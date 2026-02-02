@@ -1,265 +1,470 @@
 -- ZimEstimate Database Schema
--- Run this migration in your Supabase SQL Editor
-
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Run this in Supabase SQL Editor: https://supabase.com/dashboard/project/bjvnisdfkkhonjtytheb/sql/new
 
 -- ============================================
--- USERS TABLE
+-- 1. CREATE CUSTOM TYPES (ENUMS)
 -- ============================================
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  email TEXT UNIQUE NOT NULL,
-  name TEXT,
-  preferred_currency TEXT DEFAULT 'USD' CHECK (preferred_currency IN ('USD', 'ZWG')),
-  created_at TIMESTAMPTZ DEFAULT NOW()
+
+CREATE TYPE user_tier AS ENUM ('free', 'pro', 'admin');
+CREATE TYPE project_status AS ENUM ('draft', 'active', 'completed', 'archived');
+CREATE TYPE project_scope AS ENUM ('entire_house', 'substructure', 'superstructure', 'roofing', 'finishing', 'exterior');
+CREATE TYPE labor_preference AS ENUM ('materials_only', 'with_labor');
+CREATE TYPE access_level AS ENUM ('view', 'edit');
+CREATE TYPE currency AS ENUM ('USD', 'ZWG');
+
+-- ============================================
+-- 2. PROFILES TABLE
+-- ============================================
+
+CREATE TABLE profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    full_name TEXT,
+    avatar_url TEXT,
+    tier user_tier NOT NULL DEFAULT 'free',
+    preferred_currency currency NOT NULL DEFAULT 'USD',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- ============================================
--- PROJECTS TABLE
--- ============================================
-CREATE TABLE projects (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  location TEXT,
-  status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'completed', 'archived')),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- Enable RLS
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE INDEX idx_projects_owner ON projects(owner_id);
+-- Profiles policies
+CREATE POLICY "Users can view their own profile"
+    ON profiles FOR SELECT
+    USING (auth.uid() = id);
+
+CREATE POLICY "Users can update their own profile"
+    ON profiles FOR UPDATE
+    USING (auth.uid() = id);
+
+-- Function to handle new user signup
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.profiles (id, email, full_name, avatar_url)
+    VALUES (
+        NEW.id,
+        NEW.email,
+        NEW.raw_user_meta_data->>'full_name',
+        NEW.raw_user_meta_data->>'avatar_url'
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to auto-create profile on signup
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- Function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger for profiles updated_at
+CREATE TRIGGER update_profiles_updated_at
+    BEFORE UPDATE ON profiles
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================
--- MILESTONES TABLE (5 per project)
+-- 3. SUPPLIERS TABLE
 -- ============================================
-CREATE TABLE milestones (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  type TEXT NOT NULL CHECK (type IN ('substructure', 'superstructure', 'roofing', 'finishing', 'exterior')),
-  calculated_progress NUMERIC DEFAULT 0 CHECK (calculated_progress >= 0 AND calculated_progress <= 100),
-  manual_override BOOLEAN DEFAULT FALSE,
-  override_value NUMERIC CHECK (override_value IS NULL OR (override_value >= 0 AND override_value <= 100)),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(project_id, type)
-);
 
-CREATE INDEX idx_milestones_project ON milestones(project_id);
-
--- ============================================
--- PROJECT SHARES (View-only invites)
--- ============================================
-CREATE TABLE project_shares (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  shared_with_email TEXT NOT NULL,
-  access_level TEXT DEFAULT 'view' CHECK (access_level IN ('view', 'collaborate')),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(project_id, shared_with_email)
-);
-
-CREATE INDEX idx_project_shares_email ON project_shares(shared_with_email);
-
--- ============================================
--- SUPPLIERS TABLE
--- ============================================
 CREATE TABLE suppliers (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT NOT NULL,
-  website TEXT,
-  is_trusted BOOLEAN DEFAULT FALSE,
-  scrape_config JSONB,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    location TEXT,
+    contact_phone TEXT,
+    contact_email TEXT,
+    website TEXT,
+    is_trusted BOOLEAN NOT NULL DEFAULT FALSE,
+    rating DECIMAL(2,1) NOT NULL DEFAULT 0 CHECK (rating >= 0 AND rating <= 5),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Enable RLS
+ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
+
+-- Everyone can view suppliers
+CREATE POLICY "Anyone can view suppliers"
+    ON suppliers FOR SELECT
+    USING (true);
+
+-- Only admins can manage suppliers
+CREATE POLICY "Admins can insert suppliers"
+    ON suppliers FOR INSERT
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.tier = 'admin'
+        )
+    );
+
+CREATE POLICY "Admins can update suppliers"
+    ON suppliers FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.tier = 'admin'
+        )
+    );
+
 -- ============================================
--- MATERIALS TABLE (Dual Currency)
+-- 4. MATERIALS TABLE
 -- ============================================
+
 CREATE TABLE materials (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  category TEXT NOT NULL,
-  name TEXT NOT NULL,
-  unit TEXT NOT NULL,
-  price_usd NUMERIC NOT NULL,
-  price_zwg NUMERIC NOT NULL,
-  supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
-  last_updated TIMESTAMPTZ DEFAULT NOW()
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    category TEXT NOT NULL,
+    subcategory TEXT,
+    name TEXT NOT NULL,
+    unit TEXT NOT NULL,
+    specifications TEXT,
+    price_usd DECIMAL(12,2) NOT NULL DEFAULT 0,
+    price_zwg DECIMAL(12,2) NOT NULL DEFAULT 0,
+    supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    last_updated TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_materials_category ON materials(category);
-CREATE INDEX idx_materials_supplier ON materials(supplier_id);
+-- Enable RLS
+ALTER TABLE materials ENABLE ROW LEVEL SECURITY;
+
+-- Everyone can view active materials
+CREATE POLICY "Anyone can view active materials"
+    ON materials FOR SELECT
+    USING (is_active = true);
+
+-- Only admins can manage materials
+CREATE POLICY "Admins can insert materials"
+    ON materials FOR INSERT
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.tier = 'admin'
+        )
+    );
+
+CREATE POLICY "Admins can update materials"
+    ON materials FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.tier = 'admin'
+        )
+    );
 
 -- ============================================
--- ESTIMATE ITEMS (Budgeted vs Actual)
+-- 5. PROJECTS TABLE
 -- ============================================
-CREATE TABLE estimate_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  milestone_id UUID NOT NULL REFERENCES milestones(id) ON DELETE CASCADE,
-  material_id UUID NOT NULL REFERENCES materials(id) ON DELETE RESTRICT,
-  quantity_budgeted NUMERIC NOT NULL,
-  quantity_actual NUMERIC DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+
+CREATE TABLE projects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    location TEXT,
+    description TEXT,
+    scope project_scope NOT NULL DEFAULT 'entire_house',
+    labor_preference labor_preference NOT NULL DEFAULT 'materials_only',
+    status project_status NOT NULL DEFAULT 'draft',
+    total_usd DECIMAL(12,2) NOT NULL DEFAULT 0,
+    total_zwg DECIMAL(12,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_estimate_items_project ON estimate_items(project_id);
-CREATE INDEX idx_estimate_items_milestone ON estimate_items(milestone_id);
+-- Enable RLS
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+
+-- Users can view their own projects
+CREATE POLICY "Users can view own projects"
+    ON projects FOR SELECT
+    USING (auth.uid() = owner_id);
+
+-- Users can insert projects (with tier limit check done in application)
+CREATE POLICY "Users can create projects"
+    ON projects FOR INSERT
+    WITH CHECK (auth.uid() = owner_id);
+
+-- Users can update their own projects
+CREATE POLICY "Users can update own projects"
+    ON projects FOR UPDATE
+    USING (auth.uid() = owner_id);
+
+-- Users can delete their own projects
+CREATE POLICY "Users can delete own projects"
+    ON projects FOR DELETE
+    USING (auth.uid() = owner_id);
+
+-- Trigger for projects updated_at
+CREATE TRIGGER update_projects_updated_at
+    BEFORE UPDATE ON projects
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================
--- EXCHANGE RATES (Daily ZWG/USD)
+-- 6. BOQ ITEMS TABLE
 -- ============================================
+
+CREATE TABLE boq_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    material_id TEXT NOT NULL,
+    material_name TEXT NOT NULL,
+    category TEXT NOT NULL,
+    quantity DECIMAL(12,2) NOT NULL DEFAULT 0,
+    unit TEXT NOT NULL,
+    unit_price_usd DECIMAL(12,2) NOT NULL DEFAULT 0,
+    unit_price_zwg DECIMAL(12,2) NOT NULL DEFAULT 0,
+    total_usd DECIMAL(12,2) GENERATED ALWAYS AS (quantity * unit_price_usd) STORED,
+    total_zwg DECIMAL(12,2) GENERATED ALWAYS AS (quantity * unit_price_zwg) STORED,
+    notes TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE boq_items ENABLE ROW LEVEL SECURITY;
+
+-- Users can view BOQ items for their own projects
+CREATE POLICY "Users can view own project BOQ items"
+    ON boq_items FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM projects
+            WHERE projects.id = boq_items.project_id
+            AND projects.owner_id = auth.uid()
+        )
+    );
+
+-- Users can insert BOQ items for their own projects
+CREATE POLICY "Users can create BOQ items for own projects"
+    ON boq_items FOR INSERT
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM projects
+            WHERE projects.id = boq_items.project_id
+            AND projects.owner_id = auth.uid()
+        )
+    );
+
+-- Users can update BOQ items for their own projects
+CREATE POLICY "Users can update own project BOQ items"
+    ON boq_items FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 FROM projects
+            WHERE projects.id = boq_items.project_id
+            AND projects.owner_id = auth.uid()
+        )
+    );
+
+-- Users can delete BOQ items from their own projects
+CREATE POLICY "Users can delete own project BOQ items"
+    ON boq_items FOR DELETE
+    USING (
+        EXISTS (
+            SELECT 1 FROM projects
+            WHERE projects.id = boq_items.project_id
+            AND projects.owner_id = auth.uid()
+        )
+    );
+
+-- Trigger for boq_items updated_at
+CREATE TRIGGER update_boq_items_updated_at
+    BEFORE UPDATE ON boq_items
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================
+-- 7. PROJECT SHARES TABLE
+-- ============================================
+
+CREATE TABLE project_shares (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    shared_with_user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    shared_with_email TEXT NOT NULL,
+    access_level access_level NOT NULL DEFAULT 'view',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(project_id, shared_with_email)
+);
+
+-- Enable RLS
+ALTER TABLE project_shares ENABLE ROW LEVEL SECURITY;
+
+-- Project owners can view shares
+CREATE POLICY "Project owners can view shares"
+    ON project_shares FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM projects
+            WHERE projects.id = project_shares.project_id
+            AND projects.owner_id = auth.uid()
+        )
+    );
+
+-- Shared users can view their share record
+CREATE POLICY "Shared users can view their share"
+    ON project_shares FOR SELECT
+    USING (shared_with_user_id = auth.uid());
+
+-- Project owners can create shares
+CREATE POLICY "Project owners can create shares"
+    ON project_shares FOR INSERT
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM projects
+            WHERE projects.id = project_shares.project_id
+            AND projects.owner_id = auth.uid()
+        )
+    );
+
+-- Project owners can delete shares
+CREATE POLICY "Project owners can delete shares"
+    ON project_shares FOR DELETE
+    USING (
+        EXISTS (
+            SELECT 1 FROM projects
+            WHERE projects.id = project_shares.project_id
+            AND projects.owner_id = auth.uid()
+        )
+    );
+
+-- Add policy for shared users to view shared projects
+CREATE POLICY "Users can view shared projects"
+    ON projects FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM project_shares
+            WHERE project_shares.project_id = projects.id
+            AND project_shares.shared_with_user_id = auth.uid()
+        )
+    );
+
+-- Add policy for shared users with edit access to view BOQ items
+CREATE POLICY "Shared users can view BOQ items"
+    ON boq_items FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM project_shares
+            WHERE project_shares.project_id = boq_items.project_id
+            AND project_shares.shared_with_user_id = auth.uid()
+        )
+    );
+
+-- ============================================
+-- 8. EXCHANGE RATES TABLE
+-- ============================================
+
 CREATE TABLE exchange_rates (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  date DATE UNIQUE NOT NULL,
-  usd_to_zwg NUMERIC NOT NULL,
-  source TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    date DATE NOT NULL UNIQUE,
+    usd_to_zwg DECIMAL(12,4) NOT NULL,
+    source TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Enable RLS
+ALTER TABLE exchange_rates ENABLE ROW LEVEL SECURITY;
+
+-- Everyone can view exchange rates
+CREATE POLICY "Anyone can view exchange rates"
+    ON exchange_rates FOR SELECT
+    USING (true);
+
+-- Only admins can manage exchange rates
+CREATE POLICY "Admins can insert exchange rates"
+    ON exchange_rates FOR INSERT
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.tier = 'admin'
+        )
+    );
+
+-- ============================================
+-- 9. HELPER FUNCTIONS
+-- ============================================
+
+-- Function to get user's project count
+CREATE OR REPLACE FUNCTION get_user_project_count(user_id UUID)
+RETURNS INTEGER AS $$
+BEGIN
+    RETURN (
+        SELECT COUNT(*)::INTEGER
+        FROM projects
+        WHERE owner_id = user_id
+        AND status != 'archived'
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to check if user can create more projects
+CREATE OR REPLACE FUNCTION can_create_project(user_id UUID)
+RETURNS BOOLEAN AS $$
+DECLARE
+    user_tier user_tier;
+    project_count INTEGER;
+BEGIN
+    SELECT tier INTO user_tier FROM profiles WHERE id = user_id;
+
+    -- Pro and admin users have unlimited projects
+    IF user_tier IN ('pro', 'admin') THEN
+        RETURN TRUE;
+    END IF;
+
+    -- Free users limited to 3 projects
+    SELECT get_user_project_count(user_id) INTO project_count;
+    RETURN project_count < 3;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to update project totals
+CREATE OR REPLACE FUNCTION update_project_totals()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE projects
+    SET
+        total_usd = (SELECT COALESCE(SUM(total_usd), 0) FROM boq_items WHERE project_id = COALESCE(NEW.project_id, OLD.project_id)),
+        total_zwg = (SELECT COALESCE(SUM(total_zwg), 0) FROM boq_items WHERE project_id = COALESCE(NEW.project_id, OLD.project_id)),
+        updated_at = NOW()
+    WHERE id = COALESCE(NEW.project_id, OLD.project_id);
+
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to update project totals when BOQ items change
+CREATE TRIGGER update_project_totals_on_boq_change
+    AFTER INSERT OR UPDATE OR DELETE ON boq_items
+    FOR EACH ROW EXECUTE FUNCTION update_project_totals();
+
+-- ============================================
+-- 10. INDEXES FOR PERFORMANCE
+-- ============================================
+
+CREATE INDEX idx_projects_owner_id ON projects(owner_id);
+CREATE INDEX idx_projects_status ON projects(status);
+CREATE INDEX idx_boq_items_project_id ON boq_items(project_id);
+CREATE INDEX idx_boq_items_category ON boq_items(category);
+CREATE INDEX idx_materials_category ON materials(category);
+CREATE INDEX idx_materials_is_active ON materials(is_active);
+CREATE INDEX idx_project_shares_project_id ON project_shares(project_id);
+CREATE INDEX idx_project_shares_shared_with ON project_shares(shared_with_user_id);
 CREATE INDEX idx_exchange_rates_date ON exchange_rates(date DESC);
 
 -- ============================================
--- ROW LEVEL SECURITY POLICIES
+-- DONE! Your database is ready.
 -- ============================================
-
--- Enable RLS on all tables
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE milestones ENABLE ROW LEVEL SECURITY;
-ALTER TABLE project_shares ENABLE ROW LEVEL SECURITY;
-ALTER TABLE materials ENABLE ROW LEVEL SECURITY;
-ALTER TABLE estimate_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE exchange_rates ENABLE ROW LEVEL SECURITY;
-ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
-
--- Users can read/update their own profile
-CREATE POLICY "Users can view own profile" ON users
-  FOR SELECT USING (auth.uid() = id);
-
-CREATE POLICY "Users can update own profile" ON users
-  FOR UPDATE USING (auth.uid() = id);
-
--- Projects: Owner has full access, shared users can view
-CREATE POLICY "Owners can manage projects" ON projects
-  FOR ALL USING (auth.uid() = owner_id);
-
-CREATE POLICY "Shared users can view projects" ON projects
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM project_shares 
-      WHERE project_id = projects.id 
-      AND shared_with_email = (SELECT email FROM users WHERE id = auth.uid())
-    )
-  );
-
--- Milestones: Access follows project access
-CREATE POLICY "Milestone access follows project" ON milestones
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM projects 
-      WHERE projects.id = milestones.project_id 
-      AND projects.owner_id = auth.uid()
-    )
-  );
-
--- Materials: Public read, admin write (implement via service role)
-CREATE POLICY "Anyone can read materials" ON materials
-  FOR SELECT USING (true);
-
--- Exchange rates: Public read
-CREATE POLICY "Anyone can read exchange rates" ON exchange_rates
-  FOR SELECT USING (true);
-
--- Suppliers: Public read
-CREATE POLICY "Anyone can read suppliers" ON suppliers
-  FOR SELECT USING (true);
-
--- Estimate items: Project owner access
-CREATE POLICY "Estimate items follow project access" ON estimate_items
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM projects 
-      WHERE projects.id = estimate_items.project_id 
-      AND projects.owner_id = auth.uid()
-    )
-  );
-
--- Project shares: Owner can manage
-CREATE POLICY "Owners can manage shares" ON project_shares
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM projects 
-      WHERE projects.id = project_shares.project_id 
-      AND projects.owner_id = auth.uid()
-    )
-  );
-
--- ============================================
--- SEED DATA: Material Categories (Zimbabwe)
--- ============================================
-INSERT INTO suppliers (name, website, is_trusted) VALUES
-  ('Sino Zimbabwe', 'https://sinozim.co.zw', true),
-  ('Halsteds', 'https://halsteds.co.zw', true),
-  ('Fedmech', 'https://fedmech.co.zw', true);
-
--- Sample materials with dual pricing
-INSERT INTO materials (category, name, unit, price_usd, price_zwg, supplier_id) VALUES
-  ('Bricks', 'Common Clay Brick', 'per 1000', 85.00, 2550.00, (SELECT id FROM suppliers WHERE name = 'Sino Zimbabwe')),
-  ('Bricks', 'Common Cement Brick', 'per 1000', 75.00, 2250.00, (SELECT id FROM suppliers WHERE name = 'Sino Zimbabwe')),
-  ('Bricks', 'Face Brick Wire-cut', 'per 1000', 150.00, 4500.00, (SELECT id FROM suppliers WHERE name = 'Halsteds')),
-  ('Bricks', 'Farm Brick', 'per 1000', 45.00, 1350.00, NULL),
-  ('Sands', 'Pit Sand (Plastering)', 'per cube', 35.00, 1050.00, NULL),
-  ('Sands', 'River Sand (Concrete)', 'per cube', 45.00, 1350.00, NULL),
-  ('Sands', 'Washed River Sand', 'per cube', 55.00, 1650.00, NULL),
-  ('Cement', 'Masonry Cement 22.5X', 'per 50kg bag', 8.50, 255.00, (SELECT id FROM suppliers WHERE name = 'Halsteds')),
-  ('Cement', 'Standard Cement 32.5N', 'per 50kg bag', 10.00, 300.00, (SELECT id FROM suppliers WHERE name = 'Halsteds')),
-  ('Cement', 'Rapid Setting 42.5R', 'per 50kg bag', 12.50, 375.00, (SELECT id FROM suppliers WHERE name = 'Halsteds')),
-  ('Electrical', 'Conduit Pipe 19mm', 'per 4m length', 2.50, 75.00, (SELECT id FROM suppliers WHERE name = 'Fedmech')),
-  ('Electrical', '20 Round Box', 'each', 0.75, 22.50, (SELECT id FROM suppliers WHERE name = 'Fedmech')),
-  ('Electrical', 'CAFCA 2.5mm Twin+Earth', 'per 100m', 85.00, 2550.00, (SELECT id FROM suppliers WHERE name = 'Fedmech'));
-
--- Sample exchange rate
-INSERT INTO exchange_rates (date, usd_to_zwg, source) VALUES
-  (CURRENT_DATE, 30.00, 'RBZ Official Rate');
-
--- ============================================
--- FUNCTION: Auto-create milestones on project
--- ============================================
-CREATE OR REPLACE FUNCTION create_project_milestones()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO milestones (project_id, type) VALUES
-    (NEW.id, 'substructure'),
-    (NEW.id, 'superstructure'),
-    (NEW.id, 'roofing'),
-    (NEW.id, 'finishing'),
-    (NEW.id, 'exterior');
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_create_milestones
-  AFTER INSERT ON projects
-  FOR EACH ROW
-  EXECUTE FUNCTION create_project_milestones();
-
--- ============================================
--- FUNCTION: Update project timestamp
--- ============================================
-CREATE OR REPLACE FUNCTION update_project_timestamp()
-RETURNS TRIGGER AS $$
-BEGIN
-  UPDATE projects SET updated_at = NOW() WHERE id = NEW.project_id;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_update_project_on_milestone
-  AFTER UPDATE ON milestones
-  FOR EACH ROW
-  EXECUTE FUNCTION update_project_timestamp();
-
-CREATE TRIGGER trigger_update_project_on_estimate
-  AFTER INSERT OR UPDATE OR DELETE ON estimate_items
-  FOR EACH ROW
-  EXECUTE FUNCTION update_project_timestamp();

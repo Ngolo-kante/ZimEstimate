@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ServiceWorkerProvider } from "@/components/providers/ServiceWorkerProvider";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import { CurrencyProvider } from "@/components/ui/CurrencyToggle";
+import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -61,11 +63,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ServiceWorkerProvider>
-          <CurrencyProvider>
-            {children}
-          </CurrencyProvider>
-        </ServiceWorkerProvider>
+        <AuthProvider>
+          <ServiceWorkerProvider>
+            <CurrencyProvider>
+              <ToastProvider>
+                {children}
+              </ToastProvider>
+            </CurrencyProvider>
+          </ServiceWorkerProvider>
+        </AuthProvider>
       </body>
     </html>
   );

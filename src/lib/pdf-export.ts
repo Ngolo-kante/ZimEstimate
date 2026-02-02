@@ -1,362 +1,455 @@
-// PDF Export utilities for generating Bill of Quantities documents
-// Uses browser's built-in print functionality with custom styling
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Project, BOQItem } from './database.types';
 
-export interface BOQExportData {
-  projectName: string;
-  clientName?: string;
-  location?: string;
-  exportDate: string;
-  milestones: {
-    name: string;
-    items: {
-      material: string;
-      quantity: number;
-      unit: string;
-      unitPrice: number;
-      total: number;
-    }[];
-    subtotal: number;
-  }[];
-  grandTotal: number;
-  currency: 'USD' | 'ZWG';
-  notes?: string;
+interface ExportOptions {
+    currency: 'USD' | 'ZWG';
+    exchangeRate: number;
+    includeNotes: boolean;
+    includeSupplierInfo: boolean;
 }
 
-export function generateBOQPrintStyles(): string {
-  return `
-    @media print {
-      @page {
-        size: A4;
-        margin: 1.5cm;
-      }
+const defaultOptions: ExportOptions = {
+    currency: 'USD',
+    exchangeRate: 30,
+    includeNotes: true,
+    includeSupplierInfo: false,
+};
 
-      body {
-        font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
-        font-size: 10pt;
-        line-height: 1.4;
-        color: #1a1a1a;
-      }
+// Group items by category
+function groupItemsByCategory(items: BOQItem[]): Record<string, BOQItem[]> {
+    return items.reduce((acc, item) => {
+        const category = item.category || 'Other';
+        if (!acc[category]) {
+            acc[category] = [];
+        }
+        acc[category].push(item);
+        return acc;
+    }, {} as Record<string, BOQItem[]>);
+}
 
-      .print-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        border-bottom: 2px solid #14213D;
-        padding-bottom: 16px;
-        margin-bottom: 24px;
-      }
+// Category display names
+const categoryLabels: Record<string, string> = {
+    substructure: 'Substructure',
+    superstructure: 'Superstructure',
+    roofing: 'Roofing',
+    finishing: 'Finishing',
+    exterior: 'Exterior & Security',
+    labor: 'Labor & Services',
+};
 
-      .print-logo {
-        font-size: 18pt;
-        font-weight: 700;
-        color: #14213D;
-      }
-
-      .print-logo span {
-        color: #4E9AF7;
-      }
-
-      .print-title {
-        font-size: 14pt;
-        font-weight: 600;
-        color: #14213D;
-        margin: 0 0 8px 0;
-      }
-
-      .print-subtitle {
-        font-size: 9pt;
-        color: #666;
-        margin: 0;
-      }
-
-      .print-info-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
-        margin-bottom: 24px;
-      }
-
-      .print-info-item {
-        background: #f5f5f5;
-        padding: 12px;
-        border-radius: 4px;
-      }
-
-      .print-info-label {
-        font-size: 8pt;
-        text-transform: uppercase;
-        color: #888;
-        margin-bottom: 4px;
-      }
-
-      .print-info-value {
-        font-size: 11pt;
-        font-weight: 600;
-        color: #1a1a1a;
-      }
-
-      .print-milestone {
-        margin-bottom: 24px;
-        page-break-inside: avoid;
-      }
-
-      .print-milestone-header {
-        background: #14213D;
-        color: white;
-        padding: 8px 12px;
-        font-weight: 600;
-        font-size: 11pt;
-        margin-bottom: 0;
-      }
-
-      .print-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 8px;
-      }
-
-      .print-table th {
-        background: #f0f0f0;
-        padding: 8px;
-        text-align: left;
-        font-size: 8pt;
-        text-transform: uppercase;
-        color: #666;
-        border: 1px solid #ddd;
-      }
-
-      .print-table td {
-        padding: 8px;
-        border: 1px solid #ddd;
-        font-size: 9pt;
-      }
-
-      .print-table .text-right {
-        text-align: right;
-      }
-
-      .print-table .text-center {
-        text-align: center;
-      }
-
-      .print-table tfoot td {
-        background: #f5f5f5;
-        font-weight: 600;
-      }
-
-      .print-milestone-subtotal {
-        text-align: right;
-        padding: 8px 12px;
-        background: #f5f5f5;
-        font-weight: 600;
-        border: 1px solid #ddd;
-        border-top: none;
-      }
-
-      .print-summary {
-        margin-top: 32px;
-        border-top: 2px solid #14213D;
-        padding-top: 16px;
-      }
-
-      .print-summary-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 8px 0;
-        border-bottom: 1px solid #eee;
-      }
-
-      .print-summary-row.total {
-        font-size: 14pt;
-        font-weight: 700;
-        color: #14213D;
-        border-bottom: 2px solid #14213D;
-      }
-
-      .print-notes {
-        margin-top: 24px;
-        padding: 12px;
-        background: #fffbeb;
-        border-left: 4px solid #4E9AF7;
-        font-size: 9pt;
-        page-break-inside: avoid;
-      }
-
-      .print-notes h4 {
-        margin: 0 0 8px 0;
-        font-size: 10pt;
-        color: #14213D;
-      }
-
-      .print-footer {
-        margin-top: 40px;
-        padding-top: 16px;
-        border-top: 1px solid #ddd;
-        font-size: 8pt;
-        color: #888;
-        text-align: center;
-      }
-
-      /* Hide non-print elements */
-      .no-print {
-        display: none !important;
-      }
+// Format currency
+function formatCurrency(amount: number, currency: 'USD' | 'ZWG'): string {
+    if (currency === 'ZWG') {
+        return `ZiG ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
-  `;
+    return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export function generateBOQHTML(data: BOQExportData): string {
-  const formatCurrency = (value: number) => {
-    if (data.currency === 'USD') {
-      return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+export function generateBOQPDF(
+    project: Project,
+    items: BOQItem[],
+    options: Partial<ExportOptions> = {}
+): jsPDF {
+    const opts = { ...defaultOptions, ...options };
+    const doc = new jsPDF();
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    let yPos = margin;
+
+    // Colors
+    const primaryColor: [number, number, number] = [6, 20, 47]; // Deep Navy
+    const accentColor: [number, number, number] = [78, 154, 247]; // Vibrant Blue
+
+    // ===== HEADER =====
+    doc.setFillColor(...primaryColor);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+
+    // Logo text
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ZimEstimate', margin, 25);
+
+    // Tagline
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Bill of Quantities', margin, 33);
+
+    // Date
+    doc.setFontSize(9);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth - margin, 25, { align: 'right' });
+
+    yPos = 55;
+
+    // ===== PROJECT INFO =====
+    doc.setTextColor(...primaryColor);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text(project.name, margin, yPos);
+    yPos += 8;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+
+    if (project.location) {
+        doc.text(`Location: ${project.location}`, margin, yPos);
+        yPos += 5;
     }
-    return `ZiG ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
 
-  const milestonesHTML = data.milestones.map((milestone) => `
-    <div class="print-milestone">
-      <h3 class="print-milestone-header">${milestone.name}</h3>
-      <table class="print-table">
-        <thead>
-          <tr>
-            <th style="width: 40%">Material</th>
-            <th style="width: 15%" class="text-center">Quantity</th>
-            <th style="width: 10%" class="text-center">Unit</th>
-            <th style="width: 17%" class="text-right">Unit Price</th>
-            <th style="width: 18%" class="text-right">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${milestone.items.map((item) => `
-            <tr>
-              <td>${item.material}</td>
-              <td class="text-center">${item.quantity.toLocaleString()}</td>
-              <td class="text-center">${item.unit}</td>
-              <td class="text-right">${formatCurrency(item.unitPrice)}</td>
-              <td class="text-right">${formatCurrency(item.total)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      <div class="print-milestone-subtotal">
-        Subtotal: ${formatCurrency(milestone.subtotal)}
-      </div>
-    </div>
-  `).join('');
+    doc.text(`Scope: ${project.scope.replace('_', ' ')}`, margin, yPos);
+    yPos += 5;
 
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>BOQ - ${data.projectName}</title>
-      <style>${generateBOQPrintStyles()}</style>
-    </head>
-    <body>
-      <div class="print-header">
-        <div>
-          <div class="print-logo">Zim<span>Estimate</span></div>
-          <p class="print-subtitle">Construction Cost Estimation</p>
-        </div>
-        <div style="text-align: right;">
-          <h1 class="print-title">Bill of Quantities</h1>
-          <p class="print-subtitle">Generated: ${data.exportDate}</p>
-        </div>
-      </div>
+    doc.text(`Labor: ${project.labor_preference === 'with_labor' ? 'Included' : 'Materials Only'}`, margin, yPos);
+    yPos += 5;
 
-      <div class="print-info-grid">
-        <div class="print-info-item">
-          <div class="print-info-label">Project Name</div>
-          <div class="print-info-value">${data.projectName}</div>
-        </div>
-        ${data.clientName ? `
-          <div class="print-info-item">
-            <div class="print-info-label">Client</div>
-            <div class="print-info-value">${data.clientName}</div>
-          </div>
-        ` : ''}
-        ${data.location ? `
-          <div class="print-info-item">
-            <div class="print-info-label">Location</div>
-            <div class="print-info-value">${data.location}</div>
-          </div>
-        ` : ''}
-      </div>
+    doc.text(`Status: ${project.status.charAt(0).toUpperCase() + project.status.slice(1)}`, margin, yPos);
+    yPos += 15;
 
-      ${milestonesHTML}
+    // ===== SUMMARY BOX =====
+    const totalUsd = Number(project.total_usd);
+    const totalZwg = Number(project.total_zwg);
+    const displayTotal = opts.currency === 'USD' ? totalUsd : totalZwg;
 
-      <div class="print-summary">
-        <div class="print-summary-row total">
-          <span>Grand Total</span>
-          <span>${formatCurrency(data.grandTotal)}</span>
-        </div>
-      </div>
+    doc.setFillColor(245, 247, 250);
+    doc.roundedRect(margin, yPos, pageWidth - margin * 2, 25, 3, 3, 'F');
 
-      ${data.notes ? `
-        <div class="print-notes">
-          <h4>Notes</h4>
-          <p>${data.notes}</p>
-        </div>
-      ` : ''}
+    doc.setTextColor(...primaryColor);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL BUDGET', margin + 10, yPos + 10);
 
-      <div class="print-footer">
-        <p>Generated by ZimEstimate • ${data.exportDate}</p>
-        <p>This document is an estimate and actual costs may vary based on market conditions.</p>
-      </div>
-    </body>
-    </html>
-  `;
+    doc.setFontSize(16);
+    doc.setTextColor(...accentColor);
+    doc.text(formatCurrency(displayTotal, opts.currency), margin + 10, yPos + 20);
+
+    // Item count
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${items.length} line items`, pageWidth - margin - 10, yPos + 15, { align: 'right' });
+
+    yPos += 35;
+
+    // ===== BOQ ITEMS BY CATEGORY =====
+    const groupedItems = groupItemsByCategory(items);
+    const categories = Object.keys(groupedItems);
+
+    for (const category of categories) {
+        const categoryItems = groupedItems[category];
+        const categoryTotal = categoryItems.reduce(
+            (sum, item) => sum + Number(opts.currency === 'USD' ? item.total_usd : item.total_zwg),
+            0
+        );
+
+        // Check if we need a new page
+        if (yPos > 250) {
+            doc.addPage();
+            yPos = margin;
+        }
+
+        // Category header
+        doc.setFillColor(...accentColor);
+        doc.rect(margin, yPos, pageWidth - margin * 2, 8, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(categoryLabels[category] || category, margin + 5, yPos + 5.5);
+        doc.text(formatCurrency(categoryTotal, opts.currency), pageWidth - margin - 5, yPos + 5.5, { align: 'right' });
+
+        yPos += 10;
+
+        // Category items table
+        const tableData = categoryItems.map((item) => {
+            const unitPrice = opts.currency === 'USD' ? Number(item.unit_price_usd) : Number(item.unit_price_zwg);
+            const total = opts.currency === 'USD' ? Number(item.total_usd) : Number(item.total_zwg);
+
+            return [
+                item.material_name,
+                `${Number(item.quantity).toLocaleString()} ${item.unit}`,
+                formatCurrency(unitPrice, opts.currency),
+                formatCurrency(total, opts.currency),
+            ];
+        });
+
+        autoTable(doc, {
+            startY: yPos,
+            head: [['Material', 'Quantity', 'Unit Price', 'Total']],
+            body: tableData,
+            margin: { left: margin, right: margin },
+            styles: {
+                fontSize: 9,
+                cellPadding: 3,
+            },
+            headStyles: {
+                fillColor: [240, 240, 240],
+                textColor: [60, 60, 60],
+                fontStyle: 'bold',
+            },
+            columnStyles: {
+                0: { cellWidth: 'auto' },
+                1: { cellWidth: 40, halign: 'center' },
+                2: { cellWidth: 35, halign: 'right' },
+                3: { cellWidth: 40, halign: 'right', fontStyle: 'bold' },
+            },
+            alternateRowStyles: {
+                fillColor: [250, 250, 250],
+            },
+        });
+
+        yPos = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
+    }
+
+    // ===== GRAND TOTAL =====
+    if (yPos > 260) {
+        doc.addPage();
+        yPos = margin;
+    }
+
+    doc.setFillColor(...primaryColor);
+    doc.rect(margin, yPos, pageWidth - margin * 2, 15, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('GRAND TOTAL', margin + 10, yPos + 10);
+    doc.text(formatCurrency(displayTotal, opts.currency), pageWidth - margin - 10, yPos + 10, { align: 'right' });
+
+    // ===== FOOTER =====
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(
+            `Page ${i} of ${pageCount}`,
+            pageWidth / 2,
+            doc.internal.pageSize.getHeight() - 10,
+            { align: 'center' }
+        );
+        doc.text(
+            'Generated by ZimEstimate - zimestimate.co.zw',
+            pageWidth / 2,
+            doc.internal.pageSize.getHeight() - 5,
+            { align: 'center' }
+        );
+    }
+
+    return doc;
 }
 
-export function exportBOQToPDF(data: BOQExportData): void {
-  const html = generateBOQHTML(data);
-
-  // Create a new window for printing
-  const printWindow = window.open('', '_blank');
-  if (printWindow) {
-    printWindow.document.write(html);
-    printWindow.document.close();
-
-    // Wait for content to load, then trigger print
-    printWindow.onload = () => {
-      printWindow.focus();
-      printWindow.print();
-    };
-  }
+export function downloadBOQPDF(project: Project, items: BOQItem[], options?: Partial<ExportOptions>): void {
+    const doc = generateBOQPDF(project, items, options);
+    const filename = `${project.name.replace(/[^a-z0-9]/gi, '_')}_BOQ_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
 }
 
-// Quick export function for current estimate
-export function exportCurrentEstimate(): void {
-  // Get data from localStorage or context
-  const savedEstimate = localStorage.getItem('currentEstimate');
+export function getBOQPDFBlob(project: Project, items: BOQItem[], options?: Partial<ExportOptions>): Blob {
+    const doc = generateBOQPDF(project, items, options);
+    return doc.output('blob');
+}
 
-  if (!savedEstimate) {
-    alert('No estimate data found to export.');
-    return;
-  }
+export function printBOQPDF(project: Project, items: BOQItem[], options?: Partial<ExportOptions>): void {
+    const doc = generateBOQPDF(project, items, options);
+    doc.autoPrint();
+    window.open(doc.output('bloburl'), '_blank');
+}
 
-  try {
-    const estimateData = JSON.parse(savedEstimate);
-    const currency = localStorage.getItem('currency') as 'USD' | 'ZWG' || 'USD';
-
-    const exportData: BOQExportData = {
-      projectName: estimateData.projectName || 'Untitled Project',
-      clientName: estimateData.clientName,
-      location: estimateData.location,
-      exportDate: new Date().toLocaleDateString('en-ZW', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }),
-      milestones: estimateData.milestones || [],
-      grandTotal: estimateData.grandTotal || 0,
-      currency,
-      notes: estimateData.notes,
+// Vision Takeoff BOQ Export
+interface VisionBOQData {
+    projectName: string;
+    location?: string;
+    totalArea: number;
+    items: Array<{
+        material_name: string;
+        category: string;
+        quantity: number;
+        unit: string;
+        unit_price_usd: number;
+        unit_price_zwg: number;
+    }>;
+    totals: { usd: number; zwg: number };
+    config: {
+        scope: string;
+        brickType: string;
+        cementType: string;
+        includeLabor: boolean;
     };
+}
 
-    exportBOQToPDF(exportData);
-  } catch (error) {
-    console.error('Error exporting estimate:', error);
-    alert('Failed to export estimate. Please try again.');
-  }
+export function exportBOQToPDF(data: VisionBOQData, currency: 'USD' | 'ZWG' = 'USD'): void {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    let yPos = margin;
+
+    const primaryColor: [number, number, number] = [6, 20, 47];
+    const accentColor: [number, number, number] = [78, 154, 247];
+
+    // Header
+    doc.setFillColor(...primaryColor);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ZimEstimate', margin, 25);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('AI Vision Takeoff - Bill of Quantities', margin, 33);
+
+    doc.setFontSize(9);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth - margin, 25, { align: 'right' });
+
+    yPos = 55;
+
+    // Project Info
+    doc.setTextColor(...primaryColor);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text(data.projectName, margin, yPos);
+    yPos += 8;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+
+    if (data.location) {
+        doc.text(`Location: ${data.location}`, margin, yPos);
+        yPos += 5;
+    }
+
+    doc.text(`Floor Area: ${data.totalArea.toFixed(0)} m²`, margin, yPos);
+    yPos += 5;
+
+    doc.text(`Scope: ${data.config.scope.replace('_', ' ')}`, margin, yPos);
+    yPos += 5;
+
+    doc.text(`Wall Material: ${data.config.brickType.replace('_', ' ')}`, margin, yPos);
+    yPos += 5;
+
+    doc.text(`Labor: ${data.config.includeLabor ? 'Included' : 'Materials Only'}`, margin, yPos);
+    yPos += 15;
+
+    // Summary Box
+    const displayTotal = currency === 'USD' ? data.totals.usd : data.totals.zwg;
+
+    doc.setFillColor(245, 247, 250);
+    doc.roundedRect(margin, yPos, pageWidth - margin * 2, 25, 3, 3, 'F');
+
+    doc.setTextColor(...primaryColor);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL ESTIMATE', margin + 10, yPos + 10);
+
+    doc.setFontSize(16);
+    doc.setTextColor(...accentColor);
+    doc.text(formatCurrency(displayTotal, currency), margin + 10, yPos + 20);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${data.items.length} line items`, pageWidth - margin - 10, yPos + 15, { align: 'right' });
+
+    yPos += 35;
+
+    // Group items by category
+    const grouped: Record<string, typeof data.items> = {};
+    data.items.forEach((item) => {
+        if (!grouped[item.category]) grouped[item.category] = [];
+        grouped[item.category].push(item);
+    });
+
+    // Items by category
+    for (const category of Object.keys(grouped)) {
+        const categoryItems = grouped[category];
+        const categoryTotal = categoryItems.reduce(
+            (sum, item) => sum + item.quantity * (currency === 'USD' ? item.unit_price_usd : item.unit_price_zwg),
+            0
+        );
+
+        if (yPos > 250) {
+            doc.addPage();
+            yPos = margin;
+        }
+
+        // Category header
+        doc.setFillColor(...accentColor);
+        doc.rect(margin, yPos, pageWidth - margin * 2, 8, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(categoryLabels[category] || category, margin + 5, yPos + 5.5);
+        doc.text(formatCurrency(categoryTotal, currency), pageWidth - margin - 5, yPos + 5.5, { align: 'right' });
+
+        yPos += 10;
+
+        const tableData = categoryItems.map((item) => {
+            const unitPrice = currency === 'USD' ? item.unit_price_usd : item.unit_price_zwg;
+            const total = item.quantity * unitPrice;
+
+            return [
+                item.material_name,
+                `${item.quantity.toLocaleString()} ${item.unit}`,
+                formatCurrency(unitPrice, currency),
+                formatCurrency(total, currency),
+            ];
+        });
+
+        autoTable(doc, {
+            startY: yPos,
+            head: [['Material', 'Quantity', 'Unit Price', 'Total']],
+            body: tableData,
+            margin: { left: margin, right: margin },
+            styles: { fontSize: 9, cellPadding: 3 },
+            headStyles: {
+                fillColor: [240, 240, 240],
+                textColor: [60, 60, 60],
+                fontStyle: 'bold',
+            },
+            columnStyles: {
+                0: { cellWidth: 'auto' },
+                1: { cellWidth: 40, halign: 'center' },
+                2: { cellWidth: 35, halign: 'right' },
+                3: { cellWidth: 40, halign: 'right', fontStyle: 'bold' },
+            },
+            alternateRowStyles: { fillColor: [250, 250, 250] },
+        });
+
+        yPos = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
+    }
+
+    // Grand Total
+    if (yPos > 260) {
+        doc.addPage();
+        yPos = margin;
+    }
+
+    doc.setFillColor(...primaryColor);
+    doc.rect(margin, yPos, pageWidth - margin * 2, 15, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('GRAND TOTAL', margin + 10, yPos + 10);
+    doc.text(formatCurrency(displayTotal, currency), pageWidth - margin - 10, yPos + 10, { align: 'right' });
+
+    // Footer
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+        doc.text('Generated by ZimEstimate Vision Takeoff', pageWidth / 2, doc.internal.pageSize.getHeight() - 5, { align: 'center' });
+    }
+
+    // Download
+    const filename = `${data.projectName.replace(/[^a-z0-9]/gi, '_')}_BOQ_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
 }

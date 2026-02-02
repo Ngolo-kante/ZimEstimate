@@ -1,9 +1,13 @@
 'use client';
 
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import Card, { CardHeader, CardTitle, CardContent, CardBadge } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ProgressRing, { ProgressBar } from '@/components/ui/ProgressRing';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import {
     Plus,
@@ -13,7 +17,8 @@ import {
     Wall,
     HouseSimple,
     PaintBrush,
-    ShieldCheck
+    ShieldCheck,
+    Crown
 } from '@phosphor-icons/react';
 
 // Sample milestone data
@@ -41,8 +46,16 @@ function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: numb
     return <>{formatPrice(priceUsd, priceZwg)}</>;
 }
 
-export default function Dashboard() {
+function DashboardContent() {
+    const router = useRouter();
+    const { profile, projectCount, canCreateProject } = useAuth();
     const overallProgress = milestones.reduce((acc, m) => acc + m.progress, 0) / milestones.length;
+
+    const tierColors: Record<string, string> = {
+        free: 'var(--color-text-secondary)',
+        pro: 'var(--color-accent)',
+        admin: 'var(--color-primary)',
+    };
 
     return (
         <MainLayout title="Dashboard">
@@ -50,12 +63,29 @@ export default function Dashboard() {
                 {/* Welcome Section */}
                 <section className="welcome-section">
                     <div className="welcome-text">
-                        <h2>Welcome back!</h2>
+                        <h2>Welcome back{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}!</h2>
                         <p>Track your construction projects and manage estimates.</p>
+                        <div className="user-tier">
+                            <Crown size={14} weight="fill" style={{ color: tierColors[profile?.tier || 'free'] }} />
+                            <span style={{ color: tierColors[profile?.tier || 'free'] }}>
+                                {profile?.tier?.charAt(0).toUpperCase()}{profile?.tier?.slice(1)} Plan
+                            </span>
+                            {profile?.tier === 'free' && (
+                                <span className="project-count">
+                                    ({projectCount}/3 projects)
+                                </span>
+                            )}
+                        </div>
                     </div>
-                    <Button icon={<Plus size={18} weight="bold" />}>
-                        New Project
-                    </Button>
+                    <Link href="/boq/new">
+                        <Button
+                            icon={<Plus size={18} weight="bold" />}
+                            disabled={!canCreateProject()}
+                            title={!canCreateProject() ? 'Project limit reached. Upgrade to Pro.' : ''}
+                        >
+                            New Project
+                        </Button>
+                    </Link>
                 </section>
 
                 {/* Stats Grid */}
@@ -107,7 +137,7 @@ export default function Dashboard() {
                     <p className="section-subtitle">Choose how you want to create your Bill of Quantities</p>
 
                     <div className="boq-options">
-                        <Card variant="choice" onClick={() => console.log('Upload floor plan')}>
+                        <Card variant="choice" onClick={() => router.push('/ai/vision-takeoff')}>
                             <div className="choice-icon">
                                 <FileArrowUp size={40} weight="light" />
                             </div>
@@ -116,7 +146,7 @@ export default function Dashboard() {
                             <CardBadge variant="success">Best for Accuracy</CardBadge>
                         </Card>
 
-                        <Card variant="choice" onClick={() => console.log('Manual entry')}>
+                        <Card variant="choice" onClick={() => router.push('/boq/new')}>
                             <div className="choice-icon">
                                 <PencilSimple size={40} weight="light" />
                             </div>
@@ -304,6 +334,20 @@ export default function Dashboard() {
           }
         }
 
+        .user-tier {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-xs);
+          margin-top: var(--spacing-xs);
+          font-size: 0.75rem;
+          font-weight: 500;
+        }
+
+        .project-count {
+          color: var(--color-text-muted);
+          font-weight: 400;
+        }
+
         @media (max-width: 768px) {
           .stats-grid {
             grid-template-columns: 1fr;
@@ -319,5 +363,13 @@ export default function Dashboard() {
         }
       `}</style>
         </MainLayout>
+    );
+}
+
+export default function Dashboard() {
+    return (
+        <ProtectedRoute>
+            <DashboardContent />
+        </ProtectedRoute>
     );
 }

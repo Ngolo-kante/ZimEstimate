@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
 import Card, { CardBadge } from '@/components/ui/Card';
@@ -9,6 +10,8 @@ import {
   ArrowRight,
   Cube,
 } from '@phosphor-icons/react';
+
+type TemplateCategory = 'all' | 'residential' | 'commercial' | 'exterior';
 
 // Template data
 const templates = [
@@ -99,6 +102,15 @@ function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: numb
 }
 
 export default function TemplatesPage() {
+  const [selectedCategory, setSelectedCategory] = useState<TemplateCategory>('all');
+
+  const filteredTemplates = useMemo(() => {
+    if (selectedCategory === 'all') {
+      return templates;
+    }
+    return templates.filter((t) => t.category === selectedCategory);
+  }, [selectedCategory]);
+
   return (
     <MainLayout title="BOQ Templates">
       <div className="templates-page">
@@ -110,7 +122,11 @@ export default function TemplatesPage() {
         {/* Categories */}
         <div className="categories">
           {categories.map((cat) => (
-            <button key={cat.id} className={`category-btn ${cat.id === 'all' ? 'active' : ''}`}>
+            <button
+              key={cat.id}
+              className={`category-btn ${selectedCategory === cat.id ? 'active' : ''}`}
+              onClick={() => setSelectedCategory(cat.id as TemplateCategory)}
+            >
               {cat.label}
             </button>
           ))}
@@ -118,7 +134,7 @@ export default function TemplatesPage() {
 
         {/* Templates Grid */}
         <div className="templates-grid">
-          {templates.map((template) => {
+          {filteredTemplates.map((template) => {
             const IconComponent = template.icon;
             return (
               <Link key={template.id} href={`/boq/new?template=${template.id}`} className="template-link">
@@ -156,6 +172,13 @@ export default function TemplatesPage() {
               </Link>
             );
           })}
+
+          {filteredTemplates.length === 0 && (
+            <div className="empty-state">
+              <Cube size={48} weight="light" />
+              <p>No templates available in this category yet.</p>
+            </div>
+          )}
         </div>
 
         <p className="disclaimer">
@@ -284,6 +307,22 @@ export default function TemplatesPage() {
 
         .arrow-icon {
           color: var(--color-text-muted);
+        }
+
+        .empty-state {
+          grid-column: 1 / -1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: var(--spacing-2xl);
+          color: var(--color-text-muted);
+          text-align: center;
+          gap: var(--spacing-md);
+        }
+
+        .empty-state p {
+          margin: 0;
         }
 
         .disclaimer {

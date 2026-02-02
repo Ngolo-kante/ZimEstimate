@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, Suspense, useMemo, useRef, useEffect } from 'react';
+import { useState, Suspense, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
+import { useProjectAutoSave } from '@/hooks/useProjectAutoSave';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { BOQItem as DBBOQItem } from '@/lib/database.types';
 import {
   Plus,
   Trash,
@@ -31,11 +34,18 @@ import {
   Tag,
   MagnifyingGlass,
   X,
+  CloudCheck,
+  CloudArrowUp,
+  Warning,
+  MapPin,
+  WhatsappLogo,
+  FloppyDisk,
 } from '@phosphor-icons/react';
 import {
   materials as allMaterials,
   getBestPrice,
 } from '@/lib/materials';
+import { exportBOQToPDF } from '@/lib/pdf-export';
 import WizardStyles from './WizardStyles';
 
 
@@ -281,7 +291,12 @@ const MaterialDropdown = ({
 
 function BOQBuilderContent() {
   const searchParams = useSearchParams();
-  const _router = useRouter(); // Kept for future use
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
+
+  // Get project ID from URL if editing existing project
+  const projectIdFromUrl = searchParams.get('id');
 
   // State from URL params (kept for future use)
   const _projectType = searchParams.get('type') || 'residential';
@@ -318,6 +333,80 @@ function BOQBuilderContent() {
 
   // Currency context - must be called at top level (not inside conditionals)
   const { currency, setCurrency, exchangeRate } = useCurrency();
+
+  // Auto-save hook for database persistence
+  const {
+    project,
+    isSaving,
+    isLoading,
+    lastSaved,
+    hasUnsavedChanges,
+    error: saveError,
+    saveNow,
+    createNewProject,
+    markChanged,
+  } = useProjectAutoSave(
+    projectDetails,
+    projectScope === 'stage' ? 'stage' : 'entire',
+    selectedStages,
+    laborType,
+    milestonesState,
+    {
+      projectId: projectIdFromUrl,
+      autoSaveInterval: 30000, // 30 seconds
+      onLoadComplete: (loadedProject, items) => {
+        // Restore project details
+        setProjectDetails({
+          name: loadedProject.name,
+          location: loadedProject.location || '',
+          budget: '',
+          rooms: 4,
+          area: 150,
+        });
+
+        // Restore scope and labor preference
+        if (loadedProject.scope !== 'entire_house') {
+          setProjectScope('stage');
+          setSelectedStages([loadedProject.scope]);
+        }
+        setLaborType(loadedProject.labor_preference === 'with_labor' ? 'materials_labor' : 'materials_only');
+
+        // Restore BOQ items grouped by category/milestone
+        if (items.length > 0) {
+          setMilestonesState(prev => {
+            const newState = [...prev];
+            items.forEach(item => {
+              const milestoneIndex = newState.findIndex(m => m.id === item.category);
+              if (milestoneIndex !== -1) {
+                newState[milestoneIndex].items.push({
+                  id: item.id,
+                  materialId: item.material_id,
+                  materialName: item.material_name,
+                  quantity: item.quantity,
+                  unit: item.unit,
+                  priceUsd: item.unit_price_usd,
+                  priceZwg: item.unit_price_zwg,
+                  description: item.notes || undefined,
+                  category: item.category,
+                });
+              }
+            });
+            return newState;
+          });
+
+          // Jump to step 4 if we have items
+          setCurrentStep(4);
+        }
+      },
+    }
+  );
+
+  // Mark changes when milestone data changes (after initial load)
+  useEffect(() => {
+    if (project && currentStep === 4) {
+      markChanged();
+    }
+  }, [milestonesState, project, currentStep, markChanged]);
 
   // Derived state
   const totalAmount = useMemo(() => {
@@ -384,7 +473,7 @@ function BOQBuilderContent() {
     return true;
   });
 
-  const goToNextStep = () => {
+  const goToNextStep = async () => {
     if (currentStep === 1 && (!projectDetails.name || !projectDetails.location)) {
       alert('Please fill in project name and location');
       return;
@@ -393,6 +482,16 @@ function BOQBuilderContent() {
       alert('Please select at least one stage');
       return;
     }
+
+    // Create project in database when moving from step 1 (if authenticated and no project yet)
+    if (currentStep === 1 && isAuthenticated && !project) {
+      const projectId = await createNewProject(projectDetails);
+      if (!projectId) {
+        // Project creation failed, but allow continuing in offline mode
+        console.warn('Failed to create project in database, continuing locally');
+      }
+    }
+
     setCurrentStep(prev => prev + 1);
   };
 
@@ -502,6 +601,17 @@ function BOQBuilderContent() {
     setIsGenerating(false);
   };
 
+  const handleSaveProject = () => {
+    // Check if user is authenticated
+    if (isAuthenticated) {
+      if (hasUnsavedChanges) {
+        saveNow();
+      }
+    } else {
+      setShowSavePrompt(true);
+    }
+  };
+
   // Step definitions - moved here so it's available in all code paths
   const steps = [
     { number: 1, label: 'Project Info' },
@@ -529,10 +639,452 @@ function BOQBuilderContent() {
       acc + m.items.filter(i => i.quantity && i.quantity > 0).length, 0);
 
     return (
-      <div className="boq-builder">
+      <MainLayout title="Build BOQ">
         <WizardStyles />
+        <div className="boq-builder">
+          {/* Step Progress Bar */}
+          <div className="step-progress-bar">
+            {steps.map((step, index) => (
+              <div key={step.number} className="step-progress-item">
+                <div className={`step-node ${currentStep >= step.number ? 'active' : ''} ${currentStep > step.number ? 'completed' : ''}`}>
+                  {currentStep > step.number ? <Check size={16} weight="bold" /> : step.number}
+                </div>
+                <span className={`step-label ${currentStep >= step.number ? 'active' : ''}`}>{step.label}</span>
+                {index < steps.length - 1 && (
+                  <div className={`step-connector ${currentStep > step.number ? 'active' : ''}`} />
+                )}
+              </div>
+            ))}
+          </div>
 
-        {/* Step Progress Bar */}
+          {/* Header */}
+          <div className="builder-header">
+            <div>
+              <h1>{projectDetails.name || 'New Project'}</h1>
+              <div className="builder-meta">
+                <span>{projectDetails.location}</span>
+                <span className="meta-dot">•</span>
+                <span>{selectedStages.length > 0 ? `${selectedStages.length} Stages` : 'Entire House'}</span>
+                {/* Save Status Indicator */}
+                {isAuthenticated && (
+                  <>
+                    <span className="meta-dot">•</span>
+                    <span className={`save-status ${isSaving ? 'saving' : hasUnsavedChanges ? 'unsaved' : 'saved'}`}>
+                      {isSaving ? (
+                        <><CloudArrowUp size={14} className="animate-pulse" /> Saving...</>
+                      ) : hasUnsavedChanges ? (
+                        <><Warning size={14} /> Unsaved changes</>
+                      ) : lastSaved ? (
+                        <><CloudCheck size={14} /> Saved</>
+                      ) : null}
+                    </span>
+                  </>
+                )}
+              </div>
+              {saveError && (
+                <div className="builder-error">{saveError}</div>
+              )}
+            </div>
+            <div className="header-actions">
+              <Button variant="secondary" onClick={goToPrevStep}>Edit Details</Button>
+              {isAuthenticated ? (
+                hasUnsavedChanges && (
+                  <Button
+                    variant="secondary"
+                    onClick={saveNow}
+                    loading={isSaving}
+                    icon={<CloudArrowUp size={18} />}
+                  >
+                    Save Now
+                  </Button>
+                )
+              ) : (
+                <button className="btn btn-primary" onClick={handleSaveProject} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  border: 'none',
+                  background: 'var(--color-primary)',
+                  color: 'var(--color-text-inverse)',
+                }}>
+                  <FloppyDisk size={18} weight="light" />
+                  Save Project
+                </button>
+              )}
+              <Button
+                variant="ghost"
+                icon={<WhatsappLogo size={18} />}
+                onClick={() => {
+                  const summary = `*${projectDetails.name || 'BOQ Estimate'}*\n` +
+                    `Location: ${projectDetails.location || 'Not specified'}\n\n` +
+                    `*Total Estimate:*\n` +
+                    `USD: $${totalMaterials.toLocaleString()}\n` +
+                    `ZWG: ZiG ${(totalMaterials * exchangeRate).toLocaleString()}\n\n` +
+                    `Materials: ${totalItems} items\n\n` +
+                    `Generated with ZimEstimate`;
+                  window.open(`https://wa.me/?text=${encodeURIComponent(summary)}`, '_blank');
+                }}
+              >
+                Share
+              </Button>
+              <Button
+                variant="primary"
+                icon={<DownloadSimple size={18} />}
+                onClick={() => {
+                  // Export directly without requiring saved project
+                  const allItems = milestonesState.flatMap(ms =>
+                    ms.items.map(item => ({
+                      material_name: item.materialName,
+                      category: ms.id,
+                      quantity: item.quantity || 0,
+                      unit: item.unit,
+                      unit_price_usd: item.priceUsd,
+                      unit_price_zwg: item.priceZwg,
+                    }))
+                  );
+
+                  const boqData = {
+                    projectName: projectDetails.name || 'Manual BOQ Project',
+                    location: projectDetails.location,
+                    totalArea: projectDetails.area || 0,
+                    items: allItems,
+                    totals: {
+                      usd: totalMaterials,
+                      zwg: totalMaterials * exchangeRate,
+                    },
+                    config: {
+                      scope: projectScope === 'stage' ? selectedStages.join(', ') : 'Entire House',
+                      brickType: 'Standard',
+                      cementType: 'OPC',
+                      includeLabor: laborType === 'materials_labor',
+                    },
+                  };
+
+                  exportBOQToPDF(boqData, currency);
+                }}
+              >
+                Export PDF
+              </Button>
+            </div>
+          </div>
+
+          {/* Currency Toggle - Prominent */}
+          <div className="currency-toggle-bar">
+            <span className="currency-label">Display prices in:</span>
+            <div className="currency-toggle-group">
+              <button
+                className={`currency-btn ${currency === 'USD' ? 'active' : ''}`}
+                onClick={() => setCurrency('USD')}
+              >
+                <span className="currency-symbol">$</span> USD
+              </button>
+              <button
+                className={`currency-btn ${currency === 'ZWG' ? 'active' : ''}`}
+                onClick={() => setCurrency('ZWG')}
+              >
+                <span className="currency-symbol">Z$</span> ZiG
+              </button>
+            </div>
+          </div>
+
+          {/* Stage Materials Cards FIRST (as per requirement) */}
+          <div className="milestones-section">
+            {visibleMilestones.map((milestone) => {
+              const mData = milestonesState.find(m => m.id === milestone.id) || { items: [], expanded: true };
+              const mTotal = calculateMilestoneTotal(mData.items);
+
+              return (
+                <div key={milestone.id} className="milestone-card bg-white border border-slate-200 rounded-xl overflow-hidden mb-6">
+                  <div
+                    className="milestone-header flex items-center p-4 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors"
+                    onClick={() => toggleMilestone(milestone.id)}
+                  >
+                    <div className="flex items-center justify-center w-10 h-10 bg-white rounded-lg shadow-sm mr-4 text-blue-500">
+                      <milestone.icon size={20} weight="duotone" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-slate-900">{milestone.label}</h3>
+                      <p className="text-xs text-slate-500">{milestone.description}</p>
+                    </div>
+                    <div className="text-right mr-4">
+                      <span className="text-xs text-slate-500 block">{mData.items.length} items</span>
+                      <span className="font-bold text-slate-700">${mTotal.toFixed(2)}</span>
+                    </div>
+                    <div className={`transform transition-transform text-slate-400 ${mData.expanded ? 'rotate-180' : ''}`}>
+                      <CaretDown size={20} />
+                    </div>
+                  </div>
+
+                  {mData.expanded && (
+                    <div className="p-4">
+                      {mData.items.length > 0 ? (
+                        <div className="materials-list space-y-3">
+                          {/* Table Header */}
+                          <div className="grid grid-cols-[1fr_130px_140px_120px_48px] gap-4 px-4 py-3 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest rounded-xl border border-slate-100">
+                            <div>Material Description</div>
+                            <div className="text-right">Market Price</div>
+                            <div className="text-center">Quantity</div>
+                            <div className="text-right">Line Total</div>
+                            <div></div>
+                          </div>
+
+                          {sortMaterials(mData.items).map((item) => (
+                            <div key={item.id} className="material-row-modern group grid grid-cols-[1fr_130px_140px_120px_48px] gap-4 items-center p-4 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300">
+                              {/* Name & Desc */}
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                                  {getCategoryIcon(materialCatalog.find(m => m.id === item.materialId)?.category || '')}
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <span className="font-bold text-slate-900 truncate leading-tight">{item.materialName}</span>
+                                  <span className="text-xs text-slate-500 truncate mt-0.5">{item.description}</span>
+                                </div>
+                              </div>
+
+                              {/* Unit Price Edit */}
+                              <div className="flex items-center justify-end">
+                                <div className="relative group/input">
+                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold transition-colors group-focus-within/input:text-blue-500">$</span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    className="w-28 pl-6 pr-3 py-2 text-right text-sm font-bold text-slate-700 bg-slate-50 border border-transparent rounded-lg focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
+                                    value={item.priceUsd}
+                                    onChange={(e) => handleUpdateUnitPrice(milestone.id, item.id, parseFloat(e.target.value) || 0)}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Quantity Edit */}
+                              <div className="flex justify-center">
+                                <div className="flex items-center bg-slate-50 border border-transparent rounded-lg focus-within:bg-white focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100 transition-all w-32 overflow-hidden">
+                                  <input
+                                    className="w-full p-2 text-center text-sm font-bold text-slate-700 outline-none bg-transparent"
+                                    type="number"
+                                    value={item.quantity || ''}
+                                    onChange={(e) => handleUpdateQuantity(milestone.id, item.id, parseFloat(e.target.value))}
+                                    placeholder="0"
+                                  />
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase pr-3 pl-1">
+                                    {item.unit}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Total */}
+                              <div className="text-right">
+                                <div className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-tighter">Total</div>
+                                <div className="font-black text-slate-900">
+                                  ${((item.quantity || 0) * item.priceUsd).toFixed(2)}
+                                </div>
+                              </div>
+
+                              {/* Remove */}
+                              <div className="flex justify-end">
+                                <button
+                                  onClick={() => handleRemoveItem(milestone.id, item.id)}
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                                  title="Remove item"
+                                >
+                                  <Trash size={18} weight="bold" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200 mb-4">
+                          <p>No materials added yet.</p>
+                        </div>
+                      )}
+
+                      {/* Add Item Form */}
+                      {showAddMaterial === milestone.id ? (
+                        <div className="mt-4 p-6 bg-white border-2 border-blue-100 rounded-2xl shadow-xl shadow-blue-500/5 animate-fadeIn relative z-[50]">
+                          <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+                              <Plus size={18} weight="bold" />
+                            </div>
+                            <h4 className="font-bold text-slate-800">Add New Material</h4>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                            <div className="md:col-span-7">
+                              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Select Material from Catalog</label>
+                              <MaterialDropdown
+                                value={newItem.materialId}
+                                onChange={(id) => setNewItem({ ...newItem, materialId: id })}
+                              />
+                            </div>
+                            <div className="md:col-span-3">
+                              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Quantity</label>
+                              <div className="relative group/qty">
+                                <input
+                                  type="number"
+                                  className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-50 outline-none transition-all font-bold text-slate-700"
+                                  placeholder="0.00"
+                                  value={newItem.quantity}
+                                  onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
+                                />
+                              </div>
+                            </div>
+                            <div className="md:col-span-2 flex gap-2">
+                              <Button
+                                variant="primary"
+                                fullWidth
+                                onClick={() => handleAddMaterial(milestone.id)}
+                                disabled={!newItem.materialId || !newItem.quantity}
+                                icon={<Check size={18} weight="bold" />}
+                              >
+                                Add
+                              </Button>
+                              <button
+                                onClick={() => setShowAddMaterial(null)}
+                                className="p-3 bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded-xl transition-colors"
+                              >
+                                <X size={18} weight="bold" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex gap-3 mt-4">
+                          <Button
+                            variant="secondary"
+                            icon={<Plus size={16} />}
+                            size="sm"
+                            onClick={() => setShowAddMaterial(milestone.id)}
+                          >
+                            Add Material
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            icon={isGenerating ? <div className="animate-spin"><div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full"></div></div> : <Sparkle size={16} />}
+                            size="sm"
+                            onClick={() => handleAiGenerate(milestone.id)}
+                            disabled={isGenerating}
+                            className="ai-suggest-btn"
+                          >
+                            {mData.items.length === 0 ? "Auto-Suggest Materials" : "Suggest More"}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Grand Total Summary Card - Placed BELOW stage cards as per requirement */}
+          <div className="grand-total-section">
+            <div className="total-card p-6 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm uppercase font-semibold text-blue-600 mb-1">Grand Total Estimate</h3>
+                <p className="text-slate-500 text-sm">
+                  {totalItems} materials • {itemsWithQty} with quantities
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-slate-900">{formatCurrency(totalMaterials)}</div>
+                <div className="text-sm text-slate-500">{formatCurrency(totalMaterials, true)}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Floating Summary Bar */}
+          <div className="floating-summary-bar">
+            <div className="floating-summary-content">
+              <div className="floating-summary-info">
+                <Stack size={20} className="text-blue-500" />
+                <span className="floating-total">{formatCurrency(totalMaterials)}</span>
+                <span className="floating-items">{totalItems} items</span>
+              </div>
+              <Button
+                variant="primary"
+                icon={<DownloadSimple size={16} />}
+                size="sm"
+                onClick={() => alert('Download feature coming soon!')}
+              >
+                Export
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Save Prompt Modal */}
+        {showSavePrompt && (
+          <div className="modal-overlay" onClick={() => setShowSavePrompt(false)}>
+            <div className="save-modal" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+              <div className="modal-icon">
+                <FloppyDisk size={32} weight="light" />
+              </div>
+              <h3>Save to Your Projects</h3>
+              <p>Sign in or create an account to save this BOQ and access it anytime from your dashboard.</p>
+              <div className="modal-actions">
+                <button className="btn btn-secondary" onClick={() => setShowSavePrompt(false)} style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text-secondary)'
+                }}>
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => window.location.href = '/auth/login?redirect=/boq/new'}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    border: 'none',
+                    background: 'var(--color-primary)',
+                    color: 'var(--color-text-inverse)'
+                  }}
+                >
+                  Sign In
+                </button>
+                <button
+                  className="btn btn-accent"
+                  onClick={() => window.location.href = '/auth/register?redirect=/boq/new'}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    border: 'none',
+                    background: 'var(--color-accent)',
+                    color: 'white'
+                  }}
+                >
+                  Create Account
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </MainLayout>
+    );
+  }
+
+  return (
+    <MainLayout title="New Project">
+      <WizardStyles />
+      <div className="boq-wizard-container">
+        {/* Unified Step Progress Bar */}
         <div className="step-progress-bar">
           {steps.map((step, index) => (
             <div key={step.number} className="step-progress-item">
@@ -547,501 +1099,215 @@ function BOQBuilderContent() {
           ))}
         </div>
 
-        {/* Header */}
-        <div className="builder-header">
-          <div>
-            <h1>{projectDetails.name || 'New Project'}</h1>
-            <div className="flex gap-4 text-slate-500 text-sm">
-              <span>{projectDetails.location}</span>
-              <span>•</span>
-              <span>{selectedStages.length} Stages</span>
-            </div>
-          </div>
-          <div className="header-actions">
-            <Button variant="secondary" onClick={goToPrevStep}>Edit Details</Button>
-            <Button
-              variant="primary"
-              icon={<DownloadSimple size={18} />}
-              onClick={() => alert('Download feature coming soon!')}
-            >
-              Export PDF
-            </Button>
-          </div>
-        </div>
-
-        {/* Currency Toggle - Prominent */}
-        <div className="currency-toggle-bar">
-          <span className="currency-label">Display prices in:</span>
-          <div className="currency-toggle-group">
-            <button
-              className={`currency-btn ${currency === 'USD' ? 'active' : ''}`}
-              onClick={() => setCurrency('USD')}
-            >
-              <span className="currency-symbol">$</span> USD
-            </button>
-            <button
-              className={`currency-btn ${currency === 'ZWG' ? 'active' : ''}`}
-              onClick={() => setCurrency('ZWG')}
-            >
-              <span className="currency-symbol">Z$</span> ZiG
-            </button>
-          </div>
-        </div>
-
-        {/* Stage Materials Cards FIRST (as per requirement) */}
-        <div className="milestones-section">
-          {visibleMilestones.map((milestone) => {
-            const mData = milestonesState.find(m => m.id === milestone.id) || { items: [], expanded: true };
-            const mTotal = calculateMilestoneTotal(mData.items);
-
-            return (
-              <div key={milestone.id} className="milestone-card bg-white border border-slate-200 rounded-xl overflow-hidden mb-6">
-                <div
-                  className="milestone-header flex items-center p-4 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors"
-                  onClick={() => toggleMilestone(milestone.id)}
-                >
-                  <div className="flex items-center justify-center w-10 h-10 bg-white rounded-lg shadow-sm mr-4 text-blue-500">
-                    <milestone.icon size={20} weight="duotone" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-slate-900">{milestone.label}</h3>
-                    <p className="text-xs text-slate-500">{milestone.description}</p>
-                  </div>
-                  <div className="text-right mr-4">
-                    <span className="text-xs text-slate-500 block">{mData.items.length} items</span>
-                    <span className="font-bold text-slate-700">${mTotal.toFixed(2)}</span>
-                  </div>
-                  <div className={`transform transition-transform text-slate-400 ${mData.expanded ? 'rotate-180' : ''}`}>
-                    <CaretDown size={20} />
-                  </div>
-                </div>
-
-                {mData.expanded && (
-                  <div className="p-4">
-                    {mData.items.length > 0 ? (
-                      <div className="materials-list space-y-3">
-                        {/* Table Header */}
-                        <div className="grid grid-cols-[1fr_130px_140px_120px_48px] gap-4 px-4 py-3 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest rounded-xl border border-slate-100">
-                          <div>Material Description</div>
-                          <div className="text-right">Market Price</div>
-                          <div className="text-center">Quantity</div>
-                          <div className="text-right">Line Total</div>
-                          <div></div>
-                        </div>
-
-                        {sortMaterials(mData.items).map((item) => (
-                          <div key={item.id} className="material-row-modern group grid grid-cols-[1fr_130px_140px_120px_48px] gap-4 items-center p-4 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300">
-                            {/* Name & Desc */}
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                                {getCategoryIcon(materialCatalog.find(m => m.id === item.materialId)?.category || '')}
-                              </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="font-bold text-slate-900 truncate leading-tight">{item.materialName}</span>
-                                <span className="text-xs text-slate-500 truncate mt-0.5">{item.description}</span>
-                              </div>
-                            </div>
-
-                            {/* Unit Price Edit */}
-                            <div className="flex items-center justify-end">
-                              <div className="relative group/input">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold transition-colors group-focus-within/input:text-blue-500">$</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  className="w-28 pl-6 pr-3 py-2 text-right text-sm font-bold text-slate-700 bg-slate-50 border border-transparent rounded-lg focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
-                                  value={item.priceUsd}
-                                  onChange={(e) => handleUpdateUnitPrice(milestone.id, item.id, parseFloat(e.target.value) || 0)}
-                                />
-                              </div>
-                            </div>
-
-                            {/* Quantity Edit */}
-                            <div className="flex justify-center">
-                              <div className="flex items-center bg-slate-50 border border-transparent rounded-lg focus-within:bg-white focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100 transition-all w-32 overflow-hidden">
-                                <input
-                                  className="w-full p-2 text-center text-sm font-bold text-slate-700 outline-none bg-transparent"
-                                  type="number"
-                                  value={item.quantity || ''}
-                                  onChange={(e) => handleUpdateQuantity(milestone.id, item.id, parseFloat(e.target.value))}
-                                  placeholder="0"
-                                />
-                                <span className="text-[10px] font-bold text-slate-400 uppercase pr-3 pl-1">
-                                  {item.unit}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Total */}
-                            <div className="text-right">
-                              <div className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-tighter">Total</div>
-                              <div className="font-black text-slate-900">
-                                ${((item.quantity || 0) * item.priceUsd).toFixed(2)}
-                              </div>
-                            </div>
-
-                            {/* Remove */}
-                            <div className="flex justify-end">
-                              <button
-                                onClick={() => handleRemoveItem(milestone.id, item.id)}
-                                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
-                                title="Remove item"
-                              >
-                                <Trash size={18} weight="bold" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200 mb-4">
-                        <p>No materials added yet.</p>
-                      </div>
-                    )}
-
-                    {/* Add Item Form */}
-                    {showAddMaterial === milestone.id ? (
-                      <div className="mt-4 p-6 bg-white border-2 border-blue-100 rounded-2xl shadow-xl shadow-blue-500/5 animate-fadeIn relative z-[50]">
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                            <Plus size={18} weight="bold" />
-                          </div>
-                          <h4 className="font-bold text-slate-800">Add New Material</h4>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
-                          <div className="md:col-span-7">
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Select Material from Catalog</label>
-                            <MaterialDropdown
-                              value={newItem.materialId}
-                              onChange={(id) => setNewItem({ ...newItem, materialId: id })}
-                            />
-                          </div>
-                          <div className="md:col-span-3">
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Quantity</label>
-                            <div className="relative group/qty">
-                              <input
-                                type="number"
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-50 outline-none transition-all font-bold text-slate-700"
-                                placeholder="0.00"
-                                value={newItem.quantity}
-                                onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
-                              />
-                            </div>
-                          </div>
-                          <div className="md:col-span-2 flex gap-2">
-                            <Button
-                              variant="primary"
-                              fullWidth
-                              onClick={() => handleAddMaterial(milestone.id)}
-                              disabled={!newItem.materialId || !newItem.quantity}
-                              icon={<Check size={18} weight="bold" />}
-                            >
-                              Add
-                            </Button>
-                            <button
-                              onClick={() => setShowAddMaterial(null)}
-                              className="p-3 bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded-xl transition-colors"
-                            >
-                              <X size={18} weight="bold" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex gap-3 mt-4">
-                        <Button
-                          variant="secondary"
-                          icon={<Plus size={16} />}
-                          size="sm"
-                          onClick={() => setShowAddMaterial(milestone.id)}
-                        >
-                          Add Material
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          icon={isGenerating ? <div className="animate-spin"><div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full"></div></div> : <Sparkle size={16} />}
-                          size="sm"
-                          onClick={() => handleAiGenerate(milestone.id)}
-                          disabled={isGenerating}
-                          className="ai-suggest-btn"
-                        >
-                          {mData.items.length === 0 ? "Auto-Suggest Materials" : "Suggest More"}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
+        <div className="wizard-step">
+          {currentStep === 1 && (
+            <div className="step-content">
+              <div className="step-header">
+                <h2>Project Details</h2>
+                <p>Give your project a name and location to help organize your estimates.</p>
               </div>
-            );
-          })}
-        </div>
-
-        {/* Grand Total Summary Card - Placed BELOW stage cards as per requirement */}
-        <div className="grand-total-section">
-          <div className="total-card p-6 flex items-center justify-between">
-            <div>
-              <h3 className="text-sm uppercase font-semibold text-blue-600 mb-1">Grand Total Estimate</h3>
-              <p className="text-slate-500 text-sm">
-                {totalItems} materials • {itemsWithQty} with quantities
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="text-3xl font-bold text-slate-900">{formatCurrency(totalMaterials)}</div>
-              <div className="text-sm text-slate-500">{formatCurrency(totalMaterials, true)}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Floating Summary Bar */}
-        <div className="floating-summary-bar">
-          <div className="floating-summary-content">
-            <div className="floating-summary-info">
-              <Stack size={20} className="text-blue-500" />
-              <span className="floating-total">{formatCurrency(totalMaterials)}</span>
-              <span className="floating-items">{totalItems} items</span>
-            </div>
-            <Button
-              variant="primary"
-              icon={<DownloadSimple size={16} />}
-              size="sm"
-              onClick={() => alert('Download feature coming soon!')}
-            >
-              Export
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="boq-wizard-container">
-      <WizardStyles />
-      {/* Unified Step Progress Bar */}
-      <div className="step-progress-bar">
-        {steps.map((step, index) => (
-          <div key={step.number} className="step-progress-item">
-            <div className={`step-node ${currentStep >= step.number ? 'active' : ''} ${currentStep > step.number ? 'completed' : ''}`}>
-              {currentStep > step.number ? <Check size={16} weight="bold" /> : step.number}
-            </div>
-            <span className={`step-label ${currentStep >= step.number ? 'active' : ''}`}>{step.label}</span>
-            {index < steps.length - 1 && (
-              <div className={`step-connector ${currentStep > step.number ? 'active' : ''}`} />
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div className="wizard-step">
-        {currentStep === 1 && (
-          <div className="step-content">
-            <div className="step-header">
-              <h2>Project Details</h2>
-              <p>Start by giving your project a name and location.</p>
-            </div>
-            <div className="wizard-card p-8 max-w-xl mx-auto">
-              <div className="form-group">
-                <label className="wizard-label">Project Name</label>
-                <Input
-                  className="wizard-select"
-                  placeholder="e.g. Mabelreign Extension"
-                  value={projectDetails.name}
-                  onChange={(e) => setProjectDetails({ ...projectDetails, name: e.target.value })}
-                />
-              </div>
-              <div className="form-group mt-4">
-                <label className="wizard-label">Location</label>
-                <div className="select-wrapper">
-                  <select
+              <div className="wizard-card" style={{ maxWidth: '560px', margin: '0 auto' }}>
+                <div className="form-group">
+                  <label className="wizard-label">
+                    <House size={18} weight="light" />
+                    Project Name
+                  </label>
+                  <Input
                     className="wizard-select"
-                    value={projectDetails.location}
-                    onChange={(e) => setProjectDetails({ ...projectDetails, location: e.target.value })}
+                    placeholder="e.g. Borrowdale 4-Bedroom House"
+                    value={projectDetails.name}
+                    onChange={(e) => setProjectDetails({ ...projectDetails, name: e.target.value })}
+                  />
+                </div>
+                <div className="form-group" style={{ marginTop: '20px' }}>
+                  <label className="wizard-label">
+                    <MapPin size={18} weight="light" />
+                    Location
+                  </label>
+                  <div className="select-wrapper">
+                    <select
+                      className="wizard-select"
+                      value={projectDetails.location}
+                      onChange={(e) => setProjectDetails({ ...projectDetails, location: e.target.value })}
+                    >
+                      <option value="">Select Location</option>
+                      <option value="harare">Harare</option>
+                      <option value="bulawayo">Bulawayo</option>
+                      <option value="mutare">Mutare</option>
+                      <option value="gweru">Gweru</option>
+                      <option value="chitungwiza">Chitungwiza</option>
+                      <option value="masvingo">Masvingo</option>
+                    </select>
+                    <CaretDown className="select-icon" size={16} />
+                  </div>
+                  <span className="wizard-hint">
+                    Location helps track projects and may affect material pricing in future versions.
+                  </span>
+                </div>
+
+                <div className="wizard-actions">
+                  <div></div>
+                  <Button
+                    variant="primary"
+                    onClick={goToNextStep}
+                    icon={<ArrowRight size={18} />}
                   >
-                    <option value="">Select Location</option>
-                    <option value="harare">Harare</option>
-                    <option value="bulawayo">Bulawayo</option>
-                    <option value="mutare">Mutare</option>
-                    <option value="gweru">Gweru</option>
-                  </select>
-                  <CaretDown className="select-icon" size={16} />
+                    Continue
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 2 && (
+            <div className="step-content">
+              <div className="step-header">
+                <h2>Define Project Scope</h2>
+                <p>Are you building the whole house or focusing on a specific stage?</p>
+              </div>
+
+              <div className="scope-selection">
+                <div
+                  className={`scope-card ${projectScope === 'entire' ? 'selected' : ''}`}
+                  onClick={() => setProjectScope('entire')}
+                >
+                  <div className="scope-icon">
+                    <HouseSimple
+                      size={32}
+                      weight={projectScope === 'entire' ? 'fill' : 'light'}
+                    />
+                  </div>
+                  <div className="scope-content">
+                    <h3>Entire House</h3>
+                    <p>Full project from foundation to finish. Best for new builds.</p>
+                  </div>
+                  {projectScope === 'entire' && (
+                    <CheckCircle className="check-icon" size={24} weight="fill" />
+                  )}
+                </div>
+
+                <div
+                  className={`scope-card ${projectScope === 'stage' ? 'selected' : ''}`}
+                  onClick={() => setProjectScope('stage')}
+                >
+                  <div className="scope-icon">
+                    <Stack
+                      size={32}
+                      weight={projectScope === 'stage' ? 'fill' : 'light'}
+                    />
+                  </div>
+                  <div className="scope-content">
+                    <h3>Specific Stage</h3>
+                    <p>Focus on one phase like Substructure, Roofing, or Finishing.</p>
+                  </div>
+                  {projectScope === 'stage' && (
+                    <CheckCircle className="check-icon" size={24} weight="fill" />
+                  )}
                 </div>
               </div>
 
-              <div className="wizard-actions">
+              {projectScope === 'stage' && (
+                <div className="stage-selector-container">
+                  <div className="stage-grid">
+                    {milestones.filter(m => m.id !== 'labor').map((m) => (
+                      <div
+                        key={m.id}
+                        className={`stage-card ${selectedStages.includes(m.id) ? 'selected' : ''}`}
+                        onClick={() => toggleStageSelection(m.id)}
+                      >
+                        <div className="stage-icon">
+                          <m.icon
+                            size={28}
+                            weight={selectedStages.includes(m.id) ? 'fill' : 'light'}
+                          />
+                        </div>
+                        <span>{m.label}</span>
+                        {selectedStages.includes(m.id) && (
+                          <CheckCircle className="stage-check" size={18} weight="fill" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="wizard-actions" style={{ maxWidth: '700px', margin: '32px auto 0 auto' }}>
+                <Button variant="secondary" onClick={goToPrevStep}>
+                  Back
+                </Button>
                 <Button
                   variant="primary"
                   onClick={goToNextStep}
                   icon={<ArrowRight size={18} />}
                 >
-                  Next Step
+                  Continue
                 </Button>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {currentStep === 2 && (
-          <div className="step-content">
-            <div className="step-header">
-              <h2>Define Scope</h2>
-              <p>Are you building the whole house or just a stage?</p>
-            </div>
-
-            <div className="scope-selection">
-              <div
-                className={`scope-card ${projectScope === 'entire' ? 'selected' : ''
-                  }`}
-                onClick={() => setProjectScope('entire')}
-              >
-                <div className="scope-icon">
-                  <HouseSimple
-                    size={32}
-                    weight={projectScope === 'entire' ? 'fill' : 'regular'}
-                  />
-                </div>
-                <div className="scope-content">
-                  <h3>Entire House</h3>
-                  <p>
-                    Full project from foundation to finish. Best for new
-                    builds.
-                  </p>
-                </div>
-                {projectScope === 'entire' && (
-                  <CheckCircle
-                    className="check-icon"
-                    size={24}
-                    weight="fill"
-                  />
-                )}
+          {currentStep === 3 && (
+            <div className="step-content">
+              <div className="step-header">
+                <h2>Labor Options</h2>
+                <p>Do you want to include labor cost estimates in your BOQ?</p>
               </div>
 
-              <div
-                className={`scope-card ${projectScope === 'stage' ? 'selected' : ''
-                  }`}
-                onClick={() => setProjectScope('stage')}
-              >
-                <div className="scope-icon">
-                  <Stack
-                    size={32}
-                    weight={projectScope === 'stage' ? 'fill' : 'regular'}
-                  />
+              <div className="scope-selection">
+                <div
+                  className={`scope-card ${laborType === 'materials_only' ? 'selected' : ''}`}
+                  onClick={() => setLaborType('materials_only')}
+                >
+                  <div className="scope-icon">
+                    <Package size={32} weight={laborType === 'materials_only' ? 'fill' : 'light'} />
+                  </div>
+                  <div className="scope-content">
+                    <h3>Materials Only</h3>
+                    <p>Calculate material costs only. Labor costs not included.</p>
+                  </div>
+                  {laborType === 'materials_only' && <CheckCircle className="check-icon" size={24} weight="fill" />}
                 </div>
-                <div className="scope-content">
-                  <h3>Specific Stage</h3>
-                  <p>
-                    Focus on one phase like Substructure, Roofing, or
-                    Finishing.
-                  </p>
-                </div>
-                {projectScope === 'stage' && (
-                  <CheckCircle
-                    className="check-icon"
-                    size={24}
-                    weight="fill"
-                  />
-                )}
-              </div>
-            </div>
-
-            {projectScope === 'stage' && (
-              <div className="stage-selector-container">
-                <div className="stage-grid">
-                  {milestones.filter(m => m.id !== 'labor').map((m) => (
-                    <div
-                      key={m.id}
-                      className={`stage-card ${selectedStages.includes(m.id) ? 'selected' : ''
-                        }`}
-                      onClick={() => toggleStageSelection(m.id)}
-                    >
-                      <div className="stage-icon">
-                        <m.icon
-                          size={32}
-                          weight={
-                            selectedStages.includes(m.id)
-                              ? 'fill'
-                              : 'regular'
-                          }
-                        />
-                      </div>
-                      <span>{m.label}</span>
-                      {selectedStages.includes(m.id) && (
-                        <CheckCircle
-                          className="stage-check"
-                          size={20}
-                          weight="fill"
-                        />
-                      )}
-                    </div>
-                  ))}
+                <div
+                  className={`scope-card ${laborType === 'materials_labor' ? 'selected' : ''}`}
+                  onClick={() => setLaborType('materials_labor')}
+                >
+                  <div className="scope-icon">
+                    <HardHat size={32} weight={laborType === 'materials_labor' ? 'fill' : 'light'} />
+                  </div>
+                  <div className="scope-content">
+                    <h3>Materials & Labor</h3>
+                    <p>Include estimated builder and labor costs in your estimate.</p>
+                  </div>
+                  {laborType === 'materials_labor' && <CheckCircle className="check-icon" size={24} weight="fill" />}
                 </div>
               </div>
-            )}
 
-            <div className="wizard-actions">
-              <Button variant="secondary" onClick={goToPrevStep}>
-                Back
-              </Button>
-              <Button
-                variant="primary"
-                onClick={goToNextStep}
-                icon={<ArrowRight size={18} />}
-              >
-                Next Step
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {currentStep === 3 && (
-          <div className="step-content">
-            <div className="step-header">
-              <h2>Labor Options</h2>
-              <p>Do you want to include labor cost estimates?</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto mb-8">
-              <div
-                className={`scope-card ${laborType === 'materials_only' ? 'selected' : ''}`}
-                onClick={() => setLaborType('materials_only')}
-              >
-                <div className="scope-icon"><Cube size={32} weight={laborType === 'materials_only' ? 'fill' : 'regular'} /></div>
-                <div className="scope-content">
-                  <h3>Materials Only Estimate</h3>
-                  <p>Exclude labor costs from your BOQ estimate.</p>
-                </div>
-                {laborType === 'materials_only' && <CheckCircle className="check-icon" size={24} weight="fill" />}
+              <div className="tips-section">
+                <h3>Tip</h3>
+                <ul>
+                  <li>Labor costs are based on typical Zimbabwe market rates</li>
+                  <li>You can adjust individual labor line items after generation</li>
+                  <li>Materials-only is useful when you have your own construction team</li>
+                </ul>
               </div>
-              <div
-                className={`scope-card ${laborType === 'materials_labor' ? 'selected' : ''}`}
-                onClick={() => setLaborType('materials_labor')}
-              >
-                <div className="scope-icon"><UserCircle size={32} weight={laborType === 'materials_labor' ? 'fill' : 'regular'} /></div>
-                <div className="scope-content">
-                  <h3>Materials & Labor Estimate</h3>
-                  <p>Include estimated builder and labor costs.</p>
-                </div>
-                {laborType === 'materials_labor' && <CheckCircle className="check-icon" size={24} weight="fill" />}
+
+              <div className="wizard-actions" style={{ maxWidth: '700px', margin: '32px auto 0 auto' }}>
+                <Button variant="secondary" onClick={goToPrevStep}>
+                  Back
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={goToNextStep}
+                  icon={<Sparkle size={18} />}
+                >
+                  Start Building BOQ
+                </Button>
               </div>
             </div>
-
-            <div className="wizard-actions">
-              <Button variant="secondary" onClick={goToPrevStep}>
-                Back
-              </Button>
-              <Button
-                variant="primary"
-                onClick={goToNextStep}
-                icon={<Sparkle size={18} />}
-              >
-                Let&apos;s Build It
-              </Button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </MainLayout>
   );
 }
 export default function BOQBuilderPage() {

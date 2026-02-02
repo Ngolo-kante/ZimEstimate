@@ -3,9 +3,9 @@ const WizardStyles = () => (
   <style jsx global>{`
     /* Global & Wizard Styles */
     .boq-wizard-container {
-      max-width: 900px;
+      max-width: 800px;
       margin: 0 auto;
-      padding: 24px;
+      padding: 0;
     }
 
     .wizard-progress {
@@ -101,49 +101,60 @@ const WizardStyles = () => (
       to { opacity: 1; transform: translateY(0); }
     }
 
+    /* Enhanced Step Header - Vision AI Style */
     .step-header {
       text-align: center;
-      margin-bottom: 40px;
+      margin-bottom: var(--spacing-xl);
     }
 
     .step-header h2 {
-      font-size: 2rem;
-      font-weight: 800;
-      color: var(--color-primary);
-      margin-bottom: 8px;
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0 0 var(--spacing-sm) 0;
       letter-spacing: -0.02em;
     }
 
     .step-header p {
-      font-size: 1.125rem;
+      font-size: 1rem;
       color: var(--color-text-secondary);
+      margin: 0;
+      line-height: 1.6;
     }
 
+    /* Enhanced Wizard Card - Vision AI Style */
     .wizard-card {
       background: var(--color-surface);
-      border-radius: 16px;
+      border-radius: var(--radius-lg);
       border: 1px solid var(--color-border);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      padding: var(--spacing-xl);
     }
 
+    /* Enhanced Form Group */
     .form-group {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: var(--spacing-xs);
     }
 
     .wizard-label {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
       font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--color-primary);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      font-weight: 500;
+      color: var(--color-text);
+    }
+
+    .wizard-label svg {
+      color: var(--color-text-secondary);
     }
 
     .wizard-hint {
-      font-size: 0.8125rem;
+      font-size: 0.75rem;
       color: var(--color-text-muted);
-      margin-top: 6px;
+      margin-top: var(--spacing-xs);
     }
 
     .wizard-grid {
@@ -159,22 +170,27 @@ const WizardStyles = () => (
       position: relative;
     }
 
+    /* Enhanced Inputs - Vision AI Style */
     .wizard-select {
       width: 100%;
-      padding: 12px 16px;
+      padding: var(--spacing-sm) var(--spacing-md);
       font-size: 1rem;
       border: 1px solid var(--color-border);
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       background: var(--color-surface);
       color: var(--color-text);
       appearance: none;
       outline: none;
-      transition: border 0.2s ease;
+      transition: all 0.2s ease;
     }
 
     .wizard-select:focus {
       border-color: var(--color-accent);
-      box-shadow: 0 0 0 2px rgba(78, 154, 247, 0.1);
+      box-shadow: 0 0 0 3px var(--color-accent-bg);
+    }
+
+    .wizard-select::placeholder {
+      color: var(--color-text-muted);
     }
 
     .select-icon {
@@ -186,20 +202,23 @@ const WizardStyles = () => (
       color: var(--color-text-muted);
     }
 
+    /* Enhanced Wizard Actions - Vision AI Style */
     .wizard-actions {
       display: flex;
-      justify-content: flex-end;
-      gap: 16px;
-      margin-top: 32px;
-      padding-top: 24px;
+      justify-content: space-between;
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-xl);
+      padding-top: var(--spacing-lg);
       border-top: 1px solid var(--color-border-light);
     }
 
+    /* Enhanced Scope Selection - Vision AI Style */
     .scope-selection {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      margin-bottom: 32px;
+      gap: var(--spacing-lg);
+      max-width: 700px;
+      margin: 0 auto var(--spacing-xl) auto;
     }
     @media (max-width: 640px) {
       .scope-selection { grid-template-columns: 1fr; }
@@ -210,11 +229,11 @@ const WizardStyles = () => (
       flex-direction: row;
       align-items: flex-start;
       text-align: left;
-      gap: 16px;
-      padding: 24px;
+      gap: var(--spacing-md);
+      padding: var(--spacing-lg);
       background: var(--color-surface);
       border: 2px solid var(--color-border);
-      border-radius: 12px;
+      border-radius: var(--radius-lg);
       cursor: pointer;
       transition: all 0.2s ease;
       position: relative;
@@ -222,27 +241,27 @@ const WizardStyles = () => (
 
     .scope-card:hover {
       border-color: var(--color-accent-light);
-      background: #EEF5FC;
+      background: var(--color-accent-bg);
     }
-    
+
     .scope-card.selected {
       border-color: var(--color-accent);
-      background: #EEF5FC;
+      background: var(--color-accent-bg);
     }
 
     .scope-icon {
       color: var(--color-text-muted);
       min-width: 32px;
     }
-    
+
     .scope-card.selected .scope-icon {
       color: var(--color-accent);
     }
 
     .scope-content h3 {
       font-size: 1.125rem;
-      font-weight: 700;
-      color: var(--color-primary);
+      font-weight: 600;
+      color: var(--color-text);
       margin-bottom: 4px;
     }
 
@@ -250,27 +269,30 @@ const WizardStyles = () => (
       font-size: 0.875rem;
       color: var(--color-text-secondary);
       line-height: 1.5;
+      margin: 0;
     }
 
     .check-icon {
       position: absolute;
-      top: 24px;
-      right: 24px;
+      top: var(--spacing-lg);
+      right: var(--spacing-lg);
       color: var(--color-accent);
     }
 
-    /* Stage Grid Styles */
+    /* Enhanced Stage Grid - Vision AI Style */
     .stage-selector-container {
       background: var(--color-background);
-      padding: 24px;
-      border-radius: 12px;
+      padding: var(--spacing-lg);
+      border-radius: var(--radius-lg);
       border: 1px solid var(--color-border);
+      max-width: 700px;
+      margin: 0 auto;
     }
 
     .stage-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: var(--spacing-md);
     }
 
     .stage-card {
@@ -279,26 +301,27 @@ const WizardStyles = () => (
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 16px;
+      padding: var(--spacing-md);
       background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-md);
       cursor: pointer;
-      gap: 12px;
+      gap: var(--spacing-sm);
       transition: all 0.2s ease;
       position: relative;
     }
 
     .stage-card:hover {
       border-color: var(--color-accent);
+      transform: translateY(-2px);
     }
 
     .stage-card.selected {
       border-color: var(--color-accent);
-      background: #EEF5FC;
-      box-shadow: 0 4px 6px -1px rgba(78, 154, 247, 0.1);
+      background: var(--color-accent-bg);
+      box-shadow: 0 4px 12px rgba(78, 154, 247, 0.15);
     }
-    
+
     .stage-icon {
       color: var(--color-text-muted);
     }
@@ -307,9 +330,9 @@ const WizardStyles = () => (
     }
 
     .stage-card span {
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       font-weight: 600;
-      color: var(--color-primary);
+      color: var(--color-text);
     }
 
     .stage-check {
@@ -319,9 +342,42 @@ const WizardStyles = () => (
       color: var(--color-accent);
     }
 
+    /* Tips Section - Vision AI Style */
+    .tips-section {
+      margin-top: var(--spacing-xl);
+      padding: var(--spacing-lg);
+      background: var(--color-background);
+      border-radius: var(--radius-lg);
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .tips-section h3 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0 0 var(--spacing-md) 0;
+    }
+
+    .tips-section ul {
+      margin: 0;
+      padding-left: var(--spacing-lg);
+    }
+
+    .tips-section li {
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .tips-section li:last-child {
+      margin-bottom: 0;
+    }
+
     /* Builder (Step 4) & Common */
     .boq-builder {
-      max-width: 900px;
+      max-width: 960px;
       margin: 0 auto;
     }
 
@@ -329,20 +385,75 @@ const WizardStyles = () => (
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 24px;
+      margin-bottom: var(--spacing-xl);
+      padding-bottom: var(--spacing-lg);
+      border-bottom: 1px solid var(--color-border-light);
     }
 
     .builder-header h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--color-primary);
-      margin: 0 0 8px 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0 0 var(--spacing-xs) 0;
       line-height: 1.2;
+    }
+
+    .builder-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+    }
+
+    .meta-dot {
+      color: var(--color-text-muted);
+    }
+
+    .builder-error {
+      font-size: 0.75rem;
+      color: var(--color-error);
+      margin-top: var(--spacing-xs);
     }
 
     .header-actions {
       display: flex;
-      gap: 8px;
+      gap: var(--spacing-sm);
+      flex-shrink: 0;
+    }
+
+    /* Save Status Indicator */
+    .save-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+    }
+
+    .save-status.saved {
+      color: var(--color-success);
+    }
+
+    .save-status.saving {
+      color: var(--color-accent);
+    }
+
+    .save-status.unsaved {
+      color: var(--color-warning, #f59e0b);
+    }
+
+    .save-status svg {
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .animate-pulse {
+      animation: pulse 1.5s ease-in-out infinite;
     }
 
     .project-details-card {
@@ -415,60 +526,98 @@ const WizardStyles = () => (
     .breakdown-label { color: var(--color-text-secondary); }
     .breakdown-value { font-weight: 600; color: var(--color-text); }
 
-    /* Milestone Cards */
+    /* Milestone Cards - Vision AI Enhanced */
+    .milestones-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+
     .milestone-card {
       border: 1px solid var(--color-border);
-      border-radius: 12px;
-      margin-bottom: 16px;
+      border-radius: var(--radius-lg);
       overflow: hidden;
       transition: all 0.2s ease;
       background: var(--color-surface);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
-    
+
+    .milestone-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
     .milestone-header {
       display: flex;
       align-items: center;
-      gap: 16px;
-      padding: 16px;
+      gap: var(--spacing-md);
+      padding: var(--spacing-md) var(--spacing-lg);
       cursor: pointer;
       background: var(--color-surface);
+      transition: background 0.15s ease;
     }
-    
-    .milestone-header:hover { background: var(--color-background); }
-    
-    .milestone-icon {
-      width: 40px;
-      height: 40px;
+
+    .milestone-header:hover {
       background: var(--color-background);
-      border-radius: 8px;
+    }
+
+    .milestone-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--color-background);
+      border-radius: var(--radius-md);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--color-primary);
+      color: var(--color-accent);
+      flex-shrink: 0;
     }
-    
-    .milestone-info { flex: 1; }
-    .milestone-info h3 { font-size: 1rem; font-weight: 600; margin: 0; color: var(--color-text); }
-    .milestone-info p { font-size: 0.875rem; color: var(--color-text-secondary); margin: 0; }
-    
+
+    .milestone-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .milestone-info h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0;
+      color: var(--color-text);
+    }
+
+    .milestone-info p {
+      font-size: 0.8125rem;
+      color: var(--color-text-secondary);
+      margin: var(--spacing-xs) 0 0 0;
+    }
+
     .milestone-summary {
       text-align: right;
-      margin-right: 16px;
+      margin-right: var(--spacing-md);
     }
-    
-    .item-count { display: block; font-size: 0.75rem; color: var(--color-text-secondary); }
-    .milestone-total { font-weight: 600; color: var(--color-primary-light); }
-    
+
+    .item-count {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+    }
+
+    .milestone-total {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--color-text);
+    }
+
     .expand-btn {
       background: none;
       border: none;
       color: var(--color-text-muted);
+      transition: transform 0.2s ease;
     }
 
     .milestone-content {
-      border-top: 1px solid var(--color-border);
-      padding: 16px;
-      background: #FAFAFA;
+      border-top: 1px solid var(--color-border-light);
+      padding: var(--spacing-lg);
+      background: var(--color-background);
     }
     
     .ai-generate-btn {
@@ -827,6 +976,76 @@ const WizardStyles = () => (
     }
     .animate-fadeIn {
       animation: fadeIn 0.3s ease-out forwards;
+    }
+
+    /* Save Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(2px);
+    }
+
+    .save-modal {
+      background: white;
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-xl);
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: modalSlideUp 0.3s ease;
+    }
+
+    @keyframes modalSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modal-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto var(--spacing-md);
+      background: var(--color-accent-bg);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-accent);
+    }
+
+    .save-modal h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0 0 var(--spacing-sm) 0;
+    }
+
+    .save-modal p {
+      font-size: 0.9375rem;
+      color: var(--color-text-secondary);
+      margin: 0 0 var(--spacing-lg) 0;
+      line-height: 1.5;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: var(--spacing-sm);
+      justify-content: center;
+      flex-wrap: wrap;
     }
   `}</style>
 );

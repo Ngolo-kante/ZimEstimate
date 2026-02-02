@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   House,
   Folders,
@@ -13,6 +13,7 @@ import {
   User,
   SignOut,
 } from '@phosphor-icons/react';
+import { useAuth } from '@/components/providers/AuthProvider';
 
 interface NavItem {
   label: string;
@@ -35,6 +36,13 @@ const bottomNavItems: NavItem[] = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, profile, signOut, isAuthenticated } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/auth/login');
+  };
 
   const isActive = (href: string) => {
     if (href === '/home') {
@@ -98,15 +106,25 @@ export default function Sidebar() {
         {/* User Profile */}
         <div className="user-profile">
           <div className="user-avatar">
-            <User size={20} weight="light" />
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+            ) : (
+              <User size={20} weight="light" />
+            )}
           </div>
           <div className="user-info">
-            <span className="user-name">Guest User</span>
-            <span className="user-email">Sign in</span>
+            <span className="user-name">{profile?.full_name || 'Guest User'}</span>
+            <span className="user-email">{isAuthenticated ? user?.email : 'Sign in'}</span>
           </div>
-          <button className="logout-btn" aria-label="Sign out">
-            <SignOut size={18} weight="light" />
-          </button>
+          {isAuthenticated ? (
+            <button className="logout-btn" aria-label="Sign out" onClick={handleLogout}>
+              <SignOut size={18} weight="light" />
+            </button>
+          ) : (
+            <Link href="/auth/login" className="logout-btn" aria-label="Sign in">
+              <SignOut size={18} weight="light" />
+            </Link>
+          )}
         </div>
       </div>
 

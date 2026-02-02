@@ -1,10 +1,16 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
 import Card, { CardContent } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { useCurrency } from '@/components/ui/CurrencyToggle';
+import { getProjectWithItems } from '@/lib/services/projects';
+import { downloadBOQPDF, printBOQPDF } from '@/lib/pdf-export';
+import { Project, BOQItem } from '@/lib/database.types';
 import {
     FilePdf,
     FileXls,
@@ -13,201 +19,276 @@ import {
     Printer,
     EnvelopeSimple,
     WhatsappLogo,
+    ArrowLeft,
+    Warning,
 } from '@phosphor-icons/react';
-import { exportBOQToPDF, type BOQExportData } from '@/lib/pdf-export';
 
 function ExportContent() {
-    const [currency, _setCurrency] = useState<'USD' | 'ZWG'>('USD');
-    const [projectName, setProjectName] = useState('Borrowdale 4-Bedroom House');
-    const [clientName, setClientName] = useState('');
-    const [location, setLocation] = useState('Borrowdale, Harare');
-    const [notes, setNotes] = useState('');
+    const searchParams = useSearchParams();
+    const projectId = searchParams.get('project');
+    const { currency } = useCurrency();
+
+    const [project, setProject] = useState<Project | null>(null);
+    const [items, setItems] = useState<BOQItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [exporting, setExporting] = useState(false);
     const [copied, setCopied] = useState(false);
 
-    // Sample data for demo (in production, this would come from context/state)
-    const sampleBOQData: BOQExportData = {
-        projectName,
-        clientName: clientName || undefined,
-        location: location || undefined,
-        exportDate: new Date().toLocaleDateString('en-ZW', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        }),
-        milestones: [
-            {
-                name: 'Substructure',
-                items: [
-                    { material: 'Common Cement Brick', quantity: 5000, unit: 'bricks', unitPrice: 0.075, total: 375 },
-                    { material: 'Standard Cement 32.5N', quantity: 40, unit: 'bags', unitPrice: 10, total: 400 },
-                    { material: 'River Sand (Concrete)', quantity: 8, unit: 'cubes', unitPrice: 45, total: 360 },
-                    { material: 'Crushed Stone 19mm', quantity: 6, unit: 'cubes', unitPrice: 55, total: 330 },
-                    { material: 'Rebar Y12 (6m)', quantity: 30, unit: 'lengths', unitPrice: 8, total: 240 },
-                ],
-                subtotal: 1705,
-            },
-            {
-                name: 'Superstructure',
-                items: [
-                    { material: 'Common Cement Brick', quantity: 12000, unit: 'bricks', unitPrice: 0.075, total: 900 },
-                    { material: 'Standard Cement 32.5N', quantity: 80, unit: 'bags', unitPrice: 10, total: 800 },
-                    { material: 'River Sand (Concrete)', quantity: 12, unit: 'cubes', unitPrice: 45, total: 540 },
-                    { material: 'Rebar Y10 (6m)', quantity: 45, unit: 'lengths', unitPrice: 6.5, total: 292.5 },
-                ],
-                subtotal: 2532.5,
-            },
-            {
-                name: 'Roofing',
-                items: [
-                    { material: 'IBR Sheet 0.5mm (3m)', quantity: 45, unit: 'sheets', unitPrice: 22, total: 990 },
-                    { material: 'Timber 50x76mm (Rafters)', quantity: 40, unit: 'lengths', unitPrice: 15, total: 600 },
-                    { material: 'Timber 38x38mm (Brandering)', quantity: 60, unit: 'lengths', unitPrice: 8, total: 480 },
-                    { material: 'PVC Fascia Board', quantity: 20, unit: 'lengths', unitPrice: 12, total: 240 },
-                    { material: 'Roof Screws', quantity: 10, unit: 'packs', unitPrice: 8, total: 80 },
-                ],
-                subtotal: 2390,
-            },
-        ],
-        grandTotal: 6627.5,
-        currency: currency as 'USD' | 'ZWG',
-        notes: notes || undefined,
-    };
+    useEffect(() => {
+        async function loadProject() {
+            if (!projectId) {
+                setError('No project specified');
+                setIsLoading(false);
+                return;
+            }
+
+            setIsLoading(true);
+            const { project: loadedProject, items: loadedItems, error: loadError } =
+                await getProjectWithItems(projectId);
+
+            if (loadError) {
+                setError(loadError.message);
+            } else if (loadedProject) {
+                setProject(loadedProject);
+                setItems(loadedItems);
+            } else {
+                setError('Project not found');
+            }
+
+            setIsLoading(false);
+        }
+
+        loadProject();
+    }, [projectId]);
 
     const handleExportPDF = async () => {
+        if (!project) return;
+
         setExporting(true);
         try {
-            exportBOQToPDF(sampleBOQData);
+            downloadBOQPDF(project, items, { currency });
         } catch (error) {
             console.error('Export failed:', error);
+            alert('Failed to export PDF. Please try again.');
         } finally {
             setExporting(false);
         }
     };
 
+    const handlePrint = () => {
+        if (!project) return;
+
+        try {
+            printBOQPDF(project, items, { currency });
+        } catch (error) {
+            console.error('Print failed:', error);
+            alert('Failed to print. Please try again.');
+        }
+    };
+
     const handleCopyLink = () => {
-        const shareUrl = `${window.location.origin}/share/boq/demo-123`;
+        if (!project) return;
+
+        const shareUrl = `${window.location.origin}/share/boq/${project.id}`;
         navigator.clipboard.writeText(shareUrl);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
 
     const handleShare = (platform: 'email' | 'whatsapp') => {
-        const subject = encodeURIComponent(`BOQ: ${projectName}`);
+        if (!project) return;
+
+        const subject = encodeURIComponent(`BOQ: ${project.name}`);
+        const total = currency === 'USD' ? project.total_usd : project.total_zwg;
+        const currencySymbol = currency === 'USD' ? '$' : 'ZiG ';
         const body = encodeURIComponent(
-            `Here's the Bill of Quantities for ${projectName}.\n\nTotal: $${sampleBOQData.grandTotal.toLocaleString()}\n\nView online: ${window.location.origin}/share/boq/demo-123`
+            `Here's the Bill of Quantities for ${project.name}.\n\nTotal: ${currencySymbol}${Number(total).toLocaleString()}\n\nView online: ${window.location.origin}/share/boq/${project.id}`
         );
 
         if (platform === 'email') {
-            window.open(`mailto:?subject=${subject}&body=${body}`);
-        } else if (platform === 'whatsapp') {
-            window.open(`https://wa.me/?text=${body}`);
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        } else {
+            window.open(`https://wa.me/?text=${body}`, '_blank');
         }
     };
+
+    if (isLoading) {
+        return (
+            <MainLayout title="Export">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>Loading project...</p>
+                </div>
+                <style jsx>{`
+                    .loading-state {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        min-height: 400px;
+                        gap: var(--spacing-md);
+                    }
+                    .spinner {
+                        width: 40px;
+                        height: 40px;
+                        border: 3px solid var(--color-border);
+                        border-top-color: var(--color-primary);
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                    }
+                    @keyframes spin { to { transform: rotate(360deg); } }
+                    p { color: var(--color-text-secondary); }
+                `}</style>
+            </MainLayout>
+        );
+    }
+
+    if (error || !project) {
+        return (
+            <MainLayout title="Export">
+                <div className="error-state">
+                    <Warning size={48} weight="light" />
+                    <h2>{error || 'Project not found'}</h2>
+                    <p>Unable to load the project for export.</p>
+                    <Link href="/projects">
+                        <Button variant="secondary" icon={<ArrowLeft size={18} />}>
+                            Back to Projects
+                        </Button>
+                    </Link>
+                </div>
+                <style jsx>{`
+                    .error-state {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        min-height: 400px;
+                        gap: var(--spacing-md);
+                        text-align: center;
+                        color: var(--color-text-muted);
+                    }
+                    h2 { color: var(--color-text); margin: 0; }
+                    p { margin: 0; }
+                `}</style>
+            </MainLayout>
+        );
+    }
+
+    const totalDisplay = currency === 'USD'
+        ? `$${Number(project.total_usd).toLocaleString()}`
+        : `ZiG ${Number(project.total_zwg).toLocaleString()}`;
 
     return (
         <MainLayout title="Export BOQ">
             <div className="export-page">
+                {/* Back Link */}
+                <Link href={`/projects/${project.id}`} className="back-link">
+                    <ArrowLeft size={16} />
+                    Back to Project
+                </Link>
+
+                <h1>Export Bill of Quantities</h1>
+                <p className="subtitle">Download or share your BOQ for {project.name}</p>
+
+                {/* Preview Card */}
+                <Card className="preview-card">
+                    <CardContent>
+                        <div className="preview-header">
+                            <div>
+                                <h3>{project.name}</h3>
+                                {project.location && <p className="location">{project.location}</p>}
+                            </div>
+                            <div className="preview-total">
+                                <span className="label">Total</span>
+                                <span className="value">{totalDisplay}</span>
+                            </div>
+                        </div>
+                        <div className="preview-stats">
+                            <div className="stat">
+                                <span className="stat-value">{items.length}</span>
+                                <span className="stat-label">Line Items</span>
+                            </div>
+                            <div className="stat">
+                                <span className="stat-value">{project.scope.replace('_', ' ')}</span>
+                                <span className="stat-label">Scope</span>
+                            </div>
+                            <div className="stat">
+                                <span className="stat-value">{project.labor_preference === 'with_labor' ? 'Yes' : 'No'}</span>
+                                <span className="stat-label">Labor Included</span>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Export Options */}
                 <div className="export-grid">
-                    {/* Export Settings */}
-                    <Card className="settings-card">
+                    {/* PDF Export */}
+                    <Card className="export-option">
                         <CardContent>
-                            <h2>Export Settings</h2>
-                            <p className="settings-desc">Customize your exported document</p>
-
-                            <div className="form-group">
-                                <label>Project Name</label>
-                                <Input
-                                    value={projectName}
-                                    onChange={(e) => setProjectName(e.target.value)}
-                                    placeholder="Enter project name"
-                                />
+                            <div className="option-icon pdf">
+                                <FilePdf size={32} weight="duotone" />
                             </div>
-
-                            <div className="form-group">
-                                <label>Client Name (optional)</label>
-                                <Input
-                                    value={clientName}
-                                    onChange={(e) => setClientName(e.target.value)}
-                                    placeholder="Enter client name"
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Location (optional)</label>
-                                <Input
-                                    value={location}
-                                    onChange={(e) => setLocation(e.target.value)}
-                                    placeholder="Enter project location"
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Notes (optional)</label>
-                                <textarea
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
-                                    placeholder="Add any notes or terms..."
-                                    rows={3}
-                                    className="notes-textarea"
-                                />
-                            </div>
+                            <h4>Download PDF</h4>
+                            <p>Professional formatted document ready for printing</p>
+                            <Button
+                                fullWidth
+                                onClick={handleExportPDF}
+                                loading={exporting}
+                                icon={<FilePdf size={18} />}
+                            >
+                                Download PDF
+                            </Button>
                         </CardContent>
                     </Card>
 
-                    {/* Export Options */}
-                    <div className="export-options">
-                        <Card className="option-card">
-                            <CardContent>
-                                <div className="option-icon pdf">
-                                    <FilePdf size={32} weight="light" />
-                                </div>
-                                <h3>Export as PDF</h3>
-                                <p>Professional document ready for printing or sharing</p>
-                                <Button onClick={handleExportPDF} disabled={exporting}>
-                                    {exporting ? 'Generating...' : 'Generate PDF'}
-                                </Button>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="option-card">
-                            <CardContent>
-                                <div className="option-icon excel">
-                                    <FileXls size={32} weight="light" />
-                                </div>
-                                <h3>Export as Excel</h3>
-                                <p>Spreadsheet format for further analysis</p>
-                                <Button variant="secondary" disabled>
-                                    Coming Soon
-                                </Button>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="option-card">
-                            <CardContent>
-                                <div className="option-icon print">
-                                    <Printer size={32} weight="light" />
-                                </div>
-                                <h3>Print Directly</h3>
-                                <p>Send directly to your printer</p>
-                                <Button variant="secondary" onClick={() => window.print()}>
-                                    Print
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Share Options */}
-                    <Card className="share-card">
+                    {/* Print */}
+                    <Card className="export-option">
                         <CardContent>
-                            <h2>Share BOQ</h2>
-                            <p className="share-desc">Generate a shareable link or send directly</p>
+                            <div className="option-icon print">
+                                <Printer size={32} weight="duotone" />
+                            </div>
+                            <h4>Print Directly</h4>
+                            <p>Send to printer for physical copies</p>
+                            <Button
+                                fullWidth
+                                variant="secondary"
+                                onClick={handlePrint}
+                                icon={<Printer size={18} />}
+                            >
+                                Print
+                            </Button>
+                        </CardContent>
+                    </Card>
 
-                            <div className="share-link">
-                                <Input
-                                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/share/boq/demo-123`}
-                                    readOnly
-                                />
+                    {/* Excel (Coming Soon) */}
+                    <Card className="export-option disabled">
+                        <CardContent>
+                            <div className="option-icon excel">
+                                <FileXls size={32} weight="duotone" />
+                            </div>
+                            <h4>Export to Excel</h4>
+                            <p>Spreadsheet format for editing</p>
+                            <Button fullWidth variant="secondary" disabled>
+                                Coming Soon
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Share Options */}
+                <h2>Share</h2>
+                <div className="share-grid">
+                    <Card className="share-option">
+                        <CardContent>
+                            <div className="share-row">
+                                <div className="share-info">
+                                    <Copy size={24} />
+                                    <div>
+                                        <h4>Copy Link</h4>
+                                        <p>Share a direct link to view online</p>
+                                    </div>
+                                </div>
                                 <Button
                                     variant="secondary"
                                     onClick={handleCopyLink}
@@ -216,8 +297,19 @@ function ExportContent() {
                                     {copied ? 'Copied!' : 'Copy'}
                                 </Button>
                             </div>
+                        </CardContent>
+                    </Card>
 
-                            <div className="share-buttons">
+                    <Card className="share-option">
+                        <CardContent>
+                            <div className="share-row">
+                                <div className="share-info">
+                                    <EnvelopeSimple size={24} />
+                                    <div>
+                                        <h4>Email</h4>
+                                        <p>Send via email</p>
+                                    </div>
+                                </div>
                                 <Button
                                     variant="secondary"
                                     onClick={() => handleShare('email')}
@@ -225,13 +317,26 @@ function ExportContent() {
                                 >
                                     Email
                                 </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="share-option">
+                        <CardContent>
+                            <div className="share-row">
+                                <div className="share-info">
+                                    <WhatsappLogo size={24} />
+                                    <div>
+                                        <h4>WhatsApp</h4>
+                                        <p>Share via WhatsApp</p>
+                                    </div>
+                                </div>
                                 <Button
                                     variant="secondary"
                                     onClick={() => handleShare('whatsapp')}
                                     icon={<WhatsappLogo size={18} />}
-                                    className="whatsapp-btn"
                                 >
-                                    WhatsApp
+                                    Share
                                 </Button>
                             </div>
                         </CardContent>
@@ -240,144 +345,214 @@ function ExportContent() {
             </div>
 
             <style jsx>{`
-        .export-page {
-          max-width: 900px;
-          margin: 0 auto;
-        }
+                .export-page {
+                    max-width: 800px;
+                    margin: 0 auto;
+                }
 
-        .export-grid {
-          display: flex;
-          flex-direction: column;
-          gap: var(--spacing-lg);
-        }
+                .back-link {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: var(--spacing-xs);
+                    color: var(--color-text-secondary);
+                    text-decoration: none;
+                    font-size: 0.875rem;
+                    margin-bottom: var(--spacing-md);
+                }
 
-        .settings-card h2,
-        .share-card h2 {
-          font-size: 1.125rem;
-          font-weight: 600;
-          color: var(--color-text);
-          margin: 0 0 var(--spacing-xs) 0;
-        }
+                .back-link:hover {
+                    color: var(--color-primary);
+                }
 
-        .settings-desc,
-        .share-desc {
-          font-size: 0.875rem;
-          color: var(--color-text-secondary);
-          margin: 0 0 var(--spacing-lg) 0;
-        }
+                h1 {
+                    font-size: 1.75rem;
+                    font-weight: 700;
+                    color: var(--color-text);
+                    margin: 0 0 var(--spacing-xs) 0;
+                }
 
-        .form-group {
-          margin-bottom: var(--spacing-md);
-        }
+                .subtitle {
+                    color: var(--color-text-secondary);
+                    margin: 0 0 var(--spacing-xl) 0;
+                }
 
-        .form-group label {
-          display: block;
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--color-text);
-          margin-bottom: var(--spacing-xs);
-        }
+                h2 {
+                    font-size: 1.25rem;
+                    font-weight: 600;
+                    color: var(--color-text);
+                    margin: var(--spacing-xl) 0 var(--spacing-md) 0;
+                }
 
-        .notes-textarea {
-          width: 100%;
-          padding: var(--spacing-sm);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
-          font-family: inherit;
-          font-size: 0.875rem;
-          resize: vertical;
-          background: var(--color-background);
-          color: var(--color-text);
-        }
+                :global(.preview-card) {
+                    margin-bottom: var(--spacing-xl);
+                    background: linear-gradient(135deg, var(--color-primary) 0%, #1a3a6d 100%);
+                    color: white;
+                }
 
-        .notes-textarea:focus {
-          outline: none;
-          border-color: var(--color-accent);
-        }
+                .preview-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: var(--spacing-lg);
+                }
 
-        .export-options {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: var(--spacing-md);
-        }
+                .preview-header h3 {
+                    font-size: 1.25rem;
+                    font-weight: 600;
+                    margin: 0;
+                }
 
-        .option-card {
-          text-align: center;
-        }
+                .location {
+                    opacity: 0.8;
+                    font-size: 0.875rem;
+                    margin: var(--spacing-xs) 0 0 0;
+                }
 
-        .option-icon {
-          width: 64px;
-          height: 64px;
-          border-radius: var(--radius-lg);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto var(--spacing-md);
-        }
+                .preview-total {
+                    text-align: right;
+                }
 
-        .option-icon.pdf {
-          background: rgba(239, 68, 68, 0.1);
-          color: #ef4444;
-        }
+                .preview-total .label {
+                    display: block;
+                    font-size: 0.75rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    opacity: 0.8;
+                }
 
-        .option-icon.excel {
-          background: rgba(34, 197, 94, 0.1);
-          color: #22c55e;
-        }
+                .preview-total .value {
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                }
 
-        .option-icon.print {
-          background: rgba(59, 130, 246, 0.1);
-          color: #3b82f6;
-        }
+                .preview-stats {
+                    display: flex;
+                    gap: var(--spacing-xl);
+                    padding-top: var(--spacing-md);
+                    border-top: 1px solid rgba(255, 255, 255, 0.2);
+                }
 
-        .option-card h3 {
-          font-size: 1rem;
-          font-weight: 600;
-          color: var(--color-text);
-          margin: 0 0 var(--spacing-xs) 0;
-        }
+                .stat {
+                    display: flex;
+                    flex-direction: column;
+                }
 
-        .option-card p {
-          font-size: 0.8125rem;
-          color: var(--color-text-secondary);
-          margin: 0 0 var(--spacing-md) 0;
-        }
+                .stat-value {
+                    font-size: 1.125rem;
+                    font-weight: 600;
+                }
 
-        .share-link {
-          display: flex;
-          gap: var(--spacing-sm);
-          margin-bottom: var(--spacing-lg);
-        }
+                .stat-label {
+                    font-size: 0.75rem;
+                    opacity: 0.8;
+                }
 
-        .share-link :global(.input-wrapper) {
-          flex: 1;
-        }
+                .export-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: var(--spacing-md);
+                }
 
-        .share-buttons {
-          display: flex;
-          gap: var(--spacing-sm);
-        }
+                :global(.export-option) {
+                    text-align: center;
+                }
 
-        .whatsapp-btn {
-          background: #25d366 !important;
-          border-color: #25d366 !important;
-          color: white !important;
-        }
+                :global(.export-option.disabled) {
+                    opacity: 0.6;
+                }
 
-        @media (max-width: 768px) {
-          .export-options {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
+                .option-icon {
+                    width: 64px;
+                    height: 64px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto var(--spacing-md);
+                }
+
+                .option-icon.pdf {
+                    background: rgba(239, 68, 68, 0.1);
+                    color: #ef4444;
+                }
+
+                .option-icon.print {
+                    background: rgba(78, 154, 247, 0.1);
+                    color: var(--color-primary);
+                }
+
+                .option-icon.excel {
+                    background: rgba(34, 197, 94, 0.1);
+                    color: #22c55e;
+                }
+
+                :global(.export-option) h4 {
+                    font-size: 1rem;
+                    font-weight: 600;
+                    color: var(--color-text);
+                    margin: 0 0 var(--spacing-xs) 0;
+                }
+
+                :global(.export-option) p {
+                    font-size: 0.875rem;
+                    color: var(--color-text-secondary);
+                    margin: 0 0 var(--spacing-md) 0;
+                }
+
+                .share-grid {
+                    display: flex;
+                    flex-direction: column;
+                    gap: var(--spacing-sm);
+                }
+
+                .share-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
+                .share-info {
+                    display: flex;
+                    align-items: center;
+                    gap: var(--spacing-md);
+                    color: var(--color-text-secondary);
+                }
+
+                .share-info h4 {
+                    font-size: 0.9375rem;
+                    font-weight: 600;
+                    color: var(--color-text);
+                    margin: 0;
+                }
+
+                .share-info p {
+                    font-size: 0.75rem;
+                    color: var(--color-text-secondary);
+                    margin: 0;
+                }
+
+                @media (max-width: 768px) {
+                    .export-grid {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .preview-stats {
+                        flex-wrap: wrap;
+                    }
+                }
+            `}</style>
         </MainLayout>
     );
 }
 
-export default function ExportPage() {
+function ExportPage() {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <ExportContent />
-        </Suspense>
+        <ProtectedRoute>
+            <Suspense fallback={<div>Loading...</div>}>
+                <ExportContent />
+            </Suspense>
+        </ProtectedRoute>
     );
 }
+
+export default ExportPage;

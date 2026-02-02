@@ -5,7 +5,11 @@ import MainLayout from '@/components/layout/MainLayout';
 import Card, { CardContent } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import ProjectPickerModal from '@/components/ui/ProjectPickerModal';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
+import { useToast } from '@/components/ui/Toast';
+import { Project } from '@/lib/database.types';
+import { addBOQItem, updateProject, getProject } from '@/lib/services/projects';
 import {
   MagnifyingGlass,
   Star,
@@ -58,6 +62,57 @@ export default function MarketplacePage() {
   const [selectedCategory, setSelectedCategory] = useState<MaterialCategory | 'all'>('all');
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [trustedOnly, setTrustedOnly] = useState(false);
+  const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const [isAdding, setIsAdding] = useState(false);
+  const { success, error: showError } = useToast();
+
+  const handleAddToProject = async (project: Project) => {
+    if (!selectedMaterial) return;
+
+    const bestPrice = getBestPrice(selectedMaterial.id);
+    if (!bestPrice) {
+      showError('No pricing available for this material');
+      return;
+    }
+
+    setIsAdding(true);
+
+    // Add the BOQ item to the project
+    const { error } = await addBOQItem({
+      project_id: project.id,
+      material_id: selectedMaterial.id,
+      material_name: selectedMaterial.name,
+      category: selectedMaterial.category,
+      quantity: quantity,
+      unit: selectedMaterial.unit,
+      unit_price_usd: bestPrice.priceUsd,
+      unit_price_zwg: bestPrice.priceZwg,
+      sort_order: 0,
+    });
+
+    if (error) {
+      showError('Failed to add material to project. Please try again.');
+      setIsAdding(false);
+      return;
+    }
+
+    // Update the project totals
+    const { project: currentProject } = await getProject(project.id);
+    if (currentProject) {
+      const itemTotalUsd = bestPrice.priceUsd * quantity;
+      const itemTotalZwg = bestPrice.priceZwg * quantity;
+      await updateProject(project.id, {
+        total_usd: Number(currentProject.total_usd) + itemTotalUsd,
+        total_zwg: Number(currentProject.total_zwg) + itemTotalZwg,
+      });
+    }
+
+    success(`${quantity} ${selectedMaterial.unit} of ${selectedMaterial.name} added to ${project.name}`);
+    setShowProjectPicker(false);
+    setQuantity(1);
+    setIsAdding(false);
+  };
 
   // Filter materials
   const filteredMaterials = useMemo(() => {
@@ -250,8 +305,40 @@ export default function MarketplacePage() {
                     )}
                   </div>
 
-                  <Button icon={<Plus size={16} />} className="add-btn">
-                    Add to Estimate
+                  <div className="quantity-row">
+                    <label htmlFor="quantity">Quantity:</label>
+                    <div className="quantity-input">
+                      <button
+                        className="qty-btn"
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        disabled={quantity <= 1}
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        id="quantity"
+                        value={quantity}
+                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                        min="1"
+                      />
+                      <button
+                        className="qty-btn"
+                        onClick={() => setQuantity(quantity + 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <span className="qty-unit">{selectedMaterial.unit}</span>
+                  </div>
+
+                  <Button
+                    icon={<Plus size={16} />}
+                    className="add-btn"
+                    onClick={() => setShowProjectPicker(true)}
+                    disabled={isAdding}
+                  >
+                    {isAdding ? 'Adding...' : 'Add to Estimate'}
                   </Button>
                 </CardContent>
               </Card>
@@ -292,6 +379,15 @@ export default function MarketplacePage() {
           </div>
         </div>
       </div>
+
+      {/* Project Picker Modal */}
+      <ProjectPickerModal
+        isOpen={showProjectPicker}
+        onClose={() => setShowProjectPicker(false)}
+        onSelect={handleAddToProject}
+        title="Add to Project"
+        description={`Select a project to add ${selectedMaterial?.name || 'this material'} to`}
+      />
 
       <style jsx>{`
         .marketplace {
@@ -596,6 +692,67 @@ export default function MarketplacePage() {
           color: var(--color-text-muted);
           text-align: center;
           padding: var(--spacing-md);
+        }
+
+        .quantity-row {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-sm);
+          margin-bottom: var(--spacing-md);
+        }
+
+        .quantity-row label {
+          font-size: 0.875rem;
+          color: var(--color-text-secondary);
+        }
+
+        .quantity-input {
+          display: flex;
+          align-items: center;
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-md);
+          overflow: hidden;
+        }
+
+        .qty-btn {
+          width: 32px;
+          height: 32px;
+          background: var(--color-background);
+          border: none;
+          font-size: 1rem;
+          cursor: pointer;
+          color: var(--color-text);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .qty-btn:hover:not(:disabled) {
+          background: var(--color-border-light);
+        }
+
+        .qty-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .quantity-input input {
+          width: 60px;
+          height: 32px;
+          border: none;
+          text-align: center;
+          font-size: 0.875rem;
+          background: var(--color-surface);
+          color: var(--color-text);
+        }
+
+        .quantity-input input:focus {
+          outline: none;
+        }
+
+        .qty-unit {
+          font-size: 0.75rem;
+          color: var(--color-text-muted);
         }
 
         .add-btn {
