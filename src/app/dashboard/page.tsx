@@ -81,6 +81,20 @@ function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: numb
     return <>{formatPrice(priceUsd, priceZwg)}</>;
 }
 
+function formatShortDate(value?: string | null) {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function formatScope(scope?: string | null) {
+    if (!scope) return null;
+    return scope
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 function DashboardContent() {
     const router = useRouter();
     const { profile, projectCount, canCreateProject } = useAuth();
@@ -188,6 +202,19 @@ function DashboardContent() {
     const overallProgress = budgetStats.totalBudget > 0
         ? Math.round((budgetStats.totalSpent / budgetStats.totalBudget) * 100)
         : 0;
+    const variancePercent = budgetStats.totalBudget > 0
+        ? Math.round(Math.abs((budgetStats.variance / budgetStats.totalBudget) * 100))
+        : 0;
+    const budgetStatus = budgetStats.variance === 0
+        ? 'neutral'
+        : budgetStats.variance > 0
+            ? 'positive'
+            : 'negative';
+    const budgetLabel = budgetStats.variance === 0
+        ? 'On target'
+        : budgetStats.variance > 0
+            ? 'Under budget'
+            : 'Over budget';
 
     const upcomingDeadlines = allProjects
         .filter(p => p.target_date && new Date(p.target_date) > new Date())
@@ -229,80 +256,93 @@ function DashboardContent() {
     return (
         <MainLayout title="Dashboard">
             <div className="dashboard">
-                {/* Welcome Section */}
-                <section className="welcome-section">
-                    <div className="welcome-text">
-                        <h2>Welcome back{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}!</h2>
-                        <p>Track your construction projects and manage estimates.</p>
-                        <div className="user-tier">
-                            <Crown size={14} weight="fill" style={{ color: tierColors[profile?.tier || 'free'] }} />
-                            <span style={{ color: tierColors[profile?.tier || 'free'] }}>
-                                {profile?.tier?.charAt(0).toUpperCase()}{profile?.tier?.slice(1)} Plan
-                            </span>
-                            {profile?.tier === 'free' && (
-                                <span className="project-count">({projectCount}/3 projects)</span>
-                            )}
+                <section className="hero-zone">
+                    {/* Welcome Section */}
+                    <div className="welcome-section">
+                        <div className="welcome-text">
+                            <h2>Welcome back{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}!</h2>
+                            <p>Track your construction projects and manage estimates.</p>
+                            <div className="user-tier">
+                                <Crown size={14} weight="fill" style={{ color: tierColors[profile?.tier || 'free'] }} />
+                                <span style={{ color: tierColors[profile?.tier || 'free'] }}>
+                                    {profile?.tier?.charAt(0).toUpperCase()}{profile?.tier?.slice(1)} Plan
+                                </span>
+                                {profile?.tier === 'free' && (
+                                    <span className="project-count">({projectCount}/3 projects)</span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="welcome-actions">
+                            <Link href="/boq/new">
+                                <Button
+                                    size="lg"
+                                    icon={<Plus size={18} weight="bold" />}
+                                    disabled={!canCreateProject()}
+                                    title={!canCreateProject() ? 'Project limit reached. Upgrade to Pro.' : ''}
+                                >
+                                    New Project
+                                </Button>
+                            </Link>
                         </div>
                     </div>
-                    <Link href="/boq/new">
-                        <Button
-                            icon={<Plus size={18} weight="bold" />}
-                            disabled={!canCreateProject()}
-                            title={!canCreateProject() ? 'Project limit reached. Upgrade to Pro.' : ''}
-                        >
-                            New Project
-                        </Button>
-                    </Link>
-                </section>
 
-                {/* Stats Grid - All Clickable */}
-                <section className="stats-grid">
-                    <Card variant="dashboard" onClick={() => router.push('/projects')}>
-                        <CardHeader>
-                            <CardTitle>Total Budget</CardTitle>
-                            <CardBadge variant="accent">{budgetStats.projectCount} Projects</CardBadge>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="stat-value">
-                                <PriceDisplay priceUsd={budgetStats.totalBudget} priceZwg={budgetStats.totalBudget * 30} />
-                            </p>
-                            <p className="stat-label">Across all active projects</p>
-                        </CardContent>
-                    </Card>
+                    {/* Stats Grid - All Clickable */}
+                    <div className="stats-grid">
+                        <Card variant="dashboard" onClick={() => router.push('/projects')}>
+                            <CardHeader>
+                                <CardTitle>Total Budget</CardTitle>
+                                <CardBadge variant="accent">{budgetStats.projectCount} Projects</CardBadge>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="stat-value">
+                                    <PriceDisplay priceUsd={budgetStats.totalBudget} priceZwg={budgetStats.totalBudget * 30} />
+                                </p>
+                                <p className="stat-label">Across all active projects</p>
+                            </CardContent>
+                        </Card>
 
-                    <Card variant="dashboard" onClick={() => router.push('/projects?view=tracking')}>
-                        <CardHeader>
-                            <CardTitle>Spent to Date</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="stat-value">
-                                <PriceDisplay priceUsd={budgetStats.totalSpent} priceZwg={budgetStats.totalSpent * 30} />
-                            </p>
-                            <ProgressBar progress={overallProgress} />
-                        </CardContent>
-                    </Card>
+                        <Card variant="dashboard" onClick={() => router.push('/projects?view=tracking')}>
+                            <CardHeader>
+                                <CardTitle>Spent to Date</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="stat-value">
+                                    <PriceDisplay priceUsd={budgetStats.totalSpent} priceZwg={budgetStats.totalSpent * 30} />
+                                </p>
+                                <ProgressBar progress={overallProgress} />
+                            </CardContent>
+                        </Card>
 
-                    <Card variant="dashboard" onClick={() => router.push('/projects?status=active')}>
-                        <CardHeader>
-                            <CardTitle>Overall Progress</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="progress-display">
-                                <ProgressRing progress={overallProgress} size={80} />
-                                <div className="progress-meta">
-                                    <span className="progress-label">Complete</span>
-                                    <span className="progress-detail">
-                                        {projectsByStatus.completed.length} of {allProjects.length} projects
-                                    </span>
+                        <Card variant="dashboard" onClick={() => router.push('/projects?status=active')}>
+                            <CardHeader>
+                                <CardTitle>Overall Progress</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="progress-display">
+                                    <ProgressRing progress={overallProgress} size={80} />
+                                    <div className="progress-meta">
+                                        <span className="progress-label">Complete</span>
+                                        <span className="progress-detail">
+                                            {projectsByStatus.completed.length} of {allProjects.length} projects
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </section>
 
                 {/* Actual vs Budget Section */}
-                <section className="budget-section">
-                    <h3 className="section-title">Actual vs. Budget</h3>
+                <section className="budget-section section-block">
+                    <div className="section-header">
+                        <div>
+                            <h3 className="section-title">Actual vs. Budget</h3>
+                            <p className="section-subtitle">Understand how actual spend compares to estimates.</p>
+                        </div>
+                        <div className={`budget-chip ${budgetStatus}`}>
+                            {budgetLabel}{variancePercent > 0 ? ` · ${variancePercent}%` : ''}
+                        </div>
+                    </div>
                     <div className="budget-cards">
                         <Card variant="dashboard" onClick={() => router.push('/projects?view=tracking')}>
                             <div className="budget-metric">
@@ -358,8 +398,16 @@ function DashboardContent() {
                 </section>
 
                 {/* Project Hierarchy by Status */}
-                <section className="projects-section">
-                    <h3 className="section-title">Your Projects</h3>
+                <section className="projects-section section-block">
+                    <div className="section-header">
+                        <div>
+                            <h3 className="section-title">Your Projects</h3>
+                            <p className="section-subtitle">Monitor progress, budgets, and timelines at a glance.</p>
+                        </div>
+                        <Button variant="secondary" size="sm" onClick={() => router.push('/projects')}>
+                            View all
+                        </Button>
+                    </div>
 
                     {allProjects.length === 0 ? (
                         <Card variant="dashboard">
@@ -401,57 +449,87 @@ function DashboardContent() {
 
                                         {expandedSections[status] && (
                                             <div className="project-list">
-                                                {projects.map((project) => (
-                                                    <Card
-                                                        key={project.id}
-                                                        variant="dashboard"
-                                                        onClick={() => router.push(`/projects/${project.id}`)}
-                                                    >
-                                                        <div className="project-card">
-                                                            <div className="project-header">
-                                                                <h4>{project.name}</h4>
-                                                                {project.location && (
-                                                                    <span className="project-location">
-                                                                        <MapPin size={12} />
-                                                                        {project.location}
-                                                                    </span>
+                                                {projects.map((project) => {
+                                                    const scopeLabel = formatScope(project.scope);
+                                                    const targetDate = formatShortDate(project.target_date);
+                                                    const updatedLabel = formatShortDate(project.updated_at);
+
+                                                    return (
+                                                        <Card
+                                                            key={project.id}
+                                                            variant="dashboard"
+                                                            onClick={() => router.push(`/projects/${project.id}`)}
+                                                        >
+                                                            <div className="project-card">
+                                                                <div className="project-header">
+                                                                    <div className="project-title">
+                                                                        <h4>{project.name}</h4>
+                                                                        {project.description && (
+                                                                            <p className="project-description">{project.description}</p>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="project-meta">
+                                                                        {scopeLabel && (
+                                                                            <span className="meta-chip">{scopeLabel}</span>
+                                                                        )}
+                                                                        {targetDate && (
+                                                                            <span className="meta-chip">
+                                                                                <CalendarBlank size={12} />
+                                                                                Due {targetDate}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="project-footer">
+                                                                    {project.location && (
+                                                                        <span className="project-location">
+                                                                            <MapPin size={12} />
+                                                                            {project.location}
+                                                                        </span>
+                                                                    )}
+                                                                    {updatedLabel && (
+                                                                        <span className="project-updated">
+                                                                            <Clock size={12} />
+                                                                            Updated {updatedLabel}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="project-stats">
+                                                                    <div className="stat">
+                                                                        <span className="stat-label">Budget</span>
+                                                                        <span className="stat-value">
+                                                                            <PriceDisplay
+                                                                                priceUsd={project.purchaseStats?.estimatedTotal || project.total_usd}
+                                                                                priceZwg={(project.purchaseStats?.estimatedTotal || project.total_usd) * 30}
+                                                                            />
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="stat">
+                                                                        <span className="stat-label">Spent</span>
+                                                                        <span className="stat-value">
+                                                                            <PriceDisplay
+                                                                                priceUsd={project.purchaseStats?.actualSpent || 0}
+                                                                                priceZwg={(project.purchaseStats?.actualSpent || 0) * 30}
+                                                                            />
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="stat">
+                                                                        <span className="stat-label">Items</span>
+                                                                        <span className="stat-value">
+                                                                            {project.purchaseStats?.purchasedItems || 0}/{project.purchaseStats?.totalItems || 0}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                {project.purchaseStats && project.purchaseStats.totalItems > 0 && (
+                                                                    <ProgressBar
+                                                                        progress={(project.purchaseStats.purchasedItems / project.purchaseStats.totalItems) * 100}
+                                                                        showLabel
+                                                                    />
                                                                 )}
                                                             </div>
-                                                            <div className="project-stats">
-                                                                <div className="stat">
-                                                                    <span className="stat-label">Budget</span>
-                                                                    <span className="stat-value">
-                                                                        <PriceDisplay
-                                                                            priceUsd={project.purchaseStats?.estimatedTotal || project.total_usd}
-                                                                            priceZwg={(project.purchaseStats?.estimatedTotal || project.total_usd) * 30}
-                                                                        />
-                                                                    </span>
-                                                                </div>
-                                                                <div className="stat">
-                                                                    <span className="stat-label">Spent</span>
-                                                                    <span className="stat-value">
-                                                                        <PriceDisplay
-                                                                            priceUsd={project.purchaseStats?.actualSpent || 0}
-                                                                            priceZwg={(project.purchaseStats?.actualSpent || 0) * 30}
-                                                                        />
-                                                                    </span>
-                                                                </div>
-                                                                <div className="stat">
-                                                                    <span className="stat-label">Items</span>
-                                                                    <span className="stat-value">
-                                                                        {project.purchaseStats?.purchasedItems || 0}/{project.purchaseStats?.totalItems || 0}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            {project.purchaseStats && project.purchaseStats.totalItems > 0 && (
-                                                                <ProgressBar
-                                                                    progress={(project.purchaseStats.purchasedItems / project.purchaseStats.totalItems) * 100}
-                                                                    showLabel
-                                                                />
-                                                            )}
-                                                        </div>
-                                                    </Card>
-                                                ))}
+                                                        </Card>
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>
@@ -462,7 +540,7 @@ function DashboardContent() {
                 </section>
 
                 {/* Planning & Reminders Section */}
-                <section className="planning-section">
+                <section className="planning-section section-block" id="planning">
                     <div className="section-header">
                         <h3 className="section-title">Planning & Reminders</h3>
                         <Button
@@ -522,7 +600,12 @@ function DashboardContent() {
                             </CardHeader>
                             <CardContent>
                                 {upcomingDeadlines.length === 0 ? (
-                                    <p className="empty-text">No upcoming deadlines</p>
+                                    <div className="empty-action">
+                                        <p className="empty-text">No upcoming deadlines yet.</p>
+                                        <Link href="/projects">
+                                            <Button variant="secondary" size="sm">Set a target date</Button>
+                                        </Link>
+                                    </div>
                                 ) : (
                                     <ul className="deadline-list">
                                         {upcomingDeadlines.map(project => {
@@ -551,7 +634,16 @@ function DashboardContent() {
                             </CardHeader>
                             <CardContent>
                                 {reminders.length === 0 ? (
-                                    <p className="empty-text">No active reminders</p>
+                                    <div className="empty-action">
+                                        <p className="empty-text">No active reminders yet.</p>
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => setShowReminderForm(true)}
+                                        >
+                                            Create reminder
+                                        </Button>
+                                    </div>
                                 ) : (
                                     <ul className="reminder-list">
                                         {reminders.slice(0, 5).map(reminder => (
@@ -588,7 +680,7 @@ function DashboardContent() {
                 </section>
 
                 {/* BOQ Builder Selection */}
-                <section className="boq-section">
+                <section className="boq-section section-block">
                     <h3 className="section-title">Smart BOQ Builder</h3>
                     <p className="section-subtitle">Choose how you want to create your Bill of Quantities</p>
 
@@ -618,17 +710,37 @@ function DashboardContent() {
                     display: flex;
                     flex-direction: column;
                     gap: var(--spacing-xl);
+                    max-width: 1200px;
+                    margin: 0 auto;
+                }
+
+                .hero-zone {
+                    background: linear-gradient(180deg, rgba(78, 154, 247, 0.12), rgba(255, 255, 255, 0));
+                    border: 1px solid var(--color-border-light);
+                    border-radius: var(--radius-xl);
+                    padding: var(--spacing-xl);
+                    display: flex;
+                    flex-direction: column;
+                    gap: var(--spacing-lg);
+                    box-shadow: var(--shadow-sm);
+                    position: relative;
                 }
 
                 .welcome-section {
                     display: flex;
                     justify-content: space-between;
-                    align-items: center;
+                    align-items: flex-start;
+                    gap: var(--spacing-lg);
+                }
+
+                .welcome-text {
+                    max-width: 520px;
                 }
 
                 .welcome-text h2 {
-                    font-size: 1.5rem;
-                    font-weight: 600;
+                    font-size: 1.75rem;
+                    font-weight: 700;
+                    letter-spacing: -0.01em;
                     color: var(--color-text);
                     margin: 0 0 0.25rem 0;
                 }
@@ -645,11 +757,21 @@ function DashboardContent() {
                     margin-top: var(--spacing-xs);
                     font-size: 0.75rem;
                     font-weight: 500;
+                    background: var(--color-surface);
+                    border: 1px solid var(--color-border-light);
+                    border-radius: 9999px;
+                    padding: 0.25rem 0.5rem;
+                    width: fit-content;
                 }
 
                 .project-count {
                     color: var(--color-text-muted);
                     font-weight: 400;
+                }
+
+                .welcome-actions {
+                    display: flex;
+                    align-items: center;
                 }
 
                 .stats-grid {
@@ -658,15 +780,23 @@ function DashboardContent() {
                     gap: var(--spacing-lg);
                 }
 
+                :global(.stats-grid .card-title) {
+                    font-size: 0.95rem;
+                    font-weight: 600;
+                    color: var(--color-text-secondary);
+                }
+
                 .stat-value {
-                    font-size: 1.75rem;
+                    font-size: 1.6rem;
                     font-weight: 700;
+                    letter-spacing: -0.01em;
                     color: var(--color-text);
                     margin: 0 0 var(--spacing-xs) 0;
                 }
 
                 .stat-label {
-                    font-size: 0.875rem;
+                    font-size: 0.8125rem;
+                    font-weight: 500;
                     color: var(--color-text-secondary);
                     margin: 0;
                 }
@@ -694,8 +824,9 @@ function DashboardContent() {
                 }
 
                 /* Budget Section */
-                .budget-section {
-                    margin-top: var(--spacing-md);
+                .section-block {
+                    border-top: 1px solid var(--color-border-light);
+                    padding-top: var(--spacing-lg);
                 }
 
                 .budget-cards {
@@ -703,6 +834,28 @@ function DashboardContent() {
                     grid-template-columns: repeat(3, 1fr);
                     gap: var(--spacing-md);
                     margin-top: var(--spacing-md);
+                }
+
+                .budget-chip {
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    padding: 0.4rem 0.75rem;
+                    border-radius: 9999px;
+                    border: 1px solid var(--color-border-light);
+                    background: var(--color-surface);
+                    color: var(--color-text-secondary);
+                }
+
+                .budget-chip.positive {
+                    border-color: rgba(16, 185, 129, 0.3);
+                    color: var(--color-success);
+                    background: rgba(16, 185, 129, 0.08);
+                }
+
+                .budget-chip.negative {
+                    border-color: rgba(239, 68, 68, 0.3);
+                    color: var(--color-error);
+                    background: rgba(239, 68, 68, 0.08);
                 }
 
                 .budget-metric {
@@ -774,10 +927,6 @@ function DashboardContent() {
                 }
 
                 /* Projects Section */
-                .projects-section {
-                    margin-top: var(--spacing-md);
-                }
-
                 .section-title {
                     font-size: 1.125rem;
                     font-weight: 600;
@@ -793,8 +942,10 @@ function DashboardContent() {
                 .section-header {
                     display: flex;
                     justify-content: space-between;
-                    align-items: center;
+                    align-items: flex-start;
                     margin-bottom: var(--spacing-md);
+                    gap: var(--spacing-md);
+                    flex-wrap: wrap;
                 }
 
                 .empty-state {
@@ -871,21 +1022,67 @@ function DashboardContent() {
                     display: flex;
                     justify-content: space-between;
                     align-items: flex-start;
+                    gap: var(--spacing-md);
                 }
 
-                .project-header h4 {
+                .project-title {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.25rem;
+                }
+
+                .project-title h4 {
                     margin: 0;
                     font-size: 1rem;
                     font-weight: 600;
                     color: var(--color-text);
                 }
 
-                .project-location {
+                .project-description {
+                    margin: 0;
+                    font-size: 0.8125rem;
+                    color: var(--color-text-secondary);
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                }
+
+                .project-meta {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 0.5rem;
+                    justify-content: flex-end;
+                }
+
+                .meta-chip {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.25rem;
+                    font-size: 0.6875rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.04em;
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 9999px;
+                    background: var(--color-background);
+                    color: var(--color-text-secondary);
+                    border: 1px solid var(--color-border-light);
+                }
+
+                .project-footer {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: var(--spacing-md);
+                    font-size: 0.75rem;
+                    color: var(--color-text-secondary);
+                }
+
+                .project-location,
+                .project-updated {
                     display: flex;
                     align-items: center;
                     gap: 0.25rem;
-                    font-size: 0.75rem;
-                    color: var(--color-text-secondary);
                 }
 
                 .project-stats {
@@ -912,10 +1109,6 @@ function DashboardContent() {
                 }
 
                 /* Planning Section */
-                .planning-section {
-                    margin-top: var(--spacing-md);
-                }
-
                 .planning-grid {
                     display: grid;
                     grid-template-columns: repeat(2, 1fr);
@@ -1042,14 +1235,18 @@ function DashboardContent() {
                     color: var(--color-text-secondary);
                     font-size: 0.875rem;
                     text-align: center;
+                    margin: 0 0 var(--spacing-sm) 0;
+                }
+
+                .empty-action {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: var(--spacing-sm);
                     padding: var(--spacing-md);
                 }
 
                 /* BOQ Section */
-                .boq-section {
-                    margin-top: var(--spacing-md);
-                }
-
                 .boq-options {
                     display: grid;
                     grid-template-columns: repeat(2, 1fr);
@@ -1103,8 +1300,29 @@ function DashboardContent() {
                         gap: var(--spacing-md);
                     }
 
+                    .hero-zone {
+                        padding: var(--spacing-lg);
+                    }
+
                     .project-stats {
                         flex-wrap: wrap;
+                    }
+                }
+
+                @media (prefers-reduced-motion: no-preference) {
+                    .dashboard {
+                        animation: fade-up 0.35s ease;
+                    }
+                }
+
+                @keyframes fade-up {
+                    from {
+                        opacity: 0;
+                        transform: translateY(6px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
                     }
                 }
             `}</style>

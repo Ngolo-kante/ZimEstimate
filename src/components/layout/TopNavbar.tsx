@@ -23,11 +23,11 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', href: '/home' },
+  { label: 'Dashboard', href: '/dashboard' },
   { label: 'Projects', href: '/projects' },
-  { label: 'Market Insights', href: '/market-insights', hasDropdown: true },
-  { label: 'Materials', href: '/marketplace' },
-  { label: 'AI Tools', href: '/ai' },
+  { label: 'Insights', href: '/market-insights' },
+  { label: 'Marketplace', href: '/marketplace' },
+  { label: 'Templates', href: '/templates' },
 ];
 
 export default function TopNavbar() {
@@ -38,8 +38,8 @@ export default function TopNavbar() {
   const { user, profile, signOut, isAuthenticated } = useAuth();
 
   const isActive = (href: string) => {
-    if (href === '/home') {
-      return pathname === '/' || pathname === '/home';
+    if (href === '/dashboard') {
+      return pathname === '/dashboard' || pathname === '/home';
     }
     return pathname.startsWith(href);
   };
