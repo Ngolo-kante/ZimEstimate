@@ -68,9 +68,9 @@ export type BrickType =
 export type CementType = 'cement_325' | 'cement_425';
 
 export interface VisionConfig {
-  scope: ProjectScope;
-  brickType: BrickType;
-  cementType: CementType;
+  scope: ProjectScope | ProjectScope[]; // Can be single or multi-select
+  brickType: BrickType | BrickType[]; // Can be single or multi-select
+  cementType: CementType | CementType[]; // Can be single or multi-select
   includeLabor: boolean;
   wallHeight: number; // default 2.7m
   foundationDepth: number; // default 0.6m
@@ -84,6 +84,19 @@ export const DEFAULT_CONFIG: VisionConfig = {
   wallHeight: 2.7,
   foundationDepth: 0.6,
 };
+
+// Helper to normalize config values to arrays
+export function normalizeConfigToArrays(config: VisionConfig): {
+  scopes: ProjectScope[];
+  brickTypes: BrickType[];
+  cementTypes: CementType[];
+} {
+  return {
+    scopes: Array.isArray(config.scope) ? config.scope : [config.scope],
+    brickTypes: Array.isArray(config.brickType) ? config.brickType : [config.brickType],
+    cementTypes: Array.isArray(config.cementType) ? config.cementType : [config.cementType],
+  };
+}
 
 // ============================================
 // BOQ GENERATION TYPES

@@ -1,8 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
+import SavingOverlay from '@/components/ui/SavingOverlay';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { createProject, saveProjectWithItems } from '@/lib/services/projects';
 import {
   ArrowLeft,
   DownloadSimple,
@@ -15,8 +19,9 @@ import {
   X,
   CaretDown,
   CaretRight,
+  CircleNotch,
 } from '@phosphor-icons/react';
-import { GeneratedBOQItem, ProjectInfo, VisionConfig } from '@/lib/vision/types';
+import { GeneratedBOQItem, ProjectInfo, VisionConfig, normalizeConfigToArrays } from '@/lib/vision/types';
 import { exportBOQToPDF } from '@/lib/pdf-export';
 
 interface BOQResultsStepProps {
@@ -48,10 +53,17 @@ export default function BOQResultsStep({
   onBack,
   onStartOver,
 }: BOQResultsStepProps) {
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const { currency, formatPrice } = useCurrency();
   const [editingState, setEditingState] = useState<EditingState>({ itemId: null, field: null, value: '' });
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showSavePrompt, setShowSavePrompt] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('Creating your project...');
+  const [saveSteps, setSaveSteps] = useState<Array<{ label: string; status: 'pending' | 'active' | 'done' }>>([]);
 
   // Group items by category
   const groupedItems = useMemo(() => {
@@ -152,9 +164,94 @@ export default function BOQResultsStep({
     window.open(`https://wa.me/?text=${encodedText}`, '_blank');
   };
 
-  const handleSave = () => {
-    // Check if user is authenticated - for now, just show a placeholder
-    setShowSavePrompt(true);
+  const handleSave = async () => {
+    if (isAuthenticated) {
+      // Save project to database
+      setIsSaving(true);
+      setSaveError(null);
+      setSaveMessage('Creating your project...');
+      setSaveSteps([
+        { label: 'Creating project', status: 'active' },
+        { label: 'Saving materials', status: 'pending' },
+        { label: 'Finalizing', status: 'pending' },
+      ]);
+
+      try {
+        const { scopes } = normalizeConfigToArrays(config);
+        const hasFullHouse = scopes.includes('full_house');
+        const selectedStages = scopes.filter(scope => scope !== 'full_house');
+        const projectScope = hasFullHouse || selectedStages.length !== 1
+          ? 'entire_house'
+          : selectedStages[0];
+
+        // Create project
+        const { project, error: createError } = await createProject({
+          name: projectInfo.name || 'Vision Takeoff Project',
+          location: projectInfo.location,
+          scope: projectScope,
+          labor_preference: config.includeLabor ? 'with_labor' : 'materials_only',
+          selected_stages: !hasFullHouse && selectedStages.length > 0 ? selectedStages : null,
+        });
+
+        if (createError || !project) {
+          throw createError || new Error('Failed to create project');
+        }
+
+        setSaveMessage('Saving materials...');
+        setSaveSteps(prev => prev.map((step, index) => {
+          if (index === 0) return { ...step, status: 'done' };
+          if (index === 1) return { ...step, status: 'active' };
+          return step;
+        }));
+
+        // Convert items to database format
+        const boqItems = items.map((item, index) => ({
+          material_id: item.id,
+          material_name: item.materialName,
+          category: item.category,
+          quantity: item.quantity,
+          unit: item.unit,
+          unit_price_usd: item.unitPriceUsd,
+          unit_price_zwg: item.unitPriceZwg,
+          notes: item.calculationNote,
+          sort_order: index,
+        }));
+
+        // Save BOQ items
+        const { error: saveError } = await saveProjectWithItems(
+          project.id,
+          { status: 'active' },
+          boqItems
+        );
+
+        if (saveError) {
+          throw saveError;
+        }
+
+        setSaveSteps(prev => prev.map((step, index) => {
+          if (index <= 1) return { ...step, status: 'done' };
+          if (index === 2) return { ...step, status: 'active' };
+          return step;
+        }));
+
+        // Show success state briefly
+        setSaveSuccess(true);
+        setSaveMessage('Project saved!');
+        setSaveSteps(prev => prev.map(step => ({ ...step, status: 'done' })));
+
+        // Wait a moment to show success, then redirect
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Redirect to projects page
+        router.push('/projects?refresh=1');
+      } catch (err) {
+        setSaveError(err instanceof Error ? err.message : 'Failed to save project');
+        setIsSaving(false);
+      }
+    } else {
+      // Show login prompt for unauthenticated users
+      setShowSavePrompt(true);
+    }
   };
 
   return (
@@ -173,12 +270,23 @@ export default function BOQResultsStep({
           <button className="btn btn-icon" onClick={handleWhatsAppShare} title="Share via WhatsApp">
             <WhatsappLogo size={20} weight="light" />
           </button>
-          <button className="btn btn-primary" onClick={handleSave}>
-            <FloppyDisk size={18} weight="light" />
-            Save Project
+          <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <CircleNotch size={18} className="spinning" />
+            ) : (
+              <FloppyDisk size={18} weight="light" />
+            )}
+            {isAuthenticated ? 'Save & View Projects' : 'Save Project'}
           </button>
         </div>
       </div>
+
+      {/* Error Display */}
+      {saveError && (
+        <div className="save-error">
+          {saveError}
+        </div>
+      )}
 
       {/* Totals Summary */}
       <Card className="totals-card">
@@ -335,6 +443,14 @@ export default function BOQResultsStep({
           Start Over
         </button>
       </div>
+
+      {/* Saving Overlay */}
+      <SavingOverlay
+        isVisible={isSaving}
+        message={saveMessage}
+        success={saveSuccess}
+        steps={saveSteps}
+      />
 
       {/* Save Prompt Modal */}
       {showSavePrompt && (
@@ -762,6 +878,29 @@ export default function BOQResultsStep({
 
         .btn-accent:hover {
           background: var(--color-accent-dark);
+        }
+
+        .save-error {
+          background: rgba(239, 68, 68, 0.1);
+          color: var(--color-error);
+          padding: var(--spacing-sm) var(--spacing-md);
+          border-radius: var(--radius-md);
+          margin-bottom: var(--spacing-lg);
+          font-size: 0.875rem;
+        }
+
+        .spinning {
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        .btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
 
         @media (max-width: 768px) {

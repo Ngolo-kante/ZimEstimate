@@ -24,9 +24,6 @@ export default function AnalysisProgress() {
     const stepDuration = 800; // ms per step
     const progressInterval = 50; // ms per progress tick
 
-    let stepTimer: NodeJS.Timeout;
-    let progressTimer: NodeJS.Timeout;
-
     const advanceProgress = () => {
       setProgress((prev) => {
         const target = ((currentStep + 1) / ANALYSIS_STEPS.length) * 100;
@@ -37,9 +34,9 @@ export default function AnalysisProgress() {
       });
     };
 
-    progressTimer = setInterval(advanceProgress, progressInterval);
+    const progressTimer = setInterval(advanceProgress, progressInterval);
 
-    stepTimer = setTimeout(() => {
+    const stepTimer = setTimeout(() => {
       if (currentStep < ANALYSIS_STEPS.length - 1) {
         setCurrentStep((prev) => prev + 1);
       }

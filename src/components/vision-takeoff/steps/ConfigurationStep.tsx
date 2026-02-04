@@ -39,6 +39,81 @@ export default function ConfigurationStep({
   const brickTypes: BrickType[] = ['common', 'farm', 'blocks_6inch', 'blocks_8inch', 'face_brick'];
   const cementTypes: CementType[] = ['cement_325', 'cement_425'];
 
+  // Helper to check if a scope is selected
+  const isScopeSelected = (scope: ProjectScope): boolean => {
+    if (Array.isArray(config.scope)) {
+      return config.scope.includes(scope);
+    }
+    return config.scope === scope;
+  };
+
+  // Helper to check if full_house is selected
+  const isFullHouseSelected = isScopeSelected('full_house');
+
+  // Handle scope toggle (multi-select)
+  const handleScopeToggle = (scope: ProjectScope) => {
+    // If selecting full_house, set it as the only selection
+    if (scope === 'full_house') {
+      onUpdate({ scope: 'full_house' });
+      return;
+    }
+
+    // If full_house is currently selected and clicking another, switch to that one
+    if (isFullHouseSelected) {
+      onUpdate({ scope: scope });
+      return;
+    }
+
+    // Multi-select for non-full_house options
+    const currentScopes = Array.isArray(config.scope) ? config.scope : [config.scope];
+    if (currentScopes.includes(scope)) {
+      // Remove if already selected (but keep at least one)
+      const newScopes = currentScopes.filter(s => s !== scope);
+      onUpdate({ scope: newScopes.length > 0 ? newScopes : [scope] });
+    } else {
+      // Add to selection
+      onUpdate({ scope: [...currentScopes.filter(s => s !== 'full_house'), scope] });
+    }
+  };
+
+  // Helper to check if a brick type is selected
+  const isBrickSelected = (brick: BrickType): boolean => {
+    if (Array.isArray(config.brickType)) {
+      return config.brickType.includes(brick);
+    }
+    return config.brickType === brick;
+  };
+
+  // Handle brick type toggle (multi-select)
+  const handleBrickToggle = (brick: BrickType) => {
+    const currentBricks = Array.isArray(config.brickType) ? config.brickType : [config.brickType];
+    if (currentBricks.includes(brick)) {
+      const newBricks = currentBricks.filter(b => b !== brick);
+      onUpdate({ brickType: newBricks.length > 0 ? newBricks : [brick] });
+    } else {
+      onUpdate({ brickType: [...currentBricks, brick] });
+    }
+  };
+
+  // Helper to check if a cement type is selected
+  const isCementSelected = (cement: CementType): boolean => {
+    if (Array.isArray(config.cementType)) {
+      return config.cementType.includes(cement);
+    }
+    return config.cementType === cement;
+  };
+
+  // Handle cement type toggle (multi-select)
+  const handleCementToggle = (cement: CementType) => {
+    const currentCements = Array.isArray(config.cementType) ? config.cementType : [config.cementType];
+    if (currentCements.includes(cement)) {
+      const newCements = currentCements.filter(c => c !== cement);
+      onUpdate({ cementType: newCements.length > 0 ? newCements : [cement] });
+    } else {
+      onUpdate({ cementType: [...currentCements, cement] });
+    }
+  };
+
   return (
     <div className="config-step">
       <div className="step-header">
@@ -58,20 +133,31 @@ export default function ConfigurationStep({
           </div>
 
           <div className="option-grid scope-grid">
-            {scopes.map((scope) => (
-              <button
-                key={scope}
-                className={`option-card ${config.scope === scope ? 'selected' : ''}`}
-                onClick={() => onUpdate({ scope })}
-              >
-                <div className="option-check">
-                  {config.scope === scope && <Check size={16} weight="bold" />}
-                </div>
-                <span className="option-name">{SCOPE_INFO[scope].name}</span>
-                <span className="option-desc">{SCOPE_INFO[scope].description}</span>
-              </button>
-            ))}
+            {scopes.map((scope) => {
+              const isSelected = isScopeSelected(scope);
+              const isDisabled = scope !== 'full_house' && isFullHouseSelected;
+              return (
+                <button
+                  key={scope}
+                  className={`option-card ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
+                  onClick={() => !isDisabled && handleScopeToggle(scope)}
+                  disabled={isDisabled}
+                >
+                  <div className="option-check">
+                    {isSelected && <Check size={16} weight="bold" />}
+                  </div>
+                  <span className="option-name">{SCOPE_INFO[scope].name}</span>
+                  <span className="option-desc">{SCOPE_INFO[scope].description}</span>
+                  {scope === 'full_house' && (
+                    <span className="option-hint">Selects all stages</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
+          {!isFullHouseSelected && (
+            <p className="multi-select-hint">Select multiple stages or choose Full House for complete estimate</p>
+          )}
         </Card>
 
         {/* Brick Type Selection */}
@@ -85,21 +171,25 @@ export default function ConfigurationStep({
           </div>
 
           <div className="option-grid brick-grid">
-            {brickTypes.map((brick) => (
-              <button
-                key={brick}
-                className={`option-card ${config.brickType === brick ? 'selected' : ''}`}
-                onClick={() => onUpdate({ brickType: brick })}
-              >
-                <div className="option-check">
-                  {config.brickType === brick && <Check size={16} weight="bold" />}
-                </div>
-                <span className="option-name">{BRICK_INFO[brick].name}</span>
-                <span className="option-desc">{BRICK_INFO[brick].description}</span>
-                <span className="option-meta">{BRICK_INFO[brick].bricksPerSqm} per m²</span>
-              </button>
-            ))}
+            {brickTypes.map((brick) => {
+              const isSelected = isBrickSelected(brick);
+              return (
+                <button
+                  key={brick}
+                  className={`option-card ${isSelected ? 'selected' : ''}`}
+                  onClick={() => handleBrickToggle(brick)}
+                >
+                  <div className="option-check">
+                    {isSelected && <Check size={16} weight="bold" />}
+                  </div>
+                  <span className="option-name">{BRICK_INFO[brick].name}</span>
+                  <span className="option-desc">{BRICK_INFO[brick].description}</span>
+                  <span className="option-meta">{BRICK_INFO[brick].bricksPerSqm} per m²</span>
+                </button>
+              );
+            })}
           </div>
+          <p className="multi-select-hint">Select multiple wall materials if using different types for different areas</p>
         </Card>
 
         {/* Cement Type Selection */}
@@ -113,22 +203,26 @@ export default function ConfigurationStep({
           </div>
 
           <div className="option-grid cement-grid">
-            {cementTypes.map((cement) => (
-              <button
-                key={cement}
-                className={`option-card horizontal ${config.cementType === cement ? 'selected' : ''}`}
-                onClick={() => onUpdate({ cementType: cement })}
-              >
-                <div className="option-check">
-                  {config.cementType === cement && <Check size={16} weight="bold" />}
-                </div>
-                <div className="option-content">
-                  <span className="option-name">{CEMENT_INFO[cement].name}</span>
-                  <span className="option-desc">{CEMENT_INFO[cement].description}</span>
-                </div>
-              </button>
-            ))}
+            {cementTypes.map((cement) => {
+              const isSelected = isCementSelected(cement);
+              return (
+                <button
+                  key={cement}
+                  className={`option-card horizontal ${isSelected ? 'selected' : ''}`}
+                  onClick={() => handleCementToggle(cement)}
+                >
+                  <div className="option-check">
+                    {isSelected && <Check size={16} weight="bold" />}
+                  </div>
+                  <div className="option-content">
+                    <span className="option-name">{CEMENT_INFO[cement].name}</span>
+                    <span className="option-desc">{CEMENT_INFO[cement].description}</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
+          <p className="multi-select-hint">Select both cement types if using different grades for different purposes</p>
         </Card>
 
         {/* Labor Toggle */}
@@ -321,6 +415,25 @@ export default function ConfigurationStep({
           letter-spacing: 0.05em;
           color: var(--color-accent);
           margin-top: auto;
+        }
+
+        .option-hint {
+          font-size: 0.625rem;
+          color: var(--color-primary);
+          font-weight: 500;
+        }
+
+        .option-card.disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          pointer-events: none;
+        }
+
+        .multi-select-hint {
+          font-size: 0.75rem;
+          color: var(--color-text-muted);
+          margin: var(--spacing-sm) 0 0 0;
+          font-style: italic;
         }
 
         .labor-toggle {

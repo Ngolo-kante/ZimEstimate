@@ -171,7 +171,7 @@ export default function InflationEnginePage() {
         <div className="stats-row">
           <Card className="stat-card">
             <CardContent>
-              <div className="stat-icon orange">
+              <div className="stat-icon accent">
                 <ChartLine size={24} weight="light" />
               </div>
               <div className="stat-content">
@@ -364,8 +364,8 @@ export default function InflationEnginePage() {
           justify-content: center;
         }
 
-        .stat-icon.orange {
-          background: rgba(252, 163, 17, 0.15);
+        .stat-icon.accent {
+          background: rgba(78, 154, 247, 0.15);
           color: var(--color-accent);
         }
 

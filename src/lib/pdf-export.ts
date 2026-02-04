@@ -273,9 +273,9 @@ interface VisionBOQData {
     }>;
     totals: { usd: number; zwg: number };
     config: {
-        scope: string;
-        brickType: string;
-        cementType: string;
+        scope: string | string[];
+        brickType: string | string[];
+        cementType: string | string[];
         includeLabor: boolean;
     };
 }
@@ -326,10 +326,18 @@ export function exportBOQToPDF(data: VisionBOQData, currency: 'USD' | 'ZWG' = 'U
     doc.text(`Floor Area: ${data.totalArea.toFixed(0)} m²`, margin, yPos);
     yPos += 5;
 
-    doc.text(`Scope: ${data.config.scope.replace('_', ' ')}`, margin, yPos);
+    // Helper to format array values
+    const formatConfigValue = (value: string | string[]): string => {
+        if (Array.isArray(value)) {
+            return value.map(v => v.replace('_', ' ')).join(', ');
+        }
+        return value.replace('_', ' ');
+    };
+
+    doc.text(`Scope: ${formatConfigValue(data.config.scope)}`, margin, yPos);
     yPos += 5;
 
-    doc.text(`Wall Material: ${data.config.brickType.replace('_', ' ')}`, margin, yPos);
+    doc.text(`Wall Material: ${formatConfigValue(data.config.brickType)}`, margin, yPos);
     yPos += 5;
 
     doc.text(`Labor: ${data.config.includeLabor ? 'Included' : 'Materials Only'}`, margin, yPos);

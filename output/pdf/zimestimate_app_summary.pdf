@@ -1,0 +1,62 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 2582 >>
+stream
+BT /F1 20 Tf 48 760 Td (ZimEstimate - App Summary) Tj ET
+BT /F1 9 Tf 48 738 Td (Generated: 2026-02-03) Tj ET
+BT /F1 12 Tf 48 720 Td (What It Is) Tj ET
+BT /F1 10 Tf 48 706 Td (ZimEstimate is a Next.js web app for construction cost estimation and project management in the) Tj ET
+BT /F1 10 Tf 48 694 Td (Zimbabwean market. It helps users build bills of quantities \(BOQs\), track costs, and manage) Tj ET
+BT /F1 10 Tf 48 682 Td (construction projects.) Tj ET
+BT /F1 12 Tf 48 662 Td (Who It's For) Tj ET
+BT /F1 10 Tf 48 648 Td (Primary users are Zimbabwean homebuilders or small contractors managing residential) Tj ET
+BT /F1 10 Tf 48 636 Td (construction budgets, materials, and timelines.) Tj ET
+BT /F1 12 Tf 48 616 Td (What It Does) Tj ET
+BT /F1 10 Tf 48 602 Td (- Build BOQs manually and organize line items by category.) Tj ET
+BT /F1 10 Tf 48 590 Td (- Analyze floor plan uploads with Gemini vision to extract rooms and measurements \(AI takeoff\).) Tj ET
+BT /F1 10 Tf 48 578 Td (- Manage projects with BOQ, tracking, documents, planning, and usage tabs.) Tj ET
+BT /F1 10 Tf 48 566 Td (- Track purchases, actual vs budgeted costs, and material usage.) Tj ET
+BT /F1 10 Tf 48 554 Td (- Browse a marketplace of suppliers and materials with price comparisons.) Tj ET
+BT /F1 10 Tf 48 542 Td (- Export BOQs to PDF and other formats \(per PRD export options\).) Tj ET
+BT /F1 12 Tf 48 522 Td (How It Works) Tj ET
+BT /F1 10 Tf 48 508 Td (- UI: Next.js App Router pages in src/app with reusable UI in src/components.) Tj ET
+BT /F1 10 Tf 48 496 Td (- Data: Supabase client in src/lib/supabase.ts; project CRUD in src/lib/services/projects.ts.) Tj ET
+BT /F1 10 Tf 48 484 Td (- DB: Tables and decisions documented in PRD.md \(projects, boq_items, materials, suppliers,) Tj ET
+BT /F1 10 Tf 48 472 Td (  etc.\).) Tj ET
+BT /F1 10 Tf 48 460 Td (- Vision: POST /api/vision/analyze calls src/lib/vision/gemini-client.ts \(Gemini\).) Tj ET
+BT /F1 10 Tf 48 448 Td (- Export: src/lib/pdf-export.ts generates BOQ PDFs with jsPDF.) Tj ET
+BT /F1 12 Tf 48 428 Td (How To Run) Tj ET
+BT /F1 10 Tf 48 414 Td (- Create .env.local with NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY \(see) Tj ET
+BT /F1 10 Tf 48 402 Td (  .env.local.example\).) Tj ET
+BT /F1 10 Tf 48 390 Td (- Optional: set GOOGLE_GEMINI_API_KEY for AI vision \(used by /api/vision/analyze\).) Tj ET
+BT /F1 10 Tf 48 378 Td (- Run npm run dev \(README.md\).) Tj ET
+BT /F1 10 Tf 48 366 Td (- Open http://localhost:3000 in a browser \(README.md\).) Tj ET
+BT /F1 10 Tf 48 354 Td (- Dependency install command: Not found in repo.) Tj ET
+
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+2945
+%%EOF

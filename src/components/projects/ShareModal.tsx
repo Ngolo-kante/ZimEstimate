@@ -1,8 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { useToast } from '@/components/ui/Toast';
+import {
+    shareProject,
+    getProjectShares,
+    updateShareAccess,
+    removeShare,
+} from '@/lib/services/projects';
+import { ProjectShare, AccessLevel } from '@/lib/database.types';
 import {
     X,
     EnvelopeSimple,
@@ -10,6 +18,8 @@ import {
     Copy,
     Check,
     UserPlus,
+    CircleNotch,
+    Trash,
 } from '@phosphor-icons/react';
 
 interface ShareModalProps {
@@ -19,23 +29,35 @@ interface ShareModalProps {
     projectId: string;
 }
 
-interface SharedUser {
-    email: string;
-    accessLevel: 'view' | 'collaborate';
-    status: 'pending' | 'accepted';
-}
-
 export default function ShareModal({ isOpen, onClose, projectName, projectId }: ShareModalProps) {
+    const { success, error: showError } = useToast();
     const [email, setEmail] = useState('');
-    const [accessLevel, setAccessLevel] = useState<'view' | 'collaborate'>('view');
+    const [accessLevel, setAccessLevel] = useState<AccessLevel>('view');
     const [copied, setCopied] = useState(false);
-    const [sharedUsers, setSharedUsers] = useState<SharedUser[]>([
-        { email: 'contractor@example.com', accessLevel: 'view', status: 'accepted' },
-    ]);
+    const [shares, setShares] = useState<ProjectShare[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isInviting, setIsInviting] = useState(false);
+
+    const loadShares = useCallback(async () => {
+        setIsLoading(true);
+        const { shares: loadedShares, error } = await getProjectShares(projectId);
+        if (error) {
+            showError('Failed to load shares');
+        } else {
+            setShares(loadedShares);
+        }
+        setIsLoading(false);
+    }, [projectId, showError]);
+
+    useEffect(() => {
+        if (isOpen) {
+            loadShares();
+        }
+    }, [isOpen, loadShares]);
 
     if (!isOpen) return null;
 
-    const shareLink = `https://zimestimate.app/shared/${projectId}`;
+    const shareLink = `${window.location.origin}/projects/${projectId}`;
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(shareLink);
@@ -43,15 +65,43 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const handleInvite = () => {
-        if (email && email.includes('@')) {
-            setSharedUsers([...sharedUsers, { email, accessLevel, status: 'pending' }]);
+    const handleInvite = async () => {
+        if (!email || !email.includes('@')) {
+            showError('Please enter a valid email address');
+            return;
+        }
+
+        setIsInviting(true);
+        const { share, error } = await shareProject(projectId, email, accessLevel);
+
+        if (error) {
+            showError(error.message);
+        } else if (share) {
+            setShares([share, ...shares]);
             setEmail('');
+            success('Invitation sent!');
+        }
+        setIsInviting(false);
+    };
+
+    const handleUpdateAccess = async (shareId: string, newAccess: AccessLevel) => {
+        const { share, error } = await updateShareAccess(shareId, newAccess);
+        if (error) {
+            showError('Failed to update access level');
+        } else if (share) {
+            setShares(shares.map((s) => (s.id === shareId ? share : s)));
+            success('Access level updated');
         }
     };
 
-    const handleRemoveUser = (emailToRemove: string) => {
-        setSharedUsers(sharedUsers.filter((u) => u.email !== emailToRemove));
+    const handleRemoveShare = async (shareId: string) => {
+        const { error } = await removeShare(shareId);
+        if (error) {
+            showError('Failed to remove share');
+        } else {
+            setShares(shares.filter((s) => s.id !== shareId));
+            success('Share removed');
+        }
     };
 
     return (
@@ -78,45 +128,65 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 icon={<EnvelopeSimple size={18} weight="light" />}
+                                onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
                             />
                             <select
                                 value={accessLevel}
-                                onChange={(e) => setAccessLevel(e.target.value as 'view' | 'collaborate')}
+                                onChange={(e) => setAccessLevel(e.target.value as AccessLevel)}
                                 className="access-select"
                             >
                                 <option value="view">Can View</option>
-                                <option value="collaborate">Can Collaborate</option>
+                                <option value="edit">Can Edit</option>
                             </select>
-                            <Button icon={<UserPlus size={18} />} onClick={handleInvite}>
+                            <Button
+                                icon={isInviting ? <CircleNotch size={18} className="spin" /> : <UserPlus size={18} />}
+                                onClick={handleInvite}
+                                loading={isInviting}
+                            >
                                 Invite
                             </Button>
                         </div>
                     </div>
 
                     {/* Shared Users List */}
-                    {sharedUsers.length > 0 && (
-                        <div className="shared-users">
-                            <label className="section-label">People with Access</label>
+                    <div className="shared-users">
+                        <label className="section-label">People with Access</label>
+                        {isLoading ? (
+                            <div className="loading-state">
+                                <CircleNotch size={20} className="spin" />
+                                <span>Loading...</span>
+                            </div>
+                        ) : shares.length === 0 ? (
+                            <p className="no-shares">No one has access yet. Invite someone above.</p>
+                        ) : (
                             <ul className="users-list">
-                                {sharedUsers.map((user) => (
-                                    <li key={user.email} className="user-item">
+                                {shares.map((share) => (
+                                    <li key={share.id} className="user-item">
                                         <div className="user-avatar">
-                                            {user.email[0].toUpperCase()}
+                                            {share.shared_with_email[0].toUpperCase()}
                                         </div>
                                         <div className="user-info">
-                                            <span className="user-email">{user.email}</span>
-                                            <span className={`user-status ${user.status}`}>
-                                                {user.status === 'pending' ? 'Pending' : user.accessLevel === 'view' ? 'View Only' : 'Collaborator'}
+                                            <span className="user-email">{share.shared_with_email}</span>
+                                            <span className={`user-status ${share.shared_with_user_id ? 'accepted' : 'pending'}`}>
+                                                {share.shared_with_user_id ? '' : 'Pending signup'}
                                             </span>
                                         </div>
-                                        <button className="remove-btn" onClick={() => handleRemoveUser(user.email)}>
-                                            <X size={16} />
+                                        <select
+                                            value={share.access_level}
+                                            onChange={(e) => handleUpdateAccess(share.id, e.target.value as AccessLevel)}
+                                            className="access-select-sm"
+                                        >
+                                            <option value="view">View</option>
+                                            <option value="edit">Edit</option>
+                                        </select>
+                                        <button className="remove-btn" onClick={() => handleRemoveShare(share.id)}>
+                                            <Trash size={16} />
                                         </button>
                                     </li>
                                 ))}
                             </ul>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
                     {/* Share Link */}
                     <div className="link-section">
@@ -139,7 +209,7 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
                                 {copied ? 'Copied!' : 'Copy'}
                             </Button>
                         </div>
-                        <p className="link-hint">Anyone with this link can view the project summary</p>
+                        <p className="link-hint">Anyone with this link can view the project summary (requires login)</p>
                     </div>
                 </div>
             </div>
@@ -163,6 +233,8 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
           max-width: 500px;
           padding: var(--spacing-xl);
           box-shadow: var(--shadow-lg);
+          max-height: 90vh;
+          overflow-y: auto;
         }
 
         .modal-header {
@@ -231,6 +303,24 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
           margin-bottom: var(--spacing-xl);
         }
 
+        .loading-state {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-sm);
+          padding: var(--spacing-md);
+          color: var(--color-text-secondary);
+        }
+
+        .no-shares {
+          color: var(--color-text-muted);
+          font-size: 0.875rem;
+          margin: 0;
+          padding: var(--spacing-md);
+          background: var(--color-background);
+          border-radius: var(--radius-md);
+          text-align: center;
+        }
+
         .users-list {
           list-style: none;
           padding: 0;
@@ -260,17 +350,22 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
           justify-content: center;
           font-size: 0.75rem;
           font-weight: 600;
+          flex-shrink: 0;
         }
 
         .user-info {
           flex: 1;
           display: flex;
           flex-direction: column;
+          min-width: 0;
         }
 
         .user-email {
           font-size: 0.875rem;
           color: var(--color-text);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .user-status {
@@ -282,6 +377,16 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
           color: var(--color-warning);
         }
 
+        .access-select-sm {
+          padding: var(--spacing-xs) var(--spacing-sm);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-md);
+          background: var(--color-surface);
+          font-size: 0.75rem;
+          color: var(--color-text);
+          cursor: pointer;
+        }
+
         .remove-btn {
           background: none;
           border: none;
@@ -289,10 +394,11 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
           cursor: pointer;
           color: var(--color-text-muted);
           border-radius: var(--radius-sm);
+          flex-shrink: 0;
         }
 
         .remove-btn:hover {
-          background: var(--color-border-light);
+          background: var(--color-error-bg);
           color: var(--color-error);
         }
 
@@ -320,6 +426,25 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
           font-size: 0.75rem;
           color: var(--color-text-muted);
           margin: var(--spacing-sm) 0 0 0;
+        }
+
+        :global(.spin) {
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+          .invite-row {
+            flex-direction: column;
+          }
+
+          .user-item {
+            flex-wrap: wrap;
+          }
         }
       `}</style>
         </>

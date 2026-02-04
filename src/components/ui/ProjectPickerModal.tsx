@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Button from '@/components/ui/Button';
 import { getProjects } from '@/lib/services/projects';
 import { Project } from '@/lib/database.types';
@@ -33,19 +33,19 @@ export default function ProjectPickerModal({
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const { formatPrice } = useCurrency();
 
-    useEffect(() => {
-        if (isOpen) {
-            loadProjects();
-        }
-    }, [isOpen]);
-
-    const loadProjects = async () => {
+    const loadProjects = useCallback(async () => {
         setIsLoading(true);
         const { projects: loadedProjects } = await getProjects();
         // Only show active/draft projects
         setProjects(loadedProjects.filter(p => p.status !== 'archived' && p.status !== 'completed'));
         setIsLoading(false);
-    };
+    }, []);
+
+    useEffect(() => {
+        if (isOpen) {
+            loadProjects();
+        }
+    }, [isOpen, loadProjects]);
 
     const handleConfirm = () => {
         const selected = projects.find(p => p.id === selectedId);

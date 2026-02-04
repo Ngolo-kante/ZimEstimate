@@ -8,6 +8,7 @@ import {
     getProjectWithItems,
     saveProjectWithItems,
 } from '@/lib/services/projects';
+import { setProjectStagesApplicability } from '@/lib/services/stages';
 import { Project, BOQItem, ProjectScope, LaborPreference } from '@/lib/database.types';
 
 interface BOQItemLocal {
@@ -87,6 +88,7 @@ export function useProjectAutoSave(
 
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isInitializedRef = useRef(false);
+    const projectRef = useRef<Project | null>(null);
 
     // Convert local BOQ items to database format
     const convertItemsForSave = useCallback((milestones: MilestoneData[]) => {
@@ -124,7 +126,8 @@ export function useProjectAutoSave(
 
     // Save project to database
     const saveProject = useCallback(async () => {
-        if (!project) return;
+        const currentProject = projectRef.current;
+        if (!currentProject) return;
 
         setIsSaving(true);
         setError(null);
@@ -136,6 +139,7 @@ export function useProjectAutoSave(
             if (projectScope === 'stage' && selectedStages.length === 1) {
                 scope = selectedStages[0] as ProjectScope;
             }
+            const selectedStagesForSave = projectScope === 'stage' ? selectedStages : [];
 
             // Determine labor preference
             const labor_preference: LaborPreference =
@@ -144,12 +148,13 @@ export function useProjectAutoSave(
             const items = convertItemsForSave(milestonesState);
 
             const { project: savedProject, error: saveError } = await saveProjectWithItems(
-                project.id,
+                currentProject.id,
                 {
                     name: projectDetails.name,
                     location: projectDetails.location,
                     scope,
                     labor_preference,
+                    selected_stages: selectedStagesForSave.length > 0 ? selectedStagesForSave : null,
                     status: 'draft',
                 },
                 items
@@ -160,7 +165,11 @@ export function useProjectAutoSave(
             }
 
             if (savedProject) {
+                if (selectedStagesForSave.length > 0) {
+                    await setProjectStagesApplicability(currentProject.id, selectedStagesForSave);
+                }
                 setProject(savedProject);
+                projectRef.current = savedProject;
                 setLastSaved(new Date());
                 setHasUnsavedChanges(false);
                 onSaveComplete?.(savedProject);
@@ -191,9 +200,18 @@ export function useProjectAutoSave(
         setError(null);
 
         try {
+            let scope: ProjectScope = 'entire_house';
+            if (projectScope === 'stage' && selectedStages.length === 1) {
+                scope = selectedStages[0] as ProjectScope;
+            }
+            const selectedStagesForSave = projectScope === 'stage' ? selectedStages : [];
+
             const { project: newProject, error: createError } = await createProject({
                 name: details.name,
                 location: details.location,
+                scope,
+                labor_preference: laborType === 'materials_labor' ? 'with_labor' : 'materials_only',
+                selected_stages: selectedStagesForSave.length > 0 ? selectedStagesForSave : null,
             });
 
             if (createError) {
@@ -202,6 +220,7 @@ export function useProjectAutoSave(
 
             if (newProject) {
                 setProject(newProject);
+                projectRef.current = newProject;
                 setLastSaved(new Date());
                 setHasUnsavedChanges(false);
 
@@ -219,7 +238,7 @@ export function useProjectAutoSave(
         } finally {
             setIsSaving(false);
         }
-    }, []);
+    }, [projectScope, selectedStages, laborType]);
 
     // Load existing project
     useEffect(() => {
@@ -238,6 +257,7 @@ export function useProjectAutoSave(
 
                 if (loadedProject) {
                     setProject(loadedProject);
+                    projectRef.current = loadedProject;
                     setLastSaved(new Date(loadedProject.updated_at));
                     isInitializedRef.current = true;
                     onLoadComplete?.(loadedProject, items);

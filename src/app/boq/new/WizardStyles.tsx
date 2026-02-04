@@ -1047,6 +1047,34 @@ const WizardStyles = () => (
       justify-content: center;
       flex-wrap: wrap;
     }
+
+    /* Dropdown Menus */
+    .dropdown-container {
+      position: relative;
+    }
+
+    .dropdown-menu {
+      animation: dropdownFadeIn 0.2s ease;
+    }
+
+    @keyframes dropdownFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .dropdown-item:hover {
+      background: #f8fafc !important;
+    }
+
+    .dropdown-item:active {
+      background: #f1f5f9 !important;
+    }
   `}</style>
 );
 export default WizardStyles;

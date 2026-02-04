@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
@@ -8,1012 +8,1277 @@ import Card, { CardHeader, CardTitle, CardContent, CardBadge } from '@/component
 import Button from '@/components/ui/Button';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import InlineEdit from '@/components/ui/InlineEdit';
-import BudgetPlanner from '@/components/ui/BudgetPlanner';
+import StageTab from '@/components/projects/StageTab';
+import DocumentsTab from '@/components/projects/DocumentsTab';
+import ShareModal from '@/components/projects/ShareModal';
 import PurchaseTracker from '@/components/ui/PurchaseTracker';
+import StageSavingsToggle from '@/components/ui/StageSavingsToggle';
+import BudgetPlanner from '@/components/ui/BudgetPlanner';
+import StageUsageSection from '@/components/projects/StageUsageSection';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import {
-  getProjectWithItems,
-  deleteProject,
-  updateProject,
-  updateBOQItem,
-  getProjectPurchaseStats,
-  createReminder,
-  generateWhatsAppReminderLink,
+    getProjectWithItems,
+    createReminder,
+    deleteProject,
+    updateProject,
+    updateBOQItem,
 } from '@/lib/services/projects';
-import { Project, BOQItem } from '@/lib/database.types';
 import {
-  PencilSimple,
-  ShareNetwork,
-  Export,
-  Trash,
-  CaretDown,
-  CaretUp,
-  ArrowLeft,
-  Package,
-  MapPin,
-  Calendar,
-  Tag,
-  WhatsappLogo,
-  TrendUp,
-  CheckCircle,
-  ShoppingCart,
-  Bell,
-  Wallet,
-  ClipboardText,
+    getProjectStages,
+    getAllStagesProgress,
+    StageProgress,
+    updateStage,
+    createDefaultStages,
+    getStageUsageData,
+} from '@/lib/services/stages';
+import {
+    Project,
+    BOQItem,
+    ProjectStageWithTasks,
+    BOQCategory,
+} from '@/lib/database.types';
+import {
+    ShareNetwork,
+    Export,
+    Trash,
+    ArrowLeft,
+    MapPin,
+    Calendar,
+    Tag,
+    WhatsappLogo,
+    TrendUp,
+    Clock,
+    File,
+    ShoppingCart,
+    CircleNotch,
+    Warning,
+    CaretDown,
+    CaretUp,
 } from '@phosphor-icons/react';
 
 function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: number }) {
-  const { formatPrice } = useCurrency();
-  return <>{formatPrice(priceUsd, priceZwg)}</>;
+    const { formatPrice } = useCurrency();
+    return <>{formatPrice(priceUsd, priceZwg)}</>;
 }
 
-// Group BOQ items by category
-function groupItemsByCategory(items: BOQItem[]): Record<string, BOQItem[]> {
-  return items.reduce((acc, item) => {
-    const category = item.category || 'Other';
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(item);
-    return acc;
-  }, {} as Record<string, BOQItem[]>);
-}
+// Stage categories in order
+const STAGE_CATEGORIES: BOQCategory[] = ['substructure', 'superstructure', 'roofing', 'finishing', 'exterior'];
 
-// Category display names
-const categoryLabels: Record<string, string> = {
-  substructure: 'Substructure',
-  superstructure: 'Superstructure',
-  roofing: 'Roofing',
-  finishing: 'Finishing',
-  exterior: 'Exterior & Security',
-  labor: 'Labor & Services',
+const categoryLabels: Record<BOQCategory, string> = {
+    substructure: 'Substructure',
+    superstructure: 'Superstructure',
+    roofing: 'Roofing',
+    finishing: 'Finishing',
+    exterior: 'Exterior',
 };
 
-interface CategorySectionProps {
-  category: string;
-  items: BOQItem[];
-  onItemUpdate: (itemId: string, updates: Partial<BOQItem>) => void;
-  viewMode: 'boq' | 'tracking';
-}
-
-function CategorySection({ category, items, onItemUpdate, viewMode }: CategorySectionProps) {
-  const [expanded, setExpanded] = useState(true);
-  const { formatPrice, exchangeRate } = useCurrency();
-
-  const totalUsd = items.reduce((sum, item) => sum + Number(item.total_usd), 0);
-  const totalZwg = items.reduce((sum, item) => sum + Number(item.total_zwg), 0);
-  const purchasedCount = items.filter(i => i.is_purchased).length;
-
-  return (
-    <Card className="category-section">
-      <div className="category-header" onClick={() => setExpanded(!expanded)}>
-        <div className="category-info">
-          <h4>{categoryLabels[category] || category}</h4>
-          <span className="item-count">
-            {items.length} items
-            {viewMode === 'tracking' && ` • ${purchasedCount} purchased`}
-          </span>
-        </div>
-        <div className="category-total">
-          <PriceDisplay priceUsd={totalUsd} priceZwg={totalZwg} />
-        </div>
-        <button className="expand-btn">
-          {expanded ? <CaretUp size={20} /> : <CaretDown size={20} />}
-        </button>
-      </div>
-
-      {expanded && (
-        <div className="category-content">
-          {viewMode === 'boq' ? (
-            <table className="materials-table">
-              <thead>
-                <tr>
-                  <th>Material</th>
-                  <th>Quantity</th>
-                  <th>Unit Price</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item.id}>
-                    <td>
-                      <div className="material-name">{item.material_name}</div>
-                      {item.notes && <div className="material-notes">{item.notes}</div>}
-                    </td>
-                    <td>
-                      <InlineEdit
-                        value={Number(item.quantity)}
-                        type="number"
-                        suffix={` ${item.unit}`}
-                        onSave={(val) => onItemUpdate(item.id, {
-                          quantity: Number(val),
-                          total_usd: Number(val) * Number(item.unit_price_usd),
-                          total_zwg: Number(val) * Number(item.unit_price_zwg),
-                        })}
-                      />
-                    </td>
-                    <td>
-                      <InlineEdit
-                        value={Number(item.unit_price_usd)}
-                        type="currency"
-                        prefix="$"
-                        onSave={(val) => onItemUpdate(item.id, {
-                          unit_price_usd: Number(val),
-                          unit_price_zwg: Number(val) * exchangeRate,
-                          total_usd: Number(item.quantity) * Number(val),
-                          total_zwg: Number(item.quantity) * Number(val) * exchangeRate,
-                        })}
-                      />
-                    </td>
-                    <td className="total-cell">
-                      <PriceDisplay priceUsd={Number(item.total_usd)} priceZwg={Number(item.total_zwg)} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="tracking-list">
-              {items.map((item) => (
-                <PurchaseTracker
-                  key={item.id}
-                  item={item}
-                  onUpdate={(itemId, updates) => onItemUpdate(itemId, updates)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      <style jsx>{`
-        .category-header {
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-md);
-          cursor: pointer;
-          padding: var(--spacing-md);
-          margin: calc(-1 * var(--spacing-md));
-          border-radius: var(--radius-md);
-        }
-        .category-header:hover { background: var(--color-background); }
-        .category-info { flex: 1; }
-        .category-info h4 {
-          font-size: 1rem;
-          font-weight: 600;
-          color: var(--color-text);
-          margin: 0;
-        }
-        .item-count {
-          font-size: 0.75rem;
-          color: var(--color-text-muted);
-        }
-        .category-total {
-          font-weight: 600;
-          color: var(--color-text);
-        }
-        .expand-btn {
-          background: none;
-          border: none;
-          padding: var(--spacing-sm);
-          cursor: pointer;
-          color: var(--color-text-muted);
-          border-radius: var(--radius-sm);
-        }
-        .category-content {
-          margin-top: var(--spacing-md);
-          padding-top: var(--spacing-md);
-          border-top: 1px solid var(--color-border-light);
-        }
-        .materials-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 0.875rem;
-        }
-        .materials-table th,
-        .materials-table td {
-          padding: var(--spacing-sm);
-          text-align: left;
-          border-bottom: 1px solid var(--color-border-light);
-        }
-        .materials-table th {
-          color: var(--color-text-secondary);
-          font-weight: 500;
-          font-size: 0.75rem;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-        .materials-table tbody tr:last-child td { border-bottom: none; }
-        .material-name { font-weight: 500; }
-        .material-notes {
-          font-size: 0.75rem;
-          color: var(--color-text-muted);
-          margin-top: 2px;
-        }
-        .total-cell { font-weight: 600; }
-        .tracking-list {
-          display: flex;
-          flex-direction: column;
-          gap: var(--spacing-sm);
-        }
-      `}</style>
-    </Card>
-  );
-}
-
 function ProjectDetailContent() {
-  const params = useParams();
-  const router = useRouter();
-  const { success, error: showError } = useToast();
-  const { profile } = useAuth();
-  const { exchangeRate } = useCurrency();
-  const projectId = params.id as string;
+    const params = useParams();
+    const router = useRouter();
+    const { success, error: showError } = useToast();
+    const { profile } = useAuth();
+    const { exchangeRate, formatPrice } = useCurrency();
+    const projectId = params.id as string;
 
-  const [project, setProject] = useState<Project | null>(null);
-  const [items, setItems] = useState<BOQItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [viewMode, setViewMode] = useState<'boq' | 'tracking'>('boq');
-  const [showReminderModal, setShowReminderModal] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number || '');
+    // Core state
+    const [project, setProject] = useState<Project | null>(null);
+    const [items, setItems] = useState<BOQItem[]>([]);
+    const [stages, setStages] = useState<ProjectStageWithTasks[]>([]);
+    const [stagesProgress, setStagesProgress] = useState<StageProgress[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [showBudgetPlanner, setShowBudgetPlanner] = useState(false);
+    const [isCreatingStages, setIsCreatingStages] = useState(false);
+    const [usageByStage, setUsageByStage] = useState<Record<string, { items: BOQItem[]; usageByItem: Record<string, number> }>>({});
+    const [isUsageLoading, setIsUsageLoading] = useState(false);
 
-  // Purchase stats
-  const purchaseStats = useMemo(() => {
-    const totalItems = items.length;
-    const purchasedItems = items.filter(i => i.is_purchased).length;
-    const estimatedTotal = items.reduce((sum, item) =>
-      sum + (Number(item.quantity) * Number(item.unit_price_usd)), 0);
-    const actualSpent = items
-      .filter(item => item.is_purchased)
-      .reduce((sum, item) => {
-        const qty = item.actual_quantity ?? item.quantity;
-        const price = item.actual_price_usd ?? item.unit_price_usd;
-        return sum + (Number(qty) * Number(price));
-      }, 0);
+    // View state
+    const [activeTab, setActiveTab] = useState<BOQCategory | 'usage' | 'tracking' | 'documents'>('substructure');
+    const [stagesSetupRequired, setStagesSetupRequired] = useState(false);
 
-    // Critical items (first 3 from substructure - bricks, cement, sand)
-    const criticalItems = items
-      .filter(i => i.category === 'substructure' && !i.is_purchased)
-      .slice(0, 3)
-      .reduce((sum, item) => sum + Number(item.total_usd), 0);
+    // Purchase stats (calculated from items)
+    const purchaseStats = useMemo(() => {
+        const totalItems = items.length;
+        const purchasedItems = items.filter(i => i.is_purchased).length;
+        const estimatedTotal = items.reduce((sum, item) =>
+            sum + (Number(item.quantity) * Number(item.unit_price_usd)), 0);
+        const actualSpent = items
+            .filter(item => item.is_purchased)
+            .reduce((sum, item) => {
+                const qty = item.actual_quantity ?? item.quantity;
+                const price = item.actual_price_usd ?? item.unit_price_usd;
+                return sum + (Number(qty) * Number(price));
+            }, 0);
 
-    return {
-      totalItems,
-      purchasedItems,
-      estimatedTotal,
-      actualSpent,
-      remainingBudget: estimatedTotal - actualSpent,
-      criticalItemsUsd: criticalItems,
+        return {
+            totalItems,
+            purchasedItems,
+            estimatedTotal,
+            actualSpent,
+            remainingBudget: estimatedTotal - actualSpent,
+        };
+    }, [items]);
+
+    const activeStageItems = useMemo(() => {
+        if (STAGE_CATEGORIES.includes(activeTab as BOQCategory)) {
+            const category = activeTab as BOQCategory;
+            return items.filter(i => i.category === category);
+        }
+        return items;
+    }, [items, activeTab]);
+
+    const activeStageBudget = useMemo(() => {
+        const totalBudget = activeStageItems.reduce((sum: number, item: BOQItem) =>
+            sum + (Number(item.quantity) * Number(item.unit_price_usd)), 0);
+
+        const totalSpent = activeStageItems
+            .filter(item => item.is_purchased)
+            .reduce((sum: number, item: BOQItem) => {
+                const qty = item.actual_quantity ?? item.quantity;
+                const price = item.actual_price_usd ?? item.unit_price_usd;
+                return sum + (Number(qty) * Number(price));
+            }, 0);
+
+        return { totalBudget, totalSpent };
+    }, [activeStageItems]);
+
+    // Load project data
+    useEffect(() => {
+        async function loadProject() {
+            setIsLoading(true);
+            setError(null);
+
+            const [projectResult, stagesResult] = await Promise.all([
+                getProjectWithItems(projectId),
+                getProjectStages(projectId),
+            ]);
+
+            if (projectResult.error) {
+                setError(projectResult.error.message);
+            } else if (projectResult.project) {
+                setProject(projectResult.project);
+                setItems(projectResult.items);
+            } else {
+                setError('Project not found');
+            }
+
+            if (stagesResult.error) {
+                // Check if it's a missing table error
+                if (stagesResult.error.message?.includes('does not exist')) {
+                    setStagesSetupRequired(true);
+                }
+            } else {
+                setStages(stagesResult.stages);
+                // Set initial active tab to first applicable stage
+                const firstApplicable = stagesResult.stages.find(s => s.is_applicable);
+                if (firstApplicable) {
+                    setActiveTab(firstApplicable.boq_category);
+                }
+            }
+
+            // Load progress data
+            const progressResult = await getAllStagesProgress(projectId);
+            if (!progressResult.error) {
+                setStagesProgress(progressResult.progress);
+            }
+
+            setIsLoading(false);
+        }
+
+        loadProject();
+    }, [projectId]);
+
+    const loadUsageData = useCallback(async () => {
+        setIsUsageLoading(true);
+        const stagesToLoad = stages.filter(s => s.is_applicable);
+        const results = await Promise.all(
+            stagesToLoad.map(stage => getStageUsageData(projectId, stage.boq_category))
+        );
+
+        const nextUsage: Record<string, { items: BOQItem[]; usageByItem: Record<string, number> }> = {};
+        results.forEach((result, index) => {
+            const stage = stagesToLoad[index];
+            if (!stage) return;
+            if (!result.error) {
+                nextUsage[stage.boq_category] = {
+                    items: result.items,
+                    usageByItem: result.usageByItem,
+                };
+            }
+        });
+
+        setUsageByStage(nextUsage);
+        setIsUsageLoading(false);
+    }, [projectId, stages]);
+
+    useEffect(() => {
+        if (activeTab !== 'usage' || !project?.usage_tracking_enabled) return;
+        loadUsageData();
+    }, [activeTab, project?.usage_tracking_enabled, loadUsageData]);
+
+    // Handlers
+    const handleProjectUpdate = async (updates: Partial<Project>) => {
+        if (!project) return;
+
+        const { project: updated, error } = await updateProject(projectId, updates);
+        if (error) {
+            showError('Failed to update project');
+        } else if (updated) {
+            setProject(updated);
+            success('Project updated');
+        }
     };
-  }, [items]);
 
-  useEffect(() => {
-    async function loadProject() {
-      setIsLoading(true);
-      setError(null);
+    const handleItemUpdate = async (itemId: string, updates: Partial<BOQItem>): Promise<void> => {
+        const { item, error } = await updateBOQItem(itemId, updates);
+        if (error) {
+            showError('Failed to update item');
+        } else if (item) {
+            const updatedItems = items.map(i => {
+                if (i.id !== itemId) return i;
+                const next = { ...i, ...updates };
+                const qty = Number(next.quantity) || 0;
+                const priceUsd = Number(next.unit_price_usd) || 0;
+                const priceZwg = Number(next.unit_price_zwg) || 0;
+                return {
+                    ...next,
+                    total_usd: qty * priceUsd,
+                    total_zwg: qty * priceZwg,
+                };
+            });
 
-      const { project: loadedProject, items: loadedItems, error: loadError } =
-        await getProjectWithItems(projectId);
+            setItems(updatedItems);
 
-      if (loadError) {
-        setError(loadError.message);
-      } else if (loadedProject) {
-        setProject(loadedProject);
-        setItems(loadedItems);
-      } else {
-        setError('Project not found');
-      }
+            if ('quantity' in updates || 'unit_price_usd' in updates || 'unit_price_zwg' in updates) {
+                const newTotal = updatedItems.reduce((sum, i) => sum + Number(i.total_usd), 0);
+                await updateProject(projectId, {
+                    total_usd: newTotal,
+                    total_zwg: newTotal * exchangeRate,
+                });
+                setProject(prev => prev ? { ...prev, total_usd: newTotal, total_zwg: newTotal * exchangeRate } : prev);
+            }
+        }
+    };
 
-      setIsLoading(false);
-    }
+    const handleItemDelete = (itemId: string) => {
+        setItems(prev => prev.filter(i => i.id !== itemId));
+    };
 
-    loadProject();
-  }, [projectId]);
-
-  const handleProjectUpdate = async (updates: Partial<Project>) => {
-    if (!project) return;
-
-    const { project: updated, error } = await updateProject(projectId, updates);
-    if (error) {
-      showError('Failed to update project');
-    } else if (updated) {
-      setProject(updated);
-      success('Project updated');
-    }
-  };
-
-  const handleItemUpdate = async (itemId: string, updates: Partial<BOQItem>) => {
-    const { item, error } = await updateBOQItem(itemId, updates);
-    if (error) {
-      showError('Failed to update item');
-    } else if (item) {
-      setItems(prev => prev.map(i => i.id === itemId ? { ...i, ...updates } : i));
-
-      // Recalculate project totals if quantity or price changed
-      if ('total_usd' in updates || 'total_zwg' in updates) {
-        const newTotal = items.reduce((sum, i) => {
-          if (i.id === itemId) {
-            return sum + Number(updates.total_usd || i.total_usd);
-          }
-          return sum + Number(i.total_usd);
-        }, 0);
-
+    const handleItemAdded = async (item: BOQItem) => {
+        setItems(prev => [...prev, item]);
+        const newTotal = items.reduce((sum, i) => sum + Number(i.total_usd), 0) + Number(item.total_usd);
         await updateProject(projectId, {
-          total_usd: newTotal,
-          total_zwg: newTotal * exchangeRate,
+            total_usd: newTotal,
+            total_zwg: newTotal * exchangeRate,
         });
         setProject(prev => prev ? { ...prev, total_usd: newTotal, total_zwg: newTotal * exchangeRate } : prev);
-      }
+    };
+
+    const handleStageUpdate = (updatedStage: ProjectStageWithTasks) => {
+        setStages(prev => prev.map(s => s.id === updatedStage.id ? updatedStage : s));
+        setStagesProgress(prev => prev.map(stage => {
+            if (stage.stageId !== updatedStage.id) {
+                return stage;
+            }
+            const completedTasks = updatedStage.tasks.filter(t => t.is_completed).length;
+            return {
+                ...stage,
+                status: updatedStage.status,
+                name: updatedStage.name,
+                boqCategory: updatedStage.boq_category,
+                isApplicable: updatedStage.is_applicable,
+                taskProgress: { completed: completedTasks, total: updatedStage.tasks.length },
+            };
+        }));
+    };
+
+    const handleSavingsTargetDateChange = async (date: string) => {
+        if (STAGE_CATEGORIES.includes(activeTab as BOQCategory) && currentStage) {
+            const { stage: updated, error: stageError } = await updateStage(currentStage.id, { end_date: date });
+            if (stageError) {
+                showError('Failed to update stage target date');
+                return;
+            }
+            if (updated) {
+                handleStageUpdate({ ...currentStage, ...updated });
+                success('Stage target date updated');
+            }
+            return;
+        }
+
+        await handleProjectUpdate({ target_purchase_date: date });
+    };
+
+    const handleSavingsReminder = async (frequency: 'daily' | 'weekly' | 'monthly', amount: number) => {
+        if (!profile?.phone_number) {
+            showError('Add a phone number in Settings to schedule reminders');
+            return;
+        }
+
+        const offsetDays = frequency === 'daily' ? 1 : frequency === 'weekly' ? 7 : 30;
+        const scheduled = new Date();
+        scheduled.setDate(scheduled.getDate() + offsetDays);
+        const scheduledDate = scheduled.toISOString().split('T')[0];
+
+        const stageLabel = STAGE_CATEGORIES.includes(activeTab as BOQCategory)
+            ? categoryLabels[activeTab as BOQCategory]
+            : 'Project';
+
+        const message = `Savings reminder for ${project?.name || 'Project'} (${stageLabel}): save ${formatPrice(amount, amount * exchangeRate)} ${frequency}.`;
+
+        const { error: reminderError } = await createReminder({
+            project_id: projectId,
+            reminder_type: 'savings',
+            message,
+            scheduled_date: scheduledDate,
+            phone_number: profile.phone_number,
+        });
+
+        if (reminderError) {
+            showError('Failed to schedule reminder');
+            return;
+        }
+
+        success(`Reminder scheduled for ${scheduledDate}`);
+    };
+
+    const handleCreateStages = async () => {
+        if (!project) return;
+        setIsCreatingStages(true);
+        const { error: createError } = await createDefaultStages(projectId, project.scope);
+        if (createError) {
+            showError('Failed to create stages. Please run the stage migration.');
+            setIsCreatingStages(false);
+            return;
+        }
+
+        const [stagesResult, progressResult] = await Promise.all([
+            getProjectStages(projectId),
+            getAllStagesProgress(projectId),
+        ]);
+
+        if (!stagesResult.error) {
+            setStages(stagesResult.stages);
+            const firstApplicable = stagesResult.stages.find(s => s.is_applicable);
+            if (firstApplicable) {
+                setActiveTab(firstApplicable.boq_category);
+            }
+        }
+
+        if (!progressResult.error) {
+            setStagesProgress(progressResult.progress);
+        }
+
+        setIsCreatingStages(false);
+        success('Stages created');
+    };
+
+    const handleUsageTrackingToggle = async (enabled: boolean) => {
+        const { project: updated, error: updateError } = await updateProject(projectId, {
+            usage_tracking_enabled: enabled,
+        });
+        if (updateError) {
+            showError('Failed to update usage tracking');
+            return;
+        }
+        if (updated) {
+            setProject(updated);
+            if (enabled) {
+                loadUsageData();
+            }
+        }
+    };
+
+    const handleShare = () => {
+        const shareUrl = `${window.location.origin}/projects/${projectId}`;
+        const message = `Check out my construction project "${project?.name}" on ZimEstimate!\n\nTotal Budget: $${Number(project?.total_usd).toLocaleString()}\n\n${shareUrl}`;
+
+        if (navigator.share) {
+            navigator.share({
+                title: project?.name || 'My Project',
+                text: message,
+                url: shareUrl,
+            });
+        } else {
+            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+            return;
+        }
+
+        setIsDeleting(true);
+        const { error: deleteError } = await deleteProject(projectId);
+
+        if (deleteError) {
+            showError('Failed to delete project: ' + deleteError.message);
+            setIsDeleting(false);
+        } else {
+            success('Project deleted');
+            router.push('/projects?refresh=1');
+        }
+    };
+
+    // Loading state
+    if (isLoading) {
+        return (
+            <MainLayout title="Loading...">
+                <div className="loading-state">
+                    <CircleNotch size={40} className="spinner" />
+                    <p>Loading project...</p>
+                </div>
+                <style jsx>{`
+                    .loading-state {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        min-height: 400px;
+                        gap: var(--spacing-md);
+                    }
+                    :global(.spinner) {
+                        animation: spin 1s linear infinite;
+                        color: var(--color-primary);
+                    }
+                    @keyframes spin { to { transform: rotate(360deg); } }
+                    p { color: var(--color-text-secondary); }
+                `}</style>
+            </MainLayout>
+        );
     }
-  };
 
-  const handleSetReminder = async (type: 'daily' | 'weekly' | 'monthly', amount: number) => {
-    if (!phoneNumber) {
-      setShowReminderModal(true);
-      return;
+    // Error state
+    if (error || !project) {
+        return (
+            <MainLayout title="Error">
+                <div className="error-state">
+                    <Warning size={48} weight="light" />
+                    <h2>Project Not Found</h2>
+                    <p>{error || 'The requested project could not be found.'}</p>
+                    <Link href="/projects?refresh=1">
+                        <Button variant="secondary" icon={<ArrowLeft size={18} />}>
+                            Back to Projects
+                        </Button>
+                    </Link>
+                </div>
+                <style jsx>{`
+                    .error-state {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        min-height: 400px;
+                        gap: var(--spacing-md);
+                        text-align: center;
+                        color: var(--color-text-muted);
+                    }
+                    h2 { color: var(--color-text); margin: 0; }
+                    p { color: var(--color-text-secondary); margin: 0; }
+                `}</style>
+            </MainLayout>
+        );
     }
 
-    const message = `ZimEstimate Reminder: Save $${amount.toFixed(2)} ${type} for your "${project?.name}" project. You've got this!`;
-    const whatsappLink = generateWhatsAppReminderLink(phoneNumber, message);
+    // Get current stage
+    const currentStage = stages.find(s => s.boq_category === activeTab);
+    const applicableStages = stages.filter(s => s.is_applicable);
+    const hasLabor = project.labor_preference === 'with_labor';
+    const primaryStageCategory = applicableStages[0]?.boq_category;
+    const formatStageLabel = (stage: string) =>
+        categoryLabels[stage as BOQCategory] || stage.replace('_', ' ');
+    const scopeLabel = project.selected_stages && project.selected_stages.length > 0
+        ? project.selected_stages.map(formatStageLabel).join(', ')
+        : project.scope.replace('_', ' ');
+    const savingsTargetDate = STAGE_CATEGORIES.includes(activeTab as BOQCategory)
+        ? currentStage?.end_date || null
+        : project.target_purchase_date || project.target_completion_date || null;
 
-    // Open WhatsApp with the reminder message
-    window.open(whatsappLink, '_blank');
+    const statusColors: Record<string, 'success' | 'accent' | 'default'> = {
+        active: 'success',
+        draft: 'default',
+        completed: 'accent',
+        archived: 'default',
+    };
 
-    success(`${type.charAt(0).toUpperCase() + type.slice(1)} reminder ready! WhatsApp opened.`);
-  };
-
-  const handleShare = () => {
-    const shareUrl = `${window.location.origin}/projects/${projectId}`;
-    const message = `Check out my construction project "${project?.name}" on ZimEstimate!\n\nTotal Budget: $${Number(project?.total_usd).toLocaleString()}\n\n${shareUrl}`;
-
-    if (navigator.share) {
-      navigator.share({
-        title: project?.name || 'My Project',
-        text: message,
-        url: shareUrl,
-      });
-    } else {
-      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
-      return;
-    }
-
-    setIsDeleting(true);
-    const { error: deleteError } = await deleteProject(projectId);
-
-    if (deleteError) {
-      showError('Failed to delete project: ' + deleteError.message);
-      setIsDeleting(false);
-    } else {
-      success('Project deleted');
-      router.push('/projects');
-    }
-  };
-
-  if (isLoading) {
     return (
-      <MainLayout title="Loading...">
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading project...</p>
-        </div>
-        <style jsx>{`
-          .loading-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 400px;
-            gap: var(--spacing-md);
-          }
-          .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--color-border);
-            border-top-color: var(--color-primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-          }
-          @keyframes spin { to { transform: rotate(360deg); } }
-          p { color: var(--color-text-secondary); }
-        `}</style>
-      </MainLayout>
-    );
-  }
+        <MainLayout title={project.name}>
+            <div className="project-detail">
+                <div className="sub-nav">
+                    <Link href="/dashboard">Dashboard</Link>
+                    <span>›</span>
+                    <Link href="/projects?refresh=1">Projects Summary</Link>
+                    <span>›</span>
+                    <span className="current">{project.name}</span>
+                </div>
 
-  if (error || !project) {
-    return (
-      <MainLayout title="Error">
-        <div className="error-state">
-          <h2>Project Not Found</h2>
-          <p>{error || 'The requested project could not be found.'}</p>
-          <Link href="/projects">
-            <Button variant="secondary" icon={<ArrowLeft size={18} />}>
-              Back to Projects
-            </Button>
-          </Link>
-        </div>
-        <style jsx>{`
-          .error-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 400px;
-            gap: var(--spacing-md);
-            text-align: center;
-          }
-          h2 { color: var(--color-text); margin: 0; }
-          p { color: var(--color-text-secondary); margin: 0; }
-        `}</style>
-      </MainLayout>
-    );
-  }
-
-  const groupedItems = groupItemsByCategory(items);
-  const categories = Object.keys(groupedItems);
-
-  const statusColors: Record<string, 'success' | 'accent' | 'default'> = {
-    active: 'success',
-    draft: 'default',
-    completed: 'accent',
-    archived: 'default',
-  };
-
-  return (
-    <MainLayout title={project.name}>
-      <div className="project-detail">
-        {/* Back Link */}
-        <Link href="/projects" className="back-link">
-          <ArrowLeft size={16} />
-          Back to Projects
-        </Link>
-
-        {/* Project Header with Inline Edit */}
-        <div className="project-header">
-          <div className="project-info">
-            <h1>
-              <InlineEdit
-                value={project.name}
-                onSave={(val) => handleProjectUpdate({ name: String(val) })}
-                className="title-edit"
-              />
-            </h1>
-            <div className="project-meta">
-              <CardBadge variant={statusColors[project.status] || 'default'}>
-                {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-              </CardBadge>
-              <span className="meta-item">
-                <MapPin size={14} />
-                <InlineEdit
-                  value={project.location || ''}
-                  placeholder="Add location"
-                  onSave={(val) => handleProjectUpdate({ location: String(val) || null })}
-                />
-              </span>
-              <span className="meta-item">
-                <Calendar size={14} />
-                {new Date(project.created_at).toLocaleDateString()}
-              </span>
-              <span className="meta-item">
-                <Tag size={14} />
-                {project.scope.replace('_', ' ')}
-              </span>
-            </div>
-          </div>
-          <div className="header-actions">
-            <Button variant="ghost" icon={<WhatsappLogo size={18} />} onClick={handleShare}>
-              Share
-            </Button>
-            <Link href={`/export?project=${project.id}`}>
-              <Button variant="secondary" icon={<Export size={18} />}>
-                Export
-              </Button>
-            </Link>
-            <Button
-              variant="danger"
-              icon={<Trash size={18} />}
-              onClick={handleDelete}
-              loading={isDeleting}
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
-
-        {/* Stats Grid with Progress */}
-        <div className="stats-grid">
-          <Card variant="dashboard">
-            <CardHeader>
-              <CardTitle>Total Budget</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="stat-value">
-                <PriceDisplay
-                  priceUsd={Number(project.total_usd)}
-                  priceZwg={Number(project.total_zwg)}
-                />
-              </p>
-              <p className="stat-label">{items.length} line items</p>
-            </CardContent>
-          </Card>
-
-          <Card variant="dashboard">
-            <CardHeader>
-              <CardTitle>Progress</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="stat-value">
-                {purchaseStats.purchasedItems}/{purchaseStats.totalItems}
-              </p>
-              <div className="mini-progress">
-                <div
-                  className="mini-progress-fill"
-                  style={{ width: `${(purchaseStats.purchasedItems / purchaseStats.totalItems) * 100}%` }}
-                />
-              </div>
-              <p className="stat-label">items purchased</p>
-            </CardContent>
-          </Card>
-
-          <Card variant="dashboard">
-            <CardHeader>
-              <CardTitle>Actual Spent</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="stat-value spent">
-                <PriceDisplay
-                  priceUsd={purchaseStats.actualSpent}
-                  priceZwg={purchaseStats.actualSpent * exchangeRate}
-                />
-              </p>
-              <p className="stat-label">
-                {purchaseStats.actualSpent <= purchaseStats.estimatedTotal ? (
-                  <span className="under-budget">
-                    <TrendUp size={12} /> Under budget
-                  </span>
-                ) : (
-                  <span className="over-budget">Over by ${(purchaseStats.actualSpent - purchaseStats.estimatedTotal).toFixed(2)}</span>
-                )}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* View Mode Toggle */}
-        <div className="view-toggle">
-          <button
-            className={`toggle-btn ${viewMode === 'boq' ? 'active' : ''}`}
-            onClick={() => setViewMode('boq')}
-          >
-            <ClipboardText size={18} />
-            Bill of Quantities
-          </button>
-          <button
-            className={`toggle-btn ${viewMode === 'tracking' ? 'active' : ''}`}
-            onClick={() => setViewMode('tracking')}
-          >
-            <ShoppingCart size={18} />
-            Purchase Tracking
-          </button>
-        </div>
-
-        {/* BOQ Items by Category */}
-        <section className="boq-section">
-          <div className="section-header">
-            <h3>{viewMode === 'boq' ? 'Bill of Quantities' : 'Purchase Tracking'}</h3>
-            {viewMode === 'boq' && (
-              <Link href={`/boq/new?id=${project.id}`}>
-                <Button variant="secondary" size="sm" icon={<PencilSimple size={16} />}>
-                  Edit
-                </Button>
-              </Link>
-            )}
-          </div>
-
-          {items.length === 0 ? (
-            <Card>
-              <div className="empty-state">
-                <Package size={48} weight="light" />
-                <h4>No materials yet</h4>
-                <p>Start adding materials to your Bill of Quantities</p>
-                <Link href={`/boq/new?id=${project.id}`}>
-                  <Button icon={<PencilSimple size={18} />}>
-                    Edit BOQ
-                  </Button>
+                {/* Back Link */}
+                <Link href="/projects?refresh=1" className="back-link">
+                    <ArrowLeft size={16} />
+                    Back to Projects
                 </Link>
-              </div>
-            </Card>
-          ) : (
-            <div className="categories-list">
-              {categories.map((category) => (
-                <CategorySection
-                  key={category}
-                  category={category}
-                  items={groupedItems[category]}
-                  onItemUpdate={handleItemUpdate}
-                  viewMode={viewMode}
-                />
-              ))}
-            </div>
-          )}
-        </section>
 
-        {/* Budget Planner */}
-        {items.length > 0 && (
-          <section className="planner-section">
-            <BudgetPlanner
-              totalBudgetUsd={purchaseStats.estimatedTotal}
-              amountSpentUsd={purchaseStats.actualSpent}
-              targetDate={project.target_date}
-              onTargetDateChange={(date) => handleProjectUpdate({ target_date: date })}
-              criticalItemsUsd={purchaseStats.criticalItemsUsd}
-              onSetReminder={handleSetReminder}
+                {/* Project Header */}
+                <div className="project-header">
+                    <div className="project-info">
+                        <h1>
+                            <InlineEdit
+                                value={project.name}
+                                onSave={(val) => handleProjectUpdate({ name: String(val) })}
+                                className="title-edit"
+                            />
+                        </h1>
+                        <div className="project-meta">
+                            <CardBadge variant={statusColors[project.status] || 'default'}>
+                                {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                            </CardBadge>
+                            <span className="meta-item">
+                                <MapPin size={14} />
+                                <InlineEdit
+                                    value={project.location || ''}
+                                    placeholder="Add location"
+                                    onSave={(val) => handleProjectUpdate({ location: String(val) || null })}
+                                />
+                            </span>
+                            <span className="meta-item">
+                                <Calendar size={14} />
+                                Created {new Date(project.created_at).toLocaleDateString()}
+                            </span>
+                            {project.updated_at && project.updated_at !== project.created_at && (
+                                <span className="meta-item">
+                                    <Clock size={14} />
+                                    Modified {new Date(project.updated_at).toLocaleDateString()}
+                                </span>
+                            )}
+                            <span className="meta-item">
+                                <Tag size={14} />
+                                {scopeLabel}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="header-actions">
+                        <Button variant="ghost" icon={<ShareNetwork size={18} />} onClick={() => setShowShareModal(true)}>
+                            Share
+                        </Button>
+                        <Button variant="ghost" icon={<WhatsappLogo size={18} />} onClick={handleShare}>
+                            WhatsApp
+                        </Button>
+                        <Link href={`/export?project=${project.id}`}>
+                            <Button variant="secondary" icon={<Export size={18} />}>
+                                Export
+                            </Button>
+                        </Link>
+                        <Button
+                            variant="danger"
+                            icon={<Trash size={18} />}
+                            onClick={handleDelete}
+                            loading={isDeleting}
+                        >
+                            Delete
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Summary Cards */}
+                <div className="stats-grid">
+                    <StageSavingsToggle
+                        totalBudget={activeStageBudget.totalBudget}
+                        amountSpent={activeStageBudget.totalSpent}
+                        targetDate={savingsTargetDate}
+                    />
+
+                    <Card variant="dashboard">
+                        <CardHeader>
+                            <CardTitle>Progress</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="stat-value">
+                                {purchaseStats.purchasedItems}/{purchaseStats.totalItems}
+                            </p>
+                            <div className="mini-progress">
+                                <div
+                                    className="mini-progress-fill"
+                                    style={{ width: `${purchaseStats.totalItems > 0 ? (purchaseStats.purchasedItems / purchaseStats.totalItems) * 100 : 0}%` }}
+                                />
+                            </div>
+                            <p className="stat-label">items purchased</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card variant="dashboard">
+                        <CardHeader>
+                            <CardTitle>Amount Spent</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="stat-value spent">
+                                <PriceDisplay
+                                    priceUsd={purchaseStats.actualSpent}
+                                    priceZwg={purchaseStats.actualSpent * exchangeRate}
+                                />
+                            </p>
+                            <p className="stat-label">
+                                {purchaseStats.actualSpent <= purchaseStats.estimatedTotal ? (
+                                    <span className="under-budget">
+                                        <TrendUp size={12} /> Under budget
+                                    </span>
+                                ) : (
+                                    <span className="over-budget">Over by ${(purchaseStats.actualSpent - purchaseStats.estimatedTotal).toFixed(2)}</span>
+                                )}
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Cost Savings Planner */}
+                <div className="savings-planner">
+                    <button
+                        className="planner-toggle"
+                        onClick={() => setShowBudgetPlanner(prev => !prev)}
+                    >
+                        <span>Cost Savings Planner</span>
+                        {showBudgetPlanner ? <CaretUp size={16} /> : <CaretDown size={16} />}
+                    </button>
+
+                    {showBudgetPlanner && (
+                        <div className="planner-body">
+                            <BudgetPlanner
+                                totalBudgetUsd={activeStageBudget.totalBudget}
+                                amountSpentUsd={activeStageBudget.totalSpent}
+                                targetDate={savingsTargetDate}
+                                onTargetDateChange={handleSavingsTargetDateChange}
+                                onSetReminder={handleSavingsReminder}
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* Tab Navigation */}
+                <div className="view-toggle">
+                    {/* Stage Tabs */}
+                    {applicableStages.map((stage) => (
+                        <button
+                            key={stage.boq_category}
+                            className={`toggle-btn ${activeTab === stage.boq_category ? 'active' : ''}`}
+                            onClick={() => setActiveTab(stage.boq_category as BOQCategory)}
+                        >
+                            {categoryLabels[stage.boq_category]}
+                        </button>
+                    ))}
+
+                    <div className="tab-separator" />
+
+                    {/* Usage Tab */}
+                    <button
+                        className={`toggle-btn ${activeTab === 'usage' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('usage')}
+                    >
+                        Usage
+                    </button>
+
+                    {/* Tracking Tab */}
+                    <button
+                        className={`toggle-btn ${activeTab === 'tracking' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('tracking')}
+                    >
+                        <ShoppingCart size={18} />
+                        Tracking
+                    </button>
+
+                    {/* Documents Tab */}
+                    <button
+                        className={`toggle-btn ${activeTab === 'documents' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('documents')}
+                    >
+                        <File size={18} />
+                        Documents
+                    </button>
+                </div>
+
+                {/* Tab Content */}
+                <div className="tab-content">
+                    {/* Database setup required message */}
+                    {stagesSetupRequired && STAGE_CATEGORIES.includes(activeTab as BOQCategory) && (
+                        <div className="setup-required">
+                            <Warning size={48} weight="light" />
+                            <h4>Database Setup Required</h4>
+                            <p>The stage-first architecture requires running the database migration.</p>
+                            <code>supabase/migrations/006_stage_first_architecture.sql</code>
+                        </div>
+                    )}
+
+                    {/* Stage Tabs */}
+                    {!stagesSetupRequired && STAGE_CATEGORIES.includes(activeTab as BOQCategory) && (
+                        currentStage ? (
+                            <StageTab
+                                key={currentStage.id}
+                                stage={currentStage}
+                                projectId={projectId}
+                                items={items}
+                                onStageUpdate={handleStageUpdate}
+                                onItemUpdate={handleItemUpdate}
+                                onItemDelete={handleItemDelete}
+                                onItemAdded={handleItemAdded}
+                                showLabor={hasLabor}
+                                primaryStageCategory={primaryStageCategory}
+                            />
+                        ) : (
+                            <div className="setup-required">
+                                <Warning size={48} weight="light" />
+                                <h4>Stage Data Missing</h4>
+                                <p>This project does not have stage records yet.</p>
+                                <Button
+                                    variant="primary"
+                                    onClick={handleCreateStages}
+                                    loading={isCreatingStages}
+                                >
+                                    Create Stages
+                                </Button>
+                                <p className="hint">
+                                    If this fails, run <code>supabase/migrations/006_stage_first_architecture.sql</code>.
+                                </p>
+                            </div>
+                        )
+                    )}
+
+                    {/* Usage Tab */}
+                    {activeTab === 'usage' && (
+                        <div className="usage-tab">
+                            {!project.usage_tracking_enabled ? (
+                                <div className="usage-gate">
+                                    <h3>Has production started?</h3>
+                                    <p>Enable usage tracking to record material consumption on-site.</p>
+                                    <div className="usage-actions">
+                                        <Button
+                                            variant="secondary"
+                                            onClick={() => handleUsageTrackingToggle(false)}
+                                        >
+                                            Not Yet
+                                        </Button>
+                                        <Button
+                                            variant="primary"
+                                            onClick={() => handleUsageTrackingToggle(true)}
+                                        >
+                                            Yes, Start Tracking
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="usage-content">
+                                    <div className="usage-header">
+                                        <div>
+                                            <h3>Usage Tracking</h3>
+                                            <p>Track actual material usage once production starts.</p>
+                                        </div>
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => handleUsageTrackingToggle(false)}
+                                        >
+                                            Turn Off
+                                        </Button>
+                                    </div>
+
+                                    {isUsageLoading ? (
+                                        <div className="loading-state">
+                                            <CircleNotch size={24} className="spinner" />
+                                            <span>Loading usage data...</span>
+                                        </div>
+                                    ) : (
+                                        <div className="usage-sections">
+                                            {applicableStages.every(stage => (usageByStage[stage.boq_category]?.items || []).length === 0) ? (
+                                                <div className="empty-state">
+                                                    <ShoppingCart size={48} weight="light" />
+                                                    <h4>No items to track yet</h4>
+                                                    <p>Add BOQ items to start tracking usage</p>
+                                                </div>
+                                            ) : (
+                                                applicableStages.map((stage) => {
+                                                    const data = usageByStage[stage.boq_category];
+                                                    return (
+                                                        <div key={stage.id} className="usage-stage">
+                                                            <h4>{categoryLabels[stage.boq_category]}</h4>
+                                                            <StageUsageSection
+                                                                projectId={projectId}
+                                                                items={data?.items || []}
+                                                                usageByItem={data?.usageByItem || {}}
+                                                                onUsageRecorded={loadUsageData}
+                                                            />
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Tracking Tab */}
+                    {activeTab === 'tracking' && (
+                        <div className="tracking-tab">
+                            <h3>Purchase Tracking</h3>
+                            <p className="tracking-description">Track actual purchases and compare to estimates</p>
+
+                            {items.length === 0 ? (
+                                <div className="empty-state">
+                                    <ShoppingCart size={48} weight="light" />
+                                    <h4>No items to track</h4>
+                                    <p>Add materials to your BOQ to start tracking purchases</p>
+                                </div>
+                            ) : (
+                                <div className="tracking-list">
+                                    {items.map((item) => (
+                                        <PurchaseTracker
+                                            key={item.id}
+                                            item={item}
+                                            onUpdate={(itemId, updates) => handleItemUpdate(itemId, updates)}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Documents Tab */}
+                    {activeTab === 'documents' && (
+                        <DocumentsTab projectId={projectId} />
+                    )}
+                </div>
+            </div>
+
+            {/* Share Modal */}
+            <ShareModal
+                isOpen={showShareModal}
+                onClose={() => setShowShareModal(false)}
+                projectName={project.name}
+                projectId={projectId}
             />
-          </section>
-        )}
 
-        {/* Grand Total */}
-        {items.length > 0 && (
-          <Card className="grand-total-card">
-            <div className="grand-total">
-              <span className="total-label">Grand Total</span>
-              <span className="total-value">
-                <PriceDisplay
-                  priceUsd={Number(project.total_usd)}
-                  priceZwg={Number(project.total_zwg)}
-                />
-              </span>
-            </div>
-          </Card>
-        )}
-      </div>
+            <style jsx>{`
+                .project-detail {
+                    display: flex;
+                    flex-direction: column;
+                    gap: var(--spacing-xl);
+                    max-width: 1000px;
+                    margin: 0 auto;
+                }
 
-      {/* Phone Number Modal */}
-      {showReminderModal && (
-        <div className="modal-overlay" onClick={() => setShowReminderModal(false)}>
-          <div className="reminder-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-icon">
-              <WhatsappLogo size={32} weight="fill" />
-            </div>
-            <h3>Set Up WhatsApp Reminders</h3>
-            <p>Enter your phone number to receive savings reminders via WhatsApp.</p>
-            <input
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="+263 77 123 4567"
-              className="phone-input"
-            />
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setShowReminderModal(false)}>
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  setShowReminderModal(false);
-                  success('Phone number saved! Select a reminder option.');
-                }}
-                disabled={!phoneNumber}
-              >
-                Save Number
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                .back-link {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: var(--spacing-xs);
+                    color: var(--color-text);
+                    text-decoration: none;
+                    font-size: 0.8125rem;
+                    font-weight: 600;
+                    padding: 6px 12px;
+                    background: var(--color-surface);
+                    border: 1px solid var(--color-border-light);
+                    border-radius: var(--radius-full);
+                    transition: color 0.2s;
+                }
+                .back-link:hover {
+                    color: var(--color-primary);
+                    border-color: rgba(78, 154, 247, 0.35);
+                    background: var(--color-primary-bg);
+                }
 
-      <style jsx>{`
-        .project-detail {
-          display: flex;
-          flex-direction: column;
-          gap: var(--spacing-xl);
-          max-width: 960px;
-          margin: 0 auto;
-        }
+                .sub-nav {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 0.75rem;
+                    color: var(--color-text-muted);
+                }
 
-        .back-link {
-          display: inline-flex;
-          align-items: center;
-          gap: var(--spacing-xs);
-          color: var(--color-text-secondary);
-          text-decoration: none;
-          font-size: 0.875rem;
-          transition: color 0.2s;
-        }
-        .back-link:hover { color: var(--color-primary); }
+                .sub-nav a {
+                    color: var(--color-text-secondary);
+                    text-decoration: none;
+                }
 
-        .project-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          gap: var(--spacing-lg);
-        }
+                .sub-nav a:hover {
+                    color: var(--color-primary);
+                }
 
-        .project-info h1 {
-          font-size: 1.75rem;
-          font-weight: 700;
-          color: var(--color-text);
-          margin: 0 0 var(--spacing-sm) 0;
-        }
+                .sub-nav .current {
+                    color: var(--color-text);
+                    font-weight: 600;
+                }
 
-        .project-info :global(.title-edit) {
-          font-size: inherit;
-          font-weight: inherit;
-        }
+                .project-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    gap: var(--spacing-lg);
+                }
 
-        .project-meta {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: var(--spacing-md);
-        }
+                .project-info h1 {
+                    font-size: 1.75rem;
+                    font-weight: 700;
+                    color: var(--color-text);
+                    margin: 0 0 var(--spacing-sm) 0;
+                }
 
-        .meta-item {
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-xs);
-          color: var(--color-text-secondary);
-          font-size: 0.875rem;
-        }
+                .project-info :global(.title-edit) {
+                    font-size: inherit;
+                    font-weight: inherit;
+                }
 
-        .header-actions {
-          display: flex;
-          gap: var(--spacing-sm);
-          flex-shrink: 0;
-        }
+                .project-meta {
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    gap: var(--spacing-md);
+                }
 
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: var(--spacing-lg);
-        }
+                .meta-item {
+                    display: flex;
+                    align-items: center;
+                    gap: var(--spacing-xs);
+                    color: var(--color-text-secondary);
+                    font-size: 0.875rem;
+                }
 
-        .stat-value {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: var(--color-text);
-          margin: 0;
-        }
+                .header-actions {
+                    display: flex;
+                    gap: var(--spacing-sm);
+                    flex-shrink: 0;
+                }
 
-        .stat-value.spent { color: var(--color-accent); }
+                .stats-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: var(--spacing-lg);
+                }
 
-        .stat-label {
-          font-size: 0.875rem;
-          color: var(--color-text-secondary);
-          margin: var(--spacing-xs) 0 0 0;
-        }
+                .savings-planner {
+                    margin-top: var(--spacing-md);
+                    display: flex;
+                    flex-direction: column;
+                    gap: var(--spacing-sm);
+                }
 
-        .mini-progress {
-          height: 6px;
-          background: var(--color-border-light);
-          border-radius: 3px;
-          margin: var(--spacing-sm) 0;
-          overflow: hidden;
-        }
+                .planner-toggle {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    width: 100%;
+                    padding: var(--spacing-sm) var(--spacing-md);
+                    background: var(--color-surface);
+                    border: 1px solid var(--color-border-light);
+                    border-radius: var(--radius-lg);
+                    font-size: 0.875rem;
+                    font-weight: 600;
+                    color: var(--color-text);
+                    cursor: pointer;
+                    transition: border-color 0.2s ease, background 0.2s ease;
+                }
 
-        .mini-progress-fill {
-          height: 100%;
-          background: var(--color-success);
-          border-radius: 3px;
-          transition: width 0.5s ease;
-        }
+                .planner-toggle:hover {
+                    border-color: var(--color-primary);
+                    background: var(--color-background);
+                }
 
-        .under-budget {
-          color: var(--color-success);
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-        }
+                .planner-body {
+                    border-radius: var(--radius-lg);
+                }
 
-        .over-budget { color: var(--color-error); }
+                .stat-value {
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                    color: var(--color-text);
+                    margin: 0;
+                }
 
-        .view-toggle {
-          display: flex;
-          gap: var(--spacing-sm);
-          background: var(--color-background);
-          padding: var(--spacing-xs);
-          border-radius: var(--radius-lg);
-          width: fit-content;
-        }
+                .stat-value.spent { color: var(--color-accent); }
 
-        .toggle-btn {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: var(--spacing-sm) var(--spacing-lg);
-          background: transparent;
-          border: none;
-          border-radius: var(--radius-md);
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--color-text-secondary);
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
+                .stat-label {
+                    font-size: 0.875rem;
+                    color: var(--color-text-secondary);
+                    margin: var(--spacing-xs) 0 0 0;
+                }
 
-        .toggle-btn:hover { color: var(--color-text); }
+                .mini-progress {
+                    height: 6px;
+                    background: var(--color-border-light);
+                    border-radius: 3px;
+                    margin: var(--spacing-sm) 0;
+                    overflow: hidden;
+                }
 
-        .toggle-btn.active {
-          background: var(--color-surface);
-          color: var(--color-text);
-          box-shadow: var(--shadow-sm);
-        }
+                .mini-progress-fill {
+                    height: 100%;
+                    background: var(--color-success);
+                    border-radius: 3px;
+                    transition: width 0.5s ease;
+                }
 
-        .boq-section {
-          display: flex;
-          flex-direction: column;
-          gap: var(--spacing-md);
-        }
+                .under-budget {
+                    color: var(--color-success);
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                }
 
-        .section-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
+                .over-budget { color: var(--color-error); }
 
-        .section-header h3 {
-          font-size: 1.125rem;
-          font-weight: 600;
-          color: var(--color-text);
-          margin: 0;
-        }
+                .view-toggle {
+                    display: flex;
+                    gap: var(--spacing-xs);
+                    align-items: center;
+                    background: var(--color-surface);
+                    padding: var(--spacing-xs) var(--spacing-sm);
+                    border: 1px solid var(--color-border-light);
+                    border-radius: var(--radius-lg);
+                    overflow-x: auto;
+                }
 
-        .categories-list {
-          display: flex;
-          flex-direction: column;
-          gap: var(--spacing-md);
-        }
+                .toggle-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: var(--spacing-sm) var(--spacing-md);
+                    background: transparent;
+                    border: 1px solid transparent;
+                    border-radius: var(--radius-full);
+                    font-size: 0.8125rem;
+                    font-weight: 500;
+                    color: var(--color-text-secondary);
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    white-space: nowrap;
+                }
 
-        .empty-state {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: var(--spacing-2xl);
-          text-align: center;
-          color: var(--color-text-muted);
-        }
+                .toggle-btn:hover:not(:disabled) {
+                    color: var(--color-text);
+                    background: var(--color-background);
+                }
 
-        .empty-state h4 {
-          margin: var(--spacing-md) 0 var(--spacing-xs) 0;
-          color: var(--color-text);
-        }
+                .toggle-btn.active {
+                    background: var(--color-primary-bg);
+                    color: var(--color-primary);
+                    border-color: rgba(78, 154, 247, 0.35);
+                    box-shadow: 0 6px 16px rgba(78, 154, 247, 0.18);
+                }
 
-        .empty-state p { margin: 0 0 var(--spacing-lg) 0; }
+                .toggle-btn.not-applicable {
+                    opacity: 0.4;
+                    cursor: not-allowed;
+                }
 
-        .planner-section { margin-top: var(--spacing-lg); }
+                .tab-separator {
+                    width: 1px;
+                    background: var(--color-border-light);
+                    margin: var(--spacing-xs) var(--spacing-sm);
+                    align-self: stretch;
+                }
 
-        :global(.grand-total-card) {
-          background: var(--color-primary);
-          color: white;
-        }
+                .tab-content {
+                    min-height: 400px;
+                }
 
-        .grand-total {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
+                .setup-required {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    padding: var(--spacing-2xl);
+                    text-align: center;
+                    color: var(--color-text-muted);
+                    background: rgba(245, 158, 11, 0.05);
+                    border: 1px dashed var(--color-warning);
+                    border-radius: var(--radius-lg);
+                }
 
-        .total-label {
-          font-size: 1rem;
-          font-weight: 500;
-        }
+                .setup-required h4 {
+                    margin: var(--spacing-md) 0 var(--spacing-xs) 0;
+                    color: var(--color-text);
+                }
 
-        .total-value {
-          font-size: 1.75rem;
-          font-weight: 700;
-        }
+                .setup-required p {
+                    margin: 0;
+                    font-size: 0.875rem;
+                }
 
-        /* Modal Styles */
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
+                .setup-required code {
+                    margin-top: var(--spacing-sm);
+                    padding: var(--spacing-xs) var(--spacing-sm);
+                    background: var(--color-surface);
+                    border-radius: var(--radius-sm);
+                    font-size: 0.75rem;
+                }
 
-        .reminder-modal {
-          background: white;
-          border-radius: var(--radius-lg);
-          padding: var(--spacing-xl);
-          max-width: 400px;
-          width: 90%;
-          text-align: center;
-        }
+                .setup-required .hint {
+                    margin-top: var(--spacing-sm);
+                    font-size: 0.75rem;
+                }
 
-        .modal-icon {
-          width: 64px;
-          height: 64px;
-          margin: 0 auto var(--spacing-md);
-          background: #25D366;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-        }
+                .usage-tab {
+                    display: flex;
+                    flex-direction: column;
+                    gap: var(--spacing-lg);
+                }
 
-        .reminder-modal h3 {
-          margin: 0 0 var(--spacing-sm) 0;
-          color: var(--color-text);
-        }
+                .usage-gate {
+                    display: flex;
+                    flex-direction: column;
+                    gap: var(--spacing-sm);
+                    padding: var(--spacing-xl);
+                    background: var(--color-surface);
+                    border: 1px solid var(--color-border-light);
+                    border-radius: var(--radius-lg);
+                    text-align: center;
+                }
 
-        .reminder-modal p {
-          margin: 0 0 var(--spacing-lg) 0;
-          color: var(--color-text-secondary);
-        }
+                .usage-gate h3 {
+                    margin: 0;
+                    font-size: 1.125rem;
+                    font-weight: 600;
+                    color: var(--color-text);
+                }
 
-        .phone-input {
-          width: 100%;
-          padding: var(--spacing-md);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
-          font-size: 1rem;
-          margin-bottom: var(--spacing-lg);
-        }
+                .usage-gate p {
+                    margin: 0;
+                    color: var(--color-text-secondary);
+                    font-size: 0.875rem;
+                }
 
-        .modal-actions {
-          display: flex;
-          gap: var(--spacing-sm);
-          justify-content: center;
-        }
+                .usage-actions {
+                    display: flex;
+                    justify-content: center;
+                    gap: var(--spacing-sm);
+                    margin-top: var(--spacing-sm);
+                }
 
-        .btn {
-          padding: var(--spacing-sm) var(--spacing-lg);
-          border-radius: var(--radius-md);
-          font-size: 0.875rem;
-          font-weight: 500;
-          cursor: pointer;
-          border: none;
-          transition: all 0.2s ease;
-        }
+                .usage-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: var(--spacing-md);
+                }
 
-        .btn-primary {
-          background: var(--color-primary);
-          color: white;
-        }
+                .usage-header h3 {
+                    margin: 0 0 var(--spacing-xs) 0;
+                    font-size: 1.125rem;
+                    font-weight: 600;
+                    color: var(--color-text);
+                }
 
-        .btn-secondary {
-          background: var(--color-background);
-          border: 1px solid var(--color-border);
-          color: var(--color-text-secondary);
-        }
+                .usage-header p {
+                    margin: 0;
+                    font-size: 0.875rem;
+                    color: var(--color-text-secondary);
+                }
 
-        @media (max-width: 768px) {
-          .project-header { flex-direction: column; }
-          .header-actions {
-            width: 100%;
-            flex-wrap: wrap;
-          }
-          .stats-grid { grid-template-columns: 1fr; }
-          .view-toggle { width: 100%; }
-          .toggle-btn { flex: 1; justify-content: center; }
-        }
-      `}</style>
-    </MainLayout>
-  );
+                .usage-sections {
+                    display: flex;
+                    flex-direction: column;
+                    gap: var(--spacing-lg);
+                }
+
+                .usage-stage h4 {
+                    margin: 0 0 var(--spacing-sm) 0;
+                    font-size: 0.875rem;
+                    font-weight: 600;
+                    color: var(--color-text);
+                }
+
+                .loading-state {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: var(--spacing-sm);
+                    padding: var(--spacing-xl);
+                    background: var(--color-surface);
+                    border: 1px solid var(--color-border-light);
+                    border-radius: var(--radius-lg);
+                    color: var(--color-text-secondary);
+                    font-size: 0.875rem;
+                }
+
+                :global(.spinner) {
+                    animation: spin 1s linear infinite;
+                }
+
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+
+                .tracking-tab h3 {
+                    font-size: 1.125rem;
+                    font-weight: 600;
+                    color: var(--color-text);
+                    margin: 0 0 var(--spacing-xs) 0;
+                }
+
+                .tracking-description {
+                    color: var(--color-text-secondary);
+                    font-size: 0.875rem;
+                    margin: 0 0 var(--spacing-lg) 0;
+                }
+
+                .tracking-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: var(--spacing-md);
+                }
+
+                .empty-state {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    padding: var(--spacing-2xl);
+                    text-align: center;
+                    color: var(--color-text-muted);
+                    background: var(--color-background);
+                    border-radius: var(--radius-lg);
+                    border: 1px dashed var(--color-border);
+                }
+
+                .empty-state h4 {
+                    margin: var(--spacing-md) 0 var(--spacing-xs) 0;
+                    color: var(--color-text);
+                }
+
+                .empty-state p {
+                    margin: 0;
+                    font-size: 0.875rem;
+                }
+
+                @media (max-width: 768px) {
+                    .project-header { flex-direction: column; }
+                    .header-actions {
+                        width: 100%;
+                        flex-wrap: wrap;
+                    }
+                    .stats-grid { grid-template-columns: 1fr; }
+                    .view-toggle {
+                        flex-wrap: nowrap;
+                        -webkit-overflow-scrolling: touch;
+                    }
+                    .toggle-btn {
+                        flex-shrink: 0;
+                        padding: var(--spacing-xs) var(--spacing-sm);
+                        font-size: 0.75rem;
+                    }
+                }
+            `}</style>
+        </MainLayout>
+    );
 }
 
 export default function ProjectDetail() {
-  return (
-    <ProtectedRoute>
-      <ProjectDetailContent />
-    </ProtectedRoute>
-  );
+    return (
+        <ProtectedRoute>
+            <ProjectDetailContent />
+        </ProtectedRoute>
+    );
 }

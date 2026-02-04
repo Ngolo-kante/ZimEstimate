@@ -1,0 +1,36 @@
+name: Weekly price scrape
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC (08:00 Harare)
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run scraper
+        run: npm run scrape:prices
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PRICE_SOURCES_FILE: scripts/pricing/sources.json
+          SCRAPE_OUTPUT_DIR: output/prices
+
+      - name: Upload scrape outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: price-scrape
+          path: output/prices

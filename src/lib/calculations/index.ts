@@ -10,8 +10,33 @@ import {
   CEMENT_INFO,
   BrickType,
   CementType,
+  ProjectScope,
 } from '@/lib/vision/types';
 import { getBestPrice } from '@/lib/materials';
+
+// Helper to get first value from array or single value
+function getFirstValue<T>(value: T | T[]): T {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+// Normalize config to single values for calculations
+function normalizeConfig(config: VisionConfig): {
+  scope: ProjectScope;
+  brickType: BrickType;
+  cementType: CementType;
+  includeLabor: boolean;
+  wallHeight: number;
+  foundationDepth: number;
+} {
+  return {
+    scope: getFirstValue(config.scope),
+    brickType: getFirstValue(config.brickType),
+    cementType: getFirstValue(config.cementType),
+    includeLabor: config.includeLabor,
+    wallHeight: config.wallHeight,
+    foundationDepth: config.foundationDepth,
+  };
+}
 
 // ============================================
 // CONSTANTS
@@ -132,6 +157,7 @@ function calculateSubstructure(
   config: VisionConfig
 ): GeneratedBOQItem[] {
   const items: GeneratedBOQItem[] = [];
+  const cfg = normalizeConfig(config);
 
   // Hardcore
   const hardcoreM3 = totalArea * HARDCORE_M3_PER_SQM;
@@ -164,8 +190,8 @@ function calculateSubstructure(
   const concreteCement = Math.ceil(concreteM3 * 7); // 7 bags per m³
   items.push(
     createBOQItem(
-      config.cementType === 'cement_425' ? 'cement-425' : 'cement-325',
-      CEMENT_INFO[config.cementType].name,
+      cfg.cementType === 'cement_425' ? 'cement-425' : 'cement-325',
+      CEMENT_INFO[cfg.cementType].name,
       'substructure',
       concreteCement,
       'per 50kg bag',
@@ -204,25 +230,25 @@ function calculateSubstructure(
   const { bricks: subBricks, note: brickNote } = calculateWallBricks(
     perimeterLength,
     1.0,
-    config.brickType
+    cfg.brickType
   );
   items.push(
     createBOQItem(
-      BRICK_INFO[config.brickType].materialId,
-      BRICK_INFO[config.brickType].name,
+      BRICK_INFO[cfg.brickType].materialId,
+      BRICK_INFO[cfg.brickType].name,
       'substructure',
       subBricks,
-      BRICK_INFO[config.brickType].bricksPerSqm > 20 ? 'per 1000' : 'each',
+      BRICK_INFO[cfg.brickType].bricksPerSqm > 20 ? 'per 1000' : 'each',
       `Substructure walls: ${brickNote}`
     )
   );
 
   // Mortar for substructure
-  const { cement: subCement, sand: subSand } = calculateMortar(subBricks, config.cementType);
+  const { cement: subCement, sand: subSand } = calculateMortar(subBricks, cfg.cementType);
   items.push(
     createBOQItem(
-      config.cementType === 'cement_425' ? 'cement-425' : 'cement-325',
-      CEMENT_INFO[config.cementType].name,
+      cfg.cementType === 'cement_425' ? 'cement-425' : 'cement-325',
+      CEMENT_INFO[cfg.cementType].name,
       'substructure',
       subCement,
       'per 50kg bag',
@@ -266,6 +292,7 @@ function calculateSuperstructure(
   config: VisionConfig
 ): GeneratedBOQItem[] {
   const items: GeneratedBOQItem[] = [];
+  const cfg = normalizeConfig(config);
 
   // Calculate external and internal wall lengths
   const externalWallLength = walls
@@ -276,19 +303,19 @@ function calculateSuperstructure(
     .reduce((sum, w) => sum + w.length, 0) / 4;
 
   // External walls (window to roof level = wallHeight - 1m substructure)
-  const superWallHeight = config.wallHeight - 1.0;
+  const superWallHeight = cfg.wallHeight - 1.0;
   const { bricks: extBricks } = calculateWallBricks(
     externalWallLength,
     superWallHeight,
-    config.brickType
+    cfg.brickType
   );
   items.push(
     createBOQItem(
-      BRICK_INFO[config.brickType].materialId,
-      BRICK_INFO[config.brickType].name,
+      BRICK_INFO[cfg.brickType].materialId,
+      BRICK_INFO[cfg.brickType].name,
       'superstructure',
       extBricks,
-      BRICK_INFO[config.brickType].bricksPerSqm > 20 ? 'per 1000' : 'each',
+      BRICK_INFO[cfg.brickType].bricksPerSqm > 20 ? 'per 1000' : 'each',
       `External walls: ${externalWallLength.toFixed(1)}m x ${superWallHeight}m`
     )
   );
@@ -297,31 +324,31 @@ function calculateSuperstructure(
   if (internalWallLength > 0) {
     const { bricks: intBricks } = calculateWallBricks(
       internalWallLength,
-      config.wallHeight,
-      config.brickType
+      cfg.wallHeight,
+      cfg.brickType
     );
     items.push(
       createBOQItem(
-        BRICK_INFO[config.brickType].materialId,
-        BRICK_INFO[config.brickType].name,
+        BRICK_INFO[cfg.brickType].materialId,
+        BRICK_INFO[cfg.brickType].name,
         'superstructure',
         intBricks,
-        BRICK_INFO[config.brickType].bricksPerSqm > 20 ? 'per 1000' : 'each',
-        `Internal walls: ${internalWallLength.toFixed(1)}m x ${config.wallHeight}m`
+        BRICK_INFO[cfg.brickType].bricksPerSqm > 20 ? 'per 1000' : 'each',
+        `Internal walls: ${internalWallLength.toFixed(1)}m x ${cfg.wallHeight}m`
       )
     );
   }
 
   // Total bricks for mortar calculation
   const totalSuperBricks = extBricks + (internalWallLength > 0 ?
-    calculateWallBricks(internalWallLength, config.wallHeight, config.brickType).bricks : 0);
+    calculateWallBricks(internalWallLength, cfg.wallHeight, cfg.brickType).bricks : 0);
 
   // Mortar
-  const { cement, sand } = calculateMortar(totalSuperBricks, config.cementType);
+  const { cement, sand } = calculateMortar(totalSuperBricks, cfg.cementType);
   items.push(
     createBOQItem(
-      config.cementType === 'cement_425' ? 'cement-425' : 'cement-325',
-      CEMENT_INFO[config.cementType].name,
+      cfg.cementType === 'cement_425' ? 'cement-425' : 'cement-325',
+      CEMENT_INFO[cfg.cementType].name,
       'superstructure',
       cement,
       'per 50kg bag',
@@ -468,8 +495,9 @@ function calculateLabor(
   scope: VisionConfig['scope']
 ): GeneratedBOQItem[] {
   const items: GeneratedBOQItem[] = [];
+  const normalizedScope = getFirstValue(scope);
 
-  const laborDays = Math.ceil(totalArea * LABOR_DAYS_PER_SQM[scope]);
+  const laborDays = Math.ceil(totalArea * LABOR_DAYS_PER_SQM[normalizedScope]);
   const builderDays = laborDays;
   const assistantDays = Math.ceil(laborDays * 1.5); // 1.5 assistants per builder
   const foremanDays = Math.ceil(laborDays / 10); // 1 foreman per 10 days
@@ -481,7 +509,7 @@ function calculateLabor(
       'labor',
       builderDays,
       'per day',
-      `${totalArea}m² @ ${LABOR_DAYS_PER_SQM[scope]} days/m²`
+      `${totalArea}m² @ ${LABOR_DAYS_PER_SQM[normalizedScope]} days/m²`
     )
   );
 
@@ -545,24 +573,28 @@ export function generateBOQ(
     .filter((w) => w.type === 'external')
     .reduce((sum, w) => sum + w.length, 0) / 4; // Approximate perimeter
 
-  const { scope, includeLabor } = config;
+  const { includeLabor } = config;
+
+  // Normalize scope to array for consistent checking
+  const scopes: ProjectScope[] = Array.isArray(config.scope) ? config.scope : [config.scope];
+  const hasScope = (s: ProjectScope) => scopes.includes(s) || scopes.includes('full_house');
 
   // Generate items based on scope
-  if (scope === 'full_house' || scope === 'substructure') {
+  if (hasScope('substructure')) {
     allItems.push(...calculateSubstructure(totalArea, perimeterLength, config));
   }
 
-  if (scope === 'full_house' || scope === 'superstructure') {
+  if (hasScope('superstructure')) {
     allItems.push(...calculateSuperstructure(rooms, walls, config));
   }
 
-  if (scope === 'full_house' || scope === 'roofing') {
+  if (hasScope('roofing')) {
     allItems.push(...calculateRoofing(totalArea));
   }
 
   // Labor if requested
   if (includeLabor) {
-    allItems.push(...calculateLabor(totalArea, scope));
+    allItems.push(...calculateLabor(totalArea, config.scope));
   }
 
   return allItems;

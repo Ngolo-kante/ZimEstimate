@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import Card, { CardHeader, CardTitle, CardBadge } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -38,8 +38,18 @@ function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: numb
     return <>{formatPrice(priceUsd, priceZwg)}</>;
 }
 
+const formatStageLabel = (stage: string) => stage.replace('_', ' ');
+
+const formatScopeLabel = (project: Project) => {
+    if (project.selected_stages && project.selected_stages.length > 0) {
+        return project.selected_stages.map(formatStageLabel).join(', ');
+    }
+    return project.scope.replace('_', ' ');
+};
+
 function ProjectsContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { profile, canCreateProject, projectCount } = useAuth();
     const { success, error: showError } = useToast();
     const [projects, setProjects] = useState<Project[]>([]);
@@ -76,7 +86,10 @@ function ProjectsContent() {
 
         // Apply scope filter
         if (scopeFilter !== 'all') {
-            result = result.filter(p => p.scope === scopeFilter);
+            result = result.filter(p =>
+                p.scope === scopeFilter ||
+                (p.selected_stages && p.selected_stages.includes(scopeFilter))
+            );
         }
 
         // Apply sorting
@@ -193,24 +206,58 @@ function ProjectsContent() {
         setDeleteTarget(null);
     };
 
-    useEffect(() => {
-        async function loadProjects() {
+    // Load projects function - extracted for reuse
+    const loadProjects = useCallback(async (showLoadingState = true) => {
+        if (showLoadingState) {
             setIsLoading(true);
-            setError(null);
+        }
+        setError(null);
 
-            const { projects: loadedProjects, error: loadError } = await getProjects();
+        const { projects: loadedProjects, error: loadError } = await getProjects();
 
-            if (loadError) {
-                setError(loadError.message);
-            } else {
-                setProjects(loadedProjects);
-            }
-
-            setIsLoading(false);
+        if (loadError) {
+            setError(loadError.message);
+        } else {
+            setProjects(loadedProjects);
         }
 
-        loadProjects();
+        if (showLoadingState) {
+            setIsLoading(false);
+        }
     }, []);
+
+    // Initial load
+    useEffect(() => {
+        loadProjects();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Refresh when coming from create/delete flows
+    useEffect(() => {
+        if (searchParams.get('refresh') === '1') {
+            loadProjects(false);
+            router.replace('/projects');
+        }
+    }, [searchParams, loadProjects, router]);
+
+    // Auto-refresh when window gains focus (useful after creating a project)
+    useEffect(() => {
+        const handleFocus = () => {
+            loadProjects(false); // Refresh silently without loading state
+        };
+
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
+    }, [loadProjects]);
+
+    // Periodic refresh every 30 seconds
+    useEffect(() => {
+        const interval = setInterval(() => {
+            loadProjects(false); // Silent refresh
+        }, 30000);
+
+        return () => clearInterval(interval);
+    }, [loadProjects]);
 
     const statusColors: Record<string, 'success' | 'accent' | 'default'> = {
         active: 'success',
@@ -424,7 +471,7 @@ function ProjectsContent() {
 
                                     <div className="project-details">
                                         <span className="detail-item">
-                                            {project.scope.replace('_', ' ')}
+                                            {formatScopeLabel(project)}
                                         </span>
                                         <span className="detail-item">
                                             {project.labor_preference === 'with_labor' ? 'With Labor' : 'Materials Only'}

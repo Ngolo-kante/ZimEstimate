@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
 import Card, { CardContent } from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
+import Button from '@/components/ui/Button';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import {
   TrendUp,
@@ -173,9 +175,15 @@ export default function MarketInsightsPage() {
           </table>
         </Card>
 
-        <p className="disclaimer">
-          Prices are indicative averages from multiple suppliers in Harare. Actual prices may vary by location and supplier.
-        </p>
+        <div className="market-disclaimer">
+          <p>
+            Average prices reflect prevailing market data from Zimbabwean suppliers and classifieds.
+            Get a quote for accurate pricing.
+          </p>
+          <Link href="/ai/quote-scanner" className="quote-link">
+            <Button variant="secondary" size="sm">Get a Quote</Button>
+          </Link>
+        </div>
       </div>
 
       <style jsx>{`
@@ -331,16 +339,35 @@ export default function MarketInsightsPage() {
         .change-cell.down { color: var(--color-error); }
         .change-cell.stable { color: var(--color-text-muted); }
 
-        .disclaimer {
-          font-size: 0.75rem;
-          color: var(--color-text-muted);
-          text-align: center;
+        .market-disclaimer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--spacing-md);
+          padding: var(--spacing-md) var(--spacing-lg);
+          border: 1px solid var(--color-border-light);
+          background: var(--color-background);
+          border-radius: var(--radius-md);
+          font-size: 0.875rem;
+          color: var(--color-text-secondary);
+        }
+
+        .market-disclaimer p {
           margin: 0;
+        }
+
+        .quote-link {
+          flex-shrink: 0;
         }
 
         @media (max-width: 768px) {
           .stats-row {
             grid-template-columns: 1fr;
+          }
+
+          .market-disclaimer {
+            flex-direction: column;
+            align-items: flex-start;
           }
         }
       `}</style>

@@ -66,7 +66,7 @@ export const categoryInfo: Record<MaterialCategory, { label: string; icon: strin
 // Master material database
 export const materials: Material[] = [
     // BRICKS & BLOCKS
-    { id: 'brick-common', name: 'Common Cement Brick', category: 'bricks', subcategory: 'Cement Bricks', unit: 'per 1000', milestones: ['substructure', 'superstructure'] },
+    { id: 'brick-common', name: 'Common Cement Brick', category: 'bricks', subcategory: 'Cement Bricks', unit: 'each', milestones: ['substructure', 'superstructure'] },
     { id: 'brick-face-red', name: 'Face Brick (Red)', category: 'bricks', subcategory: 'Face Bricks', unit: 'per 1000', specifications: 'Standard red face brick', milestones: ['superstructure'] },
     { id: 'brick-face-brown', name: 'Face Brick (Brown)', category: 'bricks', subcategory: 'Face Bricks', unit: 'per 1000', specifications: 'Brown mottled face brick', milestones: ['superstructure'] },
     { id: 'block-6inch', name: 'Hollow Block 6"', category: 'bricks', subcategory: 'Blocks', unit: 'each', specifications: '150mm hollow concrete block', milestones: ['substructure', 'superstructure', 'exterior'] },
@@ -220,7 +220,7 @@ export const suppliers: Supplier[] = [
 
 // Current prices (sample data - would be fetched from DB in production)
 export const materialPrices: MaterialPrice[] = [
-    { materialId: 'brick-common', supplierId: 'sup-2', priceUsd: 75, priceZwg: 2250, lastUpdated: '2026-01-30', inStock: true },
+    { materialId: 'brick-common', supplierId: 'sup-2', priceUsd: 0.075, priceZwg: 2.25, lastUpdated: '2026-01-30', inStock: true },
     { materialId: 'brick-face-red', supplierId: 'sup-2', priceUsd: 180, priceZwg: 5400, lastUpdated: '2026-01-30', inStock: true },
     { materialId: 'cement-325', supplierId: 'sup-3', priceUsd: 10, priceZwg: 300, lastUpdated: '2026-01-31', inStock: true },
     { materialId: 'cement-325', supplierId: 'sup-2', priceUsd: 10.50, priceZwg: 315, lastUpdated: '2026-01-30', inStock: true },

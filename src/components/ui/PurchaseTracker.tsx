@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   CheckCircle,
   Circle,
@@ -8,7 +8,6 @@ import {
   TrendDown,
   Minus,
   ShoppingCart,
-  X,
 } from '@phosphor-icons/react';
 import { useCurrency } from './CurrencyToggle';
 import { BOQItem } from '@/lib/database.types';
@@ -21,13 +20,26 @@ interface PurchaseTrackerProps {
     is_purchased?: boolean;
     purchased_date?: string | null;
   }) => void;
+  onPurchase?: () => void; // Callback for purchase celebration
 }
 
-export default function PurchaseTracker({ item, onUpdate }: PurchaseTrackerProps) {
+export default function PurchaseTracker({ item, onUpdate, onPurchase }: PurchaseTrackerProps) {
   const { formatPrice, exchangeRate } = useCurrency();
   const [isEditing, setIsEditing] = useState(false);
   const [actualQty, setActualQty] = useState(item.actual_quantity?.toString() || '');
   const [actualPrice, setActualPrice] = useState(item.actual_price_usd?.toString() || '');
+  const [showConfetti, setShowConfetti] = useState(false);
+
+  // Pre-compute confetti styles - randomness is intentional for visual effect
+  // eslint-disable-next-line react-hooks/purity
+  const confettiPieces = useMemo(() => {
+    const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
+    return [...Array(30)].map(() => ({
+      left: `${Math.random() * 100}%`,
+      animationDelay: `${Math.random() * 0.5}s`,
+      backgroundColor: colors[Math.floor(Math.random() * colors.length)],
+    }));
+  }, []);
 
   const isPurchased = item.is_purchased;
   const hasActualData = item.actual_quantity !== null || item.actual_price_usd !== null;
@@ -46,6 +58,11 @@ export default function PurchaseTracker({ item, onUpdate }: PurchaseTrackerProps
       purchased_date: new Date().toISOString(),
     });
     setIsEditing(false);
+
+    // Trigger confetti celebration
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 2500);
+    onPurchase?.();
   };
 
   const handleMarkPurchased = () => {
@@ -70,6 +87,18 @@ export default function PurchaseTracker({ item, onUpdate }: PurchaseTrackerProps
 
   return (
     <div className={`purchase-tracker ${isPurchased ? 'purchased' : ''}`}>
+      {/* Confetti celebration */}
+      {showConfetti && (
+        <div className="confetti-container">
+          {confettiPieces.map((style, i) => (
+            <div
+              key={i}
+              className="confetti-piece"
+              style={style}
+            />
+          ))}
+        </div>
+      )}
       <div className="tracker-main">
         <button
           className={`status-btn ${isPurchased ? 'checked' : ''}`}
@@ -401,6 +430,52 @@ export default function PurchaseTracker({ item, onUpdate }: PurchaseTrackerProps
           .tracker-main {
             flex-wrap: wrap;
           }
+        }
+
+        /* Confetti Animation */
+        .confetti-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 100%;
+          overflow: hidden;
+          pointer-events: none;
+          z-index: 100;
+        }
+
+        .confetti-piece {
+          position: absolute;
+          width: 10px;
+          height: 10px;
+          top: -10px;
+          animation: confetti-fall 2.5s ease-out forwards;
+        }
+
+        .confetti-piece:nth-child(odd) {
+          border-radius: 50%;
+        }
+
+        .confetti-piece:nth-child(even) {
+          transform: rotate(45deg);
+        }
+
+        @keyframes confetti-fall {
+          0% {
+            top: -10px;
+            opacity: 1;
+            transform: translateX(0) rotate(0deg);
+          }
+          100% {
+            top: 100%;
+            opacity: 0;
+            transform: translateX(calc(-50px + 100px * var(--random, 0.5))) rotate(720deg);
+          }
+        }
+
+        .purchase-tracker {
+          position: relative;
+          overflow: hidden;
         }
       `}</style>
     </div>

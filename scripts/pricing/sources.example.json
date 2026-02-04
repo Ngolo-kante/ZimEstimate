@@ -1,0 +1,31 @@
+[
+  {
+    "id": "classifieds-example",
+    "name": "Classifieds Example",
+    "sourceType": "classified",
+    "url": "https://example.com/marketplace/building-materials",
+    "parser": "listing-card",
+    "selectors": {
+      "item": ".listing-card",
+      "name": ".listing-title",
+      "price": ".listing-price",
+      "unit": ".listing-unit",
+      "location": ".listing-location",
+      "supplier": ".listing-seller",
+      "url": "a"
+    }
+  },
+  {
+    "id": "supplier-example",
+    "name": "Supplier Price List Example",
+    "sourceType": "supplier",
+    "url": "https://example.com/prices",
+    "parser": "table",
+    "selectors": {
+      "row": "table.prices tbody tr",
+      "name": "td:nth-child(1)",
+      "unit": "td:nth-child(2)",
+      "price": "td:nth-child(3)"
+    }
+  }
+]

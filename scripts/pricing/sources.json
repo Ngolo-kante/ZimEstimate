@@ -1,0 +1,49 @@
+[
+  {
+    "id": "classifieds-cozw",
+    "name": "Classifieds.co.zw Building Materials",
+    "sourceType": "classified",
+    "url": "https://www.classifieds.co.zw/zimbabwe-building-materials",
+    "parser": "text-list",
+    "isActive": false,
+    "ignorePatterns": [
+      "Image:",
+      "Classifieds\\.co\\.zw",
+      "Zim classifieds",
+      "Ads by"
+    ]
+  },
+  {
+    "id": "zimplaza-classifieds",
+    "name": "ZimPlaza Classifieds Building Hardware",
+    "sourceType": "classified",
+    "url": "https://www.zimplazaclassifieds.co.zw/classifiedscategory/building-hardware",
+    "parser": "listing-card",
+    "selectors": {
+      "item": "article.post",
+      "name": "h2.entry-title a",
+      "price": ".cls-price-wrapper",
+      "unit": "",
+      "location": ".address",
+      "supplier": ".owner_name a",
+      "url": "h2.entry-title a"
+    }
+  },
+  {
+    "id": "union-hardware",
+    "name": "Union Hardware Building Materials",
+    "sourceType": "retailer",
+    "url": "https://unionhardware.co.zw/product-category/building-materials/",
+    "parser": "listing-card",
+    "isActive": false,
+    "selectors": {
+      "item": "li.product",
+      "name": ".woocommerce-loop-product__title",
+      "price": ".price",
+      "unit": "",
+      "location": "",
+      "supplier": "",
+      "url": "a.woocommerce-LoopProduct-link"
+    }
+  }
+]

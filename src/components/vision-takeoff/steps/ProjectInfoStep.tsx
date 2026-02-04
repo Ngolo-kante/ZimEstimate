@@ -70,13 +70,26 @@ export default function ProjectInfoStep({
               <MapPin size={18} weight="light" />
               Location (Optional)
             </label>
-            <input
-              id="project-location"
-              type="text"
-              value={projectInfo.location}
-              onChange={(e) => onUpdate({ location: e.target.value })}
-              placeholder="e.g., Borrowdale, Harare"
-            />
+            <div className="select-wrapper">
+              <select
+                id="project-location"
+                value={projectInfo.location}
+                onChange={(e) => onUpdate({ location: e.target.value })}
+              >
+                <option value="">Select Location</option>
+                <option value="Harare">Harare</option>
+                <option value="Bulawayo">Bulawayo</option>
+                <option value="Chitungwiza">Chitungwiza</option>
+                <option value="Mutare">Mutare</option>
+                <option value="Gweru">Gweru</option>
+                <option value="Masvingo">Masvingo</option>
+                <option value="Kwekwe">Kwekwe</option>
+                <option value="Kadoma">Kadoma</option>
+                <option value="Marondera">Marondera</option>
+                <option value="Norton">Norton</option>
+                <option value="Ruwa">Ruwa</option>
+              </select>
+            </div>
             <span className="hint-text">
               Location helps you track projects and may affect material pricing in future versions.
             </span>
@@ -163,6 +176,29 @@ export default function ProjectInfoStep({
 
         input::placeholder {
           color: var(--color-text-muted);
+        }
+
+        .select-wrapper {
+          position: relative;
+        }
+
+        select {
+          width: 100%;
+          padding: var(--spacing-sm) var(--spacing-md);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-md);
+          font-size: 1rem;
+          color: var(--color-text);
+          background: var(--color-surface);
+          transition: all 0.2s ease;
+          appearance: none;
+          cursor: pointer;
+        }
+
+        select:focus {
+          outline: none;
+          border-color: var(--color-accent);
+          box-shadow: 0 0 0 3px var(--color-accent-bg);
         }
 
         .error-text {

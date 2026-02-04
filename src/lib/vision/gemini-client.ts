@@ -137,10 +137,6 @@ export async function analyzeFloorPlan(
   mimeType: string
 ): Promise<VisionAnalysisResult> {
   try {
-    console.log('Starting floor plan analysis...');
-    console.log('Image mime type:', mimeType);
-    console.log('Image base64 length:', imageBase64.length);
-
     const ai = getGenAI();
     const model = ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
@@ -156,10 +152,7 @@ export async function analyzeFloorPlan(
 
     const response = result.response;
     const text = response.text();
-    console.log('Gemini raw response:', text.substring(0, 500) + '...');
-
     const parsed = parseGeminiResponse(text);
-    console.log('Parsed response:', { roomCount: parsed.rooms?.length, confidence: parsed.confidence, error: parsed.error });
 
     if (parsed.error) {
       return {
@@ -224,7 +217,6 @@ export async function analyzeFloorPlan(
         throw new Error('Invalid API key. Please check your GOOGLE_GEMINI_API_KEY.');
       }
       if (error.message.includes('quota') || error.message.includes('rate') || error.message.includes('429')) {
-        console.log('API quota exceeded, using demo mode...');
         // Return demo data so the user can still test the feature
         return getDemoAnalysisResult();
       }

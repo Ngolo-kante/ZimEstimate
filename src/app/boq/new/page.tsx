@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useState, Suspense, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
@@ -8,7 +8,6 @@ import Input from '@/components/ui/Input';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useProjectAutoSave } from '@/hooks/useProjectAutoSave';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { BOQItem as DBBOQItem } from '@/lib/database.types';
 import {
   Plus,
   Trash,
@@ -25,7 +24,6 @@ import {
   Sparkle,
   DownloadSimple,
   Stack,
-  CaretRight,
   Layout,
   Package,
   HardHat,
@@ -40,7 +38,14 @@ import {
   MapPin,
   WhatsappLogo,
   FloppyDisk,
+  EnvelopeSimple,
+  ChatText,
+  FilePdf,
+  FileXls,
+  FileDoc,
+  ShareNetwork,
 } from '@phosphor-icons/react';
+import SavingOverlay from '@/components/ui/SavingOverlay';
 import {
   materials as allMaterials,
   getBestPrice,
@@ -158,12 +163,12 @@ const _PriceDisplay = ({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: num
 // Helper to get category icon
 const getCategoryIcon = (category: string) => {
   switch (category.toLowerCase()) {
-    case 'bricks': return <Layout size={16} weight="duotone" className="text-orange-500" />;
-    case 'cement': return <Package size={16} weight="duotone" className="text-gray-500" />;
+    case 'bricks': return <Layout size={16} weight="duotone" className="text-blue-600" />;
+    case 'cement': return <Package size={16} weight="duotone" className="text-blue-500" />;
     case 'sand':
-    case 'aggregates': return <HardHat size={16} weight="duotone" className="text-amber-600" />;
-    case 'steel': return <Graph size={16} weight="duotone" className="text-blue-500" />;
-    case 'roofing': return <House size={16} weight="duotone" className="text-red-500" />;
+    case 'aggregates': return <HardHat size={16} weight="duotone" className="text-blue-400" />;
+    case 'steel': return <Graph size={16} weight="duotone" className="text-blue-700" />;
+    case 'roofing': return <House size={16} weight="duotone" className="text-blue-500" />;
     default: return <Tag size={16} weight="duotone" className="text-slate-400" />;
   }
 };
@@ -294,6 +299,12 @@ function BOQBuilderContent() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [showSavePrompt, setShowSavePrompt] = useState(false);
+  const [showSaveOverlay, setShowSaveOverlay] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [saveOverlayMessage, setSaveOverlayMessage] = useState('Creating your project...');
+  const [saveOverlaySuccess, setSaveOverlaySuccess] = useState(false);
+  const [saveOverlaySteps, setSaveOverlaySteps] = useState<Array<{ label: string; status: 'pending' | 'active' | 'done' }>>([]);
 
   // Get project ID from URL if editing existing project
   const projectIdFromUrl = searchParams.get('id');
@@ -365,9 +376,14 @@ function BOQBuilderContent() {
         });
 
         // Restore scope and labor preference
-        if (loadedProject.scope !== 'entire_house') {
+        const savedStages = loadedProject.selected_stages && loadedProject.selected_stages.length > 0
+          ? loadedProject.selected_stages
+          : (loadedProject.scope !== 'entire_house' ? [loadedProject.scope] : []);
+        if (savedStages.length > 0) {
           setProjectScope('stage');
-          setSelectedStages([loadedProject.scope]);
+          setSelectedStages(savedStages);
+        } else {
+          setProjectScope('entire');
         }
         setLaborType(loadedProject.labor_preference === 'with_labor' ? 'materials_labor' : 'materials_only');
 
@@ -407,6 +423,25 @@ function BOQBuilderContent() {
       markChanged();
     }
   }, [milestonesState, project, currentStep, markChanged]);
+
+  useEffect(() => {
+    if (project && currentStep >= 2) {
+      markChanged();
+    }
+  }, [projectScope, selectedStages, laborType, project, currentStep, markChanged]);
+
+  // Close dropdown menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setShowShareMenu(false);
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Derived state
   const totalAmount = useMemo(() => {
@@ -601,11 +636,63 @@ function BOQBuilderContent() {
     setIsGenerating(false);
   };
 
-  const handleSaveProject = () => {
+  const handleSaveProject = async () => {
     // Check if user is authenticated
     if (isAuthenticated) {
-      if (hasUnsavedChanges) {
-        saveNow();
+      setShowSaveOverlay(true);
+      setSaveOverlayMessage('Creating your project...');
+      setSaveOverlaySuccess(false);
+      setSaveOverlaySteps([
+        { label: 'Creating project', status: 'active' },
+        { label: 'Setting timelines', status: 'pending' },
+        { label: 'Creating substages', status: 'pending' },
+        { label: 'Saving BOQ items', status: 'pending' },
+      ]);
+
+      try {
+        const setStepState = (activeIndex: number, message: string) => {
+          setSaveOverlayMessage(message);
+          setSaveOverlaySteps(prev => prev.map((step, index) => {
+            if (index < activeIndex) return { ...step, status: 'done' };
+            if (index === activeIndex) return { ...step, status: 'active' };
+            return { ...step, status: 'pending' };
+          }));
+        };
+
+        // Step 1: Create project (if needed)
+        if (!project) {
+          setStepState(0, 'Creating your project...');
+          const newProjectId = await createNewProject(projectDetails);
+          if (!newProjectId) {
+            throw new Error('Failed to create project');
+          }
+        }
+
+        // Step 2: Timelines
+        setStepState(1, 'Setting timelines...');
+        await new Promise(resolve => setTimeout(resolve, 400));
+
+        // Step 3: Stages
+        setStepState(2, 'Creating substages...');
+        await new Promise(resolve => setTimeout(resolve, 400));
+
+        // Step 4: Save BOQ
+        setStepState(3, 'Saving BOQ items...');
+        await saveNow();
+
+        // Show success state briefly
+        setSaveOverlaySteps(prev => prev.map(step => ({ ...step, status: 'done' })));
+        setSaveOverlaySuccess(true);
+        setSaveOverlayMessage('Project saved!');
+
+        // Wait a moment to show success, then redirect
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Redirect to projects page after save
+        router.push('/projects?refresh=1');
+      } catch (err) {
+        setShowSaveOverlay(false);
+        // Error handling is done by the hook
       }
     } else {
       setShowSavePrompt(true);
@@ -687,89 +774,307 @@ function BOQBuilderContent() {
             </div>
             <div className="header-actions">
               <Button variant="secondary" onClick={goToPrevStep}>Edit Details</Button>
-              {isAuthenticated ? (
-                hasUnsavedChanges && (
-                  <Button
-                    variant="secondary"
-                    onClick={saveNow}
-                    loading={isSaving}
-                    icon={<CloudArrowUp size={18} />}
-                  >
-                    Save Now
-                  </Button>
-                )
-              ) : (
-                <button className="btn btn-primary" onClick={handleSaveProject} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  border: 'none',
-                  background: 'var(--color-primary)',
-                  color: 'var(--color-text-inverse)',
-                }}>
-                  <FloppyDisk size={18} weight="light" />
-                  Save Project
-                </button>
-              )}
-              <Button
-                variant="ghost"
-                icon={<WhatsappLogo size={18} />}
-                onClick={() => {
-                  const summary = `*${projectDetails.name || 'BOQ Estimate'}*\n` +
-                    `Location: ${projectDetails.location || 'Not specified'}\n\n` +
-                    `*Total Estimate:*\n` +
-                    `USD: $${totalMaterials.toLocaleString()}\n` +
-                    `ZWG: ZiG ${(totalMaterials * exchangeRate).toLocaleString()}\n\n` +
-                    `Materials: ${totalItems} items\n\n` +
-                    `Generated with ZimEstimate`;
-                  window.open(`https://wa.me/?text=${encodeURIComponent(summary)}`, '_blank');
-                }}
-              >
-                Share
-              </Button>
               <Button
                 variant="primary"
-                icon={<DownloadSimple size={18} />}
-                onClick={() => {
-                  // Export directly without requiring saved project
-                  const allItems = milestonesState.flatMap(ms =>
-                    ms.items.map(item => ({
-                      material_name: item.materialName,
-                      category: ms.id,
-                      quantity: item.quantity || 0,
-                      unit: item.unit,
-                      unit_price_usd: item.priceUsd,
-                      unit_price_zwg: item.priceZwg,
-                    }))
-                  );
-
-                  const boqData = {
-                    projectName: projectDetails.name || 'Manual BOQ Project',
-                    location: projectDetails.location,
-                    totalArea: projectDetails.area || 0,
-                    items: allItems,
-                    totals: {
-                      usd: totalMaterials,
-                      zwg: totalMaterials * exchangeRate,
-                    },
-                    config: {
-                      scope: projectScope === 'stage' ? selectedStages.join(', ') : 'Entire House',
-                      brickType: 'Standard',
-                      cementType: 'OPC',
-                      includeLabor: laborType === 'materials_labor',
-                    },
-                  };
-
-                  exportBOQToPDF(boqData, currency);
-                }}
+                onClick={handleSaveProject}
+                loading={isSaving}
+                icon={<FloppyDisk size={18} />}
               >
-                Export PDF
+                {isAuthenticated ? 'Save & View Projects' : 'Save Project'}
               </Button>
+              {/* Share Dropdown */}
+              <div className="dropdown-container" style={{ position: 'relative' }}>
+                <Button
+                  variant="ghost"
+                  icon={<ShareNetwork size={18} />}
+                  onClick={() => {
+                    setShowShareMenu(!showShareMenu);
+                    setShowExportMenu(false);
+                  }}
+                >
+                  Share
+                </Button>
+                {showShareMenu && (
+                  <div className="dropdown-menu" style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: '4px',
+                    minWidth: '180px',
+                    background: 'white',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
+                    border: '1px solid #e2e8f0',
+                    zIndex: 1000,
+                    overflow: 'hidden',
+                  }}>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        const summary = `*${projectDetails.name || 'BOQ Estimate'}*\n` +
+                          `Location: ${projectDetails.location || 'Not specified'}\n\n` +
+                          `*Total Estimate:*\n` +
+                          `USD: $${totalMaterials.toLocaleString()}\n` +
+                          `ZWG: ZiG ${(totalMaterials * exchangeRate).toLocaleString()}\n\n` +
+                          `Materials: ${totalItems} items\n\n` +
+                          `Generated with ZimEstimate`;
+                        window.open(`https://wa.me/?text=${encodeURIComponent(summary)}`, '_blank');
+                        setShowShareMenu(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        color: '#334155',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <WhatsappLogo size={18} weight="fill" style={{ color: '#25D366' }} />
+                      WhatsApp
+                    </button>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        const subject = encodeURIComponent(`BOQ Estimate: ${projectDetails.name || 'Project'}`);
+                        const body = encodeURIComponent(
+                          `${projectDetails.name || 'BOQ Estimate'}\n` +
+                          `Location: ${projectDetails.location || 'Not specified'}\n\n` +
+                          `Total Estimate:\n` +
+                          `USD: $${totalMaterials.toLocaleString()}\n` +
+                          `ZWG: ZiG ${(totalMaterials * exchangeRate).toLocaleString()}\n\n` +
+                          `Materials: ${totalItems} items\n\n` +
+                          `Generated with ZimEstimate`
+                        );
+                        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+                        setShowShareMenu(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        color: '#334155',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <EnvelopeSimple size={18} weight="fill" style={{ color: '#4E9AF7' }} />
+                      Email
+                    </button>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        const message = encodeURIComponent(
+                          `${projectDetails.name || 'BOQ Estimate'}\n` +
+                          `Total: $${totalMaterials.toLocaleString()} / ZiG ${(totalMaterials * exchangeRate).toLocaleString()}\n` +
+                          `${totalItems} materials - ZimEstimate`
+                        );
+                        window.location.href = `sms:?body=${message}`;
+                        setShowShareMenu(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        color: '#334155',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <ChatText size={18} weight="fill" style={{ color: '#8B5CF6' }} />
+                      SMS
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Export Dropdown */}
+              <div className="dropdown-container" style={{ position: 'relative' }}>
+                <Button
+                  variant="primary"
+                  icon={<DownloadSimple size={18} />}
+                  onClick={() => {
+                    setShowExportMenu(!showExportMenu);
+                    setShowShareMenu(false);
+                  }}
+                >
+                  Export
+                </Button>
+                {showExportMenu && (
+                  <div className="dropdown-menu" style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: '4px',
+                    minWidth: '180px',
+                    background: 'white',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
+                    border: '1px solid #e2e8f0',
+                    zIndex: 1000,
+                    overflow: 'hidden',
+                  }}>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        const allItems = milestonesState.flatMap(ms =>
+                          ms.items.map(item => ({
+                            material_name: item.materialName,
+                            category: ms.id,
+                            quantity: item.quantity || 0,
+                            unit: item.unit,
+                            unit_price_usd: item.priceUsd,
+                            unit_price_zwg: item.priceZwg,
+                          }))
+                        );
+                        const boqData = {
+                          projectName: projectDetails.name || 'Manual BOQ Project',
+                          location: projectDetails.location,
+                          totalArea: projectDetails.area || 0,
+                          items: allItems,
+                          totals: {
+                            usd: totalMaterials,
+                            zwg: totalMaterials * exchangeRate,
+                          },
+                          config: {
+                            scope: projectScope === 'stage' ? selectedStages.join(', ') : 'Entire House',
+                            brickType: 'Standard',
+                            cementType: 'OPC',
+                            includeLabor: laborType === 'materials_labor',
+                          },
+                        };
+                        exportBOQToPDF(boqData, currency);
+                        setShowExportMenu(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        color: '#334155',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <FilePdf size={18} weight="fill" style={{ color: '#EF4444' }} />
+                      PDF Document
+                    </button>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        // Export as CSV for Excel
+                        const headers = ['Material', 'Category', 'Quantity', 'Unit', 'Unit Price (USD)', 'Unit Price (ZWG)', 'Total (USD)', 'Total (ZWG)'];
+                        const rows = milestonesState.flatMap(ms =>
+                          ms.items.map(item => [
+                            item.materialName,
+                            ms.id,
+                            item.quantity || 0,
+                            item.unit,
+                            item.priceUsd.toFixed(2),
+                            item.priceZwg.toFixed(2),
+                            ((item.quantity || 0) * item.priceUsd).toFixed(2),
+                            ((item.quantity || 0) * item.priceZwg).toFixed(2),
+                          ])
+                        );
+                        const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `${projectDetails.name || 'BOQ'}_export.csv`;
+                        link.click();
+                        setShowExportMenu(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        color: '#334155',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <FileXls size={18} weight="fill" style={{ color: '#22C55E' }} />
+                      Excel (CSV)
+                    </button>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        // Export as TXT for Word
+                        let content = `${projectDetails.name || 'BOQ Estimate'}\n`;
+                        content += `${'='.repeat(50)}\n\n`;
+                        content += `Location: ${projectDetails.location || 'Not specified'}\n`;
+                        content += `Date: ${new Date().toLocaleDateString()}\n\n`;
+                        content += `MATERIALS LIST\n`;
+                        content += `${'-'.repeat(50)}\n\n`;
+
+                        milestonesState.forEach(ms => {
+                          if (ms.items.length > 0) {
+                            content += `\n${ms.id.toUpperCase()}\n`;
+                            content += `${'-'.repeat(30)}\n`;
+                            ms.items.forEach(item => {
+                              const total = (item.quantity || 0) * item.priceUsd;
+                              content += `${item.materialName}\n`;
+                              content += `  Qty: ${item.quantity || 0} ${item.unit} @ $${item.priceUsd.toFixed(2)} = $${total.toFixed(2)}\n`;
+                            });
+                          }
+                        });
+
+                        content += `\n${'='.repeat(50)}\n`;
+                        content += `TOTAL: $${totalMaterials.toLocaleString()} USD\n`;
+                        content += `       ZiG ${(totalMaterials * exchangeRate).toLocaleString()}\n`;
+                        content += `\nGenerated with ZimEstimate\n`;
+
+                        const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `${projectDetails.name || 'BOQ'}_export.txt`;
+                        link.click();
+                        setShowExportMenu(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        color: '#334155',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <FileDoc size={18} weight="fill" style={{ color: '#3B82F6' }} />
+                      Word (TXT)
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -824,8 +1129,8 @@ function BOQBuilderContent() {
                     <div className="p-4">
                       {mData.items.length > 0 ? (
                         <div className="materials-list space-y-3">
-                          {/* Table Header */}
-                          <div className="grid grid-cols-[1fr_130px_140px_120px_48px] gap-4 px-4 py-3 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest rounded-xl border border-slate-100">
+                          {/* Table Header - Hidden on mobile */}
+                          <div className="hidden md:grid grid-cols-[1fr_120px_130px_110px_40px] gap-3 px-4 py-3 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest rounded-xl border border-slate-100">
                             <div>Material Description</div>
                             <div className="text-right">Market Price</div>
                             <div className="text-center">Quantity</div>
@@ -834,59 +1139,96 @@ function BOQBuilderContent() {
                           </div>
 
                           {sortMaterials(mData.items).map((item) => (
-                            <div key={item.id} className="material-row-modern group grid grid-cols-[1fr_130px_140px_120px_48px] gap-4 items-center p-4 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300">
+                            <div key={item.id} className="material-row-modern group grid grid-cols-1 md:grid-cols-[1fr_120px_130px_110px_40px] gap-3 md:gap-3 items-start md:items-center p-4 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300">
                               {/* Name & Desc */}
                               <div className="flex items-center gap-3 min-w-0">
-                                <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                                  {getCategoryIcon(materialCatalog.find(m => m.id === item.materialId)?.category || '')}
-                                </div>
-                                <div className="flex flex-col min-w-0">
-                                  <span className="font-bold text-slate-900 truncate leading-tight">{item.materialName}</span>
+                                <div className="flex flex-col min-w-0 flex-1">
+                                  <span className="font-medium text-slate-800 truncate leading-tight">{item.materialName}</span>
                                   <span className="text-xs text-slate-500 truncate mt-0.5">{item.description}</span>
+                                </div>
+                                {/* Mobile delete button */}
+                                <button
+                                  onClick={() => handleRemoveItem(milestone.id, item.id)}
+                                  className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0"
+                                  title="Remove item"
+                                >
+                                  <Trash size={18} weight="bold" />
+                                </button>
+                              </div>
+
+                              {/* Mobile: Price/Qty/Total Row */}
+                              <div className="md:hidden flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] text-slate-400 uppercase">Price:</span>
+                                  <div className="relative">
+                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      className="w-20 pl-5 pr-2 py-1.5 text-right text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-400 outline-none"
+                                      value={item.priceUsd}
+                                      onChange={(e) => handleUpdateUnitPrice(milestone.id, item.id, parseFloat(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] text-slate-400 uppercase">Qty:</span>
+                                  <input
+                                    className="w-16 p-1.5 text-center text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-400 outline-none"
+                                    type="number"
+                                    value={item.quantity || ''}
+                                    onChange={(e) => handleUpdateQuantity(milestone.id, item.id, parseFloat(e.target.value))}
+                                    placeholder="0"
+                                  />
+                                  <span className="text-[10px] text-slate-400">{item.unit}</span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="font-semibold text-slate-900">${((item.quantity || 0) * item.priceUsd).toFixed(2)}</span>
                                 </div>
                               </div>
 
-                              {/* Unit Price Edit */}
-                              <div className="flex items-center justify-end">
+                              {/* Desktop: Unit Price Edit */}
+                              <div className="hidden md:flex items-center justify-end">
                                 <div className="relative group/input">
                                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold transition-colors group-focus-within/input:text-blue-500">$</span>
                                   <input
                                     type="number"
                                     min="0"
                                     step="0.01"
-                                    className="w-28 pl-6 pr-3 py-2 text-right text-sm font-bold text-slate-700 bg-slate-50 border border-transparent rounded-lg focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
+                                    className="w-24 pl-5 pr-2 py-2 text-right text-sm font-medium text-slate-700 bg-slate-50 border border-transparent rounded-lg focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
                                     value={item.priceUsd}
                                     onChange={(e) => handleUpdateUnitPrice(milestone.id, item.id, parseFloat(e.target.value) || 0)}
                                   />
                                 </div>
                               </div>
 
-                              {/* Quantity Edit */}
-                              <div className="flex justify-center">
-                                <div className="flex items-center bg-slate-50 border border-transparent rounded-lg focus-within:bg-white focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100 transition-all w-32 overflow-hidden">
+                              {/* Desktop: Quantity Edit */}
+                              <div className="hidden md:flex justify-center">
+                                <div className="flex items-center bg-slate-50 border border-transparent rounded-lg focus-within:bg-white focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100 transition-all w-28 overflow-hidden">
                                   <input
-                                    className="w-full p-2 text-center text-sm font-bold text-slate-700 outline-none bg-transparent"
+                                    className="w-full p-2 text-center text-sm font-medium text-slate-700 outline-none bg-transparent"
                                     type="number"
                                     value={item.quantity || ''}
                                     onChange={(e) => handleUpdateQuantity(milestone.id, item.id, parseFloat(e.target.value))}
                                     placeholder="0"
                                   />
-                                  <span className="text-[10px] font-bold text-slate-400 uppercase pr-3 pl-1">
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase pr-2 pl-1">
                                     {item.unit}
                                   </span>
                                 </div>
                               </div>
 
-                              {/* Total */}
-                              <div className="text-right">
+                              {/* Desktop: Total */}
+                              <div className="hidden md:block text-right">
                                 <div className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-tighter">Total</div>
-                                <div className="font-black text-slate-900">
+                                <div className="font-semibold text-slate-900">
                                   ${((item.quantity || 0) * item.priceUsd).toFixed(2)}
                                 </div>
                               </div>
 
-                              {/* Remove */}
-                              <div className="flex justify-end">
+                              {/* Desktop: Remove */}
+                              <div className="hidden md:flex justify-end">
                                 <button
                                   onClick={() => handleRemoveItem(milestone.id, item.id)}
                                   className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
@@ -1017,6 +1359,14 @@ function BOQBuilderContent() {
             </div>
           </div>
         </div>
+
+        {/* Saving Overlay */}
+        <SavingOverlay
+          isVisible={showSaveOverlay}
+          message={saveOverlayMessage}
+          success={saveOverlaySuccess}
+          steps={saveOverlaySteps}
+        />
 
         {/* Save Prompt Modal */}
         {showSavePrompt && (
@@ -1317,5 +1667,3 @@ export default function BOQBuilderPage() {
     </Suspense>
   );
 }
-
-

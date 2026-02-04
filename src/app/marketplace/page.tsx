@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
 import Card, { CardContent } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -377,6 +378,16 @@ export default function MarketplacePage() {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        <div className="market-disclaimer">
+          <p>
+            Average prices reflect prevailing market data from Zimbabwean suppliers and classifieds.
+            Get a quote for accurate pricing.
+          </p>
+          <Link href="/ai/quote-scanner" className="quote-link">
+            <Button variant="secondary" size="sm">Get a Quote</Button>
+          </Link>
         </div>
       </div>
 
@@ -823,6 +834,27 @@ export default function MarketplacePage() {
           color: var(--color-text-muted);
         }
 
+        .market-disclaimer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--spacing-md);
+          padding: var(--spacing-md) var(--spacing-lg);
+          border: 1px solid var(--color-border-light);
+          background: var(--color-background);
+          border-radius: var(--radius-md);
+          font-size: 0.875rem;
+          color: var(--color-text-secondary);
+        }
+
+        .market-disclaimer p {
+          margin: 0;
+        }
+
+        .quote-link {
+          flex-shrink: 0;
+        }
+
         @media (max-width: 1024px) {
           .content-grid {
             grid-template-columns: 1fr;
@@ -843,6 +875,13 @@ export default function MarketplacePage() {
 
           .suppliers-card {
             display: none;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .market-disclaimer {
+            flex-direction: column;
+            align-items: flex-start;
           }
         }
       `}</style>

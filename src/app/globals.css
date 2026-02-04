@@ -22,6 +22,7 @@
   /* Light Blue Tint */
   --color-accent-dark: #3D7DD6;
   /* Blue Hover */
+  --color-accent-bg: rgba(78, 154, 247, 0.12);
 
   /* Backgrounds */
   --color-background: #FCFCFC;
@@ -37,6 +38,10 @@
   --color-text-muted: #A1AEC4;
   /* Disabled Gray */
   --color-text-inverse: #FFFFFF;
+
+  /* Tinted backgrounds */
+  --color-primary-bg: rgba(78, 154, 247, 0.12);
+  --color-error-bg: rgba(239, 68, 68, 0.1);
 
   /* Borders */
   --color-border: #D3D3D7;
@@ -78,7 +83,7 @@
 /* Tailwind Theme Inline */
 @theme inline {
   --color-oxford-blue: #06142F;
-  --color-safety-orange: #4E9AF7;
+  --color-vibrant-blue: #4E9AF7;
   --color-background: var(--color-background);
   --color-foreground: var(--color-text);
   --font-sans: var(--font-geist-sans);
