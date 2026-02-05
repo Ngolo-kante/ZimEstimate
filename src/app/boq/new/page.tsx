@@ -50,7 +50,7 @@ import {
   materials as allMaterials,
   getBestPrice,
 } from '@/lib/materials';
-import { applyAveragePriceUpdate, calculateVariance, getScaledPriceZwg } from '@/lib/boqPricing';
+import { applyAveragePriceUpdate, getScaledPriceZwg } from '@/lib/boqPricing';
 import { exportBOQToPDF } from '@/lib/pdf-export';
 import WizardStyles from './WizardStyles';
 
@@ -148,6 +148,19 @@ const LOCATION_TYPES = [
   { value: 'rural', label: 'Rural', description: 'Farms, villages & remote sites', icon: MapPin },
 ];
 
+const LOCATION_OPTIONS = [
+  'Harare',
+  'Bulawayo',
+  'Mutare',
+  'Gweru',
+  'Chitungwiza',
+  'Masvingo',
+  'Kwekwe',
+  'Kadoma',
+  'Hwange',
+  'Victoria Falls',
+];
+
 const BUILDING_TYPES = [
   { value: 'single_storey', label: 'Single Storey', description: 'One level above ground', icon: House },
   { value: 'double_storey', label: 'Double Storey', description: 'Two levels above ground', icon: Stack },
@@ -185,16 +198,15 @@ const LOCATION_TYPE_LABELS: Record<string, string> = {
   rural: 'Rural',
 };
 
-const buildLocationLabel = (locationType: string, specificLocation: string) => {
+const buildLocationLabel = (locationType: string, locationCity: string, specificLocation: string) => {
   const label = LOCATION_TYPE_LABELS[locationType] || '';
-  if (!label && !specificLocation) return '';
-  if (!label) return specificLocation;
-  if (!specificLocation) return label;
-  return `${label} — ${specificLocation}`;
+  const parts = [label, locationCity, specificLocation].filter(Boolean);
+  if (parts.length === 0) return '';
+  return parts.join(' — ');
 };
 
 const parseLocation = (location?: string | null) => {
-  if (!location) return { locationType: '', specificLocation: '' };
+  if (!location) return { locationType: '', locationCity: '', specificLocation: '' };
   const parts = location.split(' — ');
   const possibleLabel = parts[0];
   const matchedType = Object.keys(LOCATION_TYPE_LABELS).find(
@@ -203,10 +215,11 @@ const parseLocation = (location?: string | null) => {
   if (matchedType) {
     return {
       locationType: matchedType,
-      specificLocation: parts.slice(1).join(' — ').trim(),
+      locationCity: parts[1] || '',
+      specificLocation: parts.slice(2).join(' — ').trim(),
     };
   }
-  return { locationType: '', specificLocation: location };
+  return { locationType: '', locationCity: '', specificLocation: location };
 };
 
 interface BOQItem {
@@ -232,6 +245,7 @@ interface MilestoneData {
 interface ProjectDetailsState {
   name: string;
   locationType: string;
+  locationCity: string;
   specificLocation: string;
   floorPlanSize: string;
   buildingType: string;
@@ -410,6 +424,7 @@ function BOQBuilderContent() {
   const [projectDetails, setProjectDetails] = useState<ProjectDetailsState>({
     name: '',
     locationType: '',
+    locationCity: '',
     specificLocation: '',
     floorPlanSize: '',
     buildingType: '',
@@ -417,8 +432,8 @@ function BOQBuilderContent() {
   });
 
   const locationLabel = useMemo(
-    () => buildLocationLabel(projectDetails.locationType, projectDetails.specificLocation),
-    [projectDetails.locationType, projectDetails.specificLocation]
+    () => buildLocationLabel(projectDetails.locationType, projectDetails.locationCity, projectDetails.specificLocation),
+    [projectDetails.locationType, projectDetails.locationCity, projectDetails.specificLocation]
   );
 
   const projectDetailsForSave = useMemo(
@@ -475,6 +490,7 @@ function BOQBuilderContent() {
         setProjectDetails({
           name: loadedProject.name,
           locationType: parsedLocation.locationType,
+          locationCity: parsedLocation.locationCity,
           specificLocation: parsedLocation.specificLocation,
           floorPlanSize: '',
           buildingType: '',
@@ -525,8 +541,8 @@ function BOQBuilderContent() {
             return newState;
           });
 
-          // Jump to step 4 if we have items
-          setCurrentStep(4);
+        // Jump to step 5 if we have items
+        setCurrentStep(5);
         }
       },
     }
@@ -554,7 +570,7 @@ function BOQBuilderContent() {
 
   // Mark changes when milestone data changes (after initial load)
   useEffect(() => {
-    if (project && currentStep === 4) {
+    if (project && currentStep === 5) {
       markChanged();
     }
   }, [milestonesState, project, currentStep, markChanged]);
@@ -581,14 +597,14 @@ function BOQBuilderContent() {
   // Derived state
   const totalAmount = useMemo(() => {
     return milestonesState.reduce((total, ms) => {
-      const msTotal = ms.items.reduce((t, item) => t + ((item.quantity || 0) * item.actualPriceUsd), 0);
+      const msTotal = ms.items.reduce((t, item) => t + ((item.quantity || 0) * item.averagePriceUsd), 0);
       return total + msTotal;
     }, 0);
   }, [milestonesState]);
 
   const calculateMilestoneTotal = (items: BOQItem[]) => {
     return items.reduce((acc, item) => {
-      return acc + (item.quantity || 0) * item.actualPriceUsd;
+      return acc + (item.quantity || 0) * item.averagePriceUsd;
     }, 0);
   };
 
@@ -645,19 +661,19 @@ function BOQBuilderContent() {
 
   const goToNextStep = async () => {
     if (currentStep === 1) {
-      const floorPlanValue = Number(projectDetails.floorPlanSize);
-      if (
-        !projectDetails.name.trim() ||
-        !projectDetails.locationType ||
-        !projectDetails.buildingType ||
-        !floorPlanValue ||
-        floorPlanValue <= 0
-      ) {
-        alert('Please fill in project name, location type, floor plan size, and building type');
+      if (!projectDetails.name.trim() || !projectDetails.locationType) {
+        alert('Please fill in project name and location type');
         return;
       }
     }
-    if (currentStep === 2 && projectScope === 'stage' && selectedStages.length === 0) {
+    if (currentStep === 2) {
+      const floorPlanValue = Number(projectDetails.floorPlanSize);
+      if (!projectDetails.buildingType || !floorPlanValue || floorPlanValue <= 0) {
+        alert('Please fill in floor plan size and building type');
+        return;
+      }
+    }
+    if (currentStep === 3 && projectScope === 'stage' && selectedStages.length === 0) {
       alert('Please select at least one stage');
       return;
     }
@@ -682,20 +698,6 @@ function BOQBuilderContent() {
       return {
         ...m,
         items: m.items.map(item => item.id === itemId ? { ...item, quantity: qty } : item)
-      };
-    }));
-  };
-
-  const handleUpdateActualPrice = (milestoneId: string, itemId: string, price: number) => {
-    setMilestonesState(prev => prev.map(m => {
-      if (m.id !== milestoneId) return m;
-      return {
-        ...m,
-        items: m.items.map(item => {
-          if (item.id !== itemId) return item;
-          const nextActualPriceZwg = getScaledPriceZwg(price, item.averagePriceUsd, item.averagePriceZwg, exchangeRate);
-          return { ...item, actualPriceUsd: price, actualPriceZwg: nextActualPriceZwg };
-        })
       };
     }));
   };
@@ -729,6 +731,18 @@ function BOQBuilderContent() {
   const handleKeepCurrentPrices = () => {
     setProjectPriceVersion(SYSTEM_PRICE_VERSION);
   };
+
+  const planPreviewRooms = useMemo(() => {
+    const entries = ROOM_INPUTS.flatMap((room) => {
+      const count = Number(projectDetails.roomInputs[room.key]) || 0;
+      return Array.from({ length: count }, (_, idx) => ({
+        id: `${room.key}-${idx + 1}`,
+        label: `${room.label}${count > 1 ? ` ${idx + 1}` : ''}`,
+        key: room.key,
+      }));
+    });
+    return entries.slice(0, 18);
+  }, [projectDetails.roomInputs]);
 
   const handleAddMaterial = (milestoneId: string) => {
     if (!newItem.materialId) return;
@@ -884,14 +898,15 @@ function BOQBuilderContent() {
   // Step definitions - moved here so it's available in all code paths
   const steps = [
     { number: 1, label: 'Project Info' },
-    { number: 2, label: 'Scope' },
-    { number: 3, label: 'Labor' },
-    { number: 4, label: 'Build BOQ' },
+    { number: 2, label: 'Floor Plan' },
+    { number: 3, label: 'Scope' },
+    { number: 4, label: 'Labor' },
+    { number: 5, label: 'Build BOQ' },
   ];
 
   const showPriceUpdateBanner = priceVersionReady && projectPriceVersion !== SYSTEM_PRICE_VERSION;
 
-  if (currentStep === 4) {
+  if (currentStep === 5) {
     // Format currency based on current mode (currency, setCurrency, exchangeRate are from top-level hook)
     const formatCurrency = (valueUsd: number, showZig: boolean = false): string => {
       const useZig = showZig || currency === 'ZWG';
@@ -903,7 +918,7 @@ function BOQBuilderContent() {
 
     // Calculate totals
     const totalMaterials = milestonesState.reduce((total, ms) => {
-      return total + ms.items.reduce((t, item) => t + ((item.quantity || 0) * item.actualPriceUsd), 0);
+      return total + ms.items.reduce((t, item) => t + ((item.quantity || 0) * item.averagePriceUsd), 0);
     }, 0);
     const totalItems = milestonesState.reduce((acc, m) => acc + m.items.length, 0);
     const itemsWithQty = milestonesState.reduce((acc, m) =>
@@ -913,20 +928,6 @@ function BOQBuilderContent() {
       <MainLayout title="Build BOQ">
         <WizardStyles />
         <div className="boq-builder">
-          {/* Step Progress Bar */}
-          <div className="step-progress-bar">
-            {steps.map((step, index) => (
-              <div key={step.number} className="step-progress-item">
-                <div className={`step-node ${currentStep >= step.number ? 'active' : ''} ${currentStep > step.number ? 'completed' : ''}`}>
-                  {currentStep > step.number ? <Check size={16} weight="bold" /> : step.number}
-                </div>
-                <span className={`step-label ${currentStep >= step.number ? 'active' : ''}`}>{step.label}</span>
-                {index < steps.length - 1 && (
-                  <div className={`step-connector ${currentStep > step.number ? 'active' : ''}`} />
-                )}
-              </div>
-            ))}
-          </div>
 
           {showPriceUpdateBanner && (
             <div className="price-update-banner">
@@ -1141,8 +1142,8 @@ function BOQBuilderContent() {
                             category: ms.id,
                             quantity: item.quantity || 0,
                             unit: item.unit,
-                            unit_price_usd: item.actualPriceUsd,
-                            unit_price_zwg: item.actualPriceZwg,
+                            unit_price_usd: item.averagePriceUsd,
+                            unit_price_zwg: item.averagePriceZwg,
                           }))
                         );
                         const boqData = {
@@ -1192,10 +1193,10 @@ function BOQBuilderContent() {
                             ms.id,
                             item.quantity || 0,
                             item.unit,
-                            item.actualPriceUsd.toFixed(2),
-                            item.actualPriceZwg.toFixed(2),
-                            ((item.quantity || 0) * item.actualPriceUsd).toFixed(2),
-                            ((item.quantity || 0) * item.actualPriceZwg).toFixed(2),
+                            item.averagePriceUsd.toFixed(2),
+                            item.averagePriceZwg.toFixed(2),
+                            ((item.quantity || 0) * item.averagePriceUsd).toFixed(2),
+                            ((item.quantity || 0) * item.averagePriceZwg).toFixed(2),
                           ])
                         );
                         const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
@@ -1239,9 +1240,9 @@ function BOQBuilderContent() {
                             content += `\n${ms.id.toUpperCase()}\n`;
                             content += `${'-'.repeat(30)}\n`;
                             ms.items.forEach(item => {
-                              const total = (item.quantity || 0) * item.actualPriceUsd;
+                              const total = (item.quantity || 0) * item.averagePriceUsd;
                               content += `${item.materialName}\n`;
-                              content += `  Qty: ${item.quantity || 0} ${item.unit} @ $${item.actualPriceUsd.toFixed(2)} = $${total.toFixed(2)}\n`;
+                              content += `  Qty: ${item.quantity || 0} ${item.unit} @ $${item.averagePriceUsd.toFixed(2)} = $${total.toFixed(2)}\n`;
                             });
                           }
                         });
@@ -1333,175 +1334,112 @@ function BOQBuilderContent() {
                       {mData.items.length > 0 ? (
                         <div className="materials-list space-y-3">
                           {/* Table Header - Hidden on mobile */}
-                          <div className="hidden md:grid grid-cols-[1fr_120px_120px_110px_90px_120px_110px_40px] gap-3 px-4 py-3 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest rounded-xl border border-slate-100">
+                          <div className="hidden md:grid grid-cols-[1fr_140px_110px_90px_120px_40px] gap-3 px-4 py-3 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest rounded-xl border border-slate-100">
                             <div>Material Description</div>
                             <div className="text-right">Average Price</div>
-                            <div className="text-right">Actual Price</div>
-                            <div className="text-right">Var (Absolute)</div>
-                            <div className="text-right">Var %</div>
                             <div className="text-center">Quantity</div>
+                            <div className="text-center">Unit</div>
                             <div className="text-right">Line Total</div>
                             <div></div>
                           </div>
 
-                          {sortMaterials(mData.items).map((item) => {
-                            const { variance, variancePct } = calculateVariance(item.averagePriceUsd, item.actualPriceUsd);
-                            const varianceLabel = variance === 0 ? '0.00' : `${variance > 0 ? '+' : ''}${variance.toFixed(2)}`;
-                            const variancePctLabel = variancePct === null
-                              ? '—'
-                              : variancePct === 0
-                                ? '0.0%'
-                                : `${variancePct > 0 ? '+' : ''}${variancePct.toFixed(1)}%`;
-                            const varianceClass = variance > 0
-                              ? 'text-rose-600'
-                              : variance < 0
-                                ? 'text-emerald-600'
-                                : 'text-slate-500';
-
-                            return (
-                              <div
-                                key={item.id}
-                                data-testid="boq-row"
-                                className="material-row-modern group grid grid-cols-1 md:grid-cols-[1fr_120px_120px_110px_90px_120px_110px_40px] gap-3 md:gap-3 items-start md:items-center p-4 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300"
-                              >
-                                {/* Name & Desc */}
-                                <div className="flex items-center gap-3 min-w-0">
-                                  <div className="flex flex-col min-w-0 flex-1">
-                                    <span className="font-medium text-slate-800 truncate leading-tight">{item.materialName}</span>
-                                    <span className="text-xs text-slate-500 truncate mt-0.5">{item.description}</span>
-                                  </div>
-                                  {/* Mobile delete button */}
-                                  <button
-                                    onClick={() => handleRemoveItem(milestone.id, item.id)}
-                                    className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0"
-                                    title="Remove item"
-                                  >
-                                    <Trash size={18} weight="bold" />
-                                  </button>
+                          {sortMaterials(mData.items).map((item) => (
+                            <div
+                              key={item.id}
+                              data-testid="boq-row"
+                              className="material-row-modern group grid grid-cols-1 md:grid-cols-[1fr_140px_110px_90px_120px_40px] gap-3 md:gap-3 items-start md:items-center p-4 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300"
+                            >
+                              {/* Name & Desc */}
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex flex-col min-w-0 flex-1">
+                                  <span className="font-medium text-slate-800 truncate leading-tight">{item.materialName}</span>
+                                  <span className="text-xs text-slate-500 truncate mt-0.5">{item.description}</span>
                                 </div>
+                                {/* Mobile delete button */}
+                                <button
+                                  onClick={() => handleRemoveItem(milestone.id, item.id)}
+                                  className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0"
+                                  title="Remove item"
+                                >
+                                  <Trash size={18} weight="bold" />
+                                </button>
+                              </div>
 
-                                {/* Mobile: Pricing + Qty */}
-                                <div className="md:hidden mt-3 pt-3 border-t border-slate-100 space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[10px] text-slate-400 uppercase">Average Price</span>
-                                    <span className="text-sm font-semibold text-slate-700">${item.averagePriceUsd.toFixed(2)}</span>
-                                  </div>
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span className="text-[10px] text-slate-400 uppercase">Actual Price</span>
-                                    <div className="relative">
-                                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
-                                      <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        className="w-24 pl-5 pr-2 py-1.5 text-right text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-400 outline-none"
-                                        value={item.actualPriceUsd}
-                                        onChange={(e) => handleUpdateActualPrice(milestone.id, item.id, parseFloat(e.target.value) || 0)}
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-[10px] text-slate-400 uppercase">Var (Absolute)</span>
-                                      <span className={`text-sm font-semibold ${varianceClass}`}>{varianceLabel}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-[10px] text-slate-400 uppercase">Var %</span>
-                                      <span className={`text-sm font-semibold ${varianceClass}`}>{variancePctLabel}</span>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[10px] text-slate-400 uppercase">Qty</span>
-                                      <input
-                                        className="w-16 p-1.5 text-center text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-400 outline-none"
-                                        type="number"
-                                        value={item.quantity || ''}
-                                        onChange={(e) => handleUpdateQuantity(milestone.id, item.id, parseFloat(e.target.value))}
-                                        placeholder="0"
-                                      />
-                                      <span className="text-[10px] text-slate-400">{item.unit}</span>
-                                    </div>
-                                    <div className="text-right">
-                                      <span className="font-semibold text-slate-900">${((item.quantity || 0) * item.actualPriceUsd).toFixed(2)}</span>
-                                    </div>
-                                  </div>
+                              {/* Mobile: Pricing + Qty */}
+                              <div className="md:hidden mt-3 pt-3 border-t border-slate-100 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] text-slate-400 uppercase">Average Price</span>
+                                  <span className="text-sm font-semibold text-slate-700">${item.averagePriceUsd.toFixed(2)}</span>
                                 </div>
-
-                                {/* Desktop: Average Price */}
-                                <div className="hidden md:flex items-center justify-end">
-                                  <span data-testid="boq-average-price" className="text-sm font-semibold text-slate-700">
-                                    ${item.averagePriceUsd.toFixed(2)}
-                                  </span>
-                                </div>
-
-                                {/* Desktop: Actual Price Edit */}
-                                <div className="hidden md:flex items-center justify-end">
-                                  <div className="relative group/input">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold transition-colors group-focus-within/input:text-blue-500">$</span>
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] text-slate-400 uppercase">Qty</span>
                                     <input
-                                      data-testid="boq-actual-price"
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      className="w-24 pl-5 pr-2 py-2 text-right text-sm font-medium text-slate-700 bg-slate-50 border border-transparent rounded-lg focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
-                                      value={item.actualPriceUsd}
-                                      onChange={(e) => handleUpdateActualPrice(milestone.id, item.id, parseFloat(e.target.value) || 0)}
-                                    />
-                                  </div>
-                                </div>
-
-                                {/* Desktop: Var (Absolute) */}
-                                <div className="hidden md:flex items-center justify-end">
-                                  <span data-testid="boq-var-abs" className={`text-sm font-semibold ${varianceClass}`}>
-                                    {varianceLabel}
-                                  </span>
-                                </div>
-
-                                {/* Desktop: Var % */}
-                                <div className="hidden md:flex items-center justify-end">
-                                  <span data-testid="boq-var-pct" className={`text-sm font-semibold ${varianceClass}`}>
-                                    {variancePctLabel}
-                                  </span>
-                                </div>
-
-                                {/* Desktop: Quantity Edit */}
-                                <div className="hidden md:flex justify-center">
-                                  <div className="flex items-center bg-slate-50 border border-transparent rounded-lg focus-within:bg-white focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100 transition-all w-28 overflow-hidden">
-                                    <input
-                                      className="w-full p-2 text-center text-sm font-medium text-slate-700 outline-none bg-transparent"
+                                      className="w-16 p-1.5 text-center text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-400 outline-none"
                                       type="number"
                                       value={item.quantity || ''}
+                                      onChange={(e) => handleUpdateQuantity(milestone.id, item.id, parseFloat(e.target.value))}
+                                      placeholder="0"
+                                    />
+                                    <span className="text-[10px] text-slate-400">{item.unit}</span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="font-semibold text-slate-900">${((item.quantity || 0) * item.averagePriceUsd).toFixed(2)}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Desktop: Average Price */}
+                              <div className="hidden md:flex items-center justify-end">
+                                <span data-testid="boq-average-price" className="text-sm font-semibold text-slate-700">
+                                  ${item.averagePriceUsd.toFixed(2)}
+                                </span>
+                              </div>
+
+                              {/* Desktop: Quantity Edit */}
+                              <div className="hidden md:flex justify-center">
+                                <div className="flex items-center bg-slate-50 border border-transparent rounded-lg focus-within:bg-white focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100 transition-all w-28 overflow-hidden">
+                                  <input
+                                    data-testid="boq-qty-input"
+                                    className="w-full p-2 text-center text-sm font-medium text-slate-700 outline-none bg-transparent"
+                                    type="number"
+                                    value={item.quantity || ''}
                                       onChange={(e) => handleUpdateQuantity(milestone.id, item.id, parseFloat(e.target.value))}
                                       placeholder="0"
                                     />
                                     <span className="text-[10px] font-bold text-slate-400 uppercase pr-2 pl-1">
                                       {item.unit}
                                     </span>
-                                  </div>
-                                </div>
-
-                                {/* Desktop: Total */}
-                                <div className="hidden md:block text-right">
-                                  <div className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-tighter">Total</div>
-                                  <div className="font-semibold text-slate-900">
-                                    ${((item.quantity || 0) * item.actualPriceUsd).toFixed(2)}
-                                  </div>
-                                </div>
-
-                                {/* Desktop: Remove */}
-                                <div className="hidden md:flex justify-end">
-                                  <button
-                                    onClick={() => handleRemoveItem(milestone.id, item.id)}
-                                    className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
-                                    title="Remove item"
-                                  >
-                                    <Trash size={18} weight="bold" />
-                                  </button>
                                 </div>
                               </div>
-                            );
-                          })}
+
+                              {/* Desktop: Unit */}
+                              <div className="hidden md:flex items-center justify-center">
+                                <span className="text-[11px] font-bold text-slate-400 uppercase">{item.unit}</span>
+                              </div>
+
+                              {/* Desktop: Total */}
+                              <div className="hidden md:block text-right">
+                                <div className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-tighter">Total</div>
+                                <div className="font-semibold text-slate-900">
+                                  <span data-testid="boq-line-total">
+                                    ${((item.quantity || 0) * item.averagePriceUsd).toFixed(2)}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Desktop: Remove */}
+                              <div className="hidden md:flex justify-end">
+                                <button
+                                  onClick={() => handleRemoveItem(milestone.id, item.id)}
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                                  title="Remove item"
+                                >
+                                  <Trash size={18} weight="bold" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       ) : (
                         <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200 mb-4">
@@ -1697,27 +1635,13 @@ function BOQBuilderContent() {
     <MainLayout title="New Project">
       <WizardStyles />
       <div className="boq-wizard-container">
-        {/* Unified Step Progress Bar */}
-        <div className="step-progress-bar">
-          {steps.map((step, index) => (
-            <div key={step.number} className="step-progress-item">
-              <div className={`step-node ${currentStep >= step.number ? 'active' : ''} ${currentStep > step.number ? 'completed' : ''}`}>
-                {currentStep > step.number ? <Check size={16} weight="bold" /> : step.number}
-              </div>
-              <span className={`step-label ${currentStep >= step.number ? 'active' : ''}`}>{step.label}</span>
-              {index < steps.length - 1 && (
-                <div className={`step-connector ${currentStep > step.number ? 'active' : ''}`} />
-              )}
-            </div>
-          ))}
-        </div>
 
         <div className="wizard-step">
           {currentStep === 1 && (
             <div className="step-content">
               <div className="step-header">
                 <h2>Project Details</h2>
-                <p>Set your project name, location type, and floor plan details to start estimating.</p>
+                <p>Set your project name and location preferences to start estimating.</p>
               </div>
               <div className="wizard-card wizard-card--stack" style={{ maxWidth: '720px', margin: '0 auto' }}>
                 <div className="wizard-section">
@@ -1779,6 +1703,26 @@ function BOQBuilderContent() {
                     <div className="form-group grid-span-2">
                       <label className="wizard-label">
                         <MapPin size={18} weight="light" />
+                        City / Town
+                        <span className="optional">(Optional)</span>
+                      </label>
+                      <input
+                        className="wizard-select"
+                        list="location-options"
+                        placeholder="Select or type a city"
+                        value={projectDetails.locationCity}
+                        onChange={(e) => setProjectDetails({ ...projectDetails, locationCity: e.target.value })}
+                      />
+                      <datalist id="location-options">
+                        {LOCATION_OPTIONS.map((option) => (
+                          <option key={option} value={option} />
+                        ))}
+                      </datalist>
+                    </div>
+
+                    <div className="form-group grid-span-2">
+                      <label className="wizard-label">
+                        <MapPin size={18} weight="light" />
                         Specific Location
                         <span className="optional">(Optional)</span>
                       </label>
@@ -1795,83 +1739,94 @@ function BOQBuilderContent() {
                   </div>
                 </div>
 
-                <div className="wizard-divider" />
+                <div className="wizard-actions">
+                  <div></div>
+                  <Button
+                    variant="primary"
+                    onClick={goToNextStep}
+                    icon={<ArrowRight size={18} />}
+                  >
+                    Continue
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
-                <div className="wizard-section">
-                  <div className="wizard-section-header">
-                    <div>
-                      <div className="section-kicker">Floor Plan Details</div>
-                      <h3>Floor Plan Details</h3>
-                      <p>Capture the total floor area and building type.</p>
+          {currentStep === 2 && (
+            <div className="step-content">
+              <div className="step-header">
+                <h2>Floor Plan Details</h2>
+                <p>Capture the total floor area, building type, and room mix.</p>
+              </div>
+              <div className="wizard-card wizard-card--stack" style={{ maxWidth: '900px', margin: '0 auto' }}>
+                <div className="wizard-grid">
+                  <div className="form-group">
+                    <label className="wizard-label">
+                      <Layout size={18} weight="light" />
+                      Floor Plan Size
+                      <span className="required">*</span>
+                    </label>
+                    <div className="input-with-suffix">
+                      <input
+                        type="number"
+                        min="1"
+                        step="0.1"
+                        className="wizard-select"
+                        placeholder="e.g. 240"
+                        value={projectDetails.floorPlanSize}
+                        onChange={(e) => setProjectDetails({ ...projectDetails, floorPlanSize: e.target.value })}
+                      />
+                      <span className="input-suffix">m²</span>
                     </div>
+                    <span className="wizard-hint">Total floor area of the plan.</span>
                   </div>
 
-                  <div className="wizard-grid">
-                    <div className="form-group">
-                      <label className="wizard-label">
-                        <Layout size={18} weight="light" />
-                        Floor Plan Size
-                        <span className="required">*</span>
-                      </label>
-                      <div className="input-with-suffix">
-                        <input
-                          type="number"
-                          min="1"
-                          step="0.1"
-                          className="wizard-select"
-                          placeholder="e.g. 240"
-                          value={projectDetails.floorPlanSize}
-                          onChange={(e) => setProjectDetails({ ...projectDetails, floorPlanSize: e.target.value })}
-                        />
-                        <span className="input-suffix">m²</span>
-                      </div>
-                      <span className="wizard-hint">Total floor area of the plan.</span>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="wizard-label">
-                        <HouseSimple size={18} weight="light" />
-                        Building Type
-                        <span className="required">*</span>
-                      </label>
-                      <div className="pill-grid pill-grid--two" role="radiogroup" aria-label="Building Type">
-                        {BUILDING_TYPES.map((option) => {
-                          const Icon = option.icon;
-                          const isSelected = projectDetails.buildingType === option.value;
-                          return (
-                            <button
-                              key={option.value}
-                              type="button"
-                              className={`pill-option ${isSelected ? 'selected' : ''}`}
-                              onClick={() => setProjectDetails({ ...projectDetails, buildingType: option.value })}
-                              aria-pressed={isSelected}
-                              data-testid={`building-type-${option.value}`}
-                            >
-                              <span className="pill-icon">
-                                <Icon size={18} weight={isSelected ? 'fill' : 'light'} />
-                              </span>
-                              <span className="pill-content">
-                                <span className="pill-title">{option.label}</span>
-                                <span className="pill-subtitle">{option.description}</span>
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
+                  <div className="form-group">
+                    <label className="wizard-label">
+                      <HouseSimple size={18} weight="light" />
+                      Building Type
+                      <span className="required">*</span>
+                    </label>
+                    <div className="pill-grid pill-grid--two" role="radiogroup" aria-label="Building Type">
+                      {BUILDING_TYPES.map((option) => {
+                        const Icon = option.icon;
+                        const isSelected = projectDetails.buildingType === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            className={`pill-option ${isSelected ? 'selected' : ''}`}
+                            onClick={() => setProjectDetails({ ...projectDetails, buildingType: option.value })}
+                            aria-pressed={isSelected}
+                            data-testid={`building-type-${option.value}`}
+                          >
+                            <span className="pill-icon">
+                              <Icon size={18} weight={isSelected ? 'fill' : 'light'} />
+                            </span>
+                            <span className="pill-content">
+                              <span className="pill-title">{option.label}</span>
+                              <span className="pill-subtitle">{option.description}</span>
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
+                </div>
 
-                  <div className="optional-rooms">
-                    <div className="optional-header">
+                <div className="plan-layout">
+                  <div className="plan-inputs">
+                    <div className="plan-header">
                       <div>
-                        <h4>Optional Room Inputs</h4>
-                        <p>These help refine future estimates and remain optional.</p>
+                        <h4>Room Mix (Optional)</h4>
+                        <p>Adjust counts to sketch a quick plan layout.</p>
                       </div>
                       <span className="optional-chip">Optional</span>
                     </div>
-                    <div className="room-grid">
+                    <div className="room-grid room-grid--compact">
                       {ROOM_INPUTS.map((room) => (
-                        <div key={room.key} className="room-input">
+                        <div key={room.key} className="room-input room-input--row">
                           <label>{room.label}</label>
                           <input
                             type="number"
@@ -1893,10 +1848,32 @@ function BOQBuilderContent() {
                       ))}
                     </div>
                   </div>
+
+                  <div className="plan-preview">
+                    <div className="plan-preview-header">
+                      <h4>2D Plan Sketch</h4>
+                      <span>{planPreviewRooms.length} rooms</span>
+                    </div>
+                    <div className={`plan-canvas ${planPreviewRooms.length === 0 ? 'is-empty' : ''}`}>
+                      {planPreviewRooms.length === 0 ? (
+                        <div className="plan-empty">
+                          Add rooms to generate a quick plan layout.
+                        </div>
+                      ) : (
+                        planPreviewRooms.map((room) => (
+                          <div key={room.id} className={`plan-room plan-room--${room.key}`}>
+                            <span>{room.label}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="wizard-actions">
-                  <div></div>
+                  <Button variant="secondary" onClick={goToPrevStep}>
+                    Back
+                  </Button>
                   <Button
                     variant="primary"
                     onClick={goToNextStep}
@@ -1909,7 +1886,7 @@ function BOQBuilderContent() {
             </div>
           )}
 
-          {currentStep === 2 && (
+          {currentStep === 3 && (
             <div className="step-content">
               <div className="step-header">
                 <h2>Define Project Scope</h2>
@@ -1996,7 +1973,7 @@ function BOQBuilderContent() {
             </div>
           )}
 
-          {currentStep === 3 && (
+          {currentStep === 4 && (
             <div className="step-content">
               <div className="step-header">
                 <h2>Labor Options</h2>

@@ -362,6 +362,10 @@ const WizardStyles = () => (
       gap: 12px;
     }
 
+    .room-grid--compact {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .room-input {
       background: #fff;
       border: 1px solid var(--color-border);
@@ -400,10 +404,158 @@ const WizardStyles = () => (
       box-shadow: 0 0 0 3px var(--color-accent-bg);
     }
 
+    .room-input--row {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+    }
+
+    .room-input--row label {
+      font-size: 0.75rem;
+    }
+
+    .room-input--row input {
+      width: 64px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .plan-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+      gap: 24px;
+      margin-top: var(--spacing-lg);
+      align-items: start;
+    }
+
+    .plan-inputs {
+      background: #f8fafc;
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: var(--spacing-lg);
+    }
+
+    .plan-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .plan-header h4 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .plan-header p {
+      margin: 6px 0 0;
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+    }
+
+    .plan-preview {
+      border-radius: 18px;
+      border: 1px solid var(--color-border);
+      background: linear-gradient(135deg, #ffffff, #f1f5f9);
+      padding: var(--spacing-lg);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .plan-preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .plan-preview-header h4 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .plan-preview-header span {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .plan-canvas {
+      min-height: 320px;
+      border-radius: 16px;
+      border: 1px dashed #cbd5f5;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(148, 163, 184, 0.12),
+        rgba(148, 163, 184, 0.12) 1px,
+        transparent 1px,
+        transparent 32px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        rgba(148, 163, 184, 0.12),
+        rgba(148, 163, 184, 0.12) 1px,
+        transparent 1px,
+        transparent 32px
+      );
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .plan-canvas.is-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8fafc;
+    }
+
+    .plan-empty {
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+      text-align: center;
+      padding: 12px;
+    }
+
+    .plan-room {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #dbeafe;
+      padding: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 70px;
+      box-shadow: 0 8px 16px rgba(59, 130, 246, 0.08);
+    }
+
+    .plan-room--bedrooms { background: #eff6ff; }
+    .plan-room--bathrooms { background: #ecfdf5; }
+    .plan-room--kitchen { background: #fff7ed; }
+    .plan-room--livingRoom { background: #fef9c3; }
+    .plan-room--diningRoom { background: #fce7f3; }
+    .plan-room--veranda { background: #f1f5f9; }
+    .plan-room--garage1,
+    .plan-room--garage2 { background: #ede9fe; }
+    .plan-room--pantry { background: #ecfeff; }
+
     @media (max-width: 900px) {
       .pill-grid { grid-template-columns: 1fr; }
       .pill-grid--two { grid-template-columns: 1fr; }
       .room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .plan-layout { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 520px) {
