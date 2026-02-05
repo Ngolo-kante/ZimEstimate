@@ -50,6 +50,7 @@ import {
   materials as allMaterials,
   getBestPrice,
 } from '@/lib/materials';
+import { applyAveragePriceUpdate, calculateVariance, getScaledPriceZwg } from '@/lib/boqPricing';
 import { exportBOQToPDF } from '@/lib/pdf-export';
 import WizardStyles from './WizardStyles';
 
@@ -126,6 +127,7 @@ const materialCatalog = allMaterials.map((m) => {
     unit: unit,
     priceUsd: priceUsd,
     priceZwg: priceZwg,
+    lastUpdated: bestPrice?.lastUpdated || '',
     description: m.specifications || '',
   };
 });
@@ -133,14 +135,90 @@ const materialCatalog = allMaterials.map((m) => {
 // Get unique categories (kept for future use)
 const _categories = [...new Set(materialCatalog.map(m => m.category))];
 
+const SYSTEM_PRICE_VERSION = materialCatalog.reduce((latest, material) => {
+  if (material.lastUpdated && material.lastUpdated > latest) {
+    return material.lastUpdated;
+  }
+  return latest;
+}, '');
+
+const LOCATION_TYPES = [
+  { value: 'urban', label: 'Urban', description: 'City & town locations', icon: HouseSimple },
+  { value: 'peri-urban', label: 'Peri-Urban', description: 'Outer city and growth areas', icon: House },
+  { value: 'rural', label: 'Rural', description: 'Farms, villages & remote sites', icon: MapPin },
+];
+
+const BUILDING_TYPES = [
+  { value: 'single_storey', label: 'Single Storey', description: 'One level above ground', icon: House },
+  { value: 'double_storey', label: 'Double Storey', description: 'Two levels above ground', icon: Stack },
+];
+
+const DEFAULT_ROOM_INPUTS = {
+  bedrooms: '',
+  diningRoom: '',
+  veranda: '',
+  bathrooms: '',
+  kitchen: '',
+  pantry: '',
+  livingRoom: '',
+  garage1: '',
+  garage2: '',
+};
+
+type RoomInputKey = keyof typeof DEFAULT_ROOM_INPUTS;
+
+const ROOM_INPUTS: Array<{ key: RoomInputKey; label: string }> = [
+  { key: 'bedrooms', label: 'Bedrooms' },
+  { key: 'diningRoom', label: 'Dining Room' },
+  { key: 'veranda', label: 'Veranda' },
+  { key: 'bathrooms', label: 'Bathrooms' },
+  { key: 'kitchen', label: 'Kitchen' },
+  { key: 'pantry', label: 'Pantry' },
+  { key: 'livingRoom', label: 'Living Room' },
+  { key: 'garage1', label: 'Garage 1' },
+  { key: 'garage2', label: 'Garage 2' },
+];
+
+const LOCATION_TYPE_LABELS: Record<string, string> = {
+  urban: 'Urban',
+  'peri-urban': 'Peri-Urban',
+  rural: 'Rural',
+};
+
+const buildLocationLabel = (locationType: string, specificLocation: string) => {
+  const label = LOCATION_TYPE_LABELS[locationType] || '';
+  if (!label && !specificLocation) return '';
+  if (!label) return specificLocation;
+  if (!specificLocation) return label;
+  return `${label} — ${specificLocation}`;
+};
+
+const parseLocation = (location?: string | null) => {
+  if (!location) return { locationType: '', specificLocation: '' };
+  const parts = location.split(' — ');
+  const possibleLabel = parts[0];
+  const matchedType = Object.keys(LOCATION_TYPE_LABELS).find(
+    (key) => LOCATION_TYPE_LABELS[key] === possibleLabel
+  );
+  if (matchedType) {
+    return {
+      locationType: matchedType,
+      specificLocation: parts.slice(1).join(' — ').trim(),
+    };
+  }
+  return { locationType: '', specificLocation: location };
+};
+
 interface BOQItem {
   id: string;
   materialId: string;
   materialName: string;
   quantity: number | null;
   unit: string;
-  priceUsd: number;
-  priceZwg: number;
+  averagePriceUsd: number;
+  averagePriceZwg: number;
+  actualPriceUsd: number;
+  actualPriceZwg: number;
   description?: string;
   category?: string; // Added for sorting
 }
@@ -149,6 +227,15 @@ interface MilestoneData {
   id: string;
   items: BOQItem[];
   expanded: boolean;
+}
+
+interface ProjectDetailsState {
+  name: string;
+  locationType: string;
+  specificLocation: string;
+  floorPlanSize: string;
+  buildingType: string;
+  roomInputs: Record<RoomInputKey, string>;
 }
 
 // PriceDisplay kept for future use
@@ -207,7 +294,7 @@ const MaterialDropdown = ({
   }, []);
 
   return (
-    <div className="relative w-full" ref={wrapperRef} style={{ zIndex: 1000 }}>
+    <div className="relative w-full" ref={wrapperRef} style={{ zIndex: 1000 }} data-testid="material-dropdown">
       <div
         className={`wizard-select flex items-center justify-between cursor-pointer transition-all duration-200 ${isOpen ? 'ring-2 ring-blue-100 border-blue-400' : 'border-slate-200'}`}
         onClick={() => setIsOpen(!isOpen)}
@@ -244,6 +331,7 @@ const MaterialDropdown = ({
                 type="text"
                 className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
                 placeholder="Search by name or category..."
+                data-testid="material-search-input"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 autoFocus
@@ -308,6 +396,8 @@ function BOQBuilderContent() {
 
   // Get project ID from URL if editing existing project
   const projectIdFromUrl = searchParams.get('id');
+  const [projectPriceVersion, setProjectPriceVersion] = useState<string>(SYSTEM_PRICE_VERSION);
+  const [priceVersionReady, setPriceVersionReady] = useState(false);
 
   // State from URL params (kept for future use)
   const _projectType = searchParams.get('type') || 'residential';
@@ -317,13 +407,27 @@ function BOQBuilderContent() {
   const [selectedStages, setSelectedStages] = useState<string[]>(['substructure']);
 
   // Project Details State
-  const [projectDetails, setProjectDetails] = useState({
+  const [projectDetails, setProjectDetails] = useState<ProjectDetailsState>({
     name: '',
-    location: '',
-    budget: '',
-    rooms: 4,
-    area: 150, // sqm
+    locationType: '',
+    specificLocation: '',
+    floorPlanSize: '',
+    buildingType: '',
+    roomInputs: { ...DEFAULT_ROOM_INPUTS },
   });
+
+  const locationLabel = useMemo(
+    () => buildLocationLabel(projectDetails.locationType, projectDetails.specificLocation),
+    [projectDetails.locationType, projectDetails.specificLocation]
+  );
+
+  const projectDetailsForSave = useMemo(
+    () => ({
+      name: projectDetails.name,
+      location: locationLabel,
+    }),
+    [projectDetails.name, locationLabel]
+  );
 
   // Labor Preference
   const [laborType, setLaborType] = useState<'materials_only' | 'materials_labor'>('materials_only');
@@ -357,7 +461,7 @@ function BOQBuilderContent() {
     createNewProject,
     markChanged,
   } = useProjectAutoSave(
-    projectDetails,
+    projectDetailsForSave,
     projectScope === 'stage' ? 'stage' : 'entire',
     selectedStages,
     laborType,
@@ -367,12 +471,14 @@ function BOQBuilderContent() {
       autoSaveInterval: 30000, // 30 seconds
       onLoadComplete: (loadedProject, items) => {
         // Restore project details
+        const parsedLocation = parseLocation(loadedProject.location);
         setProjectDetails({
           name: loadedProject.name,
-          location: loadedProject.location || '',
-          budget: '',
-          rooms: 4,
-          area: 150,
+          locationType: parsedLocation.locationType,
+          specificLocation: parsedLocation.specificLocation,
+          floorPlanSize: '',
+          buildingType: '',
+          roomInputs: { ...DEFAULT_ROOM_INPUTS },
         });
 
         // Restore scope and labor preference
@@ -394,14 +500,23 @@ function BOQBuilderContent() {
             items.forEach(item => {
               const milestoneIndex = newState.findIndex(m => m.id === item.category);
               if (milestoneIndex !== -1) {
+                const material = materialCatalog.find(m => m.id === item.material_id);
+                const averagePriceUsd = material?.priceUsd ?? item.unit_price_usd;
+                const averagePriceZwg = material?.priceZwg ?? item.unit_price_zwg;
+                const actualPriceUsd = item.unit_price_usd;
+                const actualPriceZwg = item.unit_price_zwg ??
+                  getScaledPriceZwg(actualPriceUsd, averagePriceUsd, averagePriceZwg, exchangeRate);
+
                 newState[milestoneIndex].items.push({
                   id: item.id,
                   materialId: item.material_id,
                   materialName: item.material_name,
                   quantity: item.quantity,
                   unit: item.unit,
-                  priceUsd: item.unit_price_usd,
-                  priceZwg: item.unit_price_zwg,
+                  averagePriceUsd,
+                  averagePriceZwg,
+                  actualPriceUsd,
+                  actualPriceZwg,
                   description: item.notes || undefined,
                   category: item.category,
                 });
@@ -416,6 +531,26 @@ function BOQBuilderContent() {
       },
     }
   );
+
+  const projectPriceKey = useMemo(
+    () => `boq_price_version_${project?.id ?? projectIdFromUrl ?? 'draft'}`,
+    [project?.id, projectIdFromUrl]
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setPriceVersionReady(false);
+    const storedVersion = localStorage.getItem(projectPriceKey);
+    const nextVersion = storedVersion || SYSTEM_PRICE_VERSION;
+    localStorage.setItem(projectPriceKey, nextVersion);
+    setProjectPriceVersion(nextVersion);
+    setPriceVersionReady(true);
+  }, [projectPriceKey]);
+
+  useEffect(() => {
+    if (!priceVersionReady || typeof window === 'undefined') return;
+    localStorage.setItem(projectPriceKey, projectPriceVersion);
+  }, [projectPriceKey, projectPriceVersion, priceVersionReady]);
 
   // Mark changes when milestone data changes (after initial load)
   useEffect(() => {
@@ -446,14 +581,14 @@ function BOQBuilderContent() {
   // Derived state
   const totalAmount = useMemo(() => {
     return milestonesState.reduce((total, ms) => {
-      const msTotal = ms.items.reduce((t, item) => t + ((item.quantity || 0) * item.priceUsd), 0);
+      const msTotal = ms.items.reduce((t, item) => t + ((item.quantity || 0) * item.actualPriceUsd), 0);
       return total + msTotal;
     }, 0);
   }, [milestonesState]);
 
   const calculateMilestoneTotal = (items: BOQItem[]) => {
     return items.reduce((acc, item) => {
-      return acc + (item.quantity || 0) * item.priceUsd;
+      return acc + (item.quantity || 0) * item.actualPriceUsd;
     }, 0);
   };
 
@@ -509,9 +644,18 @@ function BOQBuilderContent() {
   });
 
   const goToNextStep = async () => {
-    if (currentStep === 1 && (!projectDetails.name || !projectDetails.location)) {
-      alert('Please fill in project name and location');
-      return;
+    if (currentStep === 1) {
+      const floorPlanValue = Number(projectDetails.floorPlanSize);
+      if (
+        !projectDetails.name.trim() ||
+        !projectDetails.locationType ||
+        !projectDetails.buildingType ||
+        !floorPlanValue ||
+        floorPlanValue <= 0
+      ) {
+        alert('Please fill in project name, location type, floor plan size, and building type');
+        return;
+      }
     }
     if (currentStep === 2 && projectScope === 'stage' && selectedStages.length === 0) {
       alert('Please select at least one stage');
@@ -520,7 +664,7 @@ function BOQBuilderContent() {
 
     // Create project in database when moving from step 1 (if authenticated and no project yet)
     if (currentStep === 1 && isAuthenticated && !project) {
-      const projectId = await createNewProject(projectDetails);
+      const projectId = await createNewProject(projectDetailsForSave);
       if (!projectId) {
         // Project creation failed, but allow continuing in offline mode
         console.warn('Failed to create project in database, continuing locally');
@@ -542,14 +686,48 @@ function BOQBuilderContent() {
     }));
   };
 
-  const handleUpdateUnitPrice = (milestoneId: string, itemId: string, price: number) => {
+  const handleUpdateActualPrice = (milestoneId: string, itemId: string, price: number) => {
     setMilestonesState(prev => prev.map(m => {
       if (m.id !== milestoneId) return m;
       return {
         ...m,
-        items: m.items.map(item => item.id === itemId ? { ...item, priceUsd: price } : item)
+        items: m.items.map(item => {
+          if (item.id !== itemId) return item;
+          const nextActualPriceZwg = getScaledPriceZwg(price, item.averagePriceUsd, item.averagePriceZwg, exchangeRate);
+          return { ...item, actualPriceUsd: price, actualPriceZwg: nextActualPriceZwg };
+        })
       };
     }));
+  };
+
+  const handleUpdateAveragePrices = () => {
+    setMilestonesState(prev => prev.map(m => ({
+      ...m,
+      items: m.items.map(item => {
+        const material = materialCatalog.find(mat => mat.id === item.materialId);
+        if (!material) return item;
+        const nextAverageUsd = material.priceUsd;
+        const nextAverageZwg = material.priceZwg;
+        const updatedPricing = applyAveragePriceUpdate(
+          {
+            averagePriceUsd: item.averagePriceUsd,
+            averagePriceZwg: item.averagePriceZwg,
+            actualPriceUsd: item.actualPriceUsd,
+          },
+          nextAverageUsd,
+          nextAverageZwg,
+          exchangeRate
+        );
+
+        return { ...item, ...updatedPricing };
+      })
+    })));
+
+    setProjectPriceVersion(SYSTEM_PRICE_VERSION);
+  };
+
+  const handleKeepCurrentPrices = () => {
+    setProjectPriceVersion(SYSTEM_PRICE_VERSION);
   };
 
   const handleAddMaterial = (milestoneId: string) => {
@@ -579,8 +757,10 @@ function BOQBuilderContent() {
         materialName: material.name,
         quantity: parseFloat(newItem.quantity) || 1,
         unit: material.unit,
-        priceUsd: material.priceUsd,
-        priceZwg: material.priceZwg,
+        averagePriceUsd: material.priceUsd,
+        averagePriceZwg: material.priceZwg,
+        actualPriceUsd: material.priceUsd,
+        actualPriceZwg: material.priceZwg,
         description: material.description
       };
 
@@ -624,8 +804,10 @@ function BOQBuilderContent() {
           materialName: mat.name,
           quantity: null,
           unit: mat.unit,
-          priceUsd: mat.priceUsd,
-          priceZwg: mat.priceZwg,
+          averagePriceUsd: mat.priceUsd,
+          averagePriceZwg: mat.priceZwg,
+          actualPriceUsd: mat.priceUsd,
+          actualPriceZwg: mat.priceZwg,
           description: mat.description
         } as BOQItem;
       }).filter(Boolean) as BOQItem[];
@@ -662,7 +844,7 @@ function BOQBuilderContent() {
         // Step 1: Create project (if needed)
         if (!project) {
           setStepState(0, 'Creating your project...');
-          const newProjectId = await createNewProject(projectDetails);
+          const newProjectId = await createNewProject(projectDetailsForSave);
           if (!newProjectId) {
             throw new Error('Failed to create project');
           }
@@ -707,6 +889,8 @@ function BOQBuilderContent() {
     { number: 4, label: 'Build BOQ' },
   ];
 
+  const showPriceUpdateBanner = priceVersionReady && projectPriceVersion !== SYSTEM_PRICE_VERSION;
+
   if (currentStep === 4) {
     // Format currency based on current mode (currency, setCurrency, exchangeRate are from top-level hook)
     const formatCurrency = (valueUsd: number, showZig: boolean = false): string => {
@@ -719,7 +903,7 @@ function BOQBuilderContent() {
 
     // Calculate totals
     const totalMaterials = milestonesState.reduce((total, ms) => {
-      return total + ms.items.reduce((t, item) => t + ((item.quantity || 0) * item.priceUsd), 0);
+      return total + ms.items.reduce((t, item) => t + ((item.quantity || 0) * item.actualPriceUsd), 0);
     }, 0);
     const totalItems = milestonesState.reduce((acc, m) => acc + m.items.length, 0);
     const itemsWithQty = milestonesState.reduce((acc, m) =>
@@ -744,12 +928,31 @@ function BOQBuilderContent() {
             ))}
           </div>
 
+          {showPriceUpdateBanner && (
+            <div className="price-update-banner">
+              <div className="price-update-content">
+                <div className="price-update-text">
+                  <h4>🇿🇼 Average prices have been updated this week.</h4>
+                  <p>Would you like to update your project costing?</p>
+                </div>
+              </div>
+              <div className="price-update-actions">
+                <Button variant="primary" onClick={handleUpdateAveragePrices}>
+                  Update Prices
+                </Button>
+                <Button variant="secondary" onClick={handleKeepCurrentPrices}>
+                  Keep Current Prices
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <div className="builder-header">
             <div>
               <h1>{projectDetails.name || 'New Project'}</h1>
               <div className="builder-meta">
-                <span>{projectDetails.location}</span>
+                <span>{locationLabel || 'Location not set'}</span>
                 <span className="meta-dot">•</span>
                 <span>{selectedStages.length > 0 ? `${selectedStages.length} Stages` : 'Entire House'}</span>
                 {/* Save Status Indicator */}
@@ -812,7 +1015,7 @@ function BOQBuilderContent() {
                       className="dropdown-item"
                       onClick={() => {
                         const summary = `*${projectDetails.name || 'BOQ Estimate'}*\n` +
-                          `Location: ${projectDetails.location || 'Not specified'}\n\n` +
+                          `Location: ${locationLabel || 'Not specified'}\n\n` +
                           `*Total Estimate:*\n` +
                           `USD: $${totalMaterials.toLocaleString()}\n` +
                           `ZWG: ZiG ${(totalMaterials * exchangeRate).toLocaleString()}\n\n` +
@@ -844,7 +1047,7 @@ function BOQBuilderContent() {
                         const subject = encodeURIComponent(`BOQ Estimate: ${projectDetails.name || 'Project'}`);
                         const body = encodeURIComponent(
                           `${projectDetails.name || 'BOQ Estimate'}\n` +
-                          `Location: ${projectDetails.location || 'Not specified'}\n\n` +
+                          `Location: ${locationLabel || 'Not specified'}\n\n` +
                           `Total Estimate:\n` +
                           `USD: $${totalMaterials.toLocaleString()}\n` +
                           `ZWG: ZiG ${(totalMaterials * exchangeRate).toLocaleString()}\n\n` +
@@ -938,14 +1141,14 @@ function BOQBuilderContent() {
                             category: ms.id,
                             quantity: item.quantity || 0,
                             unit: item.unit,
-                            unit_price_usd: item.priceUsd,
-                            unit_price_zwg: item.priceZwg,
+                            unit_price_usd: item.actualPriceUsd,
+                            unit_price_zwg: item.actualPriceZwg,
                           }))
                         );
                         const boqData = {
                           projectName: projectDetails.name || 'Manual BOQ Project',
-                          location: projectDetails.location,
-                          totalArea: projectDetails.area || 0,
+                          location: locationLabel,
+                          totalArea: Number(projectDetails.floorPlanSize) || 0,
                           items: allItems,
                           totals: {
                             usd: totalMaterials,
@@ -982,17 +1185,17 @@ function BOQBuilderContent() {
                       className="dropdown-item"
                       onClick={() => {
                         // Export as CSV for Excel
-                        const headers = ['Material', 'Category', 'Quantity', 'Unit', 'Unit Price (USD)', 'Unit Price (ZWG)', 'Total (USD)', 'Total (ZWG)'];
+                        const headers = ['Material', 'Category', 'Quantity', 'Unit', 'Actual Price (USD)', 'Actual Price (ZWG)', 'Total (USD)', 'Total (ZWG)'];
                         const rows = milestonesState.flatMap(ms =>
                           ms.items.map(item => [
                             item.materialName,
                             ms.id,
                             item.quantity || 0,
                             item.unit,
-                            item.priceUsd.toFixed(2),
-                            item.priceZwg.toFixed(2),
-                            ((item.quantity || 0) * item.priceUsd).toFixed(2),
-                            ((item.quantity || 0) * item.priceZwg).toFixed(2),
+                            item.actualPriceUsd.toFixed(2),
+                            item.actualPriceZwg.toFixed(2),
+                            ((item.quantity || 0) * item.actualPriceUsd).toFixed(2),
+                            ((item.quantity || 0) * item.actualPriceZwg).toFixed(2),
                           ])
                         );
                         const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
@@ -1026,7 +1229,7 @@ function BOQBuilderContent() {
                         // Export as TXT for Word
                         let content = `${projectDetails.name || 'BOQ Estimate'}\n`;
                         content += `${'='.repeat(50)}\n\n`;
-                        content += `Location: ${projectDetails.location || 'Not specified'}\n`;
+                        content += `Location: ${locationLabel || 'Not specified'}\n`;
                         content += `Date: ${new Date().toLocaleDateString()}\n\n`;
                         content += `MATERIALS LIST\n`;
                         content += `${'-'.repeat(50)}\n\n`;
@@ -1036,9 +1239,9 @@ function BOQBuilderContent() {
                             content += `\n${ms.id.toUpperCase()}\n`;
                             content += `${'-'.repeat(30)}\n`;
                             ms.items.forEach(item => {
-                              const total = (item.quantity || 0) * item.priceUsd;
+                              const total = (item.quantity || 0) * item.actualPriceUsd;
                               content += `${item.materialName}\n`;
-                              content += `  Qty: ${item.quantity || 0} ${item.unit} @ $${item.priceUsd.toFixed(2)} = $${total.toFixed(2)}\n`;
+                              content += `  Qty: ${item.quantity || 0} ${item.unit} @ $${item.actualPriceUsd.toFixed(2)} = $${total.toFixed(2)}\n`;
                             });
                           }
                         });
@@ -1130,115 +1333,175 @@ function BOQBuilderContent() {
                       {mData.items.length > 0 ? (
                         <div className="materials-list space-y-3">
                           {/* Table Header - Hidden on mobile */}
-                          <div className="hidden md:grid grid-cols-[1fr_120px_130px_110px_40px] gap-3 px-4 py-3 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest rounded-xl border border-slate-100">
+                          <div className="hidden md:grid grid-cols-[1fr_120px_120px_110px_90px_120px_110px_40px] gap-3 px-4 py-3 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest rounded-xl border border-slate-100">
                             <div>Material Description</div>
-                            <div className="text-right">Market Price</div>
+                            <div className="text-right">Average Price</div>
+                            <div className="text-right">Actual Price</div>
+                            <div className="text-right">Var (Absolute)</div>
+                            <div className="text-right">Var %</div>
                             <div className="text-center">Quantity</div>
                             <div className="text-right">Line Total</div>
                             <div></div>
                           </div>
 
-                          {sortMaterials(mData.items).map((item) => (
-                            <div key={item.id} className="material-row-modern group grid grid-cols-1 md:grid-cols-[1fr_120px_130px_110px_40px] gap-3 md:gap-3 items-start md:items-center p-4 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300">
-                              {/* Name & Desc */}
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div className="flex flex-col min-w-0 flex-1">
-                                  <span className="font-medium text-slate-800 truncate leading-tight">{item.materialName}</span>
-                                  <span className="text-xs text-slate-500 truncate mt-0.5">{item.description}</span>
-                                </div>
-                                {/* Mobile delete button */}
-                                <button
-                                  onClick={() => handleRemoveItem(milestone.id, item.id)}
-                                  className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0"
-                                  title="Remove item"
-                                >
-                                  <Trash size={18} weight="bold" />
-                                </button>
-                              </div>
+                          {sortMaterials(mData.items).map((item) => {
+                            const { variance, variancePct } = calculateVariance(item.averagePriceUsd, item.actualPriceUsd);
+                            const varianceLabel = variance === 0 ? '0.00' : `${variance > 0 ? '+' : ''}${variance.toFixed(2)}`;
+                            const variancePctLabel = variancePct === null
+                              ? '—'
+                              : variancePct === 0
+                                ? '0.0%'
+                                : `${variancePct > 0 ? '+' : ''}${variancePct.toFixed(1)}%`;
+                            const varianceClass = variance > 0
+                              ? 'text-rose-600'
+                              : variance < 0
+                                ? 'text-emerald-600'
+                                : 'text-slate-500';
 
-                              {/* Mobile: Price/Qty/Total Row */}
-                              <div className="md:hidden flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[10px] text-slate-400 uppercase">Price:</span>
-                                  <div className="relative">
-                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
+                            return (
+                              <div
+                                key={item.id}
+                                data-testid="boq-row"
+                                className="material-row-modern group grid grid-cols-1 md:grid-cols-[1fr_120px_120px_110px_90px_120px_110px_40px] gap-3 md:gap-3 items-start md:items-center p-4 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300"
+                              >
+                                {/* Name & Desc */}
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="flex flex-col min-w-0 flex-1">
+                                    <span className="font-medium text-slate-800 truncate leading-tight">{item.materialName}</span>
+                                    <span className="text-xs text-slate-500 truncate mt-0.5">{item.description}</span>
+                                  </div>
+                                  {/* Mobile delete button */}
+                                  <button
+                                    onClick={() => handleRemoveItem(milestone.id, item.id)}
+                                    className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0"
+                                    title="Remove item"
+                                  >
+                                    <Trash size={18} weight="bold" />
+                                  </button>
+                                </div>
+
+                                {/* Mobile: Pricing + Qty */}
+                                <div className="md:hidden mt-3 pt-3 border-t border-slate-100 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] text-slate-400 uppercase">Average Price</span>
+                                    <span className="text-sm font-semibold text-slate-700">${item.averagePriceUsd.toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-[10px] text-slate-400 uppercase">Actual Price</span>
+                                    <div className="relative">
+                                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        className="w-24 pl-5 pr-2 py-1.5 text-right text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-400 outline-none"
+                                        value={item.actualPriceUsd}
+                                        onChange={(e) => handleUpdateActualPrice(milestone.id, item.id, parseFloat(e.target.value) || 0)}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[10px] text-slate-400 uppercase">Var (Absolute)</span>
+                                      <span className={`text-sm font-semibold ${varianceClass}`}>{varianceLabel}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[10px] text-slate-400 uppercase">Var %</span>
+                                      <span className={`text-sm font-semibold ${varianceClass}`}>{variancePctLabel}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] text-slate-400 uppercase">Qty</span>
+                                      <input
+                                        className="w-16 p-1.5 text-center text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-400 outline-none"
+                                        type="number"
+                                        value={item.quantity || ''}
+                                        onChange={(e) => handleUpdateQuantity(milestone.id, item.id, parseFloat(e.target.value))}
+                                        placeholder="0"
+                                      />
+                                      <span className="text-[10px] text-slate-400">{item.unit}</span>
+                                    </div>
+                                    <div className="text-right">
+                                      <span className="font-semibold text-slate-900">${((item.quantity || 0) * item.actualPriceUsd).toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Desktop: Average Price */}
+                                <div className="hidden md:flex items-center justify-end">
+                                  <span data-testid="boq-average-price" className="text-sm font-semibold text-slate-700">
+                                    ${item.averagePriceUsd.toFixed(2)}
+                                  </span>
+                                </div>
+
+                                {/* Desktop: Actual Price Edit */}
+                                <div className="hidden md:flex items-center justify-end">
+                                  <div className="relative group/input">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold transition-colors group-focus-within/input:text-blue-500">$</span>
                                     <input
+                                      data-testid="boq-actual-price"
                                       type="number"
                                       min="0"
                                       step="0.01"
-                                      className="w-20 pl-5 pr-2 py-1.5 text-right text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-400 outline-none"
-                                      value={item.priceUsd}
-                                      onChange={(e) => handleUpdateUnitPrice(milestone.id, item.id, parseFloat(e.target.value) || 0)}
+                                      className="w-24 pl-5 pr-2 py-2 text-right text-sm font-medium text-slate-700 bg-slate-50 border border-transparent rounded-lg focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
+                                      value={item.actualPriceUsd}
+                                      onChange={(e) => handleUpdateActualPrice(milestone.id, item.id, parseFloat(e.target.value) || 0)}
                                     />
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[10px] text-slate-400 uppercase">Qty:</span>
-                                  <input
-                                    className="w-16 p-1.5 text-center text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-400 outline-none"
-                                    type="number"
-                                    value={item.quantity || ''}
-                                    onChange={(e) => handleUpdateQuantity(milestone.id, item.id, parseFloat(e.target.value))}
-                                    placeholder="0"
-                                  />
-                                  <span className="text-[10px] text-slate-400">{item.unit}</span>
-                                </div>
-                                <div className="text-right">
-                                  <span className="font-semibold text-slate-900">${((item.quantity || 0) * item.priceUsd).toFixed(2)}</span>
-                                </div>
-                              </div>
 
-                              {/* Desktop: Unit Price Edit */}
-                              <div className="hidden md:flex items-center justify-end">
-                                <div className="relative group/input">
-                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold transition-colors group-focus-within/input:text-blue-500">$</span>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    className="w-24 pl-5 pr-2 py-2 text-right text-sm font-medium text-slate-700 bg-slate-50 border border-transparent rounded-lg focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
-                                    value={item.priceUsd}
-                                    onChange={(e) => handleUpdateUnitPrice(milestone.id, item.id, parseFloat(e.target.value) || 0)}
-                                  />
-                                </div>
-                              </div>
-
-                              {/* Desktop: Quantity Edit */}
-                              <div className="hidden md:flex justify-center">
-                                <div className="flex items-center bg-slate-50 border border-transparent rounded-lg focus-within:bg-white focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100 transition-all w-28 overflow-hidden">
-                                  <input
-                                    className="w-full p-2 text-center text-sm font-medium text-slate-700 outline-none bg-transparent"
-                                    type="number"
-                                    value={item.quantity || ''}
-                                    onChange={(e) => handleUpdateQuantity(milestone.id, item.id, parseFloat(e.target.value))}
-                                    placeholder="0"
-                                  />
-                                  <span className="text-[10px] font-bold text-slate-400 uppercase pr-2 pl-1">
-                                    {item.unit}
+                                {/* Desktop: Var (Absolute) */}
+                                <div className="hidden md:flex items-center justify-end">
+                                  <span data-testid="boq-var-abs" className={`text-sm font-semibold ${varianceClass}`}>
+                                    {varianceLabel}
                                   </span>
                                 </div>
-                              </div>
 
-                              {/* Desktop: Total */}
-                              <div className="hidden md:block text-right">
-                                <div className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-tighter">Total</div>
-                                <div className="font-semibold text-slate-900">
-                                  ${((item.quantity || 0) * item.priceUsd).toFixed(2)}
+                                {/* Desktop: Var % */}
+                                <div className="hidden md:flex items-center justify-end">
+                                  <span data-testid="boq-var-pct" className={`text-sm font-semibold ${varianceClass}`}>
+                                    {variancePctLabel}
+                                  </span>
+                                </div>
+
+                                {/* Desktop: Quantity Edit */}
+                                <div className="hidden md:flex justify-center">
+                                  <div className="flex items-center bg-slate-50 border border-transparent rounded-lg focus-within:bg-white focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100 transition-all w-28 overflow-hidden">
+                                    <input
+                                      className="w-full p-2 text-center text-sm font-medium text-slate-700 outline-none bg-transparent"
+                                      type="number"
+                                      value={item.quantity || ''}
+                                      onChange={(e) => handleUpdateQuantity(milestone.id, item.id, parseFloat(e.target.value))}
+                                      placeholder="0"
+                                    />
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase pr-2 pl-1">
+                                      {item.unit}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Desktop: Total */}
+                                <div className="hidden md:block text-right">
+                                  <div className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-tighter">Total</div>
+                                  <div className="font-semibold text-slate-900">
+                                    ${((item.quantity || 0) * item.actualPriceUsd).toFixed(2)}
+                                  </div>
+                                </div>
+
+                                {/* Desktop: Remove */}
+                                <div className="hidden md:flex justify-end">
+                                  <button
+                                    onClick={() => handleRemoveItem(milestone.id, item.id)}
+                                    className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                                    title="Remove item"
+                                  >
+                                    <Trash size={18} weight="bold" />
+                                  </button>
                                 </div>
                               </div>
-
-                              {/* Desktop: Remove */}
-                              <div className="hidden md:flex justify-end">
-                                <button
-                                  onClick={() => handleRemoveItem(milestone.id, item.id)}
-                                  className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
-                                  title="Remove item"
-                                >
-                                  <Trash size={18} weight="bold" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : (
                         <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200 mb-4">
@@ -1454,45 +1717,182 @@ function BOQBuilderContent() {
             <div className="step-content">
               <div className="step-header">
                 <h2>Project Details</h2>
-                <p>Give your project a name and location to help organize your estimates.</p>
+                <p>Set your project name, location type, and floor plan details to start estimating.</p>
               </div>
-              <div className="wizard-card" style={{ maxWidth: '560px', margin: '0 auto' }}>
-                <div className="form-group">
-                  <label className="wizard-label">
-                    <House size={18} weight="light" />
-                    Project Name
-                  </label>
-                  <Input
-                    className="wizard-select"
-                    placeholder="e.g. Borrowdale 4-Bedroom House"
-                    value={projectDetails.name}
-                    onChange={(e) => setProjectDetails({ ...projectDetails, name: e.target.value })}
-                  />
-                </div>
-                <div className="form-group" style={{ marginTop: '20px' }}>
-                  <label className="wizard-label">
-                    <MapPin size={18} weight="light" />
-                    Location
-                  </label>
-                  <div className="select-wrapper">
-                    <select
-                      className="wizard-select"
-                      value={projectDetails.location}
-                      onChange={(e) => setProjectDetails({ ...projectDetails, location: e.target.value })}
-                    >
-                      <option value="">Select Location</option>
-                      <option value="harare">Harare</option>
-                      <option value="bulawayo">Bulawayo</option>
-                      <option value="mutare">Mutare</option>
-                      <option value="gweru">Gweru</option>
-                      <option value="chitungwiza">Chitungwiza</option>
-                      <option value="masvingo">Masvingo</option>
-                    </select>
-                    <CaretDown className="select-icon" size={16} />
+              <div className="wizard-card wizard-card--stack" style={{ maxWidth: '720px', margin: '0 auto' }}>
+                <div className="wizard-section">
+                  <div className="wizard-section-header">
+                    <div>
+                      <div className="section-kicker">Project Details</div>
+                      <h3>Project Details</h3>
+                      <p>Give your project a name and choose the location type.</p>
+                    </div>
                   </div>
-                  <span className="wizard-hint">
-                    Location helps track projects and may affect material pricing in future versions.
-                  </span>
+
+                  <div className="wizard-grid">
+                    <div className="form-group grid-span-2">
+                      <label className="wizard-label">
+                        <House size={18} weight="light" />
+                        Project Name
+                        <span className="required">*</span>
+                      </label>
+                      <Input
+                        className="wizard-select"
+                        placeholder="e.g. Borrowdale 4-Bedroom House"
+                        value={projectDetails.name}
+                        onChange={(e) => setProjectDetails({ ...projectDetails, name: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="form-group grid-span-2">
+                      <label className="wizard-label">
+                        <MapPin size={18} weight="light" />
+                        Location Type
+                        <span className="required">*</span>
+                      </label>
+                      <div className="pill-grid" role="radiogroup" aria-label="Location Type">
+                        {LOCATION_TYPES.map((option) => {
+                          const Icon = option.icon;
+                          const isSelected = projectDetails.locationType === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              className={`pill-option ${isSelected ? 'selected' : ''}`}
+                              onClick={() => setProjectDetails({ ...projectDetails, locationType: option.value })}
+                              aria-pressed={isSelected}
+                              data-testid={`location-type-${option.value}`}
+                            >
+                              <span className="pill-icon">
+                                <Icon size={18} weight={isSelected ? 'fill' : 'light'} />
+                              </span>
+                              <span className="pill-content">
+                                <span className="pill-title">{option.label}</span>
+                                <span className="pill-subtitle">{option.description}</span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="form-group grid-span-2">
+                      <label className="wizard-label">
+                        <MapPin size={18} weight="light" />
+                        Specific Location
+                        <span className="optional">(Optional)</span>
+                      </label>
+                      <Input
+                        className="wizard-select"
+                        placeholder="e.g. Borrowdale, Harare"
+                        value={projectDetails.specificLocation}
+                        onChange={(e) => setProjectDetails({ ...projectDetails, specificLocation: e.target.value })}
+                      />
+                      <span className="wizard-hint">
+                        Add a suburb or area to keep projects organized.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="wizard-divider" />
+
+                <div className="wizard-section">
+                  <div className="wizard-section-header">
+                    <div>
+                      <div className="section-kicker">Floor Plan Details</div>
+                      <h3>Floor Plan Details</h3>
+                      <p>Capture the total floor area and building type.</p>
+                    </div>
+                  </div>
+
+                  <div className="wizard-grid">
+                    <div className="form-group">
+                      <label className="wizard-label">
+                        <Layout size={18} weight="light" />
+                        Floor Plan Size
+                        <span className="required">*</span>
+                      </label>
+                      <div className="input-with-suffix">
+                        <input
+                          type="number"
+                          min="1"
+                          step="0.1"
+                          className="wizard-select"
+                          placeholder="e.g. 240"
+                          value={projectDetails.floorPlanSize}
+                          onChange={(e) => setProjectDetails({ ...projectDetails, floorPlanSize: e.target.value })}
+                        />
+                        <span className="input-suffix">m²</span>
+                      </div>
+                      <span className="wizard-hint">Total floor area of the plan.</span>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="wizard-label">
+                        <HouseSimple size={18} weight="light" />
+                        Building Type
+                        <span className="required">*</span>
+                      </label>
+                      <div className="pill-grid pill-grid--two" role="radiogroup" aria-label="Building Type">
+                        {BUILDING_TYPES.map((option) => {
+                          const Icon = option.icon;
+                          const isSelected = projectDetails.buildingType === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              className={`pill-option ${isSelected ? 'selected' : ''}`}
+                              onClick={() => setProjectDetails({ ...projectDetails, buildingType: option.value })}
+                              aria-pressed={isSelected}
+                              data-testid={`building-type-${option.value}`}
+                            >
+                              <span className="pill-icon">
+                                <Icon size={18} weight={isSelected ? 'fill' : 'light'} />
+                              </span>
+                              <span className="pill-content">
+                                <span className="pill-title">{option.label}</span>
+                                <span className="pill-subtitle">{option.description}</span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="optional-rooms">
+                    <div className="optional-header">
+                      <div>
+                        <h4>Optional Room Inputs</h4>
+                        <p>These help refine future estimates and remain optional.</p>
+                      </div>
+                      <span className="optional-chip">Optional</span>
+                    </div>
+                    <div className="room-grid">
+                      {ROOM_INPUTS.map((room) => (
+                        <div key={room.key} className="room-input">
+                          <label>{room.label}</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            placeholder="0"
+                            value={projectDetails.roomInputs[room.key]}
+                            onChange={(e) =>
+                              setProjectDetails({
+                                ...projectDetails,
+                                roomInputs: {
+                                  ...projectDetails.roomInputs,
+                                  [room.key]: e.target.value,
+                                },
+                              })
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="wizard-actions">

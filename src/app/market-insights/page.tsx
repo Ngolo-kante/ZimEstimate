@@ -73,7 +73,7 @@ export default function MarketInsightsPage() {
   const risingCount = materialPrices.filter((m) => m.trend === 'up').length;
 
   return (
-    <MainLayout title="Market Insights">
+    <MainLayout title="Insights">
       <div className="market-page">
         {/* Summary Stats */}
         <div className="stats-row">

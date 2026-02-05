@@ -24,10 +24,9 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { label: 'Home', href: '/home', icon: <House size={20} weight="light" /> },
   { label: 'Projects', href: '/projects', icon: <Folders size={20} weight="light" /> },
-  { label: 'AI Tools', href: '/ai', icon: <Lightning size={20} weight="fill" /> },
   { label: 'Marketplace', href: '/marketplace', icon: <Storefront size={20} weight="light" /> },
   { label: 'Templates', href: '/templates', icon: <Sparkle size={20} weight="light" /> },
-  { label: 'Market Insights', href: '/market-insights', icon: <TrendUp size={20} weight="light" /> },
+  { label: 'Insights', href: '/market-insights', icon: <TrendUp size={20} weight="light" /> },
 ];
 
 const bottomNavItems: NavItem[] = [

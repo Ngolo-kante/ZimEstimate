@@ -5,216 +5,217 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import {
-    shareProject,
-    getProjectShares,
-    updateShareAccess,
-    removeShare,
+  shareProject,
+  getProjectShares,
+  updateShareAccess,
+  removeShare,
 } from '@/lib/services/projects';
 import { ProjectShare, AccessLevel } from '@/lib/database.types';
 import {
-    X,
-    EnvelopeSimple,
-    Link as LinkIcon,
-    Copy,
-    Check,
-    UserPlus,
-    CircleNotch,
-    Trash,
+  X,
+  EnvelopeSimple,
+  Link as LinkIcon,
+  Copy,
+  Check,
+  UserPlus,
+  CircleNotch,
+  Trash,
 } from '@phosphor-icons/react';
 
 interface ShareModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    projectName: string;
-    projectId: string;
+  isOpen: boolean;
+  onClose: () => void;
+  projectName: string;
+  projectId: string;
 }
 
 export default function ShareModal({ isOpen, onClose, projectName, projectId }: ShareModalProps) {
-    const { success, error: showError } = useToast();
-    const [email, setEmail] = useState('');
-    const [accessLevel, setAccessLevel] = useState<AccessLevel>('view');
-    const [copied, setCopied] = useState(false);
-    const [shares, setShares] = useState<ProjectShare[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isInviting, setIsInviting] = useState(false);
+  const { success, error: showError } = useToast();
+  const [email, setEmail] = useState('');
+  const [accessLevel, setAccessLevel] = useState<AccessLevel>('view');
+  const [copied, setCopied] = useState(false);
+  const [shares, setShares] = useState<ProjectShare[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInviting, setIsInviting] = useState(false);
 
-    const loadShares = useCallback(async () => {
-        setIsLoading(true);
-        const { shares: loadedShares, error } = await getProjectShares(projectId);
-        if (error) {
-            showError('Failed to load shares');
-        } else {
-            setShares(loadedShares);
-        }
-        setIsLoading(false);
-    }, [projectId, showError]);
+  const loadShares = useCallback(async () => {
+    setIsLoading(true);
+    const { shares: loadedShares, error } = await getProjectShares(projectId);
+    if (error) {
+      showError('Failed to load shares');
+    } else {
+      setShares(loadedShares);
+    }
+    setIsLoading(false);
+  }, [projectId, showError]);
 
-    useEffect(() => {
-        if (isOpen) {
-            loadShares();
-        }
-    }, [isOpen, loadShares]);
+  useEffect(() => {
+    if (isOpen) {
+      // eslint-disable-next-line
+      loadShares();
+    }
+  }, [isOpen, loadShares]);
 
-    if (!isOpen) return null;
+  if (!isOpen) return null;
 
-    const shareLink = `${window.location.origin}/projects/${projectId}`;
+  const shareLink = `${window.location.origin}/projects/${projectId}`;
 
-    const handleCopyLink = () => {
-        navigator.clipboard.writeText(shareLink);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(shareLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
-    const handleInvite = async () => {
-        if (!email || !email.includes('@')) {
-            showError('Please enter a valid email address');
-            return;
-        }
+  const handleInvite = async () => {
+    if (!email || !email.includes('@')) {
+      showError('Please enter a valid email address');
+      return;
+    }
 
-        setIsInviting(true);
-        const { share, error } = await shareProject(projectId, email, accessLevel);
+    setIsInviting(true);
+    const { share, error } = await shareProject(projectId, email, accessLevel);
 
-        if (error) {
-            showError(error.message);
-        } else if (share) {
-            setShares([share, ...shares]);
-            setEmail('');
-            success('Invitation sent!');
-        }
-        setIsInviting(false);
-    };
+    if (error) {
+      showError(error.message);
+    } else if (share) {
+      setShares([share, ...shares]);
+      setEmail('');
+      success('Invitation sent!');
+    }
+    setIsInviting(false);
+  };
 
-    const handleUpdateAccess = async (shareId: string, newAccess: AccessLevel) => {
-        const { share, error } = await updateShareAccess(shareId, newAccess);
-        if (error) {
-            showError('Failed to update access level');
-        } else if (share) {
-            setShares(shares.map((s) => (s.id === shareId ? share : s)));
-            success('Access level updated');
-        }
-    };
+  const handleUpdateAccess = async (shareId: string, newAccess: AccessLevel) => {
+    const { share, error } = await updateShareAccess(shareId, newAccess);
+    if (error) {
+      showError('Failed to update access level');
+    } else if (share) {
+      setShares(shares.map((s) => (s.id === shareId ? share : s)));
+      success('Access level updated');
+    }
+  };
 
-    const handleRemoveShare = async (shareId: string) => {
-        const { error } = await removeShare(shareId);
-        if (error) {
-            showError('Failed to remove share');
-        } else {
-            setShares(shares.filter((s) => s.id !== shareId));
-            success('Share removed');
-        }
-    };
+  const handleRemoveShare = async (shareId: string) => {
+    const { error } = await removeShare(shareId);
+    if (error) {
+      showError('Failed to remove share');
+    } else {
+      setShares(shares.filter((s) => s.id !== shareId));
+      success('Share removed');
+    }
+  };
 
-    return (
-        <>
-            <div className="modal-overlay" onClick={onClose}>
-                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                    {/* Header */}
-                    <div className="modal-header">
-                        <h2>Share Project</h2>
-                        <button className="close-btn" onClick={onClose}>
-                            <X size={20} weight="bold" />
-                        </button>
-                    </div>
+  return (
+    <>
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          {/* Header */}
+          <div className="modal-header">
+            <h2>Share Project</h2>
+            <button className="close-btn" onClick={onClose}>
+              <X size={20} weight="bold" />
+            </button>
+          </div>
 
-                    {/* Project Name */}
-                    <p className="project-name">{projectName}</p>
+          {/* Project Name */}
+          <p className="project-name">{projectName}</p>
 
-                    {/* Invite by Email */}
-                    <div className="invite-section">
-                        <label className="section-label">Invite by Email</label>
-                        <div className="invite-row">
-                            <Input
-                                placeholder="Enter email address"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                icon={<EnvelopeSimple size={18} weight="light" />}
-                                onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
-                            />
-                            <select
-                                value={accessLevel}
-                                onChange={(e) => setAccessLevel(e.target.value as AccessLevel)}
-                                className="access-select"
-                            >
-                                <option value="view">Can View</option>
-                                <option value="edit">Can Edit</option>
-                            </select>
-                            <Button
-                                icon={isInviting ? <CircleNotch size={18} className="spin" /> : <UserPlus size={18} />}
-                                onClick={handleInvite}
-                                loading={isInviting}
-                            >
-                                Invite
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Shared Users List */}
-                    <div className="shared-users">
-                        <label className="section-label">People with Access</label>
-                        {isLoading ? (
-                            <div className="loading-state">
-                                <CircleNotch size={20} className="spin" />
-                                <span>Loading...</span>
-                            </div>
-                        ) : shares.length === 0 ? (
-                            <p className="no-shares">No one has access yet. Invite someone above.</p>
-                        ) : (
-                            <ul className="users-list">
-                                {shares.map((share) => (
-                                    <li key={share.id} className="user-item">
-                                        <div className="user-avatar">
-                                            {share.shared_with_email[0].toUpperCase()}
-                                        </div>
-                                        <div className="user-info">
-                                            <span className="user-email">{share.shared_with_email}</span>
-                                            <span className={`user-status ${share.shared_with_user_id ? 'accepted' : 'pending'}`}>
-                                                {share.shared_with_user_id ? '' : 'Pending signup'}
-                                            </span>
-                                        </div>
-                                        <select
-                                            value={share.access_level}
-                                            onChange={(e) => handleUpdateAccess(share.id, e.target.value as AccessLevel)}
-                                            className="access-select-sm"
-                                        >
-                                            <option value="view">View</option>
-                                            <option value="edit">Edit</option>
-                                        </select>
-                                        <button className="remove-btn" onClick={() => handleRemoveShare(share.id)}>
-                                            <Trash size={16} />
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-
-                    {/* Share Link */}
-                    <div className="link-section">
-                        <label className="section-label">
-                            <LinkIcon size={16} weight="light" />
-                            Share Link
-                        </label>
-                        <div className="link-row">
-                            <input
-                                type="text"
-                                value={shareLink}
-                                readOnly
-                                className="link-input"
-                            />
-                            <Button
-                                variant="secondary"
-                                icon={copied ? <Check size={18} /> : <Copy size={18} />}
-                                onClick={handleCopyLink}
-                            >
-                                {copied ? 'Copied!' : 'Copy'}
-                            </Button>
-                        </div>
-                        <p className="link-hint">Anyone with this link can view the project summary (requires login)</p>
-                    </div>
-                </div>
+          {/* Invite by Email */}
+          <div className="invite-section">
+            <label className="section-label">Invite by Email</label>
+            <div className="invite-row">
+              <Input
+                placeholder="Enter email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                icon={<EnvelopeSimple size={18} weight="light" />}
+                onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
+              />
+              <select
+                value={accessLevel}
+                onChange={(e) => setAccessLevel(e.target.value as AccessLevel)}
+                className="access-select"
+              >
+                <option value="view">Can View</option>
+                <option value="edit">Can Edit</option>
+              </select>
+              <Button
+                icon={isInviting ? <CircleNotch size={18} className="spin" /> : <UserPlus size={18} />}
+                onClick={handleInvite}
+                loading={isInviting}
+              >
+                Invite
+              </Button>
             </div>
+          </div>
 
-            <style jsx>{`
+          {/* Shared Users List */}
+          <div className="shared-users">
+            <label className="section-label">People with Access</label>
+            {isLoading ? (
+              <div className="loading-state">
+                <CircleNotch size={20} className="spin" />
+                <span>Loading...</span>
+              </div>
+            ) : shares.length === 0 ? (
+              <p className="no-shares">No one has access yet. Invite someone above.</p>
+            ) : (
+              <ul className="users-list">
+                {shares.map((share) => (
+                  <li key={share.id} className="user-item">
+                    <div className="user-avatar">
+                      {share.shared_with_email[0].toUpperCase()}
+                    </div>
+                    <div className="user-info">
+                      <span className="user-email">{share.shared_with_email}</span>
+                      <span className={`user-status ${share.shared_with_user_id ? 'accepted' : 'pending'}`}>
+                        {share.shared_with_user_id ? '' : 'Pending signup'}
+                      </span>
+                    </div>
+                    <select
+                      value={share.access_level}
+                      onChange={(e) => handleUpdateAccess(share.id, e.target.value as AccessLevel)}
+                      className="access-select-sm"
+                    >
+                      <option value="view">View</option>
+                      <option value="edit">Edit</option>
+                    </select>
+                    <button className="remove-btn" onClick={() => handleRemoveShare(share.id)}>
+                      <Trash size={16} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Share Link */}
+          <div className="link-section">
+            <label className="section-label">
+              <LinkIcon size={16} weight="light" />
+              Share Link
+            </label>
+            <div className="link-row">
+              <input
+                type="text"
+                value={shareLink}
+                readOnly
+                className="link-input"
+              />
+              <Button
+                variant="secondary"
+                icon={copied ? <Check size={18} /> : <Copy size={18} />}
+                onClick={handleCopyLink}
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </Button>
+            </div>
+            <p className="link-hint">Anyone with this link can view the project summary (requires login)</p>
+          </div>
+        </div>
+      </div>
+
+      <style jsx>{`
         .modal-overlay {
           position: fixed;
           inset: 0;
@@ -447,6 +448,6 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
           }
         }
       `}</style>
-        </>
-    );
+    </>
+  );
 }

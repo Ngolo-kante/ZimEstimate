@@ -55,6 +55,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
     }, [projectId, showError]);
 
     useEffect(() => {
+        // eslint-disable-next-line
         loadDocuments();
     }, [loadDocuments]);
 

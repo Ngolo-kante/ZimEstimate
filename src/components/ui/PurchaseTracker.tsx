@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CheckCircle,
   Circle,
@@ -30,15 +30,17 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
   const [actualPrice, setActualPrice] = useState(item.actual_price_usd?.toString() || '');
   const [showConfetti, setShowConfetti] = useState(false);
 
-  // Pre-compute confetti styles - randomness is intentional for visual effect
-  // eslint-disable-next-line react-hooks/purity
-  const confettiPieces = useMemo(() => {
+  const [confettiPieces, setConfettiPieces] = useState<Array<{ left: string, animationDelay: string, backgroundColor: string }>>([]);
+
+  // Generate confetti styles on client-side only to avoid hydration mismatch
+  useEffect(() => {
     const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
-    return [...Array(30)].map(() => ({
+    // eslint-disable-next-line
+    setConfettiPieces([...Array(30)].map(() => ({
       left: `${Math.random() * 100}%`,
       animationDelay: `${Math.random() * 0.5}s`,
       backgroundColor: colors[Math.floor(Math.random() * colors.length)],
-    }));
+    })));
   }, []);
 
   const isPurchased = item.is_purchased;

@@ -217,6 +217,7 @@ function ProjectDetailContent() {
 
     useEffect(() => {
         if (activeTab !== 'usage' || !project?.usage_tracking_enabled) return;
+        // eslint-disable-next-line
         loadUsageData();
     }, [activeTab, project?.usage_tracking_enabled, loadUsageData]);
 

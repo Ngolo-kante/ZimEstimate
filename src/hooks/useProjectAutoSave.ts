@@ -17,8 +17,10 @@ interface BOQItemLocal {
     materialName: string;
     quantity: number | null;
     unit: string;
-    priceUsd: number;
-    priceZwg: number;
+    averagePriceUsd: number;
+    averagePriceZwg: number;
+    actualPriceUsd: number;
+    actualPriceZwg: number;
     description?: string;
     category?: string;
 }
@@ -113,8 +115,8 @@ export function useProjectAutoSave(
                     category: item.category || milestone.id,
                     quantity: item.quantity || 0,
                     unit: item.unit,
-                    unit_price_usd: item.priceUsd,
-                    unit_price_zwg: item.priceZwg,
+                    unit_price_usd: item.actualPriceUsd,
+                    unit_price_zwg: item.actualPriceZwg,
                     notes: item.description,
                     sort_order: sortOrder++,
                 });

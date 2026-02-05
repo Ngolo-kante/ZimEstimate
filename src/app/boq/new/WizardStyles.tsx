@@ -166,6 +166,250 @@ const WizardStyles = () => (
       .wizard-grid { grid-template-columns: 1fr; }
     }
 
+    .wizard-card--stack {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xl);
+    }
+
+    .wizard-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-lg);
+    }
+
+    .wizard-section-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--spacing-md);
+    }
+
+    .wizard-section-header h3 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .wizard-section-header p {
+      margin: 6px 0 0;
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+    }
+
+    .section-kicker {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--color-text-muted);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .wizard-divider {
+      height: 1px;
+      background: var(--color-border-light);
+      border-radius: 999px;
+    }
+
+    .grid-span-2 {
+      grid-column: 1 / -1;
+    }
+
+    .required {
+      margin-left: 6px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #ef4444;
+    }
+
+    .optional {
+      margin-left: 6px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--color-text-muted);
+    }
+
+    .pill-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .pill-grid--two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pill-option {
+      border: 1px solid var(--color-border);
+      background: #fff;
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--color-text);
+    }
+
+    .pill-option:hover {
+      border-color: #93c5fd;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .pill-option.selected {
+      border-color: var(--color-primary);
+      background: linear-gradient(135deg, rgba(226, 232, 255, 0.8), rgba(255, 255, 255, 1));
+      box-shadow: 0 12px 26px rgba(37, 99, 235, 0.18);
+    }
+
+    .pill-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: rgba(59, 130, 246, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #2563eb;
+      flex-shrink: 0;
+    }
+
+    .pill-content {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .pill-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .pill-subtitle {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+    }
+
+    .input-with-suffix {
+      position: relative;
+    }
+
+    .input-with-suffix .wizard-select {
+      padding-right: 54px;
+    }
+
+    .input-suffix {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-text-muted);
+    }
+
+    .optional-rooms {
+      margin-top: var(--spacing-lg);
+      padding: var(--spacing-lg);
+      border-radius: var(--radius-lg);
+      border: 1px dashed var(--color-border);
+      background: linear-gradient(135deg, rgba(248, 250, 252, 0.9), rgba(241, 245, 249, 0.9));
+    }
+
+    .optional-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .optional-header h4 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .optional-header p {
+      margin: 6px 0 0;
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+    }
+
+    .optional-chip {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+      background: #fff;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .room-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .room-input {
+      background: #fff;
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .room-input label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-text-muted);
+      font-weight: 600;
+    }
+
+    .room-input input {
+      border: none;
+      outline: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--color-text);
+      background: transparent;
+    }
+
+    .room-input input::placeholder {
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    .room-input:focus-within {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px var(--color-accent-bg);
+    }
+
+    @media (max-width: 900px) {
+      .pill-grid { grid-template-columns: 1fr; }
+      .pill-grid--two { grid-template-columns: 1fr; }
+      .room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 520px) {
+      .room-grid { grid-template-columns: 1fr; }
+    }
+
     .select-wrapper {
       position: relative;
     }
@@ -805,6 +1049,57 @@ const WizardStyles = () => (
       .step-progress-item { min-width: 60px; }
       .step-node { width: 28px; height: 28px; font-size: 0.75rem; }
       .step-connector { width: 50px; }
+    }
+
+    /* Price Update Banner */
+    .price-update-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 18px 20px;
+      margin: 12px 0 24px 0;
+      border-radius: 16px;
+      border: 1px solid #bae6fd;
+      background: linear-gradient(135deg, rgba(224, 242, 254, 0.9), rgba(255, 255, 255, 0.95));
+      box-shadow: 0 12px 24px rgba(14, 116, 144, 0.08);
+    }
+
+    .price-update-content {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+    }
+
+    .price-update-text h4 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .price-update-text p {
+      margin: 6px 0 0;
+      font-size: 0.85rem;
+      color: #334155;
+    }
+
+    .price-update-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 900px) {
+      .price-update-banner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .price-update-actions {
+        width: 100%;
+      }
     }
 
     /* Currency Toggle Bar */

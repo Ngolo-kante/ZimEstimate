@@ -120,6 +120,7 @@ export default function StageTab({
     }, [projectId, stage.boq_category]);
 
     useEffect(() => {
+        // eslint-disable-next-line
         loadData();
     }, [loadData, stageItems.length]);
 

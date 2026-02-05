@@ -43,6 +43,7 @@ export default function ProjectPickerModal({
 
     useEffect(() => {
         if (isOpen) {
+            // eslint-disable-next-line
             loadProjects();
         }
     }, [isOpen, loadProjects]);
