@@ -9,7 +9,7 @@ import { BOQItem, BOQCategory } from '@/lib/database.types';
 import { StageBudgetStats } from '@/lib/services/stages';
 import { addBOQItem } from '@/lib/services/projects';
 import { materials, getBestPrice } from '@/lib/materials';
-import { Package, CaretDown, CaretUp, Trash, ShoppingCart, Plus } from '@phosphor-icons/react';
+import { Package, CaretDown, CaretUp, Trash, ShoppingCart, Plus, TrendUp, TrendDown, Minus } from '@phosphor-icons/react';
 
 type StageCategory = BOQCategory | 'labor';
 
@@ -25,9 +25,9 @@ interface StageBOQSectionProps {
     stageScope?: BOQCategory;
 }
 
-function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: number }) {
+function PriceDisplay({ priceUsd, priceZwg, bold = false }: { priceUsd: number; priceZwg: number; bold?: boolean }) {
     const { formatPrice } = useCurrency();
-    return <>{formatPrice(priceUsd, priceZwg)}</>;
+    return <span className={bold ? 'font-semibold' : ''}>{formatPrice(priceUsd, priceZwg)}</span>;
 }
 
 export default function StageBOQSection({
@@ -46,7 +46,7 @@ export default function StageBOQSection({
     const [newMaterialId, setNewMaterialId] = useState('');
     const [newQuantity, setNewQuantity] = useState('1');
     const [isAdding, setIsAdding] = useState(false);
-    const { exchangeRate } = useCurrency();
+    const { exchangeRate, formatPrice } = useCurrency();
     const { success, error: showError } = useToast();
 
     const availableMaterials = useMemo(() => {
@@ -66,10 +66,9 @@ export default function StageBOQSection({
         });
     };
 
-    const handlePriceUpdate = async (item: BOQItem, newPrice: number) => {
+    const handleActualPriceUpdate = async (item: BOQItem, newPrice: number) => {
         await onItemUpdate(item.id, {
-            unit_price_usd: newPrice,
-            unit_price_zwg: newPrice * exchangeRate,
+            actual_price_usd: newPrice,
         });
     };
 
@@ -108,6 +107,7 @@ export default function StageBOQSection({
             unit: material.unit,
             unit_price_usd: bestPrice.priceUsd,
             unit_price_zwg: bestPrice.priceZwg,
+            actual_price_usd: bestPrice.priceUsd,
             sort_order: items.length,
         });
 
@@ -129,44 +129,50 @@ export default function StageBOQSection({
     const selectLabel = category === 'labor' ? 'Labor/Service' : 'Material';
     const emptyTitle = category === 'labor'
         ? 'No labor items yet'
-        : 'No materials in this stage yet';
+        : 'No items in this section';
     const emptyHint = category === 'labor'
         ? 'Add labor or service items to start tracking'
-        : 'Add materials in the BOQ Builder to see them here';
+        : 'Use the builder or add items manually';
 
     if (items.length === 0) {
         return (
             <>
-                <div className="boq-section empty">
-                    <div className="section-header">
-                        <div className="header-info">
-                            <Package size={20} weight="duotone" />
-                            <h4>Bill of Quantities - {categoryLabel}</h4>
+                <div className="boq-card empty">
+                    <div className="card-header">
+                        <div className="header-title">
+                            <div className="icon-wrapper">
+                                <Package size={18} weight="duotone" />
+                            </div>
+                            <h4>{categoryLabel}</h4>
                         </div>
-                        <button
-                            className="add-btn"
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            icon={<Plus size={14} />}
                             onClick={() => setShowAddForm(prev => !prev)}
                         >
-                            <Plus size={14} />
                             {addLabel}
-                        </button>
+                        </Button>
                     </div>
                     {showAddForm && (
                         <div className="add-form">
-                            <div className="form-row">
-                                <div className="form-group flex-2">
+                            <div className="form-grid">
+                                <div className="form-group span-2">
                                     <label>{selectLabel}</label>
-                                    <select
-                                        value={newMaterialId}
-                                        onChange={(e) => setNewMaterialId(e.target.value)}
-                                    >
-                                        <option value="">{category === 'labor' ? 'Select labor or service...' : 'Select material...'}</option>
-                                        {availableMaterials.map((material) => (
-                                            <option key={material.id} value={material.id}>
-                                                {material.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <div className="select-wrapper">
+                                        <select
+                                            value={newMaterialId}
+                                            onChange={(e) => setNewMaterialId(e.target.value)}
+                                        >
+                                            <option value="">{category === 'labor' ? 'Select labor or service...' : 'Select material...'}</option>
+                                            {availableMaterials.map((material) => (
+                                                <option key={material.id} value={material.id}>
+                                                    {material.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <CaretDown size={14} className="select-arrow" />
+                                    </div>
                                 </div>
                                 <div className="form-group">
                                     <label>Quantity</label>
@@ -180,144 +186,128 @@ export default function StageBOQSection({
                                 </div>
                             </div>
                             <div className="form-actions">
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={() => setShowAddForm(false)}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    variant="primary"
-                                    size="sm"
-                                    loading={isAdding}
-                                    onClick={handleAddItem}
-                                >
-                                    Add Item
-                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => setShowAddForm(false)}>Cancel</Button>
+                                <Button variant="primary" size="sm" loading={isAdding} onClick={handleAddItem}>Add Item</Button>
                             </div>
                         </div>
                     )}
-                    <div className="empty-content">
-                        <Package size={32} weight="light" />
+                    <div className="empty-state">
+                        <div className="empty-icon">
+                            <Package size={32} weight="light" />
+                        </div>
                         <p>{emptyTitle}</p>
-                        <span className="hint">{emptyHint}</span>
+                        <span>{emptyHint}</span>
                     </div>
                 </div>
-
                 <style jsx>{`
-                    .boq-section {
-                        background: var(--color-surface);
+                    .boq-card {
+                        background: #fff;
                         border: 1px solid var(--color-border-light);
-                        border-radius: var(--radius-lg);
+                        border-radius: 16px;
                         overflow: hidden;
+                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
                     }
-
-                    .section-header {
+                    .card-header {
                         display: flex;
                         justify-content: space-between;
                         align-items: center;
-                        padding: var(--spacing-md) var(--spacing-lg);
-                        background: var(--color-background);
+                        padding: 16px 24px;
                         border-bottom: 1px solid var(--color-border-light);
                     }
-
-                    .header-info {
+                    .header-title {
                         display: flex;
                         align-items: center;
-                        gap: var(--spacing-sm);
-                        color: var(--color-primary);
+                        gap: 12px;
                     }
-
-                    .header-info h4 {
-                        font-size: 0.875rem;
-                        font-weight: 600;
-                        color: var(--color-text);
+                    .icon-wrapper {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 32px;
+                        height: 32px;
+                        background: #f1f5f9;
+                        border-radius: 8px;
+                        color: #475569;
+                    }
+                    h4 {
                         margin: 0;
-                    }
-
-                    .add-btn {
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 6px;
-                        padding: 6px 12px;
-                        background: var(--color-primary-bg);
-                        border: 1px solid var(--color-border-light);
-                        border-radius: var(--radius-md);
-                        font-size: 0.75rem;
+                        font-size: 15px;
                         font-weight: 600;
-                        color: var(--color-primary);
-                        cursor: pointer;
-                        transition: all 0.2s ease;
+                        color: #1e293b;
                     }
-
-                    .add-btn:hover {
-                        border-color: var(--color-primary);
-                    }
-
                     .add-form {
-                        padding: var(--spacing-md) var(--spacing-lg);
-                        background: var(--color-surface);
+                        padding: 20px 24px;
+                        background: #f8fafc;
                         border-bottom: 1px solid var(--color-border-light);
                     }
-
-                    .form-row {
-                        display: flex;
-                        gap: var(--spacing-sm);
-                        margin-bottom: var(--spacing-sm);
+                    .form-grid {
+                        display: grid;
+                        grid-template-columns: 2fr 1fr;
+                        gap: 16px;
+                        margin-bottom: 16px;
                     }
-
                     .form-group {
                         display: flex;
                         flex-direction: column;
-                        gap: 4px;
+                        gap: 6px;
                     }
-
-                    .form-group.flex-2 {
-                        flex: 2;
-                    }
-
                     .form-group label {
-                        font-size: 0.625rem;
+                        font-size: 12px;
                         font-weight: 600;
+                        color: #64748b;
                         text-transform: uppercase;
-                        letter-spacing: 0.05em;
-                        color: var(--color-text-muted);
+                        letter-spacing: 0.02em;
                     }
-
-                    .form-group input,
-                    .form-group select {
-                        padding: var(--spacing-xs) var(--spacing-sm);
-                        border: 1px solid var(--color-border);
-                        border-radius: var(--radius-sm);
-                        font-size: 0.75rem;
-                        background: var(--color-surface);
+                    .select-wrapper {
+                        position: relative;
                     }
-
+                    select, input {
+                        width: 100%;
+                        padding: 10px 12px;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        background: #fff;
+                        outline: none;
+                        transition: border-color 0.2s;
+                        appearance: none;
+                    }
+                    select:focus, input:focus {
+                        border-color: #3b82f6;
+                        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+                    }
+                    .select-arrow {
+                        position: absolute;
+                        right: 12px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        pointer-events: none;
+                        color: #94a3b8;
+                    }
                     .form-actions {
                         display: flex;
                         justify-content: flex-end;
-                        gap: var(--spacing-sm);
+                        gap: 8px;
                     }
-
-                    .empty-content {
+                    .empty-state {
+                        padding: 48px 20px;
                         display: flex;
                         flex-direction: column;
                         align-items: center;
-                        justify-content: center;
-                        padding: var(--spacing-xl);
                         text-align: center;
-                        color: var(--color-text-muted);
+                        color: #64748b;
                     }
-
-                    .empty-content p {
-                        margin: var(--spacing-sm) 0 var(--spacing-xs) 0;
-                        font-size: 0.875rem;
-                        color: var(--color-text-secondary);
+                    .empty-icon {
+                        margin-bottom: 16px;
+                        color: #cbd5e1;
                     }
-
-                    .hint {
-                        font-size: 0.75rem;
+                    .empty-state p {
+                        margin: 0 0 4px;
+                        font-weight: 500;
+                        color: #334155;
+                    }
+                    .empty-state span {
+                        font-size: 13px;
                     }
                 `}</style>
             </>
@@ -326,66 +316,80 @@ export default function StageBOQSection({
 
     return (
         <>
-            <div className="boq-section">
-                <div className="section-header" onClick={() => setExpanded(!expanded)}>
-                    <div className="header-info">
-                        <Package size={20} weight="duotone" />
-                        <h4>Bill of Quantities - {categoryLabel}</h4>
-                        <span className="item-count">
-                            {items.length} items
-                            <span className="purchased-count">
-                                <ShoppingCart size={12} />
-                                {stats.purchasedCount} purchased
-                            </span>
-                        </span>
+            <div className={`boq-card ${expanded ? 'expanded' : 'collapsed'}`}>
+                <div className="card-header" onClick={() => setExpanded(!expanded)}>
+                    <div className="header-main">
+                        <div className="header-title">
+                            <div className="title-row">
+                                <div className="icon-wrapper">
+                                    <Package size={18} weight="duotone" />
+                                </div>
+                                <h4>{categoryLabel}</h4>
+                            </div>
+                            <div className="meta-row">
+                                <span className="item-badge">
+                                    {items.length} items
+                                </span>
+                                {stats.purchasedCount > 0 && (
+                                    <span className="purchased-badge">
+                                        <ShoppingCart size={12} weight="fill" />
+                                        {stats.purchasedCount} bought
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                    <div className="header-stats">
-                        <button
-                            className="add-btn"
+
+                    <div className="header-actions">
+                        <div className="stat-pill">
+                            <span className="label">Total</span>
+                            <span className="value">
+                                <PriceDisplay priceUsd={stats.totalBudget} priceZwg={stats.totalBudget * exchangeRate} bold />
+                            </span>
+                        </div>
+
+                        <div className="divider"></div>
+
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            icon={<Plus size={14} />}
+                            className="add-btn-header"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setShowAddForm(prev => !prev);
                             }}
                         >
-                            <Plus size={14} />
-                            {addLabel}
-                        </button>
-                        <div className="stat">
-                            <span className="stat-label">Budget</span>
-                            <span className="stat-value">
-                                <PriceDisplay priceUsd={stats.totalBudget} priceZwg={stats.totalBudget * exchangeRate} />
-                            </span>
-                        </div>
-                        <div className="stat">
-                            <span className="stat-label">Spent</span>
-                            <span className="stat-value spent">
-                                <PriceDisplay priceUsd={stats.totalSpent} priceZwg={stats.totalSpent * exchangeRate} />
-                            </span>
-                        </div>
-                        <button className="expand-btn">
-                            {expanded ? <CaretUp size={18} /> : <CaretDown size={18} />}
+                            Add
+                        </Button>
+
+                        <button className="expand-trigger">
+                            {expanded ? <CaretUp size={16} /> : <CaretDown size={16} />}
                         </button>
                     </div>
                 </div>
 
                 {expanded && (
-                    <div className="boq-content">
+                    <div className="card-content">
                         {showAddForm && (
                             <div className="add-form">
-                                <div className="form-row">
-                                    <div className="form-group flex-2">
-                                    <label>{selectLabel}</label>
-                                    <select
-                                        value={newMaterialId}
-                                        onChange={(e) => setNewMaterialId(e.target.value)}
-                                    >
-                                        <option value="">{category === 'labor' ? 'Select labor or service...' : 'Select material...'}</option>
-                                        {availableMaterials.map((material) => (
-                                            <option key={material.id} value={material.id}>
-                                                {material.name}
-                                            </option>
-                                        ))}
-                                        </select>
+                                <div className="form-grid">
+                                    <div className="form-group span-2">
+                                        <label>{selectLabel}</label>
+                                        <div className="select-wrapper">
+                                            <select
+                                                value={newMaterialId}
+                                                onChange={(e) => setNewMaterialId(e.target.value)}
+                                            >
+                                                <option value="">{category === 'labor' ? 'Select labor or service...' : 'Select material...'}</option>
+                                                {availableMaterials.map((material) => (
+                                                    <option key={material.id} value={material.id}>
+                                                        {material.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <CaretDown size={14} className="select-arrow" />
+                                        </div>
                                     </div>
                                     <div className="form-group">
                                         <label>Quantity</label>
@@ -399,363 +403,430 @@ export default function StageBOQSection({
                                     </div>
                                 </div>
                                 <div className="form-actions">
-                                    <Button
-                                        variant="secondary"
-                                        size="sm"
-                                        onClick={() => setShowAddForm(false)}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        variant="primary"
-                                        size="sm"
-                                        loading={isAdding}
-                                        onClick={handleAddItem}
-                                    >
-                                        Add Item
-                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => setShowAddForm(false)}>Cancel</Button>
+                                    <Button variant="primary" size="sm" loading={isAdding} onClick={handleAddItem}>Add Item</Button>
                                 </div>
                             </div>
                         )}
-                        <table className="materials-table">
-                            <thead>
-                                <tr>
-                                    <th>Material</th>
-                                    <th>Quantity</th>
-                                    <th>Unit Price</th>
-                                    <th>Total</th>
-                                    <th>Status</th>
-                                    {onItemDelete && <th></th>}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {items.map((item) => (
-                                    <tr key={item.id} className={item.is_purchased ? 'purchased' : ''}>
-                                        <td>
-                                            <div className="material-name">{item.material_name}</div>
-                                            {item.notes && <div className="material-notes">{item.notes}</div>}
-                                        </td>
-                                        <td>
-                                            <InlineEdit
-                                                value={Number(item.quantity)}
-                                                type="number"
-                                                suffix={` ${item.unit}`}
-                                                onSave={(val) => handleQuantityUpdate(item, Number(val))}
-                                            />
-                                        </td>
-                                        <td>
-                                            <InlineEdit
-                                                value={Number(item.unit_price_usd)}
-                                                type="currency"
-                                                prefix="$"
-                                                onSave={(val) => handlePriceUpdate(item, Number(val))}
-                                            />
-                                        </td>
-                                        <td className="total-cell">
-                                            <PriceDisplay
-                                                priceUsd={Number(item.total_usd)}
-                                                priceZwg={Number(item.total_zwg)}
-                                            />
-                                        </td>
-                                        <td>
-                                            {item.is_purchased ? (
-                                                <span className="status-badge purchased">Purchased</span>
-                                            ) : (
-                                                <span className="status-badge pending">Pending</span>
-                                            )}
-                                        </td>
-                                        {onItemDelete && (
-                                            <td className="delete-cell">
-                                                <button
-                                                    className="delete-btn"
-                                                    onClick={() => onItemDelete(item.id)}
-                                                    title="Delete item"
-                                                >
-                                                    <Trash size={14} />
-                                                </button>
-                                            </td>
-                                        )}
+
+                        <div className="table-responsive">
+                            <table className="boq-table">
+                                <thead>
+                                    <tr>
+                                        <th className="col-item">Item Description</th>
+                                        <th className="col-price text-right">Avg. Price</th>
+                                        <th className="col-price text-right">Actual Price</th>
+                                        <th className="col-var text-right">Variance</th>
+                                        <th className="col-qty text-right">Qty</th>
+                                        <th className="col-total text-right">Total</th>
+                                        <th className="col-status">Status</th>
+                                        <th className="col-actions"></th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {items.map((item) => {
+                                        const averagePrice = Number(item.unit_price_usd);
+                                        const actualPrice = Number(item.actual_price_usd ?? item.unit_price_usd);
+                                        const variance = actualPrice - averagePrice;
+                                        const variancePercent = averagePrice > 0 ? (variance / averagePrice) * 100 : 0;
+                                        const lineTotalUsd = Number(item.quantity) * actualPrice;
+                                        const lineTotalZwg = lineTotalUsd * exchangeRate;
+
+                                        return (
+                                            <tr key={item.id} className={`item-row ${item.is_purchased ? 'is-purchased' : ''}`}>
+                                                <td className="col-item">
+                                                    <div className="item-info">
+                                                        <span className="item-name">{item.material_name}</span>
+                                                        {item.notes && <span className="item-notes">{item.notes}</span>}
+                                                    </div>
+                                                </td>
+                                                <td className="col-price text-right">
+                                                    <span className="price-subtle">
+                                                        <PriceDisplay priceUsd={averagePrice} priceZwg={Number(item.unit_price_zwg)} />
+                                                    </span>
+                                                </td>
+                                                <td className="col-price text-right">
+                                                    <InlineEdit
+                                                        value={actualPrice}
+                                                        type="currency"
+                                                        prefix="$"
+                                                        onSave={(val) => handleActualPriceUpdate(item, Number(val))}
+                                                        className="price-edit"
+                                                    />
+                                                </td>
+                                                <td className="col-var text-right">
+                                                    <div className={`variance-badge ${variance >= 0 ? (variance === 0 ? 'neutral' : 'positive') : 'negative'}`}>
+                                                        {variance === 0 ? <Minus size={10} /> : variance < 0 ? <TrendDown size={12} /> : <TrendUp size={12} />}
+                                                        <span>{Math.abs(variancePercent).toFixed(0)}%</span>
+                                                    </div>
+                                                </td>
+                                                <td className="col-qty text-right">
+                                                    <InlineEdit
+                                                        value={Number(item.quantity)}
+                                                        type="number"
+                                                        suffix={` ${item.unit}`}
+                                                        onSave={(val) => handleQuantityUpdate(item, Number(val))}
+                                                        className="qty-edit"
+                                                    />
+                                                </td>
+                                                <td className="col-total text-right">
+                                                    <div className="line-total">
+                                                        <PriceDisplay priceUsd={lineTotalUsd} priceZwg={lineTotalZwg} bold />
+                                                    </div>
+                                                </td>
+                                                <td className="col-status">
+                                                    {item.is_purchased ? (
+                                                        <span className="status-pill purchased">Purchased</span>
+                                                    ) : (
+                                                        <span className="status-pill pending">Pending</span>
+                                                    )}
+                                                </td>
+                                                <td className="col-actions">
+                                                    {onItemDelete && (
+                                                        <button
+                                                            className="action-btn delete"
+                                                            onClick={() => onItemDelete(item.id)}
+                                                            title="Delete item"
+                                                        >
+                                                            <Trash size={16} />
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
             </div>
 
             <style jsx>{`
-                .boq-section {
-                    background: var(--color-surface);
+                .boq-card {
+                    background: #fff;
                     border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-lg);
+                    border-radius: 16px;
                     overflow: hidden;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+                    transition: all 0.2s ease;
                 }
-
-                .section-header {
+                
+                .card-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding: var(--spacing-md) var(--spacing-lg);
-                    background: var(--color-background);
-                    border-bottom: 1px solid var(--color-border-light);
+                    padding: 20px 24px;
                     cursor: pointer;
-                    transition: background 0.15s ease;
+                    background: #fff;
+                    transition: background 0.15s;
                 }
-
-                .section-header:hover {
-                    background: var(--color-surface);
+                
+                .card-header:hover {
+                    background: #f8fafc;
                 }
-
-                .header-info {
-                    display: flex;
-                    align-items: center;
-                    gap: var(--spacing-sm);
-                    color: var(--color-primary);
+                
+                .header-main {
+                    flex: 1;
                 }
-
-                .header-info h4 {
-                    font-size: 0.875rem;
-                    font-weight: 600;
-                    color: var(--color-text);
-                    margin: 0;
-                }
-
-                .add-btn {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 6px;
-                    padding: 6px 12px;
-                    background: var(--color-primary-bg);
-                    border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-md);
-                    font-size: 0.75rem;
-                    font-weight: 600;
-                    color: var(--color-primary);
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                }
-
-                .add-btn:hover {
-                    border-color: var(--color-primary);
-                }
-
-                .add-form {
-                    padding: var(--spacing-md);
-                    background: var(--color-surface);
-                    border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-md);
-                    margin-bottom: var(--spacing-md);
-                }
-
-                .form-row {
-                    display: flex;
-                    gap: var(--spacing-sm);
-                    margin-bottom: var(--spacing-sm);
-                }
-
-                .form-group {
+                
+                .header-title {
                     display: flex;
                     flex-direction: column;
                     gap: 4px;
                 }
-
-                .form-group.flex-2 {
-                    flex: 2;
-                }
-
-                .form-group label {
-                    font-size: 0.625rem;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    color: var(--color-text-muted);
-                }
-
-                .form-group input,
-                .form-group select {
-                    padding: var(--spacing-xs) var(--spacing-sm);
-                    border: 1px solid var(--color-border);
-                    border-radius: var(--radius-sm);
-                    font-size: 0.75rem;
-                    background: var(--color-surface);
-                }
-
-                .form-actions {
-                    display: flex;
-                    justify-content: flex-end;
-                    gap: var(--spacing-sm);
-                }
-
-                .item-count {
+                
+                .title-row {
                     display: flex;
                     align-items: center;
-                    gap: var(--spacing-sm);
-                    font-size: 0.75rem;
-                    color: var(--color-text-muted);
-                    padding-left: var(--spacing-sm);
-                    border-left: 1px solid var(--color-border-light);
-                    margin-left: var(--spacing-sm);
+                    gap: 12px;
                 }
-
-                .purchased-count {
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                    color: var(--color-success);
-                }
-
-                .header-stats {
-                    display: flex;
-                    align-items: center;
-                    gap: var(--spacing-lg);
-                }
-
-                .stat {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: flex-end;
-                }
-
-                .stat-label {
-                    font-size: 0.625rem;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    color: var(--color-text-muted);
-                }
-
-                .stat-value {
-                    font-size: 0.875rem;
-                    font-weight: 600;
-                    color: var(--color-text);
-                }
-
-                .stat-value.spent {
-                    color: var(--color-accent);
-                }
-
-                .expand-btn {
-                    width: 32px;
-                    height: 32px;
+                
+                .icon-wrapper {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    background: none;
-                    border: none;
-                    cursor: pointer;
-                    color: var(--color-text-muted);
-                    border-radius: var(--radius-sm);
+                    width: 32px;
+                    height: 32px;
+                    background: #eff6ff;
+                    color: #2563eb;
+                    border-radius: 8px;
                 }
-
-                .expand-btn:hover {
-                    background: var(--color-background);
+                
+                h4 {
+                    margin: 0;
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: #0f172a;
                 }
-
-                .boq-content {
-                    padding: var(--spacing-md);
+                
+                .meta-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding-left: 44px;
                 }
-
-                .materials-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    font-size: 0.875rem;
-                }
-
-                .materials-table th,
-                .materials-table td {
-                    padding: var(--spacing-sm);
-                    text-align: left;
-                    border-bottom: 1px solid var(--color-border-light);
-                }
-
-                .materials-table th {
-                    color: var(--color-text-secondary);
+                
+                .item-badge, .purchased-badge {
+                    font-size: 12px;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    background: #f1f5f9;
+                    color: #64748b;
                     font-weight: 500;
-                    font-size: 0.75rem;
+                }
+                
+                .purchased-badge {
+                    background: #f0fdf4;
+                    color: #166534;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+                
+                .header-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                }
+                
+                .stat-pill {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-end;
+                    background: #f8fafc;
+                    padding: 6px 12px;
+                    border-radius: 8px;
+                    border: 1px solid #e2e8f0;
+                }
+                
+                .stat-pill .label {
+                    font-size: 10px;
                     text-transform: uppercase;
+                    color: #64748b;
+                    font-weight: 600;
                     letter-spacing: 0.05em;
                 }
-
-                .materials-table tbody tr:last-child td {
+                
+                .stat-pill .value {
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: #0f172a;
+                }
+                
+                .divider {
+                    width: 1px;
+                    height: 24px;
+                    background: #e2e8f0;
+                }
+                
+                .expand-trigger {
+                    width: 28px;
+                    height: 28px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: none;
+                    background: transparent;
+                    color: #94a3b8;
+                    cursor: pointer;
+                    border-radius: 6px;
+                }
+                
+                .expand-trigger:hover {
+                    background: #e2e8f0;
+                    color: #475569;
+                }
+                
+                .add-form {
+                    padding: 24px;
+                    background: #f8fafc;
+                    border-top: 1px solid #e2e8f0;
+                    border-bottom: 1px solid #e2e8f0;
+                }
+                
+                .form-grid {
+                    display: grid;
+                    grid-template-columns: 2fr 1fr;
+                    gap: 16px;
+                    margin-bottom: 16px;
+                }
+                
+                .table-responsive {
+                    overflow-x: auto;
+                }
+                
+                .boq-table {
+                    width: 100%;
+                    border-collapse: separate;
+                    border-spacing: 0;
+                }
+                
+                .boq-table th {
+                    text-align: left;
+                    font-size: 11px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    color: #64748b;
+                    letter-spacing: 0.05em;
+                    padding: 12px 16px;
+                    border-bottom: 1px solid #e2e8f0;
+                    background: #fcfcfc;
+                }
+                
+                .boq-table td {
+                    padding: 16px;
+                    vertical-align: middle;
+                    border-bottom: 1px solid #f1f5f9;
+                    font-size: 14px;
+                }
+                
+                .item-row:last-child td {
                     border-bottom: none;
                 }
-
-                .materials-table tbody tr.purchased {
-                    background: rgba(16, 185, 129, 0.03);
+                
+                .item-row.is-purchased {
+                    background: #f8fafc;
                 }
-
-                .material-name {
+                
+                .item-row:hover {
+                    background: #f8fafc;
+                }
+                
+                .item-info {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                }
+                
+                .item-name {
                     font-weight: 500;
+                    color: #1e293b;
                 }
-
-                .material-notes {
-                    font-size: 0.75rem;
-                    color: var(--color-text-muted);
-                    margin-top: 2px;
+                
+                .item-notes {
+                    font-size: 12px;
+                    color: #94a3b8;
                 }
-
-                .total-cell {
+                
+                .text-right { text-align: right; }
+                
+                .price-subtle {
+                    color: #64748b;
+                }
+                
+                .variance-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 2px;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    font-size: 11px;
                     font-weight: 600;
                 }
-
-                .status-badge {
-                    font-size: 0.625rem;
+                
+                .variance-badge.neutral {
+                    color: #94a3b8;
+                    background: #f1f5f9;
+                }
+                
+                .variance-badge.positive {
+                    color: #ef4444; /* Cost increase is bad! Adjust logic if needed */
+                    background: #fef2f2;
+                }
+                
+                .variance-badge.negative {
+                    color: #10b981; /* Cost savings */
+                    background: #ecfdf5;
+                }
+                
+                .status-pill {
+                    font-size: 11px;
                     font-weight: 600;
-                    padding: 2px 8px;
-                    border-radius: var(--radius-full);
+                    padding: 4px 8px;
+                    border-radius: 20px;
                     text-transform: uppercase;
+                    letter-spacing: 0.02em;
                 }
-
-                .status-badge.purchased {
-                    background: rgba(16, 185, 129, 0.1);
-                    color: var(--color-success);
+                
+                .status-pill.purchased {
+                    background: #dcfce7;
+                    color: #15803d;
                 }
-
-                .status-badge.pending {
-                    background: var(--color-background);
-                    color: var(--color-text-muted);
+                
+                .status-pill.pending {
+                    background: #f1f5f9;
+                    color: #64748b;
                 }
-
-                .delete-cell {
-                    width: 40px;
-                    text-align: center;
-                }
-
-                .delete-btn {
-                    background: none;
+                
+                .action-btn {
                     border: none;
-                    padding: var(--spacing-xs);
+                    background: transparent;
+                    color: #cbd5e1;
+                    padding: 6px;
+                    border-radius: 6px;
                     cursor: pointer;
-                    color: var(--color-text-muted);
-                    border-radius: var(--radius-sm);
-                    opacity: 0.5;
-                    transition: all 0.2s ease;
+                    transition: all 0.2s;
+                    display: flex;
                 }
-
-                .delete-btn:hover {
-                    opacity: 1;
-                    background: var(--color-error-bg);
-                    color: var(--color-error);
+                
+                .action-btn:hover {
+                    background: #fee2e2;
+                    color: #ef4444;
+                }
+                
+                .col-item { width: 30%; }
+                .col-price { width: 12%; }
+                .col-var { width: 10%; }
+                .col-qty { width: 12%; }
+                .col-total { width: 15%; }
+                .col-status { width: 10%; padding-left: 24px; }
+                .col-actions { width: 5%; }
+                
+                /* Selection & Inputs */
+                .select-wrapper { position: relative; }
+                select, input {
+                    width: 100%;
+                    padding: 10px 12px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    background: #fff;
+                    outline: none;
+                    transition: border-color 0.2s;
+                }
+                
+                select:focus, input:focus {
+                select:focus, input:focus {
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
                 }
 
                 @media (max-width: 768px) {
-                    .section-header {
+                    .card-header {
                         flex-direction: column;
                         align-items: flex-start;
-                        gap: var(--spacing-sm);
+                        gap: 16px;
                     }
 
-                    .header-stats {
+                    .header-main {
+                        width: 100%;
+                    }
+                    
+                    .header-actions {
                         width: 100%;
                         justify-content: space-between;
                     }
-
-                    .materials-table {
-                        font-size: 0.75rem;
+                    
+                    .add-btn-header {
+                        margin-left: auto;
                     }
 
-                    .materials-table th:nth-child(3),
-                    .materials-table td:nth-child(3) {
+                    .boq-table {
+                        font-size: 13px;
+                    }
+                    
+                    .col-var, .col-status {
                         display: none;
                     }
                 }

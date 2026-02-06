@@ -110,12 +110,13 @@ export default function CalculationAnimation() {
           height: 80px;
           margin: 0 auto var(--spacing-lg);
           border-radius: var(--radius-full);
-          background: var(--color-accent-bg);
+          background: rgba(78, 154, 247, 0.12);
           display: flex;
           align-items: center;
           justify-content: center;
           color: var(--color-accent);
           animation: pulse-icon 1s ease-in-out infinite;
+          border: 1px solid rgba(78, 154, 247, 0.2);
         }
 
         @keyframes pulse-icon {
@@ -148,7 +149,7 @@ export default function CalculationAnimation() {
           align-items: center;
           gap: var(--spacing-md);
           padding: var(--spacing-sm) var(--spacing-md);
-          background: var(--color-background);
+          background: rgba(6, 20, 47, 0.02);
           border-radius: var(--radius-md);
           transition: all 0.3s ease;
           position: relative;
@@ -156,7 +157,7 @@ export default function CalculationAnimation() {
         }
 
         .calc-item.active {
-          background: var(--color-accent-bg);
+          background: rgba(78, 154, 247, 0.12);
         }
 
         .calc-item.past {
@@ -167,12 +168,13 @@ export default function CalculationAnimation() {
           width: 32px;
           height: 32px;
           border-radius: var(--radius-md);
-          background: var(--color-surface);
+          background: #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
           color: var(--color-text-muted);
           transition: all 0.3s ease;
+          border: 1px solid var(--color-border-light);
         }
 
         .calc-item.active .item-icon {
@@ -211,8 +213,9 @@ export default function CalculationAnimation() {
           grid-template-columns: repeat(3, 1fr);
           gap: var(--spacing-md);
           padding: var(--spacing-lg);
-          background: var(--color-background);
+          background: rgba(6, 20, 47, 0.02);
           border-radius: var(--radius-md);
+          border: 1px solid var(--color-border-light);
         }
 
         .count-item {

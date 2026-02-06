@@ -147,6 +147,7 @@ export default function StageTaskList({
                     border: 1px solid var(--color-border-light);
                     border-radius: var(--radius-lg);
                     overflow: hidden;
+                    box-shadow: 0 12px 24px rgba(6, 20, 47, 0.06);
                 }
 
                 .section-header {
@@ -154,7 +155,7 @@ export default function StageTaskList({
                     justify-content: space-between;
                     align-items: center;
                     padding: var(--spacing-md) var(--spacing-lg);
-                    background: var(--color-background);
+                    background: rgba(6, 20, 47, 0.02);
                     border-bottom: 1px solid var(--color-border-light);
                 }
 
@@ -183,8 +184,8 @@ export default function StageTaskList({
                     align-items: center;
                     gap: 6px;
                     padding: 6px 10px;
-                    background: var(--color-background);
-                    border: 1px solid var(--color-border-light);
+                    background: rgba(6, 20, 47, 0.04);
+                    border: 1px solid rgba(6, 20, 47, 0.08);
                     border-radius: var(--radius-full);
                     font-size: 0.75rem;
                     font-weight: 600;
@@ -203,13 +204,13 @@ export default function StageTaskList({
                     flex-direction: column;
                     gap: var(--spacing-sm);
                     padding: var(--spacing-md);
-                    background: var(--color-primary-bg);
+                    background: rgba(78, 154, 247, 0.08);
                     border-bottom: 1px solid var(--color-border-light);
                 }
 
                 .add-task-form input {
                     padding: var(--spacing-sm) var(--spacing-md);
-                    border: 1px solid var(--color-border);
+                    border: 1px solid var(--color-border-light);
                     border-radius: var(--radius-md);
                     font-size: 0.875rem;
                     background: var(--color-surface);
@@ -230,7 +231,7 @@ export default function StageTaskList({
                     display: flex;
                     flex-direction: column;
                     gap: 1px;
-                    background: var(--color-border-light);
+                    background: rgba(6, 20, 47, 0.04);
                 }
 
                 .empty-state {
@@ -241,6 +242,7 @@ export default function StageTaskList({
                     padding: var(--spacing-xl);
                     text-align: center;
                     color: var(--color-text-muted);
+                    background: rgba(6, 20, 47, 0.02);
                 }
 
                 .empty-state p {

@@ -209,6 +209,7 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
           border-radius: var(--radius-md);
           padding: var(--spacing-md);
           transition: all 0.2s ease;
+          box-shadow: 0 10px 20px rgba(6, 20, 47, 0.06);
         }
 
         .purchase-tracker:hover {
@@ -216,8 +217,8 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
         }
 
         .purchase-tracker.purchased {
-          background: var(--color-success-bg, rgba(16, 185, 129, 0.05));
-          border-color: var(--color-success);
+          background: rgba(16, 185, 129, 0.06);
+          border-color: rgba(16, 185, 129, 0.4);
         }
 
         .tracker-main {

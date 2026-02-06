@@ -154,6 +154,7 @@ export default function StageMetadataHeader({ stage, onUpdate }: StageMetadataHe
                     border: 1px solid var(--color-border-light);
                     border-radius: var(--radius-lg);
                     overflow: visible;
+                    box-shadow: 0 12px 26px rgba(6, 20, 47, 0.08);
                 }
 
                 .stage-description {
@@ -167,7 +168,7 @@ export default function StageMetadataHeader({ stage, onUpdate }: StageMetadataHe
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    background: var(--color-background);
+                    background: rgba(6, 20, 47, 0.02);
                     border: none;
                     cursor: pointer;
                     padding: var(--spacing-md) var(--spacing-lg);
@@ -186,6 +187,7 @@ export default function StageMetadataHeader({ stage, onUpdate }: StageMetadataHe
                     justify-content: space-between;
                     gap: var(--spacing-lg);
                     padding: var(--spacing-lg);
+                    background: #ffffff;
                 }
 
                 .stage-controls {
@@ -221,8 +223,8 @@ export default function StageMetadataHeader({ stage, onUpdate }: StageMetadataHe
                     align-items: center;
                     gap: var(--spacing-xs);
                     padding: var(--spacing-sm) var(--spacing-md);
-                    background: var(--color-surface);
-                    border: 1px solid var(--color-border);
+                    background: #ffffff;
+                    border: 1px solid var(--color-border-light);
                     border-radius: var(--radius-md);
                     cursor: pointer;
                     transition: all 0.2s ease;
@@ -253,9 +255,9 @@ export default function StageMetadataHeader({ stage, onUpdate }: StageMetadataHe
                     right: 0;
                     min-width: 180px;
                     background: var(--color-surface);
-                    border: 1px solid var(--color-border);
+                    border: 1px solid var(--color-border-light);
                     border-radius: var(--radius-md);
-                    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+                    box-shadow: 0 18px 32px rgba(6, 20, 47, 0.14);
                     z-index: 200;
                     overflow: hidden;
                 }
@@ -315,11 +317,11 @@ export default function StageMetadataHeader({ stage, onUpdate }: StageMetadataHe
 
                 .date-field input[type="date"] {
                     padding: var(--spacing-xs) var(--spacing-sm);
-                    border: 1px solid var(--color-border);
+                    border: 1px solid var(--color-border-light);
                     border-radius: var(--radius-sm);
                     font-size: 0.75rem;
                     color: var(--color-text);
-                    background: var(--color-surface);
+                    background: #ffffff;
                     width: 130px;
                 }
 

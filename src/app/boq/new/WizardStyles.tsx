@@ -2,10 +2,197 @@
 const WizardStyles = () => (
   <style jsx global>{`
     /* Global & Wizard Styles */
+    /* Animations */
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(20px) scale(0.95); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+    .animate-slideIn { animation: slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .animate-float { animation: float 6s ease-in-out infinite; }
+
+    .boq-wizard-container,
+    .boq-builder {
+      font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+    }
+
+    .wizard-shell {
+      min-height: 100vh;
+      padding-bottom: 80px;
+      background: var(--color-background);
+    }
+
     .boq-wizard-container {
-      max-width: 800px;
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 0;
+      padding: 0 24px;
+    }
+
+    /* Main Split Layout */
+    .wizard-content-split {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
+      gap: 40px;
+      align-items: start;
+      min-height: 600px;
+    }
+    
+    .wizard-form-area {
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 36px;
+      box-shadow: 0 16px 34px rgba(6, 20, 47, 0.08);
+      border: 1px solid var(--color-border-light);
+    }
+
+    .wizard-summary-area {
+      position: sticky;
+      top: 40px;
+      height: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .summary-card {
+      background: #ffffff;
+      border: 1px solid var(--color-border-light);
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: 0 14px 30px rgba(6, 20, 47, 0.1);
+    }
+
+    .summary-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .summary-kicker {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--color-text-muted);
+      font-weight: 600;
+    }
+
+    .summary-step {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      background: rgba(6, 20, 47, 0.04);
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
+
+    .summary-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .summary-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--color-text-muted);
+      font-weight: 600;
+    }
+
+    .summary-value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .summary-value.is-filled {
+      color: var(--color-text);
+      font-weight: 600;
+    }
+
+    .summary-value.is-empty {
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+
+    .summary-divider {
+      height: 1px;
+      background: var(--color-border-light);
+      margin: 16px 0;
+    }
+
+    .summary-room-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .summary-room {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(6, 20, 47, 0.04);
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+      font-weight: 600;
+    }
+
+    .summary-room span:last-child {
+      color: var(--color-text);
+    }
+
+    .summary-next {
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 14px;
+      background: rgba(6, 20, 47, 0.03);
+      border: 1px solid var(--color-border-light);
+    }
+
+    .summary-next span {
+      display: block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      margin-bottom: 6px;
+    }
+
+    .summary-next p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+    }
+
+    @media (max-width: 1024px) {
+      .wizard-content-split {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+      .wizard-summary-area {
+        position: static;
+        order: -1;
+      }
+      .summary-card {
+        box-shadow: none;
+      }
     }
 
     .wizard-progress {
@@ -43,7 +230,7 @@ const WizardStyles = () => (
       height: 40px;
       border-radius: 50%;
       background: var(--color-surface);
-      border: 2px solid var(--color-border);
+      border: 2px solid var(--color-border-light);
       color: var(--color-text-secondary);
       display: flex;
       align-items: center;
@@ -57,7 +244,7 @@ const WizardStyles = () => (
       background: var(--color-accent);
       border-color: var(--color-accent);
       color: var(--color-text-inverse);
-      box-shadow: 0 0 0 4px rgba(78, 154, 247, 0.2);
+      box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.18);
     }
 
     .step-item span {
@@ -77,7 +264,7 @@ const WizardStyles = () => (
       top: -14px;
       width: 60px;
       height: 3px;
-      background: var(--color-border);
+      background: var(--color-border-light);
       margin: 0 8px;
       z-index: 1;
     }
@@ -101,21 +288,32 @@ const WizardStyles = () => (
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Enhanced Step Header - Vision AI Style */
     .step-header {
-      text-align: center;
-      margin-bottom: var(--spacing-xl);
+      text-align: left;
+      margin-bottom: var(--spacing-lg);
     }
 
-    .step-header h2 {
-      font-size: 1.75rem;
+    .step-kicker {
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
       font-weight: 600;
+      color: var(--color-text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .step-title {
+      font-size: 2rem;
+      font-weight: 700;
       color: var(--color-text);
-      margin: 0 0 var(--spacing-sm) 0;
+      margin: 0 0 8px 0;
       letter-spacing: -0.02em;
     }
 
-    .step-header p {
+    .step-subtitle {
       font-size: 1rem;
       color: var(--color-text-secondary);
       margin: 0;
@@ -126,8 +324,8 @@ const WizardStyles = () => (
     .wizard-card {
       background: var(--color-surface);
       border-radius: var(--radius-lg);
-      border: 1px solid var(--color-border);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      border: 1px solid var(--color-border-light);
+      box-shadow: 0 12px 24px rgba(6, 20, 47, 0.08);
       padding: var(--spacing-xl);
     }
 
@@ -172,6 +370,11 @@ const WizardStyles = () => (
       gap: var(--spacing-xl);
     }
 
+    .wizard-main-content {
+      padding-top: 12px;
+      padding-bottom: 24px;
+    }
+
     .wizard-section {
       display: flex;
       flex-direction: column;
@@ -213,6 +416,75 @@ const WizardStyles = () => (
       border-radius: 999px;
     }
 
+    .estimate-header {
+      margin-bottom: 32px;
+    }
+
+    .estimate-header .step-kicker {
+      margin-bottom: 8px;
+    }
+
+    .choice-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .choice-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid var(--color-border-light);
+      background: #ffffff;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+
+    .choice-card:hover {
+      border-color: var(--color-accent-light);
+      background: rgba(78, 154, 247, 0.08);
+    }
+
+    .choice-card.selected {
+      border-color: var(--color-accent);
+      background: rgba(78, 154, 247, 0.12);
+      box-shadow: 0 12px 24px rgba(6, 20, 47, 0.12);
+    }
+
+    .choice-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: rgba(6, 20, 47, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+      flex-shrink: 0;
+    }
+
+    .choice-card.selected .choice-icon {
+      color: var(--color-accent);
+      background: rgba(59, 130, 246, 0.12);
+    }
+
+    .choice-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 4px;
+    }
+
+    .choice-description {
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      margin: 0;
+      line-height: 1.5;
+    }
+
     .grid-span-2 {
       grid-column: 1 / -1;
     }
@@ -242,7 +514,7 @@ const WizardStyles = () => (
     }
 
     .pill-option {
-      border: 1px solid var(--color-border);
+      border: 1px solid var(--color-border-light);
       background: #fff;
       border-radius: 14px;
       padding: 12px;
@@ -429,6 +701,10 @@ const WizardStyles = () => (
       align-items: start;
     }
 
+    .plan-layout--single {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
     .plan-inputs {
       background: #f8fafc;
       border: 1px solid var(--color-border);
@@ -470,6 +746,7 @@ const WizardStyles = () => (
       align-items: center;
       justify-content: space-between;
       margin-bottom: var(--spacing-md);
+      gap: 12px;
     }
 
     .plan-preview-header h4 {
@@ -487,8 +764,100 @@ const WizardStyles = () => (
       letter-spacing: 0.12em;
     }
 
+    .plan-preview-hint {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .plan-preview-actions {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .plan-add-room-btn {
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .plan-add-room-btn:hover {
+      border-color: var(--color-accent);
+      color: var(--color-accent-dark);
+    }
+
+    .plan-add-room-menu {
+      position: absolute;
+      top: 36px;
+      right: 0;
+      background: #fff;
+      border: 1px solid var(--color-border-light);
+      border-radius: 12px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+      padding: 8px;
+      display: grid;
+      gap: 6px;
+      min-width: 180px;
+      z-index: 5;
+    }
+
+    .plan-add-room-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: var(--color-background);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .plan-add-room-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .plan-room-adjust {
+      width: 24px;
+      height: 24px;
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      background: #fff;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--color-text-secondary);
+    }
+
+    .plan-room-adjust:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .plan-room-count {
+      min-width: 18px;
+      text-align: center;
+      font-weight: 700;
+      color: var(--color-text);
+    }
+
     .plan-canvas {
-      min-height: 320px;
+      min-height: 260px;
       border-radius: 16px;
       border: 1px dashed #cbd5f5;
       background: repeating-linear-gradient(
@@ -509,6 +878,7 @@ const WizardStyles = () => (
       grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
       gap: 12px;
       padding: 16px;
+      position: relative;
     }
 
     .plan-canvas.is-empty {
@@ -523,6 +893,29 @@ const WizardStyles = () => (
       color: var(--color-text-secondary);
       text-align: center;
       padding: 12px;
+    }
+
+    .plan-dimension {
+      position: absolute;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #4b6b8a;
+      background: #edf2f7;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+    }
+
+    .plan-dimension--x {
+      top: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .plan-dimension--y {
+      left: -24px;
+      top: 50%;
+      transform: translateY(-50%) rotate(-90deg);
     }
 
     .plan-room {
@@ -608,6 +1001,10 @@ const WizardStyles = () => (
       border-top: 1px solid var(--color-border-light);
     }
 
+    .wizard-actions--right {
+      justify-content: flex-end;
+    }
+
     /* Enhanced Scope Selection - Vision AI Style */
     .scope-selection {
       display: grid;
@@ -681,14 +1078,27 @@ const WizardStyles = () => (
       padding: var(--spacing-lg);
       border-radius: var(--radius-lg);
       border: 1px solid var(--color-border);
-      max-width: 700px;
-      margin: 0 auto;
+      max-width: 100%;
+      width: 100%;
+      margin: 0;
     }
 
     .stage-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: var(--spacing-md);
+    }
+
+    @media (max-width: 900px) {
+      .stage-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .stage-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     .stage-card {
@@ -1521,6 +1931,197 @@ const WizardStyles = () => (
 
     .dropdown-item:active {
       background: #f1f5f9 !important;
+    }
+    /* Sidebar Layout - New Design */
+    .wizard-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 48px;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .wizard-layout {
+        grid-template-columns: 1fr;
+        padding: 24px 16px;
+      }
+      .wizard-sidebar {
+        display: none;
+      }
+    }
+
+    .wizard-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: sticky;
+      top: 100px;
+      height: fit-content;
+    }
+
+    .sidebar-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--color-text-muted);
+      font-weight: 700;
+      margin-bottom: 8px;
+      padding-left: 4px;
+    }
+
+    .progress-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px;
+      background: white;
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-card.active {
+      border-color: var(--color-accent);
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.1);
+      transform: translateX(4px);
+    }
+
+    .progress-card.completed {
+      background: #f8fafc;
+      border-color: transparent;
+    }
+
+    .progress-indicator {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0px;
+      transition: all 0.3s ease;
+      background: white;
+    }
+
+    .progress-card.active .progress-indicator {
+      border-color: var(--color-accent);
+      background: var(--color-accent);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+    }
+    
+    .progress-card.active .progress-indicator svg {
+      color: white;
+    }
+
+    .progress-card.completed .progress-indicator {
+      border-color: var(--color-accent);
+      background: var(--color-accent);
+    }
+    
+    .progress-card.completed .progress-indicator svg {
+      color: white;
+    }
+
+    .progress-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .progress-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      transition: color 0.2s;
+    }
+    
+    .progress-card.active .progress-title {
+      color: var(--color-text);
+    }
+
+    .progress-description {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+    }
+    
+    .progress-card.active .progress-description {
+      color: var(--color-accent);
+    }
+
+    /* Override container styles for layout */
+    .boq-wizard-container {
+      max-width: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Content Split Layout */
+    .wizard-content-split {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 48px;
+      align-items: start;
+    }
+
+    @media (max-width: 1280px) {
+      .wizard-content-split {
+        grid-template-columns: 1fr 320px;
+        gap: 32px;
+      }
+    }
+    
+    @media (max-width: 1024px) {
+      .wizard-content-split {
+        grid-template-columns: 1fr;
+      }
+      .wizard-illustration-area {
+        display: none;
+      }
+    }
+
+    .wizard-illustration-area {
+      position: sticky;
+      top: 100px;
+      height: fit-content;
+    }
+
+    .step-illustration {
+      width: 100%;
+      aspect-ratio: 1;
+      background: #f8fafc;
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      border: 1px dashed var(--color-border);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .blob-bg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80%;
+      height: 80%;
+      background: #eff6ff;
+      border-radius: 50%;
+      z-index: 1;
+      filter: blur(40px);
+      opacity: 0.8;
+    }
+
+    /* Adjust form container max-width when illustration is present */
+    .wizard-content-split .wizard-card {
+      max-width: 100% !important;
     }
   `}</style>
 );

@@ -65,7 +65,7 @@ export function useProjectAutoSave(
     projectDetails: ProjectDetails,
     projectScope: 'entire' | 'stage',
     selectedStages: string[],
-    laborType: 'materials_only' | 'materials_labor',
+    laborType: 'materials_only' | 'materials_labor' | null,
     milestonesState: MilestoneData[],
     options: UseProjectAutoSaveOptions = {}
 ): UseProjectAutoSaveReturn {

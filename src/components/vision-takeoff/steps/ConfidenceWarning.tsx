@@ -114,7 +114,7 @@ export default function ConfidenceWarning({
 
         .confidence-bar {
           height: 8px;
-          background: var(--color-background);
+          background: rgba(6, 20, 47, 0.04);
           border-radius: var(--radius-full);
           overflow: hidden;
           margin-bottom: var(--spacing-xs);
@@ -162,7 +162,7 @@ export default function ConfidenceWarning({
         .recommendation {
           text-align: left;
           padding: var(--spacing-md);
-          background: var(--color-accent-bg);
+          background: rgba(78, 154, 247, 0.1);
           border-radius: var(--radius-md);
           font-size: 0.875rem;
           color: var(--color-text-secondary);
@@ -203,8 +203,8 @@ export default function ConfidenceWarning({
         }
 
         .btn-secondary {
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
+          background: rgba(6, 20, 47, 0.02);
+          border: 1px solid var(--color-border-light);
           color: var(--color-text-secondary);
         }
 

@@ -183,12 +183,12 @@ export default function AnalysisProgress() {
           gap: var(--spacing-md);
           padding: var(--spacing-sm) var(--spacing-md);
           border-radius: var(--radius-md);
-          background: var(--color-background);
+          background: rgba(6, 20, 47, 0.02);
           transition: all 0.3s ease;
         }
 
         .step-item.current {
-          background: var(--color-accent-bg);
+          background: rgba(78, 154, 247, 0.12);
         }
 
         .step-item.complete {
@@ -199,12 +199,13 @@ export default function AnalysisProgress() {
           width: 32px;
           height: 32px;
           border-radius: var(--radius-full);
-          background: var(--color-surface);
+          background: #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
           color: var(--color-text-muted);
           transition: all 0.3s ease;
+          border: 1px solid var(--color-border-light);
         }
 
         .step-item.current .step-icon {

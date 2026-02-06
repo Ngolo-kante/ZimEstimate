@@ -13,8 +13,10 @@ import DocumentsTab from '@/components/projects/DocumentsTab';
 import ShareModal from '@/components/projects/ShareModal';
 import PurchaseTracker from '@/components/ui/PurchaseTracker';
 import StageSavingsToggle from '@/components/ui/StageSavingsToggle';
-import BudgetPlanner from '@/components/ui/BudgetPlanner';
+import BudgetPlanner, { NotificationChannel } from '@/components/ui/BudgetPlanner';
 import StageUsageSection from '@/components/projects/StageUsageSection';
+import SidebarSpine, { ProjectView } from '@/components/projects/SidebarSpine';
+import ProjectSettings from '@/components/projects/ProjectSettings';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -24,7 +26,9 @@ import {
     deleteProject,
     updateProject,
     updateBOQItem,
+    deleteBOQItem,
 } from '@/lib/services/projects';
+import { materials, getBestPrice } from '@/lib/materials';
 import {
     getProjectStages,
     getAllStagesProgress,
@@ -49,6 +53,8 @@ import {
     Tag,
     WhatsappLogo,
     TrendUp,
+    TrendDown,
+    DownloadSimple,
     Clock,
     File,
     ShoppingCart,
@@ -56,6 +62,7 @@ import {
     Warning,
     CaretDown,
     CaretUp,
+    WarningCircle,
 } from '@phosphor-icons/react';
 
 function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: number }) {
@@ -72,6 +79,30 @@ const categoryLabels: Record<BOQCategory, string> = {
     roofing: 'Roofing',
     finishing: 'Finishing',
     exterior: 'Exterior',
+};
+
+const SYSTEM_PRICE_VERSION = materials.reduce((latest, material) => {
+    const bestPrice = getBestPrice(material.id);
+    const lastUpdated = bestPrice?.lastUpdated || '';
+    if (lastUpdated && lastUpdated > latest) {
+        return lastUpdated;
+    }
+    return latest;
+}, '');
+
+const normalizeMaterialPrice = (
+    material: { category: string; unit: string },
+    bestPrice: { priceUsd: number; priceZwg: number },
+    itemUnit: string
+) => {
+    let priceUsd = bestPrice.priceUsd;
+    let priceZwg = bestPrice.priceZwg;
+    const itemUnitLower = itemUnit.toLowerCase();
+    if (material.category === 'bricks' && material.unit.toLowerCase().includes('1000') && !itemUnitLower.includes('1000')) {
+        priceUsd = priceUsd / 1000;
+        priceZwg = priceZwg / 1000;
+    }
+    return { priceUsd, priceZwg };
 };
 
 function ProjectDetailContent() {
@@ -95,10 +126,18 @@ function ProjectDetailContent() {
     const [isCreatingStages, setIsCreatingStages] = useState(false);
     const [usageByStage, setUsageByStage] = useState<Record<string, { items: BOQItem[]; usageByItem: Record<string, number> }>>({});
     const [isUsageLoading, setIsUsageLoading] = useState(false);
+    const [projectPriceVersion, setProjectPriceVersion] = useState<string>(SYSTEM_PRICE_VERSION);
+    const [priceVersionReady, setPriceVersionReady] = useState(false);
 
     // View state
-    const [activeTab, setActiveTab] = useState<BOQCategory | 'usage' | 'tracking' | 'documents'>('substructure');
+    const [activeView, setActiveView] = useState<ProjectView>('overview');
+    const [activeTab, setActiveTab] = useState<BOQCategory>('substructure');
     const [stagesSetupRequired, setStagesSetupRequired] = useState(false);
+
+    const projectPriceKey = useMemo(
+        () => `boq_price_version_${projectId}`,
+        [projectId]
+    );
 
     // Purchase stats (calculated from items)
     const purchaseStats = useMemo(() => {
@@ -146,6 +185,16 @@ function ProjectDetailContent() {
         return { totalBudget, totalSpent };
     }, [activeStageItems]);
 
+    const usageByItem = useMemo(() => {
+        const allUsage: Record<string, number> = {};
+        Object.values(usageByStage).forEach(stageData => {
+            Object.entries(stageData.usageByItem).forEach(([itemId, usage]) => {
+                allUsage[itemId] = (allUsage[itemId] || 0) + usage;
+            });
+        });
+        return allUsage;
+    }, [usageByStage]);
+
     // Load project data
     useEffect(() => {
         async function loadProject() {
@@ -192,6 +241,22 @@ function ProjectDetailContent() {
         loadProject();
     }, [projectId]);
 
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        // eslint-disable-next-line
+        setPriceVersionReady(false);
+        const storedVersion = localStorage.getItem(projectPriceKey);
+        const nextVersion = storedVersion || SYSTEM_PRICE_VERSION;
+        localStorage.setItem(projectPriceKey, nextVersion);
+        setProjectPriceVersion(nextVersion);
+        setPriceVersionReady(true);
+    }, [projectPriceKey]);
+
+    useEffect(() => {
+        if (!priceVersionReady || typeof window === 'undefined') return;
+        localStorage.setItem(projectPriceKey, projectPriceVersion);
+    }, [projectPriceKey, projectPriceVersion, priceVersionReady]);
+
     const loadUsageData = useCallback(async () => {
         setIsUsageLoading(true);
         const stagesToLoad = stages.filter(s => s.is_applicable);
@@ -216,10 +281,10 @@ function ProjectDetailContent() {
     }, [projectId, stages]);
 
     useEffect(() => {
-        if (activeTab !== 'usage' || !project?.usage_tracking_enabled) return;
+        if (activeView !== 'tracking' || !project?.usage_tracking_enabled) return;
         // eslint-disable-next-line
         loadUsageData();
-    }, [activeTab, project?.usage_tracking_enabled, loadUsageData]);
+    }, [activeView, project?.usage_tracking_enabled, loadUsageData]);
 
     // Handlers
     const handleProjectUpdate = async (updates: Partial<Project>) => {
@@ -279,6 +344,67 @@ function ProjectDetailContent() {
         setProject(prev => prev ? { ...prev, total_usd: newTotal, total_zwg: newTotal * exchangeRate } : prev);
     };
 
+    const handleUpdateAveragePrices = async () => {
+        try {
+            const updatedItems = new Map<string, BOQItem>();
+            await Promise.all(items.map(async (item) => {
+                const material = materials.find(m => m.id === item.material_id);
+                if (!material) return;
+                const bestPrice = getBestPrice(material.id);
+                if (!bestPrice) return;
+                const normalized = normalizeMaterialPrice(material, bestPrice, item.unit);
+                if (!normalized) return;
+
+                const shouldSyncActual = item.actual_price_usd === null
+                    || Number(item.actual_price_usd) === Number(item.unit_price_usd);
+                const nextActualPrice = shouldSyncActual ? normalized.priceUsd : item.actual_price_usd;
+
+                const { item: updated, error } = await updateBOQItem(item.id, {
+                    unit_price_usd: normalized.priceUsd,
+                    unit_price_zwg: normalized.priceZwg,
+                    actual_price_usd: nextActualPrice ?? undefined,
+                });
+                if (error) {
+                    throw error;
+                }
+                const merged = updated || {
+                    ...item,
+                    unit_price_usd: normalized.priceUsd,
+                    unit_price_zwg: normalized.priceZwg,
+                    actual_price_usd: nextActualPrice ?? item.actual_price_usd,
+                };
+                updatedItems.set(item.id, merged);
+            }));
+
+            if (updatedItems.size > 0) {
+                const nextItems = items.map(i => updatedItems.get(i.id) ?? i);
+                setItems(nextItems);
+
+                const newTotal = nextItems.reduce((sum, i) => {
+                    const qty = Number(i.quantity) || 0;
+                    const priceUsd = Number(i.unit_price_usd) || 0;
+                    return sum + qty * priceUsd;
+                }, 0);
+
+                await updateProject(projectId, {
+                    total_usd: newTotal,
+                    total_zwg: newTotal * exchangeRate,
+                });
+                setProject(prev => prev ? { ...prev, total_usd: newTotal, total_zwg: newTotal * exchangeRate } : prev);
+            }
+
+            setProjectPriceVersion(SYSTEM_PRICE_VERSION);
+            success('Average prices updated');
+        } catch (err) {
+            showError('Failed to update average prices');
+        }
+    };
+
+    const handleKeepCurrentPrices = () => {
+        setProjectPriceVersion(SYSTEM_PRICE_VERSION);
+        success('Kept current prices');
+    };
+
     const handleStageUpdate = (updatedStage: ProjectStageWithTasks) => {
         setStages(prev => prev.map(s => s.id === updatedStage.id ? updatedStage : s));
         setStagesProgress(prev => prev.map(stage => {
@@ -314,9 +440,9 @@ function ProjectDetailContent() {
         await handleProjectUpdate({ target_purchase_date: date });
     };
 
-    const handleSavingsReminder = async (frequency: 'daily' | 'weekly' | 'monthly', amount: number) => {
-        if (!profile?.phone_number) {
-            showError('Add a phone number in Settings to schedule reminders');
+    const handleSavingsReminder = async (frequency: 'daily' | 'weekly' | 'monthly', amount: number, channel: NotificationChannel) => {
+        if ((channel === 'sms' || channel === 'whatsapp' || channel === 'telegram') && !profile?.phone_number) {
+            showError('Add a phone number in Settings to schedule mobile reminders');
             return;
         }
 
@@ -329,14 +455,15 @@ function ProjectDetailContent() {
             ? categoryLabels[activeTab as BOQCategory]
             : 'Project';
 
-        const message = `Savings reminder for ${project?.name || 'Project'} (${stageLabel}): save ${formatPrice(amount, amount * exchangeRate)} ${frequency}.`;
+        // Prepend channel to message since DB doesn't have a channel column yet
+        const message = `[${channel.toUpperCase()}] Savings reminder for ${project?.name || 'Project'} (${stageLabel}): save ${formatPrice(amount, amount * exchangeRate)} ${frequency}.`;
 
         const { error: reminderError } = await createReminder({
             project_id: projectId,
             reminder_type: 'savings',
             message,
             scheduled_date: scheduledDate,
-            phone_number: profile.phone_number,
+            phone_number: profile?.phone_number || '0000000000', // Fallback for email-only if DB requires phone
         });
 
         if (reminderError) {
@@ -344,7 +471,7 @@ function ProjectDetailContent() {
             return;
         }
 
-        success(`Reminder scheduled for ${scheduledDate}`);
+        success(`Reminder scheduled via ${channel} for ${scheduledDate}`);
     };
 
     const handleCreateStages = async () => {
@@ -486,6 +613,24 @@ function ProjectDetailContent() {
         );
     }
 
+    const handleDeleteItem = async (itemId: string) => {
+        const { error } = await deleteBOQItem(itemId);
+        if (error) { showError('Failed to delete item'); return; }
+        setItems(items.filter(i => i.id !== itemId));
+    };
+
+    const handleAddItem = (item: BOQItem) => {
+        setItems([...items, item]);
+    };
+
+    const handleBulkAdd = (newItems: BOQItem[]) => {
+        setItems([...items, ...newItems]);
+    };
+
+    const handleUsageRecorded = () => {
+        loadUsageData();
+    };
+
     // Get current stage
     const currentStage = stages.find(s => s.boq_category === activeTab);
     const applicableStages = stages.filter(s => s.is_applicable);
@@ -499,6 +644,7 @@ function ProjectDetailContent() {
     const savingsTargetDate = STAGE_CATEGORIES.includes(activeTab as BOQCategory)
         ? currentStage?.end_date || null
         : project.target_purchase_date || project.target_completion_date || null;
+    const showPriceUpdateBanner = priceVersionReady && projectPriceVersion !== SYSTEM_PRICE_VERSION;
 
     const statusColors: Record<string, 'success' | 'accent' | 'default'> = {
         active: 'success',
@@ -508,769 +654,204 @@ function ProjectDetailContent() {
     };
 
     return (
-        <MainLayout title={project.name}>
-            <div className="project-detail">
-                <div className="sub-nav">
-                    <Link href="/dashboard">Dashboard</Link>
-                    <span>›</span>
-                    <Link href="/projects?refresh=1">Projects Summary</Link>
-                    <span>›</span>
-                    <span className="current">{project.name}</span>
-                </div>
+        <MainLayout title={project.name} fullWidth>
+            <div className="flex bg-slate-50 min-h-[calc(100vh-64px)]">
+                <SidebarSpine
+                    project={project}
+                    activeView={activeView}
+                    onViewChange={setActiveView}
+                />
 
-                {/* Back Link */}
-                <Link href="/projects?refresh=1" className="back-link">
-                    <ArrowLeft size={16} />
-                    Back to Projects
-                </Link>
-
-                {/* Project Header */}
-                <div className="project-header">
-                    <div className="project-info">
-                        <h1>
-                            <InlineEdit
-                                value={project.name}
-                                onSave={(val) => handleProjectUpdate({ name: String(val) })}
-                                className="title-edit"
-                            />
-                        </h1>
-                        <div className="project-meta">
-                            <CardBadge variant={statusColors[project.status] || 'default'}>
-                                {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-                            </CardBadge>
-                            <span className="meta-item">
-                                <MapPin size={14} />
-                                <InlineEdit
-                                    value={project.location || ''}
-                                    placeholder="Add location"
-                                    onSave={(val) => handleProjectUpdate({ location: String(val) || null })}
-                                />
-                            </span>
-                            <span className="meta-item">
-                                <Calendar size={14} />
-                                Created {new Date(project.created_at).toLocaleDateString()}
-                            </span>
-                            {project.updated_at && project.updated_at !== project.created_at && (
-                                <span className="meta-item">
-                                    <Clock size={14} />
-                                    Modified {new Date(project.updated_at).toLocaleDateString()}
-                                </span>
-                            )}
-                            <span className="meta-item">
-                                <Tag size={14} />
-                                {scopeLabel}
-                            </span>
-                        </div>
-                    </div>
-                    <div className="header-actions">
-                        <Button variant="ghost" icon={<ShareNetwork size={18} />} onClick={() => setShowShareModal(true)}>
-                            Share
-                        </Button>
-                        <Button variant="ghost" icon={<WhatsappLogo size={18} />} onClick={handleShare}>
-                            WhatsApp
-                        </Button>
-                        <Link href={`/export?project=${project.id}`}>
-                            <Button variant="secondary" icon={<Export size={18} />}>
-                                Export
-                            </Button>
-                        </Link>
-                        <Button
-                            variant="danger"
-                            icon={<Trash size={18} />}
-                            onClick={handleDelete}
-                            loading={isDeleting}
-                        >
-                            Delete
-                        </Button>
-                    </div>
-                </div>
-
-                {/* Summary Cards */}
-                <div className="stats-grid">
-                    <StageSavingsToggle
-                        totalBudget={activeStageBudget.totalBudget}
-                        amountSpent={activeStageBudget.totalSpent}
-                        targetDate={savingsTargetDate}
-                    />
-
-                    <Card variant="dashboard">
-                        <CardHeader>
-                            <CardTitle>Progress</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="stat-value">
-                                {purchaseStats.purchasedItems}/{purchaseStats.totalItems}
-                            </p>
-                            <div className="mini-progress">
-                                <div
-                                    className="mini-progress-fill"
-                                    style={{ width: `${purchaseStats.totalItems > 0 ? (purchaseStats.purchasedItems / purchaseStats.totalItems) * 100 : 0}%` }}
-                                />
+                <main className="flex-1 overflow-y-auto h-[calc(100vh-64px)] p-6 md:p-8">
+                    {/* OVERVIEW View */}
+                    {activeView === 'overview' && (
+                        <div className="space-y-8 max-w-6xl mx-auto">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    {/* Breadcrumbs */}
+                                    <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+                                        <Link
+                                            href="/projects"
+                                            className="hover:text-blue-600 transition-colors"
+                                        >
+                                            My Projects
+                                        </Link>
+                                        <span className="text-slate-400">/</span>
+                                        <span className="text-slate-900 font-medium truncate max-w-[200px]">
+                                            {project.name}
+                                        </span>
+                                    </div>
+                                    <h1 className="text-3xl font-bold text-slate-800 mb-2">{project.name}</h1>
+                                    <div className="flex items-center gap-4 text-slate-500 text-sm">
+                                        <span className="flex items-center gap-1"><MapPin size={16} /> {project.location || 'No Location'}</span>
+                                        <span className={`flex items-center gap-1 px-2 py-0.5 rounded-md font-medium capitalize ${statusColors[project.status] === 'success' ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
+                                            {project.status}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button variant="secondary" onClick={() => setShowShareModal(true)} icon={<ShareNetwork size={18} />}>Share</Button>
+                                    <Link href={`/projects/${projectId}/export`}>
+                                        <Button variant="secondary" icon={<DownloadSimple size={18} />}>Export</Button>
+                                    </Link>
+                                </div>
                             </div>
-                            <p className="stat-label">items purchased</p>
-                        </CardContent>
-                    </Card>
 
-                    <Card variant="dashboard">
-                        <CardHeader>
-                            <CardTitle>Amount Spent</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="stat-value spent">
-                                <PriceDisplay
-                                    priceUsd={purchaseStats.actualSpent}
-                                    priceZwg={purchaseStats.actualSpent * exchangeRate}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <Card>
+                                    <CardHeader><CardTitle>Total Budget</CardTitle></CardHeader>
+                                    <div className="p-6 pt-0">
+                                        <div className="text-3xl font-bold text-slate-800">
+                                            <PriceDisplay priceUsd={purchaseStats.estimatedTotal} priceZwg={purchaseStats.estimatedTotal * exchangeRate} />
+                                        </div>
+                                        <p className="text-sm text-slate-500 mt-1">Estimated cost of materials</p>
+                                    </div>
+                                </Card>
+                                <Card>
+                                    <CardHeader><CardTitle>Amount Spent</CardTitle></CardHeader>
+                                    <div className="p-6 pt-0">
+                                        <div className="text-3xl font-bold text-blue-600">
+                                            <PriceDisplay priceUsd={purchaseStats.actualSpent} priceZwg={purchaseStats.actualSpent * exchangeRate} />
+                                        </div>
+                                        <p className="text-sm text-slate-500 mt-1">
+                                            <span className={purchaseStats.remainingBudget >= 0 ? 'text-green-600' : 'text-red-500'}>
+                                                {purchaseStats.remainingBudget >= 0 ? 'Under' : 'Over'} Budget
+                                            </span> by <PriceDisplay priceUsd={Math.abs(purchaseStats.remainingBudget)} priceZwg={Math.abs(purchaseStats.remainingBudget) * exchangeRate} />
+                                        </p>
+                                    </div>
+                                </Card>
+                                <Card>
+                                    <CardHeader><CardTitle>Progress</CardTitle></CardHeader>
+                                    <div className="p-6 pt-0">
+                                        <div className="flex items-end gap-2 mb-2">
+                                            <span className="text-3xl font-bold text-slate-800">
+                                                {purchaseStats.totalItems > 0
+                                                    ? Math.round((purchaseStats.purchasedItems / purchaseStats.totalItems) * 100)
+                                                    : 0}%
+                                            </span>
+                                            <span className="text-slate-500 mb-1">completed</span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                            <div className="bg-blue-600 h-full rounded-full transition-all duration-500"
+                                                style={{ width: `${(purchaseStats.purchasedItems / purchaseStats.totalItems) * 100}%` }} />
+                                        </div>
+                                    </div>
+                                </Card>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* BOQ View */}
+                    {activeView === 'boq' && (
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-2xl font-bold text-slate-800">Bill of Quantities</h2>
+                                <div className="flex gap-1 bg-slate-100 p-1 rounded-lg overflow-x-auto">
+                                    {applicableStages.map(stage => (
+                                        <button
+                                            key={stage.id}
+                                            onClick={() => setActiveTab(stage.boq_category)}
+                                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap ${activeTab === stage.boq_category
+                                                ? 'bg-white text-slate-800 shadow-sm'
+                                                : 'text-slate-500 hover:text-slate-700'
+                                                }`}
+                                        >
+                                            {categoryLabels[stage.boq_category]}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {currentStage && (
+                                <StageTab
+                                    stage={currentStage}
+                                    projectId={projectId}
+                                    items={activeStageItems}
+                                    onStageUpdate={(u) => handleStageUpdate({ ...currentStage, ...u })}
+                                    onItemUpdate={handleItemUpdate}
+                                    onItemDelete={handleDeleteItem}
+                                    onItemAdded={handleAddItem}
+                                    showLabor={hasLabor}
                                 />
-                            </p>
-                            <p className="stat-label">
-                                {purchaseStats.actualSpent <= purchaseStats.estimatedTotal ? (
-                                    <span className="under-budget">
-                                        <TrendUp size={12} /> Under budget
-                                    </span>
-                                ) : (
-                                    <span className="over-budget">Over by ${(purchaseStats.actualSpent - purchaseStats.estimatedTotal).toFixed(2)}</span>
-                                )}
-                            </p>
-                        </CardContent>
-                    </Card>
-                </div>
+                            )}
+                        </div>
+                    )}
 
-                {/* Cost Savings Planner */}
-                <div className="savings-planner">
-                    <button
-                        className="planner-toggle"
-                        onClick={() => setShowBudgetPlanner(prev => !prev)}
-                    >
-                        <span>Cost Savings Planner</span>
-                        {showBudgetPlanner ? <CaretUp size={16} /> : <CaretDown size={16} />}
-                    </button>
+                    {/* TRACKING View */}
+                    {activeView === 'tracking' && (
+                        <div className="space-y-6">
+                            <h2 className="text-2xl font-bold text-slate-800 mb-6">Tracking & Timeline</h2>
 
-                    {showBudgetPlanner && (
-                        <div className="planner-body">
+                            {project.usage_tracking_enabled ? (
+                                <StageUsageSection
+                                    projectId={projectId}
+                                    items={items}
+                                    usageByItem={usageByItem}
+                                    onUsageRecorded={handleUsageRecorded}
+                                />
+                            ) : (
+                                <div className="space-y-4">
+                                    <p className="text-slate-500">Track your purchases against the BOQ items.</p>
+                                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 divide-y divide-slate-100">
+                                        {items.map(item => (
+                                            <div key={item.id} className="p-4">
+                                                <PurchaseTracker
+                                                    key={item.id}
+                                                    item={item}
+                                                    onUpdate={handleItemUpdate}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* DOCUMENTS View */}
+                    {activeView === 'documents' && (
+                        <div className="space-y-6">
+                            <h2 className="text-2xl font-bold text-slate-800 mb-6">Documents</h2>
+                            <DocumentsTab projectId={projectId} />
+                        </div>
+                    )}
+
+                    {/* BUDGET View */}
+                    {activeView === 'budget' && (
+                        <div className="space-y-6">
+                            <h2 className="text-2xl font-bold text-slate-800 mb-6">Budget Planner</h2>
                             <BudgetPlanner
-                                totalBudgetUsd={activeStageBudget.totalBudget}
-                                amountSpentUsd={activeStageBudget.totalSpent}
-                                targetDate={savingsTargetDate}
+                                totalBudgetUsd={purchaseStats.estimatedTotal}
+                                amountSpentUsd={purchaseStats.actualSpent}
+                                targetDate={project.target_purchase_date}
                                 onTargetDateChange={handleSavingsTargetDateChange}
                                 onSetReminder={handleSavingsReminder}
                             />
                         </div>
                     )}
-                </div>
 
-                {/* Tab Navigation */}
-                <div className="view-toggle">
-                    {/* Stage Tabs */}
-                    {applicableStages.map((stage) => (
-                        <button
-                            key={stage.boq_category}
-                            className={`toggle-btn ${activeTab === stage.boq_category ? 'active' : ''}`}
-                            onClick={() => setActiveTab(stage.boq_category as BOQCategory)}
-                        >
-                            {categoryLabels[stage.boq_category]}
-                        </button>
-                    ))}
-
-                    <div className="tab-separator" />
-
-                    {/* Usage Tab */}
-                    <button
-                        className={`toggle-btn ${activeTab === 'usage' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('usage')}
-                    >
-                        Usage
-                    </button>
-
-                    {/* Tracking Tab */}
-                    <button
-                        className={`toggle-btn ${activeTab === 'tracking' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('tracking')}
-                    >
-                        <ShoppingCart size={18} />
-                        Tracking
-                    </button>
-
-                    {/* Documents Tab */}
-                    <button
-                        className={`toggle-btn ${activeTab === 'documents' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('documents')}
-                    >
-                        <File size={18} />
-                        Documents
-                    </button>
-                </div>
-
-                {/* Tab Content */}
-                <div className="tab-content">
-                    {/* Database setup required message */}
-                    {stagesSetupRequired && STAGE_CATEGORIES.includes(activeTab as BOQCategory) && (
-                        <div className="setup-required">
-                            <Warning size={48} weight="light" />
-                            <h4>Database Setup Required</h4>
-                            <p>The stage-first architecture requires running the database migration.</p>
-                            <code>supabase/migrations/006_stage_first_architecture.sql</code>
-                        </div>
+                    {/* SETTINGS View */}
+                    {activeView === 'settings' && (
+                        <ProjectSettings
+                            project={project}
+                            onUpdate={handleProjectUpdate}
+                        />
                     )}
-
-                    {/* Stage Tabs */}
-                    {!stagesSetupRequired && STAGE_CATEGORIES.includes(activeTab as BOQCategory) && (
-                        currentStage ? (
-                            <StageTab
-                                key={currentStage.id}
-                                stage={currentStage}
-                                projectId={projectId}
-                                items={items}
-                                onStageUpdate={handleStageUpdate}
-                                onItemUpdate={handleItemUpdate}
-                                onItemDelete={handleItemDelete}
-                                onItemAdded={handleItemAdded}
-                                showLabor={hasLabor}
-                                primaryStageCategory={primaryStageCategory}
-                            />
-                        ) : (
-                            <div className="setup-required">
-                                <Warning size={48} weight="light" />
-                                <h4>Stage Data Missing</h4>
-                                <p>This project does not have stage records yet.</p>
-                                <Button
-                                    variant="primary"
-                                    onClick={handleCreateStages}
-                                    loading={isCreatingStages}
-                                >
-                                    Create Stages
-                                </Button>
-                                <p className="hint">
-                                    If this fails, run <code>supabase/migrations/006_stage_first_architecture.sql</code>.
-                                </p>
-                            </div>
-                        )
-                    )}
-
-                    {/* Usage Tab */}
-                    {activeTab === 'usage' && (
-                        <div className="usage-tab">
-                            {!project.usage_tracking_enabled ? (
-                                <div className="usage-gate">
-                                    <h3>Has production started?</h3>
-                                    <p>Enable usage tracking to record material consumption on-site.</p>
-                                    <div className="usage-actions">
-                                        <Button
-                                            variant="secondary"
-                                            onClick={() => handleUsageTrackingToggle(false)}
-                                        >
-                                            Not Yet
-                                        </Button>
-                                        <Button
-                                            variant="primary"
-                                            onClick={() => handleUsageTrackingToggle(true)}
-                                        >
-                                            Yes, Start Tracking
-                                        </Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="usage-content">
-                                    <div className="usage-header">
-                                        <div>
-                                            <h3>Usage Tracking</h3>
-                                            <p>Track actual material usage once production starts.</p>
-                                        </div>
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={() => handleUsageTrackingToggle(false)}
-                                        >
-                                            Turn Off
-                                        </Button>
-                                    </div>
-
-                                    {isUsageLoading ? (
-                                        <div className="loading-state">
-                                            <CircleNotch size={24} className="spinner" />
-                                            <span>Loading usage data...</span>
-                                        </div>
-                                    ) : (
-                                        <div className="usage-sections">
-                                            {applicableStages.every(stage => (usageByStage[stage.boq_category]?.items || []).length === 0) ? (
-                                                <div className="empty-state">
-                                                    <ShoppingCart size={48} weight="light" />
-                                                    <h4>No items to track yet</h4>
-                                                    <p>Add BOQ items to start tracking usage</p>
-                                                </div>
-                                            ) : (
-                                                applicableStages.map((stage) => {
-                                                    const data = usageByStage[stage.boq_category];
-                                                    return (
-                                                        <div key={stage.id} className="usage-stage">
-                                                            <h4>{categoryLabels[stage.boq_category]}</h4>
-                                                            <StageUsageSection
-                                                                projectId={projectId}
-                                                                items={data?.items || []}
-                                                                usageByItem={data?.usageByItem || {}}
-                                                                onUsageRecorded={loadUsageData}
-                                                            />
-                                                        </div>
-                                                    );
-                                                })
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Tracking Tab */}
-                    {activeTab === 'tracking' && (
-                        <div className="tracking-tab">
-                            <h3>Purchase Tracking</h3>
-                            <p className="tracking-description">Track actual purchases and compare to estimates</p>
-
-                            {items.length === 0 ? (
-                                <div className="empty-state">
-                                    <ShoppingCart size={48} weight="light" />
-                                    <h4>No items to track</h4>
-                                    <p>Add materials to your BOQ to start tracking purchases</p>
-                                </div>
-                            ) : (
-                                <div className="tracking-list">
-                                    {items.map((item) => (
-                                        <PurchaseTracker
-                                            key={item.id}
-                                            item={item}
-                                            onUpdate={(itemId, updates) => handleItemUpdate(itemId, updates)}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Documents Tab */}
-                    {activeTab === 'documents' && (
-                        <DocumentsTab projectId={projectId} />
-                    )}
-                </div>
+                </main>
             </div>
 
-            {/* Share Modal */}
             <ShareModal
                 isOpen={showShareModal}
                 onClose={() => setShowShareModal(false)}
-                projectName={project.name}
                 projectId={projectId}
+                projectName={project.name}
             />
 
             <style jsx>{`
-                .project-detail {
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--spacing-xl);
-                    max-width: 1000px;
-                    margin: 0 auto;
-                }
-
-                .back-link {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: var(--spacing-xs);
-                    color: var(--color-text);
-                    text-decoration: none;
-                    font-size: 0.8125rem;
-                    font-weight: 600;
-                    padding: 6px 12px;
-                    background: var(--color-surface);
-                    border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-full);
-                    transition: color 0.2s;
-                }
-                .back-link:hover {
-                    color: var(--color-primary);
-                    border-color: rgba(78, 154, 247, 0.35);
-                    background: var(--color-primary-bg);
-                }
-
-                .sub-nav {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    font-size: 0.75rem;
-                    color: var(--color-text-muted);
-                }
-
-                .sub-nav a {
-                    color: var(--color-text-secondary);
-                    text-decoration: none;
-                }
-
-                .sub-nav a:hover {
-                    color: var(--color-primary);
-                }
-
-                .sub-nav .current {
-                    color: var(--color-text);
-                    font-weight: 600;
-                }
-
-                .project-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    gap: var(--spacing-lg);
-                }
-
-                .project-info h1 {
-                    font-size: 1.75rem;
-                    font-weight: 700;
-                    color: var(--color-text);
-                    margin: 0 0 var(--spacing-sm) 0;
-                }
-
-                .project-info :global(.title-edit) {
-                    font-size: inherit;
-                    font-weight: inherit;
-                }
-
-                .project-meta {
-                    display: flex;
-                    flex-wrap: wrap;
-                    align-items: center;
-                    gap: var(--spacing-md);
-                }
-
-                .meta-item {
-                    display: flex;
-                    align-items: center;
-                    gap: var(--spacing-xs);
-                    color: var(--color-text-secondary);
-                    font-size: 0.875rem;
-                }
-
-                .header-actions {
-                    display: flex;
-                    gap: var(--spacing-sm);
-                    flex-shrink: 0;
-                }
-
-                .stats-grid {
-                    display: grid;
-                    grid-template-columns: repeat(3, 1fr);
-                    gap: var(--spacing-lg);
-                }
-
-                .savings-planner {
-                    margin-top: var(--spacing-md);
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--spacing-sm);
-                }
-
-                .planner-toggle {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    width: 100%;
-                    padding: var(--spacing-sm) var(--spacing-md);
-                    background: var(--color-surface);
-                    border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-lg);
-                    font-size: 0.875rem;
-                    font-weight: 600;
-                    color: var(--color-text);
-                    cursor: pointer;
-                    transition: border-color 0.2s ease, background 0.2s ease;
-                }
-
-                .planner-toggle:hover {
-                    border-color: var(--color-primary);
-                    background: var(--color-background);
-                }
-
-                .planner-body {
-                    border-radius: var(--radius-lg);
-                }
-
-                .stat-value {
-                    font-size: 1.5rem;
-                    font-weight: 700;
-                    color: var(--color-text);
-                    margin: 0;
-                }
-
-                .stat-value.spent { color: var(--color-accent); }
-
-                .stat-label {
-                    font-size: 0.875rem;
-                    color: var(--color-text-secondary);
-                    margin: var(--spacing-xs) 0 0 0;
-                }
-
-                .mini-progress {
-                    height: 6px;
-                    background: var(--color-border-light);
-                    border-radius: 3px;
-                    margin: var(--spacing-sm) 0;
-                    overflow: hidden;
-                }
-
-                .mini-progress-fill {
-                    height: 100%;
-                    background: var(--color-success);
-                    border-radius: 3px;
-                    transition: width 0.5s ease;
-                }
-
-                .under-budget {
-                    color: var(--color-success);
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 4px;
-                }
-
-                .over-budget { color: var(--color-error); }
-
-                .view-toggle {
-                    display: flex;
-                    gap: var(--spacing-xs);
-                    align-items: center;
-                    background: var(--color-surface);
-                    padding: var(--spacing-xs) var(--spacing-sm);
-                    border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-lg);
-                    overflow-x: auto;
-                }
-
-                .toggle-btn {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    padding: var(--spacing-sm) var(--spacing-md);
-                    background: transparent;
-                    border: 1px solid transparent;
-                    border-radius: var(--radius-full);
-                    font-size: 0.8125rem;
-                    font-weight: 500;
-                    color: var(--color-text-secondary);
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                    white-space: nowrap;
-                }
-
-                .toggle-btn:hover:not(:disabled) {
-                    color: var(--color-text);
-                    background: var(--color-background);
-                }
-
-                .toggle-btn.active {
-                    background: var(--color-primary-bg);
-                    color: var(--color-primary);
-                    border-color: rgba(78, 154, 247, 0.35);
-                    box-shadow: 0 6px 16px rgba(78, 154, 247, 0.18);
-                }
-
-                .toggle-btn.not-applicable {
-                    opacity: 0.4;
-                    cursor: not-allowed;
-                }
-
-                .tab-separator {
-                    width: 1px;
-                    background: var(--color-border-light);
-                    margin: var(--spacing-xs) var(--spacing-sm);
-                    align-self: stretch;
-                }
-
-                .tab-content {
-                    min-height: 400px;
-                }
-
-                .setup-required {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    padding: var(--spacing-2xl);
-                    text-align: center;
-                    color: var(--color-text-muted);
-                    background: rgba(245, 158, 11, 0.05);
-                    border: 1px dashed var(--color-warning);
-                    border-radius: var(--radius-lg);
-                }
-
-                .setup-required h4 {
-                    margin: var(--spacing-md) 0 var(--spacing-xs) 0;
-                    color: var(--color-text);
-                }
-
-                .setup-required p {
-                    margin: 0;
-                    font-size: 0.875rem;
-                }
-
-                .setup-required code {
-                    margin-top: var(--spacing-sm);
-                    padding: var(--spacing-xs) var(--spacing-sm);
-                    background: var(--color-surface);
-                    border-radius: var(--radius-sm);
-                    font-size: 0.75rem;
-                }
-
-                .setup-required .hint {
-                    margin-top: var(--spacing-sm);
-                    font-size: 0.75rem;
-                }
-
-                .usage-tab {
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--spacing-lg);
-                }
-
-                .usage-gate {
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--spacing-sm);
-                    padding: var(--spacing-xl);
-                    background: var(--color-surface);
-                    border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-lg);
-                    text-align: center;
-                }
-
-                .usage-gate h3 {
-                    margin: 0;
-                    font-size: 1.125rem;
-                    font-weight: 600;
-                    color: var(--color-text);
-                }
-
-                .usage-gate p {
-                    margin: 0;
-                    color: var(--color-text-secondary);
-                    font-size: 0.875rem;
-                }
-
-                .usage-actions {
-                    display: flex;
-                    justify-content: center;
-                    gap: var(--spacing-sm);
-                    margin-top: var(--spacing-sm);
-                }
-
-                .usage-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    gap: var(--spacing-md);
-                }
-
-                .usage-header h3 {
-                    margin: 0 0 var(--spacing-xs) 0;
-                    font-size: 1.125rem;
-                    font-weight: 600;
-                    color: var(--color-text);
-                }
-
-                .usage-header p {
-                    margin: 0;
-                    font-size: 0.875rem;
-                    color: var(--color-text-secondary);
-                }
-
-                .usage-sections {
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--spacing-lg);
-                }
-
-                .usage-stage h4 {
-                    margin: 0 0 var(--spacing-sm) 0;
-                    font-size: 0.875rem;
-                    font-weight: 600;
-                    color: var(--color-text);
-                }
-
-                .loading-state {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: var(--spacing-sm);
-                    padding: var(--spacing-xl);
-                    background: var(--color-surface);
-                    border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-lg);
-                    color: var(--color-text-secondary);
-                    font-size: 0.875rem;
-                }
-
                 :global(.spinner) {
-                    animation: spin 1s linear infinite;
+                     animation: spin 1s linear infinite;
                 }
-
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
-
-                .tracking-tab h3 {
-                    font-size: 1.125rem;
-                    font-weight: 600;
-                    color: var(--color-text);
-                    margin: 0 0 var(--spacing-xs) 0;
-                }
-
-                .tracking-description {
-                    color: var(--color-text-secondary);
-                    font-size: 0.875rem;
-                    margin: 0 0 var(--spacing-lg) 0;
-                }
-
-                .tracking-list {
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--spacing-md);
-                }
-
-                .empty-state {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    padding: var(--spacing-2xl);
-                    text-align: center;
-                    color: var(--color-text-muted);
-                    background: var(--color-background);
-                    border-radius: var(--radius-lg);
-                    border: 1px dashed var(--color-border);
-                }
-
-                .empty-state h4 {
-                    margin: var(--spacing-md) 0 var(--spacing-xs) 0;
-                    color: var(--color-text);
-                }
-
-                .empty-state p {
-                    margin: 0;
-                    font-size: 0.875rem;
-                }
-
-                @media (max-width: 768px) {
-                    .project-header { flex-direction: column; }
-                    .header-actions {
-                        width: 100%;
-                        flex-wrap: wrap;
-                    }
-                    .stats-grid { grid-template-columns: 1fr; }
-                    .view-toggle {
-                        flex-wrap: nowrap;
-                        -webkit-overflow-scrolling: touch;
-                    }
-                    .toggle-btn {
-                        flex-shrink: 0;
-                        padding: var(--spacing-xs) var(--spacing-sm);
-                        font-size: 0.75rem;
-                    }
-                }
+                @keyframes spin { to { transform: rotate(360deg); } }
             `}</style>
         </MainLayout>
     );

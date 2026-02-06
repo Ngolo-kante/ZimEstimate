@@ -149,6 +149,7 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                     border-radius: var(--radius-md);
                     overflow: hidden;
                     transition: all 0.2s ease;
+                    box-shadow: 0 10px 20px rgba(6, 20, 47, 0.06);
                 }
 
                 .task-item:hover {
@@ -156,7 +157,7 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                 }
 
                 .task-item.completed {
-                    background: var(--color-background);
+                    background: rgba(6, 20, 47, 0.02);
                     opacity: 0.8;
                 }
 
@@ -171,7 +172,7 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                 .checkbox {
                     width: 20px;
                     height: 20px;
-                    border: 2px solid var(--color-border);
+                    border: 2px solid var(--color-border-light);
                     border-radius: var(--radius-sm);
                     background: var(--color-surface);
                     cursor: pointer;
@@ -239,7 +240,7 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                     font-size: 0.5rem;
                     font-weight: 600;
                     padding: 2px 6px;
-                    background: var(--color-background);
+                    background: rgba(6, 20, 47, 0.04);
                     color: var(--color-text-muted);
                     border-radius: var(--radius-full);
                     text-transform: uppercase;
@@ -259,13 +260,13 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                 }
 
                 .expand-btn:hover {
-                    background: var(--color-background);
+                    background: rgba(6, 20, 47, 0.04);
                 }
 
                 .task-details {
                     padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
                     border-top: 1px solid var(--color-border-light);
-                    background: var(--color-background);
+                    background: rgba(6, 20, 47, 0.02);
                 }
 
                 .task-description {
@@ -299,9 +300,10 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
 
                 .form-group input {
                     padding: var(--spacing-xs) var(--spacing-sm);
-                    border: 1px solid var(--color-border);
+                    border: 1px solid var(--color-border-light);
                     border-radius: var(--radius-sm);
                     font-size: 0.75rem;
+                    background: #ffffff;
                 }
 
                 .form-group input:focus {
@@ -327,7 +329,7 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                 }
 
                 .btn-cancel {
-                    background: var(--color-surface);
+                    background: rgba(6, 20, 47, 0.04);
                     color: var(--color-text-secondary);
                 }
 
@@ -356,8 +358,8 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                 }
 
                 .action-btn:hover {
-                    border-color: var(--color-border);
-                    background: var(--color-surface);
+                    border-color: rgba(6, 20, 47, 0.2);
+                    background: rgba(6, 20, 47, 0.04);
                 }
 
                 .action-btn.danger:hover {

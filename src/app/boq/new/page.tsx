@@ -1,5 +1,6 @@
 'use client';
 
+import Head from 'next/head';
 import { useState, Suspense, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
@@ -238,6 +239,7 @@ interface BOQItem {
 
 interface MilestoneData {
   id: string;
+  label?: string;
   items: BOQItem[];
   expanded: boolean;
 }
@@ -396,6 +398,213 @@ const MaterialDropdown = ({
   );
 };
 
+const LocationSelect = ({
+  value,
+  onChange,
+  options,
+  placeholder = 'Select a city...',
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+  placeholder?: string;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative w-full" ref={wrapperRef} style={{ zIndex: 900 }}>
+      <div
+        className={`wizard-select flex items-center justify-between cursor-pointer transition-all duration-200 ${isOpen ? 'ring-2 ring-blue-100 border-blue-400' : 'border-slate-200'}`}
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          border: '1px solid',
+          borderColor: isOpen ? '#60a5fa' : '#e2e8f0', // blue-400 : slate-200
+          padding: '12px 16px',
+          borderRadius: '12px',
+          background: '#fff',
+          boxShadow: isOpen ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
+          minHeight: '48px',
+        }}
+      >
+        <span className={value ? 'text-slate-900 font-medium' : 'text-slate-400'}>
+          {value || placeholder}
+        </span>
+        <CaretDown size={18} className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </div>
+
+      {isOpen && (
+        <div
+          className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-xl z-[1000] animate-fadeIn overflow-hidden"
+          style={{ maxHeight: '250px', overflowY: 'auto' }}
+        >
+          {options.map((option) => (
+            <div
+              key={option}
+              className={`px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors flex items-center justify-between ${value === option ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-700'}`}
+              onClick={() => {
+                onChange(option);
+                setIsOpen(false);
+              }}
+            >
+              <span>{option}</span>
+              {value === option && <Check size={16} weight="bold" />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+
+const WIZARD_STEPS = [
+  { step: 1, title: 'Basic Information', description: 'Name & Location' },
+  { step: 2, title: 'Floor Plan', description: 'Size & Rooms' },
+  { step: 3, title: 'Scope of Work', description: 'Stages & Trades' },
+  { step: 4, title: 'Builder Settings', description: 'Labor & Preferences' },
+  { step: 5, title: 'Estimate', description: 'View and Export BOQ' },
+];
+
+const STEP_HINTS: Record<number, string> = {
+  1: 'Next: floor plan size and building type.',
+  2: 'Next: choose the project scope.',
+  3: 'Next: pick a labor option.',
+  4: 'Next: generate your BOQ.',
+};
+
+const WizardSummaryPanel = ({
+  currentStep,
+  projectDetails,
+  projectScope,
+  selectedStages,
+  laborType,
+  locationLabel,
+}: {
+  currentStep: number;
+  projectDetails: ProjectDetailsState;
+  projectScope: string;
+  selectedStages: string[];
+  laborType: string | null;
+  locationLabel: string;
+}) => {
+  const buildingTypeLabel = BUILDING_TYPES.find((type) => type.value === projectDetails.buildingType)?.label || '';
+  const roomSummary = ROOM_INPUTS
+    .map((room) => ({
+      label: room.label,
+      count: Number(projectDetails.roomInputs[room.key]) || 0,
+    }))
+    .filter((room) => room.count > 0);
+
+  const stageLabels = milestones
+    .filter((stage) => stage.id !== 'labor' && selectedStages.includes(stage.id))
+    .map((stage) => stage.label);
+
+  const scopeLabel = projectScope === 'stage'
+    ? (stageLabels.length > 0 ? stageLabels.join(', ') : 'Choose stages')
+    : projectScope === 'full'
+      ? 'Entire House'
+      : '';
+
+  const laborLabel = laborType === 'materials_only'
+    ? 'Materials Only'
+    : 'Materials + Labor';
+
+  return (
+    <div className="wizard-summary-area">
+      <div className="summary-card">
+        <div className="summary-header">
+          <span className="summary-kicker">Project Summary</span>
+          <span className="summary-step">Step {Math.min(currentStep, 4)} of 4</span>
+        </div>
+
+        <div className="summary-section">
+          <div className="summary-item">
+            <span className="summary-label">Project Name</span>
+            <span className={`summary-value ${projectDetails.name ? 'is-filled' : 'is-empty'}`}>
+              {projectDetails.name || 'Not set'}
+            </span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Location</span>
+            <span className={`summary-value ${locationLabel ? 'is-filled' : 'is-empty'}`}>
+              {locationLabel || 'Not set'}
+            </span>
+          </div>
+        </div>
+
+        <div className="summary-divider" />
+
+        <div className="summary-section">
+          <div className="summary-item">
+            <span className="summary-label">Floor Area</span>
+            <span className={`summary-value ${projectDetails.floorPlanSize ? 'is-filled' : 'is-empty'}`}>
+              {projectDetails.floorPlanSize ? `${projectDetails.floorPlanSize} m²` : 'Not set'}
+            </span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Building Type</span>
+            <span className={`summary-value ${buildingTypeLabel ? 'is-filled' : 'is-empty'}`}>
+              {buildingTypeLabel || 'Not set'}
+            </span>
+          </div>
+        </div>
+
+        <div className="summary-divider" />
+
+        <div className="summary-section">
+          <div className="summary-item">
+            <span className="summary-label">Scope</span>
+            <span className={`summary-value ${scopeLabel ? 'is-filled' : 'is-empty'}`}>
+              {scopeLabel || 'Not set'}
+            </span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Labor</span>
+            <span className={`summary-value ${laborType ? 'is-filled' : 'is-empty'}`}>
+              {laborLabel || 'Not set'}
+            </span>
+          </div>
+        </div>
+
+        <div className="summary-divider" />
+
+        <div className="summary-section">
+          <span className="summary-label">Room Mix</span>
+          {roomSummary.length === 0 ? (
+            <span className="summary-value is-empty">No room counts yet</span>
+          ) : (
+            <div className="summary-room-grid">
+              {roomSummary.map((room) => (
+                <div key={room.label} className="summary-room">
+                  <span>{room.label}</span>
+                  <span>{room.count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="summary-next">
+          <span>Next up</span>
+          <p>{STEP_HINTS[Math.min(currentStep, 4)]}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function BOQBuilderContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -404,6 +613,7 @@ function BOQBuilderContent() {
   const [showSaveOverlay, setShowSaveOverlay] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showRoomPicker, setShowRoomPicker] = useState(false);
   const [saveOverlayMessage, setSaveOverlayMessage] = useState('Creating your project...');
   const [saveOverlaySuccess, setSaveOverlaySuccess] = useState(false);
   const [saveOverlaySteps, setSaveOverlaySteps] = useState<Array<{ label: string; status: 'pending' | 'active' | 'done' }>>([]);
@@ -415,7 +625,7 @@ function BOQBuilderContent() {
 
   // State from URL params (kept for future use)
   const _projectType = searchParams.get('type') || 'residential';
-  const [projectScope, setProjectScope] = useState(searchParams.get('scope') || 'full');
+  const [projectScope, setProjectScope] = useState(searchParams.get('scope') || '');
 
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedStages, setSelectedStages] = useState<string[]>(['substructure']);
@@ -445,7 +655,7 @@ function BOQBuilderContent() {
   );
 
   // Labor Preference
-  const [laborType, setLaborType] = useState<'materials_only' | 'materials_labor'>('materials_only');
+  const [laborType, setLaborType] = useState<'materials_only' | 'materials_labor' | null>(null);
 
   // Milestones State (The actual BOQ data)
   const [milestonesState, setMilestonesState] = useState<MilestoneData[]>(() =>
@@ -463,6 +673,35 @@ function BOQBuilderContent() {
 
   // Currency context - must be called at top level (not inside conditionals)
   const { currency, setCurrency, exchangeRate } = useCurrency();
+  const loading = isGenerating;
+
+  // Helper for currency formatting
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency === 'USD' ? 'USD' : 'ZWG', // Assuming ZWG is the other currency code or use symbol logic
+    }).format(amount);
+  };
+
+  const estimatedMaterials = useMemo(() => {
+    return milestonesState
+      .filter(m => m.id !== 'labor')
+      .map(m => ({
+        category: m.label || m.id,
+        items: m.items
+      }))
+      .filter(c => c.items.length > 0);
+  }, [milestonesState]);
+
+  const estimatedLabor = useMemo(() => {
+    return milestonesState
+      .filter(m => m.id === 'labor')
+      .map(m => ({
+        category: 'Labor & Services',
+        items: m.items
+      }))
+      .filter(c => c.items.length > 0);
+  }, [milestonesState]);
 
   // Auto-save hook for database persistence
   const {
@@ -541,8 +780,8 @@ function BOQBuilderContent() {
             return newState;
           });
 
-        // Jump to step 5 if we have items
-        setCurrentStep(5);
+          // Jump to step 5 if we have items
+          setCurrentStep(5);
         }
       },
     }
@@ -654,7 +893,7 @@ function BOQBuilderContent() {
       return selectedStages.includes(m.id);
     }
     // Labor is handled separately by labor selection
-    if (m.id === 'labor' && laborType === 'materials_only') return false;
+    if (m.id === 'labor' && laborType !== 'materials_labor') return false;
 
     return true;
   });
@@ -673,9 +912,21 @@ function BOQBuilderContent() {
         return;
       }
     }
-    if (currentStep === 3 && projectScope === 'stage' && selectedStages.length === 0) {
-      alert('Please select at least one stage');
-      return;
+    if (currentStep === 3) {
+      if (!projectScope) {
+        alert('Please select a project scope');
+        return;
+      }
+      if (projectScope === 'stage' && selectedStages.length === 0) {
+        alert('Please select at least one stage');
+        return;
+      }
+    }
+    if (currentStep === 4) {
+      if (!laborType) {
+        alert('Please select a labor option');
+        return;
+      }
     }
 
     // Create project in database when moving from step 1 (if authenticated and no project yet)
@@ -743,6 +994,46 @@ function BOQBuilderContent() {
     });
     return entries.slice(0, 18);
   }, [projectDetails.roomInputs]);
+
+  const planDimensions = useMemo(() => {
+    const area = Number(projectDetails.floorPlanSize) || 0;
+    if (!area) return null;
+    const aspectRatio = 1.4;
+    const length = Math.sqrt(area * aspectRatio);
+    const width = area / length;
+    return {
+      length,
+      width,
+      ratio: length / width,
+    };
+  }, [projectDetails.floorPlanSize]);
+
+  const handleQuickAddRoom = (key: RoomInputKey) => {
+    setProjectDetails((prev) => {
+      const current = Number(prev.roomInputs[key]) || 0;
+      return {
+        ...prev,
+        roomInputs: {
+          ...prev.roomInputs,
+          [key]: String(current + 1),
+        },
+      };
+    });
+  };
+
+  const handleAdjustRoom = (key: RoomInputKey, delta: number) => {
+    setProjectDetails((prev) => {
+      const current = Number(prev.roomInputs[key]) || 0;
+      const next = Math.max(0, current + delta);
+      return {
+        ...prev,
+        roomInputs: {
+          ...prev.roomInputs,
+          [key]: next === 0 ? '' : String(next),
+        },
+      };
+    });
+  };
 
   const handleAddMaterial = (milestoneId: string) => {
     if (!newItem.materialId) return;
@@ -885,7 +1176,7 @@ function BOQBuilderContent() {
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Redirect to projects page after save
-        router.push('/projects?refresh=1');
+        router.push('/projects');
       } catch (err) {
         setShowSaveOverlay(false);
         // Error handling is done by the hook
@@ -1404,12 +1695,12 @@ function BOQBuilderContent() {
                                     className="w-full p-2 text-center text-sm font-medium text-slate-700 outline-none bg-transparent"
                                     type="number"
                                     value={item.quantity || ''}
-                                      onChange={(e) => handleUpdateQuantity(milestone.id, item.id, parseFloat(e.target.value))}
-                                      placeholder="0"
-                                    />
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase pr-2 pl-1">
-                                      {item.unit}
-                                    </span>
+                                    onChange={(e) => handleUpdateQuantity(milestone.id, item.id, parseFloat(e.target.value))}
+                                    placeholder="0"
+                                  />
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase pr-2 pl-1">
+                                    {item.unit}
+                                  </span>
                                 </div>
                               </div>
 
@@ -1632,408 +1923,681 @@ function BOQBuilderContent() {
   }
 
   return (
-    <MainLayout title="New Project">
+    <MainLayout>
       <WizardStyles />
-      <div className="boq-wizard-container">
 
-        <div className="wizard-step">
-          {currentStep === 1 && (
-            <div className="step-content">
-              <div className="step-header">
-                <h2>Project Details</h2>
-                <p>Set your project name and location preferences to start estimating.</p>
-              </div>
-              <div className="wizard-card wizard-card--stack" style={{ maxWidth: '720px', margin: '0 auto' }}>
-                <div className="wizard-section">
-                  <div className="wizard-section-header">
-                    <div>
-                      <div className="section-kicker">Project Details</div>
-                      <h3>Project Details</h3>
-                      <p>Give your project a name and choose the location type.</p>
-                    </div>
-                  </div>
+      <div className="wizard-shell">
+        <div className="boq-wizard-container">
 
-                  <div className="wizard-grid">
-                    <div className="form-group grid-span-2">
-                      <label className="wizard-label">
-                        <House size={18} weight="light" />
-                        Project Name
-                        <span className="required">*</span>
-                      </label>
-                      <Input
-                        className="wizard-select"
-                        placeholder="e.g. Borrowdale 4-Bedroom House"
-                        value={projectDetails.name}
-                        onChange={(e) => setProjectDetails({ ...projectDetails, name: e.target.value })}
-                      />
+          {/* Main Content Area */}
+          <div className="wizard-main-content">
+
+            {/* Step 1: Project Details */}
+            {currentStep === 1 && (
+              <div className="wizard-step">
+                <div className="wizard-content-split">
+                  <div className="wizard-form-area">
+                    <div className="step-header">
+                      <span className="step-kicker">Step 1 of 4</span>
+                      <h2 className="step-title">Project Details</h2>
+                      <p className="step-subtitle">Give your project a name and choose the location type.</p>
                     </div>
 
-                    <div className="form-group grid-span-2">
-                      <label className="wizard-label">
-                        <MapPin size={18} weight="light" />
-                        Location Type
-                        <span className="required">*</span>
-                      </label>
-                      <div className="pill-grid" role="radiogroup" aria-label="Location Type">
-                        {LOCATION_TYPES.map((option) => {
-                          const Icon = option.icon;
-                          const isSelected = projectDetails.locationType === option.value;
-                          return (
-                            <button
-                              key={option.value}
-                              type="button"
-                              className={`pill-option ${isSelected ? 'selected' : ''}`}
-                              onClick={() => setProjectDetails({ ...projectDetails, locationType: option.value })}
-                              aria-pressed={isSelected}
-                              data-testid={`location-type-${option.value}`}
-                            >
-                              <span className="pill-icon">
-                                <Icon size={18} weight={isSelected ? 'fill' : 'light'} />
-                              </span>
-                              <span className="pill-content">
-                                <span className="pill-title">{option.label}</span>
-                                <span className="pill-subtitle">{option.description}</span>
-                              </span>
-                            </button>
-                          );
-                        })}
+                    <div className="wizard-card wizard-card--stack">
+                      <div className="wizard-section">
+                        <div className="wizard-section-header">
+                          <div>
+                            <span className="section-kicker">Basics</span>
+                            <h3>Project Name</h3>
+                            <p>This keeps your estimates organized.</p>
+                          </div>
+                        </div>
+                        <Input
+                          label="Project Name"
+                          placeholder="e.g. Borrowdale 4-Bedroom House"
+                          value={projectDetails.name}
+                          onChange={(e) => setProjectDetails({ ...projectDetails, name: e.target.value })}
+                          required
+                        />
                       </div>
-                    </div>
 
-                    <div className="form-group grid-span-2">
-                      <label className="wizard-label">
-                        <MapPin size={18} weight="light" />
-                        City / Town
-                        <span className="optional">(Optional)</span>
-                      </label>
-                      <input
-                        className="wizard-select"
-                        list="location-options"
-                        placeholder="Select or type a city"
-                        value={projectDetails.locationCity}
-                        onChange={(e) => setProjectDetails({ ...projectDetails, locationCity: e.target.value })}
-                      />
-                      <datalist id="location-options">
-                        {LOCATION_OPTIONS.map((option) => (
-                          <option key={option} value={option} />
-                        ))}
-                      </datalist>
-                    </div>
+                      <div className="wizard-divider" />
 
-                    <div className="form-group grid-span-2">
-                      <label className="wizard-label">
-                        <MapPin size={18} weight="light" />
-                        Specific Location
-                        <span className="optional">(Optional)</span>
-                      </label>
-                      <Input
-                        className="wizard-select"
-                        placeholder="e.g. Borrowdale, Harare"
-                        value={projectDetails.specificLocation}
-                        onChange={(e) => setProjectDetails({ ...projectDetails, specificLocation: e.target.value })}
-                      />
-                      <span className="wizard-hint">
-                        Add a suburb or area to keep projects organized.
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                      <div className="wizard-section">
+                        <div className="wizard-section-header">
+                          <div>
+                            <span className="section-kicker">Location</span>
+                            <h3>Where is the project?</h3>
+                            <p>Location type affects transport and labor pricing.</p>
+                          </div>
+                        </div>
 
-                <div className="wizard-actions">
-                  <div></div>
-                  <Button
-                    variant="primary"
-                    onClick={goToNextStep}
-                    icon={<ArrowRight size={18} />}
-                  >
-                    Continue
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
+                        <div className="form-group">
+                          <label className="wizard-label">
+                            Location Type <span className="required">*</span>
+                          </label>
+                          <div className="pill-grid" role="radiogroup" aria-label="Location Type">
+                            {LOCATION_TYPES.map((type) => {
+                              const Icon = type.icon;
+                              const isSelected = projectDetails.locationType === type.value;
+                              return (
+                                <button
+                                  key={type.value}
+                                  type="button"
+                                  className={`pill-option ${isSelected ? 'selected' : ''}`}
+                                  data-testid={`location-type-${type.value}`}
+                                  onClick={() => setProjectDetails({ ...projectDetails, locationType: type.value })}
+                                  aria-pressed={isSelected}
+                                >
+                                  <span className="pill-icon">
+                                    <Icon size={18} weight={isSelected ? 'fill' : 'light'} />
+                                  </span>
+                                  <span className="pill-content">
+                                    <span className="pill-title">{type.label}</span>
+                                    <span className="pill-subtitle">{type.description}</span>
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
 
-          {currentStep === 2 && (
-            <div className="step-content">
-              <div className="step-header">
-                <h2>Floor Plan Details</h2>
-                <p>Capture the total floor area, building type, and room mix.</p>
-              </div>
-              <div className="wizard-card wizard-card--stack" style={{ maxWidth: '900px', margin: '0 auto' }}>
-                <div className="wizard-grid">
-                  <div className="form-group">
-                    <label className="wizard-label">
-                      <Layout size={18} weight="light" />
-                      Floor Plan Size
-                      <span className="required">*</span>
-                    </label>
-                    <div className="input-with-suffix">
-                      <input
-                        type="number"
-                        min="1"
-                        step="0.1"
-                        className="wizard-select"
-                        placeholder="e.g. 240"
-                        value={projectDetails.floorPlanSize}
-                        onChange={(e) => setProjectDetails({ ...projectDetails, floorPlanSize: e.target.value })}
-                      />
-                      <span className="input-suffix">m²</span>
-                    </div>
-                    <span className="wizard-hint">Total floor area of the plan.</span>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="wizard-label">
-                      <HouseSimple size={18} weight="light" />
-                      Building Type
-                      <span className="required">*</span>
-                    </label>
-                    <div className="pill-grid pill-grid--two" role="radiogroup" aria-label="Building Type">
-                      {BUILDING_TYPES.map((option) => {
-                        const Icon = option.icon;
-                        const isSelected = projectDetails.buildingType === option.value;
-                        return (
-                          <button
-                            key={option.value}
-                            type="button"
-                            className={`pill-option ${isSelected ? 'selected' : ''}`}
-                            onClick={() => setProjectDetails({ ...projectDetails, buildingType: option.value })}
-                            aria-pressed={isSelected}
-                            data-testid={`building-type-${option.value}`}
-                          >
-                            <span className="pill-icon">
-                              <Icon size={18} weight={isSelected ? 'fill' : 'light'} />
-                            </span>
-                            <span className="pill-content">
-                              <span className="pill-title">{option.label}</span>
-                              <span className="pill-subtitle">{option.description}</span>
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="plan-layout">
-                  <div className="plan-inputs">
-                    <div className="plan-header">
-                      <div>
-                        <h4>Room Mix (Optional)</h4>
-                        <p>Adjust counts to sketch a quick plan layout.</p>
-                      </div>
-                      <span className="optional-chip">Optional</span>
-                    </div>
-                    <div className="room-grid room-grid--compact">
-                      {ROOM_INPUTS.map((room) => (
-                        <div key={room.key} className="room-input room-input--row">
-                          <label>{room.label}</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            placeholder="0"
-                            value={projectDetails.roomInputs[room.key]}
-                            onChange={(e) =>
-                              setProjectDetails({
-                                ...projectDetails,
-                                roomInputs: {
-                                  ...projectDetails.roomInputs,
-                                  [room.key]: e.target.value,
-                                },
-                              })
-                            }
+                        <div className="wizard-grid">
+                          <div className="form-group">
+                            <label className="wizard-label">
+                              City / Town <span className="optional">(Optional)</span>
+                            </label>
+                            <LocationSelect
+                              value={projectDetails.locationCity}
+                              onChange={(val) => setProjectDetails({ ...projectDetails, locationCity: val })}
+                              options={LOCATION_OPTIONS}
+                              placeholder="Select City"
+                            />
+                          </div>
+                          <Input
+                            label="Specific Location (Optional)"
+                            placeholder="e.g. Borrowdale"
+                            value={projectDetails.specificLocation}
+                            onChange={(e) => setProjectDetails({ ...projectDetails, specificLocation: e.target.value })}
                           />
                         </div>
-                      ))}
+                      </div>
+                    </div>
+
+                    <div className="wizard-actions wizard-actions--right">
+                      <Button
+                        variant="primary"
+                        onClick={goToNextStep}
+                        icon={<ArrowRight size={18} />}
+                        disabled={!projectDetails.name || !projectDetails.locationType}
+                      >
+                        Continue
+                      </Button>
                     </div>
                   </div>
 
-                  <div className="plan-preview">
-                    <div className="plan-preview-header">
-                      <h4>2D Plan Sketch</h4>
-                      <span>{planPreviewRooms.length} rooms</span>
+                  <WizardSummaryPanel
+                    currentStep={currentStep}
+                    projectDetails={projectDetails}
+                    projectScope={projectScope}
+                    selectedStages={selectedStages}
+                    laborType={laborType}
+                    locationLabel={locationLabel}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Floor Plan */}
+            {currentStep === 2 && (
+              <div className="wizard-step">
+                <div className="wizard-content-split">
+                  <div className="wizard-form-area">
+                    <div className="step-header">
+                      <span className="step-kicker">Step 2 of 4</span>
+                      <h2 className="step-title">Floor Plan Details</h2>
+                      <p className="step-subtitle">Capture the total floor area, building type, and room mix.</p>
                     </div>
-                    <div className={`plan-canvas ${planPreviewRooms.length === 0 ? 'is-empty' : ''}`}>
-                      {planPreviewRooms.length === 0 ? (
-                        <div className="plan-empty">
-                          Add rooms to generate a quick plan layout.
-                        </div>
-                      ) : (
-                        planPreviewRooms.map((room) => (
-                          <div key={room.id} className={`plan-room plan-room--${room.key}`}>
-                            <span>{room.label}</span>
+
+                    <div className="wizard-card wizard-card--stack">
+                      <div className="wizard-grid">
+                        <div className="form-group">
+                          <label className="wizard-label">
+                            Floor Plan Size <span className="required">*</span>
+                          </label>
+                          <div className="input-with-suffix">
+                            <input
+                              type="number"
+                              min="1"
+                              step="0.1"
+                              className="wizard-select"
+                              placeholder="e.g. 240"
+                              value={projectDetails.floorPlanSize}
+                              onChange={(e) => setProjectDetails({ ...projectDetails, floorPlanSize: e.target.value })}
+                              required
+                            />
+                            <span className="input-suffix">m²</span>
                           </div>
-                        ))
+                          <span className="wizard-hint">Total floor area of the plan.</span>
+                        </div>
+                        <div className="form-group">
+                          <label className="wizard-label">
+                            Building Type <span className="required">*</span>
+                          </label>
+                          <div className="pill-grid pill-grid--two" role="radiogroup" aria-label="Building Type">
+                            {BUILDING_TYPES.map((option) => {
+                              const Icon = option.icon;
+                              const isSelected = projectDetails.buildingType === option.value;
+                              return (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  className={`pill-option ${isSelected ? 'selected' : ''}`}
+                                  data-testid={`building-type-${option.value}`}
+                                  onClick={() => setProjectDetails({ ...projectDetails, buildingType: option.value })}
+                                  aria-pressed={isSelected}
+                                >
+                                  <span className="pill-icon">
+                                    <Icon size={18} weight={isSelected ? 'fill' : 'light'} />
+                                  </span>
+                                  <span className="pill-content">
+                                    <span className="pill-title">{option.label}</span>
+                                    <span className="pill-subtitle">{option.description}</span>
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="plan-layout plan-layout--single">
+                        <div className="plan-preview">
+                          <div className="plan-preview-header">
+                            <div>
+                              <h4>Plan Sketch</h4>
+                              <span className="plan-preview-hint">Sketch only</span>
+                            </div>
+                            <div className="plan-preview-actions">
+                              <button
+                                type="button"
+                                className="plan-add-room-btn"
+                                onClick={() => setShowRoomPicker((prev) => !prev)}
+                              >
+                                Add room
+                              </button>
+                              {showRoomPicker && (
+                                <div className="plan-add-room-menu">
+                                  {ROOM_INPUTS.map((room) => (
+                                    <div key={room.key} className="plan-add-room-row">
+                                      <span>{room.label}</span>
+                                      <div className="plan-add-room-controls">
+                                        <button
+                                          type="button"
+                                          className="plan-room-adjust"
+                                          onClick={() => handleAdjustRoom(room.key, -1)}
+                                          disabled={(Number(projectDetails.roomInputs[room.key]) || 0) === 0}
+                                        >
+                                          −
+                                        </button>
+                                        <span className="plan-room-count">{Number(projectDetails.roomInputs[room.key]) || 0}</span>
+                                        <button
+                                          type="button"
+                                          className="plan-room-adjust"
+                                          onClick={() => handleAdjustRoom(room.key, 1)}
+                                        >
+                                          +
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div
+                            className={`plan-canvas ${planPreviewRooms.length === 0 ? 'is-empty' : ''}`}
+                            style={planDimensions ? { aspectRatio: `${planDimensions.ratio}` } : undefined}
+                          >
+                            {planDimensions && (
+                              <>
+                                <div className="plan-dimension plan-dimension--x">
+                                  {planDimensions.length.toFixed(1)}m
+                                </div>
+                                <div className="plan-dimension plan-dimension--y">
+                                  {planDimensions.width.toFixed(1)}m
+                                </div>
+                              </>
+                            )}
+                            {planPreviewRooms.length === 0 ? (
+                              <div className="plan-empty">Add room counts to see a 2D sketch.</div>
+                            ) : (
+                              planPreviewRooms.map((room) => (
+                                <div key={room.id} className={`plan-room plan-room--${room.key}`}>
+                                  {room.label}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="wizard-actions">
+                      <Button variant="secondary" onClick={goToPrevStep}>Back</Button>
+                      <Button
+                        variant="primary"
+                        onClick={goToNextStep}
+                        icon={<ArrowRight size={18} />}
+                        disabled={!projectDetails.floorPlanSize || !projectDetails.buildingType}
+                      >
+                        Continue
+                      </Button>
+                    </div>
+                  </div>
+
+                  <WizardSummaryPanel
+                    currentStep={currentStep}
+                    projectDetails={projectDetails}
+                    projectScope={projectScope}
+                    selectedStages={selectedStages}
+                    laborType={laborType}
+                    locationLabel={locationLabel}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Scope */}
+            {currentStep === 3 && (
+              <div className="wizard-step">
+                <div className="wizard-content-split">
+                  <div className="wizard-form-area">
+                    <div className="step-header">
+                      <span className="step-kicker">Step 3 of 4</span>
+                      <h2 className="step-title">Scope of Work</h2>
+                      <p className="step-subtitle">Choose what to include in this estimate.</p>
+                    </div>
+
+                    <div className="wizard-card wizard-card--stack">
+                      <div className="wizard-section">
+                        <div className="wizard-section-header">
+                          <div>
+                            <span className="section-kicker">Scope</span>
+                            <h3>Project Scope</h3>
+                            <p>Select the level of detail you need right now.</p>
+                          </div>
+                        </div>
+
+                        <p className="wizard-hint" style={{ margin: 0 }}>
+                          Specific stages produce more accurate estimates. We recommend them whenever you only need a
+                          portion of the project.
+                        </p>
+
+                        <div className="scope-selection">
+                          <button
+                            type="button"
+                            className={`scope-card ${projectScope === 'stage' ? 'selected' : ''}`}
+                            onClick={() => setProjectScope('stage')}
+                          >
+                            <Stack size={28} weight={projectScope === 'stage' ? 'fill' : 'light'} className="scope-icon" />
+                            <div className="scope-content">
+                              <h3>Specific Stages</h3>
+                              <p>Choose only the phases you want to estimate now.</p>
+                            </div>
+                            {projectScope === 'stage' && <CheckCircle className="check-icon" size={24} weight="fill" />}
+                          </button>
+
+                          <button
+                            type="button"
+                            className={`scope-card ${projectScope === 'full' ? 'selected' : ''}`}
+                            onClick={() => setProjectScope('full')}
+                          >
+                            <HouseSimple size={28} weight={projectScope === 'full' ? 'fill' : 'light'} className="scope-icon" />
+                            <div className="scope-content">
+                              <h3>Entire House</h3>
+                              <p>Complete BOQ from foundation to finishings.</p>
+                            </div>
+                            {projectScope === 'full' && <CheckCircle className="check-icon" size={24} weight="fill" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {projectScope === 'stage' && (
+                        <div className="wizard-section">
+                          <div className="wizard-section-header">
+                            <div>
+                              <span className="section-kicker">Stages</span>
+                              <h3>Select Stages</h3>
+                              <p>Pick the construction phases you want to estimate now.</p>
+                            </div>
+                          </div>
+
+                          <div className="stage-selector-container">
+                            <div className="stage-grid">
+                              {milestones.filter(m => m.id !== 'labor').map((stage) => {
+                                const isChecked = selectedStages.includes(stage.id);
+                                const Icon = stage.icon;
+                                return (
+                                  <button
+                                    key={stage.id}
+                                    type="button"
+                                    className={`stage-card ${isChecked ? 'selected' : ''}`}
+                                    onClick={() => {
+                                      if (isChecked) {
+                                        setSelectedStages(selectedStages.filter(id => id !== stage.id));
+                                      } else {
+                                        setSelectedStages([...selectedStages, stage.id]);
+                                      }
+                                    }}
+                                  >
+                                    <Icon size={22} weight={isChecked ? 'fill' : 'duotone'} className="stage-icon" />
+                                    <span>{stage.label}</span>
+                                    {isChecked && <Check size={14} weight="bold" className="stage-check" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            {selectedStages.length === 0 && (
+                              <p className="wizard-hint" style={{ color: 'var(--color-error)', marginTop: '12px' }}>
+                                Please select at least one stage.
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
-                </div>
 
-                <div className="wizard-actions">
-                  <Button variant="secondary" onClick={goToPrevStep}>
-                    Back
-                  </Button>
-                  <Button
-                    variant="primary"
-                    onClick={goToNextStep}
-                    icon={<ArrowRight size={18} />}
-                  >
-                    Continue
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 3 && (
-            <div className="step-content">
-              <div className="step-header">
-                <h2>Define Project Scope</h2>
-                <p>Are you building the whole house or focusing on a specific stage?</p>
-              </div>
-
-              <div className="scope-selection">
-                <div
-                  className={`scope-card ${projectScope === 'entire' ? 'selected' : ''}`}
-                  onClick={() => setProjectScope('entire')}
-                >
-                  <div className="scope-icon">
-                    <HouseSimple
-                      size={32}
-                      weight={projectScope === 'entire' ? 'fill' : 'light'}
-                    />
-                  </div>
-                  <div className="scope-content">
-                    <h3>Entire House</h3>
-                    <p>Full project from foundation to finish. Best for new builds.</p>
-                  </div>
-                  {projectScope === 'entire' && (
-                    <CheckCircle className="check-icon" size={24} weight="fill" />
-                  )}
-                </div>
-
-                <div
-                  className={`scope-card ${projectScope === 'stage' ? 'selected' : ''}`}
-                  onClick={() => setProjectScope('stage')}
-                >
-                  <div className="scope-icon">
-                    <Stack
-                      size={32}
-                      weight={projectScope === 'stage' ? 'fill' : 'light'}
-                    />
-                  </div>
-                  <div className="scope-content">
-                    <h3>Specific Stage</h3>
-                    <p>Focus on one phase like Substructure, Roofing, or Finishing.</p>
-                  </div>
-                  {projectScope === 'stage' && (
-                    <CheckCircle className="check-icon" size={24} weight="fill" />
-                  )}
-                </div>
-              </div>
-
-              {projectScope === 'stage' && (
-                <div className="stage-selector-container">
-                  <div className="stage-grid">
-                    {milestones.filter(m => m.id !== 'labor').map((m) => (
-                      <div
-                        key={m.id}
-                        className={`stage-card ${selectedStages.includes(m.id) ? 'selected' : ''}`}
-                        onClick={() => toggleStageSelection(m.id)}
+                    <div className="wizard-actions">
+                      <Button variant="secondary" onClick={goToPrevStep}>Back</Button>
+                      <Button
+                        variant="primary"
+                        onClick={goToNextStep}
+                        icon={<ArrowRight size={18} />}
+                        disabled={!projectScope || (projectScope === 'stage' && selectedStages.length === 0)}
                       >
-                        <div className="stage-icon">
-                          <m.icon
-                            size={28}
-                            weight={selectedStages.includes(m.id) ? 'fill' : 'light'}
-                          />
+                        Continue
+                      </Button>
+                    </div>
+                  </div>
+
+                  <WizardSummaryPanel
+                    currentStep={currentStep}
+                    projectDetails={projectDetails}
+                    projectScope={projectScope}
+                    selectedStages={selectedStages}
+                    laborType={laborType}
+                    locationLabel={locationLabel}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Builder Settings */}
+            {currentStep === 4 && (
+              <div className="wizard-step">
+                <div className="wizard-content-split">
+                  <div className="wizard-form-area">
+                    <div className="step-header">
+                      <span className="step-kicker">Step 4 of 4</span>
+                      <h2 className="step-title">Labor Options</h2>
+                      <p className="step-subtitle">Choose how you want labor handled in the estimate.</p>
+                    </div>
+
+                    <div className="wizard-card wizard-card--stack">
+                      <div className="wizard-section">
+                        <div className="wizard-section-header">
+                          <div>
+                            <span className="section-kicker">Estimate Type</span>
+                            <h3>Materials or Materials + Labor?</h3>
+                            <p>Pick the estimate style that fits your project.</p>
+                          </div>
                         </div>
-                        <span>{m.label}</span>
-                        {selectedStages.includes(m.id) && (
-                          <CheckCircle className="stage-check" size={18} weight="fill" />
+
+                        <div className="choice-grid" role="radiogroup" aria-label="Labor Options">
+                          <button
+                            type="button"
+                            className={`choice-card ${laborType === 'materials_only' ? 'selected' : ''}`}
+                            onClick={() => setLaborType('materials_only')}
+                            aria-pressed={laborType === 'materials_only'}
+                          >
+                            <div className="choice-icon">
+                              <Package size={20} />
+                            </div>
+                            <div>
+                              <div className="choice-title">Materials Only</div>
+                              <p className="choice-description">
+                                Generate a materials list. Best if you already have a builder.
+                              </p>
+                            </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            className={`choice-card ${laborType === 'materials_labor' ? 'selected' : ''}`}
+                            onClick={() => setLaborType('materials_labor')}
+                            aria-pressed={laborType === 'materials_labor'}
+                          >
+                            <div className="choice-icon">
+                              <UserCircle size={20} />
+                            </div>
+                            <div>
+                              <div className="choice-title">Materials + Labor</div>
+                              <p className="choice-description">
+                                Include estimated labor costs for a full project view.
+                              </p>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="tips-section">
+                        <h3>Pro Tip</h3>
+                        <ul>
+                          <li>Labor rates are estimates based on Harare averages.</li>
+                          <li>You can adjust line items manually after generation.</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div className="wizard-actions">
+                      <Button variant="secondary" onClick={goToPrevStep}>Back</Button>
+                      <Button
+                        variant="primary"
+                        onClick={goToNextStep}
+                        icon={<Sparkle size={18} />}
+                      >
+                        Start Building BOQ
+                      </Button>
+                    </div>
+                  </div>
+
+                  <WizardSummaryPanel
+                    currentStep={currentStep}
+                    projectDetails={projectDetails}
+                    projectScope={projectScope}
+                    selectedStages={selectedStages}
+                    laborType={laborType}
+                    locationLabel={locationLabel}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: Estimate (Full width) */}
+            {currentStep === 5 && (
+              <div className="wizard-step">
+                {/* Existing Step 5 content - keeping it full width as it is complex */}
+                <div className="step-content">
+                  <div className="estimate-header">
+                    <span className="step-kicker">Estimate</span>
+                    <h2 className="step-title">Build BOQ</h2>
+                    <p className="step-subtitle">Review, adjust quantities, and finalize your Bill of Quantities.</p>
+                  </div>
+
+                  {/* Main Calculation View */}
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                      <p className="text-slate-500 font-medium">Calculating materials & costs...</p>
+                    </div>
+                  ) : (
+                    <div className="boq-builder w-full">
+                      {/* Floating Summary Bar */}
+                      <div className="floating-summary-bar">
+                        <div className="floating-summary-content">
+                          <div className="floating-summary-info">
+                            <Stack size={20} className="text-blue-500" />
+                            <span className="floating-total">{formatCurrency((estimatedMaterials?.reduce((acc, cat) => acc + cat.items.reduce((s, i) => s + ((currency === 'USD' ? i.averagePriceUsd : i.averagePriceZwg) * (i.quantity || 0)), 0), 0) || 0) + (estimatedLabor?.reduce((acc, cat) => acc + cat.items.reduce((s, i) => s + ((currency === 'USD' ? i.averagePriceUsd : i.averagePriceZwg) * (i.quantity || 0)), 0), 0) || 0))}</span>
+                            <span className="floating-items">{estimatedMaterials?.reduce((acc, cat) => acc + cat.items.length, 0) || 0} items</span>
+                          </div>
+                          <Button
+                            variant="primary"
+                            icon={<DownloadSimple size={16} />}
+                            size="sm"
+                            onClick={() => alert('Download feature coming soon!')}
+                          >
+                            Export PDF
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-8 pb-32">
+                        {/* Materials Section */}
+                        {estimatedMaterials && estimatedMaterials.length > 0 && (
+                          <section>
+                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                              <Package size={24} className="text-blue-500" />
+                              Materials Breakdown
+                            </h3>
+                            <div className="space-y-6">
+                              {estimatedMaterials.map((category) => (
+                                <div key={category.category} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                                  <div className="bg-slate-50 px-6 py-3 border-b border-slate-200 flex justify-between items-center">
+                                    <h4 className="font-semibold text-slate-700 capitalize">{category.category}</h4>
+                                    <div className="text-sm font-medium text-slate-600">
+                                      {formatCurrency(category.items.reduce((sum, item) => sum + ((currency === 'USD' ? item.averagePriceUsd : item.averagePriceZwg) * (item.quantity || 0)), 0))}
+                                    </div>
+                                  </div>
+                                  <div className="divide-y divide-slate-100">
+                                    {category.items.map((item, idx) => (
+                                      <div key={`${category.category}-${idx}`} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors group">
+                                        <div className="flex-1 pr-4">
+                                          <div className="font-medium text-slate-900">{item.materialName}</div>
+                                          <div className="text-xs text-slate-500 mt-1">{item.description}</div>
+                                        </div>
+                                        <div className="flex items-center gap-6">
+                                          <div className="text-right">
+                                            <div className="text-sm font-medium text-slate-900">
+                                              {Math.ceil(item.quantity || 0)} <span className="text-slate-500 font-normal">{item.unit}</span>
+                                            </div>
+                                            <div className="text-xs text-slate-400">Qty</div>
+                                          </div>
+                                          <div className="text-right w-24">
+                                            <div className="text-sm font-bold text-slate-900">
+                                              {formatCurrency((currency === 'USD' ? item.averagePriceUsd : item.averagePriceZwg) * (item.quantity || 0))}
+                                            </div>
+                                            <div className="text-xs text-slate-400">
+                                              {formatCurrency(currency === 'USD' ? item.averagePriceUsd : item.averagePriceZwg)}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </section>
+                        )}
+
+                        {/* Labor Section */}
+                        {estimatedLabor && estimatedLabor.length > 0 && (
+                          <section>
+                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                              <HardHat size={24} className="text-orange-500" />
+                              Labor Breakdown
+                            </h3>
+                            <div className="space-y-6">
+                              {estimatedLabor.map((category) => (
+                                <div key={category.category} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                                  <div className="bg-orange-50 px-6 py-3 border-b border-orange-100 flex justify-between items-center">
+                                    <h4 className="font-semibold text-orange-800 capitalize">{category.category}</h4>
+                                    <div className="text-sm font-medium text-orange-700">
+                                      {formatCurrency(category.items.reduce((sum, item) => sum + ((currency === 'USD' ? item.averagePriceUsd : item.averagePriceZwg) * (item.quantity || 0)), 0))}
+                                    </div>
+                                  </div>
+                                  <div className="divide-y divide-slate-100">
+                                    {category.items.map((item, idx) => (
+                                      <div key={`${category.category}-${idx}`} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                        <div className="flex-1 pr-4">
+                                          <div className="font-medium text-slate-900">{item.materialName}</div>
+                                          <div className="text-xs text-slate-500 mt-1">{item.description}</div>
+                                        </div>
+                                        <div className="flex items-center gap-6">
+                                          <div className="text-right w-24">
+                                            <div className="text-sm font-bold text-slate-900">
+                                              {formatCurrency((currency === 'USD' ? item.averagePriceUsd : item.averagePriceZwg) * (item.quantity || 0))}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </section>
                         )}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="wizard-actions" style={{ maxWidth: '700px', margin: '32px auto 0 auto' }}>
-                <Button variant="secondary" onClick={goToPrevStep}>
-                  Back
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={goToNextStep}
-                  icon={<ArrowRight size={18} />}
-                >
-                  Continue
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 4 && (
-            <div className="step-content">
-              <div className="step-header">
-                <h2>Labor Options</h2>
-                <p>Do you want to include labor cost estimates in your BOQ?</p>
-              </div>
-
-              <div className="scope-selection">
-                <div
-                  className={`scope-card ${laborType === 'materials_only' ? 'selected' : ''}`}
-                  onClick={() => setLaborType('materials_only')}
-                >
-                  <div className="scope-icon">
-                    <Package size={32} weight={laborType === 'materials_only' ? 'fill' : 'light'} />
-                  </div>
-                  <div className="scope-content">
-                    <h3>Materials Only</h3>
-                    <p>Calculate material costs only. Labor costs not included.</p>
-                  </div>
-                  {laborType === 'materials_only' && <CheckCircle className="check-icon" size={24} weight="fill" />}
-                </div>
-                <div
-                  className={`scope-card ${laborType === 'materials_labor' ? 'selected' : ''}`}
-                  onClick={() => setLaborType('materials_labor')}
-                >
-                  <div className="scope-icon">
-                    <HardHat size={32} weight={laborType === 'materials_labor' ? 'fill' : 'light'} />
-                  </div>
-                  <div className="scope-content">
-                    <h3>Materials & Labor</h3>
-                    <p>Include estimated builder and labor costs in your estimate.</p>
-                  </div>
-                  {laborType === 'materials_labor' && <CheckCircle className="check-icon" size={24} weight="fill" />}
+                    </div>
+                  )}
                 </div>
               </div>
+            )}
 
-              <div className="tips-section">
-                <h3>Tip</h3>
-                <ul>
-                  <li>Labor costs are based on typical Zimbabwe market rates</li>
-                  <li>You can adjust individual labor line items after generation</li>
-                  <li>Materials-only is useful when you have your own construction team</li>
-                </ul>
-              </div>
-
-              <div className="wizard-actions" style={{ maxWidth: '700px', margin: '32px auto 0 auto' }}>
-                <Button variant="secondary" onClick={goToPrevStep}>
-                  Back
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={goToNextStep}
-                  icon={<Sparkle size={18} />}
-                >
-                  Start Building BOQ
-                </Button>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
+
+      {/* Saving Overlay */}
+      <SavingOverlay
+        isVisible={showSaveOverlay}
+        message={saveOverlayMessage}
+        success={saveOverlaySuccess}
+        steps={saveOverlaySteps}
+      />
+
+      {/* Save Prompt Modal */}
+      {showSavePrompt && (
+        <div className="modal-overlay" onClick={() => setShowSavePrompt(false)}>
+          <div className="save-modal" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+            <div className="modal-icon">
+              <FloppyDisk size={32} weight="light" />
+            </div>
+            <h3>Save to Your Projects</h3>
+            <p>Sign in or create an account to save this BOQ and access it anytime from your dashboard.</p>
+            <div className="modal-actions">
+              <Button variant="secondary" onClick={() => setShowSavePrompt(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => window.location.href = '/auth/login?redirect=/boq/new'}
+              >
+                Sign In
+              </Button>
+              <Button
+                variant="primary" // Changed to primary for consistency or keep accent
+                onClick={() => window.location.href = '/auth/register?redirect=/boq/new'}
+                className="bg-slate-900 text-white hover:bg-slate-800"
+              >
+                Create Account
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 }

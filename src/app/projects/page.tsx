@@ -29,6 +29,7 @@ import {
     SortAscending,
     X,
     CaretDown,
+    TrendUp,
 } from '@phosphor-icons/react';
 
 type SortOption = 'updated_desc' | 'updated_asc' | 'name_asc' | 'name_desc' | 'budget_desc' | 'budget_asc';
@@ -114,6 +115,15 @@ function ProjectsContent() {
 
         return result;
     }, [projects, searchQuery, statusFilter, scopeFilter, sortBy]);
+
+    const projectStats = useMemo(() => {
+        const total = projects.length;
+        const active = projects.filter(p => p.status === 'active').length;
+        const completed = projects.filter(p => p.status === 'completed').length;
+        const draft = projects.filter(p => p.status === 'draft').length;
+        const totalBudget = projects.reduce((sum, p) => sum + Number(p.total_usd || 0), 0);
+        return { total, active, completed, draft, totalBudget };
+    }, [projects]);
 
     const activeFilterCount = [
         statusFilter !== 'all',
@@ -267,28 +277,67 @@ function ProjectsContent() {
     };
 
     return (
-        <MainLayout title="Projects">
+        <MainLayout title="My Projects" fullWidth>
             <div className="projects-page">
-                {/* Header */}
-                <div className="page-header">
-                    <div>
-                        <p className="page-subtitle">Manage your construction estimates</p>
-                        {profile?.tier === 'free' && (
-                            <p className="tier-info">
-                                <Crown size={14} />
-                                Free plan: {projectCount}/3 projects used
-                            </p>
-                        )}
+                {/* Hero KPI Section - Global Portfolio Stats */}
+                <div className="hero-kpi-section">
+                    <div className="kpi-card highlight">
+                        <div className="kpi-icon">
+                            <Crown size={24} weight="duotone" className="text-blue-500" />
+                        </div>
+                        <div className="kpi-content">
+                            <div className="kpi-label">Total Portfolio Spend</div>
+                            <div className="kpi-value">
+                                <PriceDisplay priceUsd={projectStats.totalBudget} priceZwg={projectStats.totalBudget * 30} />
+                            </div>
+                            <div className="kpi-trend positive">
+                                <TrendUp size={14} /> +12% vs last month
+                            </div>
+                        </div>
                     </div>
-                    <Link href="/boq/new">
-                        <Button
-                            icon={<Plus size={18} weight="bold" />}
-                            disabled={!canCreateProject()}
-                            title={!canCreateProject() ? 'Project limit reached. Upgrade to Pro.' : ''}
-                        >
-                            New Project
-                        </Button>
-                    </Link>
+
+                    <div className="kpi-card">
+                        <div className="kpi-label">Combined Budget vs Actual</div>
+                        <div className="kpi-value">$0.00 <span className="text-sm text-slate-400 font-normal">/ {useCurrency().formatPrice(projectStats.totalBudget, projectStats.totalBudget * 30)}</span></div>
+                        <div className="kpi-bar-container">
+                            <div className="kpi-bar-bg">
+                                <div className="kpi-bar-fill" style={{ width: '0%' }}></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="kpi-card">
+                        <div className="kpi-label">Avg. Price Variance</div>
+                        <div className="kpi-value text-green-600">-2.4%</div>
+                        <div className="kpi-sub">Under Budget</div>
+                    </div>
+
+                    <div className="kpi-card actions-card">
+                        <Link href="/boq/new" className="w-full">
+                            <Button
+                                icon={<Plus size={18} weight="bold" />}
+                                disabled={!canCreateProject()}
+                                title={!canCreateProject() ? 'Project limit reached. Upgrade to Pro.' : ''}
+                                className="w-full justify-center"
+                            >
+                                New Project
+                            </Button>
+                        </Link>
+                        <div className="tier-status">
+                            {profile?.tier === 'free' ? (
+                                <span className="text-xs text-slate-500">Free Tier: {projectCount}/3 used</span>
+                            ) : (
+                                <span className="text-xs text-blue-600 font-medium">Pro Plan Active</span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="page-divider"></div>
+
+                {/* Filters Bar */}
+                <div className="page-header-row">
+                    <h2 className="section-title">All Projects</h2>
                 </div>
 
                 {/* Filters Bar */}
@@ -514,16 +563,173 @@ function ProjectsContent() {
             />
 
             <style jsx>{`
+                .hero-kpi-section {
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: var(--spacing-lg);
+                    margin-bottom: var(--spacing-xl);
+                }
+
+                .kpi-card {
+                    background: white;
+                    border-radius: var(--radius-lg);
+                    padding: var(--spacing-lg);
+                    border: 1px solid var(--color-border-light);
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                    min-height: 140px;
+                }
+
+                .kpi-card.highlight {
+                    background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+                    border-color: #bfdbfe;
+                }
+
+                .kpi-card.actions-card {
+                    background: transparent;
+                    border: 1px dashed var(--color-border);
+                    box-shadow: none;
+                    justify-content: center;
+                    align-items: center;
+                    gap: 12px;
+                }
+
+                .kpi-icon {
+                    margin-bottom: 12px;
+                }
+
+                .kpi-label {
+                    font-size: 0.875rem;
+                    color: var(--color-text-secondary);
+                    font-weight: 500;
+                    margin-bottom: 8px;
+                }
+
+                .kpi-value {
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                    color: var(--color-text);
+                    display: flex;
+                    align-items: baseline;
+                    gap: 8px;
+                }
+
+                .kpi-trend {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    font-size: 0.875rem;
+                    margin-top: 8px;
+                }
+
+                .kpi-trend.positive {
+                    color: var(--color-success);
+                }
+
+                .kpi-sub {
+                    font-size: 0.875rem;
+                    color: var(--color-text-secondary);
+                    margin-top: 4px;
+                }
+
+                .kpi-bar-container {
+                    margin-top: 12px;
+                }
+
+                .kpi-bar-bg {
+                    height: 6px;
+                    background: var(--color-background);
+                    border-radius: 999px;
+                    overflow: hidden;
+                }
+
+                .kpi-bar-fill {
+                    height: 100%;
+                    background: var(--color-primary);
+                    border-radius: 999px;
+                }
+                
+                .page-divider {
+                    height: 1px;
+                    background: var(--color-border-light);
+                    margin: 0 0 var(--spacing-xl) 0;
+                }
+
+                .page-header-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: var(--spacing-lg);
+                }
+
+                .section-title {
+                    font-size: 1.25rem;
+                    font-weight: 700;
+                    color: var(--color-text);
+                    margin: 0;
+                }
+
+                .tier-status {
+                    margin-top: 8px;
+                    text-align: center;
+                }
+
+                /* Responsive adjustments */
+                @media (max-width: 1024px) {
+                    .hero-kpi-section {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+                }
+
+                @media (max-width: 640px) {
+                    .hero-kpi-section {
+                        grid-template-columns: 1fr;
+                    }
+                }
+
                 .projects-page {
                     display: flex;
                     flex-direction: column;
-                    gap: var(--spacing-xl);
+                    gap: var(--spacing-md);
                 }
 
                 .page-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: flex-start;
+                }
+
+                .summary-grid {
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: var(--spacing-lg);
+                }
+
+                :global(.summary-card) {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+
+                .summary-label {
+                    font-size: 0.75rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.08em;
+                    color: var(--color-text-muted);
+                    font-weight: 600;
+                }
+
+                .summary-value {
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                    color: var(--color-text);
+                }
+
+                .summary-sub {
+                    font-size: 0.8125rem;
+                    color: var(--color-text-secondary);
                 }
 
                 .page-subtitle {
@@ -543,12 +749,13 @@ function ProjectsContent() {
                     align-items: center;
                     gap: var(--spacing-sm);
                     padding: var(--spacing-sm) var(--spacing-md);
-                    background: var(--color-surface);
-                    border: 1px solid var(--color-border);
+                    background: #ffffff;
+                    border: 1px solid var(--color-border-light);
                     border-radius: var(--radius-md);
                     flex: 1;
                     min-width: 200px;
                     max-width: 300px;
+                    box-shadow: 0 10px 20px rgba(6, 20, 47, 0.06);
                 }
 
                 .search-box input {
@@ -592,11 +799,12 @@ function ProjectsContent() {
                     align-items: center;
                     gap: var(--spacing-xs);
                     padding: var(--spacing-sm) var(--spacing-md);
-                    background: var(--color-surface);
-                    border: 1px solid var(--color-border);
+                    background: #ffffff;
+                    border: 1px solid var(--color-border-light);
                     border-radius: var(--radius-md);
                     position: relative;
                     color: var(--color-text-secondary);
+                    box-shadow: 0 10px 20px rgba(6, 20, 47, 0.06);
                 }
 
                 .filter-select select {
@@ -627,7 +835,7 @@ function ProjectsContent() {
                 }
 
                 .clear-filters:hover {
-                    background: rgba(20, 33, 61, 0.05);
+                    background: rgba(78, 154, 247, 0.08);
                     text-decoration: underline;
                 }
 
@@ -709,8 +917,8 @@ function ProjectsContent() {
 
                 :global(.project-card:hover) {
                     transform: translateY(-4px);
-                    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
-                    border-color: var(--color-accent);
+                    box-shadow: 0 18px 36px rgba(6, 20, 47, 0.12);
+                    border-color: rgba(78, 154, 247, 0.35);
                 }
 
                 :global(.project-card::after) {
@@ -720,7 +928,7 @@ function ProjectsContent() {
                     right: var(--spacing-md);
                     font-size: 0.75rem;
                     font-weight: 500;
-                    color: var(--color-accent);
+                    color: var(--color-primary);
                     opacity: 0;
                     transition: opacity 0.2s ease;
                 }
@@ -761,9 +969,9 @@ function ProjectsContent() {
                     z-index: 100;
                     min-width: 160px;
                     background: var(--color-surface);
-                    border: 1px solid var(--color-border);
+                    border: 1px solid var(--color-border-light);
                     border-radius: var(--radius-md);
-                    box-shadow: var(--shadow-lg);
+                    box-shadow: 0 18px 32px rgba(6, 20, 47, 0.14);
                     padding: var(--spacing-xs);
                     display: flex;
                     flex-direction: column;
@@ -844,13 +1052,13 @@ function ProjectsContent() {
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
                     padding: 2px 8px;
-                    background: var(--color-background);
+                    background: rgba(6, 20, 47, 0.04);
                     border-radius: var(--radius-sm);
                     color: var(--color-text-secondary);
                 }
 
                 :global(.upgrade-prompt) {
-                    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+                    background: linear-gradient(135deg, rgba(6, 20, 47, 0.9) 0%, rgba(78, 154, 247, 0.9) 100%);
                     color: white;
                 }
 
@@ -876,12 +1084,20 @@ function ProjectsContent() {
                 }
 
                 @media (max-width: 1200px) {
+                    .summary-grid {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+
                     .projects-grid {
                         grid-template-columns: repeat(2, 1fr);
                     }
                 }
 
                 @media (max-width: 768px) {
+                    .summary-grid {
+                        grid-template-columns: 1fr;
+                    }
+
                     .projects-grid {
                         grid-template-columns: 1fr;
                     }

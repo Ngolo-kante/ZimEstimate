@@ -181,7 +181,7 @@ export default function RoomEditPanel({
           width: 32px;
           height: 32px;
           border: none;
-          background: var(--color-background);
+          background: rgba(6, 20, 47, 0.04);
           border-radius: var(--radius-md);
           cursor: pointer;
           display: flex;
@@ -221,18 +221,18 @@ export default function RoomEditPanel({
 
         input {
           padding: var(--spacing-sm) var(--spacing-md);
-          border: 1px solid var(--color-border);
+          border: 1px solid var(--color-border-light);
           border-radius: var(--radius-md);
           font-size: 0.9375rem;
           color: var(--color-text);
-          background: var(--color-surface);
+          background: #ffffff;
           transition: all 0.2s ease;
         }
 
         input:focus {
           outline: none;
           border-color: var(--color-accent);
-          box-shadow: 0 0 0 3px var(--color-accent-bg);
+          box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.18);
         }
 
         .dimension-inputs {
@@ -271,7 +271,7 @@ export default function RoomEditPanel({
           justify-content: space-between;
           align-items: center;
           padding: var(--spacing-md);
-          background: var(--color-accent-bg);
+          background: rgba(78, 154, 247, 0.12);
           border-radius: var(--radius-md);
         }
 
@@ -296,7 +296,7 @@ export default function RoomEditPanel({
 
         .wall-type-btn {
           padding: var(--spacing-sm);
-          border: 1px solid var(--color-border);
+          border: 1px solid var(--color-border-light);
           border-radius: var(--radius-md);
           background: var(--color-surface);
           font-size: 0.875rem;
@@ -325,7 +325,7 @@ export default function RoomEditPanel({
           display: inline-flex;
           align-items: center;
           padding: var(--spacing-xs) var(--spacing-sm);
-          background: var(--color-accent-bg);
+          background: rgba(78, 154, 247, 0.12);
           border-radius: var(--radius-full);
           font-size: 0.625rem;
           text-transform: uppercase;

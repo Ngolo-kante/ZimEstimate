@@ -37,8 +37,8 @@ async function completeStep2(page: Page) {
 async function goToStep5(page: Page) {
   await completeStep1(page);
   await completeStep2(page);
-  await expect(page.getByRole('heading', { name: 'Define Project Scope', level: 2 })).toBeVisible();
-  await page.getByText('Entire House').click();
+  await expect(page.getByRole('heading', { name: 'Scope of Work', level: 2 })).toBeVisible();
+  await page.getByRole('button', { name: /Entire House/ }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByRole('heading', { name: 'Labor Options', level: 2 })).toBeVisible();
   await page.getByRole('button', { name: 'Start Building BOQ' }).click();

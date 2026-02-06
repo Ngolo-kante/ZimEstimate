@@ -1,0 +1,120 @@
+
+> zimestimate-app@0.1.0 lint
+> eslint
+
+
+/Users/audreytsoka/Documents/ZimEstimate/public/sw.js
+  110:14  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+  127:14  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/scripts/pricing/scrape.mjs
+  267:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/src/app/ai/quote-scanner/page.tsx
+  260:23  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/audreytsoka/Documents/ZimEstimate/src/app/auth/signup/page.tsx
+  12:11  warning  'router' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/src/app/boq/new/page.tsx
+     3:8   warning  'Head' is defined but never used                    @typescript-eslint/no-unused-vars
+   138:7   warning  '_categories' is assigned a value but never used    @typescript-eslint/no-unused-vars
+   258:7   warning  '_PriceDisplay' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   553:9   warning  '_projectType' is assigned a value but never used   @typescript-eslint/no-unused-vars
+   607:5   warning  'isLoading' is assigned a value but never used      @typescript-eslint/no-unused-vars
+   734:9   warning  'totalAmount' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  1025:16  warning  'err' is defined but never used                     @typescript-eslint/no-unused-vars
+  1035:9   warning  'steps' is assigned a value but never used          @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/src/app/dashboard/page.tsx
+  65:7  warning  'milestoneIcons' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/src/app/projects/[id]/page.tsx
+  114:12  warning  'stagesProgress' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+  229:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/audreytsoka/Documents/ZimEstimate/src/app/projects/[id]/page.tsx:229:9
+  227 |     useEffect(() => {
+  228 |         if (typeof window === 'undefined') return;
+> 229 |         setPriceVersionReady(false);
+      |         ^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  230 |         const storedVersion = localStorage.getItem(projectPriceKey);
+  231 |         const nextVersion = storedVersion || SYSTEM_PRICE_VERSION;
+  232 |         localStorage.setItem(projectPriceKey, nextVersion);  react-hooks/set-state-in-effect
+  380:18  warning  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/src/app/settings/page.tsx
+  15:5   warning  'Bell' is defined but never used                      @typescript-eslint/no-unused-vars
+  16:5   warning  'Palette' is defined but never used                   @typescript-eslint/no-unused-vars
+  19:5   warning  'CaretRight' is defined but never used                @typescript-eslint/no-unused-vars
+  35:12  warning  'currentPassword' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  97:18  warning  'err' is defined but never used                       @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/src/components/layout/MainLayout.tsx
+  35:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/audreytsoka/Documents/ZimEstimate/src/components/layout/Sidebar.tsx
+   11:3   warning  'Lightning' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+  109:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/audreytsoka/Documents/ZimEstimate/src/components/layout/TopNavbar.tsx
+   69:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  104:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  117:27  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/audreytsoka/Documents/ZimEstimate/src/components/projects/DocumentCard.tsx
+  52:29  warning  Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images  jsx-a11y/alt-text
+
+/Users/audreytsoka/Documents/ZimEstimate/src/components/projects/DocumentsTab.tsx
+  183:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/audreytsoka/Documents/ZimEstimate/src/components/projects/StageTaskList.tsx
+  30:11  warning  'progress' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/src/components/projects/StageUsageSection.tsx
+    3:20  warning  'useCallback' is defined but never used         @typescript-eslint/no-unused-vars
+  246:39  warning  'remaining' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/src/components/providers/AuthProvider.tsx
+  6:19  warning  'UserTier' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/src/components/ui/BudgetPlanner.tsx
+   4:45  warning  'CaretDown' is defined but never used          @typescript-eslint/no-unused-vars
+  26:11  warning  'currency' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/src/components/vision-takeoff/FloorPlanEditor/FloorPlanCanvas.tsx
+  26:3  warning  'walls' is defined but never used     @typescript-eslint/no-unused-vars
+  27:3  warning  'imageUrl' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/src/components/vision-takeoff/FloorPlanEditor/FloorPlanEditor.tsx
+  39:10  warning  'showAddRoom' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  47:9   warning  'handleAddRoom' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  49:11  warning  'newRoom' is assigned a value but never used        @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/src/components/vision-takeoff/steps/BOQResultsStep.tsx
+  58:11  warning  'currency' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/src/hooks/useProjectAutoSave.ts
+    7:5   warning  'updateProject' is defined but never used                                                                          @typescript-eslint/no-unused-vars
+   82:11  warning  'router' is assigned a value but never used                                                                        @typescript-eslint/no-unused-vars
+  186:8   warning  React Hook useCallback has an unnecessary dependency: 'project'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/audreytsoka/Documents/ZimEstimate/src/hooks/useVisionTakeoff.ts
+  13:3  warning  'DEFAULT_CONFIG' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/src/lib/calculations/index.ts
+  229:9  warning  'subWallArea' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/audreytsoka/Documents/ZimEstimate/src/lib/services/projects.ts
+   23:5   warning  'MilestoneStatus' is defined but never used     @typescript-eslint/no-unused-vars
+  222:13  warning  'total_usd' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  222:24  warning  'total_zwg' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 50 problems (1 error, 49 warnings)
+

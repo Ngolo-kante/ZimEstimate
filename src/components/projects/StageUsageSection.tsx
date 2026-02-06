@@ -282,6 +282,7 @@ export default function StageUsageSection({
                     border: 1px solid var(--color-border-light);
                     border-radius: var(--radius-lg);
                     overflow: hidden;
+                    box-shadow: 0 12px 24px rgba(6, 20, 47, 0.06);
                 }
 
                 .section-header {
@@ -289,7 +290,7 @@ export default function StageUsageSection({
                     justify-content: space-between;
                     align-items: center;
                     padding: var(--spacing-md) var(--spacing-lg);
-                    background: var(--color-background);
+                    background: rgba(6, 20, 47, 0.02);
                     border-bottom: 1px solid var(--color-border-light);
                     cursor: pointer;
                     transition: background 0.15s ease;
@@ -303,7 +304,7 @@ export default function StageUsageSection({
                     display: flex;
                     align-items: center;
                     gap: var(--spacing-sm);
-                    color: #f97316;
+                    color: var(--color-accent);
                 }
 
                 .header-info h4 {
@@ -340,7 +341,7 @@ export default function StageUsageSection({
                 }
 
                 .stat-value.used {
-                    color: #f97316;
+                    color: var(--color-accent);
                 }
 
                 .expand-btn {
@@ -365,10 +366,11 @@ export default function StageUsageSection({
                 }
 
                 .usage-form {
-                    background: var(--color-background);
+                    background: #ffffff;
                     border-radius: var(--radius-md);
                     padding: var(--spacing-md);
                     margin-bottom: var(--spacing-md);
+                    box-shadow: 0 10px 20px rgba(6, 20, 47, 0.06);
                 }
 
                 .form-row {
@@ -402,7 +404,7 @@ export default function StageUsageSection({
                 .form-group input,
                 .form-group select {
                     padding: var(--spacing-xs) var(--spacing-sm);
-                    border: 1px solid var(--color-border);
+                    border: 1px solid var(--color-border-light);
                     border-radius: var(--radius-sm);
                     font-size: 0.75rem;
                     background: var(--color-surface);
@@ -433,7 +435,7 @@ export default function StageUsageSection({
                     align-items: center;
                     gap: var(--spacing-md);
                     padding: var(--spacing-sm);
-                    background: var(--color-background);
+                    background: rgba(6, 20, 47, 0.02);
                     border-radius: var(--radius-md);
                 }
 

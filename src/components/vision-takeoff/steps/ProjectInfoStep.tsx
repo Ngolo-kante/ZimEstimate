@@ -156,18 +156,18 @@ export default function ProjectInfoStep({
 
         input {
           padding: var(--spacing-sm) var(--spacing-md);
-          border: 1px solid var(--color-border);
+          border: 1px solid var(--color-border-light);
           border-radius: var(--radius-md);
           font-size: 1rem;
           color: var(--color-text);
-          background: var(--color-surface);
+          background: #ffffff;
           transition: all 0.2s ease;
         }
 
         input:focus {
           outline: none;
           border-color: var(--color-accent);
-          box-shadow: 0 0 0 3px var(--color-accent-bg);
+          box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.18);
         }
 
         input.error {
@@ -185,11 +185,11 @@ export default function ProjectInfoStep({
         select {
           width: 100%;
           padding: var(--spacing-sm) var(--spacing-md);
-          border: 1px solid var(--color-border);
+          border: 1px solid var(--color-border-light);
           border-radius: var(--radius-md);
           font-size: 1rem;
           color: var(--color-text);
-          background: var(--color-surface);
+          background: #ffffff;
           transition: all 0.2s ease;
           appearance: none;
           cursor: pointer;
@@ -198,7 +198,7 @@ export default function ProjectInfoStep({
         select:focus {
           outline: none;
           border-color: var(--color-accent);
-          box-shadow: 0 0 0 3px var(--color-accent-bg);
+          box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.18);
         }
 
         .error-text {

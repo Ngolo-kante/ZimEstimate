@@ -159,18 +159,19 @@ export default function UploadStep({ onFileSelect, error }: UploadStepProps) {
         }
 
         .drop-zone {
-          border: 2px dashed var(--color-border);
+          border: 2px dashed var(--color-border-light);
           border-radius: var(--radius-lg);
           padding: var(--spacing-2xl);
           text-align: center;
           transition: all 0.2s ease;
           cursor: pointer;
+          background: rgba(6, 20, 47, 0.02);
         }
 
         .drop-zone:hover,
         .drop-zone.dragging {
           border-color: var(--color-accent);
-          background: var(--color-accent-bg);
+          background: rgba(78, 154, 247, 0.08);
         }
 
         .file-input {
@@ -189,11 +190,12 @@ export default function UploadStep({ onFileSelect, error }: UploadStepProps) {
           width: 80px;
           height: 80px;
           border-radius: var(--radius-full);
-          background: var(--color-background);
+          background: rgba(78, 154, 247, 0.08);
           display: flex;
           align-items: center;
           justify-content: center;
           color: var(--color-accent);
+          border: 1px solid rgba(78, 154, 247, 0.2);
         }
 
         .drop-text {
@@ -214,6 +216,7 @@ export default function UploadStep({ onFileSelect, error }: UploadStepProps) {
           border-radius: var(--radius-md);
           font-size: 0.875rem;
           font-weight: 500;
+          box-shadow: 0 10px 20px rgba(6, 20, 47, 0.12);
         }
 
         .drop-label:hover .browse-btn {

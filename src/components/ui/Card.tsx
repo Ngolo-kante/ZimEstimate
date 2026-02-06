@@ -34,9 +34,9 @@ export default function Card({
           background: var(--color-surface);
           border-radius: var(--radius-lg);
           padding: var(--spacing-lg);
-          box-shadow: var(--shadow-sm);
+          box-shadow: 0 10px 22px rgba(6, 20, 47, 0.08);
           border: 1px solid var(--color-border-light);
-          transition: all 0.2s ease;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
         }
 
         .card.clickable {
@@ -44,13 +44,14 @@ export default function Card({
         }
 
         .card.clickable:hover {
-          box-shadow: var(--shadow-md);
-          border-color: var(--color-border);
+          box-shadow: 0 16px 30px rgba(6, 20, 47, 0.12);
+          border-color: rgba(78, 154, 247, 0.35);
+          transform: translateY(-2px);
         }
 
         .card.selected {
           border-color: var(--color-accent);
-          box-shadow: 0 0 0 2px var(--color-accent);
+          box-shadow: 0 0 0 2px rgba(78, 154, 247, 0.35);
         }
 
         /* Dashboard Card Variant */

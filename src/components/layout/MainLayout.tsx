@@ -79,10 +79,11 @@ export default function MainLayout({
         }
 
         .app-footer {
-          background: var(--color-primary-dark);
-          color: var(--color-text-muted);
+          background: #f4f6fb;
+          color: var(--color-text-secondary);
           padding: 20px 0;
           margin-top: auto;
+          border-top: 1px solid var(--color-border-light);
         }
 
         .footer-container {
@@ -107,14 +108,14 @@ export default function MainLayout({
         }
 
         .footer-right a {
-          color: var(--color-text-muted);
+          color: var(--color-text-secondary);
           text-decoration: none;
           font-size: 0.875rem;
           transition: color 0.2s ease;
         }
 
         .footer-right a:hover {
-          color: white;
+          color: var(--color-primary);
         }
 
         @media (max-width: 768px) {

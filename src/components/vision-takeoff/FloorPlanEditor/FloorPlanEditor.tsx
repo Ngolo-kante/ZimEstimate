@@ -193,9 +193,10 @@ export default function FloorPlanEditor({
           flex-direction: column;
           align-items: center;
           padding: var(--spacing-sm) var(--spacing-md);
-          background: var(--color-surface);
+          background: rgba(6, 20, 47, 0.02);
           border-radius: var(--radius-md);
           min-width: 80px;
+          border: 1px solid var(--color-border-light);
         }
 
         .stat-value {
@@ -255,8 +256,8 @@ export default function FloorPlanEditor({
           align-items: center;
           gap: var(--spacing-xs);
           padding: var(--spacing-xs) var(--spacing-sm);
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
+          background: #ffffff;
+          border: 1px solid var(--color-border-light);
           border-radius: var(--radius-md);
           font-size: 0.75rem;
           color: var(--color-text-secondary);
@@ -275,10 +276,10 @@ export default function FloorPlanEditor({
           align-items: center;
           gap: var(--spacing-sm);
           padding: var(--spacing-sm) var(--spacing-md);
-          background: var(--color-accent-bg);
+          background: rgba(78, 154, 247, 0.1);
           border-radius: var(--radius-md);
           font-size: 0.75rem;
-          color: var(--color-accent);
+          color: var(--color-primary);
         }
 
         .panel-container {
@@ -312,7 +313,7 @@ export default function FloorPlanEditor({
           justify-content: space-between;
           align-items: center;
           padding: var(--spacing-sm) var(--spacing-md);
-          background: var(--color-background);
+          background: rgba(6, 20, 47, 0.02);
           border: 1px solid transparent;
           border-radius: var(--radius-md);
           cursor: pointer;
@@ -325,7 +326,7 @@ export default function FloorPlanEditor({
         }
 
         .room-item.edited {
-          background: var(--color-accent-bg);
+          background: rgba(78, 154, 247, 0.12);
         }
 
         .room-info {
@@ -379,8 +380,8 @@ export default function FloorPlanEditor({
         }
 
         .btn-secondary {
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
+          background: rgba(6, 20, 47, 0.02);
+          border: 1px solid var(--color-border-light);
           color: var(--color-text-secondary);
         }
 

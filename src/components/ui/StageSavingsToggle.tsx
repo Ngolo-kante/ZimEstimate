@@ -54,11 +54,11 @@ export default function StageSavingsToggle(props: StageSavingsToggleProps) {
 
             <style jsx>{`
                 .savings-toggle-card {
-                    background: var(--color-background);
+                    background: #ffffff;
                     border: 1px solid var(--color-border-light);
                     border-radius: var(--radius-lg);
                     overflow: hidden;
-                    box-shadow: none;
+                    box-shadow: 0 12px 24px rgba(6, 20, 47, 0.08);
                 }
 
                 .card-header {
@@ -104,7 +104,7 @@ export default function StageSavingsToggle(props: StageSavingsToggleProps) {
 
                 .progress-fill {
                     height: 100%;
-                    background: var(--color-text-muted);
+                    background: var(--color-accent);
                     transition: width 0.5s ease;
                 }
 
@@ -112,7 +112,7 @@ export default function StageSavingsToggle(props: StageSavingsToggleProps) {
                     display: flex;
                     padding: var(--spacing-sm) var(--spacing-lg);
                     gap: var(--spacing-lg);
-                    background: var(--color-background);
+                    background: rgba(6, 20, 47, 0.02);
                 }
 
                 .stat {

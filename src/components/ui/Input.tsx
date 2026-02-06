@@ -82,7 +82,7 @@ export default function Input({
         .input-field:focus {
           outline: none;
           border-color: var(--color-accent);
-          box-shadow: 0 0 0 3px rgba(252, 163, 17, 0.15);
+          box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.18);
         }
 
         .input-field::placeholder {
@@ -94,7 +94,7 @@ export default function Input({
         }
 
         .has-error .input-field:focus {
-          box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+          box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
         }
 
         .input-error {
@@ -172,7 +172,7 @@ export function Textarea({
         .textarea-field:focus {
           outline: none;
           border-color: var(--color-accent);
-          box-shadow: 0 0 0 3px rgba(252, 163, 17, 0.15);
+          box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.18);
         }
 
         .textarea-field::placeholder {

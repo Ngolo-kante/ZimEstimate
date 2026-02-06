@@ -349,8 +349,8 @@ export default function ConfigurationStep({
           align-items: flex-start;
           gap: var(--spacing-xs);
           padding: var(--spacing-md);
-          background: var(--color-background);
-          border: 2px solid var(--color-border-light);
+          background: #ffffff;
+          border: 1px solid var(--color-border-light);
           border-radius: var(--radius-md);
           cursor: pointer;
           transition: all 0.2s ease;
@@ -374,7 +374,7 @@ export default function ConfigurationStep({
 
         .option-card.selected {
           border-color: var(--color-accent);
-          background: var(--color-accent-bg);
+          background: rgba(78, 154, 247, 0.12);
         }
 
         .option-check {
@@ -384,7 +384,7 @@ export default function ConfigurationStep({
           width: 20px;
           height: 20px;
           border-radius: var(--radius-full);
-          border: 2px solid var(--color-border);
+          border: 2px solid var(--color-border-light);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -449,8 +449,8 @@ export default function ConfigurationStep({
           align-items: flex-start;
           gap: var(--spacing-xs);
           padding: var(--spacing-md);
-          background: var(--color-background);
-          border: 2px solid var(--color-border-light);
+          background: rgba(6, 20, 47, 0.02);
+          border: 1px solid var(--color-border-light);
           border-radius: var(--radius-md);
           cursor: pointer;
           transition: all 0.2s ease;
@@ -463,7 +463,7 @@ export default function ConfigurationStep({
 
         .toggle-btn.selected {
           border-color: var(--color-accent);
-          background: var(--color-accent-bg);
+          background: rgba(78, 154, 247, 0.12);
         }
 
         .toggle-btn span:first-of-type {
@@ -506,8 +506,8 @@ export default function ConfigurationStep({
         }
 
         .btn-secondary {
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
+          background: rgba(6, 20, 47, 0.02);
+          border: 1px solid var(--color-border-light);
           color: var(--color-text-secondary);
         }
 

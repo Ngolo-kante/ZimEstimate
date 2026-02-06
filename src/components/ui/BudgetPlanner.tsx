@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Calendar, Wallet, TrendUp, Target, CaretDown, Info } from '@phosphor-icons/react';
+import { Calendar, Wallet, TrendUp, Target, CaretDown, Info, WhatsappLogo, PaperPlaneTilt, Envelope, ChatCircleText, PiggyBank } from '@phosphor-icons/react';
 import { useCurrency } from './CurrencyToggle';
+
+export type NotificationChannel = 'sms' | 'whatsapp' | 'telegram' | 'email';
 
 interface BudgetPlannerProps {
   totalBudgetUsd: number;
@@ -10,7 +12,7 @@ interface BudgetPlannerProps {
   targetDate?: string | null;
   onTargetDateChange?: (date: string) => void;
   criticalItemsUsd?: number;
-  onSetReminder?: (type: 'daily' | 'weekly' | 'monthly', amount: number) => void;
+  onSetReminder?: (type: 'daily' | 'weekly' | 'monthly', amount: number, channel: NotificationChannel) => void;
 }
 
 type PlanMode = 'all' | 'critical' | 'custom';
@@ -27,6 +29,7 @@ export default function BudgetPlanner({
   const [planMode, setPlanMode] = useState<PlanMode>('all');
   const [customAmount, setCustomAmount] = useState('');
   const [localTargetDate, setLocalTargetDate] = useState(targetDate || '');
+  const [selectedChannel, setSelectedChannel] = useState<NotificationChannel>('sms');
 
   const remainingBudget = totalBudgetUsd - amountSpentUsd;
   const percentComplete = totalBudgetUsd > 0 ? (amountSpentUsd / totalBudgetUsd) * 100 : 0;
@@ -63,7 +66,7 @@ export default function BudgetPlanner({
     <div className="budget-planner">
       <div className="planner-header">
         <div className="header-icon">
-          <Wallet size={24} weight="duotone" />
+          <PiggyBank size={24} weight="duotone" />
         </div>
         <div className="header-content">
           <h3>Budget Planner</h3>
@@ -155,6 +158,40 @@ export default function BudgetPlanner({
             {new Date(localTargetDate).toLocaleDateString()}, you need to save:
           </p>
 
+          <div className="channel-selector">
+            <label>Notify me via:</label>
+            <div className="channel-options">
+              <button
+                className={`channel-btn ${selectedChannel === 'sms' ? 'active' : ''}`}
+                onClick={() => setSelectedChannel('sms')}
+                title="SMS Text"
+              >
+                <ChatCircleText size={20} weight={selectedChannel === 'sms' ? 'fill' : 'light'} />
+              </button>
+              <button
+                className={`channel-btn ${selectedChannel === 'whatsapp' ? 'active' : ''}`}
+                onClick={() => setSelectedChannel('whatsapp')}
+                title="WhatsApp"
+              >
+                <WhatsappLogo size={20} weight={selectedChannel === 'whatsapp' ? 'fill' : 'light'} />
+              </button>
+              <button
+                className={`channel-btn ${selectedChannel === 'telegram' ? 'active' : ''}`}
+                onClick={() => setSelectedChannel('telegram')}
+                title="Telegram"
+              >
+                <PaperPlaneTilt size={20} weight={selectedChannel === 'telegram' ? 'fill' : 'light'} />
+              </button>
+              <button
+                className={`channel-btn ${selectedChannel === 'email' ? 'active' : ''}`}
+                onClick={() => setSelectedChannel('email')}
+                title="Email"
+              >
+                <Envelope size={20} weight={selectedChannel === 'email' ? 'fill' : 'light'} />
+              </button>
+            </div>
+          </div>
+
           <div className="savings-grid">
             <div className="savings-card daily">
               <span className="savings-label">Daily</span>
@@ -164,7 +201,7 @@ export default function BudgetPlanner({
               {onSetReminder && (
                 <button
                   className="reminder-btn"
-                  onClick={() => onSetReminder('daily', savingsPerDay)}
+                  onClick={() => onSetReminder('daily', savingsPerDay, selectedChannel)}
                 >
                   Set Reminder
                 </button>
@@ -178,7 +215,7 @@ export default function BudgetPlanner({
               {onSetReminder && (
                 <button
                   className="reminder-btn"
-                  onClick={() => onSetReminder('weekly', savingsPerWeek)}
+                  onClick={() => onSetReminder('weekly', savingsPerWeek, selectedChannel)}
                 >
                   Set Reminder
                 </button>
@@ -192,7 +229,7 @@ export default function BudgetPlanner({
               {onSetReminder && (
                 <button
                   className="reminder-btn"
-                  onClick={() => onSetReminder('monthly', savingsPerMonth)}
+                  onClick={() => onSetReminder('monthly', savingsPerMonth, selectedChannel)}
                 >
                   Set Reminder
                 </button>
@@ -399,10 +436,12 @@ export default function BudgetPlanner({
         }
 
         .savings-breakdown {
-          background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+          background: var(--color-surface);
+          border: 1px solid var(--color-border);
           border-radius: var(--radius-lg);
           padding: var(--spacing-lg);
-          color: white;
+          color: var(--color-text);
+          box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
         }
 
         .savings-breakdown h4 {
@@ -417,6 +456,51 @@ export default function BudgetPlanner({
           margin: 0 0 var(--spacing-md) 0;
         }
 
+        .channel-selector {
+          margin-bottom: var(--spacing-md);
+        }
+        
+        .channel-selector label {
+          display: block;
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          opacity: 0.8;
+          margin-bottom: 8px;
+        }
+        
+        .channel-options {
+          display: flex;
+          gap: 12px;
+        }
+        
+        .channel-btn {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--color-background);
+          border: 1px solid var(--color-border);
+          color: var(--color-text-secondary);
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        
+        .channel-btn:hover {
+          background: var(--color-surface-hover);
+          color: var(--color-primary);
+          border-color: var(--color-primary);
+        }
+        
+        .channel-btn.active {
+          background: var(--color-primary);
+          color: white;
+          border-color: var(--color-primary);
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
         .savings-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -425,11 +509,14 @@ export default function BudgetPlanner({
         }
 
         .savings-card {
-          background: rgba(255, 255, 255, 0.15);
+          background: var(--color-background);
+          border: 1px solid var(--color-border);
           border-radius: var(--radius-md);
           padding: var(--spacing-md);
           text-align: center;
-          backdrop-filter: blur(10px);
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
         }
 
         .savings-label {
@@ -448,29 +535,34 @@ export default function BudgetPlanner({
         }
 
         .reminder-btn {
-          margin-top: var(--spacing-sm);
-          padding: 6px 12px;
-          background: rgba(255, 255, 255, 0.2);
-          border: 1px solid rgba(255, 255, 255, 0.3);
+          margin-top: auto;
+          padding: 8px 12px;
+          background: var(--color-primary);
+          border: none;
           border-radius: var(--radius-sm);
           color: white;
           font-size: 0.75rem;
+          font-weight: 500;
           cursor: pointer;
           transition: all 0.2s ease;
         }
 
         .reminder-btn:hover {
-          background: rgba(255, 255, 255, 0.3);
+          background: var(--color-primary-dark);
+          transform: translateY(-1px);
         }
 
         .savings-tip {
           display: flex;
           align-items: flex-start;
-          gap: 8px;
-          padding: var(--spacing-sm);
-          background: rgba(255, 255, 255, 0.1);
+          gap: 10px;
+          padding: 12px;
+          background: var(--color-background);
+          border: 1px solid var(--color-border-light);
           border-radius: var(--radius-md);
           font-size: 0.8125rem;
+          line-height: 1.5;
+          color: var(--color-text-secondary);
         }
 
         @media (max-width: 640px) {

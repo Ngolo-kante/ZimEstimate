@@ -766,6 +766,119 @@ export interface Database {
                     created_at?: string;
                 };
             };
+            scraper_configs: {
+                Row: {
+                    id: string;
+                    site_name: string;
+                    base_url: string;
+                    price_selector: string;
+                    item_name_selector: string;
+                    cron_schedule: string;
+                    is_active: boolean;
+                    last_successful_run_at: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    site_name: string;
+                    base_url: string;
+                    price_selector: string;
+                    item_name_selector: string;
+                    cron_schedule?: string;
+                    is_active?: boolean;
+                    last_successful_run_at?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    site_name?: string;
+                    base_url?: string;
+                    price_selector?: string;
+                    item_name_selector?: string;
+                    cron_schedule?: string;
+                    is_active?: boolean;
+                    last_successful_run_at?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            material_aliases: {
+                Row: {
+                    id: string;
+                    material_id: string;
+                    alias_name: string;
+                    confidence_score: number;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    material_id: string;
+                    alias_name: string;
+                    confidence_score?: number;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    material_id?: string;
+                    alias_name?: string;
+                    confidence_score?: number;
+                    created_at?: string;
+                };
+            };
+            weekly_prices: {
+                Row: {
+                    id: string;
+                    item_name: string;
+                    average_price: number | null;
+                    currency: string | null;
+                    source_url: string | null;
+                    last_updated: string;
+                };
+                Insert: {
+                    id?: string;
+                    item_name: string;
+                    average_price?: number | null;
+                    currency?: string | null;
+                    source_url?: string | null;
+                    last_updated?: string;
+                };
+                Update: {
+                    id?: string;
+                    item_name?: string;
+                    average_price?: number | null;
+                    currency?: string | null;
+                    source_url?: string | null;
+                    last_updated?: string;
+                };
+            };
+            scraper_logs: {
+                Row: {
+                    id: string;
+                    scraper_config_id: string | null;
+                    status: 'success' | 'failure' | 'pending';
+                    message: string | null;
+                    scraped_data: Json | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    scraper_config_id?: string | null;
+                    status: 'success' | 'failure' | 'pending';
+                    message?: string | null;
+                    scraped_data?: Json | null;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    scraper_config_id?: string | null;
+                    status?: 'success' | 'failure' | 'pending';
+                    message?: string | null;
+                    scraped_data?: Json | null;
+                    created_at?: string;
+                };
+            };
         };
         Views: {
             [_ in never]: never;
@@ -798,6 +911,10 @@ export type ProjectDocument = Database['public']['Tables']['project_documents'][
 export type ProjectMilestone = Database['public']['Tables']['project_milestones']['Row'];
 export type MilestoneTask = Database['public']['Tables']['milestone_tasks']['Row'];
 export type MaterialUsage = Database['public']['Tables']['material_usage']['Row'];
+export type MaterialAlias = Database['public']['Tables']['material_aliases']['Row'];
+export type ScraperConfig = Database['public']['Tables']['scraper_configs']['Row'];
+export type WeeklyPrice = Database['public']['Tables']['weekly_prices']['Row'];
+export type ScraperLog = Database['public']['Tables']['scraper_logs']['Row'];
 export type ProjectStage = Database['public']['Tables']['project_stages']['Row'];
 export type StageTask = Database['public']['Tables']['stage_tasks']['Row'];
 

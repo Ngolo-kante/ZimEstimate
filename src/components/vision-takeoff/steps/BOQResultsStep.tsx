@@ -535,8 +535,8 @@ export default function BOQResultsStep({
 
         .btn-icon {
           padding: var(--spacing-sm);
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
+          background: rgba(6, 20, 47, 0.02);
+          border: 1px solid var(--color-border-light);
           color: var(--color-text-secondary);
         }
 
@@ -555,8 +555,8 @@ export default function BOQResultsStep({
         }
 
         .btn-secondary {
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
+          background: rgba(6, 20, 47, 0.02);
+          border: 1px solid var(--color-border-light);
           color: var(--color-text-secondary);
         }
 
@@ -572,7 +572,7 @@ export default function BOQResultsStep({
 
         .btn-ghost:hover {
           color: var(--color-text);
-          background: var(--color-background);
+          background: rgba(6, 20, 47, 0.04);
         }
 
         .totals-card {
@@ -637,7 +637,7 @@ export default function BOQResultsStep({
           align-items: center;
           gap: var(--spacing-sm);
           padding: var(--spacing-md);
-          background: var(--color-background);
+          background: rgba(6, 20, 47, 0.02);
           border: none;
           cursor: pointer;
           text-align: left;
@@ -690,7 +690,7 @@ export default function BOQResultsStep({
         }
 
         .boq-table tr.edited {
-          background: var(--color-accent-bg);
+          background: rgba(78, 154, 247, 0.12);
         }
 
         .col-qty,
@@ -732,7 +732,7 @@ export default function BOQResultsStep({
         }
 
         .editable:hover {
-          background: var(--color-background);
+          background: rgba(6, 20, 47, 0.04);
         }
 
         .editable .edit-icon {
@@ -823,7 +823,7 @@ export default function BOQResultsStep({
           max-width: 420px;
           width: 90%;
           text-align: center;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 24px 50px rgba(6, 20, 47, 0.24);
           animation: modalSlideUp 0.3s ease;
         }
 
@@ -842,12 +842,13 @@ export default function BOQResultsStep({
           width: 64px;
           height: 64px;
           margin: 0 auto var(--spacing-md);
-          background: var(--color-accent-bg);
+          background: rgba(78, 154, 247, 0.12);
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           color: var(--color-accent);
+          border: 1px solid rgba(78, 154, 247, 0.2);
         }
 
         .save-modal h3 {
