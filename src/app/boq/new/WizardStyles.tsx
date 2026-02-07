@@ -513,6 +513,10 @@ const WizardStyles = () => (
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .pill-grid--three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     .pill-option {
       border: 1px solid var(--color-border-light);
       background: #fff;
@@ -555,6 +559,8 @@ const WizardStyles = () => (
       display: flex;
       flex-direction: column;
       gap: 2px;
+      flex: 1;
+      min-width: 0; /* Allows text truncation/wrapping inside flex item */
     }
 
     .pill-title {
@@ -566,7 +572,111 @@ const WizardStyles = () => (
     .pill-subtitle {
       font-size: 0.75rem;
       color: var(--color-text-secondary);
+      line-height: 1.4;
     }
+
+    /* Brick/Block Type Selector - Compact Strip */
+    .brick-strip {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 4px 0;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .brick-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px 12px;
+      border: 2px solid var(--color-border-light);
+      background: #fff;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 90px;
+      flex-shrink: 0;
+    }
+
+    .brick-chip:hover {
+      border-color: #93c5fd;
+      background: rgba(59, 130, 246, 0.04);
+      transform: translateY(-2px);
+    }
+
+    .brick-chip.selected {
+      border-color: var(--color-primary);
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(255, 255, 255, 1));
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    }
+
+    .brick-chip-thumb {
+      position: relative;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      /* overflow: hidden; Removed to allow tick to show */
+      background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+      border: 2px solid var(--color-border-light);
+    }
+
+    .brick-chip.selected .brick-chip-thumb {
+      border-color: var(--color-primary);
+    }
+
+    .brick-chip-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    .brick-chip-check {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid white;
+      z-index: 10;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .brick-chip-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-text);
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .brick-chip-rate {
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    @media (max-width: 600px) {
+      .brick-strip {
+        gap: 6px;
+      }
+      .brick-chip {
+        padding: 8px 12px 10px;
+        min-width: 80px;
+      }
+      .brick-chip-thumb {
+        width: 48px;
+        height: 48px;
+      }
+    }
+
 
     .input-with-suffix {
       position: relative;
@@ -947,6 +1057,7 @@ const WizardStyles = () => (
     @media (max-width: 900px) {
       .pill-grid { grid-template-columns: 1fr; }
       .pill-grid--two { grid-template-columns: 1fr; }
+      .pill-grid--three { grid-template-columns: 1fr; }
       .room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .plan-layout { grid-template-columns: 1fr; }
     }

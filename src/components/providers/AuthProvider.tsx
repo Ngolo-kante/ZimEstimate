@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { Profile, UserTier, TIER_LIMITS } from '@/lib/database.types';
+import { Profile, TIER_LIMITS } from '@/lib/database.types';
 
 interface AuthState {
     user: User | null;

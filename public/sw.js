@@ -107,8 +107,8 @@ async function cacheFirst(request) {
         }
 
         return networkResponse;
-    } catch (_error) {
-        console.log('[SW] Cache-first failed:', request.url);
+    } catch (error) {
+        console.log('[SW] Cache-first failed:', request.url, error);
         return new Response('Offline', { status: 503 });
     }
 }
@@ -124,7 +124,7 @@ async function networkFirst(request) {
         }
 
         return networkResponse;
-    } catch (_error) {
+    } catch (error) {
         const cachedResponse = await caches.match(request);
 
         if (cachedResponse) {
@@ -137,6 +137,7 @@ async function networkFirst(request) {
             if (offlinePage) return offlinePage;
         }
 
+        console.log('[SW] Network-first failed:', request.url, error);
         return new Response('Offline', { status: 503 });
     }
 }

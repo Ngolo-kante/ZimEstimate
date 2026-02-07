@@ -32,6 +32,8 @@ export default function FloorPlanCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
   const [hoveredRoomId, setHoveredRoomId] = useState<string | null>(null);
+  void walls;
+  void imageUrl;
 
   // Resize observer
   useEffect(() => {

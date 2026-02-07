@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { chromium } from 'playwright';
+import { chromium, type Browser } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/lib/database.types';
 import { MaterialMatcher } from '@/lib/services/material-matcher';
@@ -8,10 +8,25 @@ import { MaterialMatcher } from '@/lib/services/material-matcher';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+type ScraperTestPayload = {
+    configId?: string;
+    url?: string;
+    priceSelector?: string;
+    nameSelector?: string;
+};
+
+type ScraperLogInsert = Database['public']['Tables']['scraper_logs']['Insert'];
+type ScraperConfigUpdate = Database['public']['Tables']['scraper_configs']['Update'];
+
 export async function POST(req: NextRequest) {
-    let browser;
+    let browser: Browser | null = null;
+    let configId: string | null = null;
     try {
-        const { configId, url, priceSelector, nameSelector } = await req.json();
+        const payload = (await req.json()) as ScraperTestPayload;
+        const url = typeof payload.url === 'string' ? payload.url : '';
+        const priceSelector = typeof payload.priceSelector === 'string' ? payload.priceSelector : '';
+        const nameSelector = typeof payload.nameSelector === 'string' ? payload.nameSelector : '';
+        configId = typeof payload.configId === 'string' ? payload.configId : null;
 
         if (!url || !priceSelector || !nameSelector) {
             return NextResponse.json({ success: false, error: 'Missing required configuration fields' }, { status: 400 });
@@ -54,43 +69,53 @@ export async function POST(req: NextRequest) {
         const matchResult = await matcher.match(nameText);
 
         let finalItemName = nameText;
-        let matchedMaterialId = null;
+        let matchedMaterialCode: string | null = null;
 
-        if (matchResult.materialId) {
-            matchedMaterialId = matchResult.materialId;
-            // Fetch the canonical name for better data quality
-            const { data: material } = await supabase.from('materials').select('name').eq('id', matchedMaterialId).single();
-            if (material) {
-                finalItemName = material.name;
+        if (matchResult.materialCode) {
+            matchedMaterialCode = matchResult.materialCode;
+            // Use static material list name when matched
+            const { materials } = await import('@/lib/materials');
+            const matched = materials.find((material) => material.id === matchedMaterialCode);
+            if (matched) {
+                finalItemName = matched.name;
             }
         }
 
         // --- Save Results ---
 
-        // 1. Update Weekly Prices (The public price list)
-        await supabase.from('weekly_prices').upsert({
-            item_name: finalItemName,
-            average_price: price,
-            currency: 'USD', // Defaulting to USD for now, parser should ideally detect
-            source_url: url,
-            last_updated: new Date().toISOString()
-        } as any, { onConflict: 'item_name' } as any); // Type assertion for simple schema matching
+        if (matchedMaterialCode) {
+            // 1. Insert into Price Observations
+            const observation = {
+                material_key: matchedMaterialCode,
+                material_name: finalItemName,
+                price_usd: price,
+                confidence: matchResult.confidence,
+                source_url: url,
+                scraped_at: new Date().toISOString(),
+            };
+
+            await supabase.from('price_observations').insert(observation as never);
+        }
 
         // 2. Update Configuration Status (if configId provided)
         if (configId) {
-            await supabase.from('scraper_configs').update({
+            const configUpdate: ScraperConfigUpdate = {
                 last_successful_run_at: new Date().toISOString()
-            } as any).eq('id', configId);
+            };
+            await supabase.from('scraper_configs').update(configUpdate as never).eq('id', configId);
         }
 
-        // 3. Log the success (Optional but good for debugging)
+        // 3. Log the success
         if (configId) {
-            await supabase.from('scraper_logs').insert({
+            const logEntry: ScraperLogInsert = {
                 scraper_config_id: configId,
                 status: 'success',
-                message: `Scraped: ${finalItemName} @ $${price}`,
+                message: matchedMaterialCode
+                    ? `Scraped & Matched: ${finalItemName} @ $${price}`
+                    : `Scraped (Unmatched): ${nameText} @ $${price}`,
                 scraped_data: { raw_name: nameText, raw_price: priceText, match_method: matchResult.method }
-            } as any);
+            };
+            await supabase.from('scraper_logs').insert(logEntry as never);
         }
 
         return NextResponse.json({
@@ -102,25 +127,26 @@ export async function POST(req: NextRequest) {
             match: matchResult
         });
 
-    } catch (error: any) {
-        console.error('Scraper Error:', error);
+    } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error('Unknown error');
+        console.error('Scraper Error:', err);
 
         // Attempt to log failure if possible
         try {
             if (supabaseServiceKey) {
                 const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
-                const { configId } = await req.json().catch(() => ({ configId: null }));
                 if (configId) {
-                    await supabase.from('scraper_logs').insert({
+                    const logEntry: ScraperLogInsert = {
                         scraper_config_id: configId,
                         status: 'failure',
-                        message: error.message || 'Unknown error',
-                    });
+                        message: err.message || 'Unknown error',
+                    };
+                    await supabase.from('scraper_logs').insert(logEntry as never);
                 }
             }
-        } catch (e) { /* ignore logging error */ }
+        } catch { /* ignore logging error */ }
 
-        let errorMessage = error.message;
+        let errorMessage = err.message;
         if (errorMessage.includes('Executable doesn\'t exist')) {
             errorMessage = 'Playwright browsers not found. Please run "npx playwright install" on the server.';
         }

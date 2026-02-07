@@ -35,6 +35,8 @@ interface StageTabProps {
     onItemAdded?: (item: BOQItem) => void;
     showLabor?: boolean;
     primaryStageCategory?: BOQCategory;
+    usageByItem?: Record<string, number>;
+    usageTrackingEnabled?: boolean;
 }
 
 const categoryLabels: Record<BOQCategory, string> = {
@@ -55,6 +57,8 @@ export default function StageTab({
     onItemAdded,
     showLabor = false,
     primaryStageCategory,
+    usageByItem,
+    usageTrackingEnabled = false,
 }: StageTabProps) {
     const { success, error: showError } = useToast();
     const [budgetStats, setBudgetStats] = useState<StageBudgetStats>({
@@ -276,6 +280,8 @@ export default function StageTab({
                         onItemUpdate={handleItemUpdate}
                         onItemDelete={onItemDelete ? handleItemDelete : undefined}
                         onItemAdded={handleItemAdded}
+                        usageByItem={usageByItem}
+                        usageTrackingEnabled={usageTrackingEnabled}
                     />
                 </div>
 
@@ -291,6 +297,8 @@ export default function StageTab({
                             onItemDelete={onItemDelete ? handleItemDelete : undefined}
                             onItemAdded={handleItemAdded}
                             stageScope={stage.boq_category}
+                            usageByItem={usageByItem}
+                            usageTrackingEnabled={usageTrackingEnabled}
                         />
                     </div>
                 )}

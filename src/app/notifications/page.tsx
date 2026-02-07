@@ -1,7 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { useToast } from '@/components/ui/Toast';
+import {
+    deleteProjectNotification,
+    getProjectNotifications,
+    markAllNotificationsRead,
+    markNotificationRead,
+} from '@/lib/services/projects';
+import { ProjectNotification } from '@/lib/database.types';
 import {
     Bell,
     CheckCircle,
@@ -9,74 +18,105 @@ import {
     Info,
     Warning,
     Trash,
-    Funnel,
     Check
 } from '@phosphor-icons/react';
 
-// Mock Data
-const MOCK_NOTIFICATIONS = [
-    {
-        id: 1,
-        type: 'success',
-        title: 'Project Created Successfully',
-        message: 'The project "Borrowdale 4-Bedroom House" has been created and saved to your dashboard.',
-        time: '2 mins ago',
-        read: false,
-        category: 'project'
-    },
-    {
-        id: 2,
-        type: 'info',
-        title: 'Material Prices Updated',
-        message: 'Market prices for cement and brick products have been updated based on recent market analysis.',
-        time: '1 hour ago',
-        read: false,
-        category: 'system'
-    },
-    {
-        id: 3,
-        type: 'warning',
-        title: 'Subscription Expiring Soon',
-        message: 'Your Pro trial period ends in 3 days. Upgrade now to keep accessing premium features.',
-        time: '1 day ago',
-        read: true,
-        category: 'account'
-    },
-    {
-        id: 4,
-        type: 'info',
-        title: 'Welcome to ZimEstimate',
-        message: 'Thanks for joining! Start by creating your first BOQ or browsing our marketplace templates.',
-        time: '2 days ago',
-        read: true,
-        category: 'system'
-    }
-];
+type NotificationItem = ProjectNotification & {
+    timeLabel: string;
+    typeLabel: string;
+};
+
+const formatTimeAgo = (timestamp: string, nowMs: number) => {
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return '';
+    const diffMs = nowMs - date.getTime();
+    const seconds = Math.floor(diffMs / 1000);
+    if (seconds < 60) return 'Just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} min${minutes === 1 ? '' : 's'} ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
+    return date.toLocaleDateString();
+};
+
+const buildNotificationItems = (records: ProjectNotification[]) => {
+    const nowMs = Date.now();
+    return records.map((notification) => ({
+        ...notification,
+        timeLabel: formatTimeAgo(notification.created_at, nowMs),
+        typeLabel: notification.type.replace('_', ' '),
+    }));
+};
 
 export default function NotificationsPage() {
+    const { user, isLoading: authLoading } = useAuth();
+    const { error: showError } = useToast();
     const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
-    const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+    const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const unreadCount = notifications.filter(n => !n.read).length;
+    useEffect(() => {
+        const loadNotifications = async () => {
+            setIsLoading(true);
+            if (!user) {
+                setNotifications([]);
+                setIsLoading(false);
+                return;
+            }
 
-    const handleMarkAllRead = () => {
-        setNotifications(notifications.map(n => ({ ...n, read: true })));
+            const { notifications, error } = await getProjectNotifications(user.id);
+            if (error) {
+                showError('Failed to load notifications');
+            } else {
+                setNotifications(buildNotificationItems(notifications));
+            }
+            setIsLoading(false);
+        };
+
+        loadNotifications();
+    }, [user, showError]);
+
+    const unreadCount = useMemo(
+        () => notifications.filter(n => !n.is_read).length,
+        [notifications]
+    );
+
+    const handleMarkAllRead = async () => {
+        if (!user || unreadCount === 0) return;
+        const { error } = await markAllNotificationsRead(user.id);
+        if (error) {
+            showError('Failed to mark all notifications as read');
+            return;
+        }
+        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     };
 
-    const handleMarkRead = (id: number) => {
-        setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+    const handleMarkRead = async (id: string) => {
+        const { error } = await markNotificationRead(id);
+        if (error) {
+            showError('Failed to mark notification as read');
+            return;
+        }
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
     };
 
-    const handleDelete = (id: number) => {
-        setNotifications(notifications.filter(n => n.id !== id));
+    const handleDelete = async (id: string) => {
+        const { error } = await deleteProjectNotification(id);
+        if (error) {
+            showError('Failed to delete notification');
+            return;
+        }
+        setNotifications(prev => prev.filter(n => n.id !== id));
     };
 
     const filteredNotifications = activeTab === 'all'
         ? notifications
-        : notifications.filter(n => !n.read);
+        : notifications.filter(n => !n.is_read);
 
     const getIcon = (type: string) => {
-        switch (type) {
+        switch (type.toLowerCase()) {
             case 'success': return <CheckCircle size={20} weight="fill" className="text-green-500" />;
             case 'warning': return <Warning size={20} weight="fill" className="text-orange-500" />;
             case 'error': return <Warning size={20} weight="fill" className="text-red-500" />;
@@ -137,14 +177,16 @@ export default function NotificationsPage() {
 
                     {/* List */}
                     <div className="divide-y divide-slate-100">
-                        {filteredNotifications.length > 0 ? (
+                        {authLoading || isLoading ? (
+                            <div className="py-20 text-center text-slate-500">Loading notifications...</div>
+                        ) : filteredNotifications.length > 0 ? (
                             filteredNotifications.map((notification) => (
                                 <div
                                     key={notification.id}
-                                    className={`p-6 flex gap-4 transition-colors hover:bg-slate-50 group ${!notification.read ? 'bg-blue-50/30' : ''}`}
+                                    className={`p-6 flex gap-4 transition-colors hover:bg-slate-50 group ${!notification.is_read ? 'bg-blue-50/30' : ''}`}
                                 >
                                     <div className="flex-shrink-0 mt-1">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${!notification.read ? 'bg-white shadow-sm' : 'bg-slate-100'}`}>
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${!notification.is_read ? 'bg-white shadow-sm' : 'bg-slate-100'}`}>
                                             {getIcon(notification.type)}
                                         </div>
                                     </div>
@@ -152,24 +194,24 @@ export default function NotificationsPage() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-4">
                                             <div>
-                                                <h3 className={`text-sm font-semibold mb-1 ${!notification.read ? 'text-slate-900' : 'text-slate-700'}`}>
+                                                <h3 className={`text-sm font-semibold mb-1 ${!notification.is_read ? 'text-slate-900' : 'text-slate-700'}`}>
                                                     {notification.title}
                                                 </h3>
                                                 <p className="text-sm text-slate-600 leading-relaxed mb-2">
-                                                    {notification.message}
-                                                </p>
-                                                <div className="flex items-center gap-3 text-xs text-slate-400">
-                                                    <span className="flex items-center gap-1">
-                                                        <Clock size={14} />
-                                                        {notification.time}
-                                                    </span>
-                                                    <span>•</span>
-                                                    <span className="capitalize">{notification.category}</span>
-                                                </div>
+                                                        {notification.message}
+                                                    </p>
+                                                    <div className="flex items-center gap-3 text-xs text-slate-400">
+                                                        <span className="flex items-center gap-1">
+                                                            <Clock size={14} />
+                                                            {notification.timeLabel}
+                                                        </span>
+                                                        <span>•</span>
+                                                        <span className="capitalize">{notification.typeLabel}</span>
+                                                    </div>
                                             </div>
 
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                {!notification.read && (
+                                                {!notification.is_read && (
                                                     <button
                                                         onClick={() => handleMarkRead(notification.id)}
                                                         className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -189,7 +231,7 @@ export default function NotificationsPage() {
                                         </div>
                                     </div>
 
-                                    {!notification.read && (
+                                    {!notification.is_read && (
                                         <div className="self-center">
                                             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                                         </div>
@@ -202,7 +244,7 @@ export default function NotificationsPage() {
                                     <Bell size={32} />
                                 </div>
                                 <h3 className="text-lg font-medium text-slate-900 mb-1">No notifications</h3>
-                                <p className="text-slate-500">You're all caught up! Check back later for updates.</p>
+                                <p className="text-slate-500">You&apos;re all caught up! Check back later for updates.</p>
                             </div>
                         )}
                     </div>

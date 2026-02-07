@@ -18,9 +18,23 @@ import {
     MilestoneTaskInsert,
     MaterialUsage,
     MaterialUsageInsert,
+    ProjectRecurringReminder,
+    ProjectRecurringReminderInsert,
+    ProjectRecurringReminderUpdate,
+    ProjectNotification,
+    ProjectNotificationInsert,
+    ProcurementRequest,
+    ProcurementRequestInsert,
+    ProcurementRequestUpdate,
+    PurchaseRecord,
+    PurchaseRecordInsert,
+    PurchaseRecordUpdate,
+    Supplier,
+    SupplierInsert,
+    SupplierUpdate,
+    WeeklyPrice,
     ProjectShare,
     DocumentCategory,
-    MilestoneStatus,
     SavingsFrequency,
     AccessLevel,
 } from '@/lib/database.types';
@@ -219,7 +233,9 @@ export async function updateBOQItem(
     itemId: string,
     updates: BOQItemUpdate
 ): Promise<{ item: BOQItem | null; error: Error | null }> {
-    const { total_usd, total_zwg, ...dbUpdates } = updates;
+    const dbUpdates = { ...updates } as BOQItemUpdate;
+    delete dbUpdates.total_usd;
+    delete dbUpdates.total_zwg;
     const { data: item, error } = await db
         .from('boq_items')
         .update(dbUpdates)
@@ -515,7 +531,7 @@ export async function getProjectPurchaseStats(projectId: string): Promise<{
 export async function createReminder(data: {
     project_id: string;
     item_id?: string;
-    reminder_type: 'material' | 'savings' | 'deadline';
+    reminder_type: 'material' | 'savings' | 'deadline' | 'usage';
     message: string;
     scheduled_date: string;
     phone_number: string;
@@ -546,6 +562,403 @@ export async function createReminder(data: {
     }
 
     return { reminder, error: null };
+}
+
+// ============================================
+// RECURRING REMINDERS
+// ============================================
+
+export async function getProjectRecurringReminder(
+    projectId: string,
+    userId: string,
+    reminderType: 'savings' | 'usage' | 'material' | 'deadline'
+): Promise<{ reminder: ProjectRecurringReminder | null; error: Error | null }> {
+    const { data: reminder, error } = await db
+        .from('project_recurring_reminders')
+        .select('*')
+        .eq('project_id', projectId)
+        .eq('user_id', userId)
+        .eq('reminder_type', reminderType)
+        .maybeSingle();
+
+    if (error) {
+        return { reminder: null, error: new Error(error.message) };
+    }
+
+    return { reminder: reminder || null, error: null };
+}
+
+export async function upsertProjectRecurringReminder(
+    data: ProjectRecurringReminderInsert
+): Promise<{ reminder: ProjectRecurringReminder | null; error: Error | null }> {
+    const { data: reminder, error } = await db
+        .from('project_recurring_reminders')
+        .upsert(data, { onConflict: 'project_id,user_id,reminder_type' })
+        .select()
+        .single();
+
+    if (error) {
+        return { reminder: null, error: new Error(error.message) };
+    }
+
+    return { reminder, error: null };
+}
+
+export async function updateProjectRecurringReminder(
+    reminderId: string,
+    updates: ProjectRecurringReminderUpdate
+): Promise<{ reminder: ProjectRecurringReminder | null; error: Error | null }> {
+    const { data: reminder, error } = await db
+        .from('project_recurring_reminders')
+        .update(updates)
+        .eq('id', reminderId)
+        .select()
+        .single();
+
+    if (error) {
+        return { reminder: null, error: new Error(error.message) };
+    }
+
+    return { reminder, error: null };
+}
+
+// ============================================
+// PROJECT NOTIFICATIONS
+// ============================================
+
+export async function createProjectNotification(
+    data: ProjectNotificationInsert
+): Promise<{ notification: ProjectNotification | null; error: Error | null }> {
+    const { data: notification, error } = await db
+        .from('project_notifications')
+        .insert(data)
+        .select()
+        .single();
+
+    if (error) {
+        return { notification: null, error: new Error(error.message) };
+    }
+
+    return { notification, error: null };
+}
+
+export async function getProjectNotifications(
+    userId: string
+): Promise<{ notifications: ProjectNotification[]; error: Error | null }> {
+    const { data: notifications, error } = await db
+        .from('project_notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        return { notifications: [], error: new Error(error.message) };
+    }
+
+    return { notifications: notifications || [], error: null };
+}
+
+export async function markNotificationRead(
+    notificationId: string
+): Promise<{ error: Error | null }> {
+    const { error } = await db
+        .from('project_notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId);
+
+    if (error) {
+        return { error: new Error(error.message) };
+    }
+
+    return { error: null };
+}
+
+export async function markAllNotificationsRead(
+    userId: string
+): Promise<{ error: Error | null }> {
+    const { error } = await db
+        .from('project_notifications')
+        .update({ is_read: true })
+        .eq('user_id', userId)
+        .eq('is_read', false);
+
+    if (error) {
+        return { error: new Error(error.message) };
+    }
+
+    return { error: null };
+}
+
+export async function getLatestProjectNotification(
+    projectId: string,
+    userId: string,
+    type: string
+): Promise<{ notification: ProjectNotification | null; error: Error | null }> {
+    const { data: notification, error } = await db
+        .from('project_notifications')
+        .select('*')
+        .eq('project_id', projectId)
+        .eq('user_id', userId)
+        .eq('type', type)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        return { notification: null, error: new Error(error.message) };
+    }
+
+    return { notification: notification || null, error: null };
+}
+
+export async function deleteProjectNotification(
+    notificationId: string
+): Promise<{ error: Error | null }> {
+    const { error } = await db
+        .from('project_notifications')
+        .delete()
+        .eq('id', notificationId);
+
+    if (error) {
+        return { error: new Error(error.message) };
+    }
+
+    return { error: null };
+}
+
+// ============================================
+// PRICE LOOKUPS
+// ============================================
+
+export async function getLatestWeeklyPrices(materialCodes: string[]): Promise<{
+    prices: Record<string, { priceUsd: number; lastUpdated: string; sourceUrl?: string | null }>;
+    error: Error | null;
+}> {
+    if (materialCodes.length === 0) {
+        return { prices: {}, error: null };
+    }
+
+    const { data, error } = await db
+        .from('weekly_prices')
+        .select('material_code, average_price, currency, source_url, last_updated')
+        .in('material_code', materialCodes)
+        .order('last_updated', { ascending: false });
+
+    if (error) {
+        return { prices: {}, error: new Error(error.message) };
+    }
+
+    const prices: Record<string, { priceUsd: number; lastUpdated: string; sourceUrl?: string | null }> = {};
+
+    (data as WeeklyPrice[] | null)?.forEach((row) => {
+        if (!row.material_code || row.average_price === null) return;
+        if (row.currency && row.currency.toUpperCase() !== 'USD') return;
+        if (!prices[row.material_code]) {
+            prices[row.material_code] = {
+                priceUsd: Number(row.average_price),
+                lastUpdated: row.last_updated,
+                sourceUrl: row.source_url,
+            };
+        }
+    });
+
+    return { prices, error: null };
+}
+
+// ============================================
+// PROCUREMENT REQUESTS
+// ============================================
+
+export async function createProcurementRequest(
+    data: ProcurementRequestInsert
+): Promise<{ request: ProcurementRequest | null; error: Error | null }> {
+    const { data: request, error } = await db
+        .from('procurement_requests')
+        .insert(data)
+        .select()
+        .single();
+
+    if (error) {
+        return { request: null, error: new Error(error.message) };
+    }
+
+    return { request, error: null };
+}
+
+export async function getProcurementRequests(
+    projectId: string
+): Promise<{ requests: ProcurementRequest[]; error: Error | null }> {
+    const { data: requests, error } = await db
+        .from('procurement_requests')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        return { requests: [], error: new Error(error.message) };
+    }
+
+    return { requests: requests || [], error: null };
+}
+
+export async function updateProcurementRequest(
+    requestId: string,
+    updates: ProcurementRequestUpdate
+): Promise<{ request: ProcurementRequest | null; error: Error | null }> {
+    const { data: request, error } = await db
+        .from('procurement_requests')
+        .update(updates)
+        .eq('id', requestId)
+        .select()
+        .single();
+
+    if (error) {
+        return { request: null, error: new Error(error.message) };
+    }
+
+    return { request, error: null };
+}
+
+// ============================================
+// PURCHASE RECORDS
+// ============================================
+
+export async function getPurchaseRecords(projectId: string): Promise<{
+    records: PurchaseRecord[];
+    error: Error | null;
+}> {
+    const { data: records, error } = await db
+        .from('purchase_records')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('purchased_at', { ascending: false });
+
+    if (error) {
+        return { records: [], error: new Error(error.message) };
+    }
+
+    return { records: records || [], error: null };
+}
+
+export async function createPurchaseRecord(
+    data: Omit<PurchaseRecordInsert, 'created_by'>
+): Promise<{ record: PurchaseRecord | null; error: Error | null }> {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) {
+        return { record: null, error: new Error('Not authenticated') };
+    }
+
+    const payload: PurchaseRecordInsert = {
+        ...data,
+        created_by: user.id,
+    };
+
+    const { data: record, error } = await db
+        .from('purchase_records')
+        .insert(payload)
+        .select()
+        .single();
+
+    if (error) {
+        return { record: null, error: new Error(error.message) };
+    }
+
+    return { record, error: null };
+}
+
+export async function updatePurchaseRecord(
+    recordId: string,
+    updates: PurchaseRecordUpdate
+): Promise<{ record: PurchaseRecord | null; error: Error | null }> {
+    const { data: record, error } = await db
+        .from('purchase_records')
+        .update(updates)
+        .eq('id', recordId)
+        .select()
+        .single();
+
+    if (error) {
+        return { record: null, error: new Error(error.message) };
+    }
+
+    return { record, error: null };
+}
+
+export async function deletePurchaseRecord(recordId: string): Promise<{ error: Error | null }> {
+    const { error } = await db
+        .from('purchase_records')
+        .delete()
+        .eq('id', recordId);
+
+    if (error) {
+        return { error: new Error(error.message) };
+    }
+
+    return { error: null };
+}
+
+// ============================================
+// SUPPLIERS
+// ============================================
+
+export async function getSuppliers(): Promise<{ suppliers: Supplier[]; error: Error | null }> {
+    const { data: suppliers, error } = await db
+        .from('suppliers')
+        .select('*')
+        .order('name', { ascending: true });
+
+    if (error) {
+        return { suppliers: [], error: new Error(error.message) };
+    }
+
+    return { suppliers: suppliers || [], error: null };
+}
+
+export async function createSupplier(
+    data: SupplierInsert
+): Promise<{ supplier: Supplier | null; error: Error | null }> {
+    const { data: supplier, error } = await db
+        .from('suppliers')
+        .insert(data)
+        .select()
+        .single();
+
+    if (error) {
+        return { supplier: null, error: new Error(error.message) };
+    }
+
+    return { supplier, error: null };
+}
+
+export async function updateSupplier(
+    supplierId: string,
+    updates: SupplierUpdate
+): Promise<{ supplier: Supplier | null; error: Error | null }> {
+    const { data: supplier, error } = await db
+        .from('suppliers')
+        .update(updates)
+        .eq('id', supplierId)
+        .select()
+        .single();
+
+    if (error) {
+        return { supplier: null, error: new Error(error.message) };
+    }
+
+    return { supplier, error: null };
+}
+
+export async function deleteSupplier(supplierId: string): Promise<{ error: Error | null }> {
+    const { error } = await db
+        .from('suppliers')
+        .delete()
+        .eq('id', supplierId);
+
+    if (error) {
+        return { error: new Error(error.message) };
+    }
+
+    return { error: null };
 }
 
 export async function getReminders(projectId: string): Promise<{

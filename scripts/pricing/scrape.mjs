@@ -265,7 +265,7 @@ const fetchLatestExchangeRate = async () => {
     if (!rows || rows.length === 0) return null;
     return Number(rows[0].usd_to_zwg);
   } catch (error) {
-    console.warn('Exchange rate fetch failed. Continuing without conversion.');
+    console.warn('Exchange rate fetch failed. Continuing without conversion.', error);
     return null;
   }
 };

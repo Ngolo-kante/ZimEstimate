@@ -26,9 +26,6 @@ export default function StageTaskList({
     const [isCreating, setIsCreating] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
 
-    const completedCount = tasks.filter(t => t.is_completed).length;
-    const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0;
-
     const handleAddTask = async () => {
         if (!newTaskTitle.trim()) return;
 
@@ -66,9 +63,9 @@ export default function StageTaskList({
                                     setShowAddForm(false);
                                 }
                             }}
+                            aria-label={isCollapsed ? 'Expand tasks' : 'Collapse tasks'}
                         >
-                            {isCollapsed ? 'Expand' : 'Collapse'}
-                            {isCollapsed ? <CaretDown size={14} /> : <CaretUp size={14} />}
+                            {isCollapsed ? <CaretDown size={16} /> : <CaretUp size={16} />}
                         </button>
                     </div>
                 </div>
@@ -143,95 +140,102 @@ export default function StageTaskList({
 
             <style jsx>{`
                 .task-list-section {
-                    background: var(--color-surface);
+                    background: #ffffff;
                     border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-lg);
+                    border-radius: 20px;
                     overflow: hidden;
-                    box-shadow: 0 12px 24px rgba(6, 20, 47, 0.06);
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 
+                                0 2px 4px -1px rgba(0, 0, 0, 0.01);
+                    margin-bottom: 24px;
                 }
 
                 .section-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding: var(--spacing-md) var(--spacing-lg);
-                    background: rgba(6, 20, 47, 0.02);
-                    border-bottom: 1px solid var(--color-border-light);
+                    padding: 16px 24px;
+                    background: #ffffff;
+                    border-bottom: 1px solid #f1f5f9;
                 }
 
                 .header-title {
                     display: flex;
                     align-items: center;
-                    gap: var(--spacing-sm);
-                    color: var(--color-primary);
+                    gap: 12px;
+                }
+                
+                .header-title svg {
+                    color: #2563eb;
                 }
 
                 .header-title h4 {
-                    font-size: 0.875rem;
+                    font-size: 1rem;
                     font-weight: 600;
-                    color: var(--color-text);
+                    color: #0f172a;
                     margin: 0;
+                    letter-spacing: -0.01em;
                 }
 
                 .header-meta {
                     display: flex;
                     align-items: center;
-                    gap: var(--spacing-md);
+                    gap: 12px;
                 }
 
                 .collapse-btn {
+                    width: 32px;
+                    height: 32px;
                     display: inline-flex;
                     align-items: center;
-                    gap: 6px;
-                    padding: 6px 10px;
-                    background: rgba(6, 20, 47, 0.04);
-                    border: 1px solid rgba(6, 20, 47, 0.08);
-                    border-radius: var(--radius-full);
-                    font-size: 0.75rem;
-                    font-weight: 600;
-                    color: var(--color-text-secondary);
+                    justify-content: center;
+                    background: transparent;
+                    border: none;
+                    border-radius: 8px;
+                    color: #94a3b8;
                     cursor: pointer;
                     transition: all 0.2s ease;
                 }
 
                 .collapse-btn:hover {
-                    border-color: var(--color-primary);
-                    color: var(--color-text);
+                    color: #475569;
+                    background: #f1f5f9;
                 }
 
                 .add-task-form {
                     display: flex;
                     flex-direction: column;
-                    gap: var(--spacing-sm);
-                    padding: var(--spacing-md);
-                    background: rgba(78, 154, 247, 0.08);
-                    border-bottom: 1px solid var(--color-border-light);
+                    gap: 12px;
+                    padding: 20px 24px;
+                    background: #f8fafc;
+                    border-bottom: 1px solid #e2e8f0;
                 }
 
                 .add-task-form input {
-                    padding: var(--spacing-sm) var(--spacing-md);
-                    border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-md);
-                    font-size: 0.875rem;
-                    background: var(--color-surface);
+                    padding: 12px 16px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
+                    font-size: 0.95rem;
+                    background: #ffffff;
+                    width: 100%;
                 }
 
                 .add-task-form input:focus {
                     outline: none;
-                    border-color: var(--color-primary);
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
                 }
 
                 .form-actions {
                     display: flex;
                     justify-content: flex-end;
-                    gap: var(--spacing-sm);
+                    gap: 10px;
                 }
 
                 .tasks-list {
                     display: flex;
                     flex-direction: column;
-                    gap: 1px;
-                    background: rgba(6, 20, 47, 0.04);
+                    padding: 8px 0;
+                    background: #ffffff;
                 }
 
                 .empty-state {
@@ -239,27 +243,29 @@ export default function StageTaskList({
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
-                    padding: var(--spacing-xl);
+                    padding: 40px 24px;
                     text-align: center;
-                    color: var(--color-text-muted);
-                    background: rgba(6, 20, 47, 0.02);
+                    color: #64748b;
+                }
+                
+                .empty-state svg {
+                    margin-bottom: 12px;
+                    color: #cbd5e1;
                 }
 
                 .empty-state p {
-                    margin: var(--spacing-sm) 0;
-                    font-size: 0.875rem;
+                    margin: 0 0 16px;
+                    font-size: 0.95rem;
+                    font-weight: 500;
+                    color: #334155;
                 }
 
                 @media (max-width: 480px) {
                     .section-header {
-                        flex-direction: column;
-                        gap: var(--spacing-sm);
-                        align-items: flex-start;
+                        padding: 16px 20px;
                     }
-
-                    .header-meta {
-                        width: 100%;
-                        justify-content: space-between;
+                    .add-task-form {
+                        padding: 16px 20px;
                     }
                 }
             `}</style>

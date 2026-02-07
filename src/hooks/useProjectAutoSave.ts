@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import {
     createProject,
-    updateProject,
     getProjectWithItems,
     saveProjectWithItems,
 } from '@/lib/services/projects';
@@ -78,8 +76,6 @@ export function useProjectAutoSave(
         onLoadComplete,
         onLoadError,
     } = options;
-
-    const router = useRouter();
 
     const [project, setProject] = useState<Project | null>(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -184,7 +180,6 @@ export function useProjectAutoSave(
             setIsSaving(false);
         }
     }, [
-        project,
         projectDetails,
         projectScope,
         selectedStages,

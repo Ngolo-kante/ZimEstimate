@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Envelope, Lock, User, GoogleLogo, Buildings, CheckCircle } from '@phosphor-icons/react';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -9,7 +8,6 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 
 export default function SignupPage() {
-    const router = useRouter();
     const { signUp, signInWithGoogle, isLoading } = useAuth();
 
     const [fullName, setFullName] = useState('');

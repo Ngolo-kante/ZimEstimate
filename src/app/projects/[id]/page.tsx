@@ -1,20 +1,20 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
-import Card, { CardHeader, CardTitle, CardContent, CardBadge } from '@/components/ui/Card';
+import Card, { CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import InlineEdit from '@/components/ui/InlineEdit';
 import StageTab from '@/components/projects/StageTab';
 import DocumentsTab from '@/components/projects/DocumentsTab';
 import ShareModal from '@/components/projects/ShareModal';
-import PurchaseTracker from '@/components/ui/PurchaseTracker';
-import StageSavingsToggle from '@/components/ui/StageSavingsToggle';
 import BudgetPlanner, { NotificationChannel } from '@/components/ui/BudgetPlanner';
-import StageUsageSection from '@/components/projects/StageUsageSection';
+import PhoneNumberModal from '@/components/ui/PhoneNumberModal';
+import ProjectUsageView from '@/components/projects/ProjectUsageView';
+import ProjectProcurementView from '@/components/projects/ProjectProcurementView';
+import ProjectTrackingView from '@/components/projects/ProjectTrackingView';
 import SidebarSpine, { ProjectView } from '@/components/projects/SidebarSpine';
 import ProjectSettings from '@/components/projects/ProjectSettings';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
@@ -22,19 +22,21 @@ import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import {
     getProjectWithItems,
+    getBOQItems,
+    getLatestWeeklyPrices,
+    getLatestProjectNotification,
+    createProjectNotification,
     createReminder,
-    deleteProject,
     updateProject,
     updateBOQItem,
     deleteBOQItem,
+    getProjectRecurringReminder,
+    upsertProjectRecurringReminder,
+    updateProjectRecurringReminder,
 } from '@/lib/services/projects';
 import { materials, getBestPrice } from '@/lib/materials';
 import {
     getProjectStages,
-    getAllStagesProgress,
-    StageProgress,
-    updateStage,
-    createDefaultStages,
     getStageUsageData,
 } from '@/lib/services/stages';
 import {
@@ -42,27 +44,15 @@ import {
     BOQItem,
     ProjectStageWithTasks,
     BOQCategory,
+    ProjectRecurringReminder,
 } from '@/lib/database.types';
 import {
     ShareNetwork,
-    Export,
-    Trash,
     ArrowLeft,
     MapPin,
-    Calendar,
-    Tag,
-    WhatsappLogo,
-    TrendUp,
-    TrendDown,
     DownloadSimple,
-    Clock,
-    File,
-    ShoppingCart,
     CircleNotch,
     Warning,
-    CaretDown,
-    CaretUp,
-    WarningCircle,
 } from '@phosphor-icons/react';
 
 function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: number }) {
@@ -81,6 +71,16 @@ const categoryLabels: Record<BOQCategory, string> = {
     exterior: 'Exterior',
 };
 
+type PriceUpdate = {
+    itemId: string;
+    materialId: string;
+    materialName: string;
+    currentPriceUsd: number;
+    newPriceUsd: number;
+    deltaPercent: number;
+    lastUpdated: string;
+};
+
 const SYSTEM_PRICE_VERSION = materials.reduce((latest, material) => {
     const bestPrice = getBestPrice(material.id);
     const lastUpdated = bestPrice?.lastUpdated || '';
@@ -90,26 +90,10 @@ const SYSTEM_PRICE_VERSION = materials.reduce((latest, material) => {
     return latest;
 }, '');
 
-const normalizeMaterialPrice = (
-    material: { category: string; unit: string },
-    bestPrice: { priceUsd: number; priceZwg: number },
-    itemUnit: string
-) => {
-    let priceUsd = bestPrice.priceUsd;
-    let priceZwg = bestPrice.priceZwg;
-    const itemUnitLower = itemUnit.toLowerCase();
-    if (material.category === 'bricks' && material.unit.toLowerCase().includes('1000') && !itemUnitLower.includes('1000')) {
-        priceUsd = priceUsd / 1000;
-        priceZwg = priceZwg / 1000;
-    }
-    return { priceUsd, priceZwg };
-};
-
 function ProjectDetailContent() {
     const params = useParams();
-    const router = useRouter();
     const { success, error: showError } = useToast();
-    const { profile } = useAuth();
+    const { profile, updateProfile } = useAuth();
     const { exchangeRate, formatPrice } = useCurrency();
     const projectId = params.id as string;
 
@@ -117,25 +101,31 @@ function ProjectDetailContent() {
     const [project, setProject] = useState<Project | null>(null);
     const [items, setItems] = useState<BOQItem[]>([]);
     const [stages, setStages] = useState<ProjectStageWithTasks[]>([]);
-    const [stagesProgress, setStagesProgress] = useState<StageProgress[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
-    const [showBudgetPlanner, setShowBudgetPlanner] = useState(false);
-    const [isCreatingStages, setIsCreatingStages] = useState(false);
     const [usageByStage, setUsageByStage] = useState<Record<string, { items: BOQItem[]; usageByItem: Record<string, number> }>>({});
-    const [isUsageLoading, setIsUsageLoading] = useState(false);
     const [projectPriceVersion, setProjectPriceVersion] = useState<string>(SYSTEM_PRICE_VERSION);
     const [priceVersionReady, setPriceVersionReady] = useState(false);
+    const [showPhoneModal, setShowPhoneModal] = useState(false);
+    const [pendingReminder, setPendingReminder] = useState<{ frequency: 'daily' | 'weekly' | 'monthly'; amount: number; channel: NotificationChannel } | null>(null);
+    const [preferredReminderChannel, setPreferredReminderChannel] = useState<NotificationChannel>('email');
+    const [requestedChannel, setRequestedChannel] = useState<NotificationChannel | null>(null);
+    const [savingsReminder, setSavingsReminder] = useState<ProjectRecurringReminder | null>(null);
+    const [priceUpdates, setPriceUpdates] = useState<PriceUpdate[]>([]);
+    const [isPriceUpdateLoading, setIsPriceUpdateLoading] = useState(false);
+    const priceNotificationSentRef = useRef(false);
 
     // View state
     const [activeView, setActiveView] = useState<ProjectView>('overview');
     const [activeTab, setActiveTab] = useState<BOQCategory>('substructure');
-    const [stagesSetupRequired, setStagesSetupRequired] = useState(false);
 
     const projectPriceKey = useMemo(
         () => `boq_price_version_${projectId}`,
+        [projectId]
+    );
+    const priceUpdateAckKey = useMemo(
+        () => `boq_price_update_ack_${projectId}`,
         [projectId]
     );
 
@@ -143,8 +133,28 @@ function ProjectDetailContent() {
     const purchaseStats = useMemo(() => {
         const totalItems = items.length;
         const purchasedItems = items.filter(i => i.is_purchased).length;
-        const estimatedTotal = items.reduce((sum, item) =>
-            sum + (Number(item.quantity) * Number(item.unit_price_usd)), 0);
+        const totals = items.reduce(
+            (acc, item) => {
+                const estimatedQty = Number(item.quantity) || 0;
+                const averagePrice = Number(item.unit_price_usd) || 0;
+                const actualQty = Number(item.actual_quantity ?? item.quantity) || 0;
+                const actualPrice = Number(item.actual_price_usd ?? item.unit_price_usd) || 0;
+
+                const estimatedTotal = estimatedQty * averagePrice;
+                const actualTotal = actualQty * actualPrice;
+                const priceVariance = (actualPrice - averagePrice) * actualQty;
+                const qtyVariance = (actualQty - estimatedQty) * averagePrice;
+
+                return {
+                    estimatedTotal: acc.estimatedTotal + estimatedTotal,
+                    actualTotal: acc.actualTotal + actualTotal,
+                    priceVariance: acc.priceVariance + priceVariance,
+                    qtyVariance: acc.qtyVariance + qtyVariance,
+                };
+            },
+            { estimatedTotal: 0, actualTotal: 0, priceVariance: 0, qtyVariance: 0 }
+        );
+
         const actualSpent = items
             .filter(item => item.is_purchased)
             .reduce((sum, item) => {
@@ -153,14 +163,47 @@ function ProjectDetailContent() {
                 return sum + (Number(qty) * Number(price));
             }, 0);
 
+        const totalVariance = totals.actualTotal - totals.estimatedTotal;
+        const totalVariancePercent = totals.estimatedTotal > 0
+            ? (totalVariance / totals.estimatedTotal) * 100
+            : 0;
+        const priceVariancePercent = totals.estimatedTotal > 0
+            ? (totals.priceVariance / totals.estimatedTotal) * 100
+            : 0;
+        const qtyVariancePercent = totals.estimatedTotal > 0
+            ? (totals.qtyVariance / totals.estimatedTotal) * 100
+            : 0;
+
         return {
             totalItems,
             purchasedItems,
-            estimatedTotal,
+            estimatedTotal: totals.estimatedTotal,
+            actualTotal: totals.actualTotal,
             actualSpent,
-            remainingBudget: estimatedTotal - actualSpent,
+            totalVariance,
+            totalVariancePercent,
+            priceVariance: totals.priceVariance,
+            priceVariancePercent,
+            qtyVariance: totals.qtyVariance,
+            qtyVariancePercent,
         };
     }, [items]);
+
+    const priceUpdatePreview = useMemo(() => {
+        if (priceUpdates.length === 0) return '';
+        const names = priceUpdates.slice(0, 3).map((update) => update.materialName);
+        const suffix = priceUpdates.length > 3 ? ` +${priceUpdates.length - 3} more` : '';
+        return `${names.join(', ')}${suffix}`;
+    }, [priceUpdates]);
+
+    const latestPriceUpdateAt = useMemo(() => {
+        if (priceUpdates.length === 0) return null;
+        return priceUpdates.reduce((latest, update) => {
+            const updateDate = new Date(update.lastUpdated);
+            if (!latest) return updateDate;
+            return updateDate > latest ? updateDate : latest;
+        }, null as Date | null);
+    }, [priceUpdates]);
 
     const activeStageItems = useMemo(() => {
         if (STAGE_CATEGORIES.includes(activeTab as BOQCategory)) {
@@ -169,21 +212,6 @@ function ProjectDetailContent() {
         }
         return items;
     }, [items, activeTab]);
-
-    const activeStageBudget = useMemo(() => {
-        const totalBudget = activeStageItems.reduce((sum: number, item: BOQItem) =>
-            sum + (Number(item.quantity) * Number(item.unit_price_usd)), 0);
-
-        const totalSpent = activeStageItems
-            .filter(item => item.is_purchased)
-            .reduce((sum: number, item: BOQItem) => {
-                const qty = item.actual_quantity ?? item.quantity;
-                const price = item.actual_price_usd ?? item.unit_price_usd;
-                return sum + (Number(qty) * Number(price));
-            }, 0);
-
-        return { totalBudget, totalSpent };
-    }, [activeStageItems]);
 
     const usageByItem = useMemo(() => {
         const allUsage: Record<string, number> = {};
@@ -215,24 +243,13 @@ function ProjectDetailContent() {
                 setError('Project not found');
             }
 
-            if (stagesResult.error) {
-                // Check if it's a missing table error
-                if (stagesResult.error.message?.includes('does not exist')) {
-                    setStagesSetupRequired(true);
-                }
-            } else {
+            if (!stagesResult.error) {
                 setStages(stagesResult.stages);
                 // Set initial active tab to first applicable stage
                 const firstApplicable = stagesResult.stages.find(s => s.is_applicable);
                 if (firstApplicable) {
                     setActiveTab(firstApplicable.boq_category);
                 }
-            }
-
-            // Load progress data
-            const progressResult = await getAllStagesProgress(projectId);
-            if (!progressResult.error) {
-                setStagesProgress(progressResult.progress);
             }
 
             setIsLoading(false);
@@ -243,7 +260,6 @@ function ProjectDetailContent() {
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        // eslint-disable-next-line
         setPriceVersionReady(false);
         const storedVersion = localStorage.getItem(projectPriceKey);
         const nextVersion = storedVersion || SYSTEM_PRICE_VERSION;
@@ -253,12 +269,84 @@ function ProjectDetailContent() {
     }, [projectPriceKey]);
 
     useEffect(() => {
+        if (!profile) return;
+        if (!profile.phone_number && preferredReminderChannel !== 'email') {
+            setPreferredReminderChannel('email');
+        }
+    }, [profile, preferredReminderChannel]);
+
+    useEffect(() => {
         if (!priceVersionReady || typeof window === 'undefined') return;
         localStorage.setItem(projectPriceKey, projectPriceVersion);
     }, [projectPriceKey, projectPriceVersion, priceVersionReady]);
 
+    useEffect(() => {
+        if (!project || !profile?.id) return;
+        const loadRecurringReminder = async () => {
+            const { reminder } = await getProjectRecurringReminder(project.id, profile.id, 'savings');
+            setSavingsReminder(reminder);
+        };
+        loadRecurringReminder();
+    }, [project, profile?.id]);
+
+    useEffect(() => {
+        priceNotificationSentRef.current = false;
+    }, [projectId]);
+
+    const getAcknowledgedPriceUpdate = useCallback(() => {
+        if (typeof window === 'undefined') return null;
+        const stored = localStorage.getItem(priceUpdateAckKey);
+        if (!stored) return null;
+        const parsed = new Date(stored);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }, [priceUpdateAckKey]);
+
+    const acknowledgePriceUpdates = (date: Date) => {
+        if (typeof window === 'undefined') return;
+        localStorage.setItem(priceUpdateAckKey, date.toISOString());
+    };
+
+    const checkPriceUpdates = useCallback(async () => {
+        if (items.length === 0) return;
+
+        setIsPriceUpdateLoading(true);
+        const materialCodes = Array.from(new Set(items.map((item) => item.material_id).filter(Boolean)));
+        const { prices, error: priceError } = await getLatestWeeklyPrices(materialCodes);
+        if (priceError) {
+            setIsPriceUpdateLoading(false);
+            return;
+        }
+
+        const acknowledgedAt = getAcknowledgedPriceUpdate();
+        const updates: PriceUpdate[] = [];
+
+        items.forEach((item) => {
+            const latest = prices[item.material_id];
+            if (!latest) return;
+            const latestDate = new Date(latest.lastUpdated);
+            if (acknowledgedAt && latestDate <= acknowledgedAt) return;
+
+            const currentPrice = Number(item.unit_price_usd) || 0;
+            const nextPrice = Number(latest.priceUsd);
+            if (Math.abs(nextPrice - currentPrice) < 0.01) return;
+
+            const deltaPercent = currentPrice > 0 ? ((nextPrice - currentPrice) / currentPrice) * 100 : 0;
+            updates.push({
+                itemId: item.id,
+                materialId: item.material_id,
+                materialName: item.material_name,
+                currentPriceUsd: currentPrice,
+                newPriceUsd: nextPrice,
+                deltaPercent,
+                lastUpdated: latest.lastUpdated,
+            });
+        });
+
+        setPriceUpdates(updates);
+        setIsPriceUpdateLoading(false);
+    }, [getAcknowledgedPriceUpdate, items]);
+
     const loadUsageData = useCallback(async () => {
-        setIsUsageLoading(true);
         const stagesToLoad = stages.filter(s => s.is_applicable);
         const results = await Promise.all(
             stagesToLoad.map(stage => getStageUsageData(projectId, stage.boq_category))
@@ -277,14 +365,48 @@ function ProjectDetailContent() {
         });
 
         setUsageByStage(nextUsage);
-        setIsUsageLoading(false);
     }, [projectId, stages]);
 
     useEffect(() => {
-        if (activeView !== 'tracking' || !project?.usage_tracking_enabled) return;
-        // eslint-disable-next-line
+        if (!project?.usage_tracking_enabled) return;
+        if (activeView !== 'tracking' && activeView !== 'boq' && activeView !== 'usage') return;
         loadUsageData();
     }, [activeView, project?.usage_tracking_enabled, loadUsageData]);
+
+    useEffect(() => {
+        if (!project || items.length === 0) return;
+        checkPriceUpdates();
+    }, [project, items, checkPriceUpdates]);
+
+    useEffect(() => {
+        if (!project || priceUpdates.length === 0 || !profile?.id) return;
+        if (priceNotificationSentRef.current) return;
+        if (project.owner_id !== profile.id) return;
+
+        const notify = async () => {
+            const { notification } = await getLatestProjectNotification(project.id, profile.id, 'price_update');
+            if (notification) {
+                const last = new Date(notification.created_at);
+                const today = new Date();
+                if (last.toDateString() === today.toDateString()) {
+                    return;
+                }
+            }
+
+            const preview = priceUpdates.slice(0, 3).map((update) => update.materialName).join(', ');
+            const suffix = priceUpdates.length > 3 ? ` +${priceUpdates.length - 3} more` : '';
+            await createProjectNotification({
+                project_id: project.id,
+                user_id: profile.id,
+                type: 'price_update',
+                title: 'Material prices updated',
+                message: `New average prices available for ${preview}${suffix}. Review and update your BOQ averages.`,
+            });
+        };
+
+        notify();
+        priceNotificationSentRef.current = true;
+    }, [priceUpdates, project, profile?.id]);
 
     // Handlers
     const handleProjectUpdate = async (updates: Partial<Project>) => {
@@ -330,126 +452,112 @@ function ProjectDetailContent() {
         }
     };
 
-    const handleItemDelete = (itemId: string) => {
-        setItems(prev => prev.filter(i => i.id !== itemId));
-    };
+    const handleApplyPriceUpdates = async () => {
+        if (priceUpdates.length === 0) return;
+        setIsPriceUpdateLoading(true);
 
-    const handleItemAdded = async (item: BOQItem) => {
-        setItems(prev => [...prev, item]);
-        const newTotal = items.reduce((sum, i) => sum + Number(i.total_usd), 0) + Number(item.total_usd);
-        await updateProject(projectId, {
-            total_usd: newTotal,
-            total_zwg: newTotal * exchangeRate,
-        });
-        setProject(prev => prev ? { ...prev, total_usd: newTotal, total_zwg: newTotal * exchangeRate } : prev);
-    };
-
-    const handleUpdateAveragePrices = async () => {
+        const updatesById = new Map<string, PriceUpdate>();
+        priceUpdates.forEach((update) => updatesById.set(update.itemId, update));
         try {
-            const updatedItems = new Map<string, BOQItem>();
-            await Promise.all(items.map(async (item) => {
-                const material = materials.find(m => m.id === item.material_id);
-                if (!material) return;
-                const bestPrice = getBestPrice(material.id);
-                if (!bestPrice) return;
-                const normalized = normalizeMaterialPrice(material, bestPrice, item.unit);
-                if (!normalized) return;
+            await Promise.all(
+                priceUpdates.map((update) =>
+                    updateBOQItem(update.itemId, {
+                        unit_price_usd: update.newPriceUsd,
+                        unit_price_zwg: update.newPriceUsd * exchangeRate,
+                    })
+                )
+            );
 
-                const shouldSyncActual = item.actual_price_usd === null
-                    || Number(item.actual_price_usd) === Number(item.unit_price_usd);
-                const nextActualPrice = shouldSyncActual ? normalized.priceUsd : item.actual_price_usd;
-
-                const { item: updated, error } = await updateBOQItem(item.id, {
-                    unit_price_usd: normalized.priceUsd,
-                    unit_price_zwg: normalized.priceZwg,
-                    actual_price_usd: nextActualPrice ?? undefined,
-                });
-                if (error) {
-                    throw error;
-                }
-                const merged = updated || {
+            const nextItems = items.map((item) => {
+                const update = updatesById.get(item.id);
+                if (!update) return item;
+                return {
                     ...item,
-                    unit_price_usd: normalized.priceUsd,
-                    unit_price_zwg: normalized.priceZwg,
-                    actual_price_usd: nextActualPrice ?? item.actual_price_usd,
+                    unit_price_usd: update.newPriceUsd,
+                    unit_price_zwg: update.newPriceUsd * exchangeRate,
                 };
-                updatedItems.set(item.id, merged);
-            }));
+            });
 
-            if (updatedItems.size > 0) {
-                const nextItems = items.map(i => updatedItems.get(i.id) ?? i);
-                setItems(nextItems);
+            setItems(nextItems);
 
-                const newTotal = nextItems.reduce((sum, i) => {
-                    const qty = Number(i.quantity) || 0;
-                    const priceUsd = Number(i.unit_price_usd) || 0;
-                    return sum + qty * priceUsd;
-                }, 0);
+            const newTotal = nextItems.reduce((sum, item) => {
+                const qty = Number(item.quantity) || 0;
+                const priceUsd = Number(item.unit_price_usd) || 0;
+                return sum + qty * priceUsd;
+            }, 0);
 
-                await updateProject(projectId, {
-                    total_usd: newTotal,
-                    total_zwg: newTotal * exchangeRate,
-                });
-                setProject(prev => prev ? { ...prev, total_usd: newTotal, total_zwg: newTotal * exchangeRate } : prev);
+            await updateProject(projectId, {
+                total_usd: newTotal,
+                total_zwg: newTotal * exchangeRate,
+            });
+            setProject(prev => prev ? { ...prev, total_usd: newTotal, total_zwg: newTotal * exchangeRate } : prev);
+
+            if (latestPriceUpdateAt) {
+                acknowledgePriceUpdates(latestPriceUpdateAt);
             }
-
-            setProjectPriceVersion(SYSTEM_PRICE_VERSION);
+            setPriceUpdates([]);
             success('Average prices updated');
-        } catch (err) {
-            showError('Failed to update average prices');
+        } catch {
+            showError('Failed to update prices');
+        } finally {
+            setIsPriceUpdateLoading(false);
         }
     };
 
-    const handleKeepCurrentPrices = () => {
-        setProjectPriceVersion(SYSTEM_PRICE_VERSION);
-        success('Kept current prices');
+    const handleIgnorePriceUpdates = () => {
+        if (latestPriceUpdateAt) {
+            acknowledgePriceUpdates(latestPriceUpdateAt);
+        }
+        setPriceUpdates([]);
     };
 
     const handleStageUpdate = (updatedStage: ProjectStageWithTasks) => {
         setStages(prev => prev.map(s => s.id === updatedStage.id ? updatedStage : s));
-        setStagesProgress(prev => prev.map(stage => {
-            if (stage.stageId !== updatedStage.id) {
-                return stage;
-            }
-            const completedTasks = updatedStage.tasks.filter(t => t.is_completed).length;
-            return {
-                ...stage,
-                status: updatedStage.status,
-                name: updatedStage.name,
-                boqCategory: updatedStage.boq_category,
-                isApplicable: updatedStage.is_applicable,
-                taskProgress: { completed: completedTasks, total: updatedStage.tasks.length },
-            };
-        }));
     };
 
     const handleSavingsTargetDateChange = async (date: string) => {
-        if (STAGE_CATEGORIES.includes(activeTab as BOQCategory) && currentStage) {
-            const { stage: updated, error: stageError } = await updateStage(currentStage.id, { end_date: date });
-            if (stageError) {
-                showError('Failed to update stage target date');
-                return;
-            }
-            if (updated) {
-                handleStageUpdate({ ...currentStage, ...updated });
-                success('Stage target date updated');
-            }
-            return;
-        }
-
         await handleProjectUpdate({ target_purchase_date: date });
     };
 
-    const handleSavingsReminder = async (frequency: 'daily' | 'weekly' | 'monthly', amount: number, channel: NotificationChannel) => {
-        if ((channel === 'sms' || channel === 'whatsapp' || channel === 'telegram') && !profile?.phone_number) {
-            showError('Add a phone number in Settings to schedule mobile reminders');
+    const getNextRunAt = (frequency: 'daily' | 'weekly' | 'monthly', baseDate = new Date()) => {
+        const next = new Date(baseDate);
+        if (frequency === 'daily') next.setDate(next.getDate() + 1);
+        if (frequency === 'weekly') next.setDate(next.getDate() + 7);
+        if (frequency === 'monthly') next.setDate(next.getDate() + 30);
+        next.setHours(9, 0, 0, 0);
+        return next;
+    };
+
+    const handleSavingsReminder = async (
+        frequency: 'daily' | 'weekly' | 'monthly',
+        amount: number,
+        channel: NotificationChannel,
+        phoneOverride?: string
+    ) => {
+        if (!profile?.id) {
+            showError('Please sign in again to set reminders.');
+            return;
+        }
+        if (project?.owner_id && profile?.id && project.owner_id !== profile.id) {
+            showError('Only the project owner can schedule reminders.');
             return;
         }
 
-        const offsetDays = frequency === 'daily' ? 1 : frequency === 'weekly' ? 7 : 30;
-        const scheduled = new Date();
-        scheduled.setDate(scheduled.getDate() + offsetDays);
-        const scheduledDate = scheduled.toISOString().split('T')[0];
+        const isMobileChannel = channel === 'sms' || channel === 'whatsapp' || channel === 'telegram';
+        const effectivePhone = phoneOverride || profile?.phone_number || '';
+        if (isMobileChannel && !effectivePhone) {
+            showError('Add a phone number to schedule mobile reminders.');
+            return;
+        }
+
+        const firstRunAt = getNextRunAt(frequency);
+        const nextRunAt = getNextRunAt(frequency, firstRunAt);
+        const targetDate = project?.target_purchase_date || null;
+
+        if (targetDate && firstRunAt.toISOString().split('T')[0] > targetDate) {
+            showError('Target date is before the next reminder date. Update the target date first.');
+            return;
+        }
 
         const stageLabel = STAGE_CATEGORIES.includes(activeTab as BOQCategory)
             ? categoryLabels[activeTab as BOQCategory]
@@ -458,51 +566,95 @@ function ProjectDetailContent() {
         // Prepend channel to message since DB doesn't have a channel column yet
         const message = `[${channel.toUpperCase()}] Savings reminder for ${project?.name || 'Project'} (${stageLabel}): save ${formatPrice(amount, amount * exchangeRate)} ${frequency}.`;
 
+        const { reminder, error: recurringError } = await upsertProjectRecurringReminder({
+            project_id: projectId,
+            user_id: profile.id,
+            reminder_type: 'savings',
+            frequency,
+            channel,
+            amount_usd: amount,
+            target_date: targetDate,
+            next_run_at: nextRunAt.toISOString(),
+            is_active: true,
+        });
+
+        if (recurringError) {
+            showError(`Failed to save recurring reminder: ${recurringError.message}`);
+            return;
+        }
+
+        setSavingsReminder(reminder);
+        setPreferredReminderChannel(channel);
+
         const { error: reminderError } = await createReminder({
             project_id: projectId,
             reminder_type: 'savings',
             message,
-            scheduled_date: scheduledDate,
-            phone_number: profile?.phone_number || '0000000000', // Fallback for email-only if DB requires phone
+            scheduled_date: firstRunAt.toISOString(),
+            phone_number: effectivePhone || '0000000000', // Fallback for email-only if DB requires phone
         });
 
         if (reminderError) {
-            showError('Failed to schedule reminder');
+            showError(`Failed to schedule reminder: ${reminderError.message}`);
             return;
         }
 
-        success(`Reminder scheduled via ${channel} for ${scheduledDate}`);
+        success(`Reminder scheduled via ${channel} for ${firstRunAt.toISOString().split('T')[0]}`);
     };
 
-    const handleCreateStages = async () => {
-        if (!project) return;
-        setIsCreatingStages(true);
-        const { error: createError } = await createDefaultStages(projectId, project.scope);
-        if (createError) {
-            showError('Failed to create stages. Please run the stage migration.');
-            setIsCreatingStages(false);
+    const handleToggleSavingsReminder = async (active: boolean) => {
+        if (!savingsReminder) return;
+        const nextRunAt = active ? getNextRunAt(savingsReminder.frequency as 'daily' | 'weekly' | 'monthly') : savingsReminder.next_run_at;
+        const { reminder, error } = await updateProjectRecurringReminder(savingsReminder.id, {
+            is_active: active,
+            next_run_at: active ? (nextRunAt instanceof Date ? nextRunAt.toISOString() : nextRunAt) : savingsReminder.next_run_at,
+        });
+        if (error) {
+            showError('Failed to update reminder status');
+            return;
+        }
+        setSavingsReminder(reminder);
+        success(active ? 'Reminder enabled' : 'Reminder disabled');
+    };
+
+    const handleRequestPhone = (payload?: {
+        channel?: NotificationChannel;
+        pendingReminder?: { frequency: 'daily' | 'weekly' | 'monthly'; amount: number };
+    }) => {
+        setRequestedChannel(payload?.channel ?? null);
+        if (payload?.pendingReminder) {
+            setPendingReminder({
+                frequency: payload.pendingReminder.frequency,
+                amount: payload.pendingReminder.amount,
+                channel: payload.channel ?? preferredReminderChannel,
+            });
+        }
+        setShowPhoneModal(true);
+    };
+
+    const handleSavePhoneNumber = async (phoneNumber: string) => {
+        const { error } = await updateProfile({ phone_number: phoneNumber });
+        if (error) {
+            showError('Failed to save phone number. Please try again.');
             return;
         }
 
-        const [stagesResult, progressResult] = await Promise.all([
-            getProjectStages(projectId),
-            getAllStagesProgress(projectId),
-        ]);
+        success('Phone number saved');
+        setShowPhoneModal(false);
 
-        if (!stagesResult.error) {
-            setStages(stagesResult.stages);
-            const firstApplicable = stagesResult.stages.find(s => s.is_applicable);
-            if (firstApplicable) {
-                setActiveTab(firstApplicable.boq_category);
-            }
+        if (requestedChannel) {
+            setPreferredReminderChannel(requestedChannel);
         }
 
-        if (!progressResult.error) {
-            setStagesProgress(progressResult.progress);
+        if (pendingReminder) {
+            const reminder = { ...pendingReminder, channel: requestedChannel ?? pendingReminder.channel };
+            setPendingReminder(null);
+            setRequestedChannel(null);
+            await handleSavingsReminder(reminder.frequency, reminder.amount, reminder.channel, phoneNumber);
+            return;
         }
 
-        setIsCreatingStages(false);
-        success('Stages created');
+        setRequestedChannel(null);
     };
 
     const handleUsageTrackingToggle = async (enabled: boolean) => {
@@ -521,37 +673,12 @@ function ProjectDetailContent() {
         }
     };
 
-    const handleShare = () => {
-        const shareUrl = `${window.location.origin}/projects/${projectId}`;
-        const message = `Check out my construction project "${project?.name}" on ZimEstimate!\n\nTotal Budget: $${Number(project?.total_usd).toLocaleString()}\n\n${shareUrl}`;
-
-        if (navigator.share) {
-            navigator.share({
-                title: project?.name || 'My Project',
-                text: message,
-                url: shareUrl,
-            });
-        } else {
-            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    const refreshItems = useCallback(async () => {
+        const { items: refreshed, error } = await getBOQItems(projectId);
+        if (!error) {
+            setItems(refreshed);
         }
-    };
-
-    const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
-            return;
-        }
-
-        setIsDeleting(true);
-        const { error: deleteError } = await deleteProject(projectId);
-
-        if (deleteError) {
-            showError('Failed to delete project: ' + deleteError.message);
-            setIsDeleting(false);
-        } else {
-            success('Project deleted');
-            router.push('/projects?refresh=1');
-        }
-    };
+    }, [projectId]);
 
     // Loading state
     if (isLoading) {
@@ -623,10 +750,6 @@ function ProjectDetailContent() {
         setItems([...items, item]);
     };
 
-    const handleBulkAdd = (newItems: BOQItem[]) => {
-        setItems([...items, ...newItems]);
-    };
-
     const handleUsageRecorded = () => {
         loadUsageData();
     };
@@ -635,16 +758,6 @@ function ProjectDetailContent() {
     const currentStage = stages.find(s => s.boq_category === activeTab);
     const applicableStages = stages.filter(s => s.is_applicable);
     const hasLabor = project.labor_preference === 'with_labor';
-    const primaryStageCategory = applicableStages[0]?.boq_category;
-    const formatStageLabel = (stage: string) =>
-        categoryLabels[stage as BOQCategory] || stage.replace('_', ' ');
-    const scopeLabel = project.selected_stages && project.selected_stages.length > 0
-        ? project.selected_stages.map(formatStageLabel).join(', ')
-        : project.scope.replace('_', ' ');
-    const savingsTargetDate = STAGE_CATEGORIES.includes(activeTab as BOQCategory)
-        ? currentStage?.end_date || null
-        : project.target_purchase_date || project.target_completion_date || null;
-    const showPriceUpdateBanner = priceVersionReady && projectPriceVersion !== SYSTEM_PRICE_VERSION;
 
     const statusColors: Record<string, 'success' | 'accent' | 'default'> = {
         active: 'success',
@@ -708,15 +821,54 @@ function ProjectDetailContent() {
                                     </div>
                                 </Card>
                                 <Card>
-                                    <CardHeader><CardTitle>Amount Spent</CardTitle></CardHeader>
+                                    <CardHeader><CardTitle>Actual Total</CardTitle></CardHeader>
                                     <div className="p-6 pt-0">
                                         <div className="text-3xl font-bold text-blue-600">
-                                            <PriceDisplay priceUsd={purchaseStats.actualSpent} priceZwg={purchaseStats.actualSpent * exchangeRate} />
+                                            <PriceDisplay priceUsd={purchaseStats.actualTotal} priceZwg={purchaseStats.actualTotal * exchangeRate} />
                                         </div>
                                         <p className="text-sm text-slate-500 mt-1">
-                                            <span className={purchaseStats.remainingBudget >= 0 ? 'text-green-600' : 'text-red-500'}>
-                                                {purchaseStats.remainingBudget >= 0 ? 'Under' : 'Over'} Budget
-                                            </span> by <PriceDisplay priceUsd={Math.abs(purchaseStats.remainingBudget)} priceZwg={Math.abs(purchaseStats.remainingBudget) * exchangeRate} />
+                                            <span className={purchaseStats.totalVariance <= 0 ? 'text-green-600' : 'text-red-500'}>
+                                                {purchaseStats.totalVariance <= 0 ? 'Under' : 'Over'} Budget
+                                            </span> by <PriceDisplay priceUsd={Math.abs(purchaseStats.totalVariance)} priceZwg={Math.abs(purchaseStats.totalVariance) * exchangeRate} />
+                                        </p>
+                                    </div>
+                                </Card>
+                                <Card>
+                                    <CardHeader><CardTitle>Total Variance</CardTitle></CardHeader>
+                                    <div className="p-6 pt-0">
+                                        <div className={`text-3xl font-bold ${purchaseStats.totalVariance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                            {purchaseStats.totalVariance >= 0 ? '+' : ''}
+                                            <PriceDisplay priceUsd={Math.abs(purchaseStats.totalVariance)} priceZwg={Math.abs(purchaseStats.totalVariance) * exchangeRate} />
+                                        </div>
+                                        <p className="text-sm text-slate-500 mt-1">
+                                            {purchaseStats.totalVariancePercent >= 0 ? '+' : ''}
+                                            {purchaseStats.totalVariancePercent.toFixed(1)}% vs estimate
+                                        </p>
+                                    </div>
+                                </Card>
+                                <Card>
+                                    <CardHeader><CardTitle>Price Variance</CardTitle></CardHeader>
+                                    <div className="p-6 pt-0">
+                                        <div className={`text-3xl font-bold ${purchaseStats.priceVariance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                            {purchaseStats.priceVariance >= 0 ? '+' : ''}
+                                            <PriceDisplay priceUsd={Math.abs(purchaseStats.priceVariance)} priceZwg={Math.abs(purchaseStats.priceVariance) * exchangeRate} />
+                                        </div>
+                                        <p className="text-sm text-slate-500 mt-1">
+                                            {purchaseStats.priceVariancePercent >= 0 ? '+' : ''}
+                                            {purchaseStats.priceVariancePercent.toFixed(1)}% from unit price changes
+                                        </p>
+                                    </div>
+                                </Card>
+                                <Card>
+                                    <CardHeader><CardTitle>Qty Variance</CardTitle></CardHeader>
+                                    <div className="p-6 pt-0">
+                                        <div className={`text-3xl font-bold ${purchaseStats.qtyVariance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                            {purchaseStats.qtyVariance >= 0 ? '+' : ''}
+                                            <PriceDisplay priceUsd={Math.abs(purchaseStats.qtyVariance)} priceZwg={Math.abs(purchaseStats.qtyVariance) * exchangeRate} />
+                                        </div>
+                                        <p className="text-sm text-slate-500 mt-1">
+                                            {purchaseStats.qtyVariancePercent >= 0 ? '+' : ''}
+                                            {purchaseStats.qtyVariancePercent.toFixed(1)}% from quantity changes
                                         </p>
                                     </div>
                                 </Card>
@@ -744,6 +896,40 @@ function ProjectDetailContent() {
                     {/* BOQ View */}
                     {activeView === 'boq' && (
                         <div className="space-y-6">
+                            {priceUpdates.length > 0 && (
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col gap-3">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-amber-900">
+                                                Material prices changed
+                                            </h3>
+                                            <p className="text-sm text-amber-700 mt-1">
+                                                New average prices are available for {priceUpdates.length} items
+                                                {priceUpdatePreview ? `: ${priceUpdatePreview}` : ''}.
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                size="sm"
+                                                onClick={handleApplyPriceUpdates}
+                                                loading={isPriceUpdateLoading}
+                                            >
+                                                Update average prices
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="secondary"
+                                                onClick={handleIgnorePriceUpdates}
+                                            >
+                                                Keep current
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-amber-700">
+                                        Prices shown are estimates/averages. For exact prices, confirm with suppliers.
+                                    </p>
+                                </div>
+                            )}
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-2xl font-bold text-slate-800">Bill of Quantities</h2>
                                 <div className="flex gap-1 bg-slate-100 p-1 rounded-lg overflow-x-auto">
@@ -772,6 +958,8 @@ function ProjectDetailContent() {
                                     onItemDelete={handleDeleteItem}
                                     onItemAdded={handleAddItem}
                                     showLabor={hasLabor}
+                                    usageByItem={usageByItem}
+                                    usageTrackingEnabled={project.usage_tracking_enabled}
                                 />
                             )}
                         </div>
@@ -780,31 +968,50 @@ function ProjectDetailContent() {
                     {/* TRACKING View */}
                     {activeView === 'tracking' && (
                         <div className="space-y-6">
-                            <h2 className="text-2xl font-bold text-slate-800 mb-6">Tracking & Timeline</h2>
+                            <ProjectTrackingView
+                                projectId={projectId}
+                                items={items}
+                                onItemsRefresh={refreshItems}
+                            />
+                        </div>
+                    )}
 
+                    {/* USAGE View */}
+                    {activeView === 'usage' && (
+                        <div className="space-y-6">
                             {project.usage_tracking_enabled ? (
-                                <StageUsageSection
-                                    projectId={projectId}
+                                <ProjectUsageView
+                                    project={project}
                                     items={items}
                                     usageByItem={usageByItem}
                                     onUsageRecorded={handleUsageRecorded}
+                                    onRequestPhone={handleRequestPhone}
+                                    canUseMobileReminders={Boolean(profile?.phone_number)}
                                 />
                             ) : (
-                                <div className="space-y-4">
-                                    <p className="text-slate-500">Track your purchases against the BOQ items.</p>
-                                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 divide-y divide-slate-100">
-                                        {items.map(item => (
-                                            <div key={item.id} className="p-4">
-                                                <PurchaseTracker
-                                                    key={item.id}
-                                                    item={item}
-                                                    onUpdate={handleItemUpdate}
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
+                                <div className="bg-white rounded-xl border border-slate-200 p-6">
+                                    <h3 className="text-lg font-semibold text-slate-800 mb-2">Enable usage tracking</h3>
+                                    <p className="text-slate-500 mb-4">
+                                        Turn on usage tracking to log materials used by builders.
+                                    </p>
+                                    <Button
+                                        variant="primary"
+                                        onClick={() => handleUsageTrackingToggle(true)}
+                                    >
+                                        Enable Usage Tracking
+                                    </Button>
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* PROCUREMENT View */}
+                    {activeView === 'procurement' && (
+                        <div className="space-y-6">
+                            <ProjectProcurementView
+                                project={project}
+                                items={items}
+                            />
                         </div>
                     )}
 
@@ -826,6 +1033,12 @@ function ProjectDetailContent() {
                                 targetDate={project.target_purchase_date}
                                 onTargetDateChange={handleSavingsTargetDateChange}
                                 onSetReminder={handleSavingsReminder}
+                                canUseMobileReminders={Boolean(profile?.phone_number)}
+                                defaultChannel={preferredReminderChannel}
+                                onRequestPhone={handleRequestPhone}
+                                reminderActive={Boolean(savingsReminder?.is_active)}
+                                reminderFrequency={(savingsReminder?.frequency as 'daily' | 'weekly' | 'monthly' | null) ?? null}
+                                onToggleReminder={handleToggleSavingsReminder}
                             />
                         </div>
                     )}
@@ -839,6 +1052,17 @@ function ProjectDetailContent() {
                     )}
                 </main>
             </div>
+
+            <PhoneNumberModal
+                isOpen={showPhoneModal}
+                onClose={() => {
+                    setShowPhoneModal(false);
+                    setPendingReminder(null);
+                    setRequestedChannel(null);
+                }}
+                onSave={handleSavePhoneNumber}
+                initialValue={profile?.phone_number || ''}
+            />
 
             <ShareModal
                 isOpen={showShareModal}

@@ -72,95 +72,99 @@ export default function StageMetadataHeader({ stage, onUpdate }: StageMetadataHe
                             {stage.description && <p className="stage-description">{stage.description}</p>}
                         </div>
                         <div className="stage-controls">
-                        {/* Status Dropdown */}
-                        <div className="status-dropdown">
-                            <div className="status-field">
-                                <label>
-                                    <Flag size={14} />
-                                    Status
-                                </label>
-                                <button
-                                    className="status-trigger"
-                                    onClick={() => setIsStatusOpen(!isStatusOpen)}
-                                    disabled={isSaving}
-                                    style={{ '--status-color': currentStatus.color } as React.CSSProperties}
-                                >
-                                    <span className="status-icon">{currentStatus.icon}</span>
-                                    <span className="status-label">{currentStatus.label}</span>
-                                    <CaretDown size={14} className={isStatusOpen ? 'rotated' : ''} />
-                                </button>
-                            </div>
-
-                            {isStatusOpen && (
-                                <div className="status-menu">
-                                    {statusOptions.map((option) => (
-                                        <button
-                                            key={option.value}
-                                            className={`status-option ${stage.status === option.value ? 'active' : ''}`}
-                                            onClick={() => handleStatusChange(option.value)}
-                                            style={{ '--option-color': option.color } as React.CSSProperties}
-                                        >
-                                            <span className="option-icon">{option.icon}</span>
-                                            <span>{option.label}</span>
-                                        </button>
-                                    ))}
+                            {/* Status Dropdown */}
+                            <div className="status-dropdown">
+                                <div className="status-field">
+                                    <label>
+                                        <Flag size={14} />
+                                        Status
+                                    </label>
+                                    <button
+                                        className="status-trigger"
+                                        onClick={() => setIsStatusOpen(!isStatusOpen)}
+                                        disabled={isSaving}
+                                        style={{ '--status-color': currentStatus.color } as React.CSSProperties}
+                                    >
+                                        <span className="status-icon">{currentStatus.icon}</span>
+                                        <span className="status-label">{currentStatus.label}</span>
+                                        <CaretDown size={14} className={isStatusOpen ? 'rotated' : ''} />
+                                    </button>
                                 </div>
-                            )}
-                        </div>
 
-                        {/* Date Range */}
-                        <div className="date-range">
-                            <div className="date-field">
-                                <label>
-                                    <Calendar size={14} />
-                                    Start
-                                </label>
-                                <input
-                                    type="date"
-                                    value={stage.start_date || ''}
-                                    onChange={(e) => handleDateChange('start_date', e.target.value)}
-                                />
-                                <span className="date-display">{formatDate(stage.start_date)}</span>
+                                {isStatusOpen && (
+                                    <div className="status-menu">
+                                        {statusOptions.map((option) => (
+                                            <button
+                                                key={option.value}
+                                                className={`status-option ${stage.status === option.value ? 'active' : ''}`}
+                                                onClick={() => handleStatusChange(option.value)}
+                                                style={{ '--option-color': option.color } as React.CSSProperties}
+                                            >
+                                                <span className="option-icon">{option.icon}</span>
+                                                <span>{option.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            <span className="date-separator">-</span>
-                            <div className="date-field">
-                                <label>
-                                    <Calendar size={14} />
-                                    End
-                                </label>
-                                <input
-                                    type="date"
-                                    value={stage.end_date || ''}
-                                    onChange={(e) => handleDateChange('end_date', e.target.value)}
-                                />
-                                <span className="date-display">
-                                    {formatDate(stage.end_date)}
-                                    {daysInfo && (
-                                        <span className={`days-badge ${daysInfo.urgent ? 'urgent' : ''}`}>
-                                            {daysInfo.days > 0 ? `${daysInfo.days}d left` : daysInfo.days === 0 ? 'Today' : 'Overdue'}
-                                        </span>
-                                    )}
-                                </span>
+
+                            {/* Date Range */}
+                            <div className="date-range">
+                                <div className="date-field">
+                                    <label>
+                                        <Calendar size={14} />
+                                        Start
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={stage.start_date || ''}
+                                        onChange={(e) => handleDateChange('start_date', e.target.value)}
+                                    />
+                                    <span className="date-display">{formatDate(stage.start_date)}</span>
+                                </div>
+                                <span className="date-separator">-</span>
+                                <div className="date-field">
+                                    <label>
+                                        <Calendar size={14} />
+                                        End
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={stage.end_date || ''}
+                                        onChange={(e) => handleDateChange('end_date', e.target.value)}
+                                    />
+                                    <span className="date-display">
+                                        {formatDate(stage.end_date)}
+                                        {daysInfo && (
+                                            <span className={`days-badge ${daysInfo.urgent ? 'urgent' : ''}`}>
+                                                {daysInfo.days > 0 ? `${daysInfo.days}d left` : daysInfo.days === 0 ? 'Today' : 'Overdue'}
+                                            </span>
+                                        )}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
             </div>
 
             <style jsx>{`
                 .stage-header {
-                    background: var(--color-surface);
+                    background: #ffffff;
                     border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-lg);
-                    overflow: visible;
-                    box-shadow: 0 12px 26px rgba(6, 20, 47, 0.08);
+                    border-radius: 20px;
+                    overflow: hidden;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 
+                                0 2px 4px -1px rgba(0, 0, 0, 0.01);
+                    transition: all 0.2s ease;
+                    margin-bottom: 24px;
                 }
 
                 .stage-description {
-                    font-size: 0.875rem;
-                    color: var(--color-text-secondary);
+                    font-size: 0.9rem;
+                    color: #64748b;
                     margin: 0;
+                    line-height: 1.5;
                 }
 
                 .section-toggle {
@@ -168,32 +172,43 @@ export default function StageMetadataHeader({ stage, onUpdate }: StageMetadataHe
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    background: rgba(6, 20, 47, 0.02);
+                    background: #ffffff;
                     border: none;
+                    border-bottom: 1px solid transparent;
                     cursor: pointer;
-                    padding: var(--spacing-md) var(--spacing-lg);
-                    font-size: 1rem;
-                    font-weight: 700;
-                    color: var(--color-text);
+                    padding: 20px 24px;
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    color: #0f172a;
+                    transition: all 0.2s;
+                    user-select: none;
                 }
 
                 .section-toggle:hover {
-                    background: var(--color-surface);
+                    background: #fafafa;
+                }
+                
+                .stage-header:has(.stage-body) .section-toggle {
+                    border-bottom-color: #f1f5f9;
                 }
 
                 .stage-body {
                     display: flex;
-                    align-items: flex-start;
+                    align-items: center;
                     justify-content: space-between;
-                    gap: var(--spacing-lg);
-                    padding: var(--spacing-lg);
+                    gap: 24px;
+                    padding: 24px;
                     background: #ffffff;
+                }
+
+                .stage-title {
+                    flex: 1;
                 }
 
                 .stage-controls {
                     display: flex;
-                    align-items: flex-start;
-                    gap: var(--spacing-lg);
+                    align-items: flex-end;
+                    gap: 24px;
                 }
 
                 /* Status Dropdown */
@@ -204,34 +219,37 @@ export default function StageMetadataHeader({ stage, onUpdate }: StageMetadataHe
                 .status-field {
                     display: flex;
                     flex-direction: column;
-                    gap: 2px;
+                    gap: 8px;
                 }
 
                 .status-field label {
                     display: flex;
                     align-items: center;
-                    gap: 4px;
-                    font-size: 0.625rem;
+                    gap: 6px;
+                    font-size: 0.7rem;
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
-                    color: var(--color-text-muted);
+                    color: #64748b;
                 }
 
                 .status-trigger {
                     display: flex;
                     align-items: center;
-                    gap: var(--spacing-xs);
-                    padding: var(--spacing-sm) var(--spacing-md);
+                    gap: 10px;
+                    padding: 10px 14px;
                     background: #ffffff;
-                    border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-md);
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
                     cursor: pointer;
                     transition: all 0.2s ease;
+                    min-width: 180px;
+                    justify-content: space-between;
                 }
 
                 .status-trigger:hover {
-                    border-color: var(--color-primary);
+                    border-color: #cbd5e1;
+                    background: #f8fafc;
                 }
 
                 .status-icon {
@@ -240,9 +258,11 @@ export default function StageMetadataHeader({ stage, onUpdate }: StageMetadataHe
                 }
 
                 .status-label {
-                    font-size: 0.875rem;
+                    font-size: 0.9rem;
                     font-weight: 500;
-                    color: var(--color-text);
+                    color: #1e293b;
+                    flex: 1;
+                    text-align: left;
                 }
 
                 .status-trigger :global(.rotated) {
@@ -251,39 +271,43 @@ export default function StageMetadataHeader({ stage, onUpdate }: StageMetadataHe
 
                 .status-menu {
                     position: absolute;
-                    top: calc(100% + 4px);
+                    top: calc(100% + 6px);
                     right: 0;
-                    min-width: 180px;
-                    background: var(--color-surface);
-                    border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-md);
-                    box-shadow: 0 18px 32px rgba(6, 20, 47, 0.14);
-                    z-index: 200;
-                    overflow: hidden;
+                    min-width: 200px;
+                    background: #ffffff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+                                0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                    z-index: 50;
+                    padding: 6px;
                 }
 
                 .status-option {
                     display: flex;
                     align-items: center;
-                    gap: var(--spacing-sm);
+                    gap: 10px;
                     width: 100%;
-                    padding: var(--spacing-sm) var(--spacing-md);
+                    padding: 8px 12px;
                     background: none;
                     border: none;
                     cursor: pointer;
-                    font-size: 0.875rem;
-                    color: var(--color-text);
+                    font-size: 0.9rem;
+                    color: #475569;
                     text-align: left;
-                    transition: background 0.15s ease;
+                    border-radius: 8px;
+                    transition: all 0.15s ease;
                 }
 
                 .status-option:hover {
-                    background: var(--color-primary-bg);
+                    background: #f1f5f9;
+                    color: #1e293b;
                 }
 
                 .status-option.active {
-                    background: var(--color-primary-bg);
+                    background: #f1f5f9;
                     font-weight: 600;
+                    color: #0f172a;
                 }
 
                 .option-icon {
@@ -295,90 +319,99 @@ export default function StageMetadataHeader({ stage, onUpdate }: StageMetadataHe
                 .date-range {
                     display: flex;
                     align-items: center;
-                    gap: var(--spacing-sm);
+                    gap: 12px;
+                    padding: 10px 16px;
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
                 }
 
                 .date-field {
                     display: flex;
                     flex-direction: column;
-                    gap: 2px;
+                    gap: 4px;
                 }
 
                 .date-field label {
                     display: flex;
                     align-items: center;
                     gap: 4px;
-                    font-size: 0.625rem;
+                    font-size: 0.7rem;
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
-                    color: var(--color-text-muted);
+                    color: #64748b;
                 }
 
                 .date-field input[type="date"] {
-                    padding: var(--spacing-xs) var(--spacing-sm);
-                    border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-sm);
-                    font-size: 0.75rem;
-                    color: var(--color-text);
-                    background: #ffffff;
-                    width: 130px;
-                }
-
-                .date-field input[type="date"]:focus {
+                    padding: 0;
+                    border: none;
+                    font-size: 0.85rem;
+                    color: #1e293b;
+                    background: transparent;
+                    width: 110px;
+                    font-weight: 500;
                     outline: none;
-                    border-color: var(--color-primary);
+                }
+                
+                .date-input-wrapper {
+                     display: flex;
+                     align-items: center;
+                     gap: 6px;
                 }
 
                 .date-display {
                     font-size: 0.75rem;
-                    color: var(--color-text-secondary);
+                    color: #94a3b8;
                     display: flex;
                     align-items: center;
-                    gap: var(--spacing-xs);
+                    gap: 6px;
                 }
 
                 .days-badge {
-                    font-size: 0.5rem;
+                    font-size: 0.65rem;
                     font-weight: 700;
-                    padding: 2px 6px;
-                    background: var(--color-primary-bg);
-                    color: var(--color-primary);
-                    border-radius: var(--radius-full);
+                    padding: 2px 8px;
+                    background: #eff6ff;
+                    color: #2563eb;
+                    border-radius: 99px;
                     text-transform: uppercase;
+                    white-space: nowrap;
                 }
 
                 .days-badge.urgent {
-                    background: rgba(239, 68, 68, 0.1);
-                    color: var(--color-error);
+                    background: #fef2f2;
+                    color: #ef4444;
                 }
 
                 .date-separator {
-                    color: var(--color-text-muted);
-                    margin-top: var(--spacing-md);
+                    color: #cbd5e1;
+                    font-size: 1.2rem;
+                    margin: 0 8px;
+                    padding-top: 12px;
                 }
 
-                @media (max-width: 768px) {
+                @media (max-width: 900px) {
                     .stage-body {
                         flex-direction: column;
+                        align-items: flex-start;
+                        gap: 20px;
                     }
 
                     .stage-controls {
                         width: 100%;
                         flex-direction: column;
-                        gap: var(--spacing-md);
+                        align-items: flex-start;
+                        gap: 16px;
+                    }
+                    
+                    .status-trigger {
+                        width: 100%;
                     }
 
                     .date-range {
                         width: 100%;
-                    }
-
-                    .date-field {
-                        flex: 1;
-                    }
-
-                    .date-field input[type="date"] {
-                        width: 100%;
+                        justify-content: space-between;
                     }
                 }
             `}</style>

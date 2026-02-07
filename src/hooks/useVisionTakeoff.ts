@@ -10,7 +10,6 @@ import {
   ProjectInfo,
   VisionAnalysisResult,
   GeneratedBOQItem,
-  DEFAULT_CONFIG,
 } from '@/lib/vision/types';
 import { generateBOQ } from '@/lib/calculations';
 

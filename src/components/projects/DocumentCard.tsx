@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {
     File,
     FilePdf,
-    Image,
+    Image as ImageIcon,
     Trash,
     DownloadSimple,
     Eye,
@@ -49,7 +49,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
     };
 
     const getIcon = () => {
-        if (isImage) return <Image size={24} weight="duotone" />;
+        if (isImage) return <ImageIcon size={24} weight="duotone" />;
         if (isPdf) return <FilePdf size={24} weight="duotone" />;
         return <File size={24} weight="duotone" />;
     };
@@ -104,19 +104,22 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
 
             <style jsx>{`
                 .document-card {
-                    background: var(--color-surface);
-                    border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-lg);
-                    padding: var(--spacing-md);
-                    transition: all 0.2s ease;
+                    background: #ffffff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 16px;
+                    padding: 20px;
+                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
                     display: flex;
                     flex-direction: column;
-                    gap: var(--spacing-sm);
+                    gap: 16px;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+                    position: relative;
                 }
 
                 .document-card:hover {
-                    border-color: var(--color-primary);
-                    box-shadow: var(--shadow-md);
+                    border-color: #cbd5e1;
+                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+                    transform: translateY(-2px);
                 }
 
                 .card-header {
@@ -126,27 +129,27 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                 }
 
                 .file-icon {
-                    width: 44px;
-                    height: 44px;
+                    width: 48px;
+                    height: 48px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    border-radius: var(--radius-md);
+                    border-radius: 12px;
                 }
 
                 .file-icon.image {
-                    background: rgba(16, 185, 129, 0.1);
-                    color: #10b981;
+                    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+                    color: #059669;
                 }
 
                 .file-icon.pdf {
-                    background: rgba(239, 68, 68, 0.1);
-                    color: #ef4444;
+                    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+                    color: #dc2626;
                 }
 
                 .file-icon.default {
-                    background: var(--color-background);
-                    color: var(--color-text-muted);
+                    background: #f1f5f9;
+                    color: #64748b;
                 }
 
                 .menu-container {
@@ -156,55 +159,58 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                 .menu-btn {
                     background: none;
                     border: none;
-                    padding: var(--spacing-xs);
+                    padding: 6px;
                     cursor: pointer;
-                    color: var(--color-text-muted);
-                    border-radius: var(--radius-sm);
+                    color: #94a3b8;
+                    border-radius: 6px;
+                    transition: all 0.2s;
                 }
 
                 .menu-btn:hover {
-                    background: var(--color-background);
-                    color: var(--color-text);
+                    background: #f1f5f9;
+                    color: #475569;
                 }
 
                 .menu-dropdown {
                     position: absolute;
                     top: 100%;
                     right: 0;
-                    margin-top: var(--spacing-xs);
-                    background: var(--color-surface);
-                    border: 1px solid var(--color-border);
-                    border-radius: var(--radius-md);
-                    box-shadow: var(--shadow-lg);
+                    margin-top: 8px;
+                    background: #ffffff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
+                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
                     min-width: 140px;
-                    z-index: 10;
+                    z-index: 20;
                     overflow: hidden;
+                    padding: 4px;
                 }
 
                 .menu-dropdown button {
                     display: flex;
                     align-items: center;
-                    gap: var(--spacing-sm);
+                    gap: 8px;
                     width: 100%;
-                    padding: var(--spacing-sm) var(--spacing-md);
+                    padding: 8px 12px;
                     background: none;
                     border: none;
-                    font-size: 0.875rem;
-                    color: var(--color-text);
+                    font-size: 0.85rem;
+                    color: #334155;
                     cursor: pointer;
                     text-align: left;
+                    border-radius: 6px;
                 }
 
                 .menu-dropdown button:hover {
-                    background: var(--color-background);
+                    background: #f1f5f9;
                 }
 
                 .menu-dropdown button.danger {
-                    color: var(--color-error);
+                    color: #ef4444;
                 }
 
                 .menu-dropdown button.danger:hover {
-                    background: var(--color-error-bg);
+                    background: #fef2f2;
                 }
 
                 .card-body {
@@ -213,19 +219,20 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                 }
 
                 .file-name {
-                    font-size: 0.875rem;
+                    font-size: 0.95rem;
                     font-weight: 600;
-                    color: var(--color-text);
+                    color: #0f172a;
                     margin: 0;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
+                    line-height: 1.4;
                 }
 
                 .file-description {
-                    font-size: 0.75rem;
-                    color: var(--color-text-muted);
-                    margin: var(--spacing-xs) 0 0 0;
+                    font-size: 0.8rem;
+                    color: #64748b;
+                    margin: 4px 0 0 0;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
@@ -235,24 +242,25 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding-top: var(--spacing-sm);
-                    border-top: 1px solid var(--color-border-light);
+                    padding-top: 16px;
+                    border-top: 1px solid #f1f5f9;
                 }
 
                 .category-badge {
-                    font-size: 0.625rem;
+                    font-size: 0.65rem;
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
-                    padding: 2px 6px;
-                    background: var(--color-primary-bg);
-                    color: var(--color-primary);
-                    border-radius: var(--radius-sm);
+                    padding: 4px 8px;
+                    background: #f1f5f9;
+                    color: #475569;
+                    border-radius: 99px;
                 }
 
                 .file-meta {
-                    font-size: 0.625rem;
-                    color: var(--color-text-muted);
+                    font-size: 0.7rem;
+                    color: #94a3b8;
+                    font-weight: 500;
                 }
             `}</style>
         </>

@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+import Image from 'next/image';
 import TopNavbar from './TopNavbar';
 import { CurrencyProvider } from '../ui/CurrencyToggle';
 
@@ -32,7 +33,7 @@ export default function MainLayout({
           <div className="footer-container">
             <div className="footer-left">
               <div className="footer-logo">
-                <img src="/logo.png" alt="ZimEstimate" width={24} height={24} style={{ objectFit: 'contain' }} />
+                <Image src="/logo.png" alt="ZimEstimate" width={24} height={24} style={{ objectFit: 'contain' }} />
                 <span>ZimEstimate © 2026</span>
               </div>
             </div>

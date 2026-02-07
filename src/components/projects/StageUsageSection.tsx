@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useToast } from '@/components/ui/Toast';
@@ -243,7 +243,6 @@ export default function StageUsageSection({
                             {items.map((item) => {
                                 const purchased = Number(item.actual_quantity) || Number(item.quantity);
                                 const used = usageByItem[item.id] || 0;
-                                const remaining = purchased - used;
                                 const usagePercent = purchased > 0 ? (used / purchased) * 100 : 0;
 
                                 return (

@@ -22,7 +22,8 @@ ZimEstimate is a construction cost estimation and project management tool for th
 - **Tracking Tab** - Mark items as purchased, track actual vs budgeted costs
 - **Documents Tab** - Upload plans, permits, receipts, photos
 - **Planning Tab** - Milestones, tasks, timelines, savings calculator
-- **Usage Tab** - Track material consumption on-site
+- **Usage Tab** - Dedicated page to log material usage by day/week; builder cadence reminders
+- **Procurement Tab** - Request supplier quotations and track procurement status
 
 ### 3. Dashboard (`/dashboard`)
 - Project overview cards
@@ -42,6 +43,8 @@ ZimEstimate is a construction cost estimation and project management tool for th
 | Dual currency storage | `price_usd` + `price_zwg` columns on all price fields |
 | User toggle | Display preference stored in profile |
 | Exchange rates | `exchange_rates` table with daily rates |
+| Price updates | `weekly_prices` stores scraped averages keyed by material code; BOQ prompts to update averages for unpurchased items |
+| Price disclaimer | BOQ banner notes prices are estimates/averages; verify with suppliers |
 
 ### Project Ownership & Sharing
 | Decision | Implementation |
@@ -56,6 +59,16 @@ ZimEstimate is a construction cost estimation and project management tool for th
 | Auto-calculate progress | Compare `actual_quantity` vs `quantity` on BOQ items |
 | Manual override | `is_purchased` boolean flag |
 | Usage tracking | `material_usage` table for on-site consumption |
+| Usage reminders | One active usage reminder per project + builder, cadence set by builder |
+| Owner notifications | Owner receives app notifications when usage logs are updated |
+
+### Reminder System
+| Decision | Implementation |
+|----------|----------------|
+| Recurring savings reminder | One active reminder per project with on/off toggle |
+| Stop condition | Reminders stop at the target purchase date |
+| Recipient | Reminders sent to builder only |
+| Channel selection | Email/SMS/WhatsApp/Telegram with phone requirement for mobile channels |
 
 ### Offline Support
 | Decision | Implementation |
@@ -83,6 +96,13 @@ project_documents  - Uploaded files (plans, permits, receipts)
 project_milestones - Project phases with target dates
 milestone_tasks    - Checklist items within milestones
 material_usage     - Track materials consumed on-site
+```
+
+### Additional Tables (Migration 011)
+```
+project_recurring_reminders - Recurring reminder settings per project/user
+project_notifications       - Owner notifications for usage/procurement updates
+procurement_requests        - RFQs and supplier request tracking
 ```
 
 ### Key Project Columns
@@ -166,8 +186,10 @@ purchased_date     DATE     -- When bought
 - [x] Savings calculator (weekly/monthly/quarterly)
 - [x] Timelines card (start, purchase, completion dates)
 - [x] Usage tracking for materials
+- [x] Usage reminders (builder cadence) + owner notifications
 - [x] Share/Export dropdown menus
 - [x] Multi-select for vision takeoff config
+- [x] Procurement hub (RFQ creation + status tracking)
 
 ### In Progress 🔄
 - [ ] Email invite system for sharing
@@ -179,6 +201,27 @@ purchased_date     DATE     -- When bought
 - [ ] Price alerts
 - [ ] Report generation
 - [ ] Mobile app (PWA improvements)
+- [ ] Procurement hub enhancements (supplier comparisons, quote analysis)
+
+---
+
+## Version 2 (Planned)
+
+- Progress photo uploads and timeline view (builder uploads, owner visibility)
+
+---
+
+## Implementation Plan (Feb 2026)
+
+- [x] Extend BOQ tables with actual qty, variance columns, and column filters
+- [x] Add recurring project reminders + phone number capture modal
+- [x] Add dedicated usage page with builder reminders and owner notifications
+- [x] Add procurement hub for RFQs and status tracking
+- [x] Connect notifications page to `project_notifications`
+- [x] Apply migration `011_project_reminders_usage_procurement.sql` in Supabase
+- [x] Add price update pipeline (weekly_prices material codes, BOQ banner + notifications)
+- [x] Improve scraper admin (run all + category filters)
+- [ ] Apply migration `012_price_updates_and_scraper_categories.sql` in Supabase
 
 ---
 
@@ -277,6 +320,8 @@ src/
 | `003_fix_rls_recursion.sql` | RLS policy fixes | ✅ Applied |
 | `004_project_enhancements.sql` | Documents, milestones, usage | ✅ Applied |
 | `005_add_project_dates.sql` | start_date, target_purchase_date | ⏳ Pending |
+| `011_project_reminders_usage_procurement.sql` | Recurring reminders, notifications, procurement | ✅ Applied |
+| `012_price_updates_and_scraper_categories.sql` | Weekly price matching + scraper categories | ⏳ Pending |
 
 ---
 

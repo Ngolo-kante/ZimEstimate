@@ -1,6 +1,5 @@
 'use client';
 
-import Head from 'next/head';
 import { useState, Suspense, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
@@ -45,15 +44,25 @@ import {
   FileXls,
   FileDoc,
   ShareNetwork,
+  ListDashes,
+  FrameCorners,
+  Door,
+  PencilSimple,
 } from '@phosphor-icons/react';
 import SavingOverlay from '@/components/ui/SavingOverlay';
+
+import { InteractiveRoomBuilder, RoomInstance } from './components/InteractiveRoomBuilder';
+
 import {
   materials as allMaterials,
   getBestPrice,
 } from '@/lib/materials';
 import { applyAveragePriceUpdate, getScaledPriceZwg } from '@/lib/boqPricing';
 import { exportBOQToPDF } from '@/lib/pdf-export';
+import { generateBOQFromBasics, ManualBuilderConfig } from '@/lib/calculations';
+import { BrickType, CementType, ProjectScope } from '@/lib/vision/types';
 import WizardStyles from './WizardStyles';
+
 
 
 // Milestone configuration with AI-suggested materials
@@ -62,7 +71,7 @@ const milestones = [
     id: 'substructure',
     label: 'Substructure',
     icon: Cube,
-    description: 'Covers Foundation, Window Level, Ring Beam/Roof Level, and associated masonry',
+    description: '🏗️ Foundation strips, hardcore filling, DPC/DPM, substructure bricks to window level, floor slab, mesh reinforcement',
     suggestedMaterials: [
       'sand-river', 'sand-pit', 'stone-19mm', 'hardcore',
       'brick-common', 'cement-325', 'cement-425',
@@ -74,38 +83,39 @@ const milestones = [
     id: 'superstructure',
     label: 'Superstructure',
     icon: Wall,
-    description: 'Main walls, lintels, ring beams, and structural elements',
+    description: '🧱 External & internal walls, window/door lintels, ring beam rebar & stirrups, brickforce, mortar (cement + sand)',
     suggestedMaterials: ['cement-brick', 'cement-32n', 'river-sand', 'rebar-y10', 'mesh-ref-193'],
   },
   {
     id: 'roofing',
     label: 'Roofing',
     icon: HouseSimple,
-    description: 'Trusses, sheeting, fascia',
+    description: '🏠 Timber rafters & brandering, IBR/corrugated sheets, roof screws, fascia boards, guttering',
     suggestedMaterials: ['ibr-sheet-3m', 'timber-50x76', 'timber-38x38', 'fascia-pvc', 'roof-screws'],
   },
   {
     id: 'finishing',
     label: 'Finishing',
     icon: PaintBrush,
-    description: 'Plaster, paint, tiles, fixtures',
+    description: '🎨 Plastering (render + skim), painting (interior/exterior), tiling, door/window frames, electrical & plumbing fittings',
     suggestedMaterials: ['plaster-sand', 'cement-32n', 'pva-20l'],
   },
   {
     id: 'exterior',
     label: 'Exterior & Security',
     icon: ShieldCheck,
-    description: 'Boundary walls, gates, durawall',
+    description: '🔒 Boundary walls, durawall precast, gates, driveway paving, security features',
     suggestedMaterials: ['durawall', 'cement-brick', 'cement-32n'],
   },
   {
     id: 'labor',
     label: 'Labor & Services',
     icon: UserCircle,
-    description: 'Builder rates, food, transport, and logistics',
+    description: '👷 Builder daily rates, general hands, food allowances, transport, site supervision',
     suggestedMaterials: ['labor-builder', 'labor-assistant', 'labor-foreman', 'service-food', 'service-transport'],
   },
 ];
+
 
 // Build material catalog with best prices and categories
 const materialCatalog = allMaterials.map((m) => {
@@ -132,9 +142,6 @@ const materialCatalog = allMaterials.map((m) => {
     description: m.specifications || '',
   };
 });
-
-// Get unique categories (kept for future use)
-const _categories = [...new Set(materialCatalog.map(m => m.category))];
 
 const SYSTEM_PRICE_VERSION = materialCatalog.reduce((latest, material) => {
   if (material.lastUpdated && material.lastUpdated > latest) {
@@ -177,6 +184,7 @@ const DEFAULT_ROOM_INPUTS = {
   livingRoom: '',
   garage1: '',
   garage2: '',
+  passage: '',
 };
 
 type RoomInputKey = keyof typeof DEFAULT_ROOM_INPUTS;
@@ -191,7 +199,11 @@ const ROOM_INPUTS: Array<{ key: RoomInputKey; label: string }> = [
   { key: 'livingRoom', label: 'Living Room' },
   { key: 'garage1', label: 'Garage 1' },
   { key: 'garage2', label: 'Garage 2' },
+  { key: 'passage', label: 'Passage' },
 ];
+
+// Plan Sketch Mode Types
+type PlanSketchMode = 'simplified' | 'detailed';
 
 const LOCATION_TYPE_LABELS: Record<string, string> = {
   urban: 'Urban',
@@ -234,8 +246,11 @@ interface BOQItem {
   actualPriceUsd: number;
   actualPriceZwg: number;
   description?: string;
-  category?: string; // Added for sorting
+  category?: string;
+  calculatedQuantity?: number; // Original calculated value
+  isOverridden?: boolean; // Track if user edited
 }
+
 
 interface MilestoneData {
   id: string;
@@ -251,16 +266,12 @@ interface ProjectDetailsState {
   specificLocation: string;
   floorPlanSize: string;
   buildingType: string;
+  wallHeight: string;
+  brickType: BrickType;
+  cementType: CementType;
   roomInputs: Record<RoomInputKey, string>;
 }
 
-// PriceDisplay kept for future use
-const _PriceDisplay = ({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: number }) => (
-  <div className="flex flex-col items-end">
-    <span className="text-sm font-semibold text-slate-800">${priceUsd.toFixed(2)}</span>
-    <span className="text-xs text-slate-500">ZWG {priceZwg.toFixed(2)}</span>
-  </div>
-);
 
 // Searchable Material Dropdown Component
 // Helper to get category icon
@@ -469,14 +480,6 @@ const LocationSelect = ({
 
 
 
-const WIZARD_STEPS = [
-  { step: 1, title: 'Basic Information', description: 'Name & Location' },
-  { step: 2, title: 'Floor Plan', description: 'Size & Rooms' },
-  { step: 3, title: 'Scope of Work', description: 'Stages & Trades' },
-  { step: 4, title: 'Builder Settings', description: 'Labor & Preferences' },
-  { step: 5, title: 'Estimate', description: 'View and Export BOQ' },
-];
-
 const STEP_HINTS: Record<number, string> = {
   1: 'Next: floor plan size and building type.',
   2: 'Next: choose the project scope.',
@@ -623,8 +626,6 @@ function BOQBuilderContent() {
   const [projectPriceVersion, setProjectPriceVersion] = useState<string>(SYSTEM_PRICE_VERSION);
   const [priceVersionReady, setPriceVersionReady] = useState(false);
 
-  // State from URL params (kept for future use)
-  const _projectType = searchParams.get('type') || 'residential';
   const [projectScope, setProjectScope] = useState(searchParams.get('scope') || '');
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -638,8 +639,12 @@ function BOQBuilderContent() {
     specificLocation: '',
     floorPlanSize: '',
     buildingType: '',
+    wallHeight: '2.7',
+    brickType: 'common',
+    cementType: 'cement_325',
     roomInputs: { ...DEFAULT_ROOM_INPUTS },
   });
+
 
   const locationLabel = useMemo(
     () => buildLocationLabel(projectDetails.locationType, projectDetails.locationCity, projectDetails.specificLocation),
@@ -656,6 +661,26 @@ function BOQBuilderContent() {
 
   // Labor Preference
   const [laborType, setLaborType] = useState<'materials_only' | 'materials_labor' | null>(null);
+
+  // Plan Sketch State
+  const [planSketchEnabled, setPlanSketchEnabled] = useState(false);
+  const [planSketchMode, setPlanSketchMode] = useState<PlanSketchMode>('simplified');
+  const [totalWindows, setTotalWindows] = useState(8);
+  const [totalDoors, setTotalDoors] = useState(5);
+  const [detailedRooms, setDetailedRooms] = useState<RoomInstance[]>([]);
+
+  const handleDetailedContinue = (rooms: RoomInstance[], totals: { area: number, walls: number, bricks: number }) => {
+    setDetailedRooms(rooms);
+    setProjectDetails(prev => ({
+      ...prev,
+      floorPlanSize: totals.area.toFixed(1)
+    }));
+    const totalW = rooms.reduce((acc, r) => acc + r.windows, 0);
+    const totalD = rooms.reduce((acc, r) => acc + r.doors, 0);
+    setTotalWindows(totalW);
+    setTotalDoors(totalD);
+    goToNextStep();
+  };
 
   // Milestones State (The actual BOQ data)
   const [milestonesState, setMilestonesState] = useState<MilestoneData[]>(() =>
@@ -707,7 +732,6 @@ function BOQBuilderContent() {
   const {
     project,
     isSaving,
-    isLoading,
     lastSaved,
     hasUnsavedChanges,
     error: saveError,
@@ -733,8 +757,12 @@ function BOQBuilderContent() {
           specificLocation: parsedLocation.specificLocation,
           floorPlanSize: '',
           buildingType: '',
+          wallHeight: '2.7',
+          brickType: 'common',
+          cementType: 'cement_325',
           roomInputs: { ...DEFAULT_ROOM_INPUTS },
         });
+
 
         // Restore scope and labor preference
         const savedStages = loadedProject.selected_stages && loadedProject.selected_stages.length > 0
@@ -834,13 +862,6 @@ function BOQBuilderContent() {
   }, []);
 
   // Derived state
-  const totalAmount = useMemo(() => {
-    return milestonesState.reduce((total, ms) => {
-      const msTotal = ms.items.reduce((t, item) => t + ((item.quantity || 0) * item.averagePriceUsd), 0);
-      return total + msTotal;
-    }, 0);
-  }, [milestonesState]);
-
   const calculateMilestoneTotal = (items: BOQItem[]) => {
     return items.reduce((acc, item) => {
       return acc + (item.quantity || 0) * item.averagePriceUsd;
@@ -877,14 +898,6 @@ function BOQBuilderContent() {
     setMilestonesState(prev => prev.map(m =>
       m.id === id ? { ...m, expanded: !m.expanded } : m
     ));
-  };
-
-  const toggleStageSelection = (id: string) => {
-    setSelectedStages(prev =>
-      prev.includes(id)
-        ? prev.filter(s => s !== id)
-        : [...prev, id]
-    );
   };
 
   const visibleMilestones = milestones.filter(m => {
@@ -938,10 +951,32 @@ function BOQBuilderContent() {
       }
     }
 
+    // Handle conditional Step 2B for detailed mode
+    if (currentStep === 2 && planSketchEnabled && planSketchMode === 'detailed') {
+      setCurrentStep(2.5); // Step 2B: Room Details
+      return;
+    }
+
+    // Skip 2.5 and go to 3 when coming from normal flow
+    if (currentStep === 2.5) {
+      setCurrentStep(3);
+      return;
+    }
+
     setCurrentStep(prev => prev + 1);
   };
 
-  const goToPrevStep = () => setCurrentStep(prev => prev - 1);
+  const goToPrevStep = () => {
+    // Handle back from Step 2B
+    if (currentStep === 2.5) {
+      setCurrentStep(2);
+      return;
+    }
+    // Handle back to Step 2B if we're at step 3 and came from detailed mode
+    // (We just go back to 2 normally for simplicity)
+    setCurrentStep(prev => prev - 1);
+  };
+
 
   const handleUpdateQuantity = (milestoneId: string, itemId: string, qty: number) => {
     setMilestonesState(prev => prev.map(m => {
@@ -983,43 +1018,7 @@ function BOQBuilderContent() {
     setProjectPriceVersion(SYSTEM_PRICE_VERSION);
   };
 
-  const planPreviewRooms = useMemo(() => {
-    const entries = ROOM_INPUTS.flatMap((room) => {
-      const count = Number(projectDetails.roomInputs[room.key]) || 0;
-      return Array.from({ length: count }, (_, idx) => ({
-        id: `${room.key}-${idx + 1}`,
-        label: `${room.label}${count > 1 ? ` ${idx + 1}` : ''}`,
-        key: room.key,
-      }));
-    });
-    return entries.slice(0, 18);
-  }, [projectDetails.roomInputs]);
 
-  const planDimensions = useMemo(() => {
-    const area = Number(projectDetails.floorPlanSize) || 0;
-    if (!area) return null;
-    const aspectRatio = 1.4;
-    const length = Math.sqrt(area * aspectRatio);
-    const width = area / length;
-    return {
-      length,
-      width,
-      ratio: length / width,
-    };
-  }, [projectDetails.floorPlanSize]);
-
-  const handleQuickAddRoom = (key: RoomInputKey) => {
-    setProjectDetails((prev) => {
-      const current = Number(prev.roomInputs[key]) || 0;
-      return {
-        ...prev,
-        roomInputs: {
-          ...prev.roomInputs,
-          [key]: String(current + 1),
-        },
-      };
-    });
-  };
 
   const handleAdjustRoom = (key: RoomInputKey, delta: number) => {
     setProjectDetails((prev) => {
@@ -1088,40 +1087,75 @@ function BOQBuilderContent() {
 
   const handleAiGenerate = async (milestoneId: string) => {
     setIsGenerating(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 800)); // Brief loading state
 
-    const milestoneConfig = milestones.find(m => m.id === milestoneId);
-    if (!milestoneConfig || !milestoneConfig.suggestedMaterials) {
-      setIsGenerating(false);
-      return;
-    }
+    // Calculate total room count from roomInputs
+    const totalRoomCount = Object.values(projectDetails.roomInputs)
+      .reduce((sum, val) => sum + (Number(val) || 0), 0);
+
+    // Map milestone to scope
+    const milestoneToScope: Record<string, ProjectScope> = {
+      'substructure': 'substructure',
+      'superstructure': 'superstructure',
+      'roofing': 'roofing',
+      'finishing': 'finishing',
+      'exterior': 'exterior',
+    };
+
+    const scope = milestoneToScope[milestoneId] || 'full_house';
+
+    // Build config for calculation
+    const config: ManualBuilderConfig = {
+      floorArea: Number(projectDetails.floorPlanSize) || 100,
+      roomCount: totalRoomCount || 4,
+      wallHeight: Number(projectDetails.wallHeight) || 2.7,
+      brickType: projectDetails.brickType,
+      cementType: projectDetails.cementType,
+      scope: scope,
+      includeLabor: laborType === 'materials_labor',
+      rooms: detailedRooms,
+    };
+
+    // Generate BOQ items using the calculation engine
+    const generatedItems = generateBOQFromBasics(config);
+
+    // Filter items for this specific milestone/category and exclude zero quantities
+    const filteredItems = generatedItems.filter(item =>
+      item.category === milestoneId && item.quantity > 0
+    );
+
+
+    // Convert GeneratedBOQItem to BOQItem format
+    const newItems: BOQItem[] = filteredItems.map(item => ({
+      id: getNextId(),
+      materialId: item.materialId,
+      materialName: item.materialName,
+      quantity: item.quantity,
+      unit: item.unit,
+      averagePriceUsd: item.unitPriceUsd,
+      averagePriceZwg: item.unitPriceZwg,
+      actualPriceUsd: item.unitPriceUsd,
+      actualPriceZwg: item.unitPriceZwg,
+      description: item.calculationNote, // Show calculation basis
+      calculatedQuantity: item.quantity, // Store original for override tracking
+      isOverridden: false,
+    }));
 
     setMilestonesState(prev => prev.map(m => {
       if (m.id !== milestoneId) return m;
-      if (m.items.length > 0) return m;
-
-      const newItems = milestoneConfig.suggestedMaterials!.map(matId => {
-        const mat = materialCatalog.find(mc => mc.id === matId);
-        if (!mat) return null;
-        return {
-          id: getNextId(),
-          materialId: mat.id,
-          materialName: mat.name,
-          quantity: null,
-          unit: mat.unit,
-          averagePriceUsd: mat.priceUsd,
-          averagePriceZwg: mat.priceZwg,
-          actualPriceUsd: mat.priceUsd,
-          actualPriceZwg: mat.priceZwg,
-          description: mat.description
-        } as BOQItem;
-      }).filter(Boolean) as BOQItem[];
-
-      return { ...m, items: newItems, expanded: true };
+      // Merge with existing items or replace if empty
+      const existingIds = m.items.map(i => i.materialId);
+      const itemsToAdd = newItems.filter(ni => !existingIds.includes(ni.materialId));
+      return {
+        ...m,
+        items: m.items.length > 0 ? [...m.items, ...itemsToAdd] : newItems,
+        expanded: true
+      };
     }));
 
     setIsGenerating(false);
   };
+
 
   const handleSaveProject = async () => {
     // Check if user is authenticated
@@ -1177,7 +1211,7 @@ function BOQBuilderContent() {
 
         // Redirect to projects page after save
         router.push('/projects');
-      } catch (err) {
+      } catch {
         setShowSaveOverlay(false);
         // Error handling is done by the hook
       }
@@ -1185,15 +1219,6 @@ function BOQBuilderContent() {
       setShowSavePrompt(true);
     }
   };
-
-  // Step definitions - moved here so it's available in all code paths
-  const steps = [
-    { number: 1, label: 'Project Info' },
-    { number: 2, label: 'Floor Plan' },
-    { number: 3, label: 'Scope' },
-    { number: 4, label: 'Labor' },
-    { number: 5, label: 'Build BOQ' },
-  ];
 
   const showPriceUpdateBanner = priceVersionReady && projectPriceVersion !== SYSTEM_PRICE_VERSION;
 
@@ -1477,7 +1502,7 @@ function BOQBuilderContent() {
                       className="dropdown-item"
                       onClick={() => {
                         // Export as CSV for Excel
-                        const headers = ['Material', 'Category', 'Quantity', 'Unit', 'Actual Price (USD)', 'Actual Price (ZWG)', 'Total (USD)', 'Total (ZWG)'];
+                        const headers = ['Material', 'Category', 'Quantity', 'Unit', 'Average Price (USD)', 'Average Price (ZWG)', 'Total (USD)', 'Total (ZWG)'];
                         const rows = milestonesState.flatMap(ms =>
                           ms.items.map(item => [
                             item.materialName,
@@ -2111,76 +2136,427 @@ function BOQBuilderContent() {
                         </div>
                       </div>
 
-                      <div className="plan-layout plan-layout--single">
-                        <div className="plan-preview">
-                          <div className="plan-preview-header">
-                            <div>
-                              <h4>Plan Sketch</h4>
-                              <span className="plan-preview-hint">Sketch only</span>
-                            </div>
-                            <div className="plan-preview-actions">
-                              <button
-                                type="button"
-                                className="plan-add-room-btn"
-                                onClick={() => setShowRoomPicker((prev) => !prev)}
-                              >
-                                Add room
-                              </button>
-                              {showRoomPicker && (
-                                <div className="plan-add-room-menu">
-                                  {ROOM_INPUTS.map((room) => (
-                                    <div key={room.key} className="plan-add-room-row">
-                                      <span>{room.label}</span>
-                                      <div className="plan-add-room-controls">
-                                        <button
-                                          type="button"
-                                          className="plan-room-adjust"
-                                          onClick={() => handleAdjustRoom(room.key, -1)}
-                                          disabled={(Number(projectDetails.roomInputs[room.key]) || 0) === 0}
-                                        >
-                                          −
-                                        </button>
-                                        <span className="plan-room-count">{Number(projectDetails.roomInputs[room.key]) || 0}</span>
-                                        <button
-                                          type="button"
-                                          className="plan-room-adjust"
-                                          onClick={() => handleAdjustRoom(room.key, 1)}
-                                        >
-                                          +
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
+                      {/* Building Configuration Section */}
+                      <div className="wizard-grid" style={{ marginTop: '1.5rem' }}>
+                        <div className="form-group">
+                          <label className="wizard-label">
+                            Wall Height
+                          </label>
+                          <div className="input-with-suffix">
+                            <input
+                              type="number"
+                              min="2.0"
+                              max="4.0"
+                              step="0.1"
+                              className="wizard-select"
+                              placeholder="2.7"
+                              value={projectDetails.wallHeight}
+                              onChange={(e) => setProjectDetails({ ...projectDetails, wallHeight: e.target.value })}
+                            />
+                            <span className="input-suffix">m</span>
                           </div>
-                          <div
-                            className={`plan-canvas ${planPreviewRooms.length === 0 ? 'is-empty' : ''}`}
-                            style={planDimensions ? { aspectRatio: `${planDimensions.ratio}` } : undefined}
-                          >
-                            {planDimensions && (
-                              <>
-                                <div className="plan-dimension plan-dimension--x">
-                                  {planDimensions.length.toFixed(1)}m
-                                </div>
-                                <div className="plan-dimension plan-dimension--y">
-                                  {planDimensions.width.toFixed(1)}m
-                                </div>
-                              </>
-                            )}
-                            {planPreviewRooms.length === 0 ? (
-                              <div className="plan-empty">Add room counts to see a 2D sketch.</div>
-                            ) : (
-                              planPreviewRooms.map((room) => (
-                                <div key={room.id} className={`plan-room plan-room--${room.key}`}>
-                                  {room.label}
-                                </div>
-                              ))
-                            )}
+                          <span className="wizard-hint">Standard is 2.7m. Adjust if you know your wall plate height.</span>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="wizard-label">
+                            Brick / Block Type <span className="required">*</span>
+                          </label>
+                          <div className="brick-strip" role="radiogroup" aria-label="Brick Type">
+                            {[
+                              { value: 'common', label: 'Red Common', desc: '50/m²', img: '/images/materials/red-common-brick.png' },
+                              { value: 'farm', label: 'Farm Brick', desc: '48/m²', img: '/images/materials/farm-brick.png' },
+                              { value: 'blocks_6inch', label: '6" Block', desc: '12/m²', img: '/images/materials/cement-block-6inch.png' },
+                              { value: 'blocks_8inch', label: '8" Block', desc: '10/m²', img: '/images/materials/cement-block-8inch.png' },
+                            ].map((option) => {
+                              const isSelected = projectDetails.brickType === option.value;
+                              return (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  className={`brick-chip ${isSelected ? 'selected' : ''}`}
+                                  onClick={() => setProjectDetails({ ...projectDetails, brickType: option.value as BrickType })}
+                                  aria-pressed={isSelected}
+                                >
+                                  <div className="brick-chip-thumb">
+                                    <img src={option.img} alt={option.label} />
+                                    {isSelected && <Check size={12} weight="bold" className="brick-chip-check" />}
+                                  </div>
+                                  <span className="brick-chip-label">{option.label}</span>
+                                  <span className="brick-chip-rate">{option.desc}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+
+
+                        <div className="form-group">
+                          <label className="wizard-label">
+                            Cement Type
+                          </label>
+                          <div className="pill-grid pill-grid--two" role="radiogroup" aria-label="Cement Type">
+                            {[
+                              { value: 'cement_325', label: '32.5N Standard', desc: 'General building • 8 bags/m³' },
+                              { value: 'cement_425', label: '42.5R Rapid', desc: 'Foundation/ringbeam • 7 bags/m³' },
+                            ].map((option) => {
+                              const isSelected = projectDetails.cementType === option.value;
+                              return (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  className={`pill-option ${isSelected ? 'selected' : ''}`}
+                                  onClick={() => setProjectDetails({ ...projectDetails, cementType: option.value as CementType })}
+                                  aria-pressed={isSelected}
+                                >
+                                  <span className="pill-content">
+                                    <span className="pill-title">{option.label}</span>
+                                    <span className="pill-subtitle">{option.desc}</span>
+                                  </span>
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       </div>
+
+                      <div className="plan-preview" style={{
+                        padding: 0,
+                        overflow: 'hidden',
+                        background: '#fff',
+                        borderRadius: '16px',
+                        border: '1px solid #e2e8f0',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+                      }}>
+                        {/* Header with Switch */}
+                        <div style={{
+                          padding: '24px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          borderBottom: planSketchEnabled ? '1px solid #f1f5f9' : 'none',
+                          background: '#fff'
+                        }}>
+                          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                            <div style={{
+                              width: '48px', height: '48px',
+                              borderRadius: '12px',
+                              background: '#eff6ff',
+                              color: '#3b82f6',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              border: '1px solid #dbeafe'
+                            }}>
+                              <PencilSimple size={24} weight="duotone" />
+                            </div>
+                            <div>
+                              <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Interactive Floor Plan</h4>
+                              <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
+                                {planSketchEnabled ? 'Customize layout & openings (Optional)' : 'Enable to refine material estimates'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setPlanSketchEnabled(!planSketchEnabled)}
+                            style={{
+                              width: '52px',
+                              height: '28px',
+                              borderRadius: '14px',
+                              border: 'none',
+                              cursor: 'pointer',
+                              position: 'relative',
+                              padding: 0,
+                              background: planSketchEnabled ? '#3b82f6' : '#cbd5e1',
+                              transition: 'background 0.2s',
+                            }}
+                            aria-label="Toggle Floor Plan"
+                          >
+                            <span
+                              style={{
+                                position: 'absolute',
+                                top: '2px',
+                                left: planSketchEnabled ? '26px' : '2px',
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '12px',
+                                background: '#fff',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                transition: 'left 0.2s',
+                              }}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Content Area */}
+                        {planSketchEnabled && (
+                          <div style={{ padding: '24px', background: '#fff' }}>
+                            {/* Mode Selector Tabs */}
+                            <div style={{
+                              display: 'grid',
+                              gridTemplateColumns: '1fr 1fr',
+                              gap: '4px',
+                              background: '#f1f5f9',
+                              padding: '4px',
+                              borderRadius: '12px',
+                              marginBottom: '24px'
+                            }}>
+                              <button
+                                type="button"
+                                onClick={() => setPlanSketchMode('simplified')}
+                                style={{
+                                  padding: '10px',
+                                  borderRadius: '10px',
+                                  border: 'none',
+                                  background: planSketchMode === 'simplified' ? '#fff' : 'transparent',
+                                  boxShadow: planSketchMode === 'simplified' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                                  color: planSketchMode === 'simplified' ? '#0f172a' : '#64748b',
+                                  fontWeight: 600,
+                                  fontSize: '14px',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                  transition: 'all 0.2s',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                <ListDashes size={18} weight={planSketchMode === 'simplified' ? 'bold' : 'regular'} />
+                                Quick Estimate
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setPlanSketchMode('detailed')}
+                                style={{
+                                  padding: '10px',
+                                  borderRadius: '10px',
+                                  border: 'none',
+                                  background: planSketchMode === 'detailed' ? '#fff' : 'transparent',
+                                  boxShadow: planSketchMode === 'detailed' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                                  color: planSketchMode === 'detailed' ? '#0f172a' : '#64748b',
+                                  fontWeight: 600,
+                                  fontSize: '14px',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                  transition: 'all 0.2s',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                <Layout size={18} weight={planSketchMode === 'detailed' ? 'bold' : 'regular'} />
+                                Detailed Editor
+                              </button>
+                            </div>
+
+                            {/* Quick Estimate Inputs */}
+                            {planSketchMode === 'simplified' && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                                {/* Windows & Doors Row */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                  {/* Windows Input */}
+                                  <div>
+                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Windows</label>
+                                    <div style={{ position: 'relative' }}>
+                                      <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}>
+                                        <FrameCorners size={20} />
+                                      </div>
+                                      <select
+                                        value={totalWindows}
+                                        onChange={(e) => setTotalWindows(Number(e.target.value))}
+                                        style={{
+                                          width: '100%',
+                                          padding: '12px 12px 12px 42px',
+                                          borderRadius: '8px',
+                                          border: '1px solid #e2e8f0',
+                                          fontSize: '15px',
+                                          color: '#0f172a',
+                                          background: '#fff',
+                                          appearance: 'none',
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        {Array.from({ length: 21 }, (_, i) => (
+                                          <option key={i} value={i}>{i} Windows</option>
+                                        ))}
+                                      </select>
+                                      <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#cbd5e1', pointerEvents: 'none' }}>
+                                        <CaretDown size={14} weight="bold" />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Doors Input */}
+                                  <div>
+                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Doors</label>
+                                    <div style={{ position: 'relative' }}>
+                                      <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}>
+                                        <Door size={20} />
+                                      </div>
+                                      <select
+                                        value={totalDoors}
+                                        onChange={(e) => setTotalDoors(Number(e.target.value))}
+                                        style={{
+                                          width: '100%',
+                                          padding: '12px 12px 12px 42px',
+                                          borderRadius: '8px',
+                                          border: '1px solid #e2e8f0',
+                                          fontSize: '15px',
+                                          color: '#0f172a',
+                                          background: '#fff',
+                                          appearance: 'none',
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        {Array.from({ length: 16 }, (_, i) => (
+                                          <option key={i} value={i}>{i} Doors</option>
+                                        ))}
+                                      </select>
+                                      <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#cbd5e1', pointerEvents: 'none' }}>
+                                        <CaretDown size={14} weight="bold" />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div style={{ height: '1px', background: '#f1f5f9', width: '100%' }} />
+
+                                {/* Room Picker */}
+                                <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                    <div>
+                                      <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#0f172a' }}>Added Rooms</label>
+                                      <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>Select rooms to include in the estimate</p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowRoomPicker((prev) => !prev)}
+                                      style={{
+                                        padding: '8px 16px',
+                                        borderRadius: '8px',
+                                        background: showRoomPicker ? '#f1f5f9' : '#eff6ff',
+                                        color: showRoomPicker ? '#64748b' : '#3b82f6',
+                                        border: 'none',
+                                        fontSize: '13px',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        display: 'flex', alignItems: 'center', gap: '6px'
+                                      }}
+                                    >
+                                      {showRoomPicker ? 'Done Editing' : (
+                                        <>
+                                          <Plus size={14} weight="bold" /> Add Room
+                                        </>
+                                      )}
+                                    </button>
+                                  </div>
+
+                                  {showRoomPicker ? (
+                                    <div className="plan-add-room-menu" style={{
+                                      position: 'relative',
+                                      top: 0,
+                                      border: '1px solid #e2e8f0',
+                                      boxShadow: 'none',
+                                      background: '#f8fafc',
+                                      marginTop: 0,
+                                      display: 'grid',
+                                      gridTemplateColumns: '1fr 1fr',
+                                      gap: '8px'
+                                    }}>
+                                      {ROOM_INPUTS.map((room) => (
+                                        <div key={room.key} className="plan-add-room-row" style={{ background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                          <span style={{ fontSize: '13px', fontWeight: 500 }}>{room.label}</span>
+                                          <div className="plan-add-room-controls">
+                                            <button
+                                              type="button"
+                                              className="plan-room-adjust"
+                                              onClick={() => handleAdjustRoom(room.key, -1)}
+                                              disabled={(Number(projectDetails.roomInputs[room.key]) || 0) === 0}
+                                              style={{ width: '24px', height: '24px', fontSize: '14px' }}
+                                            >
+                                              −
+                                            </button>
+                                            <span className="plan-room-count" style={{ fontSize: '13px', minWidth: '16px' }}>{Number(projectDetails.roomInputs[room.key]) || 0}</span>
+                                            <button
+                                              type="button"
+                                              className="plan-room-adjust"
+                                              onClick={() => handleAdjustRoom(room.key, 1)}
+                                              style={{ width: '24px', height: '24px', fontSize: '14px' }}
+                                            >
+                                              +
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                      {Object.entries(projectDetails.roomInputs).some(([_, count]) => (Number(count) || 0) > 0) ? (
+                                        Object.entries(projectDetails.roomInputs).map(([key, count]) => {
+                                          const num = Number(count) || 0;
+                                          if (num === 0) return null;
+                                          const label = ROOM_INPUTS.find(r => r.key === key)?.label || key;
+                                          return (
+                                            <div key={key} style={{
+                                              display: 'flex', alignItems: 'center', gap: '6px',
+                                              padding: '6px 12px', background: '#f1f5f9', borderRadius: '20px',
+                                              fontSize: '13px', color: '#475569', border: '1px solid #e2e8f0'
+                                            }}>
+                                              <span style={{ fontWeight: 600, color: '#0f172a' }}>{num}</span>
+                                              <span>{label}</span>
+                                            </div>
+                                          );
+                                        })
+                                      ) : (
+                                        <div style={{ width: '100%', padding: '20px', textAlign: 'center', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #e2e8f0', color: '#94a3b8', fontSize: '13px' }}>
+                                          No rooms added yet. Click "Add Room" to start.
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Detailed Editor Hero */}
+                            {planSketchMode === 'detailed' && (
+                              <div style={{
+                                background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                                borderRadius: '16px',
+                                padding: '40px 32px',
+                                textAlign: 'center',
+                                border: '1px solid #bfdbfe'
+                              }}>
+                                <div style={{
+                                  width: '72px', height: '72px',
+                                  background: '#fff',
+                                  borderRadius: '20px',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  margin: '0 auto 20px',
+                                  boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.1), 0 4px 6px -2px rgba(59, 130, 246, 0.05)'
+                                }}>
+                                  <Layout size={36} color="#3b82f6" weight="duotone" />
+                                </div>
+                                <h3 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 700, color: '#1e3a8a' }}>
+                                  Room Builder
+                                </h3>
+                                <p style={{ margin: '0', fontSize: '15px', color: '#1e40af', lineHeight: '1.6', maxWidth: '320px', marginLeft: 'auto', marginRight: 'auto' }}>
+                                  Launch the interactive editor to draw your floor plan with precise room dimensions.
+                                </p>
+                                <div style={{
+                                  marginTop: '24px',
+                                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                  fontSize: '13px', fontWeight: 600, color: '#2563eb',
+                                  background: 'rgba(255,255,255,0.6)',
+                                  padding: '8px 16px', borderRadius: '20px',
+                                  backdropFilter: 'blur(4px)'
+                                }}>
+                                  <Sparkle size={14} weight="fill" />
+                                  Click "Continue" to start editing
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
                     </div>
 
                     <div className="wizard-actions">
@@ -2206,6 +2582,18 @@ function BOQBuilderContent() {
                   />
                 </div>
               </div>
+            )}
+
+            {/* Step 2B: Room Details (Detailed Mode Only) */}
+            {currentStep === 2.5 && (
+              <InteractiveRoomBuilder
+                roomCounts={Object.fromEntries(
+                  Object.entries(projectDetails.roomInputs).map(([k, v]) => [k, Number(v) || 0])
+                )}
+                targetFloorArea={parseFloat(projectDetails.floorPlanSize) || 0}
+                onContinue={handleDetailedContinue}
+                onBack={goToPrevStep}
+              />
             )}
 
             {/* Step 3: Scope */}

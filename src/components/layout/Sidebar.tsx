@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   House,
@@ -8,7 +9,6 @@ import {
   Sparkle,
   TrendUp,
   Storefront,
-  Lightning,
   Gear,
   User,
   SignOut,
@@ -106,7 +106,14 @@ export default function Sidebar() {
         <div className="user-profile">
           <div className="user-avatar">
             {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              <Image
+                src={profile.avatar_url}
+                alt={profile.full_name ? `${profile.full_name} avatar` : 'User avatar'}
+                fill
+                sizes="36px"
+                style={{ objectFit: 'cover' }}
+                unoptimized
+              />
             ) : (
               <User size={20} weight="light" />
             )}
@@ -224,6 +231,8 @@ export default function Sidebar() {
           display: flex;
           align-items: center;
           justify-content: center;
+          position: relative;
+          overflow: hidden;
         }
 
         .user-info {

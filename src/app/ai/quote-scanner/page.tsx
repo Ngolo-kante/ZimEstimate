@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
+import Image from 'next/image';
 import Card, { CardContent } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
@@ -257,7 +258,14 @@ export default function QuoteScannerPage() {
                 {uploadedFile ? (
                   <div className="file-preview">
                     {previewUrl ? (
-                      <img src={previewUrl} alt="Quote preview" className="preview-image" />
+                      <Image
+                        src={previewUrl}
+                        alt="Quote preview"
+                        width={640}
+                        height={360}
+                        className="preview-image"
+                        unoptimized
+                      />
                     ) : (
                       <div className="pdf-icon">
                         <FileText size={48} weight="light" />

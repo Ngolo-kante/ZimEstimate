@@ -7,7 +7,6 @@ import RoomEditPanel from './RoomEditPanel';
 import {
   ArrowLeft,
   ArrowRight,
-  Plus,
   Info,
 } from '@phosphor-icons/react';
 import { DetectedRoom, DetectedWall } from '@/lib/vision/types';
@@ -36,27 +35,11 @@ export default function FloorPlanEditor({
   onBack,
 }: FloorPlanEditorProps) {
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const [showAddRoom, setShowAddRoom] = useState(false);
 
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
 
   const handleRoomSelect = (roomId: string) => {
     setSelectedRoomId(roomId === selectedRoomId ? null : roomId);
-  };
-
-  const handleAddRoom = () => {
-    // Generate a new room with default dimensions
-    const newRoom: DetectedRoom = {
-      id: `room-${Date.now()}`,
-      name: 'New Room',
-      dimensions: { width: 4, length: 3 },
-      area: 12,
-      position: { x: 50, y: 50, width: 20, height: 15 },
-      wallType: 'internal',
-      isEdited: true,
-    };
-    // This would need to be passed to parent - for now just close the add modal
-    setShowAddRoom(false);
   };
 
   return (
@@ -93,13 +76,6 @@ export default function FloorPlanEditor({
               selectedRoomId={selectedRoomId}
               onRoomSelect={handleRoomSelect}
             />
-
-            <div className="canvas-toolbar">
-              <button className="toolbar-btn" onClick={() => setShowAddRoom(true)} title="Add Room">
-                <Plus size={18} weight="light" />
-                Add Room
-              </button>
-            </div>
           </Card>
 
           <div className="tip-box">

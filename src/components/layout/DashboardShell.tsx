@@ -1,18 +1,8 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
-import Link from 'next/link';
+import { ReactNode } from 'react';
 import TopNavbar from './TopNavbar';
-import { usePathname } from 'next/navigation';
 import {
-  List,
-  X,
-  House,
-  Folders,
-  Sparkle,
-  TrendUp,
-  Storefront,
-  Gear,
   MagnifyingGlass,
   Bell,
   User,

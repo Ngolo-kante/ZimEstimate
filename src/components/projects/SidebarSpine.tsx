@@ -1,25 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
     House,
     CurrencyCircleDollar,
     ListChecks,
-    ChartBar,
+    ChartLineUp,
+    ClipboardText,
+    Truck,
     Files,
     Gear,
     CaretDown,
-    CaretRight,
     Buildings,
-    Plus
 } from '@phosphor-icons/react';
 import { Project } from '@/lib/database.types';
 import { getProjects } from '@/lib/services/projects';
-import { useAuth } from '@/components/providers/AuthProvider';
 
-export type ProjectView = 'overview' | 'budget' | 'boq' | 'tracking' | 'documents' | 'settings';
+export type ProjectView = 'overview' | 'budget' | 'boq' | 'tracking' | 'usage' | 'procurement' | 'documents' | 'settings';
 
 interface SidebarSpineProps {
     project: Project;
@@ -32,32 +31,35 @@ const navItems: { id: ProjectView; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Overview', icon: <House size={20} /> },
     { id: 'budget', label: 'Budget Planner', icon: <CurrencyCircleDollar size={20} /> },
     { id: 'boq', label: 'Bill of Quantities', icon: <ListChecks size={20} /> },
-    { id: 'tracking', label: 'Tracking & Timeline', icon: <ChartBar size={20} /> },
+    { id: 'tracking', label: 'Tracking & Timeline', icon: <ChartLineUp size={20} /> },
+    { id: 'usage', label: 'Usage', icon: <ClipboardText size={20} /> },
+    { id: 'procurement', label: 'Procurement', icon: <Truck size={20} /> },
     { id: 'documents', label: 'Documents', icon: <Files size={20} /> },
     { id: 'settings', label: 'Configurations', icon: <Gear size={20} /> },
 ];
 
 export default function SidebarSpine({ project, activeView, onViewChange }: SidebarSpineProps) {
     const router = useRouter();
-    const { user } = useAuth();
     const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoadingProjects, setIsLoadingProjects] = useState(false);
 
-    useEffect(() => {
-        if (isProjectMenuOpen && projects.length === 0) {
-            loadProjects();
-        }
-    }, [isProjectMenuOpen]);
-
-    async function loadProjects() {
+    const loadProjects = async () => {
         setIsLoadingProjects(true);
-        const { projects, error } = await getProjects();
+        const { projects } = await getProjects();
         if (projects) {
             setProjects(projects);
         }
         setIsLoadingProjects(false);
-    }
+    };
+
+    const handleToggleMenu = () => {
+        const nextOpen = !isProjectMenuOpen;
+        setIsProjectMenuOpen(nextOpen);
+        if (nextOpen && projects.length === 0) {
+            void loadProjects();
+        }
+    };
 
     const handleProjectSelect = (projectId: string) => {
         router.push(`/projects/${projectId}`);
@@ -70,7 +72,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
             <div className="project-switcher">
                 <button
                     className="switcher-btn"
-                    onClick={() => setIsProjectMenuOpen(!isProjectMenuOpen)}
+                    onClick={handleToggleMenu}
                 >
                     <div className="project-icon">
                         <Buildings size={20} weight="duotone" />
@@ -134,18 +136,20 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                 .sidebar-spine {
                     width: 280px;
                     height: calc(100vh - 64px); /* Subtract top navbar height */
-                    background: #ffffff;
-                    border-right: 1px solid var(--color-border-light);
+                    background: rgba(255, 255, 255, 0.85);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    border-right: 1px solid rgba(226, 232, 240, 0.6);
                     display: flex;
                     flex-direction: column;
                     flex-shrink: 0;
                     position: sticky;
                     top: 64px;
+                    z-index: 40;
                 }
 
                 .project-switcher {
-                    padding: 20px 16px;
-                    border-bottom: 1px solid var(--color-border-light);
+                    padding: 24px 20px;
                     position: relative;
                 }
 
@@ -154,30 +158,32 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                     align-items: center;
                     gap: 12px;
                     width: 100%;
-                    background: var(--color-background);
+                    background: #ffffff;
                     border: 1px solid var(--color-border-light);
-                    padding: 10px 12px;
-                    border-radius: 12px;
+                    padding: 12px;
+                    border-radius: 16px;
                     cursor: pointer;
-                    transition: all 0.2s ease;
+                    transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
                     text-align: left;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
                 }
 
                 .switcher-btn:hover {
                     border-color: var(--color-primary);
-                    background: white;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                    box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+                    transform: translateY(-1px);
                 }
 
                 .project-icon {
-                    width: 32px;
-                    height: 32px;
-                    background: rgba(78, 154, 247, 0.1);
+                    width: 40px;
+                    height: 40px;
+                    background: linear-gradient(135deg, rgba(78, 154, 247, 0.1), rgba(78, 154, 247, 0.2));
                     color: var(--color-primary);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    border-radius: 8px;
+                    border-radius: 12px;
+                    flex-shrink: 0;
                 }
 
                 .project-info {
@@ -188,7 +194,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                 }
 
                 .label {
-                    font-size: 0.65rem;
+                    font-size: 0.7rem;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
                     color: var(--color-text-secondary);
@@ -197,7 +203,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                 }
 
                 .name {
-                    font-size: 0.875rem;
+                    font-size: 0.95rem;
                     font-weight: 600;
                     color: var(--color-text);
                     white-space: nowrap;
@@ -216,116 +222,135 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
 
                 .switcher-dropdown {
                     position: absolute;
-                    top: calc(100% + 8px);
-                    left: 16px;
-                    right: 16px;
+                    top: calc(100% - 10px);
+                    left: 20px;
+                    right: 20px;
                     background: white;
                     border: 1px solid var(--color-border-light);
-                    border-radius: 12px;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                    border-radius: 16px;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.12);
                     z-index: 50;
-                    padding: 4px;
+                    padding: 6px;
                     max-height: 300px;
                     overflow-y: auto;
+                    animation: slideDown 0.2s ease-out forwards;
+                }
+
+                @keyframes slideDown {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
 
                 .dropdown-item {
                     display: flex;
                     align-items: center;
-                    gap: 10px;
-                    padding: 10px 12px;
-                    font-size: 0.875rem;
+                    gap: 12px;
+                    padding: 12px;
+                    font-size: 0.9rem;
                     color: var(--color-text-secondary);
-                    border-radius: 8px;
+                    border-radius: 10px;
                     cursor: pointer;
-                    transition: background 0.1s;
+                    transition: all 0.2s;
                     text-decoration: none;
                 }
 
                 .dropdown-item:hover {
-                    background: var(--color-background);
+                    background: #f8fafc;
                     color: var(--color-text);
+                    transform: translateX(2px);
                 }
 
                 .dropdown-item.active {
                     background: rgba(78, 154, 247, 0.08);
                     color: var(--color-primary);
-                    font-weight: 500;
+                    font-weight: 600;
                 }
 
                 .dropdown-divider {
                     height: 1px;
                     background: var(--color-border-light);
-                    margin: 4px 8px;
+                    margin: 6px 12px;
                 }
 
                 .dropdown-item.view-all {
                     justify-content: center;
                     color: var(--color-primary);
-                    font-size: 0.8rem;
-                    font-weight: 500;
+                    font-size: 0.85rem;
+                    font-weight: 600;
                 }
 
                 .spine-nav {
                     flex: 1;
-                    padding: 24px 16px;
+                    padding: 0 20px 24px;
                     display: flex;
                     flex-direction: column;
-                    gap: 8px;
+                    gap: 4px;
                     overflow-y: auto;
                 }
 
                 .nav-item {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
+                    gap: 14px;
                     padding: 12px 16px;
-                    border-radius: 10px;
+                    border-radius: 12px;
                     background: transparent;
                     border: none;
                     text-align: left;
                     cursor: pointer;
-                    color: var(--color-text-secondary);
+                    color: #64748b;
                     transition: all 0.2s ease;
                     position: relative;
+                    font-weight: 500;
                 }
 
                 .nav-item:hover {
-                    background: var(--color-background);
-                    color: var(--color-text);
+                    background: #f1f5f9;
+                    color: #1e293b;
                 }
 
                 .nav-item.active {
-                    background: rgba(78, 154, 247, 0.08);
+                    background: white;
                     color: var(--color-primary);
                     font-weight: 600;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
                 }
 
                 .nav-icon {
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    transition: transform 0.2s;
+                }
+                
+                .nav-item:hover .nav-icon {
+                    transform: scale(1.1);
+                }
+                
+                .nav-item.active .nav-icon {
+                    transform: scale(1.1);
                 }
 
                 .nav-label {
                     flex: 1;
-                    font-size: 0.9rem;
+                    font-size: 0.95rem;
                 }
                 
                 .active-indicator {
                     position: absolute;
-                    left: 0;
+                    right: 12px;
                     top: 50%;
                     transform: translateY(-50%);
-                    width: 3px;
-                    height: 16px;
+                    width: 6px;
+                    height: 6px;
                     background: var(--color-primary);
-                    border-radius: 0 4px 4px 0;
+                    border-radius: 50%;
+                    box-shadow: 0 0 8px rgba(78, 154, 247, 0.5);
                 }
 
                 @media (max-width: 1024px) {
                     .sidebar-spine {
-                        width: 240px;
+                        width: 250px;
                     }
                 }
             `}</style>

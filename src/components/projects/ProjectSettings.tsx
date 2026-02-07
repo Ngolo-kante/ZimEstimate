@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Project, ProjectScope, BOQCategory } from '@/lib/database.types';
-import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Project, BOQCategory } from '@/lib/database.types';
 import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { updateProject } from '@/lib/services/projects';
@@ -11,7 +10,6 @@ import {
     HouseLine,
     FloppyDisk,
     Check,
-    Eye,
     EyeSlash
 } from '@phosphor-icons/react';
 
@@ -35,9 +33,14 @@ export default function ProjectSettings({ project, onUpdate }: ProjectSettingsPr
     // Form State
     const [name, setName] = useState(project.name);
     const [location, setLocation] = useState(project.location || '');
-    const [scope, setScope] = useState<ProjectScope>(project.scope);
     const [selectedStages, setSelectedStages] = useState<string[]>(
         project.selected_stages || STAGE_CATEGORIES.map(s => s.id)
+    );
+    const [lowStockAlertsEnabled, setLowStockAlertsEnabled] = useState(
+        project.usage_low_stock_alert_enabled ?? false
+    );
+    const [lowStockThreshold, setLowStockThreshold] = useState(
+        project.usage_low_stock_threshold ?? 20
     );
 
     const handleStageToggle = (stageId: string) => {
@@ -54,8 +57,10 @@ export default function ProjectSettings({ project, onUpdate }: ProjectSettingsPr
             const updates = {
                 name,
                 location,
-                scope,
+                scope: project.scope,
                 selected_stages: selectedStages,
+                usage_low_stock_alert_enabled: lowStockAlertsEnabled,
+                usage_low_stock_threshold: lowStockThreshold,
             };
 
             const { project: updated, error } = await updateProject(project.id, updates);
@@ -77,11 +82,11 @@ export default function ProjectSettings({ project, onUpdate }: ProjectSettingsPr
     };
 
     return (
-        <div className="space-y-6 max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-2">
+        <div className="settings-page">
+            <div className="settings-header">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Project Configurations</h2>
-                    <p className="text-slate-500">Manage visibility and core settings for this project.</p>
+                    <h2>Project Configurations</h2>
+                    <p>Manage visibility and core settings for this project.</p>
                 </div>
                 <Button
                     onClick={handleSave}
@@ -93,92 +98,406 @@ export default function ProjectSettings({ project, onUpdate }: ProjectSettingsPr
             </div>
 
             {/* General Settings */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>General Parameters</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="settings-card">
+                <div className="card-header">
+                    <h3>General Parameters</h3>
+                </div>
+                <div className="card-content">
+                    <div className="form-grid">
                         <div className="form-group">
-                            <label className="block text-sm font-medium text-slate-700 mb-2">Project Name</label>
-                            <div className="relative">
+                            <label>Project Name</label>
+                            <div className="input-wrapper">
                                 <input
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:border-blue-500 transition-all font-medium"
                                 />
-                                <HouseLine size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <HouseLine size={18} />
                             </div>
                         </div>
 
                         <div className="form-group">
-                            <label className="block text-sm font-medium text-slate-700 mb-2">Location</label>
-                            <div className="relative">
+                            <label>Location</label>
+                            <div className="input-wrapper">
                                 <input
                                     type="text"
                                     value={location}
                                     onChange={(e) => setLocation(e.target.value)}
-                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:border-blue-500 transition-all"
                                     placeholder="e.g. Borrowdale, Harare"
                                 />
-                                <MapPin size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <MapPin size={18} />
                             </div>
                         </div>
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
 
             {/* Substage Manager (Visibility Toggles) */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Substage Visibility Manager</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-slate-500 mb-6">
-                        Toggle stages to hide or show them in the BOQ and Tracking views. Unchecking a stage will not delete data, only hide it.
-                    </p>
-
-                    <div className="space-y-4">
+            <div className="settings-card">
+                <div className="card-header">
+                    <h3>Substage Visibility Manager</h3>
+                    <p>Toggle stages to hide or show them in the BOQ and Tracking views.</p>
+                </div>
+                <div className="card-content">
+                    <div className="stages-grid">
                         {STAGE_CATEGORIES.map((stage) => {
                             const isVisible = selectedStages.includes(stage.id);
                             return (
                                 <div
                                     key={stage.id}
-                                    className={`flex items-center justify-between p-4 rounded-xl border transition-all ${isVisible
-                                        ? 'bg-white border-slate-200 shadow-sm'
-                                        : 'bg-slate-50 border-slate-100 opacity-60'
-                                        }`}
+                                    className={`stage-toggle ${isVisible ? 'active' : ''}`}
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isVisible ? 'bg-blue-50 text-blue-600' : 'bg-slate-200 text-slate-400'
-                                            }`}>
-                                            {isVisible ? <Check size={18} weight="bold" /> : <EyeSlash size={18} />}
+                                    <div className="toggle-info">
+                                        <div className={`icon-box ${isVisible ? 'active' : ''}`}>
+                                            {isVisible ? <Check size={16} weight="bold" /> : <EyeSlash size={16} />}
                                         </div>
                                         <div>
-                                            <h4 className={`font-semibold ${isVisible ? 'text-slate-800' : 'text-slate-500'}`}>
-                                                {stage.label}
-                                            </h4>
-                                            <p className="text-sm text-slate-500">{stage.description}</p>
+                                            <h4>{stage.label}</h4>
+                                            <p>{stage.description}</p>
                                         </div>
                                     </div>
 
                                     <button
                                         onClick={() => handleStageToggle(stage.id)}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isVisible ? 'bg-blue-600' : 'bg-slate-200'
-                                            }`}
+                                        className={`switch ${isVisible ? 'on' : 'off'}`}
+                                        role="switch"
+                                        aria-checked={isVisible}
                                     >
-                                        <span
-                                            className={`${isVisible ? 'translate-x-6' : 'translate-x-1'
-                                                } inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out`}
-                                        />
+                                        <span className="slider" />
                                     </button>
                                 </div>
                             );
                         })}
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
+
+            {/* Usage Alerts */}
+            <div className="settings-card">
+                <div className="card-header">
+                    <h3>Usage Alert Settings</h3>
+                    <p>Get notified when remaining material drops below a set threshold.</p>
+                </div>
+                <div className="card-content">
+                    <div className="alert-settings">
+                        <div className="setting-row">
+                            <div className="setting-info">
+                                <h4>Low stock alerts</h4>
+                                <p>Notify the project owner when stock is low.</p>
+                            </div>
+                            <button
+                                onClick={() => setLowStockAlertsEnabled(!lowStockAlertsEnabled)}
+                                className={`switch ${lowStockAlertsEnabled ? 'on' : 'off'}`}
+                                role="switch"
+                                aria-checked={lowStockAlertsEnabled}
+                            >
+                                <span className="slider" />
+                            </button>
+                        </div>
+
+                        {lowStockAlertsEnabled && (
+                            <div className="threshold-config">
+                                <div className="form-group">
+                                    <label>Alert threshold (% remaining)</label>
+                                    <div className="input-wrapper small">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="100"
+                                            value={lowStockThreshold}
+                                            onChange={(e) => setLowStockThreshold(Number(e.target.value))}
+                                        />
+                                        <span className="suffix">%</span>
+                                    </div>
+                                    <span className="help-text">
+                                        Example: 20 means alert when only 20% of the material remains.
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <style jsx>{`
+                .settings-page {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 24px;
+                    max-width: 900px;
+                    margin: 0 auto;
+                }
+
+                .settings-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: 8px;
+                }
+
+                .settings-header h2 {
+                    margin: 0;
+                    font-size: 1.75rem;
+                    color: #0f172a;
+                    font-weight: 700;
+                    letter-spacing: -0.02em;
+                }
+
+                .settings-header p {
+                    margin: 4px 0 0;
+                    font-size: 1rem;
+                    color: #64748b;
+                }
+
+                .settings-card {
+                    background: #ffffff;
+                    border: 1px solid rgba(226, 232, 240, 0.6);
+                    border-radius: 20px;
+                    overflow: hidden;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01);
+                }
+
+                .card-header {
+                    padding: 24px;
+                    border-bottom: 1px solid #f1f5f9;
+                }
+
+                .card-header h3 {
+                    margin: 0;
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                .card-header p {
+                    margin: 4px 0 0;
+                    font-size: 0.9rem;
+                    color: #64748b;
+                }
+
+                .card-content {
+                    padding: 24px;
+                }
+
+                /* Form Styles */
+                .form-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                    gap: 24px;
+                }
+
+                .form-group {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+
+                .form-group label {
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    color: #64748b;
+                }
+
+                .input-wrapper {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                }
+
+                .input-wrapper input {
+                    width: 100%;
+                    padding: 12px 14px;
+                    padding-right: 40px;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 10px;
+                    font-size: 0.95rem;
+                    outline: none;
+                    transition: all 0.2s;
+                    color: #0f172a;
+                    background: #ffffff;
+                }
+
+                .input-wrapper input:focus {
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                }
+
+                .input-wrapper svg {
+                    position: absolute;
+                    right: 14px;
+                    color: #94a3b8;
+                    pointer-events: none;
+                }
+
+                /* Stages Grid */
+                .stages-grid {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+
+                .stage-toggle {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 16px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    transition: all 0.2s;
+                    background: #f8fafc;
+                }
+
+                .stage-toggle.active {
+                    background: #ffffff;
+                    border-color: #cbd5e1;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+                }
+
+                .toggle-info {
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                }
+
+                .icon-box {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: #e2e8f0;
+                    color: #94a3b8;
+                    transition: all 0.2s;
+                }
+
+                .icon-box.active {
+                    background: #eff6ff;
+                    color: #2563eb;
+                }
+
+                .toggle-info h4 {
+                    margin: 0;
+                    font-size: 0.95rem;
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                .toggle-info p {
+                    margin: 2px 0 0;
+                    font-size: 0.8rem;
+                    color: #64748b;
+                }
+
+                /* Switch Component */
+                .switch {
+                    position: relative;
+                    width: 44px;
+                    height: 24px;
+                    border-radius: 99px;
+                    border: none;
+                    cursor: pointer;
+                    background: #e2e8f0;
+                    transition: background 0.2s;
+                    padding: 2px;
+                }
+
+                .switch.on {
+                    background: #2563eb;
+                }
+
+                .slider {
+                    display: block;
+                    width: 20px;
+                    height: 20px;
+                    background: white;
+                    border-radius: 50%;
+                    transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+                    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+                }
+
+                .switch.on .slider {
+                    transform: translateX(20px);
+                }
+
+                /* Alert Settings */
+                .alert-settings {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 24px;
+                }
+
+                .setting-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding-bottom: 24px;
+                    border-bottom: 1px solid #f1f5f9;
+                }
+                
+                .setting-row:last-child {
+                    border-bottom: none;
+                    padding-bottom: 0;
+                }
+
+                .setting-info h4 {
+                    margin: 0;
+                    font-size: 0.95rem;
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                .setting-info p {
+                    margin: 2px 0 0;
+                    font-size: 0.85rem;
+                    color: #64748b;
+                }
+
+                .threshold-config {
+                    animation: slideDown 0.2s ease-out;
+                }
+
+                @keyframes slideDown {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                .input-wrapper.small {
+                    max-width: 120px;
+                }
+                
+                .input-wrapper.small input {
+                    padding-right: 32px;
+                }
+
+                .suffix {
+                    position: absolute;
+                    right: 12px;
+                    color: #64748b;
+                    font-size: 0.9rem;
+                    font-weight: 500;
+                    pointer-events: none;
+                }
+                
+                .help-text {
+                    font-size: 0.8rem;
+                    color: #94a3b8;
+                }
+
+                @media (max-width: 640px) {
+                    .stage-toggle {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 16px;
+                    }
+                    
+                    .switch {
+                        align-self: flex-end;
+                    }
+                }
+            `}</style>
         </div>
     );
 }

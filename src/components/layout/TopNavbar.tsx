@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import {
@@ -80,7 +81,7 @@ export default function TopNavbar() {
         {/* Logo - PropTech Trend Concept */}
         <Link href="/home" className="logo">
           <div className="logo-icon">
-            <img src="/logo.png" alt="ZimEstimate" width={36} height={36} />
+            <Image src="/logo.png" alt="ZimEstimate" width={36} height={36} />
           </div>
           <span className="logo-text">ZimEstimate</span>
         </Link>
@@ -148,7 +149,14 @@ export default function TopNavbar() {
               aria-label="User menu"
             >
               {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="user-avatar-img" />
+                <Image
+                  src={profile.avatar_url}
+                  alt={profile.full_name ? `${profile.full_name} avatar` : 'User avatar'}
+                  width={40}
+                  height={40}
+                  className="user-avatar-img"
+                  unoptimized
+                />
               ) : (
                 <User size={18} weight="bold" />
               )}
@@ -161,7 +169,13 @@ export default function TopNavbar() {
                     <div className="profile-header">
                       <div className="profile-avatar">
                         {profile?.avatar_url ? (
-                          <img src={profile.avatar_url} alt="" />
+                          <Image
+                            src={profile.avatar_url}
+                            alt={profile.full_name ? `${profile.full_name} avatar` : 'User avatar'}
+                            width={40}
+                            height={40}
+                            unoptimized
+                          />
                         ) : (
                           <User size={20} weight="light" />
                         )}

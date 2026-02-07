@@ -1,17 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { ScraperConfig } from '@/lib/database.types';
+import MainLayout from '@/components/layout/MainLayout';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
 import {
     Plus,
     Trash,
     Play,
     Pause,
     CheckCircle,
-    WarningCircle,
     Clock,
-    Globe
+    Globe,
+    ArrowsClockwise,
+    MagnifyingGlass,
+    ArrowLeft,
+    Eye
 } from '@phosphor-icons/react';
 
 export default function ScraperPage() {
@@ -19,6 +26,10 @@ export default function ScraperPage() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [isTestRunning, setIsTestRunning] = useState<string | null>(null);
+    const [isBulkRunning, setIsBulkRunning] = useState(false);
+    const [bulkStatus, setBulkStatus] = useState<{ total: number; completed: number; failed: number } | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState('all');
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Form State
     const [formData, setFormData] = useState({
@@ -26,8 +37,37 @@ export default function ScraperPage() {
         base_url: '',
         price_selector: '',
         item_name_selector: '',
-        cron_schedule: 'weekly'
+        cron_schedule: 'weekly',
+        category: 'general'
     });
+
+    const categoryOptions = [
+        'general',
+        'cement',
+        'bricks',
+        'sand',
+        'aggregates',
+        'steel',
+        'roofing',
+        'timber',
+        'electrical',
+        'plumbing',
+        'finishes',
+        'hardware',
+    ];
+
+    const filteredConfigs = useMemo(() => {
+        let items = configs;
+        if (selectedCategory !== 'all') {
+            items = items.filter((config) => (config.category || 'general') === selectedCategory);
+        }
+        if (searchQuery) {
+            items = items.filter(config =>
+                config.site_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                config.base_url.toLowerCase().includes(searchQuery.toLowerCase()));
+        }
+        return items;
+    }, [configs, selectedCategory, searchQuery]);
 
     useEffect(() => {
         fetchConfigs();
@@ -35,7 +75,7 @@ export default function ScraperPage() {
 
     const fetchConfigs = async () => {
         setLoading(true);
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('scraper_configs')
             .select('*')
             .order('created_at', { ascending: false });
@@ -53,48 +93,102 @@ export default function ScraperPage() {
     const handleToggleActive = async (config: ScraperConfig) => {
         const { error } = await supabase
             .from('scraper_configs')
-            .update({ is_active: !config.is_active })
+            .update({ is_active: !config.is_active } as never)
             .eq('id', config.id);
         if (!error) fetchConfigs();
     };
 
-    const handleTestRun = async (config: ScraperConfig) => {
+    const runScraper = async (config: ScraperConfig) => {
         setIsTestRunning(config.id);
         try {
-            // Call the scraper API
             const response = await fetch('/api/scraper/test', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ configId: config.id, url: config.base_url, priceSelector: config.price_selector, nameSelector: config.item_name_selector })
+                body: JSON.stringify({
+                    configId: config.id,
+                    url: config.base_url,
+                    priceSelector: config.price_selector,
+                    nameSelector: config.item_name_selector
+                })
             });
             const result = await response.json();
 
-            if (result.success) {
-                // Update local state to show the green check immediately
-                setConfigs(prev => prev.map(c =>
-                    c.id === config.id
-                        ? { ...c, last_successful_run_at: new Date().toISOString() }
-                        : c
-                ));
-
-                const matchInfo = result.match.materialId
-                    ? `✅ Matched: "${result.name}" (${(result.match.confidence * 100).toFixed(0)}% confidence)`
-                    : `⚠️ Unmatched (Raw: "${result.name}")`;
-
-                alert(`Success! Found Price: $${result.price}\n\n${matchInfo}\nMethod: ${result.match.method}`);
-            } else {
-                alert(`Failed: ${result.error}`);
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to scrape');
             }
-        } catch (e) {
-            alert('Error running test scrape');
+
+            setConfigs(prev => prev.map(c =>
+                c.id === config.id
+                    ? { ...c, last_successful_run_at: new Date().toISOString() }
+                    : c
+            ));
+
+            return result;
         } finally {
             setIsTestRunning(null);
         }
     };
 
+    const handleTestRun = async (config: ScraperConfig) => {
+        try {
+            const result = await runScraper(config);
+            const matchInfo = result.match.materialCode
+                ? `✅ Matched: "${result.name}" (${(result.match.confidence * 100).toFixed(0)}% confidence)`
+                : `⚠️ Unmatched (Raw: "${result.name}")`;
+
+            alert(`Success! Found Price: $${result.price}\n\n${matchInfo}\nMethod: ${result.match.method}`);
+        } catch {
+            alert('Error running test scrape');
+        }
+    };
+
+    const handleRunAll = async () => {
+        const activeConfigs = filteredConfigs.filter((config) => config.is_active);
+        if (activeConfigs.length === 0) {
+            alert('No active scrapers visible for this filter set.');
+            return;
+        }
+
+        setIsBulkRunning(true);
+        setBulkStatus({ total: activeConfigs.length, completed: 0, failed: 0 });
+
+        try {
+            const configIds = activeConfigs.map(c => c.id);
+            const response = await fetch('/api/scraper/run-all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    category: selectedCategory !== 'all' ? selectedCategory : undefined,
+                    configIds
+                })
+            });
+
+            const result = await response.json();
+            setBulkStatus({
+                total: result.total,
+                completed: result.succeeded + result.failed,
+                failed: result.failed
+            });
+
+            // Refresh configs to get updated timestamps
+            await fetchConfigs();
+
+            const matchedItems = result.results
+                .filter((r: { success: boolean }) => r.success)
+                .reduce((sum: number, r: { itemsMatched?: number }) => sum + (r.itemsMatched || 0), 0);
+
+            alert(`Bulk run complete!\n\n✅ Succeeded: ${result.succeeded}\n❌ Failed: ${result.failed}\n📦 Items matched: ${matchedItems}`);
+        } catch (err) {
+            console.error('Bulk run error:', err);
+            alert('Error running bulk scrape. Check console for details.');
+        } finally {
+            setIsBulkRunning(false);
+        }
+    };
+
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        const { error } = await supabase.from('scraper_configs').insert([formData]);
+        const { error } = await supabase.from('scraper_configs').insert([formData] as never);
         if (!error) {
             setShowModal(false);
             setFormData({
@@ -102,7 +196,8 @@ export default function ScraperPage() {
                 base_url: '',
                 price_selector: '',
                 item_name_selector: '',
-                cron_schedule: 'weekly'
+                cron_schedule: 'weekly',
+                category: 'general'
             });
             fetchConfigs();
         } else {
@@ -111,212 +206,522 @@ export default function ScraperPage() {
     };
 
     return (
-        <div className="min-h-screen bg-black text-white p-8 font-sans selection:bg-gray-800">
-            <div className="max-w-6xl mx-auto">
-                <header className="flex items-center justify-between mb-12 border-b border-gray-800 pb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight mb-2">Scraper Admin Hub</h1>
-                        <p className="text-gray-400">Manage automated material price tracking pipelines.</p>
+        <MainLayout title="Scraper Command Center">
+            <div className="scraper-page">
+                {/* Header & Stats */}
+                <div className="page-header">
+                    <div className="header-top">
+                        <Link href="/market-insights" className="back-link">
+                            <ArrowLeft size={16} /> Back to Insights
+                        </Link>
+                        <div className="status-indicator">
+                            <span className={`status-dot ${isBulkRunning ? 'processing' : 'ready'}`} />
+                            {isBulkRunning ? 'System Processing...' : 'System Ready'}
+                        </div>
                     </div>
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded font-medium hover:bg-gray-200 transition-colors"
-                    >
-                        <Plus size={18} weight="bold" />
-                        Add Scraper
-                    </button>
-                </header>
 
+                    <div className="header-main">
+                        <div>
+                            <h1>Scraper Command Center</h1>
+                            <p>Manage data sources and execute extraction jobs directly.</p>
+                        </div>
+                        <div className="header-actions">
+                            <Link href="/admin/scraper-review" className="review-link-btn">
+                                <Eye size={16} weight="bold" /> Review Queue
+                            </Link>
+                            <Button onClick={() => setShowModal(true)} variant="secondary">
+                                <Plus size={16} weight="bold" /> New Scraper
+                            </Button>
+                            <Button onClick={handleRunAll} disabled={isBulkRunning} className="run-all-btn">
+                                <ArrowsClockwise size={18} className={isBulkRunning ? 'animate-spin' : ''} weight="bold" />
+                                {isBulkRunning ? 'Running Jobs...' : 'Sync Visible Scrapers'}
+                            </Button>
+                        </div>
+                    </div>
+
+                    {bulkStatus && isBulkRunning && (
+                        <div className="bulk-progress">
+                            <div className="progress-bar">
+                                <div
+                                    className="progress-fill"
+                                    style={{ width: `${(bulkStatus.completed / bulkStatus.total) * 100}%` }}
+                                />
+                            </div>
+                            <div className="progress-text">
+                                Processed {bulkStatus.completed} of {bulkStatus.total} ({bulkStatus.failed} failed)
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Filters Row */}
+                <div className="filters-row">
+                    <div className="search-filter">
+                        <Input
+                            placeholder="Find scrapers..."
+                            icon={<MagnifyingGlass size={16} />}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <div className="category-filter">
+                        <select
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value)}
+                        >
+                            <option value="all">All Categories</option>
+                            {categoryOptions.map(cat => (
+                                <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                {/* Grid */}
                 {loading ? (
-                    <div className="text-gray-500 animate-pulse">Loading configurations...</div>
-                ) : configs.length === 0 ? (
-                    <div className="border border-dashed border-gray-800 rounded-lg p-12 text-center">
-                        <Globe size={48} className="mx-auto text-gray-700 mb-4" />
-                        <h3 className="text-xl font-medium text-gray-300">No scrapers configured</h3>
-                        <p className="text-gray-500 mt-2">Add a new target to start tracking prices.</p>
+                    <div className="loading-state">
+                        <div className="spinner"></div>
+                        <p>Loading configurations...</p>
+                    </div>
+                ) : filteredConfigs.length === 0 ? (
+                    <div className="empty-state">
+                        <Globe size={48} weight="thin" />
+                        <h3>No Scrapers Found</h3>
+                        <p>No configurations match your current filters.</p>
+                        <Button variant="secondary" onClick={() => setShowModal(true)}>Create One</Button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {configs.map((config) => (
-                            <div
-                                key={config.id}
-                                className={`border border-gray-800 bg-gray-900/50 rounded-lg p-6 hover:border-gray-700 transition-all ${!config.is_active ? 'opacity-60' : ''}`}
-                            >
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-2 h-2 rounded-full ${config.is_active ? 'bg-green-500' : 'bg-gray-600'}`} />
-                                        <h3 className="font-semibold text-lg">{config.site_name}</h3>
+                    <div className="configs-grid">
+                        {filteredConfigs.map(config => (
+                            <div key={config.id} className={`config-card ${!config.is_active ? 'inactive' : ''}`}>
+                                <div className="card-header">
+                                    <div className="site-info">
+                                        <span className={`status-badge ${config.is_active ? 'active' : 'paused'}`}>
+                                            {config.is_active ? 'Active' : 'Paused'}
+                                        </span>
+                                        <h3>{config.site_name}</h3>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => handleToggleActive(config)}
-                                            className="text-gray-500 hover:text-white transition-colors"
-                                            title={config.is_active ? "Pause" : "Resume"}
-                                        >
+                                    <div className="card-actions">
+                                        <button onClick={() => handleToggleActive(config)} title={config.is_active ? 'Pause' : 'Resume'}>
                                             {config.is_active ? <Pause size={18} /> : <Play size={18} />}
                                         </button>
-                                        <button
-                                            onClick={() => handleDelete(config.id)}
-                                            className="text-gray-500 hover:text-red-500 transition-colors"
-                                            title="Delete"
-                                        >
+                                        <button onClick={() => handleDelete(config.id)} title="Delete" className="delete">
                                             <Trash size={18} />
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="space-y-4 mb-6">
-                                    <div>
-                                        <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Target URL</span>
-                                        <p className="text-sm text-gray-300 truncate font-mono mt-1" title={config.base_url}>
-                                            {config.base_url}
-                                        </p>
+                                <div className="card-details">
+                                    <div className="detail-item">
+                                        <span className="label">Target</span>
+                                        <span className="value url" title={config.base_url}>{config.base_url}</span>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Item Selector</span>
-                                            <code className="block text-xs bg-gray-950 p-1.5 rounded text-blue-400 font-mono mt-1 border border-gray-800">
-                                                {config.item_name_selector}
-                                            </code>
+                                    <div className="detail-row">
+                                        <div className="detail-item">
+                                            <span className="label">Schedule</span>
+                                            <span className="value badged"><Clock size={12} weight="fill" /> {config.cron_schedule}</span>
                                         </div>
-                                        <div>
-                                            <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Price Selector</span>
-                                            <code className="block text-xs bg-gray-950 p-1.5 rounded text-green-400 font-mono mt-1 border border-gray-800">
-                                                {config.price_selector}
-                                            </code>
+                                        <div className="detail-item">
+                                            <span className="label">Category</span>
+                                            <span className="value">{config.category || 'General'}</span>
                                         </div>
                                     </div>
+                                    {config.last_successful_run_at && (
+                                        <div className="last-run">
+                                            <CheckCircle size={14} weight="fill" className="text-green-500" />
+                                            Last run: {new Date(config.last_successful_run_at).toLocaleDateString()}
+                                        </div>
+                                    )}
                                 </div>
 
-                                <div className="flex items-center justify-between pt-4 border-t border-gray-800">
-                                    <div className="flex flex-col gap-1">
-                                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                                            <Clock size={14} />
-                                            <span className="capitalize">{config.cron_schedule}</span>
-                                        </div>
-                                        {config.last_successful_run_at && (
-                                            <div className="flex items-center gap-2 text-xs text-green-500" title="Last successful scrape">
-                                                <CheckCircle size={14} weight="fill" />
-                                                <span>{new Date(config.last_successful_run_at).toLocaleDateString()}</span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <button
+                                <div className="card-footer">
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
                                         onClick={() => handleTestRun(config)}
                                         disabled={isTestRunning === config.id}
-                                        className="text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded flex items-center gap-2 transition-colors disabled:opacity-50"
+                                        className="test-btn"
                                     >
-                                        {isTestRunning === config.id ? (
-                                            'Running...'
-                                        ) : (
-                                            <>
-                                                <Play size={12} weight="fill" />
-                                                Test Run
-                                            </>
-                                        )}
-                                    </button>
+                                        {isTestRunning === config.id ? 'Testing...' : 'Run Test'}
+                                    </Button>
                                 </div>
                             </div>
                         ))}
                     </div>
                 )}
+            </div>
 
-                {/* Create Modal */}
-                {showModal && (
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                        <div className="bg-gray-900 border border-gray-800 rounded-xl w-full max-w-lg p-6 shadow-2xl">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-bold">New Scraper Configuration</h2>
-                                <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-white">
-                                    &times;
-                                </button>
+            {/* Create Modal - Styled */}
+            {showModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h3>New Configuration</h3>
+                            <button onClick={() => setShowModal(false)}>&times;</button>
+                        </div>
+                        <form onSubmit={handleCreate}>
+                            <div className="form-group">
+                                <label>Provider Name</label>
+                                <Input
+                                    placeholder="e.g. Halsteds Hardware"
+                                    value={formData.site_name}
+                                    onChange={e => setFormData({ ...formData, site_name: e.target.value })}
+                                    required
+                                />
                             </div>
 
-                            <form onSubmit={handleCreate} className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Site Name</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            className="w-full bg-black border border-gray-800 rounded p-2 text-sm focus:border-white focus:outline-none transition-colors"
-                                            placeholder="e.g. Halsteds"
-                                            value={formData.site_name}
-                                            onChange={e => setFormData({ ...formData, site_name: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Schedule</label>
-                                        <select
-                                            className="w-full bg-black border border-gray-800 rounded p-2 text-sm focus:border-white focus:outline-none transition-colors appearance-none"
-                                            value={formData.cron_schedule}
-                                            onChange={e => setFormData({ ...formData, cron_schedule: e.target.value })}
-                                        >
-                                            <option value="daily">Daily</option>
-                                            <option value="weekly">Weekly</option>
-                                            <option value="monthly">Monthly</option>
-                                        </select>
-                                    </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Category</label>
+                                    <select
+                                        value={formData.category}
+                                        onChange={e => setFormData({ ...formData, category: e.target.value })}
+                                    >
+                                        {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
                                 </div>
+                                <div className="form-group">
+                                    <label>Schedule</label>
+                                    <select
+                                        value={formData.cron_schedule}
+                                        onChange={e => setFormData({ ...formData, cron_schedule: e.target.value })}
+                                    >
+                                        <option value="daily">Daily</option>
+                                        <option value="weekly">Weekly</option>
+                                        <option value="monthly">Monthly</option>
+                                    </select>
+                                </div>
+                            </div>
 
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Target URL</label>
-                                    <input
-                                        type="url"
+                            <div className="form-group">
+                                <label>Target URL</label>
+                                <Input
+                                    placeholder="https://..."
+                                    type="url"
+                                    value={formData.base_url}
+                                    onChange={e => setFormData({ ...formData, base_url: e.target.value })}
+                                    required
+                                />
+                            </div>
+
+                            <div className="selectors-section">
+                                <h4>CSS Selectors</h4>
+                                <div className="form-group">
+                                    <label>Product Name</label>
+                                    <Input
+                                        placeholder=".product-title"
+                                        value={formData.item_name_selector}
+                                        onChange={e => setFormData({ ...formData, item_name_selector: e.target.value })}
                                         required
-                                        className="w-full bg-black border border-gray-800 rounded p-2 text-sm font-mono focus:border-white focus:outline-none transition-colors"
-                                        placeholder="https://..."
-                                        value={formData.base_url}
-                                        onChange={e => setFormData({ ...formData, base_url: e.target.value })}
+                                        className="code-input"
                                     />
                                 </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Item Title Selector</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            className="w-full bg-black border border-gray-800 rounded p-2 text-sm font-mono text-blue-400 focus:border-blue-500 focus:outline-none transition-colors"
-                                            placeholder="h1.product-title"
-                                            value={formData.item_name_selector}
-                                            onChange={e => setFormData({ ...formData, item_name_selector: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Price Selector</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            className="w-full bg-black border border-gray-800 rounded p-2 text-sm font-mono text-green-400 focus:border-green-500 focus:outline-none transition-colors"
-                                            placeholder=".price .amount"
-                                            value={formData.price_selector}
-                                            onChange={e => setFormData({ ...formData, price_selector: e.target.value })}
-                                        />
-                                    </div>
+                                <div className="form-group">
+                                    <label>Price</label>
+                                    <Input
+                                        placeholder=".price-amount"
+                                        value={formData.price_selector}
+                                        onChange={e => setFormData({ ...formData, price_selector: e.target.value })}
+                                        required
+                                        className="code-input"
+                                    />
                                 </div>
+                            </div>
 
-                                <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-800">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowModal(false)}
-                                        className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="bg-white text-black px-4 py-2 rounded text-sm font-bold hover:bg-gray-200 transition-colors"
-                                    >
-                                        Create Scraper
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+                            <div className="modal-actions">
+                                <Button type="button" variant="ghost" onClick={() => setShowModal(false)}>Cancel</Button>
+                                <Button type="submit">save Configuration</Button>
+                            </div>
+                        </form>
                     </div>
-                )}
-            </div>
-        </div>
+                </div>
+            )}
+
+            <style jsx>{`
+                .scraper-page {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    color: #0f172a;
+                }
+
+                .page-header {
+                    margin-bottom: 32px;
+                    padding-bottom: 24px;
+                    border-bottom: 1px solid #e2e8f0;
+                }
+
+                .header-top {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 16px;
+                }
+
+                .back-link {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    color: #64748b;
+                    font-size: 0.9rem;
+                    text-decoration: none;
+                    transition: color 0.2s;
+                }
+                
+                .back-link:hover { color: #0f172a; }
+
+                .status-indicator {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 0.8rem;
+                    color: #64748b;
+                    font-weight: 500;
+                }
+
+                .status-dot {
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                }
+                .status-dot.ready { background: #22c55e; box-shadow: 0 0 0 2px #dcfce7; }
+                .status-dot.processing { background: #3b82f6; box-shadow: 0 0 0 2px #dbeafe; animation: pulse 1.5s infinite; }
+
+                .header-main {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-end;
+                    flex-wrap: wrap;
+                    gap: 20px;
+                }
+
+                .header-main h1 {
+                    font-size: 2rem;
+                    font-weight: 800;
+                    margin: 0 0 8px 0;
+                    letter-spacing: -0.02em;
+                }
+                
+                .header-main p { color: #64748b; margin: 0; }
+                
+                .header-actions {
+                    display: flex;
+                    gap: 12px;
+                    align-items: center;
+                }
+
+                .review-link-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 10px 16px;
+                    background: #fef3c7;
+                    color: #92400e;
+                    border-radius: 8px;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    text-decoration: none;
+                    transition: all 0.2s;
+                }
+                .review-link-btn:hover {
+                    background: #fde68a;
+                }
+
+                .run-all-btn :global(button) {
+                     background: #0f172a;
+                     color: white;
+                }
+
+                .bulk-progress {
+                    margin-top: 24px;
+                    background: #f8fafc;
+                    padding: 16px;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                }
+
+                .progress-bar {
+                    height: 6px;
+                    background: #e2e8f0;
+                    border-radius: 3px;
+                    overflow: hidden;
+                    margin-bottom: 8px;
+                }
+
+                .progress-fill {
+                    height: 100%;
+                    background: #3b82f6;
+                    transition: width 0.3s ease;
+                }
+
+                .progress-text {
+                    font-size: 0.85rem;
+                    color: #64748b;
+                    font-weight: 500;
+                }
+
+                /* Filters */
+                .filters-row {
+                    display: flex;
+                    gap: 16px;
+                    margin-bottom: 32px;
+                }
+
+                .search-filter { flex: 1; max-width: 400px; }
+                
+                .category-filter select {
+                    height: 100%;
+                    padding: 0 16px;
+                    border-radius: 8px;
+                    border: 1px solid #e2e8f0;
+                    background: white;
+                    color: #475569;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                }
+
+                /* Grid */
+                .configs-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+                    gap: 24px;
+                }
+
+                .config-card {
+                    background: white;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 16px;
+                    padding: 24px;
+                    transition: all 0.2s;
+                    display: flex;
+                    flex-direction: column;
+                }
+                
+                .config-card:hover {
+                    border-color: #cbd5e1;
+                    box-shadow: 0 4px 20px -4px rgba(0,0,0,0.05);
+                }
+                
+                .config-card.inactive { opacity: 0.7; }
+
+                .card-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: 20px;
+                }
+
+                .site-info h3 { margin: 8px 0 0 0; font-size: 1.1rem; font-weight: 700; }
+                
+                .status-badge {
+                    font-size: 0.7rem;
+                    text-transform: uppercase;
+                    padding: 2px 8px;
+                    border-radius: 99px;
+                    font-weight: 600;
+                    letter-spacing: 0.05em;
+                }
+                
+                .status-badge.active { background: #dcfce7; color: #166534; }
+                .status-badge.paused { background: #f1f5f9; color: #64748b; }
+
+                .card-actions { display: flex; gap: 8px; }
+                
+                .card-actions button {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 1px solid #e2e8f0;
+                    background: white;
+                    color: #64748b;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                
+                .card-actions button:hover { border-color: #94a3b8; color: #0f172a; }
+                .card-actions button.delete:hover { border-color: #fecaca; color: #ef4444; background: #fef2f2; }
+
+                .card-details {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                    margin-bottom: 20px;
+                }
+
+                .detail-item { display: flex; flex-direction: column; gap: 4px; }
+                .detail-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+                
+                .label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; }
+                .value { font-size: 0.9rem; font-family: monospace; color: #334155; }
+                .value.url { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                .value.badged { 
+                    display: flex; align-items: center; gap: 6px; 
+                    font-family: inherit; text-transform: capitalize;
+                }
+
+                .last-run {
+                    margin-top: auto;
+                    padding-top: 12px;
+                    border-top: 1px solid #f1f5f9;
+                    font-size: 0.8rem;
+                    color: #64748b;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .test-btn { width: 100%; border-color: #e2e8f0; }
+                
+                /* Modal */
+                .modal-overlay {
+                    position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+                    display: flex; align-items: center; justify-content: center; z-index: 50; p-4;
+                }
+                
+                .modal-content {
+                    background: white; width: 100%; max-width: 500px;
+                    border-radius: 20px; padding: 32px;
+                    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2);
+                }
+                
+                .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+                .modal-header h3 { margin: 0; font-size: 1.25rem; }
+                .modal-header button { font-size: 1.5rem; color: #94a3b8; background: none; border: none; cursor: pointer; }
+                
+                .form-group { margin-bottom: 16px; }
+                .form-group label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; color: #475569; }
+                .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+                
+                select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; }
+                
+                .selectors-section { background: #f8fafc; padding: 16px; border-radius: 12px; margin-bottom: 24px; border: 1px solid #e2e8f0; }
+                .selectors-section h4 { margin: 0 0 12px 0; font-size: 0.9rem; color: #64748b; }
+                
+                .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
+
+                .loading-state { text-align: center; padding: 60px; color: #94a3b8; }
+                .spinner { width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s infinite; margin: 0 auto 16px auto; }
+                
+                .empty-state {
+                    text-align: center; padding: 60px; border: 2px dashed #e2e8f0; border-radius: 20px;
+                    color: #94a3b8;
+                }
+                .empty-state h3 { color: #0f172a; margin: 16px 0 8px 0; }
+                .empty-state p { margin-bottom: 24px; }
+
+                @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+                @keyframes spin { to { transform: rotate(360deg); } }
+
+                @media (max-width: 768px) {
+                    .header-main { flex-direction: column; align-items: flex-start; }
+                    .header-actions { width: 100%; }
+                    .header-actions button { flex: 1; }
+                    .filters-row { flex-direction: column; }
+                }
+             `}</style>
+        </MainLayout>
     );
 }

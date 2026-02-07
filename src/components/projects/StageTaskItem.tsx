@@ -144,53 +144,54 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
 
             <style jsx>{`
                 .task-item {
-                    background: var(--color-surface);
-                    border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-md);
+                    background: #ffffff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
                     overflow: hidden;
                     transition: all 0.2s ease;
-                    box-shadow: 0 10px 20px rgba(6, 20, 47, 0.06);
+                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
                 }
 
                 .task-item:hover {
-                    border-color: var(--color-border);
+                    border-color: #cbd5e1;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
                 }
 
                 .task-item.completed {
-                    background: rgba(6, 20, 47, 0.02);
-                    opacity: 0.8;
+                    background: #f8fafc;
+                    opacity: 0.9;
                 }
 
                 .task-main {
                     display: flex;
                     align-items: center;
-                    gap: var(--spacing-sm);
-                    padding: var(--spacing-sm) var(--spacing-md);
+                    gap: 16px;
+                    padding: 12px 16px;
                     cursor: pointer;
                 }
 
                 .checkbox {
-                    width: 20px;
-                    height: 20px;
-                    border: 2px solid var(--color-border-light);
-                    border-radius: var(--radius-sm);
-                    background: var(--color-surface);
+                    width: 22px;
+                    height: 22px;
+                    border: 2px solid #cbd5e1;
+                    border-radius: 6px;
+                    background: #ffffff;
                     cursor: pointer;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     flex-shrink: 0;
                     transition: all 0.15s ease;
+                    color: white;
                 }
 
                 .checkbox:hover {
-                    border-color: var(--color-primary);
+                    border-color: #3b82f6;
                 }
 
                 .checkbox.checked {
-                    background: var(--color-success);
-                    border-color: var(--color-success);
-                    color: white;
+                    background: #2563eb;
+                    border-color: #2563eb;
                 }
 
                 .task-content {
@@ -199,179 +200,193 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                 }
 
                 .task-title {
-                    font-size: 0.875rem;
+                    font-size: 0.9rem;
                     font-weight: 500;
-                    color: var(--color-text);
+                    color: #1e293b;
                     display: block;
+                    transition: color 0.1s;
                 }
 
                 .task-item.completed .task-title {
                     text-decoration: line-through;
-                    color: var(--color-text-muted);
+                    color: #94a3b8;
                 }
 
                 .task-meta {
                     display: flex;
                     align-items: center;
-                    gap: var(--spacing-sm);
-                    margin-top: 2px;
+                    gap: 12px;
+                    margin-top: 4px;
                 }
 
                 .meta-item {
                     display: flex;
                     align-items: center;
                     gap: 4px;
-                    font-size: 0.625rem;
-                    color: var(--color-text-muted);
+                    font-size: 0.75rem;
+                    color: #64748b;
                 }
 
                 .meta-item.verified {
-                    color: var(--color-success);
-                    font-weight: 600;
+                    color: #166534;
+                    font-weight: 500;
                 }
 
                 .task-actions {
                     display: flex;
                     align-items: center;
-                    gap: var(--spacing-sm);
+                    gap: 8px;
                 }
 
                 .default-badge {
-                    font-size: 0.5rem;
+                    font-size: 0.65rem;
                     font-weight: 600;
                     padding: 2px 6px;
-                    background: rgba(6, 20, 47, 0.04);
-                    color: var(--color-text-muted);
-                    border-radius: var(--radius-full);
+                    background: #f1f5f9;
+                    color: #64748b;
+                    border-radius: 99px;
                     text-transform: uppercase;
                 }
 
                 .expand-btn {
-                    width: 24px;
-                    height: 24px;
+                    width: 28px;
+                    height: 28px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     background: none;
                     border: none;
                     cursor: pointer;
-                    color: var(--color-text-muted);
-                    border-radius: var(--radius-sm);
+                    color: #94a3b8;
+                    border-radius: 6px;
+                    transition: all 0.2s;
                 }
 
                 .expand-btn:hover {
-                    background: rgba(6, 20, 47, 0.04);
+                    background: #f1f5f9;
+                    color: #475569;
                 }
 
                 .task-details {
-                    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
-                    border-top: 1px solid var(--color-border-light);
-                    background: rgba(6, 20, 47, 0.02);
+                    padding: 16px;
+                    border-top: 1px solid #f1f5f9;
+                    background: #fcfcfc;
                 }
 
                 .task-description {
-                    font-size: 0.75rem;
-                    color: var(--color-text-secondary);
-                    margin: 0 0 var(--spacing-sm) 0;
+                    font-size: 0.85rem;
+                    color: #475569;
+                    margin: 0 0 16px 0;
+                    line-height: 1.5;
                 }
 
                 .edit-form {
                     display: flex;
                     flex-direction: column;
-                    gap: var(--spacing-sm);
+                    gap: 12px;
                 }
 
                 .form-group {
                     display: flex;
                     flex-direction: column;
-                    gap: 4px;
+                    gap: 6px;
                 }
 
                 .form-group label {
                     display: flex;
                     align-items: center;
-                    gap: 4px;
-                    font-size: 0.625rem;
+                    gap: 6px;
+                    font-size: 0.7rem;
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
-                    color: var(--color-text-muted);
+                    color: #64748b;
                 }
 
                 .form-group input {
-                    padding: var(--spacing-xs) var(--spacing-sm);
-                    border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-sm);
-                    font-size: 0.75rem;
+                    padding: 8px 12px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    font-size: 0.85rem;
                     background: #ffffff;
                 }
 
                 .form-group input:focus {
                     outline: none;
-                    border-color: var(--color-primary);
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
                 }
 
                 .form-actions {
                     display: flex;
                     justify-content: flex-end;
-                    gap: var(--spacing-xs);
-                    margin-top: var(--spacing-xs);
+                    gap: 8px;
+                    margin-top: 8px;
                 }
 
                 .btn-cancel,
                 .btn-save {
-                    padding: var(--spacing-xs) var(--spacing-sm);
-                    border-radius: var(--radius-sm);
-                    font-size: 0.75rem;
+                    padding: 6px 12px;
+                    border-radius: 6px;
+                    font-size: 0.8rem;
                     font-weight: 500;
                     cursor: pointer;
                     border: none;
                 }
 
                 .btn-cancel {
-                    background: rgba(6, 20, 47, 0.04);
-                    color: var(--color-text-secondary);
+                    background: #f1f5f9;
+                    color: #64748b;
+                }
+
+                .btn-cancel:hover {
+                    background: #e2e8f0;
                 }
 
                 .btn-save {
-                    background: var(--color-primary);
+                    background: #2563eb;
                     color: white;
+                }
+
+                .btn-save:hover {
+                    background: #1d4ed8;
                 }
 
                 .detail-actions {
                     display: flex;
-                    gap: var(--spacing-sm);
+                    gap: 8px;
                 }
 
                 .action-btn {
                     display: flex;
                     align-items: center;
-                    gap: 4px;
-                    padding: var(--spacing-xs) var(--spacing-sm);
-                    background: none;
-                    border: 1px solid var(--color-border-light);
-                    border-radius: var(--radius-sm);
-                    font-size: 0.75rem;
-                    color: var(--color-text-secondary);
+                    gap: 6px;
+                    padding: 6px 10px;
+                    background: #ffffff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 6px;
+                    font-size: 0.8rem;
+                    color: #475569;
                     cursor: pointer;
                     transition: all 0.15s ease;
                 }
 
                 .action-btn:hover {
-                    border-color: rgba(6, 20, 47, 0.2);
-                    background: rgba(6, 20, 47, 0.04);
+                    border-color: #cbd5e1;
+                    background: #f8fafc;
                 }
 
                 .action-btn.danger:hover {
-                    border-color: var(--color-error);
-                    color: var(--color-error);
-                    background: rgba(239, 68, 68, 0.05);
+                    border-color: #fee2e2;
+                    color: #ef4444;
+                    background: #fef2f2;
                 }
 
                 .completed-info {
-                    font-size: 0.625rem;
-                    color: var(--color-text-muted);
-                    margin: var(--spacing-sm) 0 0 0;
+                    font-size: 0.7rem;
+                    color: #94a3b8;
+                    margin: 12px 0 0 0;
+                    text-align: right;
                 }
             `}</style>
         </>

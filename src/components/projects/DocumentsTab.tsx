@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import DocumentUploader from './DocumentUploader';
 import DocumentCard from './DocumentCard';
 import { useToast } from '@/components/ui/Toast';
@@ -180,7 +181,16 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                         </div>
                         <div className="preview-body">
                             {previewDoc.file_type.startsWith('image/') ? (
-                                <img src={previewUrl} alt={previewDoc.file_name} />
+                                <div className="preview-image">
+                                    <Image
+                                        src={previewUrl}
+                                        alt={previewDoc.file_name}
+                                        fill
+                                        sizes="(max-width: 1024px) 90vw, 1024px"
+                                        style={{ objectFit: 'contain' }}
+                                        unoptimized
+                                    />
+                                </div>
                             ) : previewDoc.file_type === 'application/pdf' ? (
                                 <iframe src={previewUrl} title={previewDoc.file_name} />
                             ) : (
@@ -366,10 +376,10 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                     padding: var(--spacing-md);
                 }
 
-                .preview-body img {
-                    max-width: 100%;
-                    max-height: 80vh;
-                    object-fit: contain;
+                .preview-image {
+                    position: relative;
+                    width: 100%;
+                    height: 80vh;
                 }
 
                 .preview-body iframe {

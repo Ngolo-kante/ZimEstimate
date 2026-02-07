@@ -164,6 +164,16 @@ export const INITIAL_STATE: VisionTakeoffState = {
   isProcessing: false,
 };
 
+export interface DetailedRoom {
+  id: string;
+  label: string;
+  length: number;
+  width: number;
+  windows: number;
+  doors: number;
+  materialId: string;
+}
+
 // ============================================
 // BRICK & MATERIAL CONSTANTS
 // ============================================
@@ -175,34 +185,34 @@ export const BRICK_INFO: Record<BrickType, {
   description: string;
 }> = {
   common: {
-    name: 'Common Cement Brick',
+    name: 'Red Common Brick',
     materialId: 'brick-common',
     bricksPerSqm: 50,
-    description: 'Standard cement bricks, most economical option',
+    description: 'Standard fired clay bricks, most popular in Zimbabwe',
   },
   farm: {
     name: 'Farm Brick',
-    materialId: 'brick-common', // Uses common brick pricing
-    bricksPerSqm: 48,
-    description: 'Locally made farm bricks, slightly larger',
+    materialId: 'farm-brick',
+    bricksPerSqm: 55,
+    description: 'Locally made bricks, budget-friendly option',
   },
   semi_common: {
     name: 'Semi-Common Brick',
-    materialId: 'brick-common',
+    materialId: 'brick-semi',
     bricksPerSqm: 50,
-    description: 'Higher quality cement bricks',
+    description: 'Higher quality fired bricks for exposed work',
   },
   blocks_6inch: {
-    name: '6" Hollow Block',
+    name: '6" Cement Block',
     materialId: 'block-6inch',
     bricksPerSqm: 12,
-    description: '150mm hollow concrete blocks',
+    description: '150mm hollow concrete blocks, faster construction',
   },
   blocks_8inch: {
-    name: '8" Hollow Block',
+    name: '8" Cement Block',
     materialId: 'block-8inch',
     bricksPerSqm: 10,
-    description: '200mm hollow concrete blocks for external walls',
+    description: '200mm hollow blocks for external walls, best insulation',
   },
   face_brick: {
     name: 'Face Brick',
@@ -211,6 +221,7 @@ export const BRICK_INFO: Record<BrickType, {
     description: 'Decorative face bricks, no plastering needed',
   },
 };
+
 
 export const CEMENT_INFO: Record<CementType, {
   name: string;

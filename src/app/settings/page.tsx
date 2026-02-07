@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
-import Card, { CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useToast } from '@/components/ui/Toast';
@@ -12,13 +11,12 @@ import {
     User,
     CurrencyDollar,
     Lock,
-    Bell,
-    Palette,
     Crown,
     Check,
-    CaretRight,
     EnvelopeSimple,
-    ShieldCheck,
+    Phone,
+    CaretRight,
+    WarningCircle
 } from '@phosphor-icons/react';
 import Link from 'next/link';
 
@@ -28,11 +26,11 @@ function SettingsContent() {
 
     // Profile form state
     const [fullName, setFullName] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [preferredCurrency, setPreferredCurrency] = useState<Currency>('USD');
     const [isSaving, setIsSaving] = useState(false);
 
     // Password form state
-    const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -41,6 +39,7 @@ function SettingsContent() {
     useEffect(() => {
         if (profile) {
             setFullName(profile.full_name || '');
+            setPhoneNumber(profile.phone_number || '');
             setPreferredCurrency(profile.preferred_currency || 'USD');
         }
     }, [profile]);
@@ -49,11 +48,12 @@ function SettingsContent() {
         setIsSaving(true);
         const { error } = await updateProfile({
             full_name: fullName,
+            phone_number: phoneNumber || null,
             preferred_currency: preferredCurrency,
         });
 
         if (error) {
-            showError('Failed to update profile. Please try again.');
+            showError('Failed to update profile.');
         } else {
             success('Profile updated successfully');
         }
@@ -90,11 +90,10 @@ function SettingsContent() {
                 showError(error.message);
             } else {
                 success('Password changed successfully');
-                setCurrentPassword('');
                 setNewPassword('');
                 setConfirmPassword('');
             }
-        } catch (err) {
+        } catch {
             showError('An error occurred. Please try again.');
         }
 
@@ -114,511 +113,568 @@ function SettingsContent() {
 
     return (
         <MainLayout title="Settings">
-            <div className="settings-page">
-                {/* Profile Section */}
-                <Card className="settings-card">
-                    <CardHeader>
-                        <div className="section-header">
-                            <User size={24} weight="light" />
-                            <CardTitle>Profile</CardTitle>
-                        </div>
-                    </CardHeader>
+            <div className="settings-container">
+                <div className="settings-header">
+                    <div>
+                        <h1>Account Settings</h1>
+                        <p>Manage your profile, preferences, and security settings.</p>
+                    </div>
+                </div>
 
-                    <div className="settings-content">
-                        <div className="form-group">
-                            <label htmlFor="email">Email</label>
-                            <div className="input-with-icon readonly">
-                                <EnvelopeSimple size={18} />
-                                <input
-                                    type="email"
-                                    id="email"
-                                    value={user?.email || ''}
-                                    disabled
-                                />
+                <div className="settings-grid">
+                    {/* Profile Section */}
+                    <div className="settings-card">
+                        <div className="card-header">
+                            <div className="header-icon user">
+                                <User size={20} weight="bold" />
                             </div>
-                            <p className="field-hint">Email cannot be changed</p>
+                            <div>
+                                <h3>Personal Information</h3>
+                                <p>Update your personal details.</p>
+                            </div>
                         </div>
 
-                        <div className="form-group">
-                            <label htmlFor="fullName">Full Name</label>
-                            <input
-                                type="text"
-                                id="fullName"
-                                value={fullName}
-                                onChange={(e) => setFullName(e.target.value)}
-                                placeholder="Enter your full name"
-                            />
-                        </div>
-
-                        <Button
-                            onClick={handleSaveProfile}
-                            disabled={isSaving}
-                        >
-                            {isSaving ? 'Saving...' : 'Save Changes'}
-                        </Button>
-                    </div>
-                </Card>
-
-                {/* Currency Preference */}
-                <Card className="settings-card">
-                    <CardHeader>
-                        <div className="section-header">
-                            <CurrencyDollar size={24} weight="light" />
-                            <CardTitle>Currency Preference</CardTitle>
-                        </div>
-                    </CardHeader>
-
-                    <div className="settings-content">
-                        <p className="section-description">
-                            Choose your preferred currency for displaying prices throughout the app.
-                        </p>
-
-                        <div className="currency-options">
-                            <button
-                                className={`currency-option ${preferredCurrency === 'USD' ? 'active' : ''}`}
-                                onClick={() => setPreferredCurrency('USD')}
-                            >
-                                <div className="currency-info">
-                                    <span className="currency-code">USD</span>
-                                    <span className="currency-name">US Dollar</span>
-                                </div>
-                                {preferredCurrency === 'USD' && <Check size={20} weight="bold" />}
-                            </button>
-
-                            <button
-                                className={`currency-option ${preferredCurrency === 'ZWG' ? 'active' : ''}`}
-                                onClick={() => setPreferredCurrency('ZWG')}
-                            >
-                                <div className="currency-info">
-                                    <span className="currency-code">ZWG</span>
-                                    <span className="currency-name">Zimbabwe Gold</span>
-                                </div>
-                                {preferredCurrency === 'ZWG' && <Check size={20} weight="bold" />}
-                            </button>
-                        </div>
-
-                        <Button
-                            onClick={handleSaveProfile}
-                            disabled={isSaving}
-                        >
-                            {isSaving ? 'Saving...' : 'Save Preference'}
-                        </Button>
-                    </div>
-                </Card>
-
-                {/* Password Section */}
-                <Card className="settings-card">
-                    <CardHeader>
-                        <div className="section-header">
-                            <Lock size={24} weight="light" />
-                            <CardTitle>Security</CardTitle>
-                        </div>
-                    </CardHeader>
-
-                    <div className="settings-content">
-                        <form onSubmit={handleChangePassword}>
+                        <div className="card-content">
                             <div className="form-group">
-                                <label htmlFor="newPassword">New Password</label>
-                                <input
-                                    type="password"
-                                    id="newPassword"
-                                    value={newPassword}
-                                    onChange={(e) => setNewPassword(e.target.value)}
-                                    placeholder="Enter new password"
-                                    minLength={8}
-                                />
+                                <label>Email Address</label>
+                                <div className="input-box disabled">
+                                    <EnvelopeSimple size={18} />
+                                    <input type="email" value={user?.email || ''} disabled />
+                                    <span className="badge">Verified</span>
+                                </div>
                             </div>
 
-                            <div className="form-group">
-                                <label htmlFor="confirmPassword">Confirm New Password</label>
-                                <input
-                                    type="password"
-                                    id="confirmPassword"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    placeholder="Confirm new password"
-                                    minLength={8}
-                                />
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Full Name</label>
+                                    <div className="input-box">
+                                        <User size={18} />
+                                        <input
+                                            type="text"
+                                            value={fullName}
+                                            onChange={(e) => setFullName(e.target.value)}
+                                            placeholder="Enter full name"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Phone Number</label>
+                                    <div className="input-box">
+                                        <Phone size={18} />
+                                        <input
+                                            type="tel"
+                                            value={phoneNumber}
+                                            onChange={(e) => setPhoneNumber(e.target.value)}
+                                            placeholder="+263..."
+                                        />
+                                    </div>
+                                </div>
                             </div>
 
-                            <Button
-                                type="submit"
-                                disabled={isChangingPassword || !newPassword || !confirmPassword}
-                            >
-                                {isChangingPassword ? 'Changing Password...' : 'Change Password'}
-                            </Button>
-                        </form>
-                    </div>
-                </Card>
-
-                {/* Subscription Section */}
-                <Card className="settings-card">
-                    <CardHeader>
-                        <div className="section-header">
-                            <Crown size={24} weight="light" />
-                            <CardTitle>Subscription</CardTitle>
+                            <div className="card-actions">
+                                <Button onClick={handleSaveProfile} disabled={isSaving}>
+                                    {isSaving ? 'Saving...' : 'Save Changes'}
+                                </Button>
+                            </div>
                         </div>
-                    </CardHeader>
+                    </div>
 
-                    <div className="settings-content">
-                        <div className="subscription-info">
-                            <div className="current-plan">
-                                <span className="plan-label">Current Plan</span>
-                                <span className={`plan-badge ${profile?.tier}`}>
-                                    {profile?.tier === 'pro' ? 'Pro' : profile?.tier === 'admin' ? 'Admin' : 'Free'}
-                                </span>
+                    {/* Preferences & Security Grid */}
+                    <div className="split-grid">
+                        {/* Currency Preference */}
+                        <div className="settings-card">
+                            <div className="card-header">
+                                <div className="header-icon currency">
+                                    <CurrencyDollar size={20} weight="bold" />
+                                </div>
+                                <div>
+                                    <h3>Currency</h3>
+                                    <p>Select display currency.</p>
+                                </div>
                             </div>
-
-                            {profile?.tier === 'free' && (
-                                <div className="plan-features">
-                                    <h4>Free Plan Includes:</h4>
-                                    <ul>
-                                        <li><Check size={16} /> Up to 3 projects</li>
-                                        <li><Check size={16} /> Basic PDF export</li>
-                                        <li><Check size={16} /> Material price database</li>
-                                    </ul>
+                            <div className="card-content">
+                                <div className="currency-selector">
+                                    <button
+                                        className={`currency-option ${preferredCurrency === 'USD' ? 'active' : ''}`}
+                                        onClick={() => setPreferredCurrency('USD')}
+                                    >
+                                        <span className="code">USD</span>
+                                        <span className="name">US Dollar</span>
+                                        {preferredCurrency === 'USD' && <Check size={16} weight="bold" />}
+                                    </button>
+                                    <button
+                                        className={`currency-option ${preferredCurrency === 'ZWG' ? 'active' : ''}`}
+                                        onClick={() => setPreferredCurrency('ZWG')}
+                                    >
+                                        <span className="code">ZWG</span>
+                                        <span className="name">Zimbabwe Gold</span>
+                                        {preferredCurrency === 'ZWG' && <Check size={16} weight="bold" />}
+                                    </button>
                                 </div>
-                            )}
-
-                            {profile?.tier === 'pro' && (
-                                <div className="plan-features">
-                                    <h4>Pro Plan Includes:</h4>
-                                    <ul>
-                                        <li><Check size={16} /> Unlimited projects</li>
-                                        <li><Check size={16} /> AI-powered features</li>
-                                        <li><Check size={16} /> Advanced PDF export</li>
-                                        <li><Check size={16} /> Priority support</li>
-                                    </ul>
-                                </div>
-                            )}
-
-                            {profile?.tier === 'free' && (
-                                <Link href="/upgrade">
-                                    <Button icon={<Crown size={18} />}>
-                                        Upgrade to Pro
+                                <div className="card-actions">
+                                    <Button onClick={handleSaveProfile} disabled={isSaving} variant="secondary">
+                                        Update Currency
                                     </Button>
-                                </Link>
-                            )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Subscription */}
+                        <div className="settings-card">
+                            <div className="card-header">
+                                <div className="header-icon premium">
+                                    <Crown size={20} weight="bold" />
+                                </div>
+                                <div>
+                                    <h3>Subscription</h3>
+                                    <p>Manage your billing plan.</p>
+                                </div>
+                            </div>
+                            <div className="card-content">
+                                <div className="plan-summary">
+                                    <div className="current-plan">
+                                        <span className="label">Current Plan</span>
+                                        <span className={`plan-badge ${profile?.tier}`}>
+                                            {profile?.tier === 'pro' ? 'Pro' : profile?.tier === 'admin' ? 'Admin' : 'Free'}
+                                        </span>
+                                    </div>
+                                    <p className="plan-description">
+                                        {profile?.tier === 'pro'
+                                            ? 'You have access to all premium features.'
+                                            : 'Upgrade to unlock unlimited projects and AI estimates.'}
+                                    </p>
+                                    {profile?.tier === 'free' && (
+                                        <Link href="/upgrade" className="upgrade-link">
+                                            Upgrade Plan <CaretRight size={14} />
+                                        </Link>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </Card>
 
-                {/* Account Actions */}
-                <Card className="settings-card danger-zone">
-                    <CardHeader>
-                        <div className="section-header">
-                            <ShieldCheck size={24} weight="light" />
-                            <CardTitle>Account</CardTitle>
-                        </div>
-                    </CardHeader>
-
-                    <div className="settings-content">
-                        <div className="account-action">
-                            <div>
-                                <h4>Export Your Data</h4>
-                                <p>Download all your project data in JSON format</p>
+                    {/* Password Section */}
+                    <div className="settings-card">
+                        <div className="card-header">
+                            <div className="header-icon security">
+                                <Lock size={20} weight="bold" />
                             </div>
-                            <Button variant="secondary">
-                                Export Data
-                            </Button>
-                        </div>
-
-                        <div className="account-action danger">
                             <div>
-                                <h4>Delete Account</h4>
-                                <p>Permanently delete your account and all associated data</p>
+                                <h3>Security</h3>
+                                <p>Update your password.</p>
                             </div>
-                            <Button variant="ghost" className="danger-btn">
-                                Delete Account
-                            </Button>
+                        </div>
+                        <div className="card-content">
+                            <form onSubmit={handleChangePassword}>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>New Password</label>
+                                        <div className="input-box">
+                                            <input
+                                                type="password"
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                placeholder="Enter new password"
+                                                minLength={8}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Confirm Password</label>
+                                        <div className="input-box">
+                                            <input
+                                                type="password"
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                placeholder="Confirm new password"
+                                                minLength={8}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="card-actions">
+                                    <Button
+                                        type="submit"
+                                        disabled={isChangingPassword || !newPassword || !confirmPassword}
+                                        variant="secondary"
+                                    >
+                                        {isChangingPassword ? 'Updating...' : 'Update Password'}
+                                    </Button>
+                                </div>
+                            </form>
                         </div>
                     </div>
-                </Card>
+
+                    {/* Danger Zone */}
+                    <div className="settings-card danger">
+                        <div className="card-header">
+                            <div className="header-icon danger">
+                                <WarningCircle size={20} weight="bold" />
+                            </div>
+                            <div>
+                                <h3>Danger Zone</h3>
+                                <p>Irreversible account actions.</p>
+                            </div>
+                        </div>
+                        <div className="card-content">
+                            <div className="danger-row">
+                                <div>
+                                    <h4>Delete Account</h4>
+                                    <p>Permanently delete your account and all data.</p>
+                                </div>
+                                <Button variant="ghost" className="delete-btn">
+                                    Delete Account
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <style jsx>{`
-                .settings-page {
+                .settings-container {
+                    max-width: 900px;
+                    margin: 0 auto;
                     display: flex;
                     flex-direction: column;
-                    gap: var(--spacing-lg);
-                    max-width: 800px;
+                    gap: 32px;
+                    padding-bottom: 64px;
                 }
 
+                .settings-header h1 {
+                    font-size: 1.8rem;
+                    font-weight: 700;
+                    color: #0f172a;
+                    margin: 0;
+                    letter-spacing: -0.02em;
+                }
+
+                .settings-header p {
+                    color: #64748b;
+                    margin: 6px 0 0;
+                    font-size: 1.05rem;
+                }
+
+                .settings-grid {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 24px;
+                }
+
+                .split-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 24px;
+                }
+
+                .settings-card {
+                    background: #ffffff;
+                    border-radius: 20px;
+                    border: 1px solid rgba(226, 232, 240, 0.8);
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+                    overflow: hidden;
+                    transition: border-color 0.2s, box-shadow 0.2s;
+                }
+
+                .settings-card:hover {
+                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.02), 0 4px 6px -2px rgba(0, 0, 0, 0.01);
+                    border-color: rgba(203, 213, 225, 0.8);
+                }
+
+                .card-header {
+                    padding: 24px;
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                    border-bottom: 1px solid #f8fafc;
+                }
+
+                .header-icon {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+
+                .header-icon.user { background: #eff6ff; color: #3b82f6; }
+                .header-icon.currency { background: #ecfdf5; color: #10b981; }
+                .header-icon.premium { background: #fff7ed; color: #f59e0b; }
+                .header-icon.security { background: #f1f5f9; color: #64748b; }
+                .header-icon.danger { background: #fef2f2; color: #ef4444; }
+
+                .card-header h3 {
+                    margin: 0;
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                .card-header p {
+                    margin: 2px 0 0;
+                    font-size: 0.9rem;
+                    color: #64748b;
+                }
+
+                .card-content {
+                    padding: 24px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 20px;
+                }
+
+                .form-row {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 20px;
+                }
+
+                .form-group {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+
+                .form-group label {
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                    color: #475569;
+                    text-transform: uppercase;
+                    letter-spacing: 0.02em;
+                }
+
+                .input-box {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 12px 14px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    background: #ffffff;
+                    transition: all 0.2s;
+                    position: relative;
+                }
+
+                .input-box:focus-within {
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                }
+
+                .input-box.disabled {
+                    background: #f8fafc;
+                    border-color: #f1f5f9;
+                }
+
+                .input-box svg {
+                    color: #94a3b8;
+                    flex-shrink: 0;
+                }
+
+                .input-box input {
+                    border: none;
+                    outline: none;
+                    width: 100%;
+                    font-size: 0.95rem;
+                    color: #0f172a;
+                    background: transparent;
+                }
+
+                .input-box input:disabled {
+                    color: #64748b;
+                    cursor: not-allowed;
+                }
+
+                .badge {
+                    font-size: 0.7rem;
+                    font-weight: 600;
+                    color: #166534;
+                    background: #dcfce7;
+                    padding: 2px 8px;
+                    border-radius: 99px;
+                    text-transform: uppercase;
+                    margin-left: auto;
+                }
+
+                .card-actions {
+                    display: flex;
+                    justify-content: flex-end;
+                    padding-top: 8px;
+                }
+
+                /* Currency Selector */
+                .currency-selector {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 12px;
+                }
+
+                .currency-option {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    padding: 12px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    background: #ffffff;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    position: relative;
+                }
+
+                .currency-option:hover {
+                    border-color: #cbd5e1;
+                    background: #f8fafc;
+                }
+
+                .currency-option.active {
+                    border-color: #3b82f6;
+                    background: #eff6ff;
+                }
+
+                .currency-option .code {
+                    font-weight: 700;
+                    color: #0f172a;
+                    font-size: 1rem;
+                }
+
+                .currency-option .name {
+                    font-size: 0.8rem;
+                    color: #64748b;
+                }
+
+                .currency-option svg {
+                    position: absolute;
+                    top: 12px;
+                    right: 12px;
+                    color: #2563eb;
+                }
+
+                /* Plan Summary */
+                .plan-summary {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+
+                .current-plan {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                }
+
+                .current-plan .label {
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    color: #475569;
+                }
+
+                .plan-badge {
+                    padding: 4px 10px;
+                    border-radius: 99px;
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                }
+
+                .plan-badge.free { background: #f1f5f9; color: #64748b; }
+                .plan-badge.pro { background: #eff6ff; color: #2563eb; }
+                .plan-badge.admin { background: #fefce8; color: #b45309; }
+
+                .plan-description {
+                    font-size: 0.9rem;
+                    color: #64748b;
+                    line-height: 1.5;
+                    margin: 0;
+                }
+
+                .upgrade-link {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    color: #2563eb;
+                    text-decoration: none;
+                    margin-top: 4px;
+                }
+
+                .upgrade-link:hover {
+                    text-decoration: underline;
+                }
+
+                /* Danger Zone */
+                .settings-card.danger {
+                    border-color: #fecaca;
+                }
+                
+                .danger-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
+                .danger-row h4 {
+                    margin: 0;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                .danger-row p {
+                    margin: 4px 0 0;
+                    font-size: 0.85rem;
+                    color: #64748b;
+                }
+
+                :global(.delete-btn) {
+                    color: #ef4444 !important;
+                    background: #fef2f2 !important;
+                }
+                
+                :global(.delete-btn:hover) {
+                    background: #fee2e2 !important;
+                }
+
+                @media (max-width: 768px) {
+                    .split-grid, .form-row {
+                        grid-template-columns: 1fr;
+                    }
+                    
+                    .danger-row {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 16px;
+                    }
+                    
+                    .danger-row button {
+                        width: 100%;
+                    }
+                }
+                
                 .loading-state {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
-                    min-height: 300px;
-                    gap: var(--spacing-md);
+                    padding: 80px 0;
+                    gap: 16px;
+                    color: #64748b;
                 }
-
+                
                 .spinner {
-                    width: 40px;
-                    height: 40px;
-                    border: 3px solid var(--color-border);
-                    border-top-color: var(--color-primary);
+                    width: 32px;
+                    height: 32px;
+                    border: 3px solid #e2e8f0;
+                    border-top-color: #3b82f6;
                     border-radius: 50%;
                     animation: spin 1s linear infinite;
                 }
 
                 @keyframes spin {
                     to { transform: rotate(360deg); }
-                }
-
-                .loading-state p {
-                    color: var(--color-text-secondary);
-                    margin: 0;
-                }
-
-                :global(.settings-card) {
-                    overflow: hidden;
-                }
-
-                .section-header {
-                    display: flex;
-                    align-items: center;
-                    gap: var(--spacing-sm);
-                    color: var(--color-text);
-                }
-
-                .settings-content {
-                    padding: var(--spacing-lg);
-                    padding-top: 0;
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--spacing-lg);
-                }
-
-                .section-description {
-                    color: var(--color-text-secondary);
-                    margin: 0;
-                    font-size: 0.875rem;
-                }
-
-                .form-group {
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--spacing-xs);
-                }
-
-                .form-group label {
-                    font-size: 0.875rem;
-                    font-weight: 500;
-                    color: var(--color-text);
-                }
-
-                .form-group input {
-                    padding: var(--spacing-sm) var(--spacing-md);
-                    border: 1px solid var(--color-border);
-                    border-radius: var(--radius-md);
-                    font-size: 0.9375rem;
-                    background: var(--color-surface);
-                    color: var(--color-text);
-                    transition: border-color 0.2s, box-shadow 0.2s;
-                }
-
-                .form-group input:focus {
-                    outline: none;
-                    border-color: var(--color-primary);
-                    box-shadow: 0 0 0 3px rgba(20, 33, 61, 0.1);
-                }
-
-                .form-group input:disabled {
-                    background: var(--color-background);
-                    color: var(--color-text-secondary);
-                    cursor: not-allowed;
-                }
-
-                .input-with-icon {
-                    display: flex;
-                    align-items: center;
-                    gap: var(--spacing-sm);
-                    padding: var(--spacing-sm) var(--spacing-md);
-                    border: 1px solid var(--color-border);
-                    border-radius: var(--radius-md);
-                    background: var(--color-surface);
-                }
-
-                .input-with-icon.readonly {
-                    background: var(--color-background);
-                }
-
-                .input-with-icon input {
-                    border: none;
-                    padding: 0;
-                    flex: 1;
-                    background: transparent;
-                }
-
-                .input-with-icon input:focus {
-                    box-shadow: none;
-                }
-
-                .field-hint {
-                    font-size: 0.75rem;
-                    color: var(--color-text-muted);
-                    margin: 0;
-                }
-
-                .currency-options {
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--spacing-sm);
-                }
-
-                .currency-option {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: var(--spacing-md);
-                    border: 2px solid var(--color-border);
-                    border-radius: var(--radius-md);
-                    background: var(--color-surface);
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-
-                .currency-option:hover {
-                    border-color: var(--color-primary);
-                }
-
-                .currency-option.active {
-                    border-color: var(--color-primary);
-                    background: rgba(20, 33, 61, 0.05);
-                }
-
-                .currency-option.active :global(svg) {
-                    color: var(--color-primary);
-                }
-
-                .currency-info {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 2px;
-                    text-align: left;
-                }
-
-                .currency-code {
-                    font-weight: 600;
-                    color: var(--color-text);
-                }
-
-                .currency-name {
-                    font-size: 0.75rem;
-                    color: var(--color-text-secondary);
-                }
-
-                .subscription-info {
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--spacing-lg);
-                }
-
-                .current-plan {
-                    display: flex;
-                    align-items: center;
-                    gap: var(--spacing-md);
-                }
-
-                .plan-label {
-                    font-size: 0.875rem;
-                    color: var(--color-text-secondary);
-                }
-
-                .plan-badge {
-                    padding: var(--spacing-xs) var(--spacing-sm);
-                    border-radius: var(--radius-sm);
-                    font-size: 0.75rem;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                }
-
-                .plan-badge.free {
-                    background: var(--color-border-light);
-                    color: var(--color-text-secondary);
-                }
-
-                .plan-badge.pro {
-                    background: var(--color-accent);
-                    color: var(--color-primary);
-                }
-
-                .plan-badge.admin {
-                    background: var(--color-primary);
-                    color: var(--color-text-inverse);
-                }
-
-                .plan-features h4 {
-                    margin: 0 0 var(--spacing-sm) 0;
-                    font-size: 0.875rem;
-                    color: var(--color-text);
-                }
-
-                .plan-features ul {
-                    list-style: none;
-                    padding: 0;
-                    margin: 0;
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--spacing-xs);
-                }
-
-                .plan-features li {
-                    display: flex;
-                    align-items: center;
-                    gap: var(--spacing-xs);
-                    font-size: 0.875rem;
-                    color: var(--color-text-secondary);
-                }
-
-                .plan-features li :global(svg) {
-                    color: var(--color-success);
-                }
-
-                .account-action {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: var(--spacing-md);
-                    background: var(--color-background);
-                    border-radius: var(--radius-md);
-                }
-
-                .account-action h4 {
-                    margin: 0;
-                    font-size: 0.9375rem;
-                }
-
-                .account-action p {
-                    margin: var(--spacing-xs) 0 0 0;
-                    font-size: 0.75rem;
-                    color: var(--color-text-secondary);
-                }
-
-                .account-action.danger {
-                    border: 1px solid rgba(239, 68, 68, 0.2);
-                }
-
-                .account-action.danger h4 {
-                    color: var(--color-error);
-                }
-
-                :global(.danger-btn) {
-                    color: var(--color-error) !important;
-                }
-
-                :global(.danger-btn:hover) {
-                    background: rgba(239, 68, 68, 0.1) !important;
-                }
-
-                @media (max-width: 600px) {
-                    .account-action {
-                        flex-direction: column;
-                        align-items: flex-start;
-                        gap: var(--spacing-md);
-                    }
                 }
             `}</style>
         </MainLayout>

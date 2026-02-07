@@ -55,7 +55,7 @@ export default function BOQResultsStep({
 }: BOQResultsStepProps) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const { currency, formatPrice } = useCurrency();
+  const { formatPrice } = useCurrency();
   const [editingState, setEditingState] = useState<EditingState>({ itemId: null, field: null, value: '' });
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showSavePrompt, setShowSavePrompt] = useState(false);

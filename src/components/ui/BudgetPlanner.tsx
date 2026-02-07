@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Calendar, Wallet, TrendUp, Target, CaretDown, Info, WhatsappLogo, PaperPlaneTilt, Envelope, ChatCircleText, PiggyBank } from '@phosphor-icons/react';
+import { Calendar, Wallet, TrendUp, Target, Info, WhatsappLogo, PaperPlaneTilt, Envelope, ChatCircleText, PiggyBank } from '@phosphor-icons/react';
 import { useCurrency } from './CurrencyToggle';
 
 export type NotificationChannel = 'sms' | 'whatsapp' | 'telegram' | 'email';
+
+type ReminderFrequency = 'daily' | 'weekly' | 'monthly';
 
 interface BudgetPlannerProps {
   totalBudgetUsd: number;
@@ -12,7 +14,13 @@ interface BudgetPlannerProps {
   targetDate?: string | null;
   onTargetDateChange?: (date: string) => void;
   criticalItemsUsd?: number;
-  onSetReminder?: (type: 'daily' | 'weekly' | 'monthly', amount: number, channel: NotificationChannel) => void;
+  onSetReminder?: (type: ReminderFrequency, amount: number, channel: NotificationChannel) => void;
+  canUseMobileReminders?: boolean;
+  defaultChannel?: NotificationChannel;
+  onRequestPhone?: (payload?: { channel?: NotificationChannel; pendingReminder?: { frequency: ReminderFrequency; amount: number } }) => void;
+  reminderActive?: boolean;
+  reminderFrequency?: ReminderFrequency | null;
+  onToggleReminder?: (active: boolean) => void;
 }
 
 type PlanMode = 'all' | 'critical' | 'custom';
@@ -24,12 +32,18 @@ export default function BudgetPlanner({
   onTargetDateChange,
   criticalItemsUsd = 0,
   onSetReminder,
+  canUseMobileReminders = true,
+  defaultChannel = 'sms',
+  onRequestPhone,
+  reminderActive = false,
+  reminderFrequency = null,
+  onToggleReminder,
 }: BudgetPlannerProps) {
-  const { currency, exchangeRate, formatPrice } = useCurrency();
+  const { exchangeRate, formatPrice } = useCurrency();
   const [planMode, setPlanMode] = useState<PlanMode>('all');
   const [customAmount, setCustomAmount] = useState('');
   const [localTargetDate, setLocalTargetDate] = useState(targetDate || '');
-  const [selectedChannel, setSelectedChannel] = useState<NotificationChannel>('sms');
+  const [channelOverride, setChannelOverride] = useState<NotificationChannel | null>(null);
 
   const remainingBudget = totalBudgetUsd - amountSpentUsd;
   const percentComplete = totalBudgetUsd > 0 ? (amountSpentUsd / totalBudgetUsd) * 100 : 0;
@@ -60,6 +74,33 @@ export default function BudgetPlanner({
   const handleDateChange = (date: string) => {
     setLocalTargetDate(date);
     onTargetDateChange?.(date);
+  };
+
+  const isMobileChannel = (channel: NotificationChannel) =>
+    channel === 'sms' || channel === 'whatsapp' || channel === 'telegram';
+
+  const selectedChannel = useMemo(() => {
+    const baseChannel = channelOverride ?? defaultChannel;
+    if (!canUseMobileReminders && isMobileChannel(baseChannel)) {
+      return 'email';
+    }
+    return baseChannel;
+  }, [channelOverride, defaultChannel, canUseMobileReminders]);
+
+  const handleChannelSelect = (channel: NotificationChannel) => {
+    if (isMobileChannel(channel) && !canUseMobileReminders) {
+      onRequestPhone?.({ channel });
+      return;
+    }
+    setChannelOverride(channel);
+  };
+
+  const handleReminder = (frequency: ReminderFrequency, amount: number) => {
+    if (isMobileChannel(selectedChannel) && !canUseMobileReminders) {
+      onRequestPhone?.({ channel: selectedChannel, pendingReminder: { frequency, amount } });
+      return;
+    }
+    onSetReminder?.(frequency, amount, selectedChannel);
   };
 
   return (
@@ -163,33 +204,38 @@ export default function BudgetPlanner({
             <div className="channel-options">
               <button
                 className={`channel-btn ${selectedChannel === 'sms' ? 'active' : ''}`}
-                onClick={() => setSelectedChannel('sms')}
+                onClick={() => handleChannelSelect('sms')}
                 title="SMS Text"
               >
                 <ChatCircleText size={20} weight={selectedChannel === 'sms' ? 'fill' : 'light'} />
               </button>
               <button
                 className={`channel-btn ${selectedChannel === 'whatsapp' ? 'active' : ''}`}
-                onClick={() => setSelectedChannel('whatsapp')}
+                onClick={() => handleChannelSelect('whatsapp')}
                 title="WhatsApp"
               >
                 <WhatsappLogo size={20} weight={selectedChannel === 'whatsapp' ? 'fill' : 'light'} />
               </button>
               <button
                 className={`channel-btn ${selectedChannel === 'telegram' ? 'active' : ''}`}
-                onClick={() => setSelectedChannel('telegram')}
+                onClick={() => handleChannelSelect('telegram')}
                 title="Telegram"
               >
                 <PaperPlaneTilt size={20} weight={selectedChannel === 'telegram' ? 'fill' : 'light'} />
               </button>
               <button
                 className={`channel-btn ${selectedChannel === 'email' ? 'active' : ''}`}
-                onClick={() => setSelectedChannel('email')}
+                onClick={() => handleChannelSelect('email')}
                 title="Email"
               >
                 <Envelope size={20} weight={selectedChannel === 'email' ? 'fill' : 'light'} />
               </button>
             </div>
+            {!canUseMobileReminders && (
+              <p className="channel-hint">
+                Add a phone number to enable SMS, WhatsApp, and Telegram reminders.
+              </p>
+            )}
           </div>
 
           <div className="savings-grid">
@@ -201,7 +247,7 @@ export default function BudgetPlanner({
               {onSetReminder && (
                 <button
                   className="reminder-btn"
-                  onClick={() => onSetReminder('daily', savingsPerDay, selectedChannel)}
+                  onClick={() => handleReminder('daily', savingsPerDay)}
                 >
                   Set Reminder
                 </button>
@@ -215,7 +261,7 @@ export default function BudgetPlanner({
               {onSetReminder && (
                 <button
                   className="reminder-btn"
-                  onClick={() => onSetReminder('weekly', savingsPerWeek, selectedChannel)}
+                  onClick={() => handleReminder('weekly', savingsPerWeek)}
                 >
                   Set Reminder
                 </button>
@@ -229,13 +275,32 @@ export default function BudgetPlanner({
               {onSetReminder && (
                 <button
                   className="reminder-btn"
-                  onClick={() => onSetReminder('monthly', savingsPerMonth, selectedChannel)}
+                  onClick={() => handleReminder('monthly', savingsPerMonth)}
                 >
                   Set Reminder
                 </button>
               )}
             </div>
           </div>
+
+          {reminderFrequency && onToggleReminder && (
+            <div className="reminder-status">
+              <div className="status-text">
+                <span className={`status-pill ${reminderActive ? 'active' : 'inactive'}`}>
+                  {reminderActive ? 'Reminder On' : 'Reminder Off'}
+                </span>
+                <span className="status-detail">
+                  {reminderActive ? `Runs ${reminderFrequency}` : 'Turn it on to resume scheduling'}
+                </span>
+              </div>
+              <button
+                className={`toggle-btn ${reminderActive ? 'off' : 'on'}`}
+                onClick={() => onToggleReminder(!reminderActive)}
+              >
+                {reminderActive ? 'Turn Off' : 'Turn On'}
+              </button>
+            </div>
+          )}
 
           <div className="savings-tip">
             <Info size={16} weight="fill" />
@@ -473,6 +538,12 @@ export default function BudgetPlanner({
           display: flex;
           gap: 12px;
         }
+
+        .channel-hint {
+          margin-top: 8px;
+          font-size: 0.75rem;
+          color: var(--color-text-muted);
+        }
         
         .channel-btn {
           width: 40px;
@@ -563,6 +634,68 @@ export default function BudgetPlanner({
           font-size: 0.8125rem;
           line-height: 1.5;
           color: var(--color-text-secondary);
+        }
+
+        .reminder-status {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: var(--spacing-md);
+          padding: 12px 14px;
+          background: var(--color-background);
+          border: 1px solid var(--color-border-light);
+          border-radius: var(--radius-md);
+        }
+
+        .status-text {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .status-pill {
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          font-weight: 600;
+          padding: 4px 8px;
+          border-radius: 999px;
+        }
+
+        .status-pill.active {
+          background: rgba(22, 163, 74, 0.12);
+          color: #166534;
+        }
+
+        .status-pill.inactive {
+          background: rgba(148, 163, 184, 0.2);
+          color: #475569;
+        }
+
+        .status-detail {
+          font-size: 0.8rem;
+          color: var(--color-text-secondary);
+        }
+
+        .toggle-btn {
+          border: none;
+          border-radius: var(--radius-sm);
+          padding: 8px 12px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .toggle-btn.on {
+          background: var(--color-primary);
+          color: white;
+        }
+
+        .toggle-btn.off {
+          background: #fee2e2;
+          color: #b91c1c;
         }
 
         @media (max-width: 640px) {

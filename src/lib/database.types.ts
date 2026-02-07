@@ -112,6 +112,8 @@ export interface Database {
                     status: ProjectStatus;
                     selected_stages: string[] | null;
                     usage_tracking_enabled: boolean;
+                    usage_low_stock_alert_enabled: boolean;
+                    usage_low_stock_threshold: number;
                     total_usd: number;
                     total_zwg: number;
                     target_date: string | null;
@@ -134,6 +136,8 @@ export interface Database {
                     status?: ProjectStatus;
                     selected_stages?: string[] | null;
                     usage_tracking_enabled?: boolean;
+                    usage_low_stock_alert_enabled?: boolean;
+                    usage_low_stock_threshold?: number;
                     total_usd?: number;
                     total_zwg?: number;
                     target_date?: string | null;
@@ -156,6 +160,8 @@ export interface Database {
                     status?: ProjectStatus;
                     selected_stages?: string[] | null;
                     usage_tracking_enabled?: boolean;
+                    usage_low_stock_alert_enabled?: boolean;
+                    usage_low_stock_threshold?: number;
                     total_usd?: number;
                     total_zwg?: number;
                     target_date?: string | null;
@@ -515,7 +521,7 @@ export interface Database {
                     user_id: string;
                     project_id: string;
                     item_id: string | null;
-                    reminder_type: 'material' | 'savings' | 'deadline';
+                    reminder_type: 'material' | 'savings' | 'deadline' | 'usage';
                     message: string;
                     scheduled_date: string;
                     is_sent: boolean;
@@ -527,7 +533,7 @@ export interface Database {
                     user_id: string;
                     project_id: string;
                     item_id?: string | null;
-                    reminder_type: 'material' | 'savings' | 'deadline';
+                    reminder_type: 'material' | 'savings' | 'deadline' | 'usage';
                     message: string;
                     scheduled_date: string;
                     is_sent?: boolean;
@@ -539,12 +545,176 @@ export interface Database {
                     user_id?: string;
                     project_id?: string;
                     item_id?: string | null;
-                    reminder_type?: 'material' | 'savings' | 'deadline';
+                    reminder_type?: 'material' | 'savings' | 'deadline' | 'usage';
                     message?: string;
                     scheduled_date?: string;
                     is_sent?: boolean;
                     phone_number?: string;
                     created_at?: string;
+                };
+            };
+            project_recurring_reminders: {
+                Row: {
+                    id: string;
+                    project_id: string;
+                    user_id: string;
+                    reminder_type: 'material' | 'savings' | 'deadline' | 'usage';
+                    frequency: string;
+                    channel: string;
+                    amount_usd: number | null;
+                    target_date: string | null;
+                    next_run_at: string;
+                    is_active: boolean;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    project_id: string;
+                    user_id: string;
+                    reminder_type: 'material' | 'savings' | 'deadline' | 'usage';
+                    frequency: string;
+                    channel: string;
+                    amount_usd?: number | null;
+                    target_date?: string | null;
+                    next_run_at: string;
+                    is_active?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    project_id?: string;
+                    user_id?: string;
+                    reminder_type?: 'material' | 'savings' | 'deadline' | 'usage';
+                    frequency?: string;
+                    channel?: string;
+                    amount_usd?: number | null;
+                    target_date?: string | null;
+                    next_run_at?: string;
+                    is_active?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            project_notifications: {
+                Row: {
+                    id: string;
+                    project_id: string;
+                    user_id: string;
+                    type: string;
+                    title: string;
+                    message: string;
+                    is_read: boolean;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    project_id: string;
+                    user_id: string;
+                    type: string;
+                    title: string;
+                    message: string;
+                    is_read?: boolean;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    project_id?: string;
+                    user_id?: string;
+                    type?: string;
+                    title?: string;
+                    message?: string;
+                    is_read?: boolean;
+                    created_at?: string;
+                };
+            };
+            procurement_requests: {
+                Row: {
+                    id: string;
+                    project_id: string;
+                    requested_by: string;
+                    supplier_id: string | null;
+                    supplier_name: string;
+                    supplier_email: string | null;
+                    supplier_phone: string | null;
+                    status: string;
+                    notes: string | null;
+                    items: Json;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    project_id: string;
+                    requested_by: string;
+                    supplier_id?: string | null;
+                    supplier_name: string;
+                    supplier_email?: string | null;
+                    supplier_phone?: string | null;
+                    status?: string;
+                    notes?: string | null;
+                    items: Json;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    project_id?: string;
+                    requested_by?: string;
+                    supplier_id?: string | null;
+                    supplier_name?: string;
+                    supplier_email?: string | null;
+                    supplier_phone?: string | null;
+                    status?: string;
+                    notes?: string | null;
+                    items?: Json;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            purchase_records: {
+                Row: {
+                    id: string;
+                    project_id: string;
+                    boq_item_id: string;
+                    supplier_id: string | null;
+                    supplier_name: string;
+                    quantity: number;
+                    unit_price_usd: number;
+                    purchased_at: string;
+                    notes: string | null;
+                    created_by: string;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    project_id: string;
+                    boq_item_id: string;
+                    supplier_id?: string | null;
+                    supplier_name: string;
+                    quantity: number;
+                    unit_price_usd: number;
+                    purchased_at?: string;
+                    notes?: string | null;
+                    created_by: string;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    project_id?: string;
+                    boq_item_id?: string;
+                    supplier_id?: string | null;
+                    supplier_name?: string;
+                    quantity?: number;
+                    unit_price_usd?: number;
+                    purchased_at?: string;
+                    notes?: string | null;
+                    created_by?: string;
+                    created_at?: string;
+                    updated_at?: string;
                 };
             };
             project_documents: {
@@ -774,6 +944,7 @@ export interface Database {
                     price_selector: string;
                     item_name_selector: string;
                     cron_schedule: string;
+                    category: string | null;
                     is_active: boolean;
                     last_successful_run_at: string | null;
                     created_at: string;
@@ -786,6 +957,7 @@ export interface Database {
                     price_selector: string;
                     item_name_selector: string;
                     cron_schedule?: string;
+                    category?: string | null;
                     is_active?: boolean;
                     last_successful_run_at?: string | null;
                     created_at?: string;
@@ -798,6 +970,7 @@ export interface Database {
                     price_selector?: string;
                     item_name_selector?: string;
                     cron_schedule?: string;
+                    category?: string | null;
                     is_active?: boolean;
                     last_successful_run_at?: string | null;
                     created_at?: string;
@@ -807,21 +980,24 @@ export interface Database {
             material_aliases: {
                 Row: {
                     id: string;
-                    material_id: string;
+                    material_id: string | null;
+                    material_code: string | null;
                     alias_name: string;
                     confidence_score: number;
                     created_at: string;
                 };
                 Insert: {
                     id?: string;
-                    material_id: string;
+                    material_id?: string | null;
+                    material_code?: string | null;
                     alias_name: string;
                     confidence_score?: number;
                     created_at?: string;
                 };
                 Update: {
                     id?: string;
-                    material_id?: string;
+                    material_id?: string | null;
+                    material_code?: string | null;
                     alias_name?: string;
                     confidence_score?: number;
                     created_at?: string;
@@ -831,6 +1007,7 @@ export interface Database {
                 Row: {
                     id: string;
                     item_name: string;
+                    material_code: string | null;
                     average_price: number | null;
                     currency: string | null;
                     source_url: string | null;
@@ -839,6 +1016,7 @@ export interface Database {
                 Insert: {
                     id?: string;
                     item_name: string;
+                    material_code?: string | null;
                     average_price?: number | null;
                     currency?: string | null;
                     source_url?: string | null;
@@ -847,6 +1025,7 @@ export interface Database {
                 Update: {
                     id?: string;
                     item_name?: string;
+                    material_code?: string | null;
                     average_price?: number | null;
                     currency?: string | null;
                     source_url?: string | null;
@@ -907,6 +1086,10 @@ export type Material = Database['public']['Tables']['materials']['Row'];
 export type Supplier = Database['public']['Tables']['suppliers']['Row'];
 export type ExchangeRate = Database['public']['Tables']['exchange_rates']['Row'];
 export type Reminder = Database['public']['Tables']['reminders']['Row'];
+export type ProjectRecurringReminder = Database['public']['Tables']['project_recurring_reminders']['Row'];
+export type ProjectNotification = Database['public']['Tables']['project_notifications']['Row'];
+export type ProcurementRequest = Database['public']['Tables']['procurement_requests']['Row'];
+export type PurchaseRecord = Database['public']['Tables']['purchase_records']['Row'];
 export type ProjectDocument = Database['public']['Tables']['project_documents']['Row'];
 export type ProjectMilestone = Database['public']['Tables']['project_milestones']['Row'];
 export type MilestoneTask = Database['public']['Tables']['milestone_tasks']['Row'];
@@ -923,23 +1106,33 @@ export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
 export type ProjectInsert = Database['public']['Tables']['projects']['Insert'];
 export type BOQItemInsert = Database['public']['Tables']['boq_items']['Insert'];
 export type ReminderInsert = Database['public']['Tables']['reminders']['Insert'];
+export type ProjectRecurringReminderInsert = Database['public']['Tables']['project_recurring_reminders']['Insert'];
+export type ProjectNotificationInsert = Database['public']['Tables']['project_notifications']['Insert'];
+export type ProcurementRequestInsert = Database['public']['Tables']['procurement_requests']['Insert'];
+export type PurchaseRecordInsert = Database['public']['Tables']['purchase_records']['Insert'];
 export type ProjectDocumentInsert = Database['public']['Tables']['project_documents']['Insert'];
 export type ProjectMilestoneInsert = Database['public']['Tables']['project_milestones']['Insert'];
 export type MilestoneTaskInsert = Database['public']['Tables']['milestone_tasks']['Insert'];
 export type MaterialUsageInsert = Database['public']['Tables']['material_usage']['Insert'];
 export type ProjectStageInsert = Database['public']['Tables']['project_stages']['Insert'];
 export type StageTaskInsert = Database['public']['Tables']['stage_tasks']['Insert'];
+export type SupplierInsert = Database['public']['Tables']['suppliers']['Insert'];
 
 // Update types
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 export type ProjectUpdate = Database['public']['Tables']['projects']['Update'];
 export type BOQItemUpdate = Database['public']['Tables']['boq_items']['Update'];
 export type ReminderUpdate = Database['public']['Tables']['reminders']['Update'];
+export type ProjectRecurringReminderUpdate = Database['public']['Tables']['project_recurring_reminders']['Update'];
+export type ProjectNotificationUpdate = Database['public']['Tables']['project_notifications']['Update'];
+export type ProcurementRequestUpdate = Database['public']['Tables']['procurement_requests']['Update'];
+export type PurchaseRecordUpdate = Database['public']['Tables']['purchase_records']['Update'];
 export type ProjectMilestoneUpdate = Database['public']['Tables']['project_milestones']['Update'];
 export type MilestoneTaskUpdate = Database['public']['Tables']['milestone_tasks']['Update'];
 export type MaterialUsageUpdate = Database['public']['Tables']['material_usage']['Update'];
 export type ProjectStageUpdate = Database['public']['Tables']['project_stages']['Update'];
 export type StageTaskUpdate = Database['public']['Tables']['stage_tasks']['Update'];
+export type SupplierUpdate = Database['public']['Tables']['suppliers']['Update'];
 
 // Stage with tasks helper type
 export type ProjectStageWithTasks = ProjectStage & { tasks: StageTask[] };

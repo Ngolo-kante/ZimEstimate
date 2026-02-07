@@ -31,12 +31,15 @@ export default function Card({
 
       <style jsx>{`
         .card {
-          background: var(--color-surface);
-          border-radius: var(--radius-lg);
-          padding: var(--spacing-lg);
-          box-shadow: 0 10px 22px rgba(6, 20, 47, 0.08);
-          border: 1px solid var(--color-border-light);
-          transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+          background: #ffffff;
+          border-radius: 20px;
+          padding: 24px;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 
+                      0 2px 4px -1px rgba(0, 0, 0, 0.01),
+                      0 10px 15px -3px rgba(0, 0, 0, 0.01),
+                      0 0 0 1px rgba(226, 232, 240, 0.6);
+          border: none;
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
         .card.clickable {
@@ -44,43 +47,45 @@ export default function Card({
         }
 
         .card.clickable:hover {
-          box-shadow: 0 16px 30px rgba(6, 20, 47, 0.12);
-          border-color: rgba(78, 154, 247, 0.35);
-          transform: translateY(-2px);
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05),
+                      0 8px 10px -6px rgba(0, 0, 0, 0.01),
+                      0 0 0 1px rgba(59, 130, 246, 0.5);
+          transform: translateY(-4px);
         }
 
         .card.selected {
           border-color: var(--color-accent);
-          box-shadow: 0 0 0 2px rgba(78, 154, 247, 0.35);
+          box-shadow: 0 0 0 2px rgba(78, 154, 247, 0.4), 0 10px 25px -5px rgba(78, 154, 247, 0.15);
         }
 
         /* Dashboard Card Variant */
         .card-dashboard {
           display: flex;
           flex-direction: column;
-          gap: var(--spacing-md);
+          gap: 16px;
         }
 
         /* Choice Card Variant (for BOQ selection) */
         .card-choice {
           text-align: center;
-          padding: var(--spacing-xl);
+          padding: 32px;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: var(--spacing-md);
+          gap: 16px;
+          background: linear-gradient(145deg, #ffffff, #f8fafc);
         }
 
         .card-choice:hover {
-          transform: translateY(-2px);
+          background: #ffffff;
         }
 
         /* Material Card Variant */
         .card-material {
           display: flex;
           flex-direction: column;
-          gap: var(--spacing-sm);
-          padding: var(--spacing-md);
+          gap: 12px;
+          padding: 20px;
         }
       `}</style>
     </>

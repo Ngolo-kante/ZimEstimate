@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -16,12 +16,30 @@ import {
 } from '@phosphor-icons/react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import Button from '@/components/ui/Button';
+import { useToast } from '@/components/ui/Toast';
 import MainLayout from '@/components/layout/MainLayout';
 
 function UpgradeContent() {
     const searchParams = useSearchParams();
-    const { profile } = useAuth();
+    const { profile, updateProfile } = useAuth();
+    const { success, error: showError } = useToast();
+    const [isUpgrading, setIsUpgrading] = useState(false);
     const feature = searchParams.get('feature');
+
+    const handleUpgrade = async () => {
+        setIsUpgrading(true);
+        try {
+            // "Purchase" logic: simple direct update to 'pro' tier for now
+            const { error } = await updateProfile({ tier: 'pro' });
+            if (error) throw error;
+            success('Successfully upgraded to Pro!');
+        } catch (err) {
+            showError('Failed to upgrade plan. Please try again.');
+            console.error(err);
+        } finally {
+            setIsUpgrading(false);
+        }
+    };
 
     const plans = [
         {
@@ -43,8 +61,8 @@ function UpgradeContent() {
         },
         {
             name: 'Pro',
-            price: '$19',
-            period: 'per month',
+            price: '$0',
+            period: 'Beta Access',
             description: 'For professionals & contractors',
             icon: RocketLaunch,
             current: profile?.tier === 'pro',
@@ -98,7 +116,7 @@ function UpgradeContent() {
                             {plan.popular && (
                                 <div className="popular-badge">
                                     <Lightning size={14} weight="fill" />
-                                    Most Popular
+                                    Limited Beta Offer
                                 </div>
                             )}
 
@@ -136,8 +154,12 @@ function UpgradeContent() {
                                         Downgrade
                                     </Button>
                                 ) : (
-                                    <Button fullWidth>
-                                        Upgrade to {plan.name}
+                                    <Button
+                                        fullWidth
+                                        onClick={handleUpgrade}
+                                        disabled={isUpgrading}
+                                    >
+                                        {isUpgrading ? 'Upgrading...' : `Get Pro for Free`}
                                     </Button>
                                 )}
                             </div>
