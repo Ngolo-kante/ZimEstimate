@@ -169,8 +169,9 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
 
                 if (isRecent && matchesTarget && data.rooms.length > 0) {
                     // Migrate old data
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const loadedRooms = data.rooms.map((r: any, index: number) => {
-                        let update = { ...r };
+                        const update = { ...r };
 
                         // Check x,y
                         if (update.x === undefined || update.y === undefined) {

@@ -43,10 +43,7 @@ export default function ScraperReviewPage() {
     // Cement materials for the dropdown
     const cementMaterials = materials.filter(m => m.category === 'cement');
 
-    useEffect(() => {
-        fetchPendingMatches();
-        fetchStats();
-    }, []);
+
 
     const fetchPendingMatches = async () => {
         setLoading(true);
@@ -86,6 +83,11 @@ export default function ScraperReviewPage() {
             rejected: rejectedCount || 0
         });
     };
+    useEffect(() => {
+        fetchPendingMatches();
+        fetchStats();
+    }, []);
+
 
     const handleConfirm = async (match: PendingMatch, materialCode?: string) => {
         const codeToUse = materialCode || match.suggested_material_code;
