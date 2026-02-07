@@ -1,8 +1,8 @@
 // ZimEstimate Service Worker
 // Provides offline caching for critical app resources
 
-const CACHE_NAME = 'zimestimate-v1';
-const DYNAMIC_CACHE = 'zimestimate-dynamic-v1';
+const CACHE_NAME = 'zimestimate-v2';
+const DYNAMIC_CACHE = 'zimestimate-dynamic-v2';
 
 // Resources to cache on install
 const STATIC_ASSETS = [
