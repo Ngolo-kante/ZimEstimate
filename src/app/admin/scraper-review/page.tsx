@@ -84,7 +84,7 @@ export default function ScraperReviewPage() {
         });
     };
     useEffect(() => {
-        fetchPendingMatches();
+        fetchPendingMatches(); // eslint-disable-line react-hooks/set-state-in-effect
         fetchStats();
     }, []);
 
