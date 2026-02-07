@@ -15,7 +15,6 @@ import {
     X,
     Trash,
     List,
-    CaretRight,
     ArrowCounterClockwise,
     ArrowClockwise
 } from '@phosphor-icons/react';
@@ -239,6 +238,7 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                 setSelectedRoomId(initialRooms[0].id);
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [roomCounts, isMobile]);
 
     const selectedRoom = useMemo(() =>
@@ -304,7 +304,6 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
         const y = 20 + (row * 140);
 
         const newRoom: RoomInstance = {
-            // eslint-disable-next-line react-hooks/purity
             id: `${typeKey}-${existingCount}-${Date.now()}`,
             type: typeKey,
             label: `${typeDef.label} ${existingCount + 1}`,
@@ -417,7 +416,7 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
         setDragStartRooms(null);
         setResizingId(null);
         setResizeStartDims(null);
-    }, [draggingId, dragStartRooms, rooms, resizingId]);
+    }, [draggingId, dragStartRooms, rooms]);
 
     // Global event listeners for drag
     useEffect(() => {

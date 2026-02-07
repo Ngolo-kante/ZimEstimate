@@ -2179,6 +2179,7 @@ function BOQBuilderContent() {
                                   aria-pressed={isSelected}
                                 >
                                   <div className="brick-chip-thumb">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img src={option.img} alt={option.label} />
                                     {isSelected && <Check size={12} weight="bold" className="brick-chip-check" />}
                                   </div>
@@ -2488,7 +2489,7 @@ function BOQBuilderContent() {
                                     </div>
                                   ) : (
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                      {Object.entries(projectDetails.roomInputs).some(([_, count]) => (Number(count) || 0) > 0) ? (
+                                      {Object.entries(projectDetails.roomInputs).some(([, count]) => (Number(count) || 0) > 0) ? (
                                         Object.entries(projectDetails.roomInputs).map(([key, count]) => {
                                           const num = Number(count) || 0;
                                           if (num === 0) return null;

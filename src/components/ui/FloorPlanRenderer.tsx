@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { X, Plus, Minus, Door, WindowsLogo } from '@phosphor-icons/react';
+import { X, Plus, Minus } from '@phosphor-icons/react';
 
 // ============ TYPES ============
 interface RoomConfig {
@@ -174,8 +174,9 @@ export default function FloorPlanRenderer({
         };
     }, [rooms, totalArea, localWastage]);
 
-    // Emit data changes
-    const emitChanges = useCallback(() => {
+    // Emit data changes (kept for future use)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _emitChanges = useCallback(() => {
         if (onDataChange) {
             onDataChange({
                 rooms,
