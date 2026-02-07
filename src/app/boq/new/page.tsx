@@ -2506,7 +2506,7 @@ function BOQBuilderContent() {
                                         })
                                       ) : (
                                         <div style={{ width: '100%', padding: '20px', textAlign: 'center', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #e2e8f0', color: '#94a3b8', fontSize: '13px' }}>
-                                          No rooms added yet. Click "Add Room" to start.
+                                          No rooms added yet. Click &quot;Add Room&quot; to start.
                                         </div>
                                       )}
                                     </div>
@@ -2549,7 +2549,7 @@ function BOQBuilderContent() {
                                   backdropFilter: 'blur(4px)'
                                 }}>
                                   <Sparkle size={14} weight="fill" />
-                                  Click "Continue" to start editing
+                                  Click &quot;Continue&quot; to start editing
                                 </div>
                               </div>
                             )}

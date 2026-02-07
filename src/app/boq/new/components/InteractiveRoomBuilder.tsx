@@ -303,6 +303,7 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
         const y = 20 + (row * 140);
 
         const newRoom: RoomInstance = {
+            // eslint-disable-next-line react-hooks/purity
             id: `${typeKey}-${existingCount}-${Date.now()}`,
             type: typeKey,
             label: `${typeDef.label} ${existingCount + 1}`,
@@ -843,7 +844,7 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                                 width: '100%'
                             }}>
                                 <Square size={48} style={{ opacity: 0.3, margin: '0 auto 10px' }} />
-                                <p>No rooms added yet. Click "Add Room" above.</p>
+                                <p>No rooms added yet. Click &quot;Add Room&quot; above.</p>
                             </div>
                         ) : (
                             rooms.map((room) => {

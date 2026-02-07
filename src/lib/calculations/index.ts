@@ -80,8 +80,7 @@ function estimateDimensions(floorArea: number, roomCount: number): {
 function calculateSuperstructureFromRooms(
   config: ManualBuilderConfig,
   perimeter: number,
-  internalWallLength: number,
-  baseItems: GeneratedBOQItem[]
+  internalWallLength: number
 ): GeneratedBOQItem[] {
   const items: GeneratedBOQItem[] = [];
   const { rooms, wallHeight, cementType } = config;
@@ -197,10 +196,14 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   // SUPERSTRUCTURE
   // ============================================
   if (hasScope('superstructure')) {
+    // Use Detailed logic if rooms exist, else Fallback
     if (rooms && rooms.length > 0) {
-      items.push(...calculateSuperstructureFromRooms(config, perimeter, internalWallLength, items));
+      items.push(...calculateSuperstructureFromRooms(config, perimeter, internalWallLength));
 
+      // Add Global Items (Lintel, Reinforcement)
       const totalWallLen = perimeter + internalWallLength;
+
+      // BrickforceateBOQItem('brickforce', 'Brickforce', 'superstructure', Math.ceil(totalWallLen / 15), 'per roll', 'Wall reinforcement'));
       items.push(createBOQItem('brickforce', 'Brickforce', 'superstructure', Math.ceil(totalWallLen / 15), 'per roll', 'Wall reinforcement'));
       items.push(createBOQItem('rebar-12', 'Rebar Y12', 'superstructure', Math.ceil(totalWallLen * REBAR_Y12_PER_LM_RINGBEAM / 6), 'per length', 'Ring beam'));
       items.push(createBOQItem('rebar-10', 'Rebar Y10', 'superstructure', Math.ceil(totalWallLen * STIRRUPS_PER_LM / 6), 'per length', 'Stirrups'));

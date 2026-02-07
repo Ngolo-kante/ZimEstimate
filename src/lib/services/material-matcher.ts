@@ -110,7 +110,7 @@ export class MaterialMatcher {
         const scrapedInfo = this.extractCementInfo(scrapedName);
         const materialInfo = this.extractCementInfo(material.name);
 
-        let baseScore = similarity(this.normalize(scrapedName), this.normalize(material.name));
+        const baseScore = similarity(this.normalize(scrapedName), this.normalize(material.name));
         let boost = 0;
 
         // Brand match boost
