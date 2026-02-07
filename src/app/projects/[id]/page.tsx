@@ -260,6 +260,7 @@ function ProjectDetailContent() {
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPriceVersionReady(false);
         const storedVersion = localStorage.getItem(projectPriceKey);
         const nextVersion = storedVersion || SYSTEM_PRICE_VERSION;
