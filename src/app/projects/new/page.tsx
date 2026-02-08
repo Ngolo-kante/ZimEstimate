@@ -77,16 +77,21 @@ export default function NewProject() {
         }
 
         if (project) {
-          // Store optimistic data for instant display on projects list
-          try {
-            sessionStorage.setItem('zimestimate_optimistic_project', JSON.stringify({
-              id: project.id,
-              name: formData.name,
-              location: formData.location,
-              type: formData.type,
-            }));
-          } catch {}
-          router.push(`/projects?created=1`);
+          if (formData.boqMethod === 'manual') {
+            // Manual builder: go straight to the BOQ builder with the new project
+            router.push(`/boq/new?id=${project.id}`);
+          } else {
+            // Upload / Photo: show optimistic card on projects list
+            try {
+              sessionStorage.setItem('zimestimate_optimistic_project', JSON.stringify({
+                id: project.id,
+                name: formData.name,
+                location: formData.location,
+                type: formData.type,
+              }));
+            } catch {}
+            router.push(`/projects?created=1`);
+          }
         }
       } catch (err) {
         console.error('Error creating project:', err);
