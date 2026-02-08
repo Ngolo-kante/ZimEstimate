@@ -25,6 +25,8 @@ interface SidebarSpineProps {
     activeView: ProjectView;
     onViewChange: (view: ProjectView) => void;
     currentProjectName?: string;
+    isMobileOpen?: boolean;
+    onMobileClose?: () => void;
 }
 
 const navItems: { id: ProjectView; label: string; icon: React.ReactNode }[] = [
@@ -38,7 +40,7 @@ const navItems: { id: ProjectView; label: string; icon: React.ReactNode }[] = [
     { id: 'settings', label: 'Configurations', icon: <Gear size={20} /> },
 ];
 
-export default function SidebarSpine({ project, activeView, onViewChange }: SidebarSpineProps) {
+export default function SidebarSpine({ project, activeView, onViewChange, isMobileOpen, onMobileClose }: SidebarSpineProps) {
     const router = useRouter();
     const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
     const [projects, setProjects] = useState<Project[]>([]);
@@ -67,7 +69,9 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
     };
 
     return (
-        <aside className="sidebar-spine">
+        <>
+        {isMobileOpen && <div className="sidebar-backdrop" onClick={onMobileClose} />}
+        <aside className={`sidebar-spine${isMobileOpen ? ' mobile-open' : ''}`}>
             {/* Project Switcher */}
             <div className="project-switcher">
                 <button
@@ -122,7 +126,10 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                 {navItems.map((item) => (
                     <button
                         key={item.id}
-                        onClick={() => onViewChange(item.id)}
+                        onClick={() => {
+                            onViewChange(item.id);
+                            onMobileClose?.();
+                        }}
                         className={`nav-item ${activeView === item.id ? 'active' : ''}`}
                     >
                         <span className="nav-icon">{item.icon}</span>
@@ -353,7 +360,33 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         width: 250px;
                     }
                 }
+
+                @media (max-width: 768px) {
+                    .sidebar-spine {
+                        position: fixed;
+                        left: 0;
+                        top: 0;
+                        height: 100vh;
+                        z-index: 1000;
+                        transform: translateX(-100%);
+                        transition: transform 0.3s ease;
+                        width: 280px;
+                        background: white;
+                    }
+
+                    .sidebar-spine.mobile-open {
+                        transform: translateX(0);
+                    }
+
+                    .sidebar-backdrop {
+                        position: fixed;
+                        inset: 0;
+                        background: rgba(0, 0, 0, 0.4);
+                        z-index: 999;
+                    }
+                }
             `}</style>
         </aside>
+        </>
     );
 }

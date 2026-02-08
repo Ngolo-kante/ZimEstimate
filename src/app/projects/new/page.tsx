@@ -77,10 +77,16 @@ export default function NewProject() {
         }
 
         if (project) {
-          // Redirect based on selected method
-          // For now, all methods go to the project dashboard, 
-          // but we could route to specific wizards based on boqMethod
-          router.push(`/projects/${project.id}?refresh=1`);
+          // Store optimistic data for instant display on projects list
+          try {
+            sessionStorage.setItem('zimestimate_optimistic_project', JSON.stringify({
+              id: project.id,
+              name: formData.name,
+              location: formData.location,
+              type: formData.type,
+            }));
+          } catch {}
+          router.push(`/projects?created=1`);
         }
       } catch (err) {
         console.error('Error creating project:', err);

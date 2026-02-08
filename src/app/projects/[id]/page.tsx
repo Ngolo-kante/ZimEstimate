@@ -51,9 +51,10 @@ import {
     ArrowLeft,
     MapPin,
     DownloadSimple,
-    CircleNotch,
     Warning,
+    List,
 } from '@phosphor-icons/react';
+import { ProjectDetailSkeleton } from '@/components/ui/Skeleton';
 
 function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: number }) {
     const { formatPrice } = useCurrency();
@@ -119,6 +120,16 @@ function ProjectDetailContent() {
     // View state
     const [activeView, setActiveView] = useState<ProjectView>('overview');
     const [activeTab, setActiveTab] = useState<BOQCategory>('substructure');
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+    const [isMobileDetail, setIsMobileDetail] = useState(false);
+
+    // Mobile detection for project detail
+    useEffect(() => {
+        const check = () => setIsMobileDetail(window.innerWidth <= 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
 
     const projectPriceKey = useMemo(
         () => `boq_price_version_${projectId}`,
@@ -680,30 +691,11 @@ function ProjectDetailContent() {
         }
     }, [projectId]);
 
-    // Loading state
+    // Loading state - skeleton layout
     if (isLoading) {
         return (
-            <MainLayout title="Loading...">
-                <div className="loading-state">
-                    <CircleNotch size={40} className="spinner" />
-                    <p>Loading project...</p>
-                </div>
-                <style jsx>{`
-                    .loading-state {
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        justify-content: center;
-                        min-height: 400px;
-                        gap: var(--spacing-md);
-                    }
-                    :global(.spinner) {
-                        animation: spin 1s linear infinite;
-                        color: var(--color-primary);
-                    }
-                    @keyframes spin { to { transform: rotate(360deg); } }
-                    p { color: var(--color-text-secondary); }
-                `}</style>
+            <MainLayout title="Loading..." fullWidth>
+                <ProjectDetailSkeleton />
             </MainLayout>
         );
     }
@@ -773,6 +765,8 @@ function ProjectDetailContent() {
                     project={project}
                     activeView={activeView}
                     onViewChange={setActiveView}
+                    isMobileOpen={isMobileSidebarOpen}
+                    onMobileClose={() => setIsMobileSidebarOpen(false)}
                 />
 
                 <main className="flex-1 overflow-y-auto h-[calc(100vh-64px)] p-6 md:p-8">
@@ -1053,6 +1047,17 @@ function ProjectDetailContent() {
                 </main>
             </div>
 
+            {/* Mobile hamburger FAB */}
+            {isMobileDetail && (
+                <button
+                    className="mobile-sidebar-fab"
+                    onClick={() => setIsMobileSidebarOpen(true)}
+                    aria-label="Open navigation"
+                >
+                    <List size={24} weight="bold" />
+                </button>
+            )}
+
             <PhoneNumberModal
                 isOpen={showPhoneModal}
                 onClose={() => {
@@ -1076,6 +1081,34 @@ function ProjectDetailContent() {
                      animation: spin 1s linear infinite;
                 }
                 @keyframes spin { to { transform: rotate(360deg); } }
+
+                .mobile-sidebar-fab {
+                    display: none;
+                }
+
+                @media (max-width: 768px) {
+                    .mobile-sidebar-fab {
+                        display: flex;
+                        position: fixed;
+                        bottom: 24px;
+                        left: 16px;
+                        z-index: 100;
+                        width: 56px;
+                        height: 56px;
+                        border-radius: 50%;
+                        background: var(--color-primary, #3b82f6);
+                        color: white;
+                        border: none;
+                        align-items: center;
+                        justify-content: center;
+                        box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+                        cursor: pointer;
+                    }
+
+                    .mobile-sidebar-fab:active {
+                        transform: scale(0.95);
+                    }
+                }
             `}</style>
         </MainLayout>
     );

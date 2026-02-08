@@ -8,6 +8,7 @@ import Card, { CardHeader, CardTitle, CardBadge } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { ProjectCardSkeleton, KpiSkeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
@@ -60,6 +61,11 @@ function ProjectsContent() {
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const [optimisticProject, setOptimisticProject] = useState<{ id: string; name: string; location: string } | null>(null);
+    const [highlightedProjectId, setHighlightedProjectId] = useState<string | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    const [mobileMenuProjectId, setMobileMenuProjectId] = useState<string | null>(null);
 
     // Filter and sort state
     const [searchQuery, setSearchQuery] = useState('');
@@ -137,6 +143,14 @@ function ProjectsContent() {
         setSortBy('updated_desc');
     };
 
+    // Mobile detection
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth <= 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
+
     // Close menu when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -151,7 +165,11 @@ function ProjectsContent() {
     const handleMenuToggle = (e: React.MouseEvent, projectId: string) => {
         e.preventDefault();
         e.stopPropagation();
-        setOpenMenuId(openMenuId === projectId ? null : projectId);
+        if (isMobile) {
+            setMobileMenuProjectId(projectId);
+        } else {
+            setOpenMenuId(openMenuId === projectId ? null : projectId);
+        }
     };
 
     const handleEdit = (e: React.MouseEvent, projectId: string) => {
@@ -242,6 +260,32 @@ function ProjectsContent() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Handle optimistic project creation
+    useEffect(() => {
+        if (searchParams.get('created') === '1') {
+            try {
+                const stored = sessionStorage.getItem('zimestimate_optimistic_project');
+                if (stored) {
+                    const data = JSON.parse(stored);
+                    setOptimisticProject({ id: data.id, name: data.name, location: data.location });
+                }
+            } catch {}
+            router.replace('/projects');
+        }
+    }, [searchParams, router]);
+
+    // When real projects load and we have an optimistic card, transition to highlight
+    useEffect(() => {
+        if (!optimisticProject || isLoading) return;
+        const found = projects.find(p => p.id === optimisticProject.id);
+        if (found) {
+            setOptimisticProject(null);
+            setHighlightedProjectId(found.id);
+            try { sessionStorage.removeItem('zimestimate_optimistic_project'); } catch {}
+            setTimeout(() => setHighlightedProjectId(null), 3000);
+        }
+    }, [projects, optimisticProject, isLoading]);
+
     // Refresh when coming from create/delete flows
     useEffect(() => {
         if (searchParams.get('refresh') === '1') {
@@ -285,31 +329,47 @@ function ProjectsContent() {
                         <div className="kpi-icon">
                             <Crown size={24} weight="duotone" className="text-blue-500" />
                         </div>
-                        <div className="kpi-content">
-                            <div className="kpi-label">Total Portfolio Spend</div>
-                            <div className="kpi-value">
-                                <PriceDisplay priceUsd={projectStats.totalBudget} priceZwg={projectStats.totalBudget * 30} />
+                        {isLoading ? (
+                            <KpiSkeleton />
+                        ) : (
+                            <div className="kpi-content">
+                                <div className="kpi-label">Total Portfolio Spend</div>
+                                <div className="kpi-value">
+                                    <PriceDisplay priceUsd={projectStats.totalBudget} priceZwg={projectStats.totalBudget * 30} />
+                                </div>
+                                <div className="kpi-trend positive">
+                                    <TrendUp size={14} /> +12% vs last month
+                                </div>
                             </div>
-                            <div className="kpi-trend positive">
-                                <TrendUp size={14} /> +12% vs last month
-                            </div>
-                        </div>
+                        )}
                     </div>
 
                     <div className="kpi-card">
-                        <div className="kpi-label">Combined Budget vs Actual</div>
-                        <div className="kpi-value">$0.00 <span className="text-sm text-slate-400 font-normal">/ {useCurrency().formatPrice(projectStats.totalBudget, projectStats.totalBudget * 30)}</span></div>
-                        <div className="kpi-bar-container">
-                            <div className="kpi-bar-bg">
-                                <div className="kpi-bar-fill" style={{ width: '0%' }}></div>
-                            </div>
-                        </div>
+                        {isLoading ? (
+                            <KpiSkeleton />
+                        ) : (
+                            <>
+                                <div className="kpi-label">Combined Budget vs Actual</div>
+                                <div className="kpi-value">$0.00 <span className="text-sm text-slate-400 font-normal">/ {useCurrency().formatPrice(projectStats.totalBudget, projectStats.totalBudget * 30)}</span></div>
+                                <div className="kpi-bar-container">
+                                    <div className="kpi-bar-bg">
+                                        <div className="kpi-bar-fill" style={{ width: '0%' }}></div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     <div className="kpi-card">
-                        <div className="kpi-label">Avg. Price Variance</div>
-                        <div className="kpi-value text-green-600">-2.4%</div>
-                        <div className="kpi-sub">Under Budget</div>
+                        {isLoading ? (
+                            <KpiSkeleton />
+                        ) : (
+                            <>
+                                <div className="kpi-label">Avg. Price Variance</div>
+                                <div className="kpi-value text-green-600">-2.4%</div>
+                                <div className="kpi-sub">Under Budget</div>
+                            </>
+                        )}
                     </div>
 
                     <div className="kpi-card actions-card">
@@ -343,22 +403,34 @@ function ProjectsContent() {
                 {/* Filters Bar */}
                 {projects.length > 0 && (
                     <div className="filters-bar">
-                        <div className="search-box">
-                            <MagnifyingGlass size={18} weight="light" />
-                            <input
-                                type="text"
-                                placeholder="Search projects..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                            {searchQuery && (
-                                <button className="clear-search" onClick={() => setSearchQuery('')}>
-                                    <X size={14} />
+                        <div className="filters-top-row">
+                            <div className="search-box">
+                                <MagnifyingGlass size={18} weight="light" />
+                                <input
+                                    type="text"
+                                    placeholder="Search projects..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                                {searchQuery && (
+                                    <button className="clear-search" onClick={() => setSearchQuery('')}>
+                                        <X size={14} />
+                                    </button>
+                                )}
+                            </div>
+
+                            {isMobile && (
+                                <button className="filter-toggle-btn" onClick={() => setShowFilters(prev => !prev)}>
+                                    <Funnel size={18} weight="light" />
+                                    Filters
+                                    {activeFilterCount > 0 && (
+                                        <span className="filter-badge">{activeFilterCount}</span>
+                                    )}
                                 </button>
                             )}
                         </div>
 
-                        <div className="filter-group">
+                        <div className={`filter-group${isMobile ? ' mobile-filters' : ''}${isMobile && !showFilters ? ' hidden' : ''}`}>
                             <div className="filter-select">
                                 <Funnel size={16} weight="light" />
                                 <select
@@ -405,21 +477,22 @@ function ProjectsContent() {
                                 </select>
                                 <CaretDown size={14} />
                             </div>
-                        </div>
 
-                        {activeFilterCount > 0 && (
-                            <button className="clear-filters" onClick={clearFilters}>
-                                Clear filters ({activeFilterCount})
-                            </button>
-                        )}
+                            {activeFilterCount > 0 && (
+                                <button className="clear-filters" onClick={clearFilters}>
+                                    Clear filters ({activeFilterCount})
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
 
-                {/* Loading State */}
+                {/* Loading State - Skeleton Cards */}
                 {isLoading && (
-                    <div className="loading-state">
-                        <div className="spinner"></div>
-                        <p>Loading projects...</p>
+                    <div className="projects-grid">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                            <ProjectCardSkeleton key={i} />
+                        ))}
                     </div>
                 )}
 
@@ -460,11 +533,36 @@ function ProjectsContent() {
                 )}
 
                 {/* Projects Grid */}
-                {!isLoading && !error && filteredProjects.length > 0 && (
+                {!isLoading && !error && (filteredProjects.length > 0 || optimisticProject) && (
                     <div className="projects-grid">
+                        {/* Optimistic "Creating..." card */}
+                        {optimisticProject && (
+                            <div className="project-link">
+                                <Card className="project-card creating">
+                                    <CardHeader>
+                                        <div className="project-header">
+                                            <CardTitle>{optimisticProject.name}</CardTitle>
+                                            <CardBadge variant="default">Creating...</CardBadge>
+                                        </div>
+                                    </CardHeader>
+                                    <div className="project-meta">
+                                        {optimisticProject.location && (
+                                            <span className="meta-item">
+                                                <MapPin size={14} weight="light" />
+                                                {optimisticProject.location}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="project-budget">
+                                        <span className="budget-label">Budget</span>
+                                        <span className="budget-value">--</span>
+                                    </div>
+                                </Card>
+                            </div>
+                        )}
                         {filteredProjects.map((project) => (
                             <Link key={project.id} href={`/projects/${project.id}`} className="project-link">
-                                <Card className="project-card">
+                                <Card className={`project-card${highlightedProjectId === project.id ? ' highlight-new' : ''}`}>
                                     <CardHeader>
                                         <div className="project-header">
                                             <CardTitle>{project.name}</CardTitle>
@@ -548,6 +646,28 @@ function ProjectsContent() {
                     </Card>
                 )}
             </div>
+
+            {/* Mobile Bottom Sheet Menu */}
+            {isMobile && mobileMenuProjectId && (
+                <>
+                    <div className="mobile-menu-backdrop" onClick={() => setMobileMenuProjectId(null)} />
+                    <div className="mobile-bottom-sheet">
+                        <div className="bottom-sheet-handle" />
+                        <button className="bottom-sheet-item" onClick={(e) => { handleEdit(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
+                            <PencilSimple size={20} /> Edit
+                        </button>
+                        <button className="bottom-sheet-item" onClick={(e) => { handleShare(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
+                            <ShareNetwork size={20} /> Share
+                        </button>
+                        <button className="bottom-sheet-item" onClick={(e) => { handleArchive(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
+                            <Archive size={20} /> Archive
+                        </button>
+                        <button className="bottom-sheet-item danger" onClick={(e) => { handleDelete(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
+                            <Trash size={20} /> Delete
+                        </button>
+                    </div>
+                </>
+            )}
 
             {/* Delete Confirmation Dialog */}
             <ConfirmDialog
@@ -739,9 +859,43 @@ function ProjectsContent() {
 
                 .filters-bar {
                     display: flex;
+                    flex-direction: column;
+                    gap: var(--spacing-md);
+                }
+
+                .filters-top-row {
+                    display: flex;
                     align-items: center;
                     gap: var(--spacing-md);
-                    flex-wrap: wrap;
+                }
+
+                .filter-toggle-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: var(--spacing-xs);
+                    padding: var(--spacing-sm) var(--spacing-md);
+                    background: #ffffff;
+                    border: 1px solid var(--color-border-light);
+                    border-radius: var(--radius-md);
+                    font-size: 0.875rem;
+                    color: var(--color-text-secondary);
+                    cursor: pointer;
+                    white-space: nowrap;
+                    min-height: 44px;
+                    box-shadow: 0 10px 20px rgba(6, 20, 47, 0.06);
+                }
+
+                .filter-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: var(--color-primary);
+                    color: white;
+                    font-size: 0.625rem;
+                    font-weight: 700;
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
                 }
 
                 .search-box {
@@ -1093,6 +1247,26 @@ function ProjectsContent() {
                     }
                 }
 
+                :global(.project-card.creating) {
+                    animation: pulse-creating 1.5s ease-in-out infinite;
+                    border-color: rgba(78, 154, 247, 0.4);
+                    pointer-events: none;
+                }
+
+                @keyframes pulse-creating {
+                    0%, 100% { opacity: 1; box-shadow: 0 4px 6px -1px rgba(78, 154, 247, 0.1); }
+                    50% { opacity: 0.7; box-shadow: 0 4px 20px rgba(78, 154, 247, 0.25); }
+                }
+
+                :global(.project-card.highlight-new) {
+                    animation: highlight-glow 3s ease-out forwards;
+                }
+
+                @keyframes highlight-glow {
+                    0% { box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.5), 0 18px 36px rgba(78, 154, 247, 0.2); border-color: rgba(78, 154, 247, 0.5); }
+                    100% { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border-color: var(--color-border-light); }
+                }
+
                 @media (max-width: 768px) {
                     .summary-grid {
                         grid-template-columns: 1fr;
@@ -1111,6 +1285,100 @@ function ProjectsContent() {
                         flex-direction: column;
                         text-align: center;
                     }
+
+                    .search-box {
+                        max-width: none;
+                        min-width: 0;
+                    }
+
+                    .filter-group.mobile-filters {
+                        flex-direction: column;
+                    }
+
+                    .filter-group.mobile-filters .filter-select {
+                        width: 100%;
+                    }
+
+                    .filter-group.hidden {
+                        display: none;
+                    }
+
+                    .menu-btn {
+                        min-width: 44px;
+                        min-height: 44px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+
+                    .filter-select {
+                        min-height: 44px;
+                    }
+                }
+
+                /* Mobile Bottom Sheet Menu */
+                .mobile-menu-backdrop {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(0, 0, 0, 0.4);
+                    z-index: 999;
+                    animation: fadeIn 0.2s ease;
+                }
+
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+
+                .mobile-bottom-sheet {
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    background: white;
+                    border-radius: 16px 16px 0 0;
+                    z-index: 1000;
+                    padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+                    animation: slideUp 0.25s ease-out;
+                    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.12);
+                }
+
+                @keyframes slideUp {
+                    from { transform: translateY(100%); }
+                    to { transform: translateY(0); }
+                }
+
+                .bottom-sheet-handle {
+                    width: 36px;
+                    height: 4px;
+                    background: #d1d5db;
+                    border-radius: 2px;
+                    margin: 0 auto 12px;
+                }
+
+                .bottom-sheet-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    width: 100%;
+                    padding: 14px 16px;
+                    background: none;
+                    border: none;
+                    font-size: 1rem;
+                    color: var(--color-text);
+                    cursor: pointer;
+                    border-radius: 10px;
+                    text-align: left;
+                    min-height: 44px;
+                }
+
+                .bottom-sheet-item:hover,
+                .bottom-sheet-item:active {
+                    background: #f1f5f9;
+                }
+
+                .bottom-sheet-item.danger {
+                    color: var(--color-error);
                 }
             `}</style>
         </MainLayout>
