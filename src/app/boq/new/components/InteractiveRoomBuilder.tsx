@@ -1122,6 +1122,23 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                             >
                                 <GridFour size={16} weight={snapToGrid ? 'fill' : 'regular'} />
                             </button>
+                            <button
+                                onClick={() => setShowHelpModal(true)}
+                                style={{
+                                    padding: '6px',
+                                    background: showHelpModal ? '#e0f2fe' : '#fff',
+                                    border: `1px solid ${showHelpModal ? '#3b82f6' : '#e5e7eb'}`,
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    color: showHelpModal ? '#1d4ed8' : '#374151',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    marginLeft: '4px'
+                                }}
+                                title="Keyboard Shortcuts (Shift + ?)"
+                            >
+                                <Question size={16} weight="bold" />
+                            </button>
 
                             {/* Connection Mode Button */}
                             <button
