@@ -20,7 +20,6 @@ import {
     MagnifyingGlassPlus,
     MagnifyingGlassMinus,
     GridFour,
-    LinkSimple,
     Toilet,
     Bathtub,
     Keyboard,
@@ -42,7 +41,7 @@ const ROOM_TYPES = [
     { key: 'livingRoom', label: 'Living Room', defaultDims: { l: 6, w: 5 }, color: '#ec4899', bgColor: '#fdf2f8' }, // Pink
     { key: 'garage1', label: 'Single Garage', defaultDims: { l: 6, w: 3 }, color: '#64748b', bgColor: '#f8fafc' }, // Slate
     { key: 'garage2', label: 'Double Garage', defaultDims: { l: 6, w: 6 }, color: '#64748b', bgColor: '#f8fafc' }, // Slate
-    { key: 'passage', label: 'Passage', defaultDims: { l: 5, w: 1.2 }, color: '#a855f7', bgColor: '#faf5ff' }, // Violet
+    { key: 'passage', label: 'Hallway', defaultDims: { l: 5, w: 1.2 }, color: '#a855f7', bgColor: '#faf5ff' }, // Violet
 ];
 
 // En-suite / Sub-room types (can be added within larger rooms)
@@ -60,12 +59,6 @@ export const BRICK_TYPES = [
 ];
 
 // Connection between rooms (for passages)
-interface RoomConnection {
-    id: string;
-    fromRoomId: string;
-    toRoomId: string;
-}
-
 export interface RoomInstance {
     id: string;
     type: string;
@@ -79,6 +72,14 @@ export interface RoomInstance {
     materialId: string;
     parentRoomId?: string; // For en-suite rooms attached to a parent
     isEnSuite?: boolean;   // Flag for en-suite/sub-rooms
+    rotation?: number; // In degrees
+    // Wall Features for interactive building
+    walls?: {
+        top: 'solid' | 'opening' | 'door' | 'window';
+        right: 'solid' | 'opening' | 'door' | 'window';
+        bottom: 'solid' | 'opening' | 'door' | 'window';
+        left: 'solid' | 'opening' | 'door' | 'window';
+    };
 }
 
 interface InteractiveRoomBuilderProps {
@@ -106,6 +107,101 @@ const getRoomTypeColor = (typeKey: string): { color: string; bgColor: string } =
     return { color: '#94a3b8', bgColor: '#f8fafc' }; // Default slate
 };
 
+// Helper component for drawing interactive wall segments
+const WallSegment = ({
+    x1, y1, x2, y2,
+    type,
+    onClick,
+    color,
+    isVertical
+}: {
+    x1: number, y1: number, x2: number, y2: number,
+    type: 'solid' | 'opening' | 'door' | 'window',
+    onClick: (e: any) => void,
+    color: string,
+    isVertical?: boolean
+}) => {
+    // Determine feature dimensions based on wall length
+    const totalLength = Math.abs(isVertical ? y2 - y1 : x2 - x1);
+    const featureSize = Math.min(totalLength * 0.6, 60); // Max 60px or 60%
+    const half = featureSize / 2;
+
+    // Calculate gap start/end
+    const cx = (x1 + x2) / 2;
+    const cy = (y1 + y2) / 2;
+
+    let gapStart = isVertical ? { x: x1, y: cy - half } : { x: cx - half, y: y1 };
+    let gapEnd = isVertical ? { x: x2, y: cy + half } : { x: cx + half, y: y2 };
+
+    // Adjust for solid walls (no gap)
+    if (type === 'solid') {
+        gapStart = { x: x2, y: y2 }; // End point
+    }
+
+    return (
+        <g onClick={onClick} style={{ cursor: 'pointer' }}>
+            {/* Invisible Hit Area (wider for easy clicking) */}
+            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="transparent" strokeWidth="20" />
+
+            {/* Wall Start */}
+            <line
+                x1={x1} y1={y1}
+                x2={type === 'solid' ? x2 : gapStart.x}
+                y2={type === 'solid' ? y2 : gapStart.y}
+                stroke={color} strokeWidth="4"
+                strokeLinecap="round"
+            />
+
+            {/* Wall End (only if not solid) */}
+            {type !== 'solid' && (
+                <line
+                    x1={gapEnd.x} y1={gapEnd.y}
+                    x2={x2} y2={y2}
+                    stroke={color} strokeWidth="4"
+                    strokeLinecap="round"
+                />
+            )}
+
+            {/* Feature Rendering */}
+            {type === 'window' && (
+                <rect
+                    x={isVertical ? x1 - 4 : gapStart.x}
+                    y={isVertical ? gapStart.y : y1 - 4}
+                    width={isVertical ? 8 : featureSize}
+                    height={isVertical ? featureSize : 8}
+                    fill="#bfdbfe"
+                    stroke="#3b82f6"
+                    strokeWidth="1"
+                    rx="1"
+                />
+            )}
+
+            {type === 'door' && (
+                // Simple Arc visualization
+                <path
+                    d={isVertical
+                        ? `M ${x1} ${gapStart.y} Q ${x1 + 30} ${cy} ${x1} ${gapEnd.y}`
+                        : `M ${gapStart.x} ${y1} Q ${cx} ${y1 + 30} ${gapEnd.x} ${y1}`
+                    }
+                    fill="none"
+                    stroke={color}
+                    strokeWidth="1.5"
+                    strokeDasharray="3 3"
+                />
+            )}
+
+            {type === 'opening' && (
+                // Dashed line indicating opening
+                <line
+                    x1={gapStart.x} y1={gapStart.y}
+                    x2={gapEnd.x} y2={gapEnd.y}
+                    stroke={color} strokeWidth="1.5" strokeDasharray="4 4" opacity={0.6}
+                />
+            )}
+        </g>
+    );
+};
+
 export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue, onBack }: InteractiveRoomBuilderProps) {
     const [rooms, setRooms] = useState<RoomInstance[]>([]);
     const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
@@ -122,10 +218,7 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
     const [zoom, setZoom] = useState(1);
     const [snapToGrid, setSnapToGrid] = useState(true);
 
-    // Room connections (passages between rooms)
-    const [connections, setConnections] = useState<RoomConnection[]>([]);
-    const [connectionMode, setConnectionMode] = useState<'none' | 'selecting-first' | 'selecting-second'>('none');
-    const [connectionFirstRoom, setConnectionFirstRoom] = useState<string | null>(null);
+
 
     // Drag state
     const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -506,87 +599,15 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
         setRooms(prev => [...prev, newRoom]);
         setShowEnSuitePicker(false);
 
-        // Auto-create a connection between parent and en-suite
-        const newConnection: RoomConnection = {
-            id: `conn-${Date.now()}`,
-            fromRoomId: selectedRoomId,
-            toRoomId: newRoom.id
-        };
-        setConnections(prev => [...prev, newConnection]);
+
     };
 
-    // Start connection mode
-    const startConnectionMode = () => {
-        setConnectionMode('selecting-first');
-        setConnectionFirstRoom(null);
-    };
 
-    // Cancel connection mode
-    const cancelConnectionMode = () => {
-        setConnectionMode('none');
-        setConnectionFirstRoom(null);
-    };
-
-    // Handle room click during connection mode
-    const handleConnectionClick = (roomId: string) => {
-        if (connectionMode === 'selecting-first') {
-            setConnectionFirstRoom(roomId);
-            setConnectionMode('selecting-second');
-        } else if (connectionMode === 'selecting-second' && connectionFirstRoom) {
-            if (roomId === connectionFirstRoom) {
-                // Can't connect to self
-                return;
-            }
-
-            // Check if connection already exists
-            const exists = connections.some(c =>
-                (c.fromRoomId === connectionFirstRoom && c.toRoomId === roomId) ||
-                (c.fromRoomId === roomId && c.toRoomId === connectionFirstRoom)
-            );
-
-            if (!exists) {
-                const newConnection: RoomConnection = {
-                    id: `conn-${Date.now()}`,
-                    fromRoomId: connectionFirstRoom,
-                    toRoomId: roomId
-                };
-                setConnections(prev => [...prev, newConnection]);
-            }
-
-            cancelConnectionMode();
-        }
-    };
-
-    // Remove a connection
-    const removeConnection = (connectionId: string) => {
-        setConnections(prev => prev.filter(c => c.id !== connectionId));
-    };
-
-    // Get connection line coordinates between two rooms
-    const getConnectionLine = (conn: RoomConnection) => {
-        const fromRoom = rooms.find(r => r.id === conn.fromRoomId);
-        const toRoom = rooms.find(r => r.id === conn.toRoomId);
-
-        if (!fromRoom || !toRoom) return null;
-
-        // Calculate center points of each room
-        const fromCenterX = fromRoom.x + (fromRoom.width * PIXELS_PER_METER) / 2;
-        const fromCenterY = fromRoom.y + (fromRoom.length * PIXELS_PER_METER) / 2;
-        const toCenterX = toRoom.x + (toRoom.width * PIXELS_PER_METER) / 2;
-        const toCenterY = toRoom.y + (toRoom.length * PIXELS_PER_METER) / 2;
-
-        return { x1: fromCenterX, y1: fromCenterY, x2: toCenterX, y2: toCenterY };
-    };
 
     // Remove selected room
     const removeSelectedRoom = () => {
         if (!selectedRoomId) return;
         saveToHistory();
-
-        // Also remove connections involving this room
-        setConnections(prev => prev.filter(c =>
-            c.fromRoomId !== selectedRoomId && c.toRoomId !== selectedRoomId
-        ));
 
         // Also remove any en-suite rooms attached to this room
         setRooms(prev => prev.filter(r => r.id !== selectedRoomId && r.parentRoomId !== selectedRoomId));
@@ -652,12 +673,49 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                 return {
                     ...room,
                     width: room.length,
-                    length: room.width
+                    length: room.width,
+                    // If walls exist, rotate them too (top->right, right->bottom, bottom->left, left->top)
+                    ...(room.walls ? {
+                        walls: {
+                            top: room.walls.left,
+                            right: room.walls.top,
+                            bottom: room.walls.right,
+                            left: room.walls.bottom
+                        }
+                    } : {})
                 };
             }
             return room;
         }));
     }, [selectedRoomId, saveToHistory]);
+
+    // Toggle wall feature (Solid -> Opening -> Door -> Window -> Solid)
+    const toggleWallFeature = useCallback((roomId: string, side: 'top' | 'right' | 'bottom' | 'left', e: React.MouseEvent) => {
+        e.stopPropagation();
+        saveToHistory();
+
+        setRooms(prev => prev.map(room => {
+            if (room.id !== roomId) return room;
+
+            const currentWalls = room.walls || { top: 'solid', right: 'solid', bottom: 'solid', left: 'solid' };
+            const currentSide = currentWalls[side];
+
+            const cycle = ['solid', 'opening', 'door', 'window'] as const;
+            const currentIndex = cycle.indexOf(currentSide as any) === -1 ? 0 : cycle.indexOf(currentSide as any);
+            const nextIndex = (currentIndex + 1) % cycle.length;
+            const nextFeature = cycle[nextIndex];
+
+            return {
+                ...room,
+                walls: {
+                    ...currentWalls,
+                    [side]: nextFeature
+                }
+            };
+        }));
+
+        setSelectedRoomId(roomId);
+    }, [saveToHistory]);
 
     // Calculate alignment guides when dragging
     const calculateAlignmentGuides = useCallback((draggedRoom: RoomInstance) => {
@@ -870,7 +928,7 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
             if (e.key === 'Escape') {
                 setSelectedRoomId(null);
                 setShowRoomPicker(false);
-                cancelConnectionMode();
+                setShowHelpModal(false);
             }
 
             // + and - for zoom
@@ -1141,30 +1199,7 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                             </button>
 
                             {/* Connection Mode Button */}
-                            <button
-                                onClick={connectionMode === 'none' ? startConnectionMode : cancelConnectionMode}
-                                style={{
-                                    padding: '6px 10px',
-                                    background: connectionMode !== 'none' ? '#fef3c7' : '#fff',
-                                    border: `1px solid ${connectionMode !== 'none' ? '#fcd34d' : '#e5e7eb'}`,
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    color: connectionMode !== 'none' ? '#92400e' : '#374151',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    fontSize: '11px',
-                                    fontWeight: 600
-                                }}
-                                title="Add passage between rooms"
-                            >
-                                <LinkSimple size={14} weight={connectionMode !== 'none' ? 'fill' : 'regular'} />
-                                {connectionMode === 'none'
-                                    ? 'Passage'
-                                    : connectionMode === 'selecting-first'
-                                        ? 'Select 1st room...'
-                                        : 'Select 2nd room...'}
-                            </button>
+
                         </div>
                     )}
                     {loadedFromStorage && (
@@ -1468,94 +1503,7 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                         transformOrigin: 'top left',
                         transition: 'transform 0.15s ease-out'
                     }}>
-                        {/* Connection Lines SVG Overlay */}
-                        {!isMobile && connections.length > 0 && (
-                            <svg
-                                style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    pointerEvents: 'none',
-                                    zIndex: 0
-                                }}
-                            >
-                                <defs>
-                                    <marker
-                                        id="passage-dot"
-                                        viewBox="0 0 10 10"
-                                        refX="5"
-                                        refY="5"
-                                        markerWidth="6"
-                                        markerHeight="6"
-                                    >
-                                        <circle cx="5" cy="5" r="4" fill="#a855f7" />
-                                    </marker>
-                                </defs>
-                                {connections.map(conn => {
-                                    const line = getConnectionLine(conn);
-                                    if (!line) return null;
 
-                                    return (
-                                        <g key={conn.id}>
-                                            <line
-                                                x1={line.x1}
-                                                y1={line.y1}
-                                                x2={line.x2}
-                                                y2={line.y2}
-                                                stroke="#a855f7"
-                                                strokeWidth="3"
-                                                strokeDasharray="8 4"
-                                                markerStart="url(#passage-dot)"
-                                                markerEnd="url(#passage-dot)"
-                                            />
-                                            {/* Connection label with icon */}
-                                            <g
-                                                style={{ cursor: 'pointer' }}
-                                                onClick={() => removeConnection(conn.id)}
-                                            >
-                                                <rect
-                                                    x={(line.x1 + line.x2) / 2 - 32}
-                                                    y={(line.y1 + line.y2) / 2 - 18}
-                                                    width="64"
-                                                    height="16"
-                                                    rx="4"
-                                                    fill="#f5f3ff"
-                                                    stroke="#a855f7"
-                                                    strokeWidth="1"
-                                                    style={{ pointerEvents: 'auto' }}
-                                                />
-                                                {/* Door icon path */}
-                                                <path
-                                                    d={`M${(line.x1 + line.x2) / 2 - 26} ${(line.y1 + line.y2) / 2 - 14} h8 v10 h-8 z`}
-                                                    fill="none"
-                                                    stroke="#7c3aed"
-                                                    strokeWidth="1.5"
-                                                />
-                                                <circle
-                                                    cx={(line.x1 + line.x2) / 2 - 20}
-                                                    cy={(line.y1 + line.y2) / 2 - 9}
-                                                    r="1"
-                                                    fill="#7c3aed"
-                                                />
-                                                <text
-                                                    x={(line.x1 + line.x2) / 2 + 4}
-                                                    y={(line.y1 + line.y2) / 2 - 7}
-                                                    textAnchor="middle"
-                                                    fill="#7c3aed"
-                                                    fontSize="9"
-                                                    fontWeight="600"
-                                                    style={{ pointerEvents: 'none' }}
-                                                >
-                                                    Passage
-                                                </text>
-                                            </g>
-                                        </g>
-                                    );
-                                })}
-                            </svg>
-                        )}
                         {/* Alignment Guides Overlay */}
                         {(alignmentGuides.horizontal.length > 0 || alignmentGuides.vertical.length > 0) && (
                             <svg
@@ -1616,84 +1564,67 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                                 const isDragging = room.id === draggingId;
                                 const hasOverlap = roomCollisions[room.id] || false;
                                 const roomColors = getRoomTypeColor(room.type);
-                                const isConnectionTarget = connectionMode !== 'none';
-                                const isFirstSelected = connectionFirstRoom === room.id;
 
-                                // Determine border color based on state
-                                let borderStyle = `2px solid ${roomColors.color}`;
-                                if (hasOverlap) {
-                                    borderStyle = '2px solid #ef4444'; // Red for collision
-                                } else if (isDragging) {
-                                    borderStyle = '2px dashed #22c55e';
-                                } else if (isSelected) {
-                                    borderStyle = '2px solid #22c55e';
-                                } else if (isFirstSelected) {
-                                    borderStyle = '3px solid #f59e0b'; // Amber for first connection selection
-                                } else if (isConnectionTarget) {
-                                    borderStyle = `2px dashed ${roomColors.color}`;
-                                }
+                                const walls = room.walls || { top: 'solid', right: 'solid', bottom: 'solid', left: 'solid' };
+                                const widthPx = room.width * PIXELS_PER_METER;
+                                const lengthPx = room.length * PIXELS_PER_METER;
 
-                                // Determine background based on state
+                                // Visuals
                                 let bgColor = roomColors.bgColor;
+                                let boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+
                                 if (hasOverlap) {
-                                    bgColor = '#fef2f2'; // Light red for collision
+                                    bgColor = '#fef2f2';
+                                    boxShadow = '0 0 0 3px #ef4444';
+                                } else if (isDragging) {
+                                    boxShadow = '0 0 0 3px #22c55e, 0 10px 15px -3px rgba(0,0,0,0.1)';
                                 } else if (isSelected) {
                                     bgColor = '#dcfce7';
-                                } else if (isFirstSelected) {
-                                    bgColor = '#fef3c7'; // Amber bg for first selection
+                                    boxShadow = '0 0 0 2px #22c55e';
                                 }
-
-                                // Handle click based on mode
-                                const handleClick = () => {
-                                    if (connectionMode !== 'none') {
-                                        handleConnectionClick(room.id);
-                                    } else {
-                                        handleRoomSelect(room.id);
-                                    }
-                                };
 
                                 return (
                                     <div
                                         key={room.id}
-                                        onMouseDown={(e) => !isMobile && connectionMode === 'none' && handleMouseDown(e, room.id)}
-                                        onClick={handleClick}
+                                        onMouseDown={(e) => !isMobile && handleMouseDown(e, room.id)}
+                                        onClick={() => handleRoomSelect(room.id)}
                                         style={{
-                                            // Layout
                                             position: isMobile ? 'relative' : 'absolute',
                                             left: isMobile ? 'auto' : `${room.x}px`,
                                             top: isMobile ? 'auto' : `${room.y}px`,
                                             zIndex: isDragging ? 10 : (isSelected ? 5 : 1),
 
-                                            // Dimensions
-                                            width: isMobile ? 'auto' : `${room.width * PIXELS_PER_METER}px`,
-                                            height: isMobile ? 'auto' : `${room.length * PIXELS_PER_METER}px`,
+                                            width: isMobile ? 'auto' : `${widthPx}px`,
+                                            height: isMobile ? 'auto' : `${lengthPx}px`,
                                             minWidth: isMobile ? 'auto' : '60px',
                                             minHeight: isMobile ? 'auto' : '60px',
 
-                                            // Visuals
                                             background: bgColor,
-                                            border: borderStyle,
-                                            borderRadius: '4px',
+                                            boxShadow: boxShadow,
+                                            borderRadius: '2px',
 
-                                            // Flex content
                                             display: 'flex',
                                             flexDirection: 'column',
                                             alignItems: 'center',
                                             justifyContent: 'center',
 
-                                            // Interaction
                                             cursor: isMobile ? 'pointer' : (isDragging ? 'grabbing' : 'grab'),
                                             userSelect: 'none',
-                                            boxShadow: hasOverlap
-                                                ? '0 0 0 3px rgba(239, 68, 68, 0.3)'
-                                                : isDragging
-                                                    ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-                                                    : (isSelected ? '0 10px 15px -3px rgba(34, 197, 94, 0.2)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)'),
-                                            transition: isDragging ? 'none' : 'all 0.2s',
+                                            transition: isDragging ? 'none' : 'transform 0.2s, background-color 0.2s',
                                             transform: isMobile ? (isSelected ? 'scale(1.05)' : 'scale(1)') : 'none',
                                             padding: '12px'
                                         }}
                                     >
+                                        {/* Wall Rendering */}
+                                        <svg
+                                            width="100%" height="100%"
+                                            style={{ position: 'absolute', top: 0, left: 0, overflow: 'visible', zIndex: 0 }}
+                                        >
+                                            <WallSegment x1={0} y1={0} x2={widthPx} y2={0} type={walls.top} color={roomColors.color} onClick={(e: any) => toggleWallFeature(room.id, 'top', e)} />
+                                            <WallSegment x1={widthPx} y1={0} x2={widthPx} y2={lengthPx} type={walls.right} color={roomColors.color} isVertical onClick={(e: any) => toggleWallFeature(room.id, 'right', e)} />
+                                            <WallSegment x1={widthPx} y1={lengthPx} x2={0} y2={lengthPx} type={walls.bottom} color={roomColors.color} onClick={(e: any) => toggleWallFeature(room.id, 'bottom', e)} />
+                                            <WallSegment x1={0} y1={lengthPx} x2={0} y2={0} type={walls.left} color={roomColors.color} isVertical onClick={(e: any) => toggleWallFeature(room.id, 'left', e)} />
+                                        </svg>
                                         {isSelected && (
                                             <div style={{
                                                 position: 'absolute',
@@ -2084,7 +2015,6 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                                                     <button
                                                         onClick={() => {
                                                             saveToHistory();
-                                                            setConnections(prev => prev.filter(c => c.fromRoomId !== ensuite.id && c.toRoomId !== ensuite.id));
                                                             setRooms(prev => prev.filter(r => r.id !== ensuite.id));
                                                         }}
                                                         style={{
@@ -2501,6 +2431,7 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                             {[
+                                { k: 'Click Wall', d: 'Toggle: Door / Window / Open' },
                                 { k: 'Arrow Keys', d: 'Nudge selected room' },
                                 { k: 'Delete / Backspace', d: 'Remove selected room' },
                                 { k: 'Ctrl + C', d: 'Copy room' },
