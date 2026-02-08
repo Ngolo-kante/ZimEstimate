@@ -40,13 +40,23 @@ function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: numb
     return <>{formatPrice(priceUsd, priceZwg)}</>;
 }
 
-const formatStageLabel = (stage: string) => stage.replace('_', ' ');
+const STAGE_LABELS: Record<string, string> = {
+    substructure: 'Site Preparation & Foundation',
+    superstructure: 'Structural Walls & Frame',
+    roofing: 'Roofing',
+    finishing: 'Interior & Finishing',
+    exterior: 'External Work',
+    entire_house: 'Full House',
+    full_house: 'Full House'
+};
+
+const formatStageLabel = (stage: string) => STAGE_LABELS[stage] || stage.replace('_', ' ');
 
 const formatScopeLabel = (project: Project) => {
     if (project.selected_stages && project.selected_stages.length > 0) {
         return project.selected_stages.map(formatStageLabel).join(', ');
     }
-    return project.scope.replace('_', ' ');
+    return formatStageLabel(project.scope);
 };
 
 function ProjectsContent() {
@@ -269,7 +279,7 @@ function ProjectsContent() {
                     const data = JSON.parse(stored);
                     setOptimisticProject({ id: data.id, name: data.name, location: data.location });
                 }
-            } catch {}
+            } catch { }
             router.replace('/projects');
         }
     }, [searchParams, router]);
@@ -281,7 +291,7 @@ function ProjectsContent() {
         if (found) {
             setOptimisticProject(null);
             setHighlightedProjectId(found.id);
-            try { sessionStorage.removeItem('zimestimate_optimistic_project'); } catch {}
+            try { sessionStorage.removeItem('zimestimate_optimistic_project'); } catch { }
             setTimeout(() => setHighlightedProjectId(null), 3000);
         }
     }, [projects, optimisticProject, isLoading]);
@@ -452,12 +462,12 @@ function ProjectsContent() {
                                     onChange={(e) => setScopeFilter(e.target.value as ProjectScope | 'all')}
                                 >
                                     <option value="all">All Scopes</option>
-                                    <option value="entire_house">Entire House</option>
-                                    <option value="substructure">Substructure</option>
-                                    <option value="superstructure">Superstructure</option>
+                                    <option value="entire_house">Full House</option>
+                                    <option value="substructure">Site Preparation & Foundation</option>
+                                    <option value="superstructure">Structural Walls & Frame</option>
                                     <option value="roofing">Roofing</option>
-                                    <option value="finishing">Finishing</option>
-                                    <option value="exterior">Exterior</option>
+                                    <option value="finishing">Interior & Finishing</option>
+                                    <option value="exterior">External Work</option>
                                 </select>
                                 <CaretDown size={14} />
                             </div>

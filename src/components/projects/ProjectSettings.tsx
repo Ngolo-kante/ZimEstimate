@@ -19,11 +19,11 @@ interface ProjectSettingsProps {
 }
 
 const STAGE_CATEGORIES: { id: BOQCategory; label: string; description: string }[] = [
-    { id: 'substructure', label: 'Substructure', description: 'Foundation work, excavation, and footing.' },
-    { id: 'superstructure', label: 'Superstructure', description: 'Brickwork, lintels, and beams up to roof level.' },
+    { id: 'substructure', label: 'Site Preparation & Foundation', description: 'Foundation work, excavation, and footing.' },
+    { id: 'superstructure', label: 'Structural Walls & Frame', description: 'Brickwork, lintels, and beams up to roof level.' },
     { id: 'roofing', label: 'Roofing', description: 'Trusses, sheets, tiles, and ceiling.' },
-    { id: 'finishing', label: 'Finishing', description: 'Plastering, painting, tiling, and glazing.' },
-    { id: 'exterior', label: 'Exterior', description: 'Landscaping, paving, and boundary walls.' },
+    { id: 'finishing', label: 'Interior & Finishing', description: 'Plastering, painting, tiling, and glazing.' },
+    { id: 'exterior', label: 'External Work', description: 'Landscaping, paving, and boundary walls.' },
 ];
 
 export default function ProjectSettings({ project, onUpdate }: ProjectSettingsProps) {

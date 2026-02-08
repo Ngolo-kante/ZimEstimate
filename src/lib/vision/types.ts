@@ -254,27 +254,27 @@ export const SCOPE_INFO: Record<ProjectScope, {
     milestones: ['substructure', 'superstructure', 'roofing', 'finishing', 'exterior'],
   },
   substructure: {
-    name: 'Substructure Only',
+    name: 'Site Preparation & Foundation',
     description: 'Foundation, DPC, and walls to window level',
     milestones: ['substructure'],
   },
   superstructure: {
-    name: 'Superstructure Only',
+    name: 'Structural Walls & Frame',
     description: 'Walls from window level to roof plate',
     milestones: ['superstructure'],
   },
   roofing: {
-    name: 'Roofing Only',
+    name: 'Roofing',
     description: 'Roof structure, sheets, and accessories',
     milestones: ['roofing'],
   },
   finishing: {
-    name: 'Finishing Only',
+    name: 'Interior & Finishing',
     description: 'Plastering, painting, tiling, and fittings',
     milestones: ['finishing'],
   },
   exterior: {
-    name: 'Exterior Only',
+    name: 'External Work',
     description: 'Boundary walls, gates, and outdoor work',
     milestones: ['exterior'],
   },

@@ -7,6 +7,7 @@ import { Calendar, CaretDown, CaretUp, CheckCircle, Clock, Pause, CircleNotch, F
 interface StageMetadataHeaderProps {
     stage: ProjectStage;
     onUpdate: (updates: Partial<ProjectStage>) => Promise<void>;
+    customTitle?: string;
 }
 
 const statusOptions: { value: StageStatus; label: string; icon: React.ReactNode; color: string }[] = [
@@ -17,7 +18,7 @@ const statusOptions: { value: StageStatus; label: string; icon: React.ReactNode;
     { value: 'completed', label: 'Completed', icon: <CheckCircle size={16} />, color: 'var(--color-success)' },
 ];
 
-export default function StageMetadataHeader({ stage, onUpdate }: StageMetadataHeaderProps) {
+export default function StageMetadataHeader({ stage, onUpdate, customTitle }: StageMetadataHeaderProps) {
     const [isStatusOpen, setIsStatusOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isTimelineOpen, setIsTimelineOpen] = useState(true);
@@ -62,7 +63,7 @@ export default function StageMetadataHeader({ stage, onUpdate }: StageMetadataHe
                     className="section-toggle"
                     onClick={() => setIsTimelineOpen(prev => !prev)}
                 >
-                    <span>Timelines - {stage.name} Phase</span>
+                    <span>Timelines - {customTitle || stage.name} Phase</span>
                     {isTimelineOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
                 </button>
 

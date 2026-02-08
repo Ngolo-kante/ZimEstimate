@@ -30,11 +30,11 @@ function groupItemsByCategory(items: BOQItem[]): Record<string, BOQItem[]> {
 
 // Category display names
 const categoryLabels: Record<string, string> = {
-    substructure: 'Substructure',
-    superstructure: 'Superstructure',
+    substructure: 'Site Preparation & Foundation',
+    superstructure: 'Structural Walls & Frame',
     roofing: 'Roofing',
-    finishing: 'Finishing',
-    exterior: 'Exterior & Security',
+    finishing: 'Interior & Finishing',
+    exterior: 'External Work',
     labor: 'Labor & Services',
 };
 

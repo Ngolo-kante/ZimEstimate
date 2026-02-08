@@ -40,11 +40,11 @@ interface StageTabProps {
 }
 
 const categoryLabels: Record<BOQCategory, string> = {
-    substructure: 'Substructure',
-    superstructure: 'Superstructure',
+    substructure: 'Site Preparation & Foundation',
+    superstructure: 'Structural Walls & Frame',
     roofing: 'Roofing',
-    finishing: 'Finishing',
-    exterior: 'Exterior & Security',
+    finishing: 'Interior & Finishing',
+    exterior: 'External Work',
 };
 
 export default function StageTab({
@@ -252,10 +252,10 @@ export default function StageTab({
     return (
         <>
             <div className="stage-tab">
-                {/* Stage Header with Status and Dates */}
                 <StageMetadataHeader
                     stage={stage}
                     onUpdate={handleStageUpdate}
+                    customTitle={categoryLabels[stage.boq_category]}
                 />
 
                 {/* Admin & Compliance Tasks */}

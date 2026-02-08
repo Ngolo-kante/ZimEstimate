@@ -65,11 +65,11 @@ function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: numb
 const STAGE_CATEGORIES: BOQCategory[] = ['substructure', 'superstructure', 'roofing', 'finishing', 'exterior'];
 
 const categoryLabels: Record<BOQCategory, string> = {
-    substructure: 'Substructure',
-    superstructure: 'Superstructure',
+    substructure: 'Site Preparation & Foundation',
+    superstructure: 'Structural Walls & Frame',
     roofing: 'Roofing',
-    finishing: 'Finishing',
-    exterior: 'Exterior',
+    finishing: 'Interior & Finishing',
+    exterior: 'External Work',
 };
 
 type PriceUpdate = {

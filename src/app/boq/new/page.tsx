@@ -69,7 +69,7 @@ import WizardStyles from './WizardStyles';
 const milestones = [
   {
     id: 'substructure',
-    label: 'Substructure',
+    label: 'Site Preparation & Foundation',
     icon: Cube,
     description: '🏗️ Foundation strips, hardcore filling, DPC/DPM, substructure bricks to window level, floor slab, mesh reinforcement',
     suggestedMaterials: [
@@ -81,7 +81,7 @@ const milestones = [
   },
   {
     id: 'superstructure',
-    label: 'Superstructure',
+    label: 'Structural Walls & Frame',
     icon: Wall,
     description: '🧱 External & internal walls, window/door lintels, ring beam rebar & stirrups, brickforce, mortar (cement + sand)',
     suggestedMaterials: ['cement-brick', 'cement-32n', 'river-sand', 'rebar-y10', 'mesh-ref-193'],
@@ -95,14 +95,14 @@ const milestones = [
   },
   {
     id: 'finishing',
-    label: 'Finishing',
+    label: 'Interior & Finishing',
     icon: PaintBrush,
     description: '🎨 Plastering (render + skim), painting (interior/exterior), tiling, door/window frames, electrical & plumbing fittings',
     suggestedMaterials: ['plaster-sand', 'cement-32n', 'pva-20l'],
   },
   {
     id: 'exterior',
-    label: 'Exterior & Security',
+    label: 'External Work',
     icon: ShieldCheck,
     description: '🔒 Boundary walls, durawall precast, gates, driveway paving, security features',
     suggestedMaterials: ['durawall', 'cement-brick', 'cement-32n'],
@@ -897,8 +897,8 @@ function BOQBuilderContent() {
           buildingType: data.type || prev.buildingType,
         }));
       }
-    } catch {}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    } catch { }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-save after returning from auth (pendingAutoSave was set from restored session)
@@ -907,7 +907,7 @@ function BOQBuilderContent() {
       setPendingAutoSave(false);
       handleSaveProject();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingAutoSave, isAuthenticated]);
 
   // Persist full BOQ state to sessionStorage before redirecting to auth
@@ -926,7 +926,7 @@ function BOQBuilderContent() {
         totalDoors,
         pendingSave: true,
       }));
-    } catch {}
+    } catch { }
   };
 
   // Derived state
