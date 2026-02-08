@@ -1,13 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Envelope, Lock, User, GoogleLogo, Buildings, CheckCircle } from '@phosphor-icons/react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 
-export default function SignupPage() {
+function SignupForm() {
+    const searchParams = useSearchParams();
+    const redirect = searchParams.get('redirect');
     const { signUp, signInWithGoogle, isLoading } = useAuth();
 
     const [fullName, setFullName] = useState('');
@@ -36,6 +39,11 @@ export default function SignupPage() {
 
         setIsSubmitting(true);
 
+        // Store redirect URL so the email confirmation callback can use it
+        if (redirect) {
+            try { sessionStorage.setItem('zimestimate_auth_redirect', redirect); } catch {}
+        }
+
         const { error: signUpError } = await signUp(email, password, fullName);
 
         if (signUpError) {
@@ -48,6 +56,10 @@ export default function SignupPage() {
 
     const handleGoogleSignIn = async () => {
         setError('');
+        // Store redirect URL for the OAuth callback to pick up
+        if (redirect) {
+            try { sessionStorage.setItem('zimestimate_auth_redirect', redirect); } catch {}
+        }
         const { error: googleError } = await signInWithGoogle();
         if (googleError) {
             setError(googleError.message);
@@ -234,7 +246,7 @@ export default function SignupPage() {
                     <div className="auth-footer">
                         <p>
                             Already have an account?{' '}
-                            <Link href="/auth/login">Sign in</Link>
+                            <Link href={`/auth/login${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`}>Sign in</Link>
                         </p>
                     </div>
                 </div>
@@ -407,5 +419,17 @@ export default function SignupPage() {
                 }
             `}</style>
         </>
+    );
+}
+
+export default function SignupPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-primary)]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)]"></div>
+            </div>
+        }>
+            <SignupForm />
+        </Suspense>
     );
 }

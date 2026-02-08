@@ -861,6 +861,23 @@ function BOQBuilderContent() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Pre-fill project details from sessionStorage (coming from /projects/new manual builder)
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('zimestimate_new_project');
+      if (stored) {
+        const data = JSON.parse(stored) as { name: string; location: string; type: string };
+        sessionStorage.removeItem('zimestimate_new_project');
+        setProjectDetails(prev => ({
+          ...prev,
+          name: data.name || prev.name,
+          locationCity: data.location || prev.locationCity,
+          buildingType: data.type || prev.buildingType,
+        }));
+      }
+    } catch {}
+  }, []);
+
   // Derived state
   const calculateMilestoneTotal = (items: BOQItem[]) => {
     return items.reduce((acc, item) => {
@@ -1308,6 +1325,10 @@ function BOQBuilderContent() {
                   variant="ghost"
                   icon={<ShareNetwork size={18} />}
                   onClick={() => {
+                    if (!isAuthenticated) {
+                      setShowSavePrompt(true);
+                      return;
+                    }
                     setShowShareMenu(!showShareMenu);
                     setShowExportMenu(false);
                   }}
@@ -1429,6 +1450,10 @@ function BOQBuilderContent() {
                   variant="primary"
                   icon={<DownloadSimple size={18} />}
                   onClick={() => {
+                    if (!isAuthenticated) {
+                      setShowSavePrompt(true);
+                      return;
+                    }
                     setShowExportMenu(!showExportMenu);
                     setShowShareMenu(false);
                   }}
@@ -1925,7 +1950,7 @@ function BOQBuilderContent() {
                 </button>
                 <button
                   className="btn btn-accent"
-                  onClick={() => window.location.href = '/auth/register?redirect=/boq/new'}
+                  onClick={() => window.location.href = '/auth/signup?redirect=/boq/new'}
                   style={{
                     padding: '8px 16px',
                     borderRadius: '6px',
@@ -2978,7 +3003,7 @@ function BOQBuilderContent() {
               </Button>
               <Button
                 variant="primary" // Changed to primary for consistency or keep accent
-                onClick={() => window.location.href = '/auth/register?redirect=/boq/new'}
+                onClick={() => window.location.href = '/auth/signup?redirect=/boq/new'}
                 className="bg-slate-900 text-white hover:bg-slate-800"
               >
                 Create Account

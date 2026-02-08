@@ -19,6 +19,7 @@ function LoginForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const callbackError = searchParams.get('error');
+    const redirect = searchParams.get('redirect');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,12 +32,16 @@ function LoginForm() {
             setError(signInError.message);
             setIsSubmitting(false);
         } else {
-            router.push('/dashboard');
+            router.push(redirect || '/dashboard');
         }
     };
 
     const handleGoogleSignIn = async () => {
         setError('');
+        // Store redirect URL for the OAuth callback to pick up
+        if (redirect) {
+            try { sessionStorage.setItem('zimestimate_auth_redirect', redirect); } catch {}
+        }
         const { error: googleError } = await signInWithGoogle();
         if (googleError) {
             setError(googleError.message);
@@ -122,7 +127,7 @@ function LoginForm() {
                     <div className="auth-footer">
                         <p>
                             Don&apos;t have an account?{' '}
-                            <Link href="/auth/signup">Sign up</Link>
+                            <Link href={`/auth/signup${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`}>Sign up</Link>
                         </p>
                     </div>
                 </div>

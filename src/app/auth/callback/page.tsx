@@ -17,7 +17,16 @@ export default function AuthCallbackPage() {
                 console.error('Auth callback error:', error);
                 router.push('/auth/login?error=callback_failed');
             } else {
-                router.push('/dashboard');
+                // Check for a stored redirect URL (from login/signup with ?redirect=)
+                let redirectUrl = '/dashboard';
+                try {
+                    const stored = sessionStorage.getItem('zimestimate_auth_redirect');
+                    if (stored) {
+                        sessionStorage.removeItem('zimestimate_auth_redirect');
+                        redirectUrl = stored;
+                    }
+                } catch {}
+                router.push(redirectUrl);
             }
         };
 

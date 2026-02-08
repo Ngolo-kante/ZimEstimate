@@ -59,15 +59,28 @@ export default function NewProject() {
     if (step === 1 && formData.name && formData.location) {
       setStep(2);
     } else if (step === 2 && formData.boqMethod) {
+      if (formData.boqMethod === 'manual') {
+        // Manual builder: store form data in sessionStorage and redirect (no auth required)
+        try {
+          sessionStorage.setItem('zimestimate_new_project', JSON.stringify({
+            name: formData.name,
+            location: formData.location,
+            type: formData.type,
+          }));
+        } catch {}
+        router.push('/boq/new');
+        return;
+      }
+
+      // Upload / Photo methods: create project in DB (requires auth)
       setIsLoading(true);
       try {
-        // Create project
         const { project, error } = await createProject({
           name: formData.name,
           location: formData.location,
-          description: `Type: ${formData.type}`, // Store type in description for now
-          scope: 'entire_house', // Default scope
-          labor_preference: 'materials_only', // Default preference
+          description: `Type: ${formData.type}`,
+          scope: 'entire_house',
+          labor_preference: 'materials_only',
         });
 
         if (error) {
@@ -77,21 +90,15 @@ export default function NewProject() {
         }
 
         if (project) {
-          if (formData.boqMethod === 'manual') {
-            // Manual builder: go straight to the BOQ builder with the new project
-            router.push(`/boq/new?id=${project.id}`);
-          } else {
-            // Upload / Photo: show optimistic card on projects list
-            try {
-              sessionStorage.setItem('zimestimate_optimistic_project', JSON.stringify({
-                id: project.id,
-                name: formData.name,
-                location: formData.location,
-                type: formData.type,
-              }));
-            } catch {}
-            router.push(`/projects?created=1`);
-          }
+          try {
+            sessionStorage.setItem('zimestimate_optimistic_project', JSON.stringify({
+              id: project.id,
+              name: formData.name,
+              location: formData.location,
+              type: formData.type,
+            }));
+          } catch {}
+          router.push(`/projects?created=1`);
         }
       } catch (err) {
         console.error('Error creating project:', err);
