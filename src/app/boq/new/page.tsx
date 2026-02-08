@@ -613,6 +613,7 @@ function BOQBuilderContent() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [showSavePrompt, setShowSavePrompt] = useState(false);
+  const [pendingAutoSave, setPendingAutoSave] = useState(false);
   const [showSaveOverlay, setShowSaveOverlay] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -862,8 +863,29 @@ function BOQBuilderContent() {
   }, []);
 
   // Pre-fill project details from sessionStorage (coming from /projects/new manual builder)
+  // OR restore full BOQ session (coming back after auth from save prompt)
   useEffect(() => {
     try {
+      // Check for full BOQ session first (returning after auth)
+      const boqSession = sessionStorage.getItem('zimestimate_boq_session');
+      if (boqSession) {
+        const data = JSON.parse(boqSession);
+        sessionStorage.removeItem('zimestimate_boq_session');
+        if (data.currentStep) setCurrentStep(data.currentStep);
+        if (data.projectDetails) setProjectDetails(data.projectDetails);
+        if (data.projectScope) setProjectScope(data.projectScope);
+        if (data.selectedStages) setSelectedStages(data.selectedStages);
+        if (data.laborType) setLaborType(data.laborType);
+        if (data.milestonesState) setMilestonesState(data.milestonesState);
+        if (data.planSketchEnabled !== undefined) setPlanSketchEnabled(data.planSketchEnabled);
+        if (data.planSketchMode) setPlanSketchMode(data.planSketchMode);
+        if (data.totalWindows !== undefined) setTotalWindows(data.totalWindows);
+        if (data.totalDoors !== undefined) setTotalDoors(data.totalDoors);
+        if (data.pendingSave) setPendingAutoSave(true);
+        return;
+      }
+
+      // Check for basic project details (coming from /projects/new manual builder)
       const stored = sessionStorage.getItem('zimestimate_new_project');
       if (stored) {
         const data = JSON.parse(stored) as { name: string; location: string; type: string };
@@ -876,7 +898,36 @@ function BOQBuilderContent() {
         }));
       }
     } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-save after returning from auth (pendingAutoSave was set from restored session)
+  useEffect(() => {
+    if (pendingAutoSave && isAuthenticated) {
+      setPendingAutoSave(false);
+      handleSaveProject();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingAutoSave, isAuthenticated]);
+
+  // Persist full BOQ state to sessionStorage before redirecting to auth
+  const persistBOQSession = () => {
+    try {
+      sessionStorage.setItem('zimestimate_boq_session', JSON.stringify({
+        currentStep,
+        projectDetails,
+        projectScope,
+        selectedStages,
+        laborType,
+        milestonesState,
+        planSketchEnabled,
+        planSketchMode,
+        totalWindows,
+        totalDoors,
+        pendingSave: true,
+      }));
+    } catch {}
+  };
 
   // Derived state
   const calculateMilestoneTotal = (items: BOQItem[]) => {
@@ -1934,7 +1985,7 @@ function BOQBuilderContent() {
                 </button>
                 <button
                   className="btn btn-primary"
-                  onClick={() => window.location.href = '/auth/login?redirect=/boq/new'}
+                  onClick={() => { persistBOQSession(); window.location.href = '/auth/login?redirect=/boq/new'; }}
                   style={{
                     padding: '8px 16px',
                     borderRadius: '6px',
@@ -1950,7 +2001,7 @@ function BOQBuilderContent() {
                 </button>
                 <button
                   className="btn btn-accent"
-                  onClick={() => window.location.href = '/auth/signup?redirect=/boq/new'}
+                  onClick={() => { persistBOQSession(); window.location.href = '/auth/signup?redirect=/boq/new'; }}
                   style={{
                     padding: '8px 16px',
                     borderRadius: '6px',
@@ -2997,13 +3048,13 @@ function BOQBuilderContent() {
               </Button>
               <Button
                 variant="primary"
-                onClick={() => window.location.href = '/auth/login?redirect=/boq/new'}
+                onClick={() => { persistBOQSession(); window.location.href = '/auth/login?redirect=/boq/new'; }}
               >
                 Sign In
               </Button>
               <Button
-                variant="primary" // Changed to primary for consistency or keep accent
-                onClick={() => window.location.href = '/auth/signup?redirect=/boq/new'}
+                variant="primary"
+                onClick={() => { persistBOQSession(); window.location.href = '/auth/signup?redirect=/boq/new'; }}
                 className="bg-slate-900 text-white hover:bg-slate-800"
               >
                 Create Account
