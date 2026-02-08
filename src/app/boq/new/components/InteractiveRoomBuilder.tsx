@@ -22,7 +22,13 @@ import {
     GridFour,
     LinkSimple,
     Toilet,
-    Bathtub
+    Bathtub,
+    Keyboard,
+    Copy,
+    ClipboardText,
+    ArrowsClockwise,
+    Question,
+    Command
 } from '@phosphor-icons/react';
 
 // Room type definitions with colors for visual coding
@@ -134,6 +140,11 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
     const [past, setPast] = useState<RoomInstance[][]>([]);
     const [future, setFuture] = useState<RoomInstance[][]>([]);
 
+    // Phase 3: Help modal, clipboard, alignment guides
+    const [showHelpModal, setShowHelpModal] = useState(false);
+    const [clipboard, setClipboard] = useState<RoomInstance | null>(null);
+    const [alignmentGuides, setAlignmentGuides] = useState<{ horizontal: number[]; vertical: number[] }>({ horizontal: [], vertical: [] });
+
     // History helpers
     const saveToHistory = useCallback(() => {
         setPast(prev => [...prev, rooms]);
@@ -229,84 +240,7 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
         }));
     }, [selectedRoomId, saveToHistory, snapToGrid]);
 
-    // Keyboard shortcuts handler
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Don't handle if typing in an input
-            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-                return;
-            }
 
-            // Undo: Ctrl/Cmd + Z
-            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-                e.preventDefault();
-                undo();
-                return;
-            }
-
-            // Redo: Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
-                e.preventDefault();
-                redo();
-                return;
-            }
-
-            // Delete selected room
-            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRoomId) {
-                e.preventDefault();
-                saveToHistory();
-                setRooms(prev => prev.filter(r => r.id !== selectedRoomId));
-                setSelectedRoomId(null);
-                return;
-            }
-
-            // Arrow keys to move selected room
-            if (selectedRoomId) {
-                switch (e.key) {
-                    case 'ArrowUp':
-                        e.preventDefault();
-                        moveSelectedRoom(0, -1);
-                        break;
-                    case 'ArrowDown':
-                        e.preventDefault();
-                        moveSelectedRoom(0, 1);
-                        break;
-                    case 'ArrowLeft':
-                        e.preventDefault();
-                        moveSelectedRoom(-1, 0);
-                        break;
-                    case 'ArrowRight':
-                        e.preventDefault();
-                        moveSelectedRoom(1, 0);
-                        break;
-                }
-            }
-
-            // Escape to deselect
-            if (e.key === 'Escape') {
-                setSelectedRoomId(null);
-                setShowRoomPicker(false);
-            }
-
-            // + and - for zoom
-            if (e.key === '+' || e.key === '=') {
-                e.preventDefault();
-                zoomIn();
-            }
-            if (e.key === '-') {
-                e.preventDefault();
-                zoomOut();
-            }
-
-            // G to toggle grid snap
-            if (e.key === 'g' || e.key === 'G') {
-                setSnapToGrid(prev => !prev);
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [undo, redo, selectedRoomId, saveToHistory, moveSelectedRoom, zoomIn, zoomOut]);
 
     // Mouse wheel zoom handler
     const handleWheel = useCallback((e: React.WheelEvent) => {
@@ -659,6 +593,102 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
         setSelectedRoomId(rooms.length > 1 ? rooms[0].id : null);
     };
 
+    // Copy selected room to clipboard
+    const copySelectedRoom = useCallback(() => {
+        if (!selectedRoomId) return;
+        const room = rooms.find(r => r.id === selectedRoomId);
+        if (room) {
+            setClipboard({ ...room });
+        }
+    }, [selectedRoomId, rooms]);
+
+    // Paste room from clipboard
+    const pasteRoom = useCallback(() => {
+        if (!clipboard) return;
+
+        saveToHistory();
+        const newRoom: RoomInstance = {
+            ...clipboard,
+            id: `${clipboard.type}-copy-${Date.now()}`,
+            label: `${clipboard.label} (Copy)`,
+            x: clipboard.x + 40,
+            y: clipboard.y + 40,
+            parentRoomId: undefined, // Don't inherit parent relationship
+            isEnSuite: false
+        };
+
+        setRooms(prev => [...prev, newRoom]);
+        setSelectedRoomId(newRoom.id);
+    }, [clipboard, saveToHistory]);
+
+    // Duplicate selected room (copy + paste in one action)
+    const duplicateSelectedRoom = useCallback(() => {
+        if (!selectedRoomId) return;
+        const room = rooms.find(r => r.id === selectedRoomId);
+        if (!room) return;
+
+        saveToHistory();
+        const newRoom: RoomInstance = {
+            ...room,
+            id: `${room.type}-dup-${Date.now()}`,
+            label: `${room.label} (Copy)`,
+            x: room.x + 40,
+            y: room.y + 40,
+            parentRoomId: undefined,
+            isEnSuite: false
+        };
+
+        setRooms(prev => [...prev, newRoom]);
+        setSelectedRoomId(newRoom.id);
+    }, [selectedRoomId, rooms, saveToHistory]);
+
+    // Rotate selected room (swap width and length)
+    const rotateSelectedRoom = useCallback(() => {
+        if (!selectedRoomId) return;
+
+        saveToHistory();
+        setRooms(prev => prev.map(room => {
+            if (room.id === selectedRoomId) {
+                return {
+                    ...room,
+                    width: room.length,
+                    length: room.width
+                };
+            }
+            return room;
+        }));
+    }, [selectedRoomId, saveToHistory]);
+
+    // Calculate alignment guides when dragging
+    const calculateAlignmentGuides = useCallback((draggedRoom: RoomInstance) => {
+        const horizontal: number[] = [];
+        const vertical: number[] = [];
+        const threshold = 10; // Pixels tolerance for snapping
+
+        rooms.forEach(room => {
+            if (room.id === draggedRoom.id) return;
+
+            const roomRight = room.x + room.width * PIXELS_PER_METER;
+            const roomBottom = room.y + room.length * PIXELS_PER_METER;
+            const draggedRight = draggedRoom.x + draggedRoom.width * PIXELS_PER_METER;
+            const draggedBottom = draggedRoom.y + draggedRoom.length * PIXELS_PER_METER;
+
+            // Check vertical alignment (left edges, right edges, centers)
+            if (Math.abs(room.x - draggedRoom.x) < threshold) vertical.push(room.x);
+            if (Math.abs(roomRight - draggedRight) < threshold) vertical.push(roomRight);
+            if (Math.abs(room.x - draggedRight) < threshold) vertical.push(room.x);
+            if (Math.abs(roomRight - draggedRoom.x) < threshold) vertical.push(roomRight);
+
+            // Check horizontal alignment (top edges, bottom edges, centers)
+            if (Math.abs(room.y - draggedRoom.y) < threshold) horizontal.push(room.y);
+            if (Math.abs(roomBottom - draggedBottom) < threshold) horizontal.push(roomBottom);
+            if (Math.abs(room.y - draggedBottom) < threshold) horizontal.push(room.y);
+            if (Math.abs(roomBottom - draggedRoom.y) < threshold) horizontal.push(roomBottom);
+        });
+
+        setAlignmentGuides({ horizontal: [...new Set(horizontal)], vertical: [...new Set(vertical)] });
+    }, [rooms]);
+
     // Resize handlers
     const handleResizeStart = (e: React.MouseEvent, roomId: string) => {
         e.stopPropagation();
@@ -704,17 +734,38 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                     let newY = (e.clientY - dragOffset.y) / zoom;
 
                     // Apply grid snapping
-                    newX = snapToGridPosition(newX);
-                    newY = snapToGridPosition(newY);
+                    if (snapToGrid) {
+                        newX = snapToGridPosition(newX);
+                        newY = snapToGridPosition(newY);
+                    }
 
                     // Keep rooms in bounds
                     newX = Math.max(0, newX);
                     newY = Math.max(0, newY);
 
+                    // Future: Alignment guides logic here
+
                     return { ...room, x: newX, y: newY };
                 }
                 return room;
             }));
+
+            // Calculate alignment guides for visual feedback
+            if (draggingId) {
+                const room = rooms.find(r => r.id === draggingId);
+                if (room) {
+                    // We need the *new* position here for guides, but we only have current.
+                    // The effect will be slightly lagged or we calculate guides based on current drag pos.
+                    // For now, let's just trigger guide calc based on drag.
+                    const draggedRoom = {
+                        ...room,
+                        x: (e.clientX - dragOffset.x) / zoom,
+                        y: (e.clientY - dragOffset.y) / zoom
+                    };
+                    calculateAlignmentGuides(draggedRoom);
+                }
+            }
+
         } else if (resizingId && resizeStartDims) {
             const dx = e.clientX - resizeStartDims.mouseX;
             const dy = e.clientY - resizeStartDims.mouseY;
@@ -734,7 +785,131 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                 return room;
             }));
         }
-    }, [draggingId, dragOffset, resizingId, resizeStartDims, zoom, snapToGridPosition]);
+    }, [draggingId, dragOffset, resizingId, resizeStartDims, zoom, snapToGridPosition, snapToGrid, rooms, calculateAlignmentGuides]);
+
+    // Keyboard shortcuts handler (Moved from top to access all functions)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Don't handle if typing in an input
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+                return;
+            }
+
+            // Undo: Ctrl/Cmd + Z
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+                return;
+            }
+
+            // Redo: Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                e.preventDefault();
+                redo();
+                return;
+            }
+
+            // Copy: Ctrl/Cmd + C
+            if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedRoomId) {
+                e.preventDefault();
+                copySelectedRoom();
+                return;
+            }
+
+            // Paste: Ctrl/Cmd + V
+            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+                e.preventDefault();
+                pasteRoom();
+                return;
+            }
+
+            // Duplicate: Ctrl/Cmd + D
+            if ((e.ctrlKey || e.metaKey) && e.key === 'd' && selectedRoomId) {
+                e.preventDefault();
+                duplicateSelectedRoom();
+                return;
+            }
+
+            // Rotate: R
+            if ((e.key === 'r' || e.key === 'R') && selectedRoomId) {
+                e.preventDefault();
+                rotateSelectedRoom();
+                return;
+            }
+
+            // Delete selected room
+            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRoomId) {
+                e.preventDefault();
+                removeSelectedRoom();
+                return;
+            }
+
+            // Arrow keys to move selected room
+            if (selectedRoomId) {
+                switch (e.key) {
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        moveSelectedRoom(0, -1);
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        moveSelectedRoom(0, 1);
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        moveSelectedRoom(-1, 0);
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        moveSelectedRoom(1, 0);
+                        break;
+                }
+            }
+
+            // Escape to deselect
+            if (e.key === 'Escape') {
+                setSelectedRoomId(null);
+                setShowRoomPicker(false);
+                cancelConnectionMode();
+            }
+
+            // + and - for zoom
+            if (e.key === '+' || e.key === '=') {
+                e.preventDefault();
+                zoomIn();
+            }
+            if (e.key === '-') {
+                e.preventDefault();
+                zoomOut();
+            }
+
+            // G to toggle grid snap
+            if (e.key === 'g' || e.key === 'G') {
+                setSnapToGrid(prev => !prev);
+            }
+
+            // ? for help
+            if (e.key === '?' && e.shiftKey) {
+                e.preventDefault();
+                setShowHelpModal(prev => !prev);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [
+        undo,
+        redo,
+        selectedRoomId,
+        moveSelectedRoom,
+        zoomIn,
+        zoomOut,
+        copySelectedRoom,
+        pasteRoom,
+        duplicateSelectedRoom,
+        rotateSelectedRoom,
+        removeSelectedRoom
+    ]);
 
     const handleMouseUp = useCallback(() => {
         if (draggingId && dragStartRooms) {
@@ -1318,22 +1493,89 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                                                 markerStart="url(#passage-dot)"
                                                 markerEnd="url(#passage-dot)"
                                             />
-                                            {/* Connection label */}
-                                            <text
-                                                x={(line.x1 + line.x2) / 2}
-                                                y={(line.y1 + line.y2) / 2 - 8}
-                                                textAnchor="middle"
-                                                fill="#7c3aed"
-                                                fontSize="10"
-                                                fontWeight="600"
-                                                style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                                            {/* Connection label with icon */}
+                                            <g
+                                                style={{ cursor: 'pointer' }}
                                                 onClick={() => removeConnection(conn.id)}
                                             >
-                                                🚪 Passage
-                                            </text>
+                                                <rect
+                                                    x={(line.x1 + line.x2) / 2 - 32}
+                                                    y={(line.y1 + line.y2) / 2 - 18}
+                                                    width="64"
+                                                    height="16"
+                                                    rx="4"
+                                                    fill="#f5f3ff"
+                                                    stroke="#a855f7"
+                                                    strokeWidth="1"
+                                                    style={{ pointerEvents: 'auto' }}
+                                                />
+                                                {/* Door icon path */}
+                                                <path
+                                                    d={`M${(line.x1 + line.x2) / 2 - 26} ${(line.y1 + line.y2) / 2 - 14} h8 v10 h-8 z`}
+                                                    fill="none"
+                                                    stroke="#7c3aed"
+                                                    strokeWidth="1.5"
+                                                />
+                                                <circle
+                                                    cx={(line.x1 + line.x2) / 2 - 20}
+                                                    cy={(line.y1 + line.y2) / 2 - 9}
+                                                    r="1"
+                                                    fill="#7c3aed"
+                                                />
+                                                <text
+                                                    x={(line.x1 + line.x2) / 2 + 4}
+                                                    y={(line.y1 + line.y2) / 2 - 7}
+                                                    textAnchor="middle"
+                                                    fill="#7c3aed"
+                                                    fontSize="9"
+                                                    fontWeight="600"
+                                                    style={{ pointerEvents: 'none' }}
+                                                >
+                                                    Passage
+                                                </text>
+                                            </g>
                                         </g>
                                     );
                                 })}
+                            </svg>
+                        )}
+                        {/* Alignment Guides Overlay */}
+                        {(alignmentGuides.horizontal.length > 0 || alignmentGuides.vertical.length > 0) && (
+                            <svg
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    pointerEvents: 'none',
+                                    zIndex: 10
+                                }}
+                            >
+                                {alignmentGuides.horizontal.map((y, i) => (
+                                    <line
+                                        key={`h-${i}`}
+                                        x1={0}
+                                        y1={y * PIXELS_PER_METER}
+                                        x2="100%"
+                                        y2={y * PIXELS_PER_METER}
+                                        stroke="#f43f5e"
+                                        strokeWidth="1"
+                                        strokeDasharray="4 2"
+                                    />
+                                ))}
+                                {alignmentGuides.vertical.map((x, i) => (
+                                    <line
+                                        key={`v-${i}`}
+                                        x1={x * PIXELS_PER_METER}
+                                        y1={0}
+                                        x2={x * PIXELS_PER_METER}
+                                        y2="100%"
+                                        stroke="#f43f5e"
+                                        strokeWidth="1"
+                                        strokeDasharray="4 2"
+                                    />
+                                ))}
                             </svg>
                         )}
                         {rooms.length === 0 ? (
@@ -2270,6 +2512,91 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                     <ArrowRight size={18} weight="bold" />
                 </button>
             </div>
+
+            {/* Help Modal */}
+            {showHelpModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    background: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 2000,
+                    backdropFilter: 'blur(2px)'
+                }} onClick={() => setShowHelpModal(false)}>
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: '#fff',
+                            borderRadius: '16px',
+                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                            width: '90%',
+                            maxWidth: '500px',
+                            maxHeight: '80vh',
+                            overflow: 'auto',
+                            padding: '24px',
+                            position: 'relative'
+                        }}
+                    >
+                        <button
+                            onClick={() => setShowHelpModal(false)}
+                            style={{
+                                position: 'absolute',
+                                top: '16px',
+                                right: '16px',
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: '#9ca3af'
+                            }}
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#1f2937', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Keyboard size={24} weight="fill" color="#3b82f6" />
+                            Keyboard Shortcuts
+                        </h3>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+                            {[
+                                { k: 'Arrow Keys', d: 'Nudge selected room' },
+                                { k: 'Delete / Backspace', d: 'Remove selected room' },
+                                { k: 'Ctrl + C', d: 'Copy room' },
+                                { k: 'Ctrl + V', d: 'Paste room' },
+                                { k: 'Ctrl + D', d: 'Duplicate room' },
+                                { k: 'R', d: 'Rotate room (swap L/W)' },
+                                { k: 'Ctrl + Z', d: 'Undo' },
+                                { k: 'Ctrl + Y', d: 'Redo' },
+                                { k: 'G', d: 'Toggle Grid Snap' },
+                                { k: '+ / -', d: 'Zoom In / Out' },
+                                { k: 'Esc', d: 'Deselect / Cancel' },
+                                { k: 'Shift + ?', d: 'Show this help' },
+                            ].map((item, i) => (
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
+                                    <span style={{ fontSize: '14px', color: '#4b5563' }}>{item.d}</span>
+                                    <span style={{
+                                        fontFamily: 'monospace',
+                                        fontSize: '12px',
+                                        fontWeight: 600,
+                                        color: '#374151',
+                                        background: '#f3f4f6',
+                                        padding: '4px 8px',
+                                        borderRadius: '4px',
+                                        border: '1px solid #e5e7eb'
+                                    }}>
+                                        {item.k}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
