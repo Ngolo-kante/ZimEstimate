@@ -5,8 +5,9 @@ import {
     createProject,
     getProjectWithItems,
     saveProjectWithItems,
+    updateProject,
 } from '@/lib/services/projects';
-import { setProjectStagesApplicability } from '@/lib/services/stages';
+import { createDefaultStages, setProjectStagesApplicability } from '@/lib/services/stages';
 import { Project, BOQItem, ProjectScope, LaborPreference } from '@/lib/database.types';
 
 interface BOQItemLocal {
@@ -163,9 +164,28 @@ export function useProjectAutoSave(
             }
 
             if (savedProject) {
-                if (selectedStagesForSave.length > 0) {
-                    await setProjectStagesApplicability(currentProject.id, selectedStagesForSave);
+                // Ensure default stage records exist in the database
+                await createDefaultStages(currentProject.id, scope);
+
+                // Determine which stages to mark as applicable
+                let stagesToEnable = selectedStagesForSave;
+                if (stagesToEnable.length === 0) {
+                    // For "entire_house" scope, enable stages that have BOQ items
+                    const stagesWithItems = new Set<string>();
+                    milestonesState.forEach(m => {
+                        if (m.items.length > 0) stagesWithItems.add(m.id);
+                    });
+                    stagesToEnable = Array.from(stagesWithItems);
                 }
+                if (stagesToEnable.length > 0) {
+                    await setProjectStagesApplicability(currentProject.id, stagesToEnable);
+                }
+
+                // Update project totals from saved items
+                const totalUsd = items.reduce((sum, item) => sum + (item.quantity * item.unit_price_usd), 0);
+                const totalZwg = items.reduce((sum, item) => sum + (item.quantity * item.unit_price_zwg), 0);
+                await updateProject(currentProject.id, { total_usd: totalUsd, total_zwg: totalZwg });
+
                 setProject(savedProject);
                 projectRef.current = savedProject;
                 setLastSaved(new Date());
@@ -216,6 +236,9 @@ export function useProjectAutoSave(
             }
 
             if (newProject) {
+                // Create default stage records for this project
+                await createDefaultStages(newProject.id, scope);
+
                 setProject(newProject);
                 projectRef.current = newProject;
                 setLastSaved(new Date());
