@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
     Plus,
     Minus,
@@ -16,7 +16,10 @@ import {
     Trash,
     List,
     ArrowCounterClockwise,
-    ArrowClockwise
+    ArrowClockwise,
+    MagnifyingGlassPlus,
+    MagnifyingGlassMinus,
+    GridFour
 } from '@phosphor-icons/react';
 
 // Copy of room inputs for labels/structure
@@ -60,6 +63,13 @@ interface InteractiveRoomBuilderProps {
     onBack: () => void;
 }
 
+// Grid and Zoom Constants
+const GRID_SNAP_SIZE = 20; // Pixels to snap to
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 2;
+const ZOOM_STEP = 0.1;
+const PIXELS_PER_METER = 40; // 40px = 1m
+
 export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue, onBack }: InteractiveRoomBuilderProps) {
     const [rooms, setRooms] = useState<RoomInstance[]>([]);
     const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
@@ -67,6 +77,13 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
     const [isMobile, setIsMobile] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [loadedFromStorage, setLoadedFromStorage] = useState(false);
+
+    // Canvas ref for keyboard focus
+    const canvasRef = useRef<HTMLDivElement>(null);
+
+    // Zoom state
+    const [zoom, setZoom] = useState(1);
+    const [snapToGrid, setSnapToGrid] = useState(true);
 
     // Drag state
     const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -102,6 +119,170 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
         setFuture(prev => prev.slice(1));
         setRooms(next);
     }, [future, rooms]);
+
+    // Zoom controls
+    const zoomIn = useCallback(() => {
+        setZoom(prev => Math.min(MAX_ZOOM, prev + ZOOM_STEP));
+    }, []);
+
+    const zoomOut = useCallback(() => {
+        setZoom(prev => Math.max(MIN_ZOOM, prev - ZOOM_STEP));
+    }, []);
+
+    const resetZoom = useCallback(() => {
+        setZoom(1);
+    }, []);
+
+    // Collision detection helper
+    const checkCollision = useCallback((roomA: RoomInstance, roomB: RoomInstance): boolean => {
+        if (roomA.id === roomB.id) return false;
+
+        const aLeft = roomA.x;
+        const aRight = roomA.x + roomA.width * PIXELS_PER_METER;
+        const aTop = roomA.y;
+        const aBottom = roomA.y + roomA.length * PIXELS_PER_METER;
+
+        const bLeft = roomB.x;
+        const bRight = roomB.x + roomB.width * PIXELS_PER_METER;
+        const bTop = roomB.y;
+        const bBottom = roomB.y + roomB.length * PIXELS_PER_METER;
+
+        // Check if they overlap with a small margin for visual clarity
+        const margin = 4;
+        return !(aRight <= bLeft + margin ||
+            aLeft >= bRight - margin ||
+            aBottom <= bTop + margin ||
+            aTop >= bBottom - margin);
+    }, []);
+
+    // Check if a room collides with any other room
+    const hasCollision = useCallback((room: RoomInstance, allRooms: RoomInstance[]): boolean => {
+        return allRooms.some(other => checkCollision(room, other));
+    }, [checkCollision]);
+
+    // Get collision status for visual feedback
+    const roomCollisions = useMemo(() => {
+        const collisions: { [key: string]: boolean } = {};
+        rooms.forEach(room => {
+            collisions[room.id] = hasCollision(room, rooms);
+        });
+        return collisions;
+    }, [rooms, hasCollision]);
+
+    // Snap position to grid
+    const snapToGridPosition = useCallback((value: number): number => {
+        if (!snapToGrid) return value;
+        return Math.round(value / GRID_SNAP_SIZE) * GRID_SNAP_SIZE;
+    }, [snapToGrid]);
+
+    // Move selected room with arrow keys
+    const moveSelectedRoom = useCallback((dx: number, dy: number) => {
+        if (!selectedRoomId) return;
+
+        saveToHistory();
+        setRooms(prev => prev.map(room => {
+            if (room.id === selectedRoomId) {
+                const step = snapToGrid ? GRID_SNAP_SIZE : 5;
+                return {
+                    ...room,
+                    x: Math.max(0, room.x + dx * step),
+                    y: Math.max(0, room.y + dy * step)
+                };
+            }
+            return room;
+        }));
+    }, [selectedRoomId, saveToHistory, snapToGrid]);
+
+    // Keyboard shortcuts handler
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Don't handle if typing in an input
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+                return;
+            }
+
+            // Undo: Ctrl/Cmd + Z
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+                return;
+            }
+
+            // Redo: Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                e.preventDefault();
+                redo();
+                return;
+            }
+
+            // Delete selected room
+            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRoomId) {
+                e.preventDefault();
+                saveToHistory();
+                setRooms(prev => prev.filter(r => r.id !== selectedRoomId));
+                setSelectedRoomId(null);
+                return;
+            }
+
+            // Arrow keys to move selected room
+            if (selectedRoomId) {
+                switch (e.key) {
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        moveSelectedRoom(0, -1);
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        moveSelectedRoom(0, 1);
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        moveSelectedRoom(-1, 0);
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        moveSelectedRoom(1, 0);
+                        break;
+                }
+            }
+
+            // Escape to deselect
+            if (e.key === 'Escape') {
+                setSelectedRoomId(null);
+                setShowRoomPicker(false);
+            }
+
+            // + and - for zoom
+            if (e.key === '+' || e.key === '=') {
+                e.preventDefault();
+                zoomIn();
+            }
+            if (e.key === '-') {
+                e.preventDefault();
+                zoomOut();
+            }
+
+            // G to toggle grid snap
+            if (e.key === 'g' || e.key === 'G') {
+                setSnapToGrid(prev => !prev);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [undo, redo, selectedRoomId, saveToHistory, moveSelectedRoom, zoomIn, zoomOut]);
+
+    // Mouse wheel zoom handler
+    const handleWheel = useCallback((e: React.WheelEvent) => {
+        if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                zoomIn();
+            } else {
+                zoomOut();
+            }
+        }
+    }, [zoomIn, zoomOut]);
 
     // Clear saved room data
     const clearSavedData = () => {
@@ -368,12 +549,17 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
         if (draggingId) {
             setRooms(prev => prev.map(room => {
                 if (room.id === draggingId) {
-                    let newX = e.clientX - dragOffset.x;
-                    let newY = e.clientY - dragOffset.y;
+                    // Account for zoom level in position calculation
+                    let newX = (e.clientX - dragOffset.x) / zoom;
+                    let newY = (e.clientY - dragOffset.y) / zoom;
 
-                    // Simple snapping (grid of 20px)
-                    newX = Math.round(newX / 20) * 20;
-                    newY = Math.round(newY / 20) * 20;
+                    // Apply grid snapping
+                    newX = snapToGridPosition(newX);
+                    newY = snapToGridPosition(newY);
+
+                    // Keep rooms in bounds
+                    newX = Math.max(0, newX);
+                    newY = Math.max(0, newY);
 
                     return { ...room, x: newX, y: newY };
                 }
@@ -383,9 +569,9 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
             const dx = e.clientX - resizeStartDims.mouseX;
             const dy = e.clientY - resizeStartDims.mouseY;
 
-            // 40px = 1m. Snap to 0.1m
-            const dw = dx / 40;
-            const dl = dy / 40;
+            // Snap to 0.1m increments
+            const dw = dx / PIXELS_PER_METER;
+            const dl = dy / PIXELS_PER_METER;
 
             setRooms(prev => prev.map(room => {
                 if (room.id === resizingId) {
@@ -398,7 +584,7 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                 return room;
             }));
         }
-    }, [draggingId, dragOffset, resizingId, resizeStartDims]);
+    }, [draggingId, dragOffset, resizingId, resizeStartDims, zoom, snapToGridPosition]);
 
     const handleMouseUp = useCallback(() => {
         if (draggingId && dragStartRooms) {
@@ -534,11 +720,85 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                                 display: 'flex',
                                 alignItems: 'center'
                             }}
-                            title="Redo"
+                            title="Redo (Ctrl+Shift+Z)"
                         >
                             <ArrowClockwise size={16} />
                         </button>
                     </div>
+
+                    {/* Zoom Controls */}
+                    {!isMobile && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderLeft: '1px solid #e5e7eb', paddingLeft: '12px' }}>
+                            <button
+                                onClick={zoomOut}
+                                disabled={zoom <= MIN_ZOOM}
+                                style={{
+                                    padding: '6px',
+                                    background: zoom > MIN_ZOOM ? '#fff' : '#f3f4f6',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: '6px',
+                                    cursor: zoom > MIN_ZOOM ? 'pointer' : 'not-allowed',
+                                    color: zoom > MIN_ZOOM ? '#374151' : '#9ca3af',
+                                    display: 'flex',
+                                    alignItems: 'center'
+                                }}
+                                title="Zoom Out (-)"
+                            >
+                                <MagnifyingGlassMinus size={16} />
+                            </button>
+                            <button
+                                onClick={resetZoom}
+                                style={{
+                                    padding: '4px 8px',
+                                    background: zoom === 1 ? '#f3f4f6' : '#fff',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    color: '#374151',
+                                    minWidth: '48px'
+                                }}
+                                title="Reset Zoom"
+                            >
+                                {Math.round(zoom * 100)}%
+                            </button>
+                            <button
+                                onClick={zoomIn}
+                                disabled={zoom >= MAX_ZOOM}
+                                style={{
+                                    padding: '6px',
+                                    background: zoom < MAX_ZOOM ? '#fff' : '#f3f4f6',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: '6px',
+                                    cursor: zoom < MAX_ZOOM ? 'pointer' : 'not-allowed',
+                                    color: zoom < MAX_ZOOM ? '#374151' : '#9ca3af',
+                                    display: 'flex',
+                                    alignItems: 'center'
+                                }}
+                                title="Zoom In (+)"
+                            >
+                                <MagnifyingGlassPlus size={16} />
+                            </button>
+                            <button
+                                onClick={() => setSnapToGrid(!snapToGrid)}
+                                style={{
+                                    padding: '6px',
+                                    background: snapToGrid ? '#dcfce7' : '#fff',
+                                    border: `1px solid ${snapToGrid ? '#86efac' : '#e5e7eb'}`,
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    color: snapToGrid ? '#166534' : '#9ca3af',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    marginLeft: '4px'
+                                }}
+                                title={`Grid Snap: ${snapToGrid ? 'ON' : 'OFF'} (G)`}
+                            >
+                                <GridFour size={16} weight={snapToGrid ? 'fill' : 'regular'} />
+                            </button>
+                        </div>
+                    )}
                     {loadedFromStorage && (
                         <div style={{
                             display: 'flex',
@@ -675,18 +935,24 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
             }}>
 
                 {/* Left: Canvas Area */}
-                <div style={{
-                    flex: isMobile && sidebarOpen ? '0 0 auto' : 1,
-                    position: 'relative',
-                    overflow: 'auto',
-                    padding: isMobile ? '20px' : '40px',
-                    display: isMobile && sidebarOpen ? 'none' : 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)',
-                    backgroundSize: '20px 20px',
-                    minHeight: isMobile ? '300px' : 'auto'
-                }}>
+                <div
+                    ref={canvasRef}
+                    onWheel={handleWheel}
+                    tabIndex={0}
+                    style={{
+                        flex: isMobile && sidebarOpen ? '0 0 auto' : 1,
+                        position: 'relative',
+                        overflow: 'auto',
+                        padding: isMobile ? '20px' : '40px',
+                        display: isMobile && sidebarOpen ? 'none' : 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        backgroundImage: `radial-gradient(#d1d5db 1px, transparent 1px)`,
+                        backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
+                        minHeight: isMobile ? '300px' : 'auto',
+                        outline: 'none'
+                    }}
+                >
                     {/* Compass / North Indicator */}
                     <div style={{
                         position: 'absolute',
@@ -826,10 +1092,13 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                         maxWidth: '700px',
                         perspective: '1000px',
                         position: 'relative',
-                        height: isMobile ? 'auto' : '600px', // Fixed height for canvas mode
-                        background: isMobile ? 'transparent' : '#f0f9ff', // Light blue bg for canvas
+                        height: isMobile ? 'auto' : '600px',
+                        background: isMobile ? 'transparent' : '#f0f9ff',
                         borderRadius: '12px',
-                        border: isMobile ? 'none' : '2px dashed #bfdbfe'
+                        border: isMobile ? 'none' : '2px dashed #bfdbfe',
+                        transform: isMobile ? 'none' : `scale(${zoom})`,
+                        transformOrigin: 'top left',
+                        transition: 'transform 0.15s ease-out'
                     }}>
                         {rooms.length === 0 ? (
                             <div style={{
@@ -850,6 +1119,25 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                             rooms.map((room) => {
                                 const isSelected = room.id === selectedRoomId;
                                 const isDragging = room.id === draggingId;
+                                const hasOverlap = roomCollisions[room.id] || false;
+
+                                // Determine border color based on state
+                                let borderStyle = '2px solid #94a3b8';
+                                if (hasOverlap) {
+                                    borderStyle = '2px solid #ef4444'; // Red for collision
+                                } else if (isDragging) {
+                                    borderStyle = '2px dashed #22c55e';
+                                } else if (isSelected) {
+                                    borderStyle = '2px solid #22c55e';
+                                }
+
+                                // Determine background based on state
+                                let bgColor = '#fff';
+                                if (hasOverlap) {
+                                    bgColor = '#fef2f2'; // Light red for collision
+                                } else if (isSelected) {
+                                    bgColor = '#dcfce7';
+                                }
 
                                 return (
                                     <div
@@ -864,15 +1152,14 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                                             zIndex: isDragging ? 10 : (isSelected ? 5 : 1),
 
                                             // Dimensions
-                                            // Dimensions
-                                            width: isMobile ? 'auto' : `${room.width * 40}px`,
-                                            height: isMobile ? 'auto' : `${room.length * 40}px`,
+                                            width: isMobile ? 'auto' : `${room.width * PIXELS_PER_METER}px`,
+                                            height: isMobile ? 'auto' : `${room.length * PIXELS_PER_METER}px`,
                                             minWidth: isMobile ? 'auto' : '60px',
                                             minHeight: isMobile ? 'auto' : '60px',
 
                                             // Visuals
-                                            background: isSelected ? '#dcfce7' : '#fff',
-                                            border: isDragging ? '2px dashed #22c55e' : (isSelected ? '2px solid #22c55e' : '2px solid #94a3b8'),
+                                            background: bgColor,
+                                            border: borderStyle,
                                             borderRadius: '4px',
 
                                             // Flex content
@@ -884,10 +1171,12 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                                             // Interaction
                                             cursor: isMobile ? 'pointer' : (isDragging ? 'grabbing' : 'grab'),
                                             userSelect: 'none',
-                                            boxShadow: isDragging
-                                                ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-                                                : (isSelected ? '0 10px 15px -3px rgba(34, 197, 94, 0.2)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)'),
-                                            transition: isDragging ? 'none' : 'all 0.2s', // Disable transition during drag
+                                            boxShadow: hasOverlap
+                                                ? '0 0 0 3px rgba(239, 68, 68, 0.3)'
+                                                : isDragging
+                                                    ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                                                    : (isSelected ? '0 10px 15px -3px rgba(34, 197, 94, 0.2)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)'),
+                                            transition: isDragging ? 'none' : 'all 0.2s',
                                             transform: isMobile ? (isSelected ? 'scale(1.05)' : 'scale(1)') : 'none',
                                             padding: '12px'
                                         }}
