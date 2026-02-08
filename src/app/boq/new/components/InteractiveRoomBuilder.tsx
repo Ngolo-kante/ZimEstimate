@@ -19,29 +19,46 @@ import {
     ArrowClockwise,
     MagnifyingGlassPlus,
     MagnifyingGlassMinus,
-    GridFour
+    GridFour,
+    LinkSimple,
+    Toilet,
+    Bathtub
 } from '@phosphor-icons/react';
 
-// Copy of room inputs for labels/structure
+// Room type definitions with colors for visual coding
 const ROOM_TYPES = [
-    { key: 'bedrooms', label: 'Bedroom', defaultDims: { l: 4, w: 3.5 } },
-    { key: 'diningRoom', label: 'Dining Room', defaultDims: { l: 5, w: 4 } },
-    { key: 'veranda', label: 'Veranda', defaultDims: { l: 4, w: 2 } },
-    { key: 'bathrooms', label: 'Bathroom', defaultDims: { l: 2.5, w: 2 } },
-    { key: 'kitchen', label: 'Kitchen', defaultDims: { l: 4, w: 3 } },
-    { key: 'pantry', label: 'Pantry', defaultDims: { l: 2, w: 1.5 } },
-    { key: 'livingRoom', label: 'Living Room', defaultDims: { l: 6, w: 5 } },
-    { key: 'garage1', label: 'Single Garage', defaultDims: { l: 6, w: 3 } },
-    { key: 'garage2', label: 'Double Garage', defaultDims: { l: 6, w: 6 } },
-    { key: 'passage', label: 'Passage', defaultDims: { l: 5, w: 1.2 } },
+    { key: 'bedrooms', label: 'Bedroom', defaultDims: { l: 4, w: 3.5 }, color: '#3b82f6', bgColor: '#eff6ff' }, // Blue
+    { key: 'diningRoom', label: 'Dining Room', defaultDims: { l: 5, w: 4 }, color: '#8b5cf6', bgColor: '#f5f3ff' }, // Purple
+    { key: 'veranda', label: 'Veranda', defaultDims: { l: 4, w: 2 }, color: '#22c55e', bgColor: '#f0fdf4' }, // Green
+    { key: 'bathrooms', label: 'Bathroom', defaultDims: { l: 2.5, w: 2 }, color: '#06b6d4', bgColor: '#ecfeff' }, // Cyan
+    { key: 'kitchen', label: 'Kitchen', defaultDims: { l: 4, w: 3 }, color: '#f97316', bgColor: '#fff7ed' }, // Orange
+    { key: 'pantry', label: 'Pantry', defaultDims: { l: 2, w: 1.5 }, color: '#eab308', bgColor: '#fefce8' }, // Yellow
+    { key: 'livingRoom', label: 'Living Room', defaultDims: { l: 6, w: 5 }, color: '#ec4899', bgColor: '#fdf2f8' }, // Pink
+    { key: 'garage1', label: 'Single Garage', defaultDims: { l: 6, w: 3 }, color: '#64748b', bgColor: '#f8fafc' }, // Slate
+    { key: 'garage2', label: 'Double Garage', defaultDims: { l: 6, w: 6 }, color: '#64748b', bgColor: '#f8fafc' }, // Slate
+    { key: 'passage', label: 'Passage', defaultDims: { l: 5, w: 1.2 }, color: '#a855f7', bgColor: '#faf5ff' }, // Violet
+];
+
+// En-suite / Sub-room types (can be added within larger rooms)
+const ENSUITE_TYPES = [
+    { key: 'ensuite-toilet', label: 'En-suite Toilet', defaultDims: { l: 1.5, w: 1 }, color: '#06b6d4', bgColor: '#ecfeff', icon: 'toilet' },
+    { key: 'ensuite-bathroom', label: 'En-suite Bath', defaultDims: { l: 2, w: 1.5 }, color: '#06b6d4', bgColor: '#ecfeff', icon: 'bathtub' },
+    { key: 'walkin-closet', label: 'Walk-in Closet', defaultDims: { l: 2, w: 1.5 }, color: '#a855f7', bgColor: '#faf5ff', icon: 'closet' },
 ];
 
 export const BRICK_TYPES = [
-    { id: 'brick-common', label: 'Common Bricks', rate: 52, color: '#dc2626' }, // 52 with wastage
-    { id: 'block-6inch', label: '6" Hollow Blocks', rate: 13, color: '#64748b' }, // ~12.5 + wastage
+    { id: 'brick-common', label: 'Common Bricks', rate: 52, color: '#dc2626' },
+    { id: 'block-6inch', label: '6" Hollow Blocks', rate: 13, color: '#64748b' },
     { id: 'brick-face-red', label: 'Face Bricks (Red)', rate: 52, color: '#b91c1c' },
-    { id: 'farm-brick', label: 'Farm Bricks', rate: 55, color: '#ea580c' } // Slightly more wastage/smaller
+    { id: 'farm-brick', label: 'Farm Bricks', rate: 55, color: '#ea580c' }
 ];
+
+// Connection between rooms (for passages)
+interface RoomConnection {
+    id: string;
+    fromRoomId: string;
+    toRoomId: string;
+}
 
 export interface RoomInstance {
     id: string;
@@ -54,6 +71,8 @@ export interface RoomInstance {
     x: number;
     y: number;
     materialId: string;
+    parentRoomId?: string; // For en-suite rooms attached to a parent
+    isEnSuite?: boolean;   // Flag for en-suite/sub-rooms
 }
 
 interface InteractiveRoomBuilderProps {
@@ -70,10 +89,22 @@ const MAX_ZOOM = 2;
 const ZOOM_STEP = 0.1;
 const PIXELS_PER_METER = 40; // 40px = 1m
 
+// Helper to get room type color
+const getRoomTypeColor = (typeKey: string): { color: string; bgColor: string } => {
+    const roomType = ROOM_TYPES.find(t => t.key === typeKey);
+    if (roomType) return { color: roomType.color, bgColor: roomType.bgColor };
+
+    const ensuiteType = ENSUITE_TYPES.find(t => t.key === typeKey);
+    if (ensuiteType) return { color: ensuiteType.color, bgColor: ensuiteType.bgColor };
+
+    return { color: '#94a3b8', bgColor: '#f8fafc' }; // Default slate
+};
+
 export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue, onBack }: InteractiveRoomBuilderProps) {
     const [rooms, setRooms] = useState<RoomInstance[]>([]);
     const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
     const [showRoomPicker, setShowRoomPicker] = useState(false);
+    const [showEnSuitePicker, setShowEnSuitePicker] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [loadedFromStorage, setLoadedFromStorage] = useState(false);
@@ -84,6 +115,11 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
     // Zoom state
     const [zoom, setZoom] = useState(1);
     const [snapToGrid, setSnapToGrid] = useState(true);
+
+    // Room connections (passages between rooms)
+    const [connections, setConnections] = useState<RoomConnection[]>([]);
+    const [connectionMode, setConnectionMode] = useState<'none' | 'selecting-first' | 'selecting-second'>('none');
+    const [connectionFirstRoom, setConnectionFirstRoom] = useState<string | null>(null);
 
     // Drag state
     const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -501,11 +537,125 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
         setShowRoomPicker(false);
     };
 
+    // Add an en-suite/sub-room attached to a parent room
+    const addEnSuiteRoom = (ensuiteTypeKey: string) => {
+        if (!selectedRoomId) return;
+
+        saveToHistory();
+        const typeDef = ENSUITE_TYPES.find(r => r.key === ensuiteTypeKey);
+        if (!typeDef) return;
+
+        const parentRoom = rooms.find(r => r.id === selectedRoomId);
+        if (!parentRoom) return;
+
+        const existingEnSuites = rooms.filter(r => r.parentRoomId === selectedRoomId).length;
+
+        // Position the en-suite inside or adjacent to the parent room
+        const x = parentRoom.x + (parentRoom.width * PIXELS_PER_METER) - (typeDef.defaultDims.w * PIXELS_PER_METER) - 10;
+        const y = parentRoom.y + 10 + (existingEnSuites * (typeDef.defaultDims.l * PIXELS_PER_METER + 10));
+
+        const newRoom: RoomInstance = {
+            id: `${ensuiteTypeKey}-${Date.now()}`,
+            type: ensuiteTypeKey,
+            label: typeDef.label,
+            length: typeDef.defaultDims.l,
+            width: typeDef.defaultDims.w,
+            windows: 0,
+            doors: 1,
+            x,
+            y,
+            materialId: 'brick-common',
+            parentRoomId: selectedRoomId,
+            isEnSuite: true
+        };
+
+        setRooms(prev => [...prev, newRoom]);
+        setShowEnSuitePicker(false);
+
+        // Auto-create a connection between parent and en-suite
+        const newConnection: RoomConnection = {
+            id: `conn-${Date.now()}`,
+            fromRoomId: selectedRoomId,
+            toRoomId: newRoom.id
+        };
+        setConnections(prev => [...prev, newConnection]);
+    };
+
+    // Start connection mode
+    const startConnectionMode = () => {
+        setConnectionMode('selecting-first');
+        setConnectionFirstRoom(null);
+    };
+
+    // Cancel connection mode
+    const cancelConnectionMode = () => {
+        setConnectionMode('none');
+        setConnectionFirstRoom(null);
+    };
+
+    // Handle room click during connection mode
+    const handleConnectionClick = (roomId: string) => {
+        if (connectionMode === 'selecting-first') {
+            setConnectionFirstRoom(roomId);
+            setConnectionMode('selecting-second');
+        } else if (connectionMode === 'selecting-second' && connectionFirstRoom) {
+            if (roomId === connectionFirstRoom) {
+                // Can't connect to self
+                return;
+            }
+
+            // Check if connection already exists
+            const exists = connections.some(c =>
+                (c.fromRoomId === connectionFirstRoom && c.toRoomId === roomId) ||
+                (c.fromRoomId === roomId && c.toRoomId === connectionFirstRoom)
+            );
+
+            if (!exists) {
+                const newConnection: RoomConnection = {
+                    id: `conn-${Date.now()}`,
+                    fromRoomId: connectionFirstRoom,
+                    toRoomId: roomId
+                };
+                setConnections(prev => [...prev, newConnection]);
+            }
+
+            cancelConnectionMode();
+        }
+    };
+
+    // Remove a connection
+    const removeConnection = (connectionId: string) => {
+        setConnections(prev => prev.filter(c => c.id !== connectionId));
+    };
+
+    // Get connection line coordinates between two rooms
+    const getConnectionLine = (conn: RoomConnection) => {
+        const fromRoom = rooms.find(r => r.id === conn.fromRoomId);
+        const toRoom = rooms.find(r => r.id === conn.toRoomId);
+
+        if (!fromRoom || !toRoom) return null;
+
+        // Calculate center points of each room
+        const fromCenterX = fromRoom.x + (fromRoom.width * PIXELS_PER_METER) / 2;
+        const fromCenterY = fromRoom.y + (fromRoom.length * PIXELS_PER_METER) / 2;
+        const toCenterX = toRoom.x + (toRoom.width * PIXELS_PER_METER) / 2;
+        const toCenterY = toRoom.y + (toRoom.length * PIXELS_PER_METER) / 2;
+
+        return { x1: fromCenterX, y1: fromCenterY, x2: toCenterX, y2: toCenterY };
+    };
+
     // Remove selected room
     const removeSelectedRoom = () => {
         if (!selectedRoomId) return;
         saveToHistory();
-        setRooms(prev => prev.filter(r => r.id !== selectedRoomId));
+
+        // Also remove connections involving this room
+        setConnections(prev => prev.filter(c =>
+            c.fromRoomId !== selectedRoomId && c.toRoomId !== selectedRoomId
+        ));
+
+        // Also remove any en-suite rooms attached to this room
+        setRooms(prev => prev.filter(r => r.id !== selectedRoomId && r.parentRoomId !== selectedRoomId));
         setSelectedRoomId(rooms.length > 1 ? rooms[0].id : null);
     };
 
@@ -796,6 +946,32 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                                 title={`Grid Snap: ${snapToGrid ? 'ON' : 'OFF'} (G)`}
                             >
                                 <GridFour size={16} weight={snapToGrid ? 'fill' : 'regular'} />
+                            </button>
+
+                            {/* Connection Mode Button */}
+                            <button
+                                onClick={connectionMode === 'none' ? startConnectionMode : cancelConnectionMode}
+                                style={{
+                                    padding: '6px 10px',
+                                    background: connectionMode !== 'none' ? '#fef3c7' : '#fff',
+                                    border: `1px solid ${connectionMode !== 'none' ? '#fcd34d' : '#e5e7eb'}`,
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    color: connectionMode !== 'none' ? '#92400e' : '#374151',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    fontSize: '11px',
+                                    fontWeight: 600
+                                }}
+                                title="Add passage between rooms"
+                            >
+                                <LinkSimple size={14} weight={connectionMode !== 'none' ? 'fill' : 'regular'} />
+                                {connectionMode === 'none'
+                                    ? 'Passage'
+                                    : connectionMode === 'selecting-first'
+                                        ? 'Select 1st room...'
+                                        : 'Select 2nd room...'}
                             </button>
                         </div>
                     )}
@@ -1100,6 +1276,66 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                         transformOrigin: 'top left',
                         transition: 'transform 0.15s ease-out'
                     }}>
+                        {/* Connection Lines SVG Overlay */}
+                        {!isMobile && connections.length > 0 && (
+                            <svg
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    pointerEvents: 'none',
+                                    zIndex: 0
+                                }}
+                            >
+                                <defs>
+                                    <marker
+                                        id="passage-dot"
+                                        viewBox="0 0 10 10"
+                                        refX="5"
+                                        refY="5"
+                                        markerWidth="6"
+                                        markerHeight="6"
+                                    >
+                                        <circle cx="5" cy="5" r="4" fill="#a855f7" />
+                                    </marker>
+                                </defs>
+                                {connections.map(conn => {
+                                    const line = getConnectionLine(conn);
+                                    if (!line) return null;
+
+                                    return (
+                                        <g key={conn.id}>
+                                            <line
+                                                x1={line.x1}
+                                                y1={line.y1}
+                                                x2={line.x2}
+                                                y2={line.y2}
+                                                stroke="#a855f7"
+                                                strokeWidth="3"
+                                                strokeDasharray="8 4"
+                                                markerStart="url(#passage-dot)"
+                                                markerEnd="url(#passage-dot)"
+                                            />
+                                            {/* Connection label */}
+                                            <text
+                                                x={(line.x1 + line.x2) / 2}
+                                                y={(line.y1 + line.y2) / 2 - 8}
+                                                textAnchor="middle"
+                                                fill="#7c3aed"
+                                                fontSize="10"
+                                                fontWeight="600"
+                                                style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                                                onClick={() => removeConnection(conn.id)}
+                                            >
+                                                🚪 Passage
+                                            </text>
+                                        </g>
+                                    );
+                                })}
+                            </svg>
+                        )}
                         {rooms.length === 0 ? (
                             <div style={{
                                 gridColumn: '1/-1',
@@ -1120,30 +1356,48 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                                 const isSelected = room.id === selectedRoomId;
                                 const isDragging = room.id === draggingId;
                                 const hasOverlap = roomCollisions[room.id] || false;
+                                const roomColors = getRoomTypeColor(room.type);
+                                const isConnectionTarget = connectionMode !== 'none';
+                                const isFirstSelected = connectionFirstRoom === room.id;
 
                                 // Determine border color based on state
-                                let borderStyle = '2px solid #94a3b8';
+                                let borderStyle = `2px solid ${roomColors.color}`;
                                 if (hasOverlap) {
                                     borderStyle = '2px solid #ef4444'; // Red for collision
                                 } else if (isDragging) {
                                     borderStyle = '2px dashed #22c55e';
                                 } else if (isSelected) {
                                     borderStyle = '2px solid #22c55e';
+                                } else if (isFirstSelected) {
+                                    borderStyle = '3px solid #f59e0b'; // Amber for first connection selection
+                                } else if (isConnectionTarget) {
+                                    borderStyle = `2px dashed ${roomColors.color}`;
                                 }
 
                                 // Determine background based on state
-                                let bgColor = '#fff';
+                                let bgColor = roomColors.bgColor;
                                 if (hasOverlap) {
                                     bgColor = '#fef2f2'; // Light red for collision
                                 } else if (isSelected) {
                                     bgColor = '#dcfce7';
+                                } else if (isFirstSelected) {
+                                    bgColor = '#fef3c7'; // Amber bg for first selection
                                 }
+
+                                // Handle click based on mode
+                                const handleClick = () => {
+                                    if (connectionMode !== 'none') {
+                                        handleConnectionClick(room.id);
+                                    } else {
+                                        handleRoomSelect(room.id);
+                                    }
+                                };
 
                                 return (
                                     <div
                                         key={room.id}
-                                        onMouseDown={(e) => !isMobile && handleMouseDown(e, room.id)}
-                                        onClick={() => handleRoomSelect(room.id)}
+                                        onMouseDown={(e) => !isMobile && connectionMode === 'none' && handleMouseDown(e, room.id)}
+                                        onClick={handleClick}
                                         style={{
                                             // Layout
                                             position: isMobile ? 'relative' : 'absolute',
@@ -1193,6 +1447,65 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                                                 boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
                                             }}>
                                                 Click to Edit
+                                            </div>
+                                        )}
+
+                                        {/* Live Dimension Labels on Edges */}
+                                        {!isMobile && (
+                                            <>
+                                                {/* Width label (top) */}
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    top: '-20px',
+                                                    left: '50%',
+                                                    transform: 'translateX(-50%)',
+                                                    background: roomColors.color,
+                                                    color: '#fff',
+                                                    fontSize: '9px',
+                                                    fontWeight: 700,
+                                                    padding: '2px 6px',
+                                                    borderRadius: '3px',
+                                                    whiteSpace: 'nowrap',
+                                                    boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                                                }}>
+                                                    {room.width}m
+                                                </div>
+
+                                                {/* Length label (right) */}
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    top: '50%',
+                                                    right: '-22px',
+                                                    transform: 'translateY(-50%) rotate(90deg)',
+                                                    background: roomColors.color,
+                                                    color: '#fff',
+                                                    fontSize: '9px',
+                                                    fontWeight: 700,
+                                                    padding: '2px 6px',
+                                                    borderRadius: '3px',
+                                                    whiteSpace: 'nowrap',
+                                                    boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                                                }}>
+                                                    {room.length}m
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* En-suite indicator badge */}
+                                        {room.isEnSuite && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '4px',
+                                                left: '4px',
+                                                background: '#a855f7',
+                                                color: '#fff',
+                                                fontSize: '7px',
+                                                fontWeight: 700,
+                                                padding: '2px 4px',
+                                                borderRadius: '3px',
+                                                textTransform: 'uppercase'
+                                            }}>
+                                                En-suite
                                             </div>
                                         )}
 
@@ -1495,6 +1808,123 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
                                     <Trash size={16} />
                                 </button>
                             </div>
+
+                            {/* Add En-suite Section */}
+                            {!selectedRoom.isEnSuite && (
+                                <div style={{ marginBottom: '20px', position: 'relative' }}>
+                                    <button
+                                        onClick={() => setShowEnSuitePicker(!showEnSuitePicker)}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px',
+                                            padding: '10px',
+                                            width: '100%',
+                                            background: showEnSuitePicker ? '#ecfeff' : '#f0f9ff',
+                                            border: `1px dashed ${showEnSuitePicker ? '#06b6d4' : '#3b82f6'}`,
+                                            borderRadius: '8px',
+                                            fontSize: '12px',
+                                            fontWeight: 600,
+                                            color: showEnSuitePicker ? '#0891b2' : '#2563eb',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        <Plus size={14} weight="bold" />
+                                        Add En-suite / Sub-room
+                                    </button>
+
+                                    {showEnSuitePicker && (
+                                        <div style={{
+                                            marginTop: '8px',
+                                            padding: '12px',
+                                            background: '#fff',
+                                            border: '1px solid #e5e7eb',
+                                            borderRadius: '8px',
+                                            display: 'grid',
+                                            gridTemplateColumns: '1fr',
+                                            gap: '8px'
+                                        }}>
+                                            {ENSUITE_TYPES.map(type => (
+                                                <button
+                                                    key={type.key}
+                                                    onClick={() => addEnSuiteRoom(type.key)}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '10px',
+                                                        padding: '10px 12px',
+                                                        background: type.bgColor,
+                                                        border: `1px solid ${type.color}40`,
+                                                        borderRadius: '6px',
+                                                        fontSize: '12px',
+                                                        fontWeight: 500,
+                                                        color: '#1f2937',
+                                                        cursor: 'pointer',
+                                                        textAlign: 'left',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    {type.icon === 'toilet' && <Toilet size={18} color={type.color} weight="fill" />}
+                                                    {type.icon === 'bathtub' && <Bathtub size={18} color={type.color} weight="fill" />}
+                                                    {type.icon === 'closet' && <Door size={18} color={type.color} weight="fill" />}
+                                                    <div>
+                                                        <div style={{ fontWeight: 600 }}>{type.label}</div>
+                                                        <div style={{ fontSize: '10px', color: '#6b7280' }}>
+                                                            {type.defaultDims.l}m × {type.defaultDims.w}m
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Show existing en-suites */}
+                                    {rooms.filter(r => r.parentRoomId === selectedRoom.id).length > 0 && (
+                                        <div style={{ marginTop: '12px' }}>
+                                            <div style={{ fontSize: '10px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', marginBottom: '6px' }}>
+                                                Attached Rooms:
+                                            </div>
+                                            {rooms.filter(r => r.parentRoomId === selectedRoom.id).map(ensuite => (
+                                                <div
+                                                    key={ensuite.id}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'space-between',
+                                                        padding: '8px 10px',
+                                                        background: getRoomTypeColor(ensuite.type).bgColor,
+                                                        border: `1px solid ${getRoomTypeColor(ensuite.type).color}40`,
+                                                        borderRadius: '6px',
+                                                        marginBottom: '6px',
+                                                        fontSize: '12px'
+                                                    }}
+                                                >
+                                                    <span style={{ fontWeight: 500 }}>{ensuite.label}</span>
+                                                    <button
+                                                        onClick={() => {
+                                                            saveToHistory();
+                                                            setConnections(prev => prev.filter(c => c.fromRoomId !== ensuite.id && c.toRoomId !== ensuite.id));
+                                                            setRooms(prev => prev.filter(r => r.id !== ensuite.id));
+                                                        }}
+                                                        style={{
+                                                            padding: '4px',
+                                                            background: 'transparent',
+                                                            border: 'none',
+                                                            cursor: 'pointer',
+                                                            color: '#dc2626'
+                                                        }}
+                                                        title="Remove"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Wall Material */}
                             <div style={{ marginBottom: '24px' }}>
