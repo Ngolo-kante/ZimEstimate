@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { chromium, type Browser } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/lib/database.types';
 import { MaterialMatcher, MatchResult } from '@/lib/services/material-matcher';
+import Firecrawl from '@mendable/firecrawl-js';
+import * as cheerio from 'cheerio';
 
 // Initialize Supabase Client with Service Role Key for backend access
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -36,8 +37,6 @@ interface CategoryScrapeResponse {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse<CategoryScrapeResponse>> {
-    let browser: Browser | null = null;
-
     try {
         const payload = await req.json() as CategoryScrapePayload;
         const {
@@ -78,39 +77,46 @@ export async function POST(req: NextRequest): Promise<NextResponse<CategoryScrap
         const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
         const matcher = new MaterialMatcher(supabase);
 
-        // Launch browser
-        browser = await chromium.launch({ headless: true });
-        const page = await browser.newPage();
+        // Initialize Firecrawl
+        const firecrawl = new Firecrawl({ apiKey: process.env.FIRECRAWL_API_KEY });
 
-        // Navigate with extended timeout
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        console.log(`[Category Scrape] Starting Firecrawl for ${url}`);
 
-        // Wait for product container to load
+        // Scrape using Firecrawl v4.x API - returns Document directly, throws on error
+        const scrapeResult = await firecrawl.scrape(url, {
+            formats: ['html'],
+            // Extended timeout implicitly handled by Firecrawl, can add overrides if needed
+        });
+
+        const html = scrapeResult.html;
+        if (!html) {
+            throw new Error('Firecrawl returned no HTML content');
+        }
+
+        // Parse HTML with Cheerio
+        const $ = cheerio.load(html);
         const containerSel = containerSelector || 'body';
-        await page.waitForSelector(containerSel, { timeout: 15000 });
 
-        // Extract all product cards
-        const rawItems = await page.$$eval(
-            `${containerSel} ${itemCardSelector}`,
-            (cards, selectors) => {
-                const results: { name: string; price: string }[] = [];
-                const { nameSelector, priceSelector } = selectors as { nameSelector: string; priceSelector: string };
+        // Extract product cards
+        const rawItems: { name: string; price: string }[] = [];
 
-                for (const card of cards) {
-                    const nameEl = card.querySelector(nameSelector);
-                    const priceEl = card.querySelector(priceSelector);
+        // Find cards within container
+        const $container = $(containerSel);
 
-                    if (nameEl && priceEl) {
-                        results.push({
-                            name: nameEl.textContent?.trim() || '',
-                            price: priceEl.textContent?.trim() || ''
-                        });
-                    }
+        if ($container.length === 0) {
+            console.warn(`Container selector "${containerSel}" not found.`);
+        } else {
+            $container.find(itemCardSelector).each((_, element) => {
+                const name = $(element).find(nameSelector).text().trim();
+                const price = $(element).find(priceSelector).text().trim();
+
+                if (name && price) {
+                    rawItems.push({ name, price });
                 }
-                return results;
-            },
-            { nameSelector, priceSelector }
-        );
+            });
+        }
+
+        console.log(`[Category Scrape] Extracted ${rawItems.length} raw items.`);
 
         // Apply limit
         const limitedItems = rawItems.slice(0, limit);
@@ -184,7 +190,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<CategoryScrap
             await supabase.from('scraper_logs').insert({
                 scraper_config_id: configId,
                 status: 'success',
-                message: `Category scrape: ${scrapedItems.length} items found, ${matchedCount} matched, ${pendingCount} pending review`,
+                message: `Category scrape (Firecrawl): ${scrapedItems.length} items found, ${matchedCount} matched, ${pendingCount} pending review`,
                 scraped_data: { itemCount: scrapedItems.length, matchedCount, pendingCount }
             } as never);
         }
@@ -203,9 +209,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<CategoryScrap
         console.error('Category Scraper Error:', err);
 
         let errorMessage = err.message;
-        if (errorMessage.includes("Executable doesn't exist")) {
-            errorMessage = 'Playwright browsers not found. Run "npx playwright install" on the server.';
-        }
 
         return NextResponse.json({
             success: false,
@@ -216,10 +219,5 @@ export async function POST(req: NextRequest): Promise<NextResponse<CategoryScrap
             items: [],
             error: errorMessage
         }, { status: 500 });
-
-    } finally {
-        if (browser) {
-            await browser.close();
-        }
     }
 }

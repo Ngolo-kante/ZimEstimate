@@ -53,6 +53,13 @@ import {
     DownloadSimple,
     Warning,
     List,
+    Wallet,
+    TrendUp,
+    Info,
+    CheckCircle,
+    ChartLineUp,
+    Tag,
+    Stack,
 } from '@phosphor-icons/react';
 import { ProjectDetailSkeleton } from '@/components/ui/Skeleton';
 
@@ -805,84 +812,119 @@ function ProjectDetailContent() {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <Card>
-                                    <CardHeader><CardTitle>Total Budget</CardTitle></CardHeader>
-                                    <div className="p-6 pt-0">
-                                        <div className="text-3xl font-bold text-slate-800">
+                                {/* Total Budget - Primary Funding */}
+                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                        <Wallet size={80} weight="duotone" className="text-blue-500" />
+                                    </div>
+                                    <div className="relative z-10">
+                                        <p className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-1">Total Budget</p>
+                                        <div className="text-3xl font-bold text-slate-900 mb-2">
                                             <PriceDisplay priceUsd={purchaseStats.estimatedTotal} priceZwg={purchaseStats.estimatedTotal * exchangeRate} />
                                         </div>
-                                        <p className="text-sm text-slate-500 mt-1">Estimated cost of materials</p>
+                                        <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 w-fit px-2 py-1 rounded-md">
+                                            <Info size={14} weight="fill" className="text-blue-500" />
+                                            <span>Estimated cost</span>
+                                        </div>
                                     </div>
-                                </Card>
-                                <Card>
-                                    <CardHeader><CardTitle>Actual Total</CardTitle></CardHeader>
-                                    <div className="p-6 pt-0">
-                                        <div className="text-3xl font-bold text-blue-600">
+                                </div>
+
+                                {/* Actual Spend - Tracking */}
+                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                        <TrendUp size={80} weight="duotone" className={purchaseStats.totalVariance <= 0 ? 'text-green-500' : 'text-orange-500'} />
+                                    </div>
+                                    <div className="relative z-10">
+                                        <p className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-1">Actual Spend</p>
+                                        <div className="text-3xl font-bold text-slate-900 mb-2">
                                             <PriceDisplay priceUsd={purchaseStats.actualTotal} priceZwg={purchaseStats.actualTotal * exchangeRate} />
                                         </div>
-                                        <p className="text-sm text-slate-500 mt-1">
-                                            <span className={purchaseStats.totalVariance <= 0 ? 'text-green-600' : 'text-red-500'}>
-                                                {purchaseStats.totalVariance <= 0 ? 'Under' : 'Over'} Budget
-                                            </span> by <PriceDisplay priceUsd={Math.abs(purchaseStats.totalVariance)} priceZwg={Math.abs(purchaseStats.totalVariance) * exchangeRate} />
-                                        </p>
-                                    </div>
-                                </Card>
-                                <Card>
-                                    <CardHeader><CardTitle>Total Variance</CardTitle></CardHeader>
-                                    <div className="p-6 pt-0">
-                                        <div className={`text-3xl font-bold ${purchaseStats.totalVariance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                            {purchaseStats.totalVariance >= 0 ? '+' : ''}
-                                            <PriceDisplay priceUsd={Math.abs(purchaseStats.totalVariance)} priceZwg={Math.abs(purchaseStats.totalVariance) * exchangeRate} />
+                                        <div className={`flex items-center gap-1.5 text-sm w-fit px-2 py-1 rounded-md font-medium ${purchaseStats.totalVariance <= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                                            {purchaseStats.totalVariance <= 0 ? <CheckCircle size={14} weight="fill" /> : <Info size={14} weight="fill" />}
+                                            <span>
+                                                {purchaseStats.totalVariance <= 0 ? 'Under Budget' : 'Over Budget'} by <PriceDisplay priceUsd={Math.abs(purchaseStats.totalVariance)} priceZwg={Math.abs(purchaseStats.totalVariance) * exchangeRate} />
+                                            </span>
                                         </div>
-                                        <p className="text-sm text-slate-500 mt-1">
-                                            {purchaseStats.totalVariancePercent >= 0 ? '+' : ''}
-                                            {purchaseStats.totalVariancePercent.toFixed(1)}% vs estimate
-                                        </p>
                                     </div>
-                                </Card>
-                                <Card>
-                                    <CardHeader><CardTitle>Price Variance</CardTitle></CardHeader>
-                                    <div className="p-6 pt-0">
-                                        <div className={`text-3xl font-bold ${purchaseStats.priceVariance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                            {purchaseStats.priceVariance >= 0 ? '+' : ''}
-                                            <PriceDisplay priceUsd={Math.abs(purchaseStats.priceVariance)} priceZwg={Math.abs(purchaseStats.priceVariance) * exchangeRate} />
-                                        </div>
-                                        <p className="text-sm text-slate-500 mt-1">
-                                            {purchaseStats.priceVariancePercent >= 0 ? '+' : ''}
-                                            {purchaseStats.priceVariancePercent.toFixed(1)}% from unit price changes
-                                        </p>
-                                    </div>
-                                </Card>
-                                <Card>
-                                    <CardHeader><CardTitle>Qty Variance</CardTitle></CardHeader>
-                                    <div className="p-6 pt-0">
-                                        <div className={`text-3xl font-bold ${purchaseStats.qtyVariance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                            {purchaseStats.qtyVariance >= 0 ? '+' : ''}
-                                            <PriceDisplay priceUsd={Math.abs(purchaseStats.qtyVariance)} priceZwg={Math.abs(purchaseStats.qtyVariance) * exchangeRate} />
-                                        </div>
-                                        <p className="text-sm text-slate-500 mt-1">
-                                            {purchaseStats.qtyVariancePercent >= 0 ? '+' : ''}
-                                            {purchaseStats.qtyVariancePercent.toFixed(1)}% from quantity changes
-                                        </p>
-                                    </div>
-                                </Card>
-                                <Card>
-                                    <CardHeader><CardTitle>Progress</CardTitle></CardHeader>
-                                    <div className="p-6 pt-0">
-                                        <div className="flex items-end gap-2 mb-2">
-                                            <span className="text-3xl font-bold text-slate-800">
+                                </div>
+
+                                {/* Progress - Completion */}
+                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <p className="text-sm font-medium text-slate-500 uppercase tracking-wide">Completion</p>
+                                            <span className="text-2xl font-bold text-slate-900">
                                                 {purchaseStats.totalItems > 0
                                                     ? Math.round((purchaseStats.purchasedItems / purchaseStats.totalItems) * 100)
                                                     : 0}%
                                             </span>
-                                            <span className="text-slate-500 mb-1">completed</span>
                                         </div>
-                                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                            <div className="bg-blue-600 h-full rounded-full transition-all duration-500"
+                                        <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden mb-3">
+                                            <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-1000 ease-out"
                                                 style={{ width: `${(purchaseStats.purchasedItems / purchaseStats.totalItems) * 100}%` }} />
                                         </div>
                                     </div>
-                                </Card>
+                                    <div className="flex items-center justify-between text-sm text-slate-500">
+                                        <span>{purchaseStats.purchasedItems} of {purchaseStats.totalItems} items purchased</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Detailed Variance Stats */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {/* Total Variance */}
+                                <div className="bg-white rounded-xl p-5 border border-slate-200">
+                                    <h4 className="text-sm font-semibold text-slate-500 mb-3 flex items-center gap-2">
+                                        <ChartLineUp size={16} /> Total Variance
+                                    </h4>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className={`text-2xl font-bold ${purchaseStats.totalVariance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                            {purchaseStats.totalVariance >= 0 ? '+' : ''}
+                                            <PriceDisplay priceUsd={Math.abs(purchaseStats.totalVariance)} priceZwg={Math.abs(purchaseStats.totalVariance) * exchangeRate} />
+                                        </span>
+                                        <span className={`text-sm font-medium px-1.5 py-0.5 rounded ${purchaseStats.totalVariance >= 0 ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+                                            {purchaseStats.totalVariancePercent >= 0 ? '+' : ''}
+                                            {purchaseStats.totalVariancePercent.toFixed(1)}%
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-2">Overall difference from estimate</p>
+                                </div>
+
+                                {/* Price Variance */}
+                                <div className="bg-white rounded-xl p-5 border border-slate-200">
+                                    <h4 className="text-sm font-semibold text-slate-500 mb-3 flex items-center gap-2">
+                                        <Tag size={16} /> Price Variance
+                                    </h4>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className={`text-2xl font-bold ${purchaseStats.priceVariance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                            {purchaseStats.priceVariance >= 0 ? '+' : ''}
+                                            <PriceDisplay priceUsd={Math.abs(purchaseStats.priceVariance)} priceZwg={Math.abs(purchaseStats.priceVariance) * exchangeRate} />
+                                        </span>
+                                        <span className={`text-sm font-medium px-1.5 py-0.5 rounded ${purchaseStats.priceVariance >= 0 ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+                                            {purchaseStats.priceVariancePercent >= 0 ? '+' : ''}
+                                            {purchaseStats.priceVariancePercent.toFixed(1)}%
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-2">Due to unit price changes</p>
+                                </div>
+
+                                {/* Qty Variance */}
+                                <div className="bg-white rounded-xl p-5 border border-slate-200">
+                                    <h4 className="text-sm font-semibold text-slate-500 mb-3 flex items-center gap-2">
+                                        <Stack size={16} /> Quantity Variance
+                                    </h4>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className={`text-2xl font-bold ${purchaseStats.qtyVariance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                            {purchaseStats.qtyVariance >= 0 ? '+' : ''}
+                                            <PriceDisplay priceUsd={Math.abs(purchaseStats.qtyVariance)} priceZwg={Math.abs(purchaseStats.qtyVariance) * exchangeRate} />
+                                        </span>
+                                        <span className={`text-sm font-medium px-1.5 py-0.5 rounded ${purchaseStats.qtyVariance >= 0 ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+                                            {purchaseStats.qtyVariancePercent >= 0 ? '+' : ''}
+                                            {purchaseStats.qtyVariancePercent.toFixed(1)}%
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-2">Due to quantity changes</p>
+                                </div>
                             </div>
                         </div>
                     )}

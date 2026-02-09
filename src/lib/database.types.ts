@@ -949,6 +949,10 @@ export interface Database {
                     last_successful_run_at: string | null;
                     created_at: string;
                     updated_at: string;
+                    // Category scraper fields
+                    scrape_mode: 'single' | 'category' | null;
+                    container_selector: string | null;
+                    item_card_selector: string | null;
                 };
                 Insert: {
                     id?: string;
@@ -962,6 +966,10 @@ export interface Database {
                     last_successful_run_at?: string | null;
                     created_at?: string;
                     updated_at?: string;
+                    // Category scraper fields
+                    scrape_mode?: 'single' | 'category' | null;
+                    container_selector?: string | null;
+                    item_card_selector?: string | null;
                 };
                 Update: {
                     id?: string;
@@ -975,6 +983,10 @@ export interface Database {
                     last_successful_run_at?: string | null;
                     created_at?: string;
                     updated_at?: string;
+                    // Category scraper fields
+                    scrape_mode?: 'single' | 'category' | null;
+                    container_selector?: string | null;
+                    item_card_selector?: string | null;
                 };
             };
             material_aliases: {

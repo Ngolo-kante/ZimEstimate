@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Calendar, Wallet, TrendUp, Target, Info, WhatsappLogo, PaperPlaneTilt, Envelope, ChatCircleText, PiggyBank } from '@phosphor-icons/react';
+import { Calendar, Wallet, TrendUp, Target, Info, WhatsappLogo, PaperPlaneTilt, Envelope, ChatCircleText, PiggyBank, Bell, CheckCircle } from '@phosphor-icons/react';
 import { useCurrency } from './CurrencyToggle';
 
 export type NotificationChannel = 'sms' | 'whatsapp' | 'telegram' | 'email';
@@ -106,606 +106,679 @@ export default function BudgetPlanner({
   return (
     <div className="budget-planner">
       <div className="planner-header">
-        <div className="header-icon">
-          <PiggyBank size={24} weight="duotone" />
+        <div className="header-icon-wrapper">
+          <PiggyBank size={32} weight="duotone" />
         </div>
         <div className="header-content">
           <h3>Budget Planner</h3>
-          <p>Plan your savings to reach your construction goals</p>
+          <p>Optimize your project savings & timeline</p>
+        </div>
+        <div className="header-badge">
+          {percentComplete >= 100 ? 'Goal Reached' : 'In Progress'}
         </div>
       </div>
 
-      {/* Progress Overview */}
-      <div className="progress-section">
-        <div className="progress-header">
-          <span>Progress</span>
-          <span className="progress-percent">{percentComplete.toFixed(0)}%</span>
-        </div>
-        <div className="progress-bar">
-          <div className="progress-fill" style={{ width: `${Math.min(100, percentComplete)}%` }} />
-        </div>
-        <div className="progress-labels">
-          <span>Spent: {formatPrice(amountSpentUsd, amountSpentUsd * exchangeRate)}</span>
-          <span>Remaining: {formatPrice(remainingBudget, remainingBudget * exchangeRate)}</span>
-        </div>
-      </div>
-
-      {/* Plan Mode Selection */}
-      <div className="mode-section">
-        <label className="mode-label">What do you want to save for?</label>
-        <div className="mode-options">
-          <button
-            className={`mode-btn ${planMode === 'all' ? 'active' : ''}`}
-            onClick={() => setPlanMode('all')}
-          >
-            <Target size={18} weight={planMode === 'all' ? 'fill' : 'light'} />
-            All Materials
-          </button>
-          <button
-            className={`mode-btn ${planMode === 'critical' ? 'active' : ''}`}
-            onClick={() => setPlanMode('critical')}
-            disabled={criticalItemsUsd === 0}
-          >
-            <TrendUp size={18} weight={planMode === 'critical' ? 'fill' : 'light'} />
-            Critical Items
-          </button>
-          <button
-            className={`mode-btn ${planMode === 'custom' ? 'active' : ''}`}
-            onClick={() => setPlanMode('custom')}
-          >
-            <Wallet size={18} weight={planMode === 'custom' ? 'fill' : 'light'} />
-            Custom Amount
-          </button>
-        </div>
-
-        {planMode === 'custom' && (
-          <div className="custom-amount-input">
-            <span className="currency-prefix">$</span>
-            <input
-              type="number"
-              value={customAmount}
-              onChange={(e) => setCustomAmount(e.target.value)}
-              placeholder="Enter target amount"
-              min="0"
-            />
+      {/* Progress Card */}
+      <div className="planner-card progress-card">
+        <div className="card-row">
+          <div className="progress-info">
+            <span className="label">Budget Progress</span>
+            <span className="value">{percentComplete.toFixed(0)}%</span>
           </div>
-        )}
-      </div>
-
-      {/* Target Date */}
-      <div className="date-section">
-        <label className="date-label">
-          <Calendar size={18} weight="light" />
-          When do you want to buy?
-        </label>
-        <input
-          type="date"
-          value={localTargetDate}
-          onChange={(e) => handleDateChange(e.target.value)}
-          min={new Date().toISOString().split('T')[0]}
-          className="date-input"
-        />
-        {daysUntilTarget > 0 && (
-          <span className="days-remaining">{daysUntilTarget} days remaining</span>
-        )}
-      </div>
-
-      {/* Savings Breakdown */}
-      {localTargetDate && targetAmount > 0 && (
-        <div className="savings-breakdown">
-          <h4>Your Savings Plan</h4>
-          <p className="target-info">
-            To save {formatPrice(targetAmount, targetAmount * exchangeRate)} by{' '}
-            {new Date(localTargetDate).toLocaleDateString()}, you need to save:
-          </p>
-
-          <div className="channel-selector">
-            <label>Notify me via:</label>
-            <div className="channel-options">
-              <button
-                className={`channel-btn ${selectedChannel === 'sms' ? 'active' : ''}`}
-                onClick={() => handleChannelSelect('sms')}
-                title="SMS Text"
-              >
-                <ChatCircleText size={20} weight={selectedChannel === 'sms' ? 'fill' : 'light'} />
-              </button>
-              <button
-                className={`channel-btn ${selectedChannel === 'whatsapp' ? 'active' : ''}`}
-                onClick={() => handleChannelSelect('whatsapp')}
-                title="WhatsApp"
-              >
-                <WhatsappLogo size={20} weight={selectedChannel === 'whatsapp' ? 'fill' : 'light'} />
-              </button>
-              <button
-                className={`channel-btn ${selectedChannel === 'telegram' ? 'active' : ''}`}
-                onClick={() => handleChannelSelect('telegram')}
-                title="Telegram"
-              >
-                <PaperPlaneTilt size={20} weight={selectedChannel === 'telegram' ? 'fill' : 'light'} />
-              </button>
-              <button
-                className={`channel-btn ${selectedChannel === 'email' ? 'active' : ''}`}
-                onClick={() => handleChannelSelect('email')}
-                title="Email"
-              >
-                <Envelope size={20} weight={selectedChannel === 'email' ? 'fill' : 'light'} />
-              </button>
+          <div className="budget-values">
+            <div className="budget-item">
+              <span className="sub-label">Spent</span>
+              <span className="sub-value">{formatPrice(amountSpentUsd, amountSpentUsd * exchangeRate)}</span>
             </div>
-            {!canUseMobileReminders && (
-              <p className="channel-hint">
-                Add a phone number to enable SMS, WhatsApp, and Telegram reminders.
-              </p>
-            )}
+            <div className="divider"></div>
+            <div className="budget-item">
+              <span className="sub-label">Remaining</span>
+              <span className="sub-value">{formatPrice(remainingBudget, remainingBudget * exchangeRate)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="progress-track">
+          <div
+            className="progress-fill"
+            style={{ width: `${Math.min(100, percentComplete)}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="planner-grid">
+        {/* Helper Column */}
+        <div className="planner-col settings-col">
+          <div className="section-title">
+            <Target size={18} />
+            <span>Savings Goal</span>
           </div>
 
-          <div className="savings-grid">
-            <div className="savings-card daily">
-              <span className="savings-label">Daily</span>
-              <span className="savings-amount">
-                {formatPrice(savingsPerDay, savingsPerDay * exchangeRate)}
-              </span>
-              {onSetReminder && (
-                <button
-                  className="reminder-btn"
-                  onClick={() => handleReminder('daily', savingsPerDay)}
-                >
-                  Set Reminder
-                </button>
-              )}
-            </div>
-            <div className="savings-card weekly">
-              <span className="savings-label">Weekly</span>
-              <span className="savings-amount">
-                {formatPrice(savingsPerWeek, savingsPerWeek * exchangeRate)}
-              </span>
-              {onSetReminder && (
-                <button
-                  className="reminder-btn"
-                  onClick={() => handleReminder('weekly', savingsPerWeek)}
-                >
-                  Set Reminder
-                </button>
-              )}
-            </div>
-            <div className="savings-card monthly">
-              <span className="savings-label">Monthly</span>
-              <span className="savings-amount">
-                {formatPrice(savingsPerMonth, savingsPerMonth * exchangeRate)}
-              </span>
-              {onSetReminder && (
-                <button
-                  className="reminder-btn"
-                  onClick={() => handleReminder('monthly', savingsPerMonth)}
-                >
-                  Set Reminder
-                </button>
-              )}
+          <div className="input-group">
+            <label>Target Scope</label>
+            <div className="toggle-group">
+              <button
+                className={`toggle-btn ${planMode === 'all' ? 'active' : ''}`}
+                onClick={() => setPlanMode('all')}
+              >
+                All
+              </button>
+              <button
+                className={`toggle-btn ${planMode === 'critical' ? 'active' : ''}`}
+                onClick={() => setPlanMode('critical')}
+                disabled={criticalItemsUsd === 0}
+              >
+                Critical
+              </button>
+              <button
+                className={`toggle-btn ${planMode === 'custom' ? 'active' : ''}`}
+                onClick={() => setPlanMode('custom')}
+              >
+                Custom
+              </button>
             </div>
           </div>
 
-          {reminderFrequency && onToggleReminder && (
-            <div className="reminder-status">
-              <div className="status-text">
-                <span className={`status-pill ${reminderActive ? 'active' : 'inactive'}`}>
-                  {reminderActive ? 'Reminder On' : 'Reminder Off'}
-                </span>
-                <span className="status-detail">
-                  {reminderActive ? `Runs ${reminderFrequency}` : 'Turn it on to resume scheduling'}
-                </span>
-              </div>
-              <button
-                className={`toggle-btn ${reminderActive ? 'off' : 'on'}`}
-                onClick={() => onToggleReminder(!reminderActive)}
-              >
-                {reminderActive ? 'Turn Off' : 'Turn On'}
-              </button>
+          {planMode === 'custom' && (
+            <div className="input-group animate-in">
+              <label>Target Amount ($)</label>
+              <input
+                type="number"
+                value={customAmount}
+                onChange={(e) => setCustomAmount(e.target.value)}
+                placeholder="0.00"
+                min="0"
+                className="modern-input"
+              />
             </div>
           )}
 
-          <div className="savings-tip">
-            <Info size={16} weight="fill" />
-            <span>
-              Start with daily savings of {formatPrice(savingsPerDay, savingsPerDay * exchangeRate)} and watch your construction fund grow!
-            </span>
+          <div className="input-group">
+            <label>Target Date</label>
+            <div className="date-input-wrapper">
+              <Calendar size={18} className="input-icon" />
+              <input
+                type="date"
+                value={localTargetDate}
+                onChange={(e) => handleDateChange(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="modern-input with-icon"
+              />
+            </div>
+            {daysUntilTarget > 0 && (
+              <span className="helper-text">{daysUntilTarget} days remaining</span>
+            )}
           </div>
         </div>
-      )}
+
+        {/* Savings Output Column */}
+        <div className="planner-col results-col">
+          {localTargetDate && targetAmount > 0 ? (
+            <>
+              <div className="section-title">
+                <TrendUp size={18} />
+                <span>Required Savings</span>
+              </div>
+
+              <div className="savings-cards">
+                <div className="savings-card">
+                  <span className="period">Daily</span>
+                  <span className="amount">{formatPrice(savingsPerDay, savingsPerDay * exchangeRate)}</span>
+                  {onSetReminder && (
+                    <button className="set-reminder-sm" onClick={() => handleReminder('daily', savingsPerDay)}>
+                      <Bell size={14} /> Set
+                    </button>
+                  )}
+                </div>
+                <div className="savings-card featured">
+                  <span className="period">Weekly</span>
+                  <span className="amount">{formatPrice(savingsPerWeek, savingsPerWeek * exchangeRate)}</span>
+                  {onSetReminder && (
+                    <button className="set-reminder-sm" onClick={() => handleReminder('weekly', savingsPerWeek)}>
+                      <Bell size={14} /> Set
+                    </button>
+                  )}
+                </div>
+                <div className="savings-card">
+                  <span className="period">Monthly</span>
+                  <span className="amount">{formatPrice(savingsPerMonth, savingsPerMonth * exchangeRate)}</span>
+                  {onSetReminder && (
+                    <button className="set-reminder-sm" onClick={() => handleReminder('monthly', savingsPerMonth)}>
+                      <Bell size={14} /> Set
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="channel-section">
+                <span className="channel-label">Notify via:</span>
+                <div className="channel-row">
+                  <button className={`channel-chip ${selectedChannel === 'sms' ? 'active' : ''}`} onClick={() => handleChannelSelect('sms')}>
+                    <ChatCircleText size={16} weight="fill" /> SMS
+                  </button>
+                  <button className={`channel-chip ${selectedChannel === 'whatsapp' ? 'active' : ''}`} onClick={() => handleChannelSelect('whatsapp')}>
+                    <WhatsappLogo size={16} weight="fill" /> WhatsApp
+                  </button>
+                  <button className={`channel-chip ${selectedChannel === 'email' ? 'active' : ''}`} onClick={() => handleChannelSelect('email')}>
+                    <Envelope size={16} weight="fill" /> Email
+                  </button>
+                </div>
+              </div>
+
+              {reminderFrequency && onToggleReminder && (
+                <div className={`reminder-banner ${reminderActive ? 'active' : 'inactive'}`}>
+                  <div className="banner-icon">
+                    {reminderActive ? <CheckCircle size={20} weight="fill" /> : <Info size={20} weight="fill" />}
+                  </div>
+                  <div className="banner-content">
+                    <span className="banner-title">{reminderActive ? 'Reminder Active' : 'Reminder Paused'}</span>
+                    <span className="banner-desc">{reminderActive ? `Scheduled ${reminderFrequency}` : 'Resume to stay on track'}</span>
+                  </div>
+                  <button className="toggle-switch" onClick={() => onToggleReminder(!reminderActive)}>
+                    {reminderActive ? 'Off' : 'On'}
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="empty-state">
+              <Target size={48} weight="duotone" />
+              <p>Set a target date to see your savings plan</p>
+            </div>
+          )}
+        </div>
+      </div>
 
       <style jsx>{`
         .budget-planner {
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-lg);
-          padding: var(--spacing-lg);
+          background: #ffffff;
+          border: 1px solid var(--color-border-light);
+          border-radius: 20px;
+          padding: 24px;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+          font-family: var(--font-sans);
         }
 
         .planner-header {
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-md);
-          margin-bottom: var(--spacing-lg);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--color-border-light);
         }
 
-        .header-icon {
-          width: 48px;
-          height: 48px;
-          background: var(--color-accent-bg);
-          border-radius: var(--radius-md);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--color-accent);
+        .header-icon-wrapper {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            color: #3b82f6;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        }
+
+        .header-content {
+            flex: 1;
         }
 
         .header-content h3 {
-          font-size: 1.125rem;
-          font-weight: 600;
-          margin: 0;
-          color: var(--color-text);
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+            letter-spacing: -0.01em;
         }
 
         .header-content p {
-          font-size: 0.875rem;
-          color: var(--color-text-secondary);
-          margin: 4px 0 0 0;
+            font-size: 0.9rem;
+            color: #64748b;
+            margin: 4px 0 0 0;
         }
 
-        .progress-section {
-          background: var(--color-background);
-          padding: var(--spacing-md);
-          border-radius: var(--radius-md);
-          margin-bottom: var(--spacing-lg);
+        .header-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 6px 12px;
+            border-radius: 99px;
+            background: #f1f5f9;
+            color: #64748b;
         }
 
-        .progress-header {
-          display: flex;
-          justify-content: space-between;
-          font-size: 0.875rem;
-          margin-bottom: var(--spacing-sm);
+        /* Progress Card */
+        .progress-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
         }
 
-        .progress-percent {
-          font-weight: 600;
-          color: var(--color-accent);
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 12px;
         }
 
-        .progress-bar {
-          height: 8px;
-          background: var(--color-border-light);
-          border-radius: 4px;
-          overflow: hidden;
+        .progress-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1;
+        }
+
+        .budget-values {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(226, 232, 240, 0.6);
+        }
+
+        .budget-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .sub-label {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .sub-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .divider {
+            width: 1px;
+            height: 24px;
+            background: #cbd5e1;
+        }
+
+        .progress-track {
+            height: 10px;
+            background: #cbd5e1;
+            border-radius: 99px;
+            overflow: hidden;
+            position: relative;
         }
 
         .progress-fill {
-          height: 100%;
-          background: linear-gradient(90deg, var(--color-accent) 0%, var(--color-success) 100%);
-          border-radius: 4px;
-          transition: width 0.5s ease;
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 99px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
         }
 
-        .progress-labels {
-          display: flex;
-          justify-content: space-between;
-          font-size: 0.75rem;
-          color: var(--color-text-secondary);
-          margin-top: var(--spacing-sm);
+        /* Grid Layout */
+        .planner-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 24px;
         }
 
-        .mode-section {
-          margin-bottom: var(--spacing-lg);
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        .mode-label {
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--color-text);
-          display: block;
-          margin-bottom: var(--spacing-sm);
+        .input-group {
+            margin-bottom: 20px;
         }
 
-        .mode-options {
-          display: flex;
-          gap: var(--spacing-sm);
-          flex-wrap: wrap;
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #64748b;
+            margin-bottom: 8px;
         }
 
-        .mode-btn {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: var(--spacing-sm) var(--spacing-md);
-          background: var(--color-background);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
-          font-size: 0.875rem;
-          color: var(--color-text-secondary);
-          cursor: pointer;
-          transition: all 0.2s ease;
+        .modern-input {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 1rem;
+            color: #0f172a;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.2s;
         }
 
-        .mode-btn:hover:not(:disabled) {
-          border-color: var(--color-accent);
-          color: var(--color-text);
+        .modern-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
-        .mode-btn.active {
-          background: var(--color-accent-bg);
-          border-color: var(--color-accent);
-          color: var(--color-accent);
+        .date-input-wrapper {
+            position: relative;
         }
 
-        .mode-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            pointer-events: none;
         }
 
-        .custom-amount-input {
-          display: flex;
-          align-items: center;
-          margin-top: var(--spacing-sm);
-          background: var(--color-background);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
-          overflow: hidden;
+        .modern-input.with-icon {
+            padding-left: 42px;
         }
 
-        .currency-prefix {
-          padding: var(--spacing-sm) var(--spacing-md);
-          background: var(--color-border-light);
-          color: var(--color-text-secondary);
-          font-weight: 500;
-        }
-
-        .custom-amount-input input {
-          flex: 1;
-          border: none;
-          padding: var(--spacing-sm) var(--spacing-md);
-          font-size: 1rem;
-          outline: none;
-        }
-
-        .date-section {
-          margin-bottom: var(--spacing-lg);
-        }
-
-        .date-label {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--color-text);
-          margin-bottom: var(--spacing-sm);
-        }
-
-        .date-input {
-          width: 100%;
-          padding: var(--spacing-sm) var(--spacing-md);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
-          font-size: 1rem;
-          outline: none;
-          transition: border-color 0.2s ease;
-        }
-
-        .date-input:focus {
-          border-color: var(--color-accent);
-        }
-
-        .days-remaining {
-          display: block;
-          margin-top: var(--spacing-xs);
-          font-size: 0.75rem;
-          color: var(--color-accent);
-          font-weight: 500;
-        }
-
-        .savings-breakdown {
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-lg);
-          padding: var(--spacing-lg);
-          color: var(--color-text);
-          box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
-        }
-
-        .savings-breakdown h4 {
-          font-size: 1rem;
-          font-weight: 600;
-          margin: 0 0 var(--spacing-sm) 0;
-        }
-
-        .target-info {
-          font-size: 0.875rem;
-          opacity: 0.9;
-          margin: 0 0 var(--spacing-md) 0;
-        }
-
-        .channel-selector {
-          margin-bottom: var(--spacing-md);
-        }
-        
-        .channel-selector label {
-          display: block;
-          font-size: 0.75rem;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          opacity: 0.8;
-          margin-bottom: 8px;
-        }
-        
-        .channel-options {
-          display: flex;
-          gap: 12px;
-        }
-
-        .channel-hint {
-          margin-top: 8px;
-          font-size: 0.75rem;
-          color: var(--color-text-muted);
-        }
-        
-        .channel-btn {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: var(--color-background);
-          border: 1px solid var(--color-border);
-          color: var(--color-text-secondary);
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        
-        .channel-btn:hover {
-          background: var(--color-surface-hover);
-          color: var(--color-primary);
-          border-color: var(--color-primary);
-        }
-        
-        .channel-btn.active {
-          background: var(--color-primary);
-          color: white;
-          border-color: var(--color-primary);
-          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-        }
-
-        .savings-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: var(--spacing-sm);
-          margin-bottom: var(--spacing-md);
-        }
-
-        .savings-card {
-          background: var(--color-background);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
-          padding: var(--spacing-md);
-          text-align: center;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .savings-label {
-          display: block;
-          font-size: 0.75rem;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          opacity: 0.8;
-          margin-bottom: 4px;
-        }
-
-        .savings-amount {
-          display: block;
-          font-size: 1.25rem;
-          font-weight: 700;
-        }
-
-        .reminder-btn {
-          margin-top: auto;
-          padding: 8px 12px;
-          background: var(--color-primary);
-          border: none;
-          border-radius: var(--radius-sm);
-          color: white;
-          font-size: 0.75rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .reminder-btn:hover {
-          background: var(--color-primary-dark);
-          transform: translateY(-1px);
-        }
-
-        .savings-tip {
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          padding: 12px;
-          background: var(--color-background);
-          border: 1px solid var(--color-border-light);
-          border-radius: var(--radius-md);
-          font-size: 0.8125rem;
-          line-height: 1.5;
-          color: var(--color-text-secondary);
-        }
-
-        .reminder-status {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          margin-bottom: var(--spacing-md);
-          padding: 12px 14px;
-          background: var(--color-background);
-          border: 1px solid var(--color-border-light);
-          border-radius: var(--radius-md);
-        }
-
-        .status-text {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .status-pill {
-          font-size: 0.7rem;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          font-weight: 600;
-          padding: 4px 8px;
-          border-radius: 999px;
-        }
-
-        .status-pill.active {
-          background: rgba(22, 163, 74, 0.12);
-          color: #166534;
-        }
-
-        .status-pill.inactive {
-          background: rgba(148, 163, 184, 0.2);
-          color: #475569;
-        }
-
-        .status-detail {
-          font-size: 0.8rem;
-          color: var(--color-text-secondary);
+        .toggle-group {
+            display: flex;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 12px;
         }
 
         .toggle-btn {
-          border: none;
-          border-radius: var(--radius-sm);
-          padding: 8px 12px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: transparent;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #64748b;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .toggle-btn.on {
-          background: var(--color-primary);
-          color: white;
+        .toggle-btn.active {
+            background: #ffffff;
+            color: #0f172a;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .toggle-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            color: #cbd5e1;
         }
 
-        .toggle-btn.off {
-          background: #fee2e2;
-          color: #b91c1c;
+        .helper-text {
+            display: block;
+            font-size: 0.75rem;
+            color: #3b82f6;
+            margin-top: 6px;
+            font-weight: 500;
         }
 
-        @media (max-width: 640px) {
-          .savings-grid {
-            grid-template-columns: 1fr;
-          }
+        /* Savings Cards */
+        .savings-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
 
-          .mode-options {
+        .savings-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 16px 12px;
+            display: flex;
             flex-direction: column;
-          }
+            align-items: center;
+            text-align: center;
+            gap: 8px;
+            transition: transform 0.2s;
+        }
+        
+        .savings-card:hover {
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+        }
+
+        .savings-card.featured {
+            background: linear-gradient(180deg, #ffffff 0%, #eff6ff 100%);
+            border-color: #bfdbfe;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+            position: relative;
+            z-index: 1;
+            transform: scale(1.05);
+        }
+        
+         .savings-card.featured:hover {
+            transform: scale(1.05) translateY(-2px);
+         }
+
+        .period {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .amount {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .set-reminder-sm {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: #f1f5f9;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            color: #475569;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .set-reminder-sm:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+        
+        .savings-card.featured .set-reminder-sm {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        
+        .savings-card.featured .set-reminder-sm:hover {
+            background: #bfdbfe;
+        }
+
+        /* Channels */
+        .channel-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 0 4px;
+        }
+
+        .channel-label {
+            font-size: 0.8rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .channel-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .channel-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 99px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .channel-chip:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+        }
+
+        .channel-chip.active {
+            background: #0f172a;
+            color: white;
+            border-color: #0f172a;
+        }
+
+        /* Reminder Banner */
+        .reminder-banner {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .reminder-banner.active {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+        }
+        
+        .reminder-banner.inactive {
+            background: #fff1f2;
+            border: 1px solid #fecdd3;
+        }
+
+        .banner-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .active .banner-icon {
+            background: #d1fae5;
+            color: #059669;
+        }
+        
+        .inactive .banner-icon {
+            background: #ffe4e6;
+            color: #e11d48;
+        }
+
+        .banner-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .banner-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .banner-desc {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .toggle-switch {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .active .toggle-switch {
+            background: white;
+            color: #059669;
+            border: 1px solid #d1fae5;
+        }
+        
+        .inactive .toggle-switch {
+             background: #e11d48;
+             color: white;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #cbd5e1;
+            gap: 12px;
+            min-height: 200px;
+            background: #f8fafc;
+            border-radius: 16px;
+            border: 2px dashed #e2e8f0;
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        @media (max-width: 768px) {
+            .planner-grid {
+                grid-template-columns: 1fr;
+            }
+            .card-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            .budget-values {
+                width: 100%;
+                justify-content: space-between;
+            }
         }
       `}</style>
     </div>

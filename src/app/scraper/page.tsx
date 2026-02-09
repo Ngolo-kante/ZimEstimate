@@ -38,7 +38,10 @@ export default function ScraperPage() {
         price_selector: '',
         item_name_selector: '',
         cron_schedule: 'weekly',
-        category: 'general'
+        category: 'general',
+        scrape_mode: 'single' as 'single' | 'category',
+        container_selector: '',
+        item_card_selector: ''
     });
 
     const categoryOptions = [
@@ -86,30 +89,57 @@ export default function ScraperPage() {
 
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this scraper?')) return;
-        const { error } = await supabase.from('scraper_configs').delete().eq('id', id);
-        if (!error) fetchConfigs();
+        try {
+            const response = await fetch(`/api/scraper/${id}`, { method: 'DELETE' });
+            if (!response.ok) throw new Error('Failed to delete');
+            fetchConfigs();
+        } catch (error: any) {
+            console.error('Delete error:', error);
+            alert('Error deleting scraper: ' + error.message);
+        }
     };
 
     const handleToggleActive = async (config: ScraperConfig) => {
-        const { error } = await supabase
-            .from('scraper_configs')
-            .update({ is_active: !config.is_active } as never)
-            .eq('id', config.id);
-        if (!error) fetchConfigs();
+        try {
+            const response = await fetch(`/api/scraper/${config.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_active: !config.is_active })
+            });
+            if (!response.ok) throw new Error('Failed to update status');
+            fetchConfigs();
+        } catch (error: any) {
+            console.error('Toggle error:', error);
+            alert('Error updating scraper status: ' + error.message);
+        }
     };
 
     const runScraper = async (config: ScraperConfig) => {
         setIsTestRunning(config.id);
         try {
-            const response = await fetch('/api/scraper/test', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            const isCategory = config.scrape_mode === 'category';
+            const endpoint = isCategory ? '/api/scraper/category' : '/api/scraper/test';
+
+            const payload = isCategory
+                ? {
+                    configId: config.id,
+                    url: config.base_url,
+                    containerSelector: config.container_selector,
+                    itemCardSelector: config.item_card_selector,
+                    nameSelector: config.item_name_selector,
+                    priceSelector: config.price_selector
+                }
+                : {
                     configId: config.id,
                     url: config.base_url,
                     priceSelector: config.price_selector,
                     nameSelector: config.item_name_selector
-                })
+                };
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
             const result = await response.json();
 
@@ -132,13 +162,20 @@ export default function ScraperPage() {
     const handleTestRun = async (config: ScraperConfig) => {
         try {
             const result = await runScraper(config);
-            const matchInfo = result.match.materialCode
-                ? `✅ Matched: "${result.name}" (${(result.match.confidence * 100).toFixed(0)}% confidence)`
-                : `⚠️ Unmatched (Raw: "${result.name}")`;
 
-            alert(`Success! Found Price: $${result.price}\n\n${matchInfo}\nMethod: ${result.match.method}`);
-        } catch {
-            alert('Error running test scrape');
+            if (config.scrape_mode === 'category') {
+                // Category scraper result
+                alert(`Category Scrape Complete!\n\n📦 Items Found: ${result.itemsFound}\n✅ Matched: ${result.itemsMatched}\n⏳ Pending Review: ${result.itemsPending}`);
+            } else {
+                // Single item scraper result
+                const matchInfo = result.match?.materialCode
+                    ? `✅ Matched: "${result.name}" (${(result.match.confidence * 100).toFixed(0)}% confidence)`
+                    : `⚠️ Unmatched (Raw: "${result.name}")`;
+
+                alert(`Success! Found Price: $${result.price}\n\n${matchInfo}\nMethod: ${result.match?.method || 'unknown'}`);
+            }
+        } catch (err) {
+            alert('Error running test scrape: ' + (err instanceof Error ? err.message : 'Unknown error'));
         }
     };
 
@@ -188,19 +225,42 @@ export default function ScraperPage() {
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        const { error } = await supabase.from('scraper_configs').insert([formData] as never);
-        if (!error) {
-            setShowModal(false);
-            setFormData({
-                site_name: '',
-                base_url: '',
-                price_selector: '',
-                item_name_selector: '',
-                cron_schedule: 'weekly',
-                category: 'general'
+
+        try {
+            const response = await fetch('/api/scraper/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
             });
-            fetchConfigs();
-        } else {
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to create scraper');
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+                setShowModal(false);
+                setFormData({
+                    site_name: '',
+                    base_url: '',
+                    price_selector: '',
+                    item_name_selector: '',
+                    cron_schedule: 'weekly',
+                    category: 'general',
+                    scrape_mode: 'single',
+                    container_selector: '',
+                    item_card_selector: ''
+                });
+                fetchConfigs();
+            } else {
+                throw new Error(result.error || 'Unknown error');
+            }
+        } catch (error: any) {
+            console.error('Error creating scraper:', error);
             alert('Error creating scraper: ' + error.message);
         }
     };
@@ -296,9 +356,14 @@ export default function ScraperPage() {
                             <div key={config.id} className={`config-card ${!config.is_active ? 'inactive' : ''}`}>
                                 <div className="card-header">
                                     <div className="site-info">
-                                        <span className={`status-badge ${config.is_active ? 'active' : 'paused'}`}>
-                                            {config.is_active ? 'Active' : 'Paused'}
-                                        </span>
+                                        <div className="badge-row">
+                                            <span className={`status-badge ${config.is_active ? 'active' : 'paused'}`}>
+                                                {config.is_active ? 'Active' : 'Paused'}
+                                            </span>
+                                            {config.scrape_mode === 'category' && (
+                                                <span className="status-badge mode-badge">Category</span>
+                                            )}
+                                        </div>
                                         <h3>{config.site_name}</h3>
                                     </div>
                                     <div className="card-actions">
@@ -394,6 +459,31 @@ export default function ScraperPage() {
                             </div>
 
                             <div className="form-group">
+                                <label>Scrape Mode</label>
+                                <div className="mode-toggle">
+                                    <button
+                                        type="button"
+                                        className={`mode-btn ${formData.scrape_mode === 'single' ? 'active' : ''}`}
+                                        onClick={() => setFormData({ ...formData, scrape_mode: 'single' })}
+                                    >
+                                        Single Product
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`mode-btn ${formData.scrape_mode === 'category' ? 'active' : ''}`}
+                                        onClick={() => setFormData({ ...formData, scrape_mode: 'category' })}
+                                    >
+                                        Category Page
+                                    </button>
+                                </div>
+                                <span className="mode-hint">
+                                    {formData.scrape_mode === 'single'
+                                        ? 'Scrape a single product page'
+                                        : 'Scrape multiple products from a listing page'}
+                                </span>
+                            </div>
+
+                            <div className="form-group">
                                 <label>Target URL</label>
                                 <Input
                                     placeholder="https://..."
@@ -406,10 +496,35 @@ export default function ScraperPage() {
 
                             <div className="selectors-section">
                                 <h4>CSS Selectors</h4>
+
+                                {formData.scrape_mode === 'category' && (
+                                    <>
+                                        <div className="form-group">
+                                            <label>Container Selector</label>
+                                            <Input
+                                                placeholder=".listings, .products-grid"
+                                                value={formData.container_selector}
+                                                onChange={e => setFormData({ ...formData, container_selector: e.target.value })}
+                                                className="code-input"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Item Card Selector</label>
+                                            <Input
+                                                placeholder=".listing, .product-card"
+                                                value={formData.item_card_selector}
+                                                onChange={e => setFormData({ ...formData, item_card_selector: e.target.value })}
+                                                required
+                                                className="code-input"
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
                                 <div className="form-group">
-                                    <label>Product Name</label>
+                                    <label>Product Name {formData.scrape_mode === 'category' && '(within card)'}</label>
                                     <Input
-                                        placeholder=".product-title"
+                                        placeholder={formData.scrape_mode === 'category' ? '.listing-title a' : '.product-title'}
                                         value={formData.item_name_selector}
                                         onChange={e => setFormData({ ...formData, item_name_selector: e.target.value })}
                                         required
@@ -417,9 +532,9 @@ export default function ScraperPage() {
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label>Price</label>
+                                    <label>Price {formData.scrape_mode === 'category' && '(within card)'}</label>
                                     <Input
-                                        placeholder=".price-amount"
+                                        placeholder={formData.scrape_mode === 'category' ? '.usd-price-tooltip' : '.price-amount'}
                                         value={formData.price_selector}
                                         onChange={e => setFormData({ ...formData, price_selector: e.target.value })}
                                         required
@@ -623,6 +738,9 @@ export default function ScraperPage() {
                 
                 .status-badge.active { background: #dcfce7; color: #166534; }
                 .status-badge.paused { background: #f1f5f9; color: #64748b; }
+                .status-badge.mode-badge { background: #dbeafe; color: #1d4ed8; }
+
+                .badge-row { display: flex; gap: 6px; flex-wrap: wrap; }
 
                 .card-actions { display: flex; gap: 8px; }
                 
@@ -678,7 +796,7 @@ export default function ScraperPage() {
                 /* Modal */
                 .modal-overlay {
                     position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
-                    display: flex; align-items: center; justify-content: center; z-index: 50; p-4;
+                    display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;
                 }
                 
                 .modal-content {
@@ -699,6 +817,32 @@ export default function ScraperPage() {
                 
                 .selectors-section { background: #f8fafc; padding: 16px; border-radius: 12px; margin-bottom: 24px; border: 1px solid #e2e8f0; }
                 .selectors-section h4 { margin: 0 0 12px 0; font-size: 0.9rem; color: #64748b; }
+
+                .mode-toggle { display: flex; gap: 8px; margin-bottom: 8px; }
+                .mode-btn {
+                    flex: 1;
+                    padding: 10px 16px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    background: white;
+                    color: #64748b;
+                    font-size: 0.9rem;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .mode-btn:hover { border-color: #94a3b8; }
+                .mode-btn.active {
+                    background: #0f172a;
+                    color: white;
+                    border-color: #0f172a;
+                }
+                .mode-hint {
+                    display: block;
+                    font-size: 0.75rem;
+                    color: #94a3b8;
+                    margin-top: 4px;
+                }
                 
                 .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
 

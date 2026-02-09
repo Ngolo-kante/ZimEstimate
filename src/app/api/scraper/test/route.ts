@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { chromium, type Browser } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/lib/database.types';
 import { MaterialMatcher } from '@/lib/services/material-matcher';
+import Firecrawl from '@mendable/firecrawl-js';
+import * as cheerio from 'cheerio';
 
 // Initialize Supabase Client with Service Role Key for backend access
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -19,7 +20,6 @@ type ScraperLogInsert = Database['public']['Tables']['scraper_logs']['Insert'];
 type ScraperConfigUpdate = Database['public']['Tables']['scraper_configs']['Update'];
 
 export async function POST(req: NextRequest) {
-    let browser: Browser | null = null;
     let configId: string | null = null;
     try {
         const payload = (await req.json()) as ScraperTestPayload;
@@ -38,22 +38,34 @@ export async function POST(req: NextRequest) {
 
         const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
 
-        // Launch Playwright
-        browser = await chromium.launch({ headless: true });
-        const page = await browser.newPage();
+        // Initialize Firecrawl
+        const firecrawl = new Firecrawl({ apiKey: process.env.FIRECRAWL_API_KEY });
 
-        // Navigate to URL with extended timeout
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
+        console.log(`Scraping URL with Firecrawl: ${url}`);
 
-        // Wait for selectors
-        await page.waitForSelector(priceSelector, { timeout: 15000 });
-        if (nameSelector) {
-            await page.waitForSelector(nameSelector, { timeout: 15000 });
+        // Scrape using Firecrawl v4.x API - returns Document directly, throws on error
+        const scrapeResult = await firecrawl.scrape(url, {
+            formats: ['html'],
+            // Add options if needed, e.g. waitFor: 5000 if dynamic content is slow
+        });
+
+        const html = scrapeResult.html;
+        if (!html) {
+            throw new Error('Firecrawl returned no HTML content');
         }
 
+        // Parse HTML with Cheerio
+        const $ = cheerio.load(html);
+
         // Extract data
-        const priceText = await page.$eval(priceSelector, (el) => el.textContent?.trim() || '');
-        const nameText = await page.$eval(nameSelector, (el) => el.textContent?.trim() || '');
+        const priceText = $(priceSelector).first().text().trim() || '';
+        const nameText = $(nameSelector).first().text().trim() || '';
+
+        console.log(`Extracted - Name: "${nameText}", Price: "${priceText}"`);
+
+        if (!priceText) {
+            throw new Error(`Price selector "${priceSelector}" returned empty text`);
+        }
 
         // Clean data
         // Remove non-numeric chars except dot, but safeguard against multiple dots or currency symbols
@@ -92,12 +104,24 @@ export async function POST(req: NextRequest) {
                 confidence: matchResult.confidence,
                 source_url: url,
                 scraped_at: new Date().toISOString(),
+                review_status: matchResult.needsReview ? 'pending' : 'auto'
             };
 
             await supabase.from('price_observations').insert(observation as never);
         }
 
-        // 2. Update Configuration Status (if configId provided)
+        // 2. Add to pending review queue if needed
+        if (matchResult.needsReview) {
+            await matcher.addToPendingReview(
+                nameText,
+                price,
+                url,
+                configId,
+                matchResult
+            );
+        }
+
+        // 3. Update Configuration Status (if configId provided)
         if (configId) {
             const configUpdate: ScraperConfigUpdate = {
                 last_successful_run_at: new Date().toISOString()
@@ -105,7 +129,7 @@ export async function POST(req: NextRequest) {
             await supabase.from('scraper_configs').update(configUpdate as never).eq('id', configId);
         }
 
-        // 3. Log the success
+        // 4. Log the success
         if (configId) {
             const logEntry: ScraperLogInsert = {
                 scraper_config_id: configId,
@@ -146,19 +170,12 @@ export async function POST(req: NextRequest) {
             }
         } catch { /* ignore logging error */ }
 
+        // Simplify error message
         let errorMessage = err.message;
-        if (errorMessage.includes('Executable doesn\'t exist')) {
-            errorMessage = 'Playwright browsers not found. Please run "npx playwright install" on the server.';
-        }
 
         return NextResponse.json({
             success: false,
             error: errorMessage
         }, { status: 500 });
-
-    } finally {
-        if (browser) {
-            await browser.close();
-        }
     }
 }
