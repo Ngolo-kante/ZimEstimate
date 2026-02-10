@@ -7,6 +7,8 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Currency } from '@/lib/database.types';
+import { getNotificationDeliveries, subscribeToPushNotifications, unsubscribeFromPushNotifications } from '@/lib/services/notifications';
+import type { NotificationDelivery } from '@/lib/database.types';
 import {
     User,
     CurrencyDollar,
@@ -16,7 +18,10 @@ import {
     EnvelopeSimple,
     Phone,
     CaretRight,
-    WarningCircle
+    WarningCircle,
+    Bell,
+    WhatsappLogo,
+    DeviceMobile
 } from '@phosphor-icons/react';
 import Link from 'next/link';
 
@@ -30,6 +35,18 @@ function SettingsContent() {
     const [preferredCurrency, setPreferredCurrency] = useState<Currency>('USD');
     const [isSaving, setIsSaving] = useState(false);
 
+    // Notification preferences
+    const [notifyEmail, setNotifyEmail] = useState(true);
+    const [notifyWhatsapp, setNotifyWhatsapp] = useState(false);
+    const [notifyPush, setNotifyPush] = useState(false);
+    const [notifyRfq, setNotifyRfq] = useState(true);
+    const [notifyQuoteUpdates, setNotifyQuoteUpdates] = useState(true);
+    const [notifyPriceAlerts, setNotifyPriceAlerts] = useState(true);
+    const [notifyProjectReminders, setNotifyProjectReminders] = useState(true);
+    const [isSavingNotifications, setIsSavingNotifications] = useState(false);
+    const [isPushBusy, setIsPushBusy] = useState(false);
+    const [deliveryLogs, setDeliveryLogs] = useState<NotificationDelivery[]>([]);
+
     // Password form state
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -41,8 +58,24 @@ function SettingsContent() {
             setFullName(profile.full_name || '');
             setPhoneNumber(profile.phone_number || '');
             setPreferredCurrency(profile.preferred_currency || 'USD');
+            setNotifyEmail(profile.notify_email ?? true);
+            setNotifyWhatsapp(profile.notify_whatsapp ?? false);
+            setNotifyPush(profile.notify_push ?? false);
+            setNotifyRfq(profile.notify_rfq ?? true);
+            setNotifyQuoteUpdates(profile.notify_quote_updates ?? true);
+            setNotifyPriceAlerts(profile.notify_price_alerts ?? true);
+            setNotifyProjectReminders(profile.notify_project_reminders ?? true);
         }
     }, [profile]);
+
+    useEffect(() => {
+        if (!user) return;
+        const loadDeliveries = async () => {
+            const { deliveries } = await getNotificationDeliveries(user.id, 8);
+            setDeliveryLogs(deliveries);
+        };
+        loadDeliveries();
+    }, [user]);
 
     const handleSaveProfile = async () => {
         setIsSaving(true);
@@ -58,6 +91,58 @@ function SettingsContent() {
             success('Profile updated successfully');
         }
         setIsSaving(false);
+    };
+
+    const handleSaveNotifications = async () => {
+        if (!user) return;
+        if (notifyWhatsapp && !phoneNumber) {
+            showError('Add a phone number to enable WhatsApp notifications.');
+            return;
+        }
+
+        setIsSavingNotifications(true);
+        const { error } = await updateProfile({
+            notify_email: notifyEmail,
+            notify_whatsapp: notifyWhatsapp,
+            notify_push: notifyPush,
+            notify_rfq: notifyRfq,
+            notify_quote_updates: notifyQuoteUpdates,
+            notify_price_alerts: notifyPriceAlerts,
+            notify_project_reminders: notifyProjectReminders,
+        });
+
+        if (error) {
+            showError('Failed to update notification preferences.');
+        } else {
+            success('Notification preferences updated');
+        }
+        setIsSavingNotifications(false);
+    };
+
+    const handleTogglePush = async (enabled: boolean) => {
+        setIsPushBusy(true);
+        if (enabled) {
+            const { error } = await subscribeToPushNotifications();
+            if (error) {
+                showError(error.message);
+                setNotifyPush(false);
+            } else {
+                setNotifyPush(true);
+            }
+        } else {
+            const { error } = await unsubscribeFromPushNotifications();
+            if (error) {
+                showError(error.message);
+            }
+            setNotifyPush(false);
+        }
+        setIsPushBusy(false);
+    };
+
+    const formatDeliveryTime = (timestamp: string) => {
+        const date = new Date(timestamp);
+        if (Number.isNaN(date.getTime())) return '';
+        return date.toLocaleString();
     };
 
     const handleChangePassword = async (e: React.FormEvent) => {
@@ -254,6 +339,142 @@ function SettingsContent() {
                         </div>
                     </div>
 
+                    {/* Notification Preferences */}
+                    <div className="split-grid">
+                        <div className="settings-card">
+                            <div className="card-header">
+                                <div className="header-icon notification">
+                                    <Bell size={20} weight="bold" />
+                                </div>
+                                <div>
+                                    <h3>Notifications</h3>
+                                    <p>Choose how you want to be alerted.</p>
+                                </div>
+                            </div>
+                            <div className="card-content">
+                                <div className="toggle-group">
+                                    <div className="toggle-row">
+                                        <div>
+                                            <span className="toggle-label">Email</span>
+                                            <span className="toggle-hint">RFQs, quotes, and updates</span>
+                                        </div>
+                                        <label className="toggle">
+                                            <input
+                                                type="checkbox"
+                                                checked={notifyEmail}
+                                                onChange={(e) => setNotifyEmail(e.target.checked)}
+                                            />
+                                            <span className="toggle-slider" />
+                                        </label>
+                                    </div>
+                                    <div className="toggle-row">
+                                        <div>
+                                            <span className="toggle-label">WhatsApp</span>
+                                            <span className="toggle-hint">Instant alerts to your phone</span>
+                                        </div>
+                                        <label className="toggle">
+                                            <input
+                                                type="checkbox"
+                                                checked={notifyWhatsapp}
+                                                onChange={(e) => setNotifyWhatsapp(e.target.checked)}
+                                            />
+                                            <span className="toggle-slider" />
+                                        </label>
+                                    </div>
+                                    <div className="toggle-row">
+                                        <div>
+                                            <span className="toggle-label">Push Notifications</span>
+                                            <span className="toggle-hint">Browser and device notifications</span>
+                                        </div>
+                                        <label className={`toggle ${isPushBusy ? 'disabled' : ''}`}>
+                                            <input
+                                                type="checkbox"
+                                                checked={notifyPush}
+                                                onChange={(e) => handleTogglePush(e.target.checked)}
+                                                disabled={isPushBusy}
+                                            />
+                                            <span className="toggle-slider" />
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="notification-section">
+                                    <div className="section-title">What to notify me about</div>
+                                    <div className="chip-grid">
+                                        <button
+                                            className={`chip ${notifyRfq ? 'active' : ''}`}
+                                            onClick={() => setNotifyRfq(!notifyRfq)}
+                                        >
+                                            RFQs
+                                        </button>
+                                        <button
+                                            className={`chip ${notifyQuoteUpdates ? 'active' : ''}`}
+                                            onClick={() => setNotifyQuoteUpdates(!notifyQuoteUpdates)}
+                                        >
+                                            Quote updates
+                                        </button>
+                                        <button
+                                            className={`chip ${notifyPriceAlerts ? 'active' : ''}`}
+                                            onClick={() => setNotifyPriceAlerts(!notifyPriceAlerts)}
+                                        >
+                                            Price alerts
+                                        </button>
+                                        <button
+                                            className={`chip ${notifyProjectReminders ? 'active' : ''}`}
+                                            onClick={() => setNotifyProjectReminders(!notifyProjectReminders)}
+                                        >
+                                            Project reminders
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {notifyWhatsapp && !phoneNumber && (
+                                    <div className="notice warning">
+                                        <WhatsappLogo size={16} weight="bold" />
+                                        Add a phone number above to receive WhatsApp alerts.
+                                    </div>
+                                )}
+
+                                <div className="card-actions">
+                                    <Button onClick={handleSaveNotifications} disabled={isSavingNotifications} variant="secondary">
+                                        {isSavingNotifications ? 'Saving...' : 'Save Preferences'}
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="settings-card">
+                            <div className="card-header">
+                                <div className="header-icon activity">
+                                    <DeviceMobile size={20} weight="bold" />
+                                </div>
+                                <div>
+                                    <h3>Delivery Activity</h3>
+                                    <p>Recent notification delivery status.</p>
+                                </div>
+                            </div>
+                            <div className="card-content">
+                                {deliveryLogs.length === 0 ? (
+                                    <div className="empty-log">No delivery activity yet.</div>
+                                ) : (
+                                    <div className="delivery-list">
+                                        {deliveryLogs.map((delivery) => (
+                                            <div key={delivery.id} className="delivery-row">
+                                                <div>
+                                                    <div className="delivery-title">{delivery.template_key.replace('_', ' ')}</div>
+                                                    <div className="delivery-meta">{formatDeliveryTime(delivery.created_at)}</div>
+                                                </div>
+                                                <div className={`status-pill ${delivery.status}`}>
+                                                    {delivery.status}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Password Section */}
                     <div className="settings-card">
                         <div className="card-header">
@@ -405,6 +626,8 @@ function SettingsContent() {
                 .header-icon.premium { background: #fff7ed; color: #f59e0b; }
                 .header-icon.security { background: #f1f5f9; color: #64748b; }
                 .header-icon.danger { background: #fef2f2; color: #ef4444; }
+                .header-icon.notification { background: #eff6ff; color: #2563eb; }
+                .header-icon.activity { background: #ecfeff; color: #0ea5e9; }
 
                 .card-header h3 {
                     margin: 0;
@@ -502,6 +725,181 @@ function SettingsContent() {
                     display: flex;
                     justify-content: flex-end;
                     padding-top: 8px;
+                }
+
+                .toggle-group {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                }
+
+                .toggle-row {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 12px;
+                }
+
+                .toggle-label {
+                    font-size: 0.95rem;
+                    font-weight: 600;
+                    color: #0f172a;
+                    display: block;
+                }
+
+                .toggle-hint {
+                    font-size: 0.8rem;
+                    color: #64748b;
+                }
+
+                .toggle {
+                    position: relative;
+                    width: 48px;
+                    height: 28px;
+                }
+
+                .toggle input {
+                    opacity: 0;
+                    width: 0;
+                    height: 0;
+                }
+
+                .toggle-slider {
+                    position: absolute;
+                    cursor: pointer;
+                    inset: 0;
+                    background: #e2e8f0;
+                    border-radius: 999px;
+                    transition: 0.2s;
+                }
+
+                .toggle-slider::before {
+                    position: absolute;
+                    content: '';
+                    height: 20px;
+                    width: 20px;
+                    left: 4px;
+                    top: 4px;
+                    background: white;
+                    border-radius: 999px;
+                    transition: 0.2s;
+                    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+                }
+
+                .toggle input:checked + .toggle-slider {
+                    background: #2563eb;
+                }
+
+                .toggle input:checked + .toggle-slider::before {
+                    transform: translateX(20px);
+                }
+
+                .toggle.disabled {
+                    opacity: 0.6;
+                    pointer-events: none;
+                }
+
+                .notification-section {
+                    border-top: 1px solid #f1f5f9;
+                    padding-top: 16px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+
+                .section-title {
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.02em;
+                    color: #64748b;
+                }
+
+                .chip-grid {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                }
+
+                .chip {
+                    border: 1px solid #e2e8f0;
+                    background: #f8fafc;
+                    color: #475569;
+                    font-size: 0.85rem;
+                    padding: 6px 12px;
+                    border-radius: 999px;
+                    cursor: pointer;
+                    transition: 0.2s;
+                }
+
+                .chip.active {
+                    background: #2563eb;
+                    border-color: #2563eb;
+                    color: #ffffff;
+                }
+
+                .notice {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 10px 12px;
+                    border-radius: 12px;
+                    font-size: 0.85rem;
+                }
+
+                .notice.warning {
+                    background: #fff7ed;
+                    color: #c2410c;
+                }
+
+                .delivery-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+
+                .delivery-row {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 12px;
+                    padding-bottom: 12px;
+                    border-bottom: 1px solid #f1f5f9;
+                }
+
+                .delivery-title {
+                    font-weight: 600;
+                    text-transform: capitalize;
+                }
+
+                .delivery-meta {
+                    font-size: 0.8rem;
+                    color: #64748b;
+                }
+
+                .status-pill {
+                    padding: 4px 10px;
+                    border-radius: 999px;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    background: #e2e8f0;
+                    color: #475569;
+                }
+
+                .status-pill.sent {
+                    background: #dcfce7;
+                    color: #166534;
+                }
+
+                .status-pill.failed {
+                    background: #fee2e2;
+                    color: #b91c1c;
+                }
+
+                .empty-log {
+                    color: #94a3b8;
+                    font-size: 0.9rem;
                 }
 
                 /* Currency Selector */

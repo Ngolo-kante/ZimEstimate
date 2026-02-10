@@ -21,14 +21,16 @@ interface NavItem {
   label: string;
   href: string;
   hasDropdown?: boolean;
+  adminOnly?: boolean;
 }
 
 const navItems: NavItem[] = [
   { label: 'Home', href: '/home' },
   { label: 'My Projects', href: '/projects' },
+  { label: 'Analytics', href: '/analytics' },
   { label: 'Insights', href: '/market-insights' },
   { label: 'Templates', href: '/templates' },
-  { label: 'Scraper', href: '/scraper' }, // TODO: Restrict to role === 'admin' later
+  { label: 'Scraper', href: '/scraper', adminOnly: true },
   { label: 'Marketplace', href: '/marketplace' },
 ];
 
@@ -38,6 +40,7 @@ export default function TopNavbar() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const { user, profile, signOut, isAuthenticated } = useAuth();
+  const isAdmin = profile?.user_type === 'admin' || profile?.tier === 'admin';
 
   const isActive = (href: string) => {
     return pathname.startsWith(href);
@@ -88,7 +91,9 @@ export default function TopNavbar() {
 
         {/* Desktop Navigation */}
         <nav className="desktop-nav">
-          {navItems.map((item) => (
+          {navItems
+            .filter((item) => !item.adminOnly || isAdmin)
+            .map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -249,7 +254,9 @@ export default function TopNavbar() {
       {mobileMenuOpen && (
         <div className="mobile-menu">
           <nav className="mobile-nav">
-            {navItems.map((item) => (
+            {navItems
+              .filter((item) => !item.adminOnly || isAdmin)
+              .map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

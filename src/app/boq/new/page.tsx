@@ -50,6 +50,7 @@ import {
   PencilSimple,
 } from '@phosphor-icons/react';
 import SavingOverlay from '@/components/ui/SavingOverlay';
+import { WizardSidebar, WizardStep, StepStatus, ProjectSummaryData } from '@/components/ui/WizardSidebar';
 
 import { InteractiveRoomBuilder, RoomInstance } from './components/InteractiveRoomBuilder';
 
@@ -646,6 +647,11 @@ function BOQBuilderContent() {
     roomInputs: { ...DEFAULT_ROOM_INPUTS },
   });
 
+  // Validation Error State
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+
+
 
   const locationLabel = useMemo(
     () => buildLocationLabel(projectDetails.locationType, projectDetails.locationCity, projectDetails.specificLocation),
@@ -662,6 +668,11 @@ function BOQBuilderContent() {
 
   // Labor Preference
   const [laborType, setLaborType] = useState<'materials_only' | 'materials_labor' | null>(null);
+
+  // Clear validation error when inputs change
+  useEffect(() => {
+    if (validationError) setValidationError(null);
+  }, [projectDetails, projectScope, laborType, validationError]);
 
   // Plan Sketch State
   const [planSketchEnabled, setPlanSketchEnabled] = useState(false);
@@ -698,7 +709,7 @@ function BOQBuilderContent() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Currency context - must be called at top level (not inside conditionals)
-  const { currency, setCurrency, exchangeRate } = useCurrency();
+  const { currency, setCurrency, exchangeRate, formatPrice } = useCurrency();
   const loading = isGenerating;
 
   // Helper for currency formatting
@@ -728,6 +739,141 @@ function BOQBuilderContent() {
       }))
       .filter(c => c.items.length > 0);
   }, [milestonesState]);
+
+  // Calculate totals for sidebar
+  const { totalUSD, totalZWG, totalItems } = useMemo(() => {
+    let usd = 0;
+    let zwg = 0;
+    let items = 0;
+    milestonesState.forEach(m => {
+      m.items.forEach(item => {
+        const qty = item.quantity || 0;
+        usd += item.averagePriceUsd * qty;
+        zwg += item.averagePriceZwg * qty;
+        items++;
+      });
+    });
+    return { totalUSD: usd, totalZWG: zwg, totalItems: items };
+  }, [milestonesState]);
+
+  // Calculate stats per milestone for sidebar
+  const milestoneStats = useMemo(() => {
+    return milestonesState.reduce((acc, m) => {
+      const subtotal = m.items.reduce((sum, item) => sum + (item.averagePriceUsd * (item.quantity || 0)), 0);
+      acc[m.id] = {
+        itemCount: m.items.length,
+        subtotal
+      };
+      return acc;
+    }, {} as Record<string, { itemCount: number; subtotal: number }>);
+  }, [milestonesState]);
+
+  // Build wizard steps for sidebar
+  const wizardSteps: WizardStep[] = useMemo(() => {
+    const getStepStatus = (stepNum: number): StepStatus => {
+      if (currentStep > stepNum) return 'completed';
+      if (currentStep === stepNum) return 'current';
+      if (stepNum === currentStep + 1) return 'available';
+      return 'locked';
+    };
+
+    const baseSteps: WizardStep[] = [
+      {
+        id: 'project-details',
+        label: 'Project Details',
+        shortLabel: 'Details',
+        description: 'Name and location',
+        icon: HouseSimple,
+        status: getStepStatus(1),
+      },
+      {
+        id: 'floor-plan',
+        label: 'Floor Plan',
+        shortLabel: 'Floor Plan',
+        description: 'Size and room mix',
+        icon: Layout,
+        status: getStepStatus(2),
+      },
+      {
+        id: 'scope',
+        label: 'Scope of Work',
+        shortLabel: 'Scope',
+        description: 'What to include',
+        icon: ListDashes,
+        status: getStepStatus(3),
+      },
+      {
+        id: 'labor',
+        label: 'Labor Options',
+        shortLabel: 'Labor',
+        description: 'Materials only or with labor',
+        icon: UserCircle,
+        status: getStepStatus(4),
+      },
+      {
+        id: 'boq-estimate',
+        label: 'BOQ Estimate',
+        shortLabel: 'Estimate',
+        description: 'Review and finalize',
+        icon: Sparkle,
+        status: getStepStatus(5),
+      },
+    ];
+
+    return baseSteps;
+  }, [currentStep, selectedStages, milestoneStats]);
+
+  const handleSidebarStepClick = (stepId: string) => {
+    const stepIndex = ['project-details', 'floor-plan', 'scope', 'labor'].indexOf(stepId);
+    if (stepIndex >= 0) {
+      setCurrentStep(stepIndex + 1);
+    } else if (currentStep === 5) {
+      // Scroll to milestone section
+      const element = document.getElementById(`milestone-${stepId}`);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleToggleMilestone = (milestoneId: string, included: boolean) => {
+    if (included) {
+      setSelectedStages(prev => [...prev, milestoneId]);
+    } else {
+      setSelectedStages(prev => prev.filter(s => s !== milestoneId));
+    }
+  };
+
+  // Project summary data for sidebar
+  const projectSummary: ProjectSummaryData = useMemo(() => {
+    const buildingTypeLabel = BUILDING_TYPES.find(t => t.value === projectDetails.buildingType)?.label || '';
+    const scopeLabel = projectScope === 'stage'
+      ? (selectedStages.length > 0 ? `${selectedStages.length} stages` : 'Specific Stages')
+      : projectScope === 'full'
+        ? 'Entire House'
+        : '';
+    const laborLabel = laborType === 'materials_only'
+      ? 'Materials Only'
+      : laborType === 'materials_labor'
+        ? 'Materials + Labor'
+        : '';
+
+    const roomSummary = Object.entries(projectDetails.roomInputs)
+      .filter(([, count]) => count && parseInt(count) > 0)
+      .map(([key, count]) => ({
+        label: ROOM_INPUTS.find(r => r.key === key)?.label || key,
+        count: parseInt(count)
+      }));
+
+    return {
+      name: projectDetails.name,
+      location: buildLocationLabel(projectDetails.locationType, projectDetails.locationCity, projectDetails.specificLocation),
+      floorArea: projectDetails.floorPlanSize,
+      buildingType: buildingTypeLabel,
+      scope: scopeLabel,
+      labor: laborLabel,
+      rooms: roomSummary,
+      nextHint: STEP_HINTS[Math.min(currentStep, 4)]
+    };
+  }, [projectDetails, projectScope, selectedStages, laborType, currentStep]);
 
   // Auto-save hook for database persistence
   const {
@@ -980,32 +1126,46 @@ function BOQBuilderContent() {
   });
 
   const goToNextStep = async () => {
+    setValidationError(null);
+
     if (currentStep === 1) {
-      if (!projectDetails.name.trim() || !projectDetails.locationType) {
-        alert('Please fill in project name and location type');
+      if (!projectDetails.name.trim()) {
+        setValidationError('Please enter a project name.');
+        return;
+      }
+      if (!projectDetails.locationType) {
+        setValidationError('Please select a location type.');
         return;
       }
     }
     if (currentStep === 2) {
       const floorPlanValue = Number(projectDetails.floorPlanSize);
-      if (!projectDetails.buildingType || !floorPlanValue || floorPlanValue <= 0) {
-        alert('Please fill in floor plan size and building type');
+      if (!projectDetails.floorPlanSize || floorPlanValue <= 0) {
+        setValidationError('Please enter a valid floor plan size.');
+        return;
+      }
+      if (!projectDetails.buildingType) {
+        setValidationError('Please select a building type.');
+        return;
+      }
+      if (!projectDetails.brickType) {
+        setValidationError('Please select a brick type.');
         return;
       }
     }
     if (currentStep === 3) {
       if (!projectScope) {
-        alert('Please select a project scope');
+        setValidationError('Please select a project scope.');
         return;
       }
       if (projectScope === 'stage' && selectedStages.length === 0) {
-        alert('Please select at least one stage');
+        setValidationError('Please select at least one stage.');
         return;
       }
     }
     if (currentStep === 4) {
       if (!laborType) {
-        alert('Please select a labor option');
+        setValidationError('Please select a labor option.');
         return;
       }
     }
@@ -2024,10 +2184,33 @@ function BOQBuilderContent() {
   }
 
   return (
-    <MainLayout>
+    <MainLayout fullWidth>
       <WizardStyles />
 
-      <div className="wizard-shell">
+      <div className={`wizard-shell ${currentStep >= 1 ? 'has-sidebar' : ''}`}>
+        {/* TurboTax-style Sidebar */}
+        <div className="wizard-sidebar-wrapper">
+          <WizardSidebar
+            steps={wizardSteps}
+            currentStepId={
+              currentStep === 1 ? 'project-details' :
+                currentStep === 2 ? 'floor-plan' :
+                  currentStep === 3 ? 'scope' :
+                    currentStep === 4 ? 'labor' :
+                      'boq-estimate'
+            }
+            currentStepNumber={Math.min(currentStep, 5)}
+            totalSetupSteps={5}
+            onStepClick={handleSidebarStepClick}
+            onToggleStep={currentStep >= 5 ? handleToggleMilestone : undefined}
+            totalUSD={totalUSD}
+            totalZWG={totalZWG}
+            projectSummary={projectSummary}
+            completionPercentage={((currentStep - 1) / 5) * 100}
+            formatPrice={formatPrice}
+          />
+        </div>
+
         <div className="boq-wizard-container">
 
           {/* Main Content Area */}
@@ -2125,26 +2308,20 @@ function BOQBuilderContent() {
                       </div>
                     </div>
 
-                    <div className="wizard-actions wizard-actions--right">
+                    <div className="wizard-actions wizard-actions--right flex-col items-end gap-2">
+                      {validationError && (
+                        <p className="text-sm text-red-500 font-medium animate-fadeIn">{validationError}</p>
+                      )}
                       <Button
                         variant="primary"
                         onClick={goToNextStep}
                         icon={<ArrowRight size={18} />}
-                        disabled={!projectDetails.name || !projectDetails.locationType}
                       >
                         Continue
                       </Button>
                     </div>
                   </div>
 
-                  <WizardSummaryPanel
-                    currentStep={currentStep}
-                    projectDetails={projectDetails}
-                    projectScope={projectScope}
-                    selectedStages={selectedStages}
-                    laborType={laborType}
-                    locationLabel={locationLabel}
-                  />
                 </div>
               </div>
             )}
@@ -2649,14 +2826,7 @@ function BOQBuilderContent() {
                     </div>
                   </div>
 
-                  <WizardSummaryPanel
-                    currentStep={currentStep}
-                    projectDetails={projectDetails}
-                    projectScope={projectScope}
-                    selectedStages={selectedStages}
-                    laborType={laborType}
-                    locationLabel={locationLabel}
-                  />
+                  {/* Summary moved to sidebar */}
                 </div>
               </div>
             )}
@@ -2773,27 +2943,24 @@ function BOQBuilderContent() {
                       )}
                     </div>
 
-                    <div className="wizard-actions">
-                      <Button variant="secondary" onClick={goToPrevStep}>Back</Button>
-                      <Button
-                        variant="primary"
-                        onClick={goToNextStep}
-                        icon={<ArrowRight size={18} />}
-                        disabled={!projectScope || (projectScope === 'stage' && selectedStages.length === 0)}
-                      >
-                        Continue
-                      </Button>
+                    <div className="wizard-actions flex-col items-end gap-2">
+                      {validationError && (
+                        <p className="text-sm text-red-500 font-medium animate-fadeIn w-full text-right">{validationError}</p>
+                      )}
+                      <div className="flex gap-3 w-full justify-end">
+                        <Button variant="secondary" onClick={goToPrevStep}>Back</Button>
+                        <Button
+                          variant="primary"
+                          onClick={goToNextStep}
+                          icon={<ArrowRight size={18} />}
+                        >
+                          Continue
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
-                  <WizardSummaryPanel
-                    currentStep={currentStep}
-                    projectDetails={projectDetails}
-                    projectScope={projectScope}
-                    selectedStages={selectedStages}
-                    laborType={laborType}
-                    locationLabel={locationLabel}
-                  />
+                  {/* Summary moved to sidebar */}
                 </div>
               </div>
             )}
@@ -2865,26 +3032,24 @@ function BOQBuilderContent() {
                       </div>
                     </div>
 
-                    <div className="wizard-actions">
-                      <Button variant="secondary" onClick={goToPrevStep}>Back</Button>
-                      <Button
-                        variant="primary"
-                        onClick={goToNextStep}
-                        icon={<Sparkle size={18} />}
-                      >
-                        Start Building BOQ
-                      </Button>
+                    <div className="wizard-actions flex-col items-end gap-2">
+                      {validationError && (
+                        <p className="text-sm text-red-500 font-medium animate-fadeIn w-full text-right">{validationError}</p>
+                      )}
+                      <div className="flex gap-3 w-full justify-end">
+                        <Button variant="secondary" onClick={goToPrevStep}>Back</Button>
+                        <Button
+                          variant="primary"
+                          onClick={goToNextStep}
+                          icon={<Sparkle size={18} />}
+                        >
+                          Start Building BOQ
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
-                  <WizardSummaryPanel
-                    currentStep={currentStep}
-                    projectDetails={projectDetails}
-                    projectScope={projectScope}
-                    selectedStages={selectedStages}
-                    laborType={laborType}
-                    locationLabel={locationLabel}
-                  />
+                  {/* Summary moved to sidebar */}
                 </div>
               </div>
             )}

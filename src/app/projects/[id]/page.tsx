@@ -10,11 +10,13 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import StageTab from '@/components/projects/StageTab';
 import DocumentsTab from '@/components/projects/DocumentsTab';
 import ShareModal from '@/components/projects/ShareModal';
+import { RunningTotalBar } from '@/components/ui/RunningTotalBar';
+import { StageProgressCards } from '@/components/projects/StageProgressCards';
+import { CelebrationModal } from '@/components/ui/CelebrationModal';
 import BudgetPlanner, { NotificationChannel } from '@/components/ui/BudgetPlanner';
 import PhoneNumberModal from '@/components/ui/PhoneNumberModal';
 import ProjectUsageView from '@/components/projects/ProjectUsageView';
-import ProjectProcurementView from '@/components/projects/ProjectProcurementView';
-import ProjectTrackingView from '@/components/projects/ProjectTrackingView';
+import UnifiedProcurementView from '@/components/projects/UnifiedProcurementView';
 import SidebarSpine, { ProjectView } from '@/components/projects/SidebarSpine';
 import ProjectSettings from '@/components/projects/ProjectSettings';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
@@ -123,6 +125,12 @@ function ProjectDetailContent() {
     const [priceUpdates, setPriceUpdates] = useState<PriceUpdate[]>([]);
     const [isPriceUpdateLoading, setIsPriceUpdateLoading] = useState(false);
     const priceNotificationSentRef = useRef(false);
+    const [showCelebration, setShowCelebration] = useState(false);
+    const [celebrationData, setCelebrationData] = useState<{
+        title: string;
+        message: string;
+        stats?: { label: string; value: string; highlight?: boolean }[];
+    } | null>(null);
 
     // View state
     const [activeView, setActiveView] = useState<ProjectView>('overview');
@@ -387,7 +395,7 @@ function ProjectDetailContent() {
 
     useEffect(() => {
         if (!project?.usage_tracking_enabled) return;
-        if (activeView !== 'tracking' && activeView !== 'boq' && activeView !== 'usage') return;
+        if (activeView !== 'procurement' && activeView !== 'boq' && activeView !== 'usage') return;
         loadUsageData();
     }, [activeView, project?.usage_tracking_enabled, loadUsageData]);
 
@@ -811,6 +819,30 @@ function ProjectDetailContent() {
                                 </div>
                             </div>
 
+                            {/* Running Total Bar - TurboTax-inspired */}
+                            <RunningTotalBar
+                                totalUSD={purchaseStats.estimatedTotal}
+                                totalZWG={purchaseStats.estimatedTotal * exchangeRate}
+                                budgetTargetUSD={project.budget_target_usd}
+                                completionPercentage={purchaseStats.totalItems > 0
+                                    ? Math.round((purchaseStats.purchasedItems / purchaseStats.totalItems) * 100)
+                                    : 0}
+                                projectName={project.name}
+                            />
+
+                            {/* Stage Progress Cards */}
+                            <div>
+                                <h3 className="text-lg font-semibold text-slate-800 mb-4">Build Progress</h3>
+                                <StageProgressCards
+                                    stages={stages}
+                                    items={items}
+                                    onStageClick={(category) => {
+                                        setActiveTab(category);
+                                        setActiveView('boq');
+                                    }}
+                                />
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {/* Total Budget - Primary Funding */}
                                 <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
@@ -1001,11 +1033,11 @@ function ProjectDetailContent() {
                         </div>
                     )}
 
-                    {/* TRACKING View */}
-                    {activeView === 'tracking' && (
+                    {/* PROCUREMENT View - Unified Hub */}
+                    {activeView === 'procurement' && (
                         <div className="space-y-6">
-                            <ProjectTrackingView
-                                projectId={projectId}
+                            <UnifiedProcurementView
+                                project={project}
                                 items={items}
                                 onItemsRefresh={refreshItems}
                             />
@@ -1038,16 +1070,6 @@ function ProjectDetailContent() {
                                     </Button>
                                 </div>
                             )}
-                        </div>
-                    )}
-
-                    {/* PROCUREMENT View */}
-                    {activeView === 'procurement' && (
-                        <div className="space-y-6">
-                            <ProjectProcurementView
-                                project={project}
-                                items={items}
-                            />
                         </div>
                     )}
 
@@ -1116,6 +1138,25 @@ function ProjectDetailContent() {
                 onClose={() => setShowShareModal(false)}
                 projectId={projectId}
                 projectName={project.name}
+            />
+
+            {/* Celebration Modal for milestones */}
+            <CelebrationModal
+                isOpen={showCelebration}
+                onClose={() => {
+                    setShowCelebration(false);
+                    setCelebrationData(null);
+                }}
+                title={celebrationData?.title || ''}
+                message={celebrationData?.message || ''}
+                stats={celebrationData?.stats}
+                variant="stage-complete"
+                actionLabel="Continue Building"
+                onAction={() => {
+                    setShowCelebration(false);
+                    setCelebrationData(null);
+                    setActiveView('boq');
+                }}
             />
 
             <style jsx>{`

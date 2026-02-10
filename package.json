@@ -9,15 +9,19 @@
     "start": "next start",
     "lint": "eslint",
     "scrape:prices": "node scripts/pricing/scrape.mjs",
-    "test:unit": "vitest run",
+    "test:unit": "VITE_CJS_IGNORE_WARNING=1 vitest run",
     "test:e2e": "playwright test",
-    "test": "npm run test:unit && npm run test:e2e"
+    "test": "npm run test:unit && npm run test:e2e",
+    "check:env": "node scripts/check-env.ts",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@mendable/firecrawl-js": "^4.12.0",
     "@phosphor-icons/react": "^2.1.10",
     "@supabase/supabase-js": "^2.93.3",
+    "@vercel/analytics": "^1.2.2",
     "cheerio": "^1.0.0",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
@@ -28,6 +32,11 @@
     "react-konva": "^19.2.2"
   },
   "devDependencies": {
+    "@storybook/addon-a11y": "^8.6.14",
+    "@storybook/addon-essentials": "^8.6.14",
+    "@storybook/addon-interactions": "^8.6.14",
+    "@storybook/addon-links": "^8.6.14",
+    "@storybook/nextjs": "^8.6.14",
     "@playwright/test": "^1.52.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
@@ -36,6 +45,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "firecrawl-cli": "^1.3.1",
+    "storybook": "^8.6.14",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^2.1.3"

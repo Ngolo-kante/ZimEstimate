@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import Image from 'next/image';
 import TopNavbar from './TopNavbar';
 import { CurrencyProvider } from '../ui/CurrencyToggle';
+import InstallPromptBanner from '../ui/InstallPromptBanner';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -27,6 +28,8 @@ export default function MainLayout({
             {children}
           </div>
         </main>
+
+        <InstallPromptBanner />
 
         {/* Footer */}
         <footer className="app-footer">

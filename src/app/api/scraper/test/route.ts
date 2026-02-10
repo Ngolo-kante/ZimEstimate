@@ -4,6 +4,8 @@ import { Database } from '@/lib/database.types';
 import { MaterialMatcher } from '@/lib/services/material-matcher';
 import Firecrawl from '@mendable/firecrawl-js';
 import * as cheerio from 'cheerio';
+import { enforceCsrf, enforceRateLimit, sanitizeText, sanitizeUrl } from '@/lib/server/security';
+import { requireAdmin } from '@/lib/server/auth';
 
 // Initialize Supabase Client with Service Role Key for backend access
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -22,10 +24,23 @@ type ScraperConfigUpdate = Database['public']['Tables']['scraper_configs']['Upda
 export async function POST(req: NextRequest) {
     let configId: string | null = null;
     try {
+        const rateLimit = enforceRateLimit(req, {
+            keyPrefix: 'scraper:test',
+            limit: 10,
+            windowMs: 60_000,
+        });
+        if (rateLimit) return rateLimit;
+
+        const csrf = enforceCsrf(req);
+        if (csrf) return csrf;
+
+        const auth = await requireAdmin(req);
+        if (auth instanceof NextResponse) return auth;
+
         const payload = (await req.json()) as ScraperTestPayload;
-        const url = typeof payload.url === 'string' ? payload.url : '';
-        const priceSelector = typeof payload.priceSelector === 'string' ? payload.priceSelector : '';
-        const nameSelector = typeof payload.nameSelector === 'string' ? payload.nameSelector : '';
+        const url = sanitizeUrl(payload.url);
+        const priceSelector = sanitizeText(payload.priceSelector, { maxLength: 200 });
+        const nameSelector = sanitizeText(payload.nameSelector, { maxLength: 200 });
         configId = typeof payload.configId === 'string' ? payload.configId : null;
 
         if (!url || !priceSelector || !nameSelector) {
@@ -97,15 +112,17 @@ export async function POST(req: NextRequest) {
 
         if (matchedMaterialCode) {
             // 1. Insert into Price Observations
-            const observation = {
-                material_key: matchedMaterialCode,
-                material_name: finalItemName,
-                price_usd: price,
-                confidence: matchResult.confidence,
-                source_url: url,
-                scraped_at: new Date().toISOString(),
-                review_status: matchResult.needsReview ? 'pending' : 'auto'
-            };
+            // Convert 0-1 confidence to 1-5 scale for database
+            const confidenceScale = Math.max(1, Math.min(5, Math.round(matchResult.confidence * 4 + 1)));
+        const observation = {
+            material_key: matchedMaterialCode,
+            material_name: finalItemName,
+            price_usd: price,
+            confidence: confidenceScale,
+            url: url,
+            scraped_at: new Date().toISOString(),
+            review_status: matchResult.needsReview ? 'pending' : 'auto'
+        };
 
             await supabase.from('price_observations').insert(observation as never);
         }

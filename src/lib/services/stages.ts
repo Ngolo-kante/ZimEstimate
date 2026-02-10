@@ -19,6 +19,7 @@ const db = supabase as any;
 // STAGE OPERATIONS
 // ============================================
 
+/** Fetch all stages for a project. */
 export async function getProjectStages(projectId: string): Promise<{
     stages: ProjectStageWithTasks[];
     error: Error | null;
@@ -45,6 +46,7 @@ export async function getProjectStages(projectId: string): Promise<{
     return { stages: sortedStages, error: null };
 }
 
+/** Fetch a single stage by id. */
 export async function getStage(stageId: string): Promise<{
     stage: ProjectStageWithTasks | null;
     error: Error | null;
@@ -71,6 +73,7 @@ export async function getStage(stageId: string): Promise<{
     return { stage: sortedStage, error: null };
 }
 
+/** Update stage details by id. */
 export async function updateStage(
     stageId: string,
     updates: ProjectStageUpdate
@@ -89,6 +92,7 @@ export async function updateStage(
     return { stage, error: null };
 }
 
+/** Fetch the active stage for a project. */
 export async function getActiveStage(projectId: string): Promise<{
     stage: ProjectStageWithTasks | null;
     error: Error | null;
@@ -124,6 +128,7 @@ export async function getActiveStage(projectId: string): Promise<{
     return { stage: sortedStage, error: null };
 }
 
+/** Fetch a stage by BOQ category. */
 export async function getStageByCategory(
     projectId: string,
     category: BOQCategory
@@ -150,6 +155,7 @@ export async function getStageByCategory(
     return { stage: sortedStage, error: null };
 }
 
+/** Create default stage set for a project. */
 export async function createDefaultStages(
     projectId: string,
     scope: string
@@ -166,6 +172,7 @@ export async function createDefaultStages(
     return { error: null };
 }
 
+/** Toggle stage applicability for a project. */
 export async function setProjectStagesApplicability(
     projectId: string,
     selectedStages: string[]
@@ -200,6 +207,7 @@ export async function setProjectStagesApplicability(
 // STAGE TASK OPERATIONS
 // ============================================
 
+/** Create a task under a project stage. */
 export async function createStageTask(
     stageId: string,
     data: { title: string; description?: string; assigned_to?: string }
@@ -237,6 +245,7 @@ export async function createStageTask(
     return { task, error: null };
 }
 
+/** Update a stage task by id. */
 export async function updateStageTask(
     taskId: string,
     updates: StageTaskUpdate
@@ -255,6 +264,7 @@ export async function updateStageTask(
     return { task, error: null };
 }
 
+/** Toggle completion state for a stage task. */
 export async function toggleStageTask(
     taskId: string,
     completed: boolean
@@ -276,6 +286,7 @@ export async function toggleStageTask(
     return { task, error: null };
 }
 
+/** Delete a stage task by id. */
 export async function deleteStageTask(taskId: string): Promise<{ error: Error | null }> {
     const { error } = await db
         .from('stage_tasks')
@@ -302,6 +313,7 @@ export interface StageBudgetStats {
     usagePercent: number;
 }
 
+/** Fetch budget stats for a stage. */
 export async function getStageBudgetStats(
     projectId: string,
     boqCategory: BOQCategory
@@ -348,6 +360,7 @@ export async function getStageBudgetStats(
     };
 }
 
+/** Fetch BOQ items for a specific category. */
 export async function getBOQItemsByCategory(
     projectId: string,
     category: BOQCategory
@@ -380,6 +393,7 @@ export interface StageProgress {
     isApplicable: boolean;
 }
 
+/** Fetch progress details for all stages in a project. */
 export async function getAllStagesProgress(projectId: string): Promise<{
     progress: StageProgress[];
     error: Error | null;
@@ -413,6 +427,7 @@ export async function getAllStagesProgress(projectId: string): Promise<{
 // STAGE USAGE HELPERS
 // ============================================
 
+/** Fetch usage history for a stage. */
 export async function getStageUsageData(
     projectId: string,
     boqCategory: BOQCategory
@@ -462,6 +477,7 @@ export interface StageSavingsPlan {
     monthlyTarget: number;
 }
 
+/** Calculate savings plan for a specific stage. */
 export async function calculateStageSavingsPlan(
     projectId: string,
     stageId: string

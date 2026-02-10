@@ -22,31 +22,62 @@ const WizardStyles = () => (
 
     .wizard-shell {
       min-height: 100vh;
-      padding-bottom: 80px;
       background: var(--color-background);
+      display: flex;
+    }
+
+    .wizard-shell.has-sidebar {
+      padding-bottom: 0;
+    }
+
+    .wizard-sidebar-wrapper {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      flex-shrink: 0;
+      z-index: 10;
     }
 
     .boq-wizard-container {
-      max-width: 1200px;
+      flex: 1;
+      width: 100%;
+      max-width: 1920px;
       margin: 0 auto;
-      padding: 0 24px;
+      padding: 0 32px 80px;
     }
 
-    /* Main Split Layout */
+    .wizard-shell.has-sidebar .boq-wizard-container {
+      max-width: none;
+      padding: 32px 56px 40px;
+    }
+
+    /* Main Content Layout - Full width when sidebar present */
     .wizard-content-split {
-      display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
-      gap: 40px;
-      align-items: start;
+      display: block;
       min-height: 600px;
     }
-    
+
+    /* Without sidebar - use old split layout */
+    .wizard-shell:not(.has-sidebar) .wizard-content-split {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 48px;
+      align-items: start;
+    }
+
     .wizard-form-area {
       background: #ffffff;
       border-radius: 24px;
-      padding: 36px;
+      padding: 40px 48px;
       box-shadow: 0 16px 34px rgba(6, 20, 47, 0.08);
       border: 1px solid var(--color-border-light);
+      width: 100%;
+      max-width: 100%;
+    }
+
+    /* Full width form when sidebar is present */
+    .wizard-shell.has-sidebar .wizard-form-area {
+      max-width: 100%;
     }
 
     .wizard-summary-area {
@@ -56,6 +87,11 @@ const WizardStyles = () => (
       display: flex;
       flex-direction: column;
       gap: 20px;
+    }
+
+    /* Hide summary area when sidebar is present */
+    .wizard-shell.has-sidebar .wizard-summary-area {
+      display: none;
     }
 
     .summary-card {
@@ -360,6 +396,17 @@ const WizardStyles = () => (
       grid-template-columns: 1fr 1fr;
       gap: 24px;
     }
+
+    /* Wider grid when sidebar is present - use 3 columns on large screens */
+    .wizard-shell.has-sidebar .wizard-grid {
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 28px;
+    }
+
+    @media (max-width: 1200px) {
+       .wizard-grid { grid-template-columns: 1fr 1fr; }
+    }
+
     @media (max-width: 768px) {
       .wizard-grid { grid-template-columns: 1fr; }
     }
@@ -371,8 +418,13 @@ const WizardStyles = () => (
     }
 
     .wizard-main-content {
-      padding-top: 12px;
+      padding-top: 24px;
       padding-bottom: 24px;
+    }
+
+    /* Better spacing when sidebar present */
+    .wizard-shell.has-sidebar .wizard-main-content {
+      padding-top: 0;
     }
 
     .wizard-section {
@@ -426,8 +478,8 @@ const WizardStyles = () => (
 
     .choice-grid {
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 16px;
     }
 
     .choice-card {

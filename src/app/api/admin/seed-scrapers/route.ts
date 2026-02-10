@@ -1,10 +1,25 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/lib/database.types';
+import { enforceCsrf, enforceRateLimit } from '@/lib/server/security';
+import { requireAdmin } from '@/lib/server/auth';
 
 type ScraperConfigInsert = Database['public']['Tables']['scraper_configs']['Insert'];
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const rateLimit = enforceRateLimit(request, {
+        keyPrefix: 'scraper:seed',
+        limit: 3,
+        windowMs: 60_000,
+    });
+    if (rateLimit) return rateLimit;
+
+    const csrf = enforceCsrf(request);
+    if (csrf) return csrf;
+
+    const auth = await requireAdmin(request);
+    if (auth instanceof NextResponse) return auth;
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 

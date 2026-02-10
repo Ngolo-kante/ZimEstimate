@@ -19,6 +19,7 @@ interface ProjectPickerModalProps {
     onSelect: (project: Project) => void;
     title?: string;
     description?: string;
+    confirmLabel?: string;
 }
 
 export default function ProjectPickerModal({
@@ -27,6 +28,7 @@ export default function ProjectPickerModal({
     onSelect,
     title = 'Select Project',
     description = 'Choose a project to add the item to',
+    confirmLabel = 'Add to Project',
 }: ProjectPickerModalProps) {
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -132,7 +134,7 @@ export default function ProjectPickerModal({
                                 onClick={handleConfirm}
                                 disabled={!selectedId}
                             >
-                                Add to Project
+                                {confirmLabel}
                             </Button>
                         </div>
                     )}

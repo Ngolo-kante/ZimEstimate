@@ -9,6 +9,38 @@ interface ExportOptions {
     includeSupplierInfo: boolean;
 }
 
+export interface AnalyticsReportData {
+    projectName: string;
+    generatedAt: Date;
+    currency: 'USD' | 'ZWG';
+    summary: {
+        totalSpend: number;
+        budget: number;
+        variance: number;
+        completionPct: number;
+        areaSqm: number;
+        costPerSqm: number;
+    };
+    supplierBreakdown: Array<{
+        name: string;
+        spend: number;
+        sharePct: number;
+    }>;
+    watchedMaterials: Array<{
+        name: string;
+        price: number;
+        changePct: number;
+        trend: 'up' | 'down' | 'stable';
+    }>;
+    projectComparison: Array<{
+        name: string;
+        status: string;
+        spend: number;
+        budget: number;
+        completionPct: number;
+    }>;
+}
+
 const defaultOptions: ExportOptions = {
     currency: 'USD',
     exchangeRate: 30,
@@ -44,6 +76,128 @@ function formatCurrency(amount: number, currency: 'USD' | 'ZWG'): string {
         return `ZiG ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+export function generateAnalyticsPDF(data: AnalyticsReportData): jsPDF {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    let yPos = margin;
+
+    const primaryColor: [number, number, number] = [6, 20, 47];
+    const accentColor: [number, number, number] = [78, 154, 247];
+
+    // Header
+    doc.setFillColor(...primaryColor);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ZimEstimate', margin, 25);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Analytics Report', margin, 33);
+    doc.setFontSize(9);
+    doc.text(`Generated: ${data.generatedAt.toLocaleDateString()}`, pageWidth - margin, 25, { align: 'right' });
+
+    yPos = 55;
+
+    // Project title
+    doc.setTextColor(...primaryColor);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text(data.projectName, margin, yPos);
+    yPos += 10;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Reporting currency: ${data.currency}`, margin, yPos);
+    yPos += 10;
+
+    // Summary table
+    autoTable(doc, {
+        startY: yPos,
+        head: [['Summary Metric', 'Value']],
+        body: [
+            ['Total Spend', formatCurrency(data.summary.totalSpend, data.currency)],
+            ['Budget', formatCurrency(data.summary.budget, data.currency)],
+            ['Variance', formatCurrency(data.summary.variance, data.currency)],
+            ['Completion', `${data.summary.completionPct.toFixed(1)}%`],
+            ['Cost per sqm', `${formatCurrency(data.summary.costPerSqm, data.currency)} / m²`],
+        ],
+        margin: { left: margin, right: margin },
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: accentColor, textColor: [255, 255, 255], fontStyle: 'bold' },
+        columnStyles: { 0: { cellWidth: 70 }, 1: { cellWidth: 'auto' } },
+    });
+
+    yPos = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 12;
+
+    // Supplier breakdown
+    if (data.supplierBreakdown.length > 0) {
+        autoTable(doc, {
+            startY: yPos,
+            head: [['Supplier', 'Spend', 'Share']],
+            body: data.supplierBreakdown.map((row) => [
+                row.name,
+                formatCurrency(row.spend, data.currency),
+                `${row.sharePct.toFixed(1)}%`,
+            ]),
+            margin: { left: margin, right: margin },
+            styles: { fontSize: 9, cellPadding: 3 },
+            headStyles: { fillColor: [240, 240, 240], textColor: [60, 60, 60], fontStyle: 'bold' },
+            columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } },
+        });
+
+        yPos = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 12;
+    }
+
+    // Watched materials
+    if (data.watchedMaterials.length > 0) {
+        autoTable(doc, {
+            startY: yPos,
+            head: [['Watched Material', 'Price', 'Change']],
+            body: data.watchedMaterials.map((row) => [
+                row.name,
+                formatCurrency(row.price, data.currency),
+                `${row.changePct > 0 ? '+' : ''}${row.changePct.toFixed(1)}% (${row.trend})`,
+            ]),
+            margin: { left: margin, right: margin },
+            styles: { fontSize: 9, cellPadding: 3 },
+            headStyles: { fillColor: [240, 240, 240], textColor: [60, 60, 60], fontStyle: 'bold' },
+            columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } },
+        });
+
+        yPos = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 12;
+    }
+
+    // Project comparison
+    if (data.projectComparison.length > 0) {
+        autoTable(doc, {
+            startY: yPos,
+            head: [['Project', 'Status', 'Spend', 'Budget', 'Completion']],
+            body: data.projectComparison.map((row) => [
+                row.name,
+                row.status,
+                formatCurrency(row.spend, data.currency),
+                formatCurrency(row.budget, data.currency),
+                `${row.completionPct.toFixed(1)}%`,
+            ]),
+            margin: { left: margin, right: margin },
+            styles: { fontSize: 9, cellPadding: 3 },
+            headStyles: { fillColor: [240, 240, 240], textColor: [60, 60, 60], fontStyle: 'bold' },
+            columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' } },
+        });
+    }
+
+    return doc;
+}
+
+export function downloadAnalyticsPDF(data: AnalyticsReportData): void {
+    const doc = generateAnalyticsPDF(data);
+    const filename = `${data.projectName.replace(/[^a-z0-9]/gi, '_')}_Analytics_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
 }
 
 export function generateBOQPDF(

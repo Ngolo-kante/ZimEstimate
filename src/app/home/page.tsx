@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
@@ -15,6 +16,16 @@ import {
   UserPlus,
   FileText,
   TrendUp,
+  Wallet,
+  ChartLineUp,
+  Stack,
+  CheckCircle,
+  Storefront,
+  UsersThree,
+  ChartBar,
+  Bell,
+  DownloadSimple,
+  DeviceMobile,
 } from '@phosphor-icons/react';
 
 const boqMethods = [
@@ -66,9 +77,102 @@ const stats = [
   },
 ];
 
+const platformFeatures = [
+  {
+    title: 'Budget Planner',
+    description: 'Set savings targets, track progress, and stay on budget with automated reminders.',
+    icon: Wallet,
+  },
+  {
+    title: 'Material Usage Tracker',
+    description: 'Log on-site material consumption and keep procurement aligned with real usage.',
+    icon: Package,
+  },
+  {
+    title: 'Budget vs Actual',
+    description: 'See variance breakdowns across materials, labor, and overhead in seconds.',
+    icon: ChartLineUp,
+  },
+  {
+    title: 'Stage-Based BOQ',
+    description: 'Organize materials by construction phases for clear sequencing and approvals.',
+    icon: Stack,
+  },
+  {
+    title: 'Progress Tracking',
+    description: 'Visualize completion percentages per stage with live status updates.',
+    icon: CheckCircle,
+  },
+  {
+    title: 'Live Price Alerts',
+    description: 'Monitor price swings and act quickly when market rates change.',
+    icon: TrendUp,
+  },
+  {
+    title: 'RFQ & Procurement',
+    description: 'Request quotes, compare suppliers, and accept bids without leaving the platform.',
+    icon: Storefront,
+  },
+  {
+    title: 'Document Storage',
+    description: 'Keep drawings, invoices, and RFQs organized with secure storage.',
+    icon: FileText,
+  },
+  {
+    title: 'Team Collaboration',
+    description: 'Share project visibility with stakeholders and teams safely.',
+    icon: UsersThree,
+  },
+  {
+    title: 'Variance Analysis',
+    description: 'Break down cost variance by price, quantity, and scope.',
+    icon: ChartBar,
+  },
+  {
+    title: 'Multi-Currency',
+    description: 'Switch between USD and ZiG with live exchange rates.',
+    icon: CurrencyDollar,
+  },
+  {
+    title: 'Savings Reminders',
+    description: 'Schedule daily, weekly, or monthly nudges via WhatsApp and email.',
+    icon: Bell,
+  },
+  {
+    title: 'PDF/Excel Export',
+    description: 'Generate professional reports and share with clients instantly.',
+    icon: DownloadSimple,
+  },
+  {
+    title: 'Mobile PWA',
+    description: 'Use ZimEstimate offline in the field with installable PWA access.',
+    icon: DeviceMobile,
+  },
+];
+
 export default function HomePage() {
   const router = useRouter();
   const heroMetrics = stats.slice(0, 2);
+
+  useEffect(() => {
+    const cards = document.querySelectorAll('.feature-card');
+    if (!cards.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries, obs) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            obs.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+
+    cards.forEach((card) => observer.observe(card));
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <MainLayout fullWidth>
@@ -132,6 +236,43 @@ export default function HomePage() {
                   })}
                 </div>
               </aside>
+            </div>
+          </div>
+        </section>
+
+        {/* Platform Features */}
+        <section className="features-section">
+          <div className="features-shell">
+            <div className="section-header">
+              <div className="section-title">
+                <span className="section-badge">PLATFORM FEATURES</span>
+                <h2>Everything you need to run a modern build.</h2>
+                <p>From RFQs to live pricing, ZimEstimate keeps your team aligned and ahead.</p>
+              </div>
+              <div className="section-actions">
+                <Link href="/projects" className="hero-link">
+                  Explore Projects
+                </Link>
+              </div>
+            </div>
+
+            <div className="features-grid">
+              {platformFeatures.map((feature, index) => {
+                const Icon = feature.icon;
+                return (
+                  <div
+                    key={feature.title}
+                    className="feature-card"
+                    style={{ '--delay': `${index * 80}ms` } as React.CSSProperties}
+                  >
+                    <div className="feature-icon">
+                      <Icon size={24} weight="duotone" />
+                    </div>
+                    <h3>{feature.title}</h3>
+                    <p>{feature.description}</p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -450,6 +591,84 @@ export default function HomePage() {
         .panel-arrow {
           margin-left: auto;
           color: var(--color-primary-light);
+        }
+
+        /* Features Section */
+        .features-section {
+          padding: 72px 24px;
+          background: linear-gradient(180deg, rgba(10, 24, 52, 0.04), rgba(255, 255, 255, 0.9));
+          position: relative;
+          overflow: hidden;
+        }
+
+        .features-section::before {
+          content: '';
+          position: absolute;
+          width: 420px;
+          height: 420px;
+          right: -120px;
+          top: -160px;
+          background: radial-gradient(circle, rgba(78, 154, 247, 0.18), rgba(78, 154, 247, 0));
+          pointer-events: none;
+        }
+
+        .features-shell {
+          max-width: 1280px;
+          margin: 0 auto;
+        }
+
+        .section-actions {
+          display: flex;
+          align-items: center;
+        }
+
+        .features-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 20px;
+          margin-top: 32px;
+        }
+
+        .feature-card {
+          background: #ffffff;
+          border: 1px solid rgba(148, 163, 184, 0.25);
+          border-radius: 18px;
+          padding: 20px;
+          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+          opacity: 0;
+          transform: translateY(20px) scale(0.98);
+          transition: opacity 0.5s ease, transform 0.5s ease;
+          transition-delay: var(--delay);
+        }
+
+        .feature-card.in-view {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+
+        .feature-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(15, 23, 42, 0.06);
+          color: var(--color-primary);
+          margin-bottom: 14px;
+        }
+
+        .feature-card h3 {
+          margin: 0 0 8px 0;
+          font-size: 1rem;
+          color: var(--color-primary);
+        }
+
+        .feature-card p {
+          margin: 0;
+          font-size: 0.85rem;
+          color: var(--color-text-secondary);
+          line-height: 1.5;
         }
 
         /* BOQ Section */
@@ -790,6 +1009,12 @@ export default function HomePage() {
             animation: none;
           }
 
+          .feature-card {
+            opacity: 1;
+            transform: none;
+            transition: none;
+          }
+
           .panel-item,
           .boq-card,
           .get-started-link {
@@ -805,10 +1030,18 @@ export default function HomePage() {
           .hero-subtitle {
             max-width: 100%;
           }
+
+          .features-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
         }
 
         @media (max-width: 900px) {
           .boq-cards {
+            grid-template-columns: 1fr;
+          }
+
+          .features-grid {
             grid-template-columns: 1fr;
           }
 
@@ -855,6 +1088,10 @@ export default function HomePage() {
 
           .hero-metrics {
             flex-direction: column;
+          }
+
+          .features-section {
+            padding: 56px 20px;
           }
         }
       `}</style>

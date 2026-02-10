@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { Analytics } from "@vercel/analytics/react";
 import { ServiceWorkerProvider } from "@/components/providers/ServiceWorkerProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { CurrencyProvider } from "@/components/ui/CurrencyToggle";
@@ -92,6 +93,7 @@ export default function RootLayout({
             <CurrencyProvider>
               <ToastProvider>
                 {children}
+                <Analytics />
               </ToastProvider>
             </CurrencyProvider>
           </ServiceWorkerProvider>

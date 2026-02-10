@@ -28,7 +28,6 @@ export type AccessLevel = 'view' | 'edit';
 
 export type Currency = 'USD' | 'ZWG';
 
-export type MilestoneStatus = 'pending' | 'in_progress' | 'completed';
 
 export type StageStatus = 'planning' | 'pending_approval' | 'in_progress' | 'on_hold' | 'completed';
 
@@ -37,6 +36,14 @@ export type BOQCategory = 'substructure' | 'superstructure' | 'roofing' | 'finis
 export type DocumentCategory = 'plan' | 'permit' | 'receipt' | 'contract' | 'photo' | 'general';
 
 export type SavingsFrequency = 'weekly' | 'monthly' | 'quarterly';
+
+export type UserType = 'builder' | 'supplier' | 'admin';
+
+export type VerificationStatus = 'unverified' | 'pending' | 'verified' | 'trusted' | 'premium';
+
+export type SupplierApplicationStatus = 'pending' | 'under_review' | 'approved' | 'rejected';
+
+export type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock' | 'discontinued';
 
 // Tier limits configuration
 export const TIER_LIMITS = {
@@ -72,6 +79,14 @@ export interface Database {
                     preferred_currency: Currency;
                     phone_number: string | null;
                     whatsapp_reminders: boolean;
+                    notify_email: boolean;
+                    notify_whatsapp: boolean;
+                    notify_push: boolean;
+                    notify_rfq: boolean;
+                    notify_quote_updates: boolean;
+                    notify_price_alerts: boolean;
+                    notify_project_reminders: boolean;
+                    user_type: UserType;
                     created_at: string;
                     updated_at: string;
                 };
@@ -84,6 +99,14 @@ export interface Database {
                     preferred_currency?: Currency;
                     phone_number?: string | null;
                     whatsapp_reminders?: boolean;
+                    notify_email?: boolean;
+                    notify_whatsapp?: boolean;
+                    notify_push?: boolean;
+                    notify_rfq?: boolean;
+                    notify_quote_updates?: boolean;
+                    notify_price_alerts?: boolean;
+                    notify_project_reminders?: boolean;
+                    user_type?: UserType;
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -96,6 +119,14 @@ export interface Database {
                     preferred_currency?: Currency;
                     phone_number?: string | null;
                     whatsapp_reminders?: boolean;
+                    notify_email?: boolean;
+                    notify_whatsapp?: boolean;
+                    notify_push?: boolean;
+                    notify_rfq?: boolean;
+                    notify_quote_updates?: boolean;
+                    notify_price_alerts?: boolean;
+                    notify_project_reminders?: boolean;
+                    user_type?: UserType;
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -310,36 +341,101 @@ export interface Database {
             suppliers: {
                 Row: {
                     id: string;
+                    user_id: string | null;
                     name: string;
                     location: string | null;
                     contact_phone: string | null;
                     contact_email: string | null;
                     website: string | null;
+                    registration_number: string | null;
+                    business_license_url: string | null;
+                    physical_address: string | null;
+                    delivery_radius_km: number | null;
+                    material_categories: string[] | null;
+                    payment_terms: string | null;
+                    verification_status: VerificationStatus;
+                    verified_at: string | null;
                     is_trusted: boolean;
                     rating: number;
+                    deleted_at: string | null;
                     created_at: string;
+                    updated_at: string;
                 };
                 Insert: {
                     id?: string;
+                    user_id?: string | null;
                     name: string;
                     location?: string | null;
                     contact_phone?: string | null;
                     contact_email?: string | null;
                     website?: string | null;
+                    registration_number?: string | null;
+                    business_license_url?: string | null;
+                    physical_address?: string | null;
+                    delivery_radius_km?: number | null;
+                    material_categories?: string[] | null;
+                    payment_terms?: string | null;
+                    verification_status?: VerificationStatus;
+                    verified_at?: string | null;
                     is_trusted?: boolean;
                     rating?: number;
+                    deleted_at?: string | null;
                     created_at?: string;
+                    updated_at?: string;
                 };
                 Update: {
                     id?: string;
+                    user_id?: string | null;
                     name?: string;
                     location?: string | null;
                     contact_phone?: string | null;
                     contact_email?: string | null;
                     website?: string | null;
+                    registration_number?: string | null;
+                    business_license_url?: string | null;
+                    physical_address?: string | null;
+                    delivery_radius_km?: number | null;
+                    material_categories?: string[] | null;
+                    payment_terms?: string | null;
+                    verification_status?: VerificationStatus;
+                    verified_at?: string | null;
                     is_trusted?: boolean;
                     rating?: number;
+                    deleted_at?: string | null;
                     created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            supplier_api_keys: {
+                Row: {
+                    id: string;
+                    supplier_id: string;
+                    key_prefix: string;
+                    key_hash: string;
+                    label: string | null;
+                    created_at: string;
+                    last_used_at: string | null;
+                    revoked_at: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    supplier_id: string;
+                    key_prefix: string;
+                    key_hash: string;
+                    label?: string | null;
+                    created_at?: string;
+                    last_used_at?: string | null;
+                    revoked_at?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    supplier_id?: string;
+                    key_prefix?: string;
+                    key_hash?: string;
+                    label?: string | null;
+                    created_at?: string;
+                    last_used_at?: string | null;
+                    revoked_at?: string | null;
                 };
             };
             price_sources: {
@@ -405,6 +501,7 @@ export interface Database {
                     confidence: number;
                     scraped_at: string;
                     observed_at: string | null;
+                    review_status: 'auto' | 'pending' | 'confirmed' | 'rejected';
                 };
                 Insert: {
                     id?: string;
@@ -424,6 +521,7 @@ export interface Database {
                     confidence?: number;
                     scraped_at?: string;
                     observed_at?: string | null;
+                    review_status?: 'auto' | 'pending' | 'confirmed' | 'rejected';
                 };
                 Update: {
                     id?: string;
@@ -443,6 +541,7 @@ export interface Database {
                     confidence?: number;
                     scraped_at?: string;
                     observed_at?: string | null;
+                    review_status?: 'auto' | 'pending' | 'confirmed' | 'rejected';
                 };
             };
             price_weekly: {
@@ -629,6 +728,73 @@ export interface Database {
                     created_at?: string;
                 };
             };
+            notification_deliveries: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    channel: string;
+                    template_key: string;
+                    payload: Json | null;
+                    status: string;
+                    attempt_count: number;
+                    last_error: string | null;
+                    created_at: string;
+                    sent_at: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    channel: string;
+                    template_key: string;
+                    payload?: Json | null;
+                    status?: string;
+                    attempt_count?: number;
+                    last_error?: string | null;
+                    created_at?: string;
+                    sent_at?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    channel?: string;
+                    template_key?: string;
+                    payload?: Json | null;
+                    status?: string;
+                    attempt_count?: number;
+                    last_error?: string | null;
+                    created_at?: string;
+                    sent_at?: string | null;
+                };
+            };
+            push_subscriptions: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    endpoint: string;
+                    p256dh: string | null;
+                    auth: string | null;
+                    user_agent: string | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    endpoint: string;
+                    p256dh?: string | null;
+                    auth?: string | null;
+                    user_agent?: string | null;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    endpoint?: string;
+                    p256dh?: string | null;
+                    auth?: string | null;
+                    user_agent?: string | null;
+                    created_at?: string;
+                };
+            };
             procurement_requests: {
                 Row: {
                     id: string;
@@ -671,6 +837,216 @@ export interface Database {
                     items?: Json;
                     created_at?: string;
                     updated_at?: string;
+                };
+            };
+            rfq_requests: {
+                Row: {
+                    id: string;
+                    project_id: string;
+                    user_id: string;
+                    delivery_address: string | null;
+                    required_by: string | null;
+                    notes: string | null;
+                    status: string;
+                    created_at: string;
+                    expires_at: string;
+                    accepted_quote_id: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    project_id: string;
+                    user_id: string;
+                    delivery_address?: string | null;
+                    required_by?: string | null;
+                    notes?: string | null;
+                    status?: string;
+                    created_at?: string;
+                    expires_at?: string;
+                    accepted_quote_id?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    project_id?: string;
+                    user_id?: string;
+                    delivery_address?: string | null;
+                    required_by?: string | null;
+                    notes?: string | null;
+                    status?: string;
+                    created_at?: string;
+                    expires_at?: string;
+                    accepted_quote_id?: string | null;
+                };
+            };
+            rfq_items: {
+                Row: {
+                    id: string;
+                    rfq_id: string;
+                    material_key: string;
+                    material_name: string | null;
+                    quantity: number;
+                    unit: string | null;
+                    specifications: string | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    rfq_id: string;
+                    material_key: string;
+                    material_name?: string | null;
+                    quantity: number;
+                    unit?: string | null;
+                    specifications?: string | null;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    rfq_id?: string;
+                    material_key?: string;
+                    material_name?: string | null;
+                    quantity?: number;
+                    unit?: string | null;
+                    specifications?: string | null;
+                    created_at?: string;
+                };
+            };
+            rfq_recipients: {
+                Row: {
+                    id: string;
+                    rfq_id: string;
+                    supplier_id: string;
+                    status: string;
+                    notification_channels: string[];
+                    notified_at: string;
+                    last_viewed_at: string | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    rfq_id: string;
+                    supplier_id: string;
+                    status?: string;
+                    notification_channels?: string[];
+                    notified_at?: string;
+                    last_viewed_at?: string | null;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    rfq_id?: string;
+                    supplier_id?: string;
+                    status?: string;
+                    notification_channels?: string[];
+                    notified_at?: string;
+                    last_viewed_at?: string | null;
+                    created_at?: string;
+                };
+            };
+            rfq_quotes: {
+                Row: {
+                    id: string;
+                    rfq_id: string;
+                    supplier_id: string;
+                    total_usd: number | null;
+                    total_zwg: number | null;
+                    delivery_days: number | null;
+                    valid_until: string | null;
+                    notes: string | null;
+                    status: string;
+                    submitted_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    rfq_id: string;
+                    supplier_id: string;
+                    total_usd?: number | null;
+                    total_zwg?: number | null;
+                    delivery_days?: number | null;
+                    valid_until?: string | null;
+                    notes?: string | null;
+                    status?: string;
+                    submitted_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    rfq_id?: string;
+                    supplier_id?: string;
+                    total_usd?: number | null;
+                    total_zwg?: number | null;
+                    delivery_days?: number | null;
+                    valid_until?: string | null;
+                    notes?: string | null;
+                    status?: string;
+                    submitted_at?: string;
+                    updated_at?: string;
+                };
+            };
+            rfq_quote_items: {
+                Row: {
+                    id: string;
+                    quote_id: string;
+                    rfq_item_id: string;
+                    unit_price_usd: number | null;
+                    unit_price_zwg: number | null;
+                    available_quantity: number | null;
+                    notes: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    quote_id: string;
+                    rfq_item_id: string;
+                    unit_price_usd?: number | null;
+                    unit_price_zwg?: number | null;
+                    available_quantity?: number | null;
+                    notes?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    quote_id?: string;
+                    rfq_item_id?: string;
+                    unit_price_usd?: number | null;
+                    unit_price_zwg?: number | null;
+                    available_quantity?: number | null;
+                    notes?: string | null;
+                };
+            };
+            rfq_notification_queue: {
+                Row: {
+                    id: string;
+                    rfq_id: string;
+                    supplier_id: string;
+                    channel: string;
+                    payload: Json | null;
+                    status: string;
+                    attempt_count: number;
+                    last_error: string | null;
+                    created_at: string;
+                    sent_at: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    rfq_id: string;
+                    supplier_id: string;
+                    channel: string;
+                    payload?: Json | null;
+                    status?: string;
+                    attempt_count?: number;
+                    last_error?: string | null;
+                    created_at?: string;
+                    sent_at?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    rfq_id?: string;
+                    supplier_id?: string;
+                    channel?: string;
+                    payload?: Json | null;
+                    status?: string;
+                    attempt_count?: number;
+                    last_error?: string | null;
+                    created_at?: string;
+                    sent_at?: string | null;
                 };
             };
             purchase_records: {
@@ -752,70 +1128,6 @@ export interface Database {
                     storage_path?: string;
                     category?: DocumentCategory;
                     description?: string | null;
-                    created_at?: string;
-                };
-            };
-            project_milestones: {
-                Row: {
-                    id: string;
-                    project_id: string;
-                    name: string;
-                    description: string | null;
-                    target_date: string | null;
-                    completed_date: string | null;
-                    sort_order: number;
-                    status: MilestoneStatus;
-                    created_at: string;
-                };
-                Insert: {
-                    id?: string;
-                    project_id: string;
-                    name: string;
-                    description?: string | null;
-                    target_date?: string | null;
-                    completed_date?: string | null;
-                    sort_order?: number;
-                    status?: MilestoneStatus;
-                    created_at?: string;
-                };
-                Update: {
-                    id?: string;
-                    project_id?: string;
-                    name?: string;
-                    description?: string | null;
-                    target_date?: string | null;
-                    completed_date?: string | null;
-                    sort_order?: number;
-                    status?: MilestoneStatus;
-                    created_at?: string;
-                };
-            };
-            milestone_tasks: {
-                Row: {
-                    id: string;
-                    milestone_id: string;
-                    title: string;
-                    is_completed: boolean;
-                    completed_at: string | null;
-                    sort_order: number;
-                    created_at: string;
-                };
-                Insert: {
-                    id?: string;
-                    milestone_id: string;
-                    title: string;
-                    is_completed?: boolean;
-                    completed_at?: string | null;
-                    sort_order?: number;
-                    created_at?: string;
-                };
-                Update: {
-                    id?: string;
-                    milestone_id?: string;
-                    title?: string;
-                    is_completed?: boolean;
-                    completed_at?: string | null;
-                    sort_order?: number;
                     created_at?: string;
                 };
             };
@@ -1070,6 +1382,133 @@ export interface Database {
                     created_at?: string;
                 };
             };
+            supplier_applications: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    business_name: string;
+                    registration_number: string | null;
+                    business_license_url: string | null;
+                    physical_address: string | null;
+                    city: string | null;
+                    contact_phone: string | null;
+                    contact_email: string | null;
+                    website: string | null;
+                    delivery_radius_km: number;
+                    material_categories: string[];
+                    payment_terms: string | null;
+                    years_in_business: number | null;
+                    customer_references: string[] | null;
+                    status: SupplierApplicationStatus;
+                    reviewed_by: string | null;
+                    reviewed_at: string | null;
+                    rejection_reason: string | null;
+                    notes: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    business_name: string;
+                    registration_number?: string | null;
+                    business_license_url?: string | null;
+                    physical_address?: string | null;
+                    city?: string | null;
+                    contact_phone?: string | null;
+                    contact_email?: string | null;
+                    website?: string | null;
+                    delivery_radius_km?: number;
+                    material_categories?: string[];
+                    payment_terms?: string | null;
+                    years_in_business?: number | null;
+                    customer_references?: string[] | null;
+                    status?: SupplierApplicationStatus;
+                    reviewed_by?: string | null;
+                    reviewed_at?: string | null;
+                    rejection_reason?: string | null;
+                    notes?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    business_name?: string;
+                    registration_number?: string | null;
+                    business_license_url?: string | null;
+                    physical_address?: string | null;
+                    city?: string | null;
+                    contact_phone?: string | null;
+                    contact_email?: string | null;
+                    website?: string | null;
+                    delivery_radius_km?: number;
+                    material_categories?: string[];
+                    payment_terms?: string | null;
+                    years_in_business?: number | null;
+                    customer_references?: string[] | null;
+                    status?: SupplierApplicationStatus;
+                    reviewed_by?: string | null;
+                    reviewed_at?: string | null;
+                    rejection_reason?: string | null;
+                    notes?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            supplier_products: {
+                Row: {
+                    id: string;
+                    supplier_id: string;
+                    material_key: string;
+                    material_name: string | null;
+                    price_usd: number | null;
+                    price_zwg: number | null;
+                    min_order_qty: number;
+                    max_order_qty: number | null;
+                    unit: string | null;
+                    stock_status: StockStatus;
+                    lead_time_days: number;
+                    notes: string | null;
+                    is_active: boolean;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    supplier_id: string;
+                    material_key: string;
+                    material_name?: string | null;
+                    price_usd?: number | null;
+                    price_zwg?: number | null;
+                    min_order_qty?: number;
+                    max_order_qty?: number | null;
+                    unit?: string | null;
+                    stock_status?: StockStatus;
+                    lead_time_days?: number;
+                    notes?: string | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    supplier_id?: string;
+                    material_key?: string;
+                    material_name?: string | null;
+                    price_usd?: number | null;
+                    price_zwg?: number | null;
+                    min_order_qty?: number;
+                    max_order_qty?: number | null;
+                    unit?: string | null;
+                    stock_status?: StockStatus;
+                    lead_time_days?: number;
+                    notes?: string | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
         };
         Views: {
             [_ in never]: never;
@@ -1096,22 +1535,32 @@ export type BOQItem = Database['public']['Tables']['boq_items']['Row'];
 export type ProjectShare = Database['public']['Tables']['project_shares']['Row'];
 export type Material = Database['public']['Tables']['materials']['Row'];
 export type Supplier = Database['public']['Tables']['suppliers']['Row'];
+export type SupplierApiKey = Database['public']['Tables']['supplier_api_keys']['Row'];
 export type ExchangeRate = Database['public']['Tables']['exchange_rates']['Row'];
 export type Reminder = Database['public']['Tables']['reminders']['Row'];
 export type ProjectRecurringReminder = Database['public']['Tables']['project_recurring_reminders']['Row'];
 export type ProjectNotification = Database['public']['Tables']['project_notifications']['Row'];
+export type NotificationDelivery = Database['public']['Tables']['notification_deliveries']['Row'];
+export type PushSubscription = Database['public']['Tables']['push_subscriptions']['Row'];
 export type ProcurementRequest = Database['public']['Tables']['procurement_requests']['Row'];
+export type RfqRequest = Database['public']['Tables']['rfq_requests']['Row'];
+export type RfqItem = Database['public']['Tables']['rfq_items']['Row'];
+export type RfqRecipient = Database['public']['Tables']['rfq_recipients']['Row'];
+export type RfqQuote = Database['public']['Tables']['rfq_quotes']['Row'];
+export type RfqQuoteItem = Database['public']['Tables']['rfq_quote_items']['Row'];
+export type RfqNotification = Database['public']['Tables']['rfq_notification_queue']['Row'];
 export type PurchaseRecord = Database['public']['Tables']['purchase_records']['Row'];
 export type ProjectDocument = Database['public']['Tables']['project_documents']['Row'];
-export type ProjectMilestone = Database['public']['Tables']['project_milestones']['Row'];
-export type MilestoneTask = Database['public']['Tables']['milestone_tasks']['Row'];
 export type MaterialUsage = Database['public']['Tables']['material_usage']['Row'];
 export type MaterialAlias = Database['public']['Tables']['material_aliases']['Row'];
 export type ScraperConfig = Database['public']['Tables']['scraper_configs']['Row'];
 export type WeeklyPrice = Database['public']['Tables']['weekly_prices']['Row'];
+export type PriceWeekly = Database['public']['Tables']['price_weekly']['Row'];
 export type ScraperLog = Database['public']['Tables']['scraper_logs']['Row'];
 export type ProjectStage = Database['public']['Tables']['project_stages']['Row'];
 export type StageTask = Database['public']['Tables']['stage_tasks']['Row'];
+export type SupplierApplication = Database['public']['Tables']['supplier_applications']['Row'];
+export type SupplierProduct = Database['public']['Tables']['supplier_products']['Row'];
 
 // Insert types
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
@@ -1120,15 +1569,24 @@ export type BOQItemInsert = Database['public']['Tables']['boq_items']['Insert'];
 export type ReminderInsert = Database['public']['Tables']['reminders']['Insert'];
 export type ProjectRecurringReminderInsert = Database['public']['Tables']['project_recurring_reminders']['Insert'];
 export type ProjectNotificationInsert = Database['public']['Tables']['project_notifications']['Insert'];
+export type NotificationDeliveryInsert = Database['public']['Tables']['notification_deliveries']['Insert'];
+export type PushSubscriptionInsert = Database['public']['Tables']['push_subscriptions']['Insert'];
 export type ProcurementRequestInsert = Database['public']['Tables']['procurement_requests']['Insert'];
+export type RfqRequestInsert = Database['public']['Tables']['rfq_requests']['Insert'];
+export type RfqItemInsert = Database['public']['Tables']['rfq_items']['Insert'];
+export type RfqRecipientInsert = Database['public']['Tables']['rfq_recipients']['Insert'];
+export type RfqQuoteInsert = Database['public']['Tables']['rfq_quotes']['Insert'];
+export type RfqQuoteItemInsert = Database['public']['Tables']['rfq_quote_items']['Insert'];
+export type RfqNotificationInsert = Database['public']['Tables']['rfq_notification_queue']['Insert'];
 export type PurchaseRecordInsert = Database['public']['Tables']['purchase_records']['Insert'];
 export type ProjectDocumentInsert = Database['public']['Tables']['project_documents']['Insert'];
-export type ProjectMilestoneInsert = Database['public']['Tables']['project_milestones']['Insert'];
-export type MilestoneTaskInsert = Database['public']['Tables']['milestone_tasks']['Insert'];
 export type MaterialUsageInsert = Database['public']['Tables']['material_usage']['Insert'];
 export type ProjectStageInsert = Database['public']['Tables']['project_stages']['Insert'];
 export type StageTaskInsert = Database['public']['Tables']['stage_tasks']['Insert'];
 export type SupplierInsert = Database['public']['Tables']['suppliers']['Insert'];
+export type SupplierApiKeyInsert = Database['public']['Tables']['supplier_api_keys']['Insert'];
+export type SupplierApplicationInsert = Database['public']['Tables']['supplier_applications']['Insert'];
+export type SupplierProductInsert = Database['public']['Tables']['supplier_products']['Insert'];
 
 // Update types
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
@@ -1137,14 +1595,23 @@ export type BOQItemUpdate = Database['public']['Tables']['boq_items']['Update'];
 export type ReminderUpdate = Database['public']['Tables']['reminders']['Update'];
 export type ProjectRecurringReminderUpdate = Database['public']['Tables']['project_recurring_reminders']['Update'];
 export type ProjectNotificationUpdate = Database['public']['Tables']['project_notifications']['Update'];
+export type NotificationDeliveryUpdate = Database['public']['Tables']['notification_deliveries']['Update'];
+export type PushSubscriptionUpdate = Database['public']['Tables']['push_subscriptions']['Update'];
 export type ProcurementRequestUpdate = Database['public']['Tables']['procurement_requests']['Update'];
+export type RfqRequestUpdate = Database['public']['Tables']['rfq_requests']['Update'];
+export type RfqItemUpdate = Database['public']['Tables']['rfq_items']['Update'];
+export type RfqRecipientUpdate = Database['public']['Tables']['rfq_recipients']['Update'];
+export type RfqQuoteUpdate = Database['public']['Tables']['rfq_quotes']['Update'];
+export type RfqQuoteItemUpdate = Database['public']['Tables']['rfq_quote_items']['Update'];
+export type RfqNotificationUpdate = Database['public']['Tables']['rfq_notification_queue']['Update'];
 export type PurchaseRecordUpdate = Database['public']['Tables']['purchase_records']['Update'];
-export type ProjectMilestoneUpdate = Database['public']['Tables']['project_milestones']['Update'];
-export type MilestoneTaskUpdate = Database['public']['Tables']['milestone_tasks']['Update'];
 export type MaterialUsageUpdate = Database['public']['Tables']['material_usage']['Update'];
 export type ProjectStageUpdate = Database['public']['Tables']['project_stages']['Update'];
 export type StageTaskUpdate = Database['public']['Tables']['stage_tasks']['Update'];
 export type SupplierUpdate = Database['public']['Tables']['suppliers']['Update'];
+export type SupplierApiKeyUpdate = Database['public']['Tables']['supplier_api_keys']['Update'];
+export type SupplierApplicationUpdate = Database['public']['Tables']['supplier_applications']['Update'];
+export type SupplierProductUpdate = Database['public']['Tables']['supplier_products']['Update'];
 
 // Stage with tasks helper type
 export type ProjectStageWithTasks = ProjectStage & { tasks: StageTask[] };

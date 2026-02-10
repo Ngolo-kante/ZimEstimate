@@ -7,6 +7,7 @@ import { ScraperConfig } from '@/lib/database.types';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { useAuth } from '@/components/providers/AuthProvider';
 import {
     Plus,
     Trash,
@@ -22,6 +23,7 @@ import {
 } from '@phosphor-icons/react';
 
 export default function ScraperPage() {
+    const { profile, isAuthenticated, isLoading: authLoading } = useAuth();
     const [configs, setConfigs] = useState<ScraperConfig[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -30,6 +32,7 @@ export default function ScraperPage() {
     const [bulkStatus, setBulkStatus] = useState<{ total: number; completed: number; failed: number } | null>(null);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [accessToken, setAccessToken] = useState<string | null>(null);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -73,8 +76,40 @@ export default function ScraperPage() {
     }, [configs, selectedCategory, searchQuery]);
 
     useEffect(() => {
-        fetchConfigs();
-    }, []);
+        if (authLoading) return;
+        if (!isAuthenticated) {
+            window.location.href = '/auth/login?redirect=/scraper';
+            return;
+        }
+
+        const isAdmin = profile?.user_type === 'admin' || profile?.tier === 'admin';
+        if (!isAdmin) {
+            window.location.href = '/home';
+            return;
+        }
+
+        const loadSession = async () => {
+            const { data } = await supabase.auth.getSession();
+            setAccessToken(data.session?.access_token || null);
+        };
+
+        loadSession().then(fetchConfigs);
+    }, [authLoading, isAuthenticated, profile]);
+
+    const fetchWithAuth = async (input: RequestInfo | URL, init?: RequestInit) => {
+        const token = accessToken || (await supabase.auth.getSession()).data.session?.access_token;
+        if (!token) {
+            throw new Error('Missing session token.');
+        }
+
+        return fetch(input, {
+            ...init,
+            headers: {
+                ...(init?.headers || {}),
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    };
 
     const fetchConfigs = async () => {
         setLoading(true);
@@ -90,7 +125,7 @@ export default function ScraperPage() {
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this scraper?')) return;
         try {
-            const response = await fetch(`/api/scraper/${id}`, { method: 'DELETE' });
+            const response = await fetchWithAuth(`/api/scraper/${id}`, { method: 'DELETE' });
             if (!response.ok) throw new Error('Failed to delete');
             fetchConfigs();
         } catch (error: any) {
@@ -101,7 +136,7 @@ export default function ScraperPage() {
 
     const handleToggleActive = async (config: ScraperConfig) => {
         try {
-            const response = await fetch(`/api/scraper/${config.id}`, {
+            const response = await fetchWithAuth(`/api/scraper/${config.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ is_active: !config.is_active })
@@ -136,7 +171,7 @@ export default function ScraperPage() {
                     nameSelector: config.item_name_selector
                 };
 
-            const response = await fetch(endpoint, {
+            const response = await fetchWithAuth(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -191,7 +226,7 @@ export default function ScraperPage() {
 
         try {
             const configIds = activeConfigs.map(c => c.id);
-            const response = await fetch('/api/scraper/run-all', {
+            const response = await fetchWithAuth('/api/scraper/run-all', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -227,7 +262,7 @@ export default function ScraperPage() {
         e.preventDefault();
 
         try {
-            const response = await fetch('/api/scraper/create', {
+            const response = await fetchWithAuth('/api/scraper/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

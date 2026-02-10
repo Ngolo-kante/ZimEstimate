@@ -41,6 +41,7 @@ async function goToStep5(page: Page) {
   await page.getByRole('button', { name: /Entire House/ }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByRole('heading', { name: 'Labor Options', level: 2 })).toBeVisible();
+  await page.getByRole('button', { name: /Materials Only/ }).click();
   await page.getByRole('button', { name: 'Start Building BOQ' }).click();
 }
 

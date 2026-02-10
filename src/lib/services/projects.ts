@@ -11,11 +11,6 @@ import {
     ProjectStatus,
     ProjectDocument,
     ProjectDocumentInsert,
-    ProjectMilestone,
-    ProjectMilestoneInsert,
-    ProjectMilestoneUpdate,
-    MilestoneTask,
-    MilestoneTaskInsert,
     MaterialUsage,
     MaterialUsageInsert,
     ProjectRecurringReminder,
@@ -32,7 +27,7 @@ import {
     Supplier,
     SupplierInsert,
     SupplierUpdate,
-    WeeklyPrice,
+    PriceWeekly,
     ProjectShare,
     DocumentCategory,
     SavingsFrequency,
@@ -47,6 +42,7 @@ const db = supabase as any;
 // PROJECT CRUD OPERATIONS
 // ============================================
 
+/** Create a new project for the authenticated user. */
 export async function createProject(data: {
     name: string;
     location?: string;
@@ -89,6 +85,7 @@ export async function createProject(data: {
     return { project, error: null };
 }
 
+/** Fetch a single project by id. */
 export async function getProject(projectId: string): Promise<{ project: Project | null; error: Error | null }> {
     const { data: project, error } = await db
         .from('projects')
@@ -103,6 +100,7 @@ export async function getProject(projectId: string): Promise<{ project: Project 
     return { project, error: null };
 }
 
+/** Fetch projects for the current user with optional filters. */
 export async function getProjects(options?: {
     status?: ProjectStatus;
     limit?: number;
@@ -134,6 +132,7 @@ export async function getProjects(options?: {
     return { projects: projects || [], error: null };
 }
 
+/** Update a project by id. */
 export async function updateProject(
     projectId: string,
     updates: ProjectUpdate
@@ -152,6 +151,7 @@ export async function updateProject(
     return { project, error: null };
 }
 
+/** Permanently delete a project by id. */
 export async function deleteProject(projectId: string): Promise<{ error: Error | null }> {
     // First delete all BOQ items associated with this project
     const { error: itemsError } = await deleteBOQItems(projectId);
@@ -172,10 +172,12 @@ export async function deleteProject(projectId: string): Promise<{ error: Error |
     return { error: null };
 }
 
+/** Archive a project by id. */
 export async function archiveProject(projectId: string): Promise<{ project: Project | null; error: Error | null }> {
     return updateProject(projectId, { status: 'archived' });
 }
 
+/** Restore an archived project by id. */
 export async function unarchiveProject(projectId: string): Promise<{ project: Project | null; error: Error | null }> {
     return updateProject(projectId, { status: 'draft' });
 }
@@ -184,6 +186,7 @@ export async function unarchiveProject(projectId: string): Promise<{ project: Pr
 // BOQ ITEMS CRUD OPERATIONS
 // ============================================
 
+/** Fetch BOQ items for a project. */
 export async function getBOQItems(projectId: string): Promise<{ items: BOQItem[]; error: Error | null }> {
     const { data: items, error } = await db
         .from('boq_items')
@@ -198,6 +201,7 @@ export async function getBOQItems(projectId: string): Promise<{ items: BOQItem[]
     return { items: items || [], error: null };
 }
 
+/** Add a single BOQ item to a project. */
 export async function addBOQItem(data: BOQItemInsert): Promise<{ item: BOQItem | null; error: Error | null }> {
     const { data: item, error } = await db
         .from('boq_items')
@@ -212,6 +216,7 @@ export async function addBOQItem(data: BOQItemInsert): Promise<{ item: BOQItem |
     return { item, error: null };
 }
 
+/** Add multiple BOQ items in bulk. */
 export async function addBOQItems(items: BOQItemInsert[]): Promise<{ items: BOQItem[]; error: Error | null }> {
     if (items.length === 0) {
         return { items: [], error: null };
@@ -229,6 +234,7 @@ export async function addBOQItems(items: BOQItemInsert[]): Promise<{ items: BOQI
     return { items: addedItems || [], error: null };
 }
 
+/** Update a BOQ item by id. */
 export async function updateBOQItem(
     itemId: string,
     updates: BOQItemUpdate
@@ -250,6 +256,7 @@ export async function updateBOQItem(
     return { item, error: null };
 }
 
+/** Delete a BOQ item by id. */
 export async function deleteBOQItem(itemId: string): Promise<{ error: Error | null }> {
     const { error } = await db
         .from('boq_items')
@@ -263,6 +270,7 @@ export async function deleteBOQItem(itemId: string): Promise<{ error: Error | nu
     return { error: null };
 }
 
+/** Delete all BOQ items for a project. */
 export async function deleteBOQItems(projectId: string): Promise<{ error: Error | null }> {
     const { error } = await db
         .from('boq_items')
@@ -280,6 +288,7 @@ export async function deleteBOQItems(projectId: string): Promise<{ error: Error 
 // COMBINED OPERATIONS
 // ============================================
 
+/** Fetch a project and its BOQ items. */
 export async function getProjectWithItems(projectId: string): Promise<{
     project: Project | null;
     items: BOQItem[];
@@ -305,6 +314,7 @@ export async function getProjectWithItems(projectId: string): Promise<{
     };
 }
 
+/** Save a project and replace its BOQ items. */
 export async function saveProjectWithItems(
     projectId: string,
     projectUpdates: ProjectUpdate,
@@ -362,6 +372,7 @@ export async function saveProjectWithItems(
 // UTILITY FUNCTIONS
 // ============================================
 
+/** Determine if the current user can create another project based on tier limits. */
 export async function canUserCreateProject(): Promise<boolean> {
     const { data: { user } } = await db.auth.getUser();
 
@@ -391,6 +402,7 @@ export async function canUserCreateProject(): Promise<boolean> {
     return (count || 0) < 3;
 }
 
+/** Duplicate an existing project with its BOQ items. */
 export async function duplicateProject(projectId: string, newName?: string): Promise<{
     project: Project | null;
     error: Error | null;
@@ -442,6 +454,7 @@ export async function duplicateProject(projectId: string, newName?: string): Pro
 // PURCHASE TRACKING OPERATIONS
 // ============================================
 
+/** Update purchase metadata for a BOQ item. */
 export async function updateItemPurchase(
     itemId: string,
     purchaseData: {
@@ -454,6 +467,7 @@ export async function updateItemPurchase(
     return updateBOQItem(itemId, purchaseData);
 }
 
+/** Mark BOQ items as purchased and update totals. */
 export async function markItemsPurchased(
     itemIds: string[],
     purchaseData?: {
@@ -479,6 +493,7 @@ export async function markItemsPurchased(
     return { error: null };
 }
 
+/** Fetch purchase stats for a project. */
 export async function getProjectPurchaseStats(projectId: string): Promise<{
     totalItems: number;
     purchasedItems: number;
@@ -528,6 +543,7 @@ export async function getProjectPurchaseStats(projectId: string): Promise<{
 // REMINDER OPERATIONS
 // ============================================
 
+/** Create a one-off reminder for a project. */
 export async function createReminder(data: {
     project_id: string;
     item_id?: string;
@@ -568,6 +584,7 @@ export async function createReminder(data: {
 // RECURRING REMINDERS
 // ============================================
 
+/** Fetch the recurring reminder settings for a project. */
 export async function getProjectRecurringReminder(
     projectId: string,
     userId: string,
@@ -588,6 +605,7 @@ export async function getProjectRecurringReminder(
     return { reminder: reminder || null, error: null };
 }
 
+/** Create or replace recurring reminder settings. */
 export async function upsertProjectRecurringReminder(
     data: ProjectRecurringReminderInsert
 ): Promise<{ reminder: ProjectRecurringReminder | null; error: Error | null }> {
@@ -604,6 +622,7 @@ export async function upsertProjectRecurringReminder(
     return { reminder, error: null };
 }
 
+/** Update recurring reminder settings by id. */
 export async function updateProjectRecurringReminder(
     reminderId: string,
     updates: ProjectRecurringReminderUpdate
@@ -626,6 +645,7 @@ export async function updateProjectRecurringReminder(
 // PROJECT NOTIFICATIONS
 // ============================================
 
+/** Create a project notification for a user. */
 export async function createProjectNotification(
     data: ProjectNotificationInsert
 ): Promise<{ notification: ProjectNotification | null; error: Error | null }> {
@@ -642,6 +662,7 @@ export async function createProjectNotification(
     return { notification, error: null };
 }
 
+/** Fetch notifications for a user within a project. */
 export async function getProjectNotifications(
     userId: string
 ): Promise<{ notifications: ProjectNotification[]; error: Error | null }> {
@@ -658,6 +679,7 @@ export async function getProjectNotifications(
     return { notifications: notifications || [], error: null };
 }
 
+/** Mark a notification as read. */
 export async function markNotificationRead(
     notificationId: string
 ): Promise<{ error: Error | null }> {
@@ -673,6 +695,7 @@ export async function markNotificationRead(
     return { error: null };
 }
 
+/** Mark all notifications as read for a user and project. */
 export async function markAllNotificationsRead(
     userId: string
 ): Promise<{ error: Error | null }> {
@@ -689,6 +712,7 @@ export async function markAllNotificationsRead(
     return { error: null };
 }
 
+/** Fetch the latest notification for a user and project. */
 export async function getLatestProjectNotification(
     projectId: string,
     userId: string,
@@ -711,6 +735,7 @@ export async function getLatestProjectNotification(
     return { notification: notification || null, error: null };
 }
 
+/** Delete a project notification by id. */
 export async function deleteProjectNotification(
     notificationId: string
 ): Promise<{ error: Error | null }> {
@@ -730,6 +755,7 @@ export async function deleteProjectNotification(
 // PRICE LOOKUPS
 // ============================================
 
+/** Fetch latest weekly prices for a list of materials. */
 export async function getLatestWeeklyPrices(materialCodes: string[]): Promise<{
     prices: Record<string, { priceUsd: number; lastUpdated: string; sourceUrl?: string | null }>;
     error: Error | null;
@@ -739,10 +765,10 @@ export async function getLatestWeeklyPrices(materialCodes: string[]): Promise<{
     }
 
     const { data, error } = await db
-        .from('weekly_prices')
-        .select('material_code, average_price, currency, source_url, last_updated')
-        .in('material_code', materialCodes)
-        .order('last_updated', { ascending: false });
+        .from('price_weekly')
+        .select('material_key, avg_price_usd, week_start, last_scraped_at, updated_at')
+        .in('material_key', materialCodes)
+        .order('week_start', { ascending: false });
 
     if (error) {
         return { prices: {}, error: new Error(error.message) };
@@ -750,14 +776,12 @@ export async function getLatestWeeklyPrices(materialCodes: string[]): Promise<{
 
     const prices: Record<string, { priceUsd: number; lastUpdated: string; sourceUrl?: string | null }> = {};
 
-    (data as WeeklyPrice[] | null)?.forEach((row) => {
-        if (!row.material_code || row.average_price === null) return;
-        if (row.currency && row.currency.toUpperCase() !== 'USD') return;
-        if (!prices[row.material_code]) {
-            prices[row.material_code] = {
-                priceUsd: Number(row.average_price),
-                lastUpdated: row.last_updated,
-                sourceUrl: row.source_url,
+    (data as PriceWeekly[] | null)?.forEach((row) => {
+        if (!row.material_key || row.avg_price_usd === null) return;
+        if (!prices[row.material_key]) {
+            prices[row.material_key] = {
+                priceUsd: Number(row.avg_price_usd),
+                lastUpdated: row.last_scraped_at || row.updated_at,
             };
         }
     });
@@ -769,6 +793,7 @@ export async function getLatestWeeklyPrices(materialCodes: string[]): Promise<{
 // PROCUREMENT REQUESTS
 // ============================================
 
+/** Create a procurement request. */
 export async function createProcurementRequest(
     data: ProcurementRequestInsert
 ): Promise<{ request: ProcurementRequest | null; error: Error | null }> {
@@ -785,6 +810,7 @@ export async function createProcurementRequest(
     return { request, error: null };
 }
 
+/** Fetch procurement requests for a project. */
 export async function getProcurementRequests(
     projectId: string
 ): Promise<{ requests: ProcurementRequest[]; error: Error | null }> {
@@ -801,6 +827,7 @@ export async function getProcurementRequests(
     return { requests: requests || [], error: null };
 }
 
+/** Update a procurement request by id. */
 export async function updateProcurementRequest(
     requestId: string,
     updates: ProcurementRequestUpdate
@@ -823,6 +850,7 @@ export async function updateProcurementRequest(
 // PURCHASE RECORDS
 // ============================================
 
+/** Fetch purchase records for a project. */
 export async function getPurchaseRecords(projectId: string): Promise<{
     records: PurchaseRecord[];
     error: Error | null;
@@ -840,6 +868,7 @@ export async function getPurchaseRecords(projectId: string): Promise<{
     return { records: records || [], error: null };
 }
 
+/** Create a new purchase record. */
 export async function createPurchaseRecord(
     data: Omit<PurchaseRecordInsert, 'created_by'>
 ): Promise<{ record: PurchaseRecord | null; error: Error | null }> {
@@ -866,6 +895,7 @@ export async function createPurchaseRecord(
     return { record, error: null };
 }
 
+/** Update a purchase record by id. */
 export async function updatePurchaseRecord(
     recordId: string,
     updates: PurchaseRecordUpdate
@@ -884,6 +914,7 @@ export async function updatePurchaseRecord(
     return { record, error: null };
 }
 
+/** Delete a purchase record by id. */
 export async function deletePurchaseRecord(recordId: string): Promise<{ error: Error | null }> {
     const { error } = await db
         .from('purchase_records')
@@ -901,10 +932,12 @@ export async function deletePurchaseRecord(recordId: string): Promise<{ error: E
 // SUPPLIERS
 // ============================================
 
+/** Fetch active suppliers for procurement workflows. */
 export async function getSuppliers(): Promise<{ suppliers: Supplier[]; error: Error | null }> {
     const { data: suppliers, error } = await db
         .from('suppliers')
         .select('*')
+        .is('deleted_at', null)
         .order('name', { ascending: true });
 
     if (error) {
@@ -914,6 +947,7 @@ export async function getSuppliers(): Promise<{ suppliers: Supplier[]; error: Er
     return { suppliers: suppliers || [], error: null };
 }
 
+/** Create a supplier record. */
 export async function createSupplier(
     data: SupplierInsert
 ): Promise<{ supplier: Supplier | null; error: Error | null }> {
@@ -930,6 +964,7 @@ export async function createSupplier(
     return { supplier, error: null };
 }
 
+/** Update a supplier record. */
 export async function updateSupplier(
     supplierId: string,
     updates: SupplierUpdate
@@ -938,6 +973,7 @@ export async function updateSupplier(
         .from('suppliers')
         .update(updates)
         .eq('id', supplierId)
+        .is('deleted_at', null)
         .select()
         .single();
 
@@ -948,11 +984,13 @@ export async function updateSupplier(
     return { supplier, error: null };
 }
 
+/** Soft-delete a supplier by id. */
 export async function deleteSupplier(supplierId: string): Promise<{ error: Error | null }> {
     const { error } = await db
         .from('suppliers')
-        .delete()
-        .eq('id', supplierId);
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', supplierId)
+        .is('deleted_at', null);
 
     if (error) {
         return { error: new Error(error.message) };
@@ -961,6 +999,7 @@ export async function deleteSupplier(supplierId: string): Promise<{ error: Error
     return { error: null };
 }
 
+/** Fetch reminders for a project. */
 export async function getReminders(projectId: string): Promise<{
     reminders: Array<{
         id: string;
@@ -984,6 +1023,7 @@ export async function getReminders(projectId: string): Promise<{
     return { reminders: reminders || [], error: null };
 }
 
+/** Delete a reminder by id. */
 export async function deleteReminder(reminderId: string): Promise<{ error: Error | null }> {
     const { error } = await db
         .from('reminders')
@@ -998,6 +1038,7 @@ export async function deleteReminder(reminderId: string): Promise<{ error: Error
 }
 
 // Generate WhatsApp message link for reminders
+/** Build a WhatsApp deeplink for a reminder message. */
 export function generateWhatsAppReminderLink(
     phoneNumber: string,
     message: string
@@ -1012,6 +1053,7 @@ export function generateWhatsAppReminderLink(
 // DASHBOARD AGGREGATION OPERATIONS
 // ============================================
 
+/** Fetch all reminders across projects. */
 export async function getAllReminders(): Promise<{
     reminders: Array<{
         id: string;
@@ -1064,6 +1106,7 @@ export async function getAllReminders(): Promise<{
     return { reminders: formattedReminders, error: null };
 }
 
+/** Aggregate budget stats across projects. */
 export async function getAggregatedBudgetStats(): Promise<{
     totalBudget: number;
     totalSpent: number;
@@ -1096,6 +1139,7 @@ export async function getAggregatedBudgetStats(): Promise<{
     };
 }
 
+/** Fetch project counts grouped by status. */
 export async function getProjectsGroupedByStatus(): Promise<{
     active: Project[];
     draft: Project[];
@@ -1120,6 +1164,7 @@ export async function getProjectsGroupedByStatus(): Promise<{
 // DOCUMENT OPERATIONS
 // ============================================
 
+/** Upload a document to project storage. */
 export async function uploadDocument(
     projectId: string,
     file: File,
@@ -1173,6 +1218,7 @@ export async function uploadDocument(
     return { document, error: null };
 }
 
+/** Fetch documents for a project. */
 export async function getProjectDocuments(
     projectId: string,
     category?: DocumentCategory
@@ -1196,6 +1242,7 @@ export async function getProjectDocuments(
     return { documents: documents || [], error: null };
 }
 
+/** Delete a project document and storage blob. */
 export async function deleteDocument(documentId: string): Promise<{ error: Error | null }> {
     // Get document to find storage path
     const { data: document, error: fetchError } = await db
@@ -1226,6 +1273,7 @@ export async function deleteDocument(documentId: string): Promise<{ error: Error
     return { error: null };
 }
 
+/** Create a signed URL for a stored document. */
 export async function getDocumentUrl(storagePath: string): Promise<string | null> {
     const { data } = await db.storage
         .from('project-documents')
@@ -1235,198 +1283,10 @@ export async function getDocumentUrl(storagePath: string): Promise<string | null
 }
 
 // ============================================
-// MILESTONE OPERATIONS
-// ============================================
-
-export async function createMilestone(
-    projectId: string,
-    data: { name: string; description?: string; targetDate?: string }
-): Promise<{ milestone: ProjectMilestone | null; error: Error | null }> {
-    // Get current max sort_order
-    const { data: existing } = await db
-        .from('project_milestones')
-        .select('sort_order')
-        .eq('project_id', projectId)
-        .order('sort_order', { ascending: false })
-        .limit(1);
-
-    const nextOrder = (existing?.[0]?.sort_order || 0) + 1;
-
-    const milestoneData: ProjectMilestoneInsert = {
-        project_id: projectId,
-        name: data.name,
-        description: data.description || null,
-        target_date: data.targetDate || null,
-        sort_order: nextOrder,
-        status: 'pending',
-    };
-
-    const { data: milestone, error } = await db
-        .from('project_milestones')
-        .insert(milestoneData)
-        .select()
-        .single();
-
-    if (error) {
-        return { milestone: null, error: new Error(error.message) };
-    }
-
-    return { milestone, error: null };
-}
-
-export async function getMilestones(projectId: string): Promise<{
-    milestones: (ProjectMilestone & { tasks: MilestoneTask[] })[];
-    error: Error | null;
-}> {
-    const { data: milestones, error } = await db
-        .from('project_milestones')
-        .select(`
-            *,
-            milestone_tasks (*)
-        `)
-        .eq('project_id', projectId)
-        .order('sort_order', { ascending: true });
-
-    if (error) {
-        return { milestones: [], error: new Error(error.message) };
-    }
-
-    // Sort tasks within each milestone
-    const sortedMilestones = (milestones || []).map((m: ProjectMilestone & { milestone_tasks: MilestoneTask[] }) => ({
-        ...m,
-        tasks: (m.milestone_tasks || []).sort((a: MilestoneTask, b: MilestoneTask) => a.sort_order - b.sort_order),
-    }));
-
-    return { milestones: sortedMilestones, error: null };
-}
-
-export async function updateMilestone(
-    milestoneId: string,
-    updates: ProjectMilestoneUpdate
-): Promise<{ milestone: ProjectMilestone | null; error: Error | null }> {
-    const { data: milestone, error } = await db
-        .from('project_milestones')
-        .update(updates)
-        .eq('id', milestoneId)
-        .select()
-        .single();
-
-    if (error) {
-        return { milestone: null, error: new Error(error.message) };
-    }
-
-    return { milestone, error: null };
-}
-
-export async function deleteMilestone(milestoneId: string): Promise<{ error: Error | null }> {
-    const { error } = await db
-        .from('project_milestones')
-        .delete()
-        .eq('id', milestoneId);
-
-    if (error) {
-        return { error: new Error(error.message) };
-    }
-
-    return { error: null };
-}
-
-export async function reorderMilestones(
-    projectId: string,
-    orderedIds: string[]
-): Promise<{ error: Error | null }> {
-    // Update each milestone's sort_order
-    for (let i = 0; i < orderedIds.length; i++) {
-        const { error } = await db
-            .from('project_milestones')
-            .update({ sort_order: i })
-            .eq('id', orderedIds[i])
-            .eq('project_id', projectId);
-
-        if (error) {
-            return { error: new Error(error.message) };
-        }
-    }
-
-    return { error: null };
-}
-
-// ============================================
-// TASK OPERATIONS
-// ============================================
-
-export async function createTask(
-    milestoneId: string,
-    title: string
-): Promise<{ task: MilestoneTask | null; error: Error | null }> {
-    // Get current max sort_order
-    const { data: existing } = await db
-        .from('milestone_tasks')
-        .select('sort_order')
-        .eq('milestone_id', milestoneId)
-        .order('sort_order', { ascending: false })
-        .limit(1);
-
-    const nextOrder = (existing?.[0]?.sort_order || 0) + 1;
-
-    const taskData: MilestoneTaskInsert = {
-        milestone_id: milestoneId,
-        title,
-        sort_order: nextOrder,
-        is_completed: false,
-    };
-
-    const { data: task, error } = await db
-        .from('milestone_tasks')
-        .insert(taskData)
-        .select()
-        .single();
-
-    if (error) {
-        return { task: null, error: new Error(error.message) };
-    }
-
-    return { task, error: null };
-}
-
-export async function toggleTask(
-    taskId: string,
-    completed: boolean
-): Promise<{ task: MilestoneTask | null; error: Error | null }> {
-    const { data: task, error } = await db
-        .from('milestone_tasks')
-        .update({
-            is_completed: completed,
-            completed_at: completed ? new Date().toISOString() : null,
-        })
-        .eq('id', taskId)
-        .select()
-        .single();
-
-    if (error) {
-        return { task: null, error: new Error(error.message) };
-    }
-
-    return { task, error: null };
-}
-
-export async function deleteTask(taskId: string): Promise<{ error: Error | null }> {
-    const { error } = await db
-        .from('milestone_tasks')
-        .delete()
-        .eq('id', taskId);
-
-    if (error) {
-        return { error: new Error(error.message) };
-    }
-
-    return { error: null };
-}
-
-// ============================================
 // USAGE TRACKING OPERATIONS
 // ============================================
 
+/** Record material usage against a BOQ item. */
 export async function recordUsage(
     projectId: string,
     boqItemId: string,
@@ -1462,6 +1322,7 @@ export async function recordUsage(
     return { usage, error: null };
 }
 
+/** Fetch usage history for a project. */
 export async function getUsageHistory(projectId: string): Promise<{
     usage: MaterialUsage[];
     error: Error | null;
@@ -1479,6 +1340,7 @@ export async function getUsageHistory(projectId: string): Promise<{
     return { usage: usage || [], error: null };
 }
 
+/** Summarize usage for a BOQ item. */
 export async function getItemUsageSummary(boqItemId: string): Promise<{
     totalUsed: number;
     records: MaterialUsage[];
@@ -1499,6 +1361,7 @@ export async function getItemUsageSummary(boqItemId: string): Promise<{
     return { totalUsed, records: records || [], error: null };
 }
 
+/** Aggregate usage totals by BOQ item for a project. */
 export async function getTotalUsageByItem(projectId: string): Promise<{
     usageByItem: Record<string, number>;
     error: Error | null;
@@ -1520,6 +1383,7 @@ export async function getTotalUsageByItem(projectId: string): Promise<{
     return { usageByItem, error: null };
 }
 
+/** Delete a usage record by id. */
 export async function deleteUsageRecord(usageId: string): Promise<{ error: Error | null }> {
     const { error } = await db
         .from('material_usage')
@@ -1537,6 +1401,7 @@ export async function deleteUsageRecord(usageId: string): Promise<{ error: Error
 // SHARING OPERATIONS
 // ============================================
 
+/** Share a project with another user. */
 export async function shareProject(
     projectId: string,
     email: string,
@@ -1581,6 +1446,7 @@ export async function shareProject(
     return { share, error: null };
 }
 
+/** Fetch sharing records for a project. */
 export async function getProjectShares(projectId: string): Promise<{
     shares: ProjectShare[];
     error: Error | null;
@@ -1598,6 +1464,7 @@ export async function getProjectShares(projectId: string): Promise<{
     return { shares: shares || [], error: null };
 }
 
+/** Update access level for a project share. */
 export async function updateShareAccess(
     shareId: string,
     accessLevel: AccessLevel
@@ -1616,6 +1483,7 @@ export async function updateShareAccess(
     return { share, error: null };
 }
 
+/** Remove a project share by id. */
 export async function removeShare(shareId: string): Promise<{ error: Error | null }> {
     const { error } = await db
         .from('project_shares')
@@ -1629,6 +1497,7 @@ export async function removeShare(shareId: string): Promise<{ error: Error | nul
     return { error: null };
 }
 
+/** Fetch projects shared with the current user. */
 export async function getSharedProjects(): Promise<{
     projects: Project[];
     error: Error | null;
@@ -1681,6 +1550,7 @@ export interface SavingsPlan {
     periodLabel: string;
 }
 
+/** Calculate a savings plan based on project budget and schedule. */
 export async function calculateSavingsPlan(
     projectId: string,
     targetDate: string,

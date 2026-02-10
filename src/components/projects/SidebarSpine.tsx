@@ -7,8 +7,7 @@ import {
     House,
     CurrencyCircleDollar,
     ListChecks,
-    ChartLineUp,
-    ClipboardText,
+    Clipboard,
     Truck,
     Files,
     Gear,
@@ -18,7 +17,7 @@ import {
 import { Project } from '@/lib/database.types';
 import { getProjects } from '@/lib/services/projects';
 
-export type ProjectView = 'overview' | 'budget' | 'boq' | 'tracking' | 'usage' | 'procurement' | 'documents' | 'settings';
+export type ProjectView = 'overview' | 'budget' | 'boq' | 'procurement' | 'usage' | 'documents' | 'settings';
 
 interface SidebarSpineProps {
     project: Project;
@@ -33,9 +32,8 @@ const navItems: { id: ProjectView; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Overview', icon: <House size={20} /> },
     { id: 'budget', label: 'Budget Planner', icon: <CurrencyCircleDollar size={20} /> },
     { id: 'boq', label: 'Bill of Quantities', icon: <ListChecks size={20} /> },
-    { id: 'tracking', label: 'Tracking & Timeline', icon: <ChartLineUp size={20} /> },
-    { id: 'usage', label: 'Usage', icon: <ClipboardText size={20} /> },
-    { id: 'procurement', label: 'Procurement', icon: <Truck size={20} /> },
+    { id: 'procurement', label: 'Procurement Hub', icon: <Truck size={20} /> },
+    { id: 'usage', label: 'Usage Tracking', icon: <Clipboard size={20} /> },
     { id: 'documents', label: 'Documents', icon: <Files size={20} /> },
     { id: 'settings', label: 'Configurations', icon: <Gear size={20} /> },
 ];

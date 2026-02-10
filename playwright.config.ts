@@ -1,5 +1,8 @@
 import { defineConfig } from '@playwright/test';
 
+// Avoid NO_COLOR/FORCE_COLOR conflict warnings in Playwright's web server.
+delete process.env.NO_COLOR;
+
 const host = process.env.PLAYWRIGHT_HOST ?? '127.0.0.1';
 const port = Number(process.env.PLAYWRIGHT_PORT ?? process.env.PORT ?? 3000);
 
