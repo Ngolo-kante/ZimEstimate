@@ -22,6 +22,7 @@ import ProjectSettings from '@/components/projects/ProjectSettings';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useReveal } from '@/hooks/useReveal';
 import {
     getProjectWithItems,
     getBOQItems,
@@ -137,6 +138,8 @@ function ProjectDetailContent() {
     const [activeTab, setActiveTab] = useState<BOQCategory>('substructure');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [isMobileDetail, setIsMobileDetail] = useState(false);
+
+    useReveal({ deps: [isLoading, activeView, activeTab] });
 
     // Mobile detection for project detail
     useEffect(() => {
@@ -736,11 +739,15 @@ function ProjectDetailContent() {
                         align-items: center;
                         justify-content: center;
                         min-height: 400px;
-                        gap: var(--spacing-md);
+                        gap: var(--space-4);
                         text-align: center;
                         color: var(--color-text-muted);
+                        background: var(--color-surface);
+                        border-radius: var(--card-radius);
+                        border: 1px solid var(--color-border);
+                        margin: var(--space-8);
                     }
-                    h2 { color: var(--color-text); margin: 0; }
+                    h2 { color: var(--color-text); margin: 0; font-family: var(--font-heading); }
                     p { color: var(--color-text-secondary); margin: 0; }
                 `}</style>
             </MainLayout>
@@ -775,7 +782,7 @@ function ProjectDetailContent() {
 
     return (
         <MainLayout title={project.name} fullWidth>
-            <div className="flex bg-slate-50 min-h-[calc(100vh-64px)]">
+            <div className="flex bg-background min-h-[calc(100vh-64px)]">
                 <SidebarSpine
                     project={project}
                     activeView={activeView}
@@ -784,178 +791,205 @@ function ProjectDetailContent() {
                     onMobileClose={() => setIsMobileSidebarOpen(false)}
                 />
 
-                <main className="flex-1 overflow-y-auto h-[calc(100vh-64px)] p-6 md:p-8">
+                <main className="flex-1 overflow-y-auto h-[calc(100vh-64px)] p-6 md:p-8 bg-background">
                     {/* OVERVIEW View */}
                     {activeView === 'overview' && (
-                        <div className="space-y-8 max-w-6xl mx-auto">
+                        <div className="space-y-8 max-w-6xl mx-auto reveal" data-delay="1">
                             <div className="flex justify-between items-start">
                                 <div>
                                     {/* Breadcrumbs */}
-                                    <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+                                    <div className="flex items-center gap-2 text-sm text-secondary mb-2">
                                         <Link
                                             href="/projects"
-                                            className="hover:text-blue-600 transition-colors"
+                                            className="hover:text-accent transition-colors"
                                         >
                                             My Projects
                                         </Link>
-                                        <span className="text-slate-400">/</span>
-                                        <span className="text-slate-900 font-medium truncate max-w-[200px]">
-                                            {project.name}
-                                        </span>
+                                        <span className="text-secondary">/</span>
+                                        <span className="text-primary font-medium">{project.name}</span>
                                     </div>
-                                    <h1 className="text-3xl font-bold text-slate-800 mb-2">{project.name}</h1>
-                                    <div className="flex items-center gap-4 text-slate-500 text-sm">
-                                        <span className="flex items-center gap-1"><MapPin size={16} /> {project.location || 'No Location'}</span>
-                                        <span className={`flex items-center gap-1 px-2 py-0.5 rounded-md font-medium capitalize ${statusColors[project.status] === 'success' ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                                            {project.status}
+                                    <h1 className="text-3xl font-bold text-primary font-heading">{project.name}</h1>
+                                    <div className="flex items-center gap-2 text-sm text-secondary mt-1">
+                                        <MapPin size={16} />
+                                        {project.location || 'No location set'}
+                                        <span className="mx-2">•</span>
+                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium bg-${statusColors[project.status]}-soft text-${statusColors[project.status]}`}>
+                                            {project.status.toUpperCase()}
                                         </span>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button variant="secondary" onClick={() => setShowShareModal(true)} icon={<ShareNetwork size={18} />}>Share</Button>
-                                    <Link href={`/projects/${projectId}/export`}>
-                                        <Button variant="secondary" icon={<DownloadSimple size={18} />}>Export</Button>
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => setShowShareModal(true)}
+                                        icon={<ShareNetwork size={16} />}
+                                    >
+                                        Share
+                                    </Button>
+                                    <Link href={`/boq/edit/${project.id}`}>
+                                        <Button
+                                            size="sm"
+                                            icon={<PencilSimple size={16} />}
+                                        >
+                                            Edit Project
+                                        </Button>
                                     </Link>
                                 </div>
                             </div>
 
-                            {/* Running Total Bar - TurboTax-inspired */}
-                            <RunningTotalBar
-                                totalUSD={purchaseStats.estimatedTotal}
-                                totalZWG={purchaseStats.estimatedTotal * exchangeRate}
-                                budgetTargetUSD={project.budget_target_usd}
-                                completionPercentage={purchaseStats.totalItems > 0
-                                    ? Math.round((purchaseStats.purchasedItems / purchaseStats.totalItems) * 100)
-                                    : 0}
-                                projectName={project.name}
-                            />
+                            {/* Price Update Alert */}
+                            {priceUpdates.length > 0 && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 reveal" data-delay="2">
+                                    <div className="flex items-start gap-3">
+                                        <div className="bg-white p-2 rounded-lg text-blue-600 shadow-sm">
+                                            <TrendUp size={20} weight="bold" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold text-blue-900">Price Updates Available</h4>
+                                            <p className="text-sm text-blue-700 mt-1">
+                                                New market prices detected for {priceUpdatePreview}.
+                                                Updating will adjust your estimated totals.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 w-full sm:w-auto">
+                                        <Button
+                                            size="sm"
+                                            variant="secondary"
+                                            onClick={handleIgnorePriceUpdates}
+                                            className="bg-white hover:bg-blue-50 text-blue-700 border-blue-200"
+                                        >
+                                            Ignore
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            onClick={handleApplyPriceUpdates}
+                                            isLoading={isPriceUpdateLoading}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white border-none"
+                                        >
+                                            Apply Updates
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
 
-                            {/* Stage Progress Cards */}
-                            <div>
-                                <h3 className="text-lg font-semibold text-slate-800 mb-4">Build Progress</h3>
+                            {/* Project Progress/Timeline */}
+                            <section className="reveal" data-delay="3">
+                                <h3 className="section-title mb-4">Construction Progress</h3>
                                 <StageProgressCards
                                     stages={stages}
-                                    items={items}
-                                    onStageClick={(category) => {
-                                        setActiveTab(category);
-                                        setActiveView('boq');
-                                    }}
+                                    usageByStage={usageByStage}
+                                    activeTab={activeTab}
+                                    onTabChange={setActiveTab}
                                 />
-                            </div>
+                            </section>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {/* Total Budget - Primary Funding */}
-                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        <Wallet size={80} weight="duotone" className="text-blue-500" />
-                                    </div>
-                                    <div className="relative z-10">
-                                        <p className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-1">Total Budget</p>
-                                        <div className="text-3xl font-bold text-slate-900 mb-2">
-                                            <PriceDisplay priceUsd={purchaseStats.estimatedTotal} priceZwg={purchaseStats.estimatedTotal * exchangeRate} />
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                {/* Left Column - Budget & Planning */}
+                                <div className="lg:col-span-2 space-y-8">
+                                    {/* Budget Planner */}
+                                    <section className="bg-surface border border-border rounded-xl p-6 shadow-card reveal" data-delay="4">
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
+                                                <Wallet size={24} weight="duotone" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-primary font-heading">Budget Planner</h3>
+                                                <p className="text-sm text-secondary">Track savings towards your construction goals</p>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 w-fit px-2 py-1 rounded-md">
-                                            <Info size={14} weight="fill" className="text-blue-500" />
-                                            <span>Estimated cost</span>
+
+                                        <BudgetPlanner
+                                            totalCost={project.total_usd || 0}
+                                            targetDate={project.target_purchase_date || null}
+                                            onTargetDateChange={handleSavingsTargetDateChange}
+                                            setReminder={handleSavingsReminder}
+                                            onRequestPhone={handleRequestPhone}
+                                            hasPhone={!!profile?.phone_number}
+                                            scheduledReminder={savingsReminder}
+                                            onToggleReminder={handleToggleSavingsReminder}
+                                            currency="USD"
+                                        />
+                                    </section>
+
+                                    {/* Recent Activity / Next Steps */}
+                                    <section className="bg-surface border border-border rounded-xl p-6 shadow-card reveal" data-delay="5">
+                                        <h3 className="text-lg font-bold text-primary mb-4 font-heading">Next Steps</h3>
+                                        <div className="space-y-4">
+                                            {items.filter(i => !i.is_purchased).slice(0, 3).map(item => (
+                                                <div key={item.id} className="flex items-center justify-between p-3 bg-mist rounded-lg">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-2 h-2 rounded-full bg-accent"></div>
+                                                        <span className="font-medium text-primary">{item.material_name}</span>
+                                                    </div>
+                                                    <Button size="sm" variant="secondary" onClick={() => setActiveView('procurement')}>
+                                                        Purchase
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                            {items.filter(i => !i.is_purchased).length === 0 && (
+                                                <div className="text-center py-8 text-secondary">
+                                                    <CheckCircle size={32} className="mx-auto mb-2 text-green-500" />
+                                                    <p>All items purchased! Great job.</p>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
+                                    </section>
                                 </div>
 
-                                {/* Actual Spend - Tracking */}
-                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        <TrendUp size={80} weight="duotone" className={purchaseStats.totalVariance <= 0 ? 'text-green-500' : 'text-orange-500'} />
-                                    </div>
-                                    <div className="relative z-10">
-                                        <p className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-1">Actual Spend</p>
-                                        <div className="text-3xl font-bold text-slate-900 mb-2">
-                                            <PriceDisplay priceUsd={purchaseStats.actualTotal} priceZwg={purchaseStats.actualTotal * exchangeRate} />
+                                {/* Right Column - Summary Stats */}
+                                <div className="space-y-6">
+                                    <Card className="reveal" data-delay="6">
+                                        <CardHeader>
+                                            <CardTitle>Project Summary</CardTitle>
+                                        </CardHeader>
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center py-2 border-b border-border-light">
+                                                <span className="text-sm text-secondary">Total Budget</span>
+                                                <span className="font-bold text-primary">
+                                                    {formatPrice(project.total_usd, project.total_zwg)}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center py-2 border-b border-border-light">
+                                                <span className="text-sm text-secondary">Est. Materials</span>
+                                                <span className="font-medium text-primary">{items.length} Items</span>
+                                            </div>
+                                            <div className="flex justify-between items-center py-2 border-b border-border-light">
+                                                <span className="text-sm text-secondary">Completion</span>
+                                                <span className="font-medium text-primary">
+                                                    {(purchaseStats.totalItems > 0
+                                                        ? (purchaseStats.purchasedItems / purchaseStats.totalItems) * 100
+                                                        : 0
+                                                    ).toFixed(0)}%
+                                                </span>
+                                            </div>
+                                            <div className="pt-2">
+                                                <RunningTotalBar
+                                                    total={purchaseStats.estimatedTotal}
+                                                    current={purchaseStats.actualSpent}
+                                                    label="Spend vs Budget"
+                                                    currency="USD"
+                                                />
+                                            </div>
                                         </div>
-                                        <div className={`flex items-center gap-1.5 text-sm w-fit px-2 py-1 rounded-md font-medium ${purchaseStats.totalVariance <= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                                            {purchaseStats.totalVariance <= 0 ? <CheckCircle size={14} weight="fill" /> : <Info size={14} weight="fill" />}
-                                            <span>
-                                                {purchaseStats.totalVariance <= 0 ? 'Under Budget' : 'Over Budget'} by <PriceDisplay priceUsd={Math.abs(purchaseStats.totalVariance)} priceZwg={Math.abs(purchaseStats.totalVariance) * exchangeRate} />
-                                            </span>
+                                    </Card>
+
+                                    <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100 reveal" data-delay="7">
+                                        <div className="p-4">
+                                            <h4 className="font-bold text-blue-900 mb-2">Pro Tip</h4>
+                                            <p className="text-sm text-blue-700">
+                                                Use the <strong>Procurement Hub</strong> to request quotes from multiple suppliers and get the best deals.
+                                            </p>
+                                            <Button
+                                                size="sm"
+                                                className="mt-3 bg-blue-600 hover:bg-blue-700 text-white w-full border-none"
+                                                onClick={() => setActiveView('procurement')}
+                                            >
+                                                Go to Procurement
+                                            </Button>
                                         </div>
-                                    </div>
-                                </div>
-
-                                {/* Progress - Completion */}
-                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all flex flex-col justify-between">
-                                    <div>
-                                        <div className="flex justify-between items-start mb-2">
-                                            <p className="text-sm font-medium text-slate-500 uppercase tracking-wide">Completion</p>
-                                            <span className="text-2xl font-bold text-slate-900">
-                                                {purchaseStats.totalItems > 0
-                                                    ? Math.round((purchaseStats.purchasedItems / purchaseStats.totalItems) * 100)
-                                                    : 0}%
-                                            </span>
-                                        </div>
-                                        <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden mb-3">
-                                            <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-1000 ease-out"
-                                                style={{ width: `${(purchaseStats.purchasedItems / purchaseStats.totalItems) * 100}%` }} />
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between text-sm text-slate-500">
-                                        <span>{purchaseStats.purchasedItems} of {purchaseStats.totalItems} items purchased</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Detailed Variance Stats */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {/* Total Variance */}
-                                <div className="bg-white rounded-xl p-5 border border-slate-200">
-                                    <h4 className="text-sm font-semibold text-slate-500 mb-3 flex items-center gap-2">
-                                        <ChartLineUp size={16} /> Total Variance
-                                    </h4>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className={`text-2xl font-bold ${purchaseStats.totalVariance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                            {purchaseStats.totalVariance >= 0 ? '+' : ''}
-                                            <PriceDisplay priceUsd={Math.abs(purchaseStats.totalVariance)} priceZwg={Math.abs(purchaseStats.totalVariance) * exchangeRate} />
-                                        </span>
-                                        <span className={`text-sm font-medium px-1.5 py-0.5 rounded ${purchaseStats.totalVariance >= 0 ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
-                                            {purchaseStats.totalVariancePercent >= 0 ? '+' : ''}
-                                            {purchaseStats.totalVariancePercent.toFixed(1)}%
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-slate-400 mt-2">Overall difference from estimate</p>
-                                </div>
-
-                                {/* Price Variance */}
-                                <div className="bg-white rounded-xl p-5 border border-slate-200">
-                                    <h4 className="text-sm font-semibold text-slate-500 mb-3 flex items-center gap-2">
-                                        <Tag size={16} /> Price Variance
-                                    </h4>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className={`text-2xl font-bold ${purchaseStats.priceVariance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                            {purchaseStats.priceVariance >= 0 ? '+' : ''}
-                                            <PriceDisplay priceUsd={Math.abs(purchaseStats.priceVariance)} priceZwg={Math.abs(purchaseStats.priceVariance) * exchangeRate} />
-                                        </span>
-                                        <span className={`text-sm font-medium px-1.5 py-0.5 rounded ${purchaseStats.priceVariance >= 0 ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
-                                            {purchaseStats.priceVariancePercent >= 0 ? '+' : ''}
-                                            {purchaseStats.priceVariancePercent.toFixed(1)}%
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-slate-400 mt-2">Due to unit price changes</p>
-                                </div>
-
-                                {/* Qty Variance */}
-                                <div className="bg-white rounded-xl p-5 border border-slate-200">
-                                    <h4 className="text-sm font-semibold text-slate-500 mb-3 flex items-center gap-2">
-                                        <Stack size={16} /> Quantity Variance
-                                    </h4>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className={`text-2xl font-bold ${purchaseStats.qtyVariance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                            {purchaseStats.qtyVariance >= 0 ? '+' : ''}
-                                            <PriceDisplay priceUsd={Math.abs(purchaseStats.qtyVariance)} priceZwg={Math.abs(purchaseStats.qtyVariance) * exchangeRate} />
-                                        </span>
-                                        <span className={`text-sm font-medium px-1.5 py-0.5 rounded ${purchaseStats.qtyVariance >= 0 ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
-                                            {purchaseStats.qtyVariancePercent >= 0 ? '+' : ''}
-                                            {purchaseStats.qtyVariancePercent.toFixed(1)}%
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-slate-400 mt-2">Due to quantity changes</p>
+                                    </Card>
                                 </div>
                             </div>
                         </div>
@@ -963,79 +997,26 @@ function ProjectDetailContent() {
 
                     {/* BOQ View */}
                     {activeView === 'boq' && (
-                        <div className="space-y-6">
-                            {priceUpdates.length > 0 && (
-                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col gap-3">
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div>
-                                            <h3 className="text-sm font-semibold text-amber-900">
-                                                Material prices changed
-                                            </h3>
-                                            <p className="text-sm text-amber-700 mt-1">
-                                                New average prices are available for {priceUpdates.length} items
-                                                {priceUpdatePreview ? `: ${priceUpdatePreview}` : ''}.
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Button
-                                                size="sm"
-                                                onClick={handleApplyPriceUpdates}
-                                                loading={isPriceUpdateLoading}
-                                            >
-                                                Update average prices
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="secondary"
-                                                onClick={handleIgnorePriceUpdates}
-                                            >
-                                                Keep current
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-amber-700">
-                                        Prices shown are estimates/averages. For exact prices, confirm with suppliers.
-                                    </p>
-                                </div>
-                            )}
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-2xl font-bold text-slate-800">Bill of Quantities</h2>
-                                <div className="flex gap-1 bg-slate-100 p-1 rounded-lg overflow-x-auto">
-                                    {applicableStages.map(stage => (
-                                        <button
-                                            key={stage.id}
-                                            onClick={() => setActiveTab(stage.boq_category)}
-                                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap ${activeTab === stage.boq_category
-                                                ? 'bg-white text-slate-800 shadow-sm'
-                                                : 'text-slate-500 hover:text-slate-700'
-                                                }`}
-                                        >
-                                            {categoryLabels[stage.boq_category]}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {currentStage && (
-                                <StageTab
-                                    stage={currentStage}
-                                    projectId={projectId}
-                                    items={activeStageItems}
-                                    onStageUpdate={(u) => handleStageUpdate({ ...currentStage, ...u })}
-                                    onItemUpdate={handleItemUpdate}
-                                    onItemDelete={handleDeleteItem}
-                                    onItemAdded={handleAddItem}
-                                    showLabor={hasLabor}
-                                    usageByItem={usageByItem}
-                                    usageTrackingEnabled={project.usage_tracking_enabled}
-                                />
-                            )}
+                        <div className="space-y-6 max-w-full mx-auto reveal">
+                            <StageTab
+                                stages={stages}
+                                activeTab={activeTab}
+                                setActiveTab={setActiveTab}
+                                items={activeStageItems}
+                                onUpdateItem={handleItemUpdate}
+                                onDeleteItem={handleDeleteItem}
+                                onAddItem={handleAddItem}
+                                projectId={projectId}
+                                category={activeTab as BOQCategory}
+                                laborRate={project.labor_rate || 0}
+                                showLabor={hasLabor}
+                            />
                         </div>
                     )}
 
-                    {/* PROCUREMENT View - Unified Hub */}
+                    {/* PROCUREMENT View */}
                     {activeView === 'procurement' && (
-                        <div className="space-y-6">
+                        <div className="reveal">
                             <UnifiedProcurementView
                                 project={project}
                                 items={items}
@@ -1046,158 +1027,105 @@ function ProjectDetailContent() {
 
                     {/* USAGE View */}
                     {activeView === 'usage' && (
-                        <div className="space-y-6">
-                            {project.usage_tracking_enabled ? (
-                                <ProjectUsageView
-                                    project={project}
-                                    items={items}
-                                    usageByItem={usageByItem}
-                                    onUsageRecorded={handleUsageRecorded}
-                                    onRequestPhone={handleRequestPhone}
-                                    canUseMobileReminders={Boolean(profile?.phone_number)}
-                                />
-                            ) : (
-                                <div className="bg-white rounded-xl border border-slate-200 p-6">
-                                    <h3 className="text-lg font-semibold text-slate-800 mb-2">Enable usage tracking</h3>
-                                    <p className="text-slate-500 mb-4">
-                                        Turn on usage tracking to log materials used by builders.
-                                    </p>
-                                    <Button
-                                        variant="primary"
-                                        onClick={() => handleUsageTrackingToggle(true)}
-                                    >
-                                        Enable Usage Tracking
-                                    </Button>
-                                </div>
-                            )}
+                        <div className="reveal">
+                            <ProjectUsageView
+                                project={project}
+                                items={items}
+                                usageByItem={usageByItem}
+                                onUsageTrackingToggle={handleUsageTrackingToggle}
+                                onUsageRecorded={handleUsageRecorded}
+                                stages={stages}
+                            />
                         </div>
                     )}
 
                     {/* DOCUMENTS View */}
                     {activeView === 'documents' && (
-                        <div className="space-y-6">
-                            <h2 className="text-2xl font-bold text-slate-800 mb-6">Documents</h2>
-                            <DocumentsTab projectId={projectId} />
-                        </div>
-                    )}
-
-                    {/* BUDGET View */}
-                    {activeView === 'budget' && (
-                        <div className="space-y-6">
-                            <h2 className="text-2xl font-bold text-slate-800 mb-6">Budget Planner</h2>
-                            <BudgetPlanner
-                                totalBudgetUsd={purchaseStats.estimatedTotal}
-                                amountSpentUsd={purchaseStats.actualSpent}
-                                targetDate={project.target_purchase_date}
-                                onTargetDateChange={handleSavingsTargetDateChange}
-                                onSetReminder={handleSavingsReminder}
-                                canUseMobileReminders={Boolean(profile?.phone_number)}
-                                defaultChannel={preferredReminderChannel}
-                                onRequestPhone={handleRequestPhone}
-                                reminderActive={Boolean(savingsReminder?.is_active)}
-                                reminderFrequency={(savingsReminder?.frequency as 'daily' | 'weekly' | 'monthly' | null) ?? null}
-                                onToggleReminder={handleToggleSavingsReminder}
+                        <div className="reveal">
+                            <DocumentsTab
+                                projectId={projectId}
+                                userId={profile?.id || ''}
                             />
                         </div>
                     )}
 
                     {/* SETTINGS View */}
                     {activeView === 'settings' && (
-                        <ProjectSettings
-                            project={project}
-                            onUpdate={handleProjectUpdate}
-                        />
+                        <div className="reveal">
+                            <ProjectSettings
+                                project={project}
+                                onUpdate={handleProjectUpdate}
+                                onDelete={() => router.push('/projects')}
+                                stages={stages}
+                                onStageUpdate={handleStageUpdate}
+                            />
+                        </div>
                     )}
                 </main>
             </div>
 
-            {/* Mobile hamburger FAB */}
-            {isMobileDetail && (
-                <button
-                    className="mobile-sidebar-fab"
-                    onClick={() => setIsMobileSidebarOpen(true)}
-                    aria-label="Open navigation"
-                >
-                    <List size={24} weight="bold" />
-                </button>
-            )}
-
-            <PhoneNumberModal
-                isOpen={showPhoneModal}
-                onClose={() => {
-                    setShowPhoneModal(false);
-                    setPendingReminder(null);
-                    setRequestedChannel(null);
-                }}
-                onSave={handleSavePhoneNumber}
-                initialValue={profile?.phone_number || ''}
-            />
-
+            {/* Modals */}
             <ShareModal
                 isOpen={showShareModal}
                 onClose={() => setShowShareModal(false)}
-                projectId={projectId}
-                projectName={project.name}
-            />
-
-            {/* Celebration Modal for milestones */}
-            <CelebrationModal
-                isOpen={showCelebration}
-                onClose={() => {
-                    setShowCelebration(false);
-                    setCelebrationData(null);
-                }}
-                title={celebrationData?.title || ''}
-                message={celebrationData?.message || ''}
-                stats={celebrationData?.stats}
-                variant="stage-complete"
-                actionLabel="Continue Building"
-                onAction={() => {
-                    setShowCelebration(false);
-                    setCelebrationData(null);
-                    setActiveView('boq');
+                project={project}
+                stats={{
+                    total: formatPrice(project.total_usd, project.total_zwg),
+                    items: items.length
                 }}
             />
 
-            <style jsx>{`
-                :global(.spinner) {
-                     animation: spin 1s linear infinite;
-                }
-                @keyframes spin { to { transform: rotate(360deg); } }
+            <PhoneNumberModal
+                isOpen={showPhoneModal}
+                onClose={() => setShowPhoneModal(false)}
+                onSave={handleSavePhoneNumber}
+                isSaving={false}
+            />
 
-                .mobile-sidebar-fab {
-                    display: none;
-                }
+            {showCelebration && celebrationData && (
+                <CelebrationModal
+                    isOpen={showCelebration}
+                    onClose={() => setShowCelebration(false)}
+                    title={celebrationData.title}
+                    message={celebrationData.message}
+                    stats={celebrationData.stats}
+                />
+            )}
 
-                @media (max-width: 768px) {
-                    .mobile-sidebar-fab {
-                        display: flex;
-                        position: fixed;
-                        bottom: 24px;
-                        left: 16px;
-                        z-index: 100;
-                        width: 56px;
-                        height: 56px;
-                        border-radius: 50%;
-                        background: var(--color-primary, #3b82f6);
-                        color: white;
-                        border: none;
-                        align-items: center;
-                        justify-content: center;
-                        box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
-                        cursor: pointer;
-                    }
-
-                    .mobile-sidebar-fab:active {
-                        transform: scale(0.95);
-                    }
+            <style jsx global>{`
+                :root {
+                    --background: var(--color-background);
+                    --surface: var(--color-surface);
+                    --primary: var(--color-primary);
+                    --secondary: var(--color-text-secondary);
+                    --border: var(--color-border);
                 }
+                
+                body {
+                    background-color: var(--background);
+                    color: var(--color-text);
+                }
+                
+                .bg-background { background-color: var(--color-background); }
+                .bg-surface { background-color: var(--color-surface); }
+                .bg-mist { background-color: var(--color-mist); }
+                
+                .text-primary { color: var(--color-text); }
+                .text-secondary { color: var(--color-text-secondary); }
+                .text-accent { color: var(--color-accent); }
+                
+                .border-border { border-color: var(--color-border); }
+                .border-border-light { border-color: var(--color-border-light); }
+                
+                .shadow-card { box-shadow: var(--shadow-card); }
+                
+                .font-heading { font-family: var(--font-heading); }
             `}</style>
         </MainLayout>
     );
 }
 
-export default function ProjectDetail() {
+export default function ProjectDetailPage() {
     return (
         <ProtectedRoute>
             <ProjectDetailContent />

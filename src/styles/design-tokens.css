@@ -1,0 +1,268 @@
+/**
+ * ZimEstimate Design Tokens
+ * ========================
+ * Approved: Feb 10, 2026 (Ngolo)
+ *
+ * Usage: Import this file in your global styles or _app.tsx
+ * All component styles should reference these CSS custom properties.
+ */
+
+:root {
+  /* ========================================
+   * TYPOGRAPHY
+   * ======================================== */
+
+  /* Font Families */
+  --font-heading: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Font Sizes - Headings */
+  --text-h1: 2.5rem;      /* 40px */
+  --text-h2: 2rem;        /* 32px */
+  --text-h3: 1.5rem;      /* 24px */
+  --text-h4: 1.25rem;     /* 20px */
+  --text-h5: 1.125rem;    /* 18px */
+  --text-h6: 1rem;        /* 16px */
+
+  /* Font Sizes - Body */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-base: 1rem;      /* 16px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-xs: 0.75rem;     /* 12px */
+
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Line Heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* ========================================
+   * COLORS
+   * ======================================== */
+
+  /* Primary */
+  --color-primary: #0B1F3B;         /* Deep Navy */
+  --color-primary-light: #1A3A5C;
+  --color-primary-dark: #061526;
+
+  /* Accent */
+  --color-accent: #2E6CF6;          /* Electric Blue */
+  --color-accent-light: #5A8DF7;
+  --color-accent-dark: #1E4FD9;
+  --color-accent-muted: rgba(46, 108, 246, 0.12);
+
+  /* Support Colors */
+  --color-clay: #D97A4A;            /* Warm accent */
+  --color-emerald: #16A34A;         /* Success */
+  --color-amber: #F59E0B;           /* Warning */
+  --color-danger: #DC2626;          /* Danger/Destructive */
+
+  /* Neutrals */
+  --color-slate: #1F2937;
+  --color-slate-light: #374151;
+  --color-mist: #F5F7FB;
+  --color-white: #FFFFFF;
+
+  /* Borders */
+  --color-border: #E2E8F0;
+  --color-border-light: rgba(148, 163, 184, 0.25);
+  --color-border-dark: #CBD5E1;
+
+  /* Text */
+  --color-text: #0F172A;
+  --color-text-secondary: #64748B;
+  --color-text-muted: #94A3B8;
+  --color-text-inverse: #FFFFFF;
+
+  /* Surfaces */
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #FFFFFF;
+  --color-surface-overlay: rgba(15, 23, 42, 0.5);
+  --color-background: #F8FAFC;
+  --color-background-alt: linear-gradient(180deg, rgba(10, 24, 52, 0.04), rgba(255, 255, 255, 0.9));
+
+  /* ========================================
+   * SPACING
+   * ======================================== */
+
+  --space-0: 0;
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+  --space-20: 5rem;     /* 80px */
+  --space-24: 6rem;     /* 96px */
+
+  /* ========================================
+   * BORDERS & RADIUS
+   * ======================================== */
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  --border-width: 1px;
+  --border-width-thick: 2px;
+
+  /* ========================================
+   * SHADOWS
+   * ======================================== */
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 6px rgba(15, 23, 42, 0.07);
+  --shadow-lg: 0 12px 24px rgba(15, 23, 42, 0.06);
+  --shadow-xl: 0 20px 40px rgba(15, 23, 42, 0.1);
+  --shadow-card: 0 12px 24px rgba(15, 23, 42, 0.06);
+  --shadow-button: 0 2px 4px rgba(15, 23, 42, 0.1);
+
+  /* ========================================
+   * TRANSITIONS & MOTION
+   * ======================================== */
+
+  --duration-fast: 150ms;
+  --duration-normal: 220ms;
+  --duration-slow: 350ms;
+  --duration-slower: 500ms;
+
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Animation stagger delays for lists */
+  --stagger-1: 0ms;
+  --stagger-2: 80ms;
+  --stagger-3: 160ms;
+  --stagger-4: 240ms;
+  --stagger-5: 320ms;
+
+  /* ========================================
+   * Z-INDEX SCALE
+   * ======================================== */
+
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal-backdrop: 300;
+  --z-modal: 400;
+  --z-tooltip: 500;
+  --z-toast: 600;
+
+  /* ========================================
+   * BREAKPOINTS (for reference in JS)
+   * CSS media queries should use these values directly
+   * ======================================== */
+
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  /* ========================================
+   * GRID
+   * ======================================== */
+
+  --grid-columns: 12;
+  --grid-gutter: 24px;
+  --container-max: 1280px;
+  --container-padding: 24px;
+}
+
+/* ========================================
+ * COMPONENT TOKENS
+ * ======================================== */
+
+:root {
+  /* Buttons */
+  --btn-height-sm: 32px;
+  --btn-height-md: 40px;
+  --btn-height-lg: 48px;
+  --btn-padding-sm: 0 12px;
+  --btn-padding-md: 0 16px;
+  --btn-padding-lg: 0 24px;
+  --btn-radius: var(--radius-md);
+  --btn-font-size: var(--text-sm);
+  --btn-font-weight: var(--font-semibold);
+
+  /* Cards */
+  --card-padding: var(--space-5);
+  --card-radius: 18px;
+  --card-shadow: var(--shadow-card);
+  --card-border: 1px solid var(--color-border-light);
+  --card-bg: var(--color-surface);
+
+  /* Inputs */
+  --input-height: 44px;
+  --input-padding: 0 14px;
+  --input-radius: var(--radius-md);
+  --input-border: 1px solid var(--color-border);
+  --input-border-focus: 1px solid var(--color-accent);
+  --input-bg: var(--color-surface);
+
+  /* Tables */
+  --table-header-bg: var(--color-mist);
+  --table-row-hover: rgba(46, 108, 246, 0.04);
+  --table-zebra-bg: rgba(15, 23, 42, 0.02);
+  --table-cell-padding: var(--space-3) var(--space-4);
+
+  /* Icons */
+  --icon-size-sm: 16px;
+  --icon-size-md: 20px;
+  --icon-size-lg: 24px;
+  --icon-size-xl: 32px;
+
+  /* Badges */
+  --badge-padding: 4px 10px;
+  --badge-radius: var(--radius-full);
+  --badge-font-size: var(--text-xs);
+  --badge-font-weight: var(--font-medium);
+}
+
+/* ========================================
+ * UTILITY CLASSES
+ * ======================================== */
+
+/* Reveal animation for scroll-triggered elements */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px) scale(0.98);
+  transition:
+    opacity var(--duration-slower) var(--ease-out),
+    transform var(--duration-slower) var(--ease-out);
+}
+
+.reveal.in-view {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Stagger delays for list items */
+.reveal[data-delay="1"] { transition-delay: var(--stagger-1); }
+.reveal[data-delay="2"] { transition-delay: var(--stagger-2); }
+.reveal[data-delay="3"] { transition-delay: var(--stagger-3); }
+.reveal[data-delay="4"] { transition-delay: var(--stagger-4); }
+.reveal[data-delay="5"] { transition-delay: var(--stagger-5); }
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

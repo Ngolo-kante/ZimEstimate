@@ -10,6 +10,7 @@ import ProjectPickerModal from '@/components/ui/ProjectPickerModal';
 import PriceSparkline from '@/components/ui/PriceSparkline';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useToast } from '@/components/ui/Toast';
+import { useReveal } from '@/hooks/useReveal';
 import { Project } from '@/lib/database.types';
 import { addBOQItem, updateProject, getProject } from '@/lib/services/projects';
 import { createRfqRequest } from '@/lib/services/rfq';
@@ -104,6 +105,7 @@ export default function MarketplacePage() {
   const [materialCompareOpen, setMaterialCompareOpen] = useState(false);
   const [compareTargetId, setCompareTargetId] = useState<string | null>(null);
   const { success, error: showError } = useToast();
+
 
   // Load live prices on mount
   useEffect(() => {
@@ -281,6 +283,8 @@ export default function MarketplacePage() {
     return groups;
   }, [filteredMaterials]);
 
+  useReveal({ deps: [filteredMaterials.length, selectedCategory, selectedMaterial?.id, isLoadingPrices] });
+
   const categories = Object.keys(categoryInfo) as MaterialCategory[];
 
   const alternativeMaterials = useMemo(() => {
@@ -312,7 +316,7 @@ export default function MarketplacePage() {
     <MainLayout title="Marketplace">
       <div className="marketplace">
         {/* Search and Filters */}
-        <div className="search-section">
+        <div className="search-section reveal" data-delay="1">
           <div className="search-box">
             <Input
               placeholder="Search materials (e.g., cement, rebar, IBR sheets)..."
@@ -339,7 +343,7 @@ export default function MarketplacePage() {
         </div>
 
         {/* Category Pills */}
-        <div className="category-section">
+        <div className="category-section reveal" data-delay="2">
           <button
             className={`category-pill ${selectedCategory === 'all' ? 'active' : ''}`}
             onClick={() => setSelectedCategory('all')}
@@ -373,66 +377,72 @@ export default function MarketplacePage() {
               </div>
             )}
 
-            {Object.entries(groupedMaterials).map(([category, items]) => (
-              <div key={category} className="category-group">
+            {Object.entries(groupedMaterials).map(([category, items], groupIndex) => (
+              <div
+                key={category}
+                className="category-group reveal"
+                data-delay={(groupIndex % 5) + 1}
+              >
                 <h3 className="category-title">
                   {categoryInfo[category as MaterialCategory]?.label || category}
                   <span className="count">{items.length}</span>
                 </h3>
                 <div className="materials-grid">
-                  {items.map((material) => {
+                  {items.map((material, index) => {
                     const livePrice = livePrices.get(material.id);
                     const hasAlert = priceAlerts.has(material.id);
                     const supplierCount = getPricesForMaterial(material.id).length;
+                    const delay = (index % 5) + 1;
 
                     return (
-                      <Card
-                        key={material.id}
-                        className={`material-card ${selectedMaterial?.id === material.id ? 'selected' : ''}`}
-                        onClick={() => setSelectedMaterial(material)}
-                      >
-                        <CardContent>
-                          <div className="material-header">
-                            <span className="material-name">{material.name}</span>
-                            <span className="material-subcategory">{material.subcategory}</span>
-                          </div>
-                          <div className="material-details">
-                            <span className="unit">{material.unit}</span>
-                            {livePrice && (
-                              <span className="price">
-                                <PriceDisplay priceUsd={livePrice.priceUsd} priceZwg={livePrice.priceZwg} />
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Price metadata row */}
-                          {livePrice && (
-                            <div className="price-meta">
-                              <span className={`source-badge ${livePrice.source}`}>
-                                {livePrice.source === 'scraped' ? (
-                                  <><Database size={10} /> Live</>
-                                ) : (
-                                  <><Info size={10} /> Static</>
-                                )}
-                              </span>
-                              <span className="supplier-count">
-                                {supplierCount} suppliers
-                              </span>
-                              <span className="last-updated">
-                                <Clock size={10} />
-                                {formatLastUpdated(livePrice.lastUpdated)}
-                              </span>
-                              {hasAlert && (
-                                <Bell size={12} weight="fill" className="alert-indicator" />
+                      <div key={material.id} className="material-card-wrapper reveal" data-delay={delay}>
+                        <Card
+                          className={`material-card ${selectedMaterial?.id === material.id ? 'selected' : ''}`}
+                          onClick={() => setSelectedMaterial(material)}
+                        >
+                          <CardContent>
+                            <div className="material-header">
+                              <span className="material-name">{material.name}</span>
+                              <span className="material-subcategory">{material.subcategory}</span>
+                            </div>
+                            <div className="material-details">
+                              <span className="unit">{material.unit}</span>
+                              {livePrice && (
+                                <span className="price">
+                                  <PriceDisplay priceUsd={livePrice.priceUsd} priceZwg={livePrice.priceZwg} />
+                                </span>
                               )}
                             </div>
-                          )}
 
-                          {material.specifications && (
-                            <p className="specs">{material.specifications}</p>
-                          )}
-                        </CardContent>
-                      </Card>
+                            {/* Price metadata row */}
+                            {livePrice && (
+                              <div className="price-meta">
+                                <span className={`source-badge ${livePrice.source}`}>
+                                  {livePrice.source === 'scraped' ? (
+                                    <><Database size={10} /> Live</>
+                                  ) : (
+                                    <><Info size={10} /> Static</>
+                                  )}
+                                </span>
+                                <span className="supplier-count">
+                                  {supplierCount} suppliers
+                                </span>
+                                <span className="last-updated">
+                                  <Clock size={10} />
+                                  {formatLastUpdated(livePrice.lastUpdated)}
+                                </span>
+                                {hasAlert && (
+                                  <Bell size={12} weight="fill" className="alert-indicator" />
+                                )}
+                              </div>
+                            )}
+
+                            {material.specifications && (
+                              <p className="specs">{material.specifications}</p>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </div>
                     );
                   })}
                 </div>
@@ -440,14 +450,14 @@ export default function MarketplacePage() {
             ))}
 
             {filteredMaterials.length === 0 && (
-              <div className="empty-state">
+              <div className="empty-state reveal" data-delay="2">
                 <p>No materials found matching your search.</p>
               </div>
             )}
           </div>
 
           {/* Detail Panel */}
-          <div className="detail-panel">
+          <div className="detail-panel reveal" data-delay="3">
             {selectedMaterial ? (
               <Card className="detail-card">
                 <CardContent>
@@ -740,7 +750,7 @@ export default function MarketplacePage() {
           </div>
         </div>
 
-        <div className="market-disclaimer">
+        <div className="market-disclaimer reveal" data-delay="2">
           <p>
             Prices reflect live market data from Zimbabwean suppliers. Live prices are updated regularly from verified sources.
           </p>
@@ -894,13 +904,18 @@ export default function MarketplacePage() {
         .marketplace {
           display: flex;
           flex-direction: column;
-          gap: var(--spacing-lg);
+          gap: var(--space-6);
+          max-width: var(--container-max);
+          margin: 0 auto;
+          padding: var(--space-8) var(--container-padding);
+          font-family: var(--font-body);
         }
 
         .search-section {
           display: flex;
-          gap: var(--spacing-md);
+          gap: var(--space-4);
           align-items: center;
+          flex-wrap: wrap;
         }
 
         .search-box {
@@ -910,7 +925,8 @@ export default function MarketplacePage() {
 
         .filter-actions {
           display: flex;
-          gap: var(--spacing-sm);
+          gap: var(--space-2);
+          flex-wrap: wrap;
         }
 
         .dir-link {
@@ -920,21 +936,21 @@ export default function MarketplacePage() {
         .category-section {
           display: flex;
           flex-wrap: wrap;
-          gap: var(--spacing-sm);
+          gap: var(--space-2);
         }
 
         .category-pill {
           display: flex;
           align-items: center;
-          gap: var(--spacing-xs);
-          padding: var(--spacing-xs) var(--spacing-md);
+          gap: var(--space-1);
+          padding: var(--space-2) var(--space-4);
           background: var(--color-surface);
           border: 1px solid var(--color-border-light);
           border-radius: var(--radius-full);
-          font-size: 0.875rem;
+          font-size: var(--text-sm);
           color: var(--color-text-secondary);
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all var(--duration-fast) var(--ease-out);
         }
 
         .category-pill:hover {
@@ -942,35 +958,36 @@ export default function MarketplacePage() {
         }
 
         .category-pill.active {
-          background: var(--color-accent);
+          background: rgba(46, 108, 246, 0.12);
           border-color: var(--color-accent);
-          color: var(--color-primary);
+          color: var(--color-accent);
+          font-weight: var(--font-semibold);
         }
 
         .content-grid {
           display: grid;
           grid-template-columns: 1fr 400px;
-          gap: var(--spacing-lg);
+          gap: var(--space-6);
           min-height: 600px;
         }
 
         .loading-banner {
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 12px 16px;
-          background: #eff6ff;
-          border-radius: 12px;
-          color: #2563eb;
-          font-size: 0.875rem;
-          margin-bottom: 16px;
+          gap: var(--space-3);
+          padding: var(--space-3) var(--space-4);
+          background: rgba(46, 108, 246, 0.08);
+          border-radius: var(--radius-md);
+          color: var(--color-accent);
+          font-size: var(--text-sm);
+          margin-bottom: var(--space-4);
         }
 
         .spinner {
           width: 16px;
           height: 16px;
-          border: 2px solid #93c5fd;
-          border-top-color: #2563eb;
+          border: 2px solid rgba(46, 108, 246, 0.3);
+          border-top-color: var(--color-accent);
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
         }
@@ -980,30 +997,31 @@ export default function MarketplacePage() {
         .materials-list {
           display: flex;
           flex-direction: column;
-          gap: var(--spacing-lg);
+          gap: var(--space-6);
         }
 
         .category-group {
           display: flex;
           flex-direction: column;
-          gap: var(--spacing-md);
+          gap: var(--space-4);
         }
 
         .category-title {
           display: flex;
           align-items: center;
-          gap: var(--spacing-sm);
-          font-size: 1rem;
-          font-weight: 600;
-          color: var(--color-text);
+          gap: var(--space-2);
+          font-size: var(--text-base);
+          font-weight: var(--font-semibold);
+          color: var(--color-primary);
           margin: 0;
+          font-family: var(--font-heading);
         }
 
         .category-title .count {
-          font-size: 0.75rem;
-          font-weight: 500;
+          font-size: var(--text-xs);
+          font-weight: var(--font-medium);
           color: var(--color-text-muted);
-          background: var(--color-background);
+          background: var(--color-mist);
           padding: 2px 8px;
           border-radius: var(--radius-full);
         }
@@ -1011,36 +1029,46 @@ export default function MarketplacePage() {
         .materials-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-          gap: var(--spacing-md);
+          gap: var(--space-4);
         }
 
-        .material-card {
+        .material-card-wrapper {
+          height: 100%;
+        }
+
+        .material-card.card {
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all var(--duration-normal) var(--ease-out);
+          border-radius: var(--card-radius);
+          border: 1px solid var(--color-border-light);
+          box-shadow: var(--shadow-card);
+          background: var(--color-surface);
         }
 
-        .material-card:hover {
+        .material-card.card:hover {
           border-color: var(--color-accent);
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-lg);
         }
 
-        .material-card.selected {
+        .material-card.card.selected {
           border-color: var(--color-accent);
-          box-shadow: 0 0 0 2px rgba(252, 163, 17, 0.2);
+          box-shadow: 0 0 0 2px rgba(46, 108, 246, 0.2);
         }
 
         .material-header {
-          margin-bottom: var(--spacing-xs);
+          margin-bottom: var(--space-1);
         }
 
         .material-name {
           display: block;
-          font-weight: 600;
+          font-weight: var(--font-semibold);
           color: var(--color-text);
-          font-size: 0.9375rem;
+          font-size: var(--text-sm);
         }
 
         .material-subcategory {
-          font-size: 0.75rem;
+          font-size: var(--text-xs);
           color: var(--color-text-muted);
         }
 
@@ -1048,29 +1076,30 @@ export default function MarketplacePage() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: var(--spacing-xs);
+          margin-bottom: var(--space-1);
         }
 
         .unit {
-          font-size: 0.75rem;
+          font-size: var(--text-xs);
           color: var(--color-text-secondary);
         }
 
         .price {
-          font-weight: 600;
+          font-weight: var(--font-semibold);
           color: var(--color-accent);
         }
 
         .price-meta {
           display: flex;
           align-items: center;
-          gap: 8px;
-          margin-bottom: 8px;
+          gap: var(--space-2);
+          margin-bottom: var(--space-2);
+          flex-wrap: wrap;
         }
 
         .supplier-count {
-          font-size: 0.7rem;
-          color: #94a3b8;
+          font-size: var(--text-xs);
+          color: var(--color-text-muted);
         }
 
         .source-badge {
@@ -1085,29 +1114,29 @@ export default function MarketplacePage() {
         }
 
         .source-badge.scraped {
-          background: #dcfce7;
-          color: #166534;
+          background: rgba(22, 163, 74, 0.12);
+          color: var(--color-emerald);
         }
 
         .source-badge.static {
-          background: #f1f5f9;
-          color: #64748b;
+          background: var(--color-mist);
+          color: var(--color-text-secondary);
         }
 
         .last-updated {
           display: flex;
           align-items: center;
           gap: 4px;
-          font-size: 0.7rem;
-          color: #94a3b8;
+          font-size: var(--text-xs);
+          color: var(--color-text-muted);
         }
 
         .alert-indicator {
-          color: #f59e0b;
+          color: var(--color-amber);
         }
 
         .specs {
-          font-size: 0.75rem;
+          font-size: var(--text-xs);
           color: var(--color-text-muted);
           margin: 0;
         }
@@ -1115,19 +1144,23 @@ export default function MarketplacePage() {
         .detail-panel {
           display: flex;
           flex-direction: column;
-          gap: var(--spacing-md);
+          gap: var(--space-4);
         }
 
-        .detail-card {
+        .detail-card.card {
           position: sticky;
-          top: var(--spacing-lg);
+          top: var(--space-6);
+          border: 1px solid var(--color-border-light);
+          border-radius: var(--card-radius);
+          box-shadow: var(--shadow-card);
+          background: var(--color-surface);
         }
 
         .detail-header {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          margin-bottom: var(--spacing-md);
+          margin-bottom: var(--space-4);
         }
 
         .alert-btn {
@@ -1136,69 +1169,70 @@ export default function MarketplacePage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #f1f5f9;
+          background: var(--color-mist);
           border: none;
-          border-radius: 8px;
-          color: #64748b;
+          border-radius: var(--radius-md);
+          color: var(--color-text-secondary);
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all var(--duration-fast);
         }
 
         .alert-btn:hover {
-          background: #e2e8f0;
+          background: var(--color-border-light);
         }
 
         .alert-btn.active {
-          background: #fef3c7;
-          color: #f59e0b;
+          background: rgba(245, 158, 11, 0.15);
+          color: var(--color-amber);
         }
 
         .detail-title {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: var(--color-text);
-          margin: 0 0 var(--spacing-xs) 0;
+          font-size: var(--text-h4);
+          font-weight: var(--font-semibold);
+          color: var(--color-primary);
+          margin: 0 0 var(--space-1) 0;
+          font-family: var(--font-heading);
         }
 
         .detail-subtitle {
-          font-size: 0.875rem;
+          font-size: var(--text-sm);
           color: var(--color-text-secondary);
           margin: 0;
         }
 
         .detail-specs {
-          font-size: 0.875rem;
+          font-size: var(--text-sm);
           color: var(--color-text-secondary);
-          background: var(--color-background);
-          padding: var(--spacing-sm);
+          background: var(--color-mist);
+          padding: var(--space-2);
           border-radius: var(--radius-md);
-          margin: 0 0 var(--spacing-md) 0;
+          margin: 0 0 var(--space-4) 0;
         }
 
         .detail-unit {
           display: flex;
-          gap: var(--spacing-sm);
-          margin-bottom: var(--spacing-sm);
+          gap: var(--space-2);
+          margin-bottom: var(--space-2);
         }
 
         .detail-unit .label {
-          font-size: 0.875rem;
+          font-size: var(--text-sm);
           color: var(--color-text-secondary);
         }
 
         .detail-unit .value {
-          font-size: 0.875rem;
-          font-weight: 500;
+          font-size: var(--text-sm);
+          font-weight: var(--font-medium);
           color: var(--color-text);
         }
 
         /* Live Price Card */
         .live-price-card {
-          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-          border: 1px solid #e2e8f0;
-          border-radius: 12px;
-          padding: 16px;
-          margin-bottom: 16px;
+          background: var(--color-background-alt);
+          border: 1px solid var(--color-border-light);
+          border-radius: var(--radius-md);
+          padding: var(--space-4);
+          margin-bottom: var(--space-4);
         }
 
         .price-main {
@@ -1209,26 +1243,26 @@ export default function MarketplacePage() {
         }
 
         .price-label {
-          font-size: 0.75rem;
+          font-size: var(--text-xs);
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          color: #64748b;
-          font-weight: 600;
+          color: var(--color-text-muted);
+          font-weight: var(--font-semibold);
         }
 
         .price-value {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: #0f172a;
+          font-size: var(--text-h3);
+          font-weight: var(--font-bold);
+          color: var(--color-primary);
         }
 
         .price-trend {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 12px;
-          padding-bottom: 12px;
-          border-bottom: 1px solid #e2e8f0;
+          margin-bottom: var(--space-3);
+          padding-bottom: var(--space-3);
+          border-bottom: 1px solid var(--color-border-light);
         }
 
         .trend-chart {
@@ -1245,9 +1279,9 @@ export default function MarketplacePage() {
           font-weight: 600;
         }
 
-        .trend-badge.up { background: #dcfce7; color: #166534; }
-        .trend-badge.down { background: #fee2e2; color: #991b1b; }
-        .trend-badge.stable { background: #f1f5f9; color: #64748b; }
+        .trend-badge.up { background: rgba(22, 163, 74, 0.12); color: var(--color-emerald); }
+        .trend-badge.down { background: rgba(220, 38, 38, 0.12); color: var(--color-danger); }
+        .trend-badge.stable { background: var(--color-mist); color: var(--color-text-secondary); }
 
         .dash {
           width: 8px;
@@ -1271,7 +1305,7 @@ export default function MarketplacePage() {
           font-size: 0.65rem;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          color: #94a3b8;
+          color: var(--color-text-muted);
           margin-bottom: 2px;
         }
 
@@ -1279,53 +1313,53 @@ export default function MarketplacePage() {
           display: block;
           font-size: 0.8rem;
           font-weight: 600;
-          color: #334155;
+          color: var(--color-text);
         }
 
         .info-value.source.scraped {
-          color: #16a34a;
+          color: var(--color-emerald);
         }
 
         .info-value.source.static {
-          color: #64748b;
+          color: var(--color-text-secondary);
         }
 
         .supplier-info {
           display: flex;
           align-items: center;
           gap: 4px;
-          margin-top: 12px;
-          padding-top: 12px;
-          border-top: 1px solid #e2e8f0;
+          margin-top: var(--space-3);
+          padding-top: var(--space-3);
+          border-top: 1px solid var(--color-border-light);
           font-size: 0.8rem;
-          color: #64748b;
+          color: var(--color-text-secondary);
         }
 
         .supplier-info .location {
-          color: #94a3b8;
+          color: var(--color-text-muted);
         }
 
         .milestones-used {
-          margin-bottom: var(--spacing-md);
+          margin-bottom: var(--space-4);
         }
 
         .milestones-used .label {
           display: block;
-          font-size: 0.875rem;
+          font-size: var(--text-sm);
           color: var(--color-text-secondary);
-          margin-bottom: var(--spacing-xs);
+          margin-bottom: var(--space-1);
         }
 
         .milestone-tags {
           display: flex;
           flex-wrap: wrap;
-          gap: var(--spacing-xs);
+          gap: var(--space-1);
         }
 
         .milestone-tag {
-          font-size: 0.75rem;
+          font-size: var(--text-xs);
           text-transform: capitalize;
-          background: var(--color-background);
+          background: var(--color-mist);
           padding: 2px 8px;
           border-radius: var(--radius-sm);
           color: var(--color-text-secondary);
@@ -1334,34 +1368,34 @@ export default function MarketplacePage() {
         .divider {
           border: none;
           border-top: 1px solid var(--color-border-light);
-          margin: var(--spacing-md) 0;
+          margin: var(--space-4) 0;
         }
 
         .suppliers-title {
-          font-size: 0.875rem;
-          font-weight: 600;
+          font-size: var(--text-sm);
+          font-weight: var(--font-semibold);
           color: var(--color-text);
-          margin: 0 0 var(--spacing-md) 0;
+          margin: 0 0 var(--space-4) 0;
         }
 
         .price-list {
           display: flex;
           flex-direction: column;
-          gap: var(--spacing-sm);
-          margin-bottom: var(--spacing-lg);
+          gap: var(--space-2);
+          margin-bottom: var(--space-6);
         }
 
         .price-row {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: var(--spacing-sm);
-          background: var(--color-background);
+          padding: var(--space-2);
+          background: var(--color-mist);
           border-radius: var(--radius-md);
         }
 
         .price-row.best {
-          background: rgba(252, 163, 17, 0.1);
+          background: rgba(46, 108, 246, 0.12);
           border: 1px solid var(--color-accent);
         }
 
@@ -1376,21 +1410,21 @@ export default function MarketplacePage() {
         .supplier-name {
           display: flex;
           align-items: center;
-          gap: var(--spacing-xs);
-          font-size: 0.875rem;
-          font-weight: 500;
+          gap: var(--space-1);
+          font-size: var(--text-sm);
+          font-weight: var(--font-medium);
           color: var(--color-text);
         }
 
         .trusted-badge {
-          color: var(--color-success);
+          color: var(--color-emerald);
         }
 
         .supplier-location {
           display: flex;
           align-items: center;
           gap: 4px;
-          font-size: 0.75rem;
+          font-size: var(--text-xs);
           color: var(--color-text-muted);
         }
 
@@ -1412,33 +1446,33 @@ export default function MarketplacePage() {
         }
 
         .no-prices {
-          font-size: 0.875rem;
+          font-size: var(--text-sm);
           color: var(--color-text-muted);
           text-align: center;
-          padding: var(--spacing-md);
+          padding: var(--space-4);
         }
 
         .quantity-row {
           display: flex;
           align-items: center;
-          gap: var(--spacing-sm);
-          margin-bottom: var(--spacing-md);
+          gap: var(--space-2);
+          margin-bottom: var(--space-4);
         }
 
         .action-row {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: var(--spacing-sm);
-          margin-bottom: var(--spacing-sm);
+          gap: var(--space-2);
+          margin-bottom: var(--space-2);
         }
 
         .compare-btn {
           width: 100%;
-          margin-bottom: var(--spacing-md);
+          margin-bottom: var(--space-4);
         }
 
         .quantity-row label {
-          font-size: 0.875rem;
+          font-size: var(--text-sm);
           color: var(--color-text-secondary);
         }
 
@@ -1448,12 +1482,13 @@ export default function MarketplacePage() {
           border: 1px solid var(--color-border);
           border-radius: var(--radius-md);
           overflow: hidden;
+          background: var(--color-surface);
         }
 
         .qty-btn {
           width: 32px;
           height: 32px;
-          background: var(--color-background);
+          background: var(--color-mist);
           border: none;
           font-size: 1rem;
           cursor: pointer;
@@ -1477,7 +1512,7 @@ export default function MarketplacePage() {
           height: 32px;
           border: none;
           text-align: center;
-          font-size: 0.875rem;
+          font-size: var(--text-sm);
           background: var(--color-surface);
           color: var(--color-text);
         }
@@ -1487,7 +1522,7 @@ export default function MarketplacePage() {
         }
 
         .qty-unit {
-          font-size: 0.75rem;
+          font-size: var(--text-xs);
           color: var(--color-text-muted);
         }
 
@@ -1500,27 +1535,27 @@ export default function MarketplacePage() {
         }
 
         .alt-title {
-          font-size: 0.875rem;
-          font-weight: 600;
+          font-size: var(--text-sm);
+          font-weight: var(--font-semibold);
           color: var(--color-text);
-          margin: 0 0 var(--spacing-sm) 0;
+          margin: 0 0 var(--space-2) 0;
         }
 
         .alt-grid {
           display: grid;
           grid-template-columns: 1fr;
-          gap: var(--spacing-xs);
-          margin-bottom: var(--spacing-md);
+          gap: var(--space-1);
+          margin-bottom: var(--space-4);
         }
 
         .alt-card {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: var(--spacing-sm);
+          padding: var(--space-2);
           border-radius: var(--radius-md);
           border: 1px solid var(--color-border-light);
-          background: var(--color-background);
+          background: var(--color-mist);
           cursor: pointer;
           text-align: left;
         }
@@ -1532,103 +1567,104 @@ export default function MarketplacePage() {
         .alt-name {
           display: block;
           font-size: 0.85rem;
-          font-weight: 600;
+          font-weight: var(--font-semibold);
           color: var(--color-text);
         }
 
         .alt-sub {
           display: block;
-          font-size: 0.7rem;
+          font-size: var(--text-xs);
           color: var(--color-text-muted);
         }
 
         .alt-price {
           font-size: 0.85rem;
-          font-weight: 600;
+          font-weight: var(--font-semibold);
           color: var(--color-accent);
         }
 
         .comparison-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(15, 23, 42, 0.4);
+          background: var(--color-surface-overlay);
           backdrop-filter: blur(3px);
           z-index: 200;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 24px;
+          padding: var(--space-6);
         }
 
         .comparison-modal {
           width: 100%;
           max-width: 560px;
           background: var(--color-surface);
-          border-radius: 16px;
-          box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
-          padding: 20px;
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-xl);
+          padding: var(--space-5);
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: var(--space-4);
         }
 
         .material-compare-modal {
           width: 100%;
           max-width: 640px;
           background: var(--color-surface);
-          border-radius: 16px;
-          box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
-          padding: 20px;
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-xl);
+          padding: var(--space-5);
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: var(--space-4);
         }
 
         .comparison-header {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          gap: 16px;
+          gap: var(--space-4);
         }
 
         .close-btn {
           background: none;
           border: none;
           padding: 6px;
-          border-radius: 8px;
+          border-radius: var(--radius-md);
           cursor: pointer;
-          color: #94a3b8;
+          color: var(--color-text-muted);
         }
 
         .close-btn:hover {
-          background: #f1f5f9;
-          color: #64748b;
+          background: var(--color-mist);
+          color: var(--color-text-secondary);
         }
 
         .comparison-header h3 {
           margin: 0;
-          font-size: 1.1rem;
+          font-size: var(--text-h5);
           color: var(--color-text);
+          font-family: var(--font-heading);
         }
 
         .comparison-header p {
           margin: 4px 0 0;
-          font-size: 0.85rem;
+          font-size: var(--text-sm);
           color: var(--color-text-secondary);
         }
 
         .comparison-loading {
           display: flex;
           align-items: center;
-          gap: 12px;
-          color: #2563eb;
-          font-size: 0.875rem;
+          gap: var(--space-3);
+          color: var(--color-accent);
+          font-size: var(--text-sm);
         }
 
         .comparison-list {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: var(--space-3);
           max-height: 50vh;
           overflow-y: auto;
         }
@@ -1637,11 +1673,11 @@ export default function MarketplacePage() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 16px;
-          padding: 12px;
+          gap: var(--space-4);
+          padding: var(--space-3);
           border: 1px solid var(--color-border-light);
-          border-radius: 12px;
-          background: var(--color-background);
+          border-radius: var(--radius-md);
+          background: var(--color-mist);
         }
 
         .comparison-price {
@@ -1649,19 +1685,19 @@ export default function MarketplacePage() {
           display: flex;
           flex-direction: column;
           gap: 4px;
-          font-size: 0.85rem;
+          font-size: var(--text-sm);
           color: var(--color-text);
         }
 
         .comparison-row .supplier-name {
-          font-size: 0.9rem;
-          font-weight: 600;
+          font-size: var(--text-sm);
+          font-weight: var(--font-semibold);
           color: var(--color-text);
         }
 
         .comparison-row .supplier-location {
           display: block;
-          font-size: 0.75rem;
+          font-size: var(--text-xs);
           color: var(--color-text-muted);
           margin-bottom: 4px;
         }
@@ -1673,52 +1709,52 @@ export default function MarketplacePage() {
         }
 
         .compare-select label {
-          font-size: 0.75rem;
+          font-size: var(--text-xs);
           text-transform: uppercase;
           letter-spacing: 0.04em;
           color: var(--color-text-muted);
         }
 
         .compare-select select {
-          padding: 8px 12px;
-          border-radius: 10px;
+          padding: var(--space-2) var(--space-3);
+          border-radius: var(--radius-md);
           border: 1px solid var(--color-border-light);
           background: var(--color-surface);
-          font-size: 0.85rem;
+          font-size: var(--text-sm);
         }
 
         .compare-table {
           display: grid;
-          gap: 8px;
+          gap: var(--space-2);
         }
 
         .compare-row {
           display: grid;
           grid-template-columns: 120px 1fr 1fr;
-          gap: 12px;
-          padding: 10px 12px;
-          border-radius: 12px;
+          gap: var(--space-3);
+          padding: var(--space-3);
+          border-radius: var(--radius-md);
           border: 1px solid var(--color-border-light);
-          background: var(--color-background);
+          background: var(--color-mist);
           align-items: center;
-          font-size: 0.85rem;
+          font-size: var(--text-sm);
         }
 
         .compare-row.header {
-          font-weight: 600;
+          font-weight: var(--font-semibold);
           background: var(--color-surface);
         }
 
         .compare-row .label {
           color: var(--color-text-muted);
-          font-size: 0.75rem;
+          font-size: var(--text-xs);
           text-transform: uppercase;
           letter-spacing: 0.04em;
         }
 
         .muted {
           color: var(--color-text-muted);
-          font-size: 0.85rem;
+          font-size: var(--text-sm);
         }
 
         .empty-detail {
@@ -1726,8 +1762,8 @@ export default function MarketplacePage() {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: var(--spacing-md);
-          padding: var(--spacing-xl);
+          gap: var(--space-4);
+          padding: var(--space-8);
           color: var(--color-text-muted);
           text-align: center;
         }
@@ -1739,17 +1775,17 @@ export default function MarketplacePage() {
         .suppliers-header {
           display: flex;
           align-items: center;
-          gap: var(--spacing-sm);
-          font-size: 0.875rem;
-          font-weight: 600;
+          gap: var(--space-2);
+          font-size: var(--text-sm);
+          font-weight: var(--font-semibold);
           color: var(--color-accent);
-          margin: 0 0 var(--spacing-md) 0;
+          margin: 0 0 var(--space-4) 0;
         }
 
         .supplier-list {
           display: flex;
           flex-direction: column;
-          gap: var(--spacing-sm);
+          gap: var(--space-2);
         }
 
         .supplier-row {
@@ -1760,14 +1796,14 @@ export default function MarketplacePage() {
 
         .supplier-row .name {
           display: block;
-          font-size: 0.875rem;
-          font-weight: 500;
+          font-size: var(--text-sm);
+          font-weight: var(--font-medium);
           color: var(--color-text-inverse);
         }
 
         .supplier-row .location {
           display: block;
-          font-size: 0.75rem;
+          font-size: var(--text-xs);
           color: rgba(255, 255, 255, 0.6);
         }
 
@@ -1775,13 +1811,13 @@ export default function MarketplacePage() {
           display: flex;
           align-items: center;
           gap: 4px;
-          font-size: 0.875rem;
+          font-size: var(--text-sm);
           color: var(--color-accent);
         }
 
         .empty-state {
           text-align: center;
-          padding: var(--spacing-xl);
+          padding: var(--space-8);
           color: var(--color-text-muted);
         }
 
@@ -1789,12 +1825,12 @@ export default function MarketplacePage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: var(--spacing-md);
-          padding: var(--spacing-md) var(--spacing-lg);
+          gap: var(--space-4);
+          padding: var(--space-4) var(--space-6);
           border: 1px solid var(--color-border-light);
-          background: var(--color-background);
+          background: var(--color-mist);
           border-radius: var(--radius-md);
-          font-size: 0.875rem;
+          font-size: var(--text-sm);
           color: var(--color-text-secondary);
         }
 
@@ -1817,7 +1853,7 @@ export default function MarketplacePage() {
             left: 260px;
             right: 0;
             background: var(--color-surface);
-            padding: var(--spacing-lg);
+            padding: var(--space-6);
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
             z-index: 100;
             max-height: 50vh;

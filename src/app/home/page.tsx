@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useReveal } from '@/hooks/useReveal';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
@@ -154,25 +154,7 @@ export default function HomePage() {
   const router = useRouter();
   const heroMetrics = stats.slice(0, 2);
 
-  useEffect(() => {
-    const cards = document.querySelectorAll('.feature-card');
-    if (!cards.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries, obs) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('in-view');
-            obs.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.2 }
-    );
-
-    cards.forEach((card) => observer.observe(card));
-    return () => observer.disconnect();
-  }, []);
+  useReveal({ selector: '.feature-card', threshold: 0.2, once: true });
 
   return (
     <MainLayout fullWidth>

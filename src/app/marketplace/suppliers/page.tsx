@@ -5,6 +5,7 @@ import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
 import Input from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase';
+import { useReveal } from '@/hooks/useReveal';
 import {
   MagnifyingGlass,
   MapPin,
@@ -46,6 +47,8 @@ export default function SupplierDirectoryPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
+
+  useReveal({ deps: [filteredSuppliers.length, loading, loadingMore] });
 
   const loadSuppliers = useCallback(async (offset = 0, append = false) => {
     if (offset === 0) {
@@ -136,7 +139,7 @@ export default function SupplierDirectoryPage() {
   return (
     <MainLayout title="Supplier Directory">
       <div className="supplier-directory">
-        <div className="directory-header">
+        <div className="directory-header reveal" data-delay="1">
           <div>
             <h1>Supplier Directory</h1>
             <p>Browse verified suppliers and their product catalogs.</p>
@@ -144,12 +147,13 @@ export default function SupplierDirectoryPage() {
           <Link href="/marketplace" className="back-link">Back to Marketplace</Link>
         </div>
 
-        <div className="directory-filters">
+        <div className="directory-filters reveal" data-delay="2">
           <Input
             placeholder="Search suppliers by name or location..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             icon={<MagnifyingGlass size={18} weight="light" />}
+            className="search-input"
           />
 
           <div className="category-filters">
@@ -172,23 +176,29 @@ export default function SupplierDirectoryPage() {
         </div>
 
         {loading ? (
-          <div className="loading-state">Loading suppliers...</div>
+          <div className="loading-state reveal">
+            <SpinnerGap size={32} className="spinner" />
+            <p>Loading suppliers...</p>
+          </div>
         ) : filteredSuppliers.length === 0 ? (
-          <div className="empty-state">
+          <div className="empty-state reveal">
             <Storefront size={48} weight="light" />
             <p>No suppliers match your search.</p>
           </div>
         ) : (
           <>
-            <div className="results-info">
+            <div className="results-info reveal">
               Showing {filteredSuppliers.length} of {totalCount} suppliers
             </div>
             <div className="supplier-grid">
-              {filteredSuppliers.map((supplier) => {
+              {filteredSuppliers.map((supplier, index) => {
                 const badge = supplier.verification_status ? VERIFICATION_BADGES[supplier.verification_status] : null;
                 const count = productCounts[supplier.id] || 0;
+                // Stagger delay based on index modulo 5
+                const delay = (index % 5) + 1;
+
                 return (
-                  <div key={supplier.id} className="supplier-card">
+                  <div key={supplier.id} className="supplier-card reveal" data-delay={delay}>
                     <div className="card-header">
                       <div>
                         <h3>{supplier.name}</h3>
@@ -204,7 +214,7 @@ export default function SupplierDirectoryPage() {
                     </div>
 
                     <div className="card-meta">
-                      <span className="rating"><Star size={14} weight="fill" />{supplier.rating?.toFixed(1) || '—'}</span>
+                      <span className="rating"><Star size={14} weight="fill" color="var(--color-amber)" />{supplier.rating?.toFixed(1) || '—'}</span>
                       <span className="products"><Package size={14} />{count} products</span>
                     </div>
 
@@ -228,7 +238,7 @@ export default function SupplierDirectoryPage() {
             </div>
 
             {hasMore && (
-              <div className="load-more-container">
+              <div className="load-more-container reveal">
                 <button
                   className="load-more-btn"
                   onClick={handleLoadMore}
@@ -253,104 +263,142 @@ export default function SupplierDirectoryPage() {
         .supplier-directory {
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: var(--space-6);
+          max-width: var(--container-max);
+          margin: 0 auto;
+          padding: var(--space-8) var(--container-padding);
+          font-family: var(--font-body);
         }
 
         .directory-header {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          gap: 16px;
+          gap: var(--space-4);
+          margin-bottom: var(--space-4);
         }
 
         .directory-header h1 {
-          margin: 0 0 6px;
-          font-size: 1.5rem;
-          color: var(--color-text);
+          margin: 0 0 var(--space-2);
+          font-family: var(--font-heading);
+          font-size: var(--text-h2);
+          font-weight: var(--font-bold);
+          color: var(--color-primary);
         }
 
         .directory-header p {
           margin: 0;
           color: var(--color-text-secondary);
+          font-size: var(--text-lg);
         }
 
         .back-link {
-          font-size: 0.875rem;
+          font-size: var(--text-sm);
           color: var(--color-text-secondary);
           text-decoration: none;
-          padding: 8px 12px;
-          border-radius: 10px;
+          padding: var(--space-2) var(--space-3);
+          border-radius: var(--radius-md);
           border: 1px solid var(--color-border-light);
+          transition: all var(--duration-fast);
+        }
+
+        .back-link:hover {
+          border-color: var(--color-accent);
+          color: var(--color-accent);
         }
 
         .directory-filters {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: var(--space-4);
         }
 
         .category-filters {
           display: flex;
           flex-wrap: wrap;
-          gap: 8px;
+          gap: var(--space-2);
         }
 
         .pill {
           background: var(--color-surface);
           border: 1px solid var(--color-border-light);
-          padding: 6px 12px;
-          border-radius: 999px;
-          font-size: 0.8rem;
+          padding: 6px 14px;
+          border-radius: var(--radius-full);
+          font-size: var(--text-sm);
           cursor: pointer;
           color: var(--color-text-secondary);
+          font-weight: var(--font-medium);
+          transition: all var(--duration-fast);
+          font-family: var(--font-body);
+        }
+
+        .pill:hover {
+          background: var(--color-mist);
+          color: var(--color-text);
         }
 
         .pill.active {
-          background: var(--color-accent);
+          background: rgba(46, 108, 246, 0.1);
           border-color: var(--color-accent);
-          color: var(--color-primary);
+          color: var(--color-accent);
+          font-weight: var(--font-semibold);
         }
 
         .loading-state,
         .empty-state {
-          padding: 48px;
+          padding: var(--space-12);
           text-align: center;
           color: var(--color-text-muted);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: var(--space-4);
         }
 
         .supplier-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-          gap: 16px;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: var(--grid-gutter);
+          margin-top: var(--space-4);
         }
 
         .supplier-card {
           background: var(--color-surface);
           border: 1px solid var(--color-border-light);
-          border-radius: 16px;
-          padding: 16px;
+          border-radius: var(--card-radius);
+          padding: var(--space-6);
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: var(--space-4);
+          transition: transform var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out);
+          box-shadow: var(--shadow-card);
+        }
+
+        .supplier-card:hover {
+          transform: translateY(-4px);
+          border-color: var(--color-accent);
+          box-shadow: var(--shadow-lg);
         }
 
         .card-header {
           display: flex;
           justify-content: space-between;
-          gap: 12px;
+          gap: var(--space-3);
         }
 
         .card-header h3 {
-          margin: 0 0 4px;
-          font-size: 1rem;
-          color: var(--color-text);
+          margin: 0 0 var(--space-1);
+          font-family: var(--font-heading);
+          font-size: var(--text-lg);
+          font-weight: var(--font-bold);
+          color: var(--color-primary);
         }
 
         .location {
           display: flex;
           align-items: center;
           gap: 4px;
-          font-size: 0.75rem;
+          font-size: var(--text-sm);
           color: var(--color-text-muted);
         }
 
@@ -358,17 +406,18 @@ export default function SupplierDirectoryPage() {
           display: inline-flex;
           align-items: center;
           gap: 4px;
-          font-size: 0.7rem;
-          font-weight: 600;
-          padding: 4px 8px;
-          border-radius: 999px;
+          font-size: var(--text-xs);
+          font-weight: var(--font-bold);
+          padding: 4px 10px;
+          border-radius: var(--radius-full);
           white-space: nowrap;
+          height: fit-content;
         }
 
         .card-meta {
           display: flex;
-          gap: 16px;
-          font-size: 0.8rem;
+          gap: var(--space-4);
+          font-size: var(--text-sm);
           color: var(--color-text-secondary);
         }
 
@@ -377,69 +426,84 @@ export default function SupplierDirectoryPage() {
           display: flex;
           align-items: center;
           gap: 4px;
+          font-weight: var(--font-medium);
         }
 
         .category-tags {
           display: flex;
           flex-wrap: wrap;
-          gap: 6px;
+          gap: var(--space-2);
         }
 
         .tag {
-          font-size: 0.7rem;
+          font-size: var(--text-xs);
           padding: 4px 8px;
-          border-radius: 8px;
-          background: var(--color-background);
-          color: var(--color-text-muted);
+          border-radius: var(--radius-sm);
+          background: var(--color-mist);
+          color: var(--color-text-secondary);
+          font-weight: var(--font-medium);
         }
 
         .card-actions {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          font-size: 0.75rem;
+          font-size: var(--text-sm);
+          padding-top: var(--space-4);
+          border-top: 1px solid var(--color-border-light);
+          margin-top: auto;
         }
 
         .view-link {
           color: var(--color-accent);
           text-decoration: none;
-          font-weight: 600;
+          font-weight: var(--font-semibold);
+          transition: color 0.2s;
+        }
+        
+        .view-link:hover {
+            color: var(--color-accent-dark);
         }
 
         .contact {
           color: var(--color-text-muted);
+          font-family: var(--font-mono);
+          font-size: var(--text-xs);
         }
 
         .results-info {
-          font-size: 0.875rem;
+          font-size: var(--text-sm);
           color: var(--color-text-muted);
         }
 
         .load-more-container {
           display: flex;
           justify-content: center;
-          margin-top: 16px;
+          margin-top: var(--space-8);
         }
 
         .load-more-btn {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 12px 24px;
+          padding: 12px 32px;
           background: var(--color-surface);
           border: 1px solid var(--color-border-light);
-          border-radius: 12px;
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--color-text);
+          border-radius: var(--radius-md);
+          font-size: var(--text-sm);
+          font-weight: var(--font-semibold);
+          color: var(--color-primary);
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all var(--duration-fast);
+          box-shadow: var(--shadow-sm);
         }
 
         .load-more-btn:hover:not(:disabled) {
-          background: var(--color-accent);
-          border-color: var(--color-accent);
-          color: var(--color-primary);
+          background: var(--color-primary);
+          border-color: var(--color-primary);
+          color: var(--color-white);
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-md);
         }
 
         .load-more-btn:disabled {
@@ -447,18 +511,22 @@ export default function SupplierDirectoryPage() {
           cursor: not-allowed;
         }
 
+        /* Spinner Animation */
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
 
-        .load-more-btn :global(.spinner) {
+        :global(.spinner) {
           animation: spin 1s linear infinite;
         }
 
         @media (max-width: 768px) {
           .directory-header {
             flex-direction: column;
+          }
+          .supplier-grid {
+             grid-template-columns: 1fr;
           }
         }
       `}</style>

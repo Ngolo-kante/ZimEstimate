@@ -1,0 +1,287 @@
+/* Component style guide primitives (uses design tokens) */
+
+.ds-page {
+  min-height: 100vh;
+  padding: var(--space-12) var(--space-8);
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+.ds-hero {
+  display: grid;
+  gap: var(--space-6);
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  margin-bottom: var(--space-10);
+}
+
+.ds-hero h1 {
+  font-family: var(--font-heading);
+  font-size: var(--text-h1);
+  line-height: var(--leading-tight);
+  margin: 0 0 var(--space-3);
+}
+
+.ds-hero p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-lg);
+}
+
+.ds-surface {
+  background: var(--color-background-alt);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  border: 1px solid var(--color-border-light);
+}
+
+.ds-section {
+  margin-top: var(--space-12);
+}
+
+.ds-section h2 {
+  font-family: var(--font-heading);
+  font-size: var(--text-h3);
+  margin: 0 0 var(--space-2);
+}
+
+.ds-section p {
+  margin: 0 0 var(--space-6);
+  color: var(--color-text-secondary);
+}
+
+.ds-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.ds-grid {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.ds-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ds-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Buttons */
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--btn-height-md);
+  padding: var(--btn-padding-md);
+  border-radius: var(--btn-radius);
+  font-size: var(--btn-font-size);
+  font-weight: var(--btn-font-weight);
+  border: var(--border-width) solid transparent;
+  transition: transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    border var(--duration-fast) var(--ease-out);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.ds-btn:active {
+  transform: translateY(1px);
+}
+
+.ds-btn--sm {
+  height: var(--btn-height-sm);
+  padding: var(--btn-padding-sm);
+  font-size: var(--text-xs);
+}
+
+.ds-btn--lg {
+  height: var(--btn-height-lg);
+  padding: var(--btn-padding-lg);
+  font-size: var(--text-base);
+}
+
+.ds-btn--primary {
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+  box-shadow: var(--shadow-button);
+}
+
+.ds-btn--primary:hover {
+  background: var(--color-accent-dark);
+}
+
+.ds-btn--secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border-dark);
+}
+
+.ds-btn--secondary:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.ds-btn--ghost {
+  background: transparent;
+  color: var(--color-accent);
+  border-color: var(--color-border-light);
+}
+
+.ds-btn--ghost:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-muted);
+}
+
+.ds-btn--danger {
+  background: var(--color-danger);
+  color: var(--color-text-inverse);
+}
+
+.ds-btn--danger:hover {
+  background: #b91c1c;
+}
+
+.ds-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+/* Cards */
+.ds-card {
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+  padding: var(--card-padding);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ds-card h3 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-h5);
+}
+
+.ds-card p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.ds-card-actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.ds-card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Inputs */
+.ds-field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ds-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+}
+
+.ds-input,
+.ds-select,
+.ds-textarea {
+  width: 100%;
+  height: var(--input-height);
+  padding: var(--input-padding);
+  border-radius: var(--input-radius);
+  border: var(--input-border);
+  background: var(--input-bg);
+  color: var(--color-text);
+  font-size: var(--text-base);
+  font-family: var(--font-body);
+}
+
+.ds-textarea {
+  min-height: 120px;
+  padding: var(--space-3) var(--space-4);
+}
+
+.ds-input:focus,
+.ds-select:focus,
+.ds-textarea:focus {
+  outline: none;
+  border: var(--input-border-focus);
+  box-shadow: 0 0 0 3px rgba(46, 108, 246, 0.12);
+}
+
+.ds-helper {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.ds-helper.ds-error {
+  color: var(--color-danger);
+}
+
+/* Tables */
+.ds-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.ds-table th,
+.ds-table td {
+  padding: var(--table-cell-padding);
+  text-align: left;
+}
+
+.ds-table th {
+  background: var(--table-header-bg);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+.ds-table td {
+  border-bottom: 1px solid var(--color-border-light);
+  font-size: var(--text-sm);
+}
+
+.ds-table tbody tr:nth-child(even) {
+  background: var(--table-zebra-bg);
+}
+
+.ds-table tbody tr:hover {
+  background: var(--table-row-hover);
+}
+
+@media (max-width: 960px) {
+  .ds-grid-2,
+  .ds-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .ds-page {
+    padding: var(--space-10) var(--space-4);
+  }
+}

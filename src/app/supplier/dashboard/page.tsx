@@ -30,6 +30,7 @@ import {
 } from '@phosphor-icons/react';
 import { supabase } from '@/lib/supabase';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
+import { useReveal } from '@/hooks/useReveal';
 import {
   getUserSupplierProfile,
   getSupplierProducts,
@@ -50,10 +51,10 @@ import type { Supplier, SupplierApiKey, SupplierProduct } from '@/lib/database.t
 type TabKey = 'overview' | 'products' | 'quotes' | 'settings';
 
 const STOCK_STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  in_stock: { label: 'In Stock', color: '#16a34a' },
-  low_stock: { label: 'Low Stock', color: '#f59e0b' },
-  out_of_stock: { label: 'Out of Stock', color: '#ef4444' },
-  discontinued: { label: 'Discontinued', color: '#6b7280' },
+  in_stock: { label: 'In Stock', color: 'var(--color-emerald)' },
+  low_stock: { label: 'Low Stock', color: 'var(--color-amber)' },
+  out_of_stock: { label: 'Out of Stock', color: 'var(--color-danger)' },
+  discontinued: { label: 'Discontinued', color: 'var(--color-text-muted)' },
 };
 
 export default function SupplierDashboardPage() {
@@ -78,6 +79,8 @@ export default function SupplierDashboardPage() {
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
   const [apiKeyProcessing, setApiKeyProcessing] = useState(false);
+
+  useReveal({ deps: [activeTab, products.length, rfqInbox.length, apiKeys.length, loading, rfqLoading] });
 
   useEffect(() => {
     async function loadData() {
@@ -353,14 +356,8 @@ export default function SupplierDashboardPage() {
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#f8fafc',
-      }}>
-        <Spinner size={32} className="animate-spin" style={{ color: '#3b82f6' }} />
+      <div className="supplier-loading">
+        <Spinner size={32} className="animate-spin" style={{ color: 'var(--color-accent)' }} />
       </div>
     );
   }
@@ -370,37 +367,24 @@ export default function SupplierDashboardPage() {
   }
 
   const verificationBadge = {
-    unverified: { label: 'Unverified', color: '#6b7280', icon: Clock },
-    pending: { label: 'Pending Review', color: '#f59e0b', icon: Clock },
-    verified: { label: 'Verified', color: '#16a34a', icon: ShieldCheck },
-    trusted: { label: 'Trusted Supplier', color: '#3b82f6', icon: ShieldCheck },
-    premium: { label: 'Premium Partner', color: '#7c3aed', icon: ShieldCheck },
+    unverified: { label: 'Unverified', color: 'var(--color-text-muted)', icon: Clock },
+    pending: { label: 'Pending Review', color: 'var(--color-amber)', icon: Clock },
+    verified: { label: 'Verified', color: 'var(--color-emerald)', icon: ShieldCheck },
+    trusted: { label: 'Trusted Supplier', color: 'var(--color-accent)', icon: ShieldCheck },
+    premium: { label: 'Premium Partner', color: 'var(--color-clay)', icon: ShieldCheck },
   }[supplier.verification_status || 'unverified'];
 
   const VerificationIcon = verificationBadge.icon;
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#f8fafc',
-    }}>
+    <div className="supplier-dashboard">
       {/* Header */}
-      <div style={{
-        backgroundColor: 'white',
-        borderBottom: '1px solid #e2e8f0',
-        padding: '1.5rem 2rem',
-      }}>
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
+      <div className="supplier-header reveal" data-delay="1">
+        <div className="supplier-header-inner">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-              <Storefront size={28} style={{ color: '#3b82f6' }} />
-              <h1 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{supplier.name}</h1>
+            <div className="supplier-title">
+              <Storefront size={28} style={{ color: 'var(--color-accent)' }} />
+              <h1>{supplier.name}</h1>
               <span style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -408,7 +392,7 @@ export default function SupplierDashboardPage() {
                 padding: '0.25rem 0.75rem',
                 borderRadius: '20px',
                 fontSize: '0.75rem',
-                fontWeight: 500,
+                fontWeight: 600,
                 backgroundColor: `${verificationBadge.color}15`,
                 color: verificationBadge.color,
               }}>
@@ -416,15 +400,15 @@ export default function SupplierDashboardPage() {
                 {verificationBadge.label}
               </span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.875rem', color: '#64748b' }}>
+            <div className="supplier-meta">
               {supplier.location && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <span className="supplier-meta-item">
                   <MapPin size={16} />
                   {supplier.location}
                 </span>
               )}
               {supplier.contact_phone && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <span className="supplier-meta-item">
                   <Phone size={16} />
                   {supplier.contact_phone}
                 </span>
@@ -434,14 +418,7 @@ export default function SupplierDashboardPage() {
 
           <Link
             href="/"
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#f1f5f9',
-              borderRadius: '6px',
-              color: '#64748b',
-              textDecoration: 'none',
-              fontSize: '0.875rem',
-            }}
+            className="supplier-back-link"
           >
             Back to Home
           </Link>
@@ -449,17 +426,8 @@ export default function SupplierDashboardPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{
-        backgroundColor: 'white',
-        borderBottom: '1px solid #e2e8f0',
-      }}>
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          display: 'flex',
-          gap: '0.5rem',
-          padding: '0 2rem',
-        }}>
+      <div className="supplier-tabs">
+        <div className="supplier-tabs-inner">
           {[
             { key: 'overview' as TabKey, label: 'Overview', icon: ChartLine },
             { key: 'products' as TabKey, label: 'Products', icon: Package },
@@ -472,19 +440,7 @@ export default function SupplierDashboardPage() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '1rem 1.25rem',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  borderBottom: isActive ? '2px solid #3b82f6' : '2px solid transparent',
-                  color: isActive ? '#3b82f6' : '#64748b',
-                  fontWeight: isActive ? 600 : 400,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
+                className={`supplier-tab ${isActive ? 'active' : ''}`}
               >
                 <Icon size={20} />
                 {tab.label}
@@ -495,137 +451,60 @@ export default function SupplierDashboardPage() {
       </div>
 
       {/* Content */}
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '2rem',
-      }}>
+      <div className="supplier-content">
         {/* Overview Tab */}
         {activeTab === 'overview' && (
-          <div style={{ display: 'grid', gap: '1.5rem' }}>
+          <div className="overview-grid">
             {/* Stats Cards */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '1rem',
-            }}>
-              <div style={{
-                backgroundColor: 'white',
-                borderRadius: '12px',
-                padding: '1.5rem',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              }}>
-                <div style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                  Total Products
-                </div>
-                <div style={{ fontSize: '2rem', fontWeight: 600 }}>{products.length}</div>
+            <div className="stats-grid">
+              <div className="stat-card reveal" data-delay="1">
+                <div className="stat-label">Total Products</div>
+                <div className="stat-value">{products.length}</div>
               </div>
 
-              <div style={{
-                backgroundColor: 'white',
-                borderRadius: '12px',
-                padding: '1.5rem',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              }}>
-                <div style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                  In Stock
-                </div>
-                <div style={{ fontSize: '2rem', fontWeight: 600, color: '#16a34a' }}>
+              <div className="stat-card reveal" data-delay="2">
+                <div className="stat-label">In Stock</div>
+                <div className="stat-value stat-value--success">
                   {products.filter(p => p.stock_status === 'in_stock').length}
                 </div>
               </div>
 
-              <div style={{
-                backgroundColor: 'white',
-                borderRadius: '12px',
-                padding: '1.5rem',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              }}>
-                <div style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                  Low Stock
-                </div>
-                <div style={{ fontSize: '2rem', fontWeight: 600, color: '#f59e0b' }}>
+              <div className="stat-card reveal" data-delay="3">
+                <div className="stat-label">Low Stock</div>
+                <div className="stat-value stat-value--warning">
                   {products.filter(p => p.stock_status === 'low_stock').length}
                 </div>
               </div>
 
-              <div style={{
-                backgroundColor: 'white',
-                borderRadius: '12px',
-                padding: '1.5rem',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              }}>
-                <div style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                  Delivery Radius
-                </div>
-                <div style={{ fontSize: '2rem', fontWeight: 600 }}>
+              <div className="stat-card reveal" data-delay="4">
+                <div className="stat-label">Delivery Radius</div>
+                <div className="stat-value">
                   {supplier.delivery_radius_km || 50} km
                 </div>
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '12px',
-              padding: '1.5rem',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            }}>
-              <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>
-                Quick Actions
-              </h2>
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <div className="panel-card reveal" data-delay="2">
+              <h2>Quick Actions</h2>
+              <div className="action-row">
                 <button
                   onClick={() => setActiveTab('products')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.75rem 1.25rem',
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontWeight: 500,
-                  }}
+                  className="action-btn action-btn--primary"
                 >
                   <Plus size={18} weight="bold" />
                   Add Product
                 </button>
                 <Link
                   href="/supplier/analytics"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.75rem 1.25rem',
-                    backgroundColor: '#f8fafc',
-                    color: '#0f172a',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontWeight: 500,
-                    textDecoration: 'none',
-                  }}
+                  className="action-btn action-btn--secondary"
                 >
                   <ChartLine size={18} weight="bold" />
                   View Analytics
                 </Link>
                 <button
                   onClick={() => setActiveTab('settings')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.75rem 1.25rem',
-                    backgroundColor: 'white',
-                    color: '#64748b',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontWeight: 500,
-                  }}
+                  className="action-btn action-btn--ghost"
                 >
                   <PencilSimple size={18} />
                   Edit Profile
@@ -635,26 +514,13 @@ export default function SupplierDashboardPage() {
 
             {/* Categories */}
             {supplier.material_categories && supplier.material_categories.length > 0 && (
-              <div style={{
-                backgroundColor: 'white',
-                borderRadius: '12px',
-                padding: '1.5rem',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              }}>
-                <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>
-                  Your Categories
-                </h2>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div className="panel-card reveal" data-delay="3">
+                <h2>Your Categories</h2>
+                <div className="pill-row">
                   {supplier.material_categories.map(category => (
                     <span
                       key={category}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        backgroundColor: '#eff6ff',
-                        color: '#3b82f6',
-                        borderRadius: '20px',
-                        fontSize: '0.875rem',
-                      }}
+                      className="category-pill"
                     >
                       {category}
                     </span>
@@ -668,28 +534,13 @@ export default function SupplierDashboardPage() {
         {/* Products Tab */}
         {activeTab === 'products' && (
           <div>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '1.5rem',
-            }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>
+            <div className="section-header reveal" data-delay="1">
+              <h2 className="section-title">
                 Your Products ({products.length})
               </h2>
               <Link
                 href={`/supplier/products/add`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.75rem 1.25rem',
-                  backgroundColor: '#3b82f6',
-                  color: 'white',
-                  borderRadius: '8px',
-                  textDecoration: 'none',
-                  fontWeight: 500,
-                }}
+                className="action-btn action-btn--primary"
               >
                 <Plus size={18} weight="bold" />
                 Add Product
@@ -697,103 +548,64 @@ export default function SupplierDashboardPage() {
             </div>
 
             {products.length === 0 ? (
-              <div style={{
-                backgroundColor: 'white',
-                borderRadius: '12px',
-                padding: '3rem',
-                textAlign: 'center',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              }}>
-                <Package size={48} style={{ color: '#94a3b8', marginBottom: '1rem' }} />
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-                  No products yet
-                </h3>
-                <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
+              <div className="empty-state reveal">
+                <Package size={48} style={{ color: 'var(--color-text-muted)', marginBottom: '1rem' }} />
+                <h3>No products yet</h3>
+                <p>
                   Add your first product to start appearing in search results.
                 </p>
                 <Link
                   href={`/supplier/products/add`}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
-                    borderRadius: '8px',
-                    textDecoration: 'none',
-                    fontWeight: 500,
-                  }}
+                  className="action-btn action-btn--primary"
                 >
                   <Plus size={18} weight="bold" />
                   Add Your First Product
                 </Link>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div className="category-stack">
                 {Object.entries(productsByCategory).map(([category, categoryProducts]) => (
                   <div
                     key={category}
-                    style={{
-                      backgroundColor: 'white',
-                      borderRadius: '12px',
-                      overflow: 'hidden',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                    }}
+                    className="category-card reveal"
                   >
                     <button
                       onClick={() => toggleCategory(category)}
-                      style={{
-                        width: '100%',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '1rem 1.5rem',
-                        backgroundColor: '#f8fafc',
-                        border: 'none',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
+                      className="category-toggle"
                     >
-                      <span style={{ fontWeight: 600 }}>
+                      <span className="category-title">
                         {category} ({categoryProducts.length})
                       </span>
                       {expandedCategories.has(category) ? (
-                        <CaretUp size={20} style={{ color: '#64748b' }} />
+                        <CaretUp size={20} style={{ color: 'var(--color-text-secondary)' }} />
                       ) : (
-                        <CaretDown size={20} style={{ color: '#64748b' }} />
+                        <CaretDown size={20} style={{ color: 'var(--color-text-secondary)' }} />
                       )}
                     </button>
 
                     {expandedCategories.has(category) && (
-                      <div style={{ padding: '0.5rem' }}>
+                      <div className="category-body">
                         {categoryProducts.map(product => {
                           const statusInfo = STOCK_STATUS_LABELS[product.stock_status] || STOCK_STATUS_LABELS.in_stock;
                           return (
                             <div
                               key={product.id}
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                padding: '1rem',
-                                borderBottom: '1px solid #f1f5f9',
-                              }}
+                              className="product-row"
                             >
                               <div>
-                                <div style={{ fontWeight: 500, marginBottom: '0.25rem' }}>
+                                <div className="product-title">
                                   {product.material_name || product.material_key}
                                 </div>
-                                <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                                <div className="product-meta">
                                   {product.unit && `Per ${product.unit}`}
                                   {product.min_order_qty > 1 && ` · Min order: ${product.min_order_qty}`}
                                 </div>
                               </div>
 
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <div style={{ textAlign: 'right' }}>
+                              <div className="product-actions">
+                                <div className="product-price">
                                   {product.price_usd && (
-                                    <div style={{ fontWeight: 600 }}>
+                                    <div className="product-price-value">
                                       ${product.price_usd.toFixed(2)}
                                     </div>
                                   )}
@@ -808,28 +620,16 @@ export default function SupplierDashboardPage() {
                                   </span>
                                 </div>
 
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <div className="icon-button-row">
                                   <Link
                                     href={`/supplier/products/edit/${product.id}`}
-                                    style={{
-                                      padding: '0.5rem',
-                                      backgroundColor: '#f1f5f9',
-                                      borderRadius: '6px',
-                                      color: '#64748b',
-                                    }}
+                                    className="icon-button"
                                   >
                                     <PencilSimple size={16} />
                                   </Link>
                                   <button
                                     onClick={() => handleDeleteProduct(product.id)}
-                                    style={{
-                                      padding: '0.5rem',
-                                      backgroundColor: '#fef2f2',
-                                      border: 'none',
-                                      borderRadius: '6px',
-                                      color: '#ef4444',
-                                      cursor: 'pointer',
-                                    }}
+                                    className="icon-button icon-button--danger"
                                   >
                                     <Trash size={16} />
                                   </button>
@@ -849,13 +649,9 @@ export default function SupplierDashboardPage() {
 
         {/* RFQ Quotes Tab */}
         {activeTab === 'quotes' && (
-          <div style={{ display: 'grid', gap: '1.5rem' }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>
+          <div className="quotes-grid">
+            <div className="section-header reveal" data-delay="1">
+              <h2 className="section-title">
                 RFQ Quotes ({rfqInbox.length})
               </h2>
               <button
@@ -866,43 +662,21 @@ export default function SupplierDashboardPage() {
                   setRfqInbox(rfqs);
                   setRfqLoading(false);
                 }}
-                style={{
-                  padding: '0.5rem 0.75rem',
-                  borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
-                  backgroundColor: 'white',
-                  color: '#64748b',
-                  cursor: 'pointer',
-                  fontWeight: 500,
-                }}
+                className="action-btn action-btn--ghost"
               >
                 Refresh
               </button>
             </div>
 
             {rfqLoading ? (
-              <div style={{
-                backgroundColor: 'white',
-                borderRadius: '12px',
-                padding: '2rem',
-                textAlign: 'center',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              }}>
-                <Spinner size={24} className="animate-spin" style={{ color: '#3b82f6' }} />
+              <div className="panel-card reveal">
+                <Spinner size={24} className="animate-spin" style={{ color: 'var(--color-accent)' }} />
               </div>
             ) : rfqInbox.length === 0 ? (
-              <div style={{
-                backgroundColor: 'white',
-                borderRadius: '12px',
-                padding: '3rem',
-                textAlign: 'center',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              }}>
-                <ClipboardText size={48} style={{ color: '#94a3b8', marginBottom: '1rem' }} />
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-                  No RFQs yet
-                </h3>
-                <p style={{ color: '#64748b' }}>
+              <div className="empty-state reveal">
+                <ClipboardText size={48} style={{ color: 'var(--color-text-muted)', marginBottom: '1rem' }} />
+                <h3>No RFQs yet</h3>
+                <p>
                   Matched requests will appear here once builders send RFQs.
                 </p>
               </div>
@@ -925,20 +699,14 @@ export default function SupplierDashboardPage() {
                 return (
                   <div
                     key={rfq.id}
-                    style={{
-                      backgroundColor: 'white',
-                      borderRadius: '12px',
-                      padding: '1.5rem',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                      border: '1px solid #e2e8f0',
-                    }}
+                    className="rfq-card reveal"
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                    <div className="rfq-header">
                       <div>
-                        <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
+                        <div className="rfq-title">
                           {rfq.project?.name || 'Project'} · RFQ #{rfq.id.slice(0, 8)}
                         </div>
-                        <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                        <div className="rfq-meta">
                           {rfq.project?.location || 'Location TBD'}
                           {rfq.required_by && ` · Needed by ${new Date(rfq.required_by).toLocaleDateString()}`}
                         </div>
@@ -947,31 +715,23 @@ export default function SupplierDashboardPage() {
                         fontSize: '0.75rem',
                         padding: '0.25rem 0.75rem',
                         borderRadius: '999px',
-                        backgroundColor: '#e2e8f0',
-                        color: '#475569',
+                        backgroundColor: 'var(--color-mist)',
+                        color: 'var(--color-text-secondary)',
                         fontWeight: 600,
                       }}>
                         {rfq.status.toUpperCase()}
                       </span>
                     </div>
 
-                    <div style={{ display: 'grid', gap: '0.75rem' }}>
+                    <div className="rfq-items">
                       {rfq.rfq_items.map((item) => (
                         <div
                           key={item.id}
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: '2fr 1fr 1fr',
-                            gap: '0.75rem',
-                            alignItems: 'center',
-                            padding: '0.75rem',
-                            borderRadius: '10px',
-                            backgroundColor: '#f8fafc',
-                          }}
+                          className="rfq-item"
                         >
                           <div>
-                            <div style={{ fontWeight: 500 }}>{item.material_name || item.material_key}</div>
-                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            <div className="rfq-item-title">{item.material_name || item.material_key}</div>
+                            <div className="rfq-item-meta">
                               Requested: {Number(item.quantity).toFixed(2)} {item.unit || ''}
                             </div>
                           </div>
@@ -983,11 +743,7 @@ export default function SupplierDashboardPage() {
                             value={form?.items[item.id]?.unitPriceUsd || ''}
                             onChange={(e) => updateRfqItemField(rfq.id, item.id, 'unitPriceUsd', e.target.value)}
                             disabled={isLocked}
-                            style={{
-                              padding: '0.5rem 0.75rem',
-                              borderRadius: '8px',
-                              border: '1px solid #e2e8f0',
-                            }}
+                            className="rfq-input"
                           />
                           <input
                             type="number"
@@ -997,22 +753,13 @@ export default function SupplierDashboardPage() {
                             value={form?.items[item.id]?.availableQuantity || ''}
                             onChange={(e) => updateRfqItemField(rfq.id, item.id, 'availableQuantity', e.target.value)}
                             disabled={isLocked}
-                            style={{
-                              padding: '0.5rem 0.75rem',
-                              borderRadius: '8px',
-                              border: '1px solid #e2e8f0',
-                            }}
+                            className="rfq-input"
                           />
                         </div>
                       ))}
                     </div>
 
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                      gap: '0.75rem',
-                      marginTop: '1rem',
-                    }}>
+                    <div className="rfq-input-row">
                       <input
                         type="number"
                         min="0"
@@ -1020,22 +767,14 @@ export default function SupplierDashboardPage() {
                         value={form?.deliveryDays || ''}
                         onChange={(e) => updateRfqField(rfq.id, 'deliveryDays', e.target.value)}
                         disabled={isLocked}
-                        style={{
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '8px',
-                          border: '1px solid #e2e8f0',
-                        }}
+                        className="rfq-input"
                       />
                       <input
                         type="date"
                         value={form?.validUntil || ''}
                         onChange={(e) => updateRfqField(rfq.id, 'validUntil', e.target.value)}
                         disabled={isLocked}
-                        style={{
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '8px',
-                          border: '1px solid #e2e8f0',
-                        }}
+                        className="rfq-input"
                       />
                       <input
                         type="text"
@@ -1043,30 +782,19 @@ export default function SupplierDashboardPage() {
                         value={form?.notes || ''}
                         onChange={(e) => updateRfqField(rfq.id, 'notes', e.target.value)}
                         disabled={isLocked}
-                        style={{
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '8px',
-                          border: '1px solid #e2e8f0',
-                        }}
+                        className="rfq-input"
                       />
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
-                      <div style={{ fontWeight: 600 }}>
+                    <div className="rfq-footer">
+                      <div className="rfq-total">
                         Total: {formatPrice(totals.usd, totals.zwg)}
                       </div>
                       <button
                         onClick={() => handleSubmitQuote(rfq)}
                         disabled={isLocked}
-                        style={{
-                          padding: '0.75rem 1.25rem',
-                          backgroundColor: isLocked ? '#e2e8f0' : '#3b82f6',
-                          color: isLocked ? '#94a3b8' : 'white',
-                          border: 'none',
-                          borderRadius: '8px',
-                          cursor: isLocked ? 'not-allowed' : 'pointer',
-                          fontWeight: 600,
-                        }}
+                        className={`action-btn action-btn--primary ${isLocked ? 'is-disabled' : ''}`}
+                        style={isLocked ? { backgroundColor: 'var(--color-border-light)', color: 'var(--color-text-muted)' } : undefined}
                       >
                         {rfq.supplier_quote ? 'Update Quote' : 'Submit Quote'}
                       </button>
@@ -1080,87 +808,72 @@ export default function SupplierDashboardPage() {
 
         {/* Settings Tab */}
         {activeTab === 'settings' && (
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            padding: '2rem',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>
-              Business Profile
-            </h2>
+          <div className="panel-card reveal">
+            <h2 className="section-title">Business Profile</h2>
 
-            <div style={{ display: 'grid', gap: '1.5rem' }}>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: '1.5rem',
-              }}>
+            <div className="settings-grid">
+              <div className="info-grid">
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>
+                  <label className="info-label">
                     Business Name
                   </label>
-                  <div style={{ fontWeight: 500 }}>{supplier.name}</div>
+                  <div className="info-value">{supplier.name}</div>
                 </div>
 
                 {supplier.registration_number && (
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>
+                    <label className="info-label">
                       Registration Number
                     </label>
-                    <div style={{ fontWeight: 500 }}>{supplier.registration_number}</div>
+                    <div className="info-value">{supplier.registration_number}</div>
                   </div>
                 )}
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>
+                  <label className="info-label">
                     Location
                   </label>
-                  <div style={{ fontWeight: 500 }}>{supplier.location || 'Not set'}</div>
+                  <div className="info-value">{supplier.location || 'Not set'}</div>
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>
+                  <label className="info-label">
                     Physical Address
                   </label>
-                  <div style={{ fontWeight: 500 }}>{supplier.physical_address || 'Not set'}</div>
+                  <div className="info-value">{supplier.physical_address || 'Not set'}</div>
                 </div>
               </div>
 
-              <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0' }} />
+              <hr className="section-divider" />
 
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: '1.5rem',
-              }}>
+              <div className="info-grid">
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>
-                    <Phone size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                  <label className="info-label">
+                    <Phone size={16} className="inline-icon" />
                     Phone
                   </label>
-                  <div style={{ fontWeight: 500 }}>{supplier.contact_phone || 'Not set'}</div>
+                  <div className="info-value">{supplier.contact_phone || 'Not set'}</div>
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>
-                    <Envelope size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                  <label className="info-label">
+                    <Envelope size={16} className="inline-icon" />
                     Email
                   </label>
-                  <div style={{ fontWeight: 500 }}>{supplier.contact_email || 'Not set'}</div>
+                  <div className="info-value">{supplier.contact_email || 'Not set'}</div>
                 </div>
 
                 {supplier.website && (
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>
-                      <Globe size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                    <label className="info-label">
+                      <Globe size={16} className="inline-icon" />
                       Website
                     </label>
                     <a
                       href={supplier.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: '#3b82f6', fontWeight: 500 }}
+                      className="link-accent"
                     >
                       {supplier.website}
                     </a>
@@ -1168,137 +881,81 @@ export default function SupplierDashboardPage() {
                 )}
               </div>
 
-              <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0' }} />
+              <hr className="section-divider" />
 
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: '1.5rem',
-              }}>
+              <div className="info-grid">
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>
+                  <label className="info-label">
                     Delivery Radius
                   </label>
-                  <div style={{ fontWeight: 500 }}>{supplier.delivery_radius_km || 50} km</div>
+                  <div className="info-value">{supplier.delivery_radius_km || 50} km</div>
                 </div>
 
                 {supplier.payment_terms && (
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>
+                    <label className="info-label">
                       Payment Terms
                     </label>
-                    <div style={{ fontWeight: 500 }}>{supplier.payment_terms}</div>
+                    <div className="info-value">{supplier.payment_terms}</div>
                   </div>
                 )}
               </div>
 
-              <div style={{ marginTop: '1rem' }}>
+              <div className="settings-actions">
                 <Link
                   href="/supplier/profile/edit"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
-                    borderRadius: '8px',
-                    textDecoration: 'none',
-                    fontWeight: 500,
-                  }}
+                  className="action-btn action-btn--primary"
                 >
                   <PencilSimple size={18} />
                   Edit Profile
                 </Link>
               </div>
 
-              <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', marginTop: '2rem' }} />
+              <hr className="section-divider section-divider--spaced" />
 
-              <div style={{ marginTop: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <div className="api-keys">
+                <div className="api-keys-header">
                   <Key size={18} />
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>API Keys</h3>
+                  <h3>API Keys</h3>
                 </div>
-                <p style={{ marginTop: 0, color: '#64748b' }}>
+                <p className="muted">
                   Generate API keys to integrate your catalog and availability with ZimEstimate.
                 </p>
 
-                <div style={{
-                  display: 'grid',
-                  gap: '0.75rem',
-                  padding: '1rem',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '12px',
-                  background: '#f8fafc',
-                }}>
-                  <label style={{ fontSize: '0.875rem', color: '#64748b' }}>Key Label (optional)</label>
+                <div className="api-key-card">
+                  <label className="info-label">Key Label (optional)</label>
                   <input
                     type="text"
                     value={apiKeyLabel}
                     onChange={(e) => setApiKeyLabel(e.target.value)}
                     placeholder="e.g. Inventory sync"
-                    style={{
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '8px',
-                      border: '1px solid #e2e8f0',
-                    }}
+                    className="rfq-input"
                   />
                   <button
                     onClick={handleCreateApiKey}
                     disabled={apiKeyProcessing || apiKeysLoading}
-                    style={{
-                      padding: '0.6rem 1rem',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: apiKeyProcessing ? '#cbd5f5' : '#2563eb',
-                      color: 'white',
-                      fontWeight: 600,
-                      cursor: apiKeyProcessing ? 'not-allowed' : 'pointer',
-                      width: 'fit-content',
-                    }}
+                    className={`action-btn action-btn--primary ${apiKeyProcessing ? 'is-disabled' : ''}`}
+                    style={apiKeyProcessing ? { backgroundColor: 'var(--color-border-light)' } : undefined}
                   >
                     {apiKeyProcessing ? 'Creating...' : 'Create API Key'}
                   </button>
                 </div>
 
                 {newApiKey && (
-                  <div style={{
-                    marginTop: '1rem',
-                    padding: '1rem',
-                    borderRadius: '12px',
-                    border: '1px solid #bae6fd',
-                    background: '#f0f9ff',
-                  }}>
-                    <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
+                  <div className="api-key-new">
+                    <div className="api-key-new-title">
                       New key created — copy it now. You won’t see it again.
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <div className="api-key-row">
                       <input
                         type="text"
                         readOnly
                         value={newApiKey}
-                        style={{
-                          flex: '1 1 260px',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '8px',
-                          border: '1px solid #e2e8f0',
-                          fontFamily: 'monospace',
-                        }}
+                        className="api-key-input"
                       />
                       <button
                         onClick={handleCopyApiKey}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.4rem',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '8px',
-                          border: '1px solid #93c5fd',
-                          background: '#ffffff',
-                          color: '#1d4ed8',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                        }}
+                        className="action-btn action-btn--secondary"
                       >
                         <ClipboardText size={16} /> Copy
                       </button>
@@ -1307,54 +964,46 @@ export default function SupplierDashboardPage() {
                 )}
 
                 {apiKeyError && (
-                  <div style={{ color: '#b91c1c', marginTop: '0.75rem' }}>{apiKeyError}</div>
+                  <div className="error-text">{apiKeyError}</div>
                 )}
 
-                <div style={{ marginTop: '1.5rem' }}>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>Active Keys</h4>
+                <div className="api-key-table">
+                  <h4>Active Keys</h4>
                   {apiKeysLoading ? (
-                    <div style={{ color: '#64748b' }}>Loading API keys...</div>
+                    <div className="muted">Loading API keys...</div>
                   ) : apiKeys.length === 0 ? (
-                    <div style={{ color: '#64748b' }}>No API keys created yet.</div>
+                    <div className="muted">No API keys created yet.</div>
                   ) : (
                     <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '520px' }}>
+                      <table className="api-table">
                         <thead>
-                          <tr style={{ textAlign: 'left', color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>
-                            <th style={{ padding: '0.5rem 0' }}>Label</th>
-                            <th style={{ padding: '0.5rem 0' }}>Prefix</th>
-                            <th style={{ padding: '0.5rem 0' }}>Created</th>
-                            <th style={{ padding: '0.5rem 0' }}>Last Used</th>
-                            <th style={{ padding: '0.5rem 0' }}>Status</th>
-                            <th style={{ padding: '0.5rem 0' }} />
+                          <tr>
+                            <th>Label</th>
+                            <th>Prefix</th>
+                            <th>Created</th>
+                            <th>Last Used</th>
+                            <th>Status</th>
+                            <th />
                           </tr>
                         </thead>
                         <tbody>
                           {apiKeys.map((key) => (
-                            <tr key={key.id} style={{ borderTop: '1px solid #e2e8f0' }}>
-                              <td style={{ padding: '0.75rem 0' }}>{key.label || '—'}</td>
-                              <td style={{ padding: '0.75rem 0', fontFamily: 'monospace' }}>
+                            <tr key={key.id}>
+                              <td>{key.label || '—'}</td>
+                              <td className="mono">
                                 {key.key_prefix}…
                               </td>
-                              <td style={{ padding: '0.75rem 0' }}>{formatTimestamp(key.created_at)}</td>
-                              <td style={{ padding: '0.75rem 0' }}>{formatTimestamp(key.last_used_at)}</td>
-                              <td style={{ padding: '0.75rem 0' }}>
+                              <td>{formatTimestamp(key.created_at)}</td>
+                              <td>{formatTimestamp(key.last_used_at)}</td>
+                              <td>
                                 {key.revoked_at ? 'Revoked' : 'Active'}
                               </td>
-                              <td style={{ padding: '0.75rem 0', textAlign: 'right' }}>
+                              <td className="align-right">
                                 {!key.revoked_at && (
                                   <button
                                     onClick={() => handleRevokeApiKey(key.id)}
                                     disabled={apiKeyProcessing}
-                                    style={{
-                                      padding: '0.4rem 0.75rem',
-                                      borderRadius: '6px',
-                                      border: '1px solid #fecaca',
-                                      background: '#fef2f2',
-                                      color: '#b91c1c',
-                                      fontWeight: 600,
-                                      cursor: apiKeyProcessing ? 'not-allowed' : 'pointer',
-                                    }}
+                                    className="danger-button"
                                   >
                                     Revoke
                                   </button>
@@ -1372,6 +1021,673 @@ export default function SupplierDashboardPage() {
           </div>
         )}
       </div>
+      <style jsx>{`
+        .supplier-dashboard {
+          min-height: 100vh;
+          background: var(--color-background);
+          color: var(--color-text);
+          font-family: var(--font-body);
+        }
+
+        .supplier-loading {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--color-background);
+        }
+
+        .supplier-header {
+          background: var(--color-surface);
+          border-bottom: 1px solid var(--color-border-light);
+        }
+
+        .supplier-header-inner {
+          max-width: var(--container-max);
+          margin: 0 auto;
+          padding: var(--space-6) var(--container-padding);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: var(--space-4);
+        }
+
+        .supplier-title {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          margin-bottom: var(--space-2);
+          flex-wrap: wrap;
+        }
+
+        .supplier-title h1 {
+          font-size: var(--text-h3);
+          font-weight: var(--font-bold);
+          margin: 0;
+          font-family: var(--font-heading);
+          color: var(--color-primary);
+        }
+
+        .supplier-meta {
+          display: flex;
+          align-items: center;
+          gap: var(--space-4);
+          font-size: var(--text-sm);
+          color: var(--color-text-secondary);
+          flex-wrap: wrap;
+        }
+
+        .supplier-meta-item {
+          display: inline-flex;
+          align-items: center;
+          gap: var(--space-1);
+        }
+
+        .supplier-back-link {
+          padding: var(--space-2) var(--space-4);
+          background: var(--color-mist);
+          border-radius: var(--radius-md);
+          color: var(--color-text-secondary);
+          text-decoration: none;
+          font-size: var(--text-sm);
+          border: 1px solid var(--color-border-light);
+          transition: all var(--duration-fast);
+        }
+
+        .supplier-back-link:hover {
+          border-color: var(--color-accent);
+          color: var(--color-accent);
+        }
+
+        .supplier-tabs {
+          background: var(--color-surface);
+          border-bottom: 1px solid var(--color-border-light);
+        }
+
+        .supplier-tabs-inner {
+          max-width: var(--container-max);
+          margin: 0 auto;
+          display: flex;
+          gap: var(--space-2);
+          padding: 0 var(--container-padding);
+          flex-wrap: wrap;
+        }
+
+        .supplier-tab {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          padding: var(--space-4) var(--space-5);
+          background: transparent;
+          border: none;
+          border-bottom: 2px solid transparent;
+          color: var(--color-text-secondary);
+          font-weight: var(--font-medium);
+          cursor: pointer;
+          transition: all var(--duration-fast) var(--ease-out);
+        }
+
+        .supplier-tab.active {
+          border-bottom-color: var(--color-accent);
+          color: var(--color-accent);
+          font-weight: var(--font-semibold);
+        }
+
+        .supplier-content {
+          max-width: var(--container-max);
+          margin: 0 auto;
+          padding: var(--space-8) var(--container-padding);
+        }
+
+        .overview-grid {
+          display: grid;
+          gap: var(--space-6);
+        }
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: var(--space-4);
+        }
+
+        .stat-card {
+          background: var(--color-surface);
+          border-radius: var(--card-radius);
+          padding: var(--card-padding);
+          box-shadow: var(--shadow-card);
+          border: 1px solid var(--color-border-light);
+        }
+
+        .stat-label {
+          color: var(--color-text-secondary);
+          font-size: var(--text-sm);
+          margin-bottom: var(--space-2);
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          font-weight: var(--font-semibold);
+        }
+
+        .stat-value {
+          font-size: var(--text-h2);
+          font-weight: var(--font-bold);
+          font-family: var(--font-heading);
+          color: var(--color-text);
+        }
+
+        .stat-value--success {
+          color: var(--color-emerald);
+        }
+
+        .stat-value--warning {
+          color: var(--color-amber);
+        }
+
+        .panel-card {
+          background: var(--color-surface);
+          border-radius: var(--card-radius);
+          padding: var(--card-padding);
+          box-shadow: var(--shadow-card);
+          border: 1px solid var(--color-border-light);
+          display: grid;
+          gap: var(--space-4);
+        }
+
+        .panel-card h2 {
+          font-size: var(--text-h5);
+          font-weight: var(--font-semibold);
+          margin: 0;
+          font-family: var(--font-heading);
+          color: var(--color-primary);
+        }
+
+        .action-row {
+          display: flex;
+          gap: var(--space-4);
+          flex-wrap: wrap;
+        }
+
+        .action-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: var(--space-2);
+          padding: var(--space-3) var(--space-5);
+          border-radius: var(--radius-md);
+          border: 1px solid transparent;
+          font-weight: var(--font-semibold);
+          cursor: pointer;
+          text-decoration: none;
+          transition: all var(--duration-fast) var(--ease-out);
+        }
+
+        .action-btn--primary {
+          background: var(--color-accent);
+          color: var(--color-text-inverse);
+          box-shadow: var(--shadow-button);
+        }
+
+        .action-btn--primary:hover {
+          background: var(--color-accent-dark);
+        }
+
+        .action-btn--secondary {
+          background: var(--color-mist);
+          color: var(--color-text);
+          border-color: var(--color-border-light);
+        }
+
+        .action-btn--secondary:hover {
+          border-color: var(--color-accent);
+          color: var(--color-accent);
+        }
+
+        .action-btn--ghost {
+          background: var(--color-surface);
+          color: var(--color-text-secondary);
+          border-color: var(--color-border-light);
+        }
+
+        .action-btn--ghost:hover {
+          border-color: var(--color-accent);
+          color: var(--color-accent);
+        }
+
+        .action-btn.is-disabled {
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+
+        .pill-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: var(--space-2);
+        }
+
+        .category-pill {
+          padding: var(--space-2) var(--space-4);
+          background: rgba(46, 108, 246, 0.08);
+          color: var(--color-accent);
+          border-radius: var(--radius-full);
+          font-size: var(--text-sm);
+          font-weight: var(--font-medium);
+        }
+
+        .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: var(--space-6);
+          gap: var(--space-4);
+          flex-wrap: wrap;
+        }
+
+        .section-title {
+          font-size: var(--text-h4);
+          font-weight: var(--font-semibold);
+          margin: 0;
+          font-family: var(--font-heading);
+          color: var(--color-primary);
+        }
+
+        .empty-state {
+          background: var(--color-surface);
+          border-radius: var(--card-radius);
+          padding: var(--space-12);
+          text-align: center;
+          box-shadow: var(--shadow-card);
+          border: 1px solid var(--color-border-light);
+          display: grid;
+          gap: var(--space-3);
+        }
+
+        .empty-state h3 {
+          margin: 0;
+          font-size: var(--text-h5);
+          font-weight: var(--font-semibold);
+        }
+
+        .empty-state p {
+          margin: 0;
+          color: var(--color-text-secondary);
+        }
+
+        .category-stack {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-4);
+        }
+
+        .category-card {
+          background: var(--color-surface);
+          border-radius: var(--card-radius);
+          overflow: hidden;
+          box-shadow: var(--shadow-card);
+          border: 1px solid var(--color-border-light);
+        }
+
+        .category-toggle {
+          width: 100%;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: var(--space-4) var(--space-6);
+          background: var(--color-mist);
+          border: none;
+          cursor: pointer;
+          text-align: left;
+        }
+
+        .category-title {
+          font-weight: var(--font-semibold);
+          color: var(--color-primary);
+        }
+
+        .category-body {
+          padding: var(--space-2);
+        }
+
+        .product-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: var(--space-4);
+          border-bottom: 1px solid var(--color-border-light);
+          gap: var(--space-4);
+          flex-wrap: wrap;
+        }
+
+        .product-row:last-child {
+          border-bottom: none;
+        }
+
+        .product-title {
+          font-weight: var(--font-semibold);
+          margin-bottom: var(--space-1);
+        }
+
+        .product-meta {
+          font-size: var(--text-sm);
+          color: var(--color-text-secondary);
+        }
+
+        .product-actions {
+          display: flex;
+          align-items: center;
+          gap: var(--space-4);
+        }
+
+        .product-price {
+          text-align: right;
+        }
+
+        .product-price-value {
+          font-weight: var(--font-semibold);
+        }
+
+        .icon-button-row {
+          display: flex;
+          gap: var(--space-2);
+        }
+
+        .icon-button {
+          padding: var(--space-2);
+          background: var(--color-mist);
+          border-radius: var(--radius-sm);
+          color: var(--color-text-secondary);
+          display: inline-flex;
+          align-items: center;
+        }
+
+        .icon-button--danger {
+          background: rgba(220, 38, 38, 0.1);
+          color: var(--color-danger);
+          border: none;
+          cursor: pointer;
+        }
+
+        .quotes-grid {
+          display: grid;
+          gap: var(--space-6);
+        }
+
+        .rfq-card {
+          background: var(--color-surface);
+          border-radius: var(--card-radius);
+          padding: var(--card-padding);
+          box-shadow: var(--shadow-card);
+          border: 1px solid var(--color-border-light);
+          display: grid;
+          gap: var(--space-4);
+        }
+
+        .rfq-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: var(--space-4);
+          flex-wrap: wrap;
+        }
+
+        .rfq-title {
+          font-weight: var(--font-semibold);
+          margin-bottom: var(--space-1);
+        }
+
+        .rfq-meta {
+          font-size: var(--text-sm);
+          color: var(--color-text-secondary);
+        }
+
+        .rfq-items {
+          display: grid;
+          gap: var(--space-3);
+        }
+
+        .rfq-item {
+          display: grid;
+          grid-template-columns: 2fr 1fr 1fr;
+          gap: var(--space-3);
+          align-items: center;
+          padding: var(--space-3);
+          border-radius: var(--radius-md);
+          background: var(--color-mist);
+        }
+
+        .rfq-item-title {
+          font-weight: var(--font-semibold);
+        }
+
+        .rfq-item-meta {
+          font-size: var(--text-xs);
+          color: var(--color-text-secondary);
+        }
+
+        .rfq-input {
+          padding: var(--space-2) var(--space-3);
+          border-radius: var(--radius-md);
+          border: 1px solid var(--color-border);
+          background: var(--color-surface);
+          font-size: var(--text-sm);
+        }
+
+        .rfq-input:focus {
+          outline: none;
+          border-color: var(--color-accent);
+          box-shadow: 0 0 0 3px rgba(46, 108, 246, 0.12);
+        }
+
+        .rfq-input-row {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: var(--space-3);
+          margin-top: var(--space-4);
+        }
+
+        .rfq-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: var(--space-4);
+          flex-wrap: wrap;
+          gap: var(--space-3);
+        }
+
+        .rfq-total {
+          font-weight: var(--font-semibold);
+        }
+
+        .settings-grid {
+          display: grid;
+          gap: var(--space-6);
+        }
+
+        .info-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: var(--space-6);
+        }
+
+        .info-label {
+          display: block;
+          font-size: var(--text-sm);
+          color: var(--color-text-secondary);
+          margin-bottom: var(--space-1);
+        }
+
+        .info-value {
+          font-weight: var(--font-medium);
+        }
+
+        .inline-icon {
+          display: inline;
+          margin-right: var(--space-1);
+        }
+
+        .link-accent {
+          color: var(--color-accent);
+          font-weight: var(--font-medium);
+        }
+
+        .settings-actions {
+          margin-top: var(--space-4);
+        }
+
+        .section-divider {
+          border: none;
+          border-top: 1px solid var(--color-border-light);
+        }
+
+        .section-divider--spaced {
+          margin-top: var(--space-8);
+        }
+
+        .api-keys {
+          margin-top: var(--space-4);
+          display: grid;
+          gap: var(--space-4);
+        }
+
+        .api-keys-header {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+        }
+
+        .api-keys-header h3 {
+          margin: 0;
+          font-size: var(--text-h5);
+          font-weight: var(--font-semibold);
+        }
+
+        .muted {
+          color: var(--color-text-secondary);
+        }
+
+        .api-key-card {
+          display: grid;
+          gap: var(--space-3);
+          padding: var(--space-4);
+          border: 1px solid var(--color-border-light);
+          border-radius: var(--radius-md);
+          background: var(--color-mist);
+        }
+
+        .api-key-new {
+          margin-top: var(--space-4);
+          padding: var(--space-4);
+          border-radius: var(--radius-md);
+          border: 1px solid rgba(46, 108, 246, 0.25);
+          background: rgba(46, 108, 246, 0.08);
+        }
+
+        .api-key-new-title {
+          font-weight: var(--font-semibold);
+          margin-bottom: var(--space-2);
+        }
+
+        .api-key-row {
+          display: flex;
+          gap: var(--space-2);
+          flex-wrap: wrap;
+        }
+
+        .api-key-input {
+          flex: 1 1 260px;
+          padding: var(--space-2) var(--space-3);
+          border-radius: var(--radius-md);
+          border: 1px solid var(--color-border);
+          font-family: var(--font-mono);
+        }
+
+        .api-key-table h4 {
+          margin: 0 0 var(--space-3);
+          font-size: var(--text-base);
+          font-weight: var(--font-semibold);
+        }
+
+        .api-table {
+          width: 100%;
+          border-collapse: collapse;
+          min-width: 520px;
+        }
+
+        .api-table th {
+          text-align: left;
+          font-size: var(--text-xs);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: var(--color-text-secondary);
+          padding: var(--space-2) 0;
+        }
+
+        .api-table td {
+          padding: var(--space-3) 0;
+          border-top: 1px solid var(--color-border-light);
+        }
+
+        .mono {
+          font-family: var(--font-mono);
+        }
+
+        .align-right {
+          text-align: right;
+        }
+
+        .danger-button {
+          padding: var(--space-1) var(--space-3);
+          border-radius: var(--radius-sm);
+          border: 1px solid rgba(220, 38, 38, 0.35);
+          background: rgba(220, 38, 38, 0.1);
+          color: var(--color-danger);
+          font-weight: var(--font-semibold);
+          cursor: pointer;
+        }
+
+        .error-text {
+          color: var(--color-danger);
+          margin-top: var(--space-3);
+        }
+
+        @media (max-width: 1280px) {
+          .supplier-header-inner,
+          .supplier-tabs-inner,
+          .supplier-content {
+            padding-left: var(--space-6);
+            padding-right: var(--space-6);
+          }
+        }
+
+        @media (max-width: 768px) {
+          .supplier-header-inner {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .rfq-item {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .supplier-content {
+            padding: var(--space-6) var(--space-4);
+          }
+
+          .action-row {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .action-btn {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+      `}</style>
     </div>
   );
 }

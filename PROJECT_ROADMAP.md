@@ -690,6 +690,27 @@ Use this section to log daily progress:
 **Outcome:**
 - Manual purchase logging no longer shows a generic RFQ load error when RFQ tables are unavailable.
 
+### February 10, 2026 - Design Tokens + Component Style Guide ✅ (Kante)
+
+**Files Updated/Created:**
+- `src/app/globals.css` - Import design tokens + component guide styles globally
+- `src/styles/component-guide.css` - Token-based primitives for buttons, cards, inputs, tables
+- `src/app/style-guide/page.tsx` - Component style guide page for UI reference
+
+**Highlights:**
+- Established a token-driven component baseline to align upcoming refresh work.
+- Style guide available at `/style-guide` for review and QA.
+
+### February 10, 2026 - Supplier Dashboard + Marketplace Materials Refresh ✅ (Kante)
+
+**Files Updated:**
+- `src/app/supplier/dashboard/page.tsx` - Tokenized UI refresh with reveal animations and updated cards/forms
+- `src/app/marketplace/page.tsx` - Marketplace materials refresh with reveal animations, updated cards/tables, and token-aligned styling
+
+**Highlights:**
+- Applied design tokens across both pages and aligned motion with `useReveal`.
+- Normalized card and table styling to match Market Insights / Supplier Directory patterns.
+
 ### February 10, 2026 - Security & Code Quality Fixes ✅ (Ngolo)
 
 **Files Updated:**
@@ -762,6 +783,21 @@ Use this section to log daily progress:
 - Returns JSONB with rfq_id, item_ids, and recipient_ids
 - Updated service to prepare data upfront, then call RPC function
 - Notifications still handled outside transaction (fire-and-forget pattern)
+
+### February 11, 2026 - Phase 1 & 4 Enhancements: Design System & Motion Refresh ✅ (Mbudzi)
+
+**Files Updated:**
+- `src/app/projects/page.tsx` - Projects List refresh
+- `src/app/projects/[id]/page.tsx` - Project Detail refresh
+- `src/components/projects/UnifiedProcurementView.tsx` - Procurement Hub refresh
+- `src/app/globals.css` - Global Tailwind theme token mapping
+- `REFRESH_REPORT.md` - detailed report of changes and findings
+
+**Highlights:**
+- Integrated new design tokens and `useReveal` motion hook across high-traffic project pages
+- Mapped CSS variables to Tailwind utility classes in `globals.css` for consistent styling
+- Refactored layout and components to match the new visual direction (deep navy/electric blue)
+- Ensured mobile responsiveness for complex grids and tables
 
 ---
 
@@ -980,22 +1016,34 @@ const data = JSON.parse(event.data);
 - Component system alignment (buttons, cards, tables, inputs).
 - Responsive breakpoints and layout rules.
 
-**Proposed Mbudzi (Gemini Pro) Trial + Sequencing (Needs Ngolo Approval)**
+**Mbudzi (Gemini Pro) Trial + Sequencing** ✅ **APPROVED by Ngolo (Feb 10, 2026)**
 - **Trial Task (1–2 pages):** Market Insights + Marketplace Suppliers
   - Goal: prove alignment with design direction (type, color, motion, layout)
   - Acceptance: mobile‑ready, no regressions, consistent styling
+- **Kickoff (Kante):** Trial instructions prepared in roadmap; pending Mbudzi start.
 - **If trial passes → expand scope:**
   - Home → Projects list + detail → Procurement hub → Supplier dashboard → Marketplace materials
 
-**Order of Completion (request Ngolo’s call):**
-1. Design tokens + component style guide (buttons/cards/tables/inputs)
-2. Trial pages (Insights + Marketplace Suppliers)
-3. Evaluate trial and decide on full refresh
-4. Rollout to remaining scoped pages
+**Mbudzi Trial Review (Kante - Feb 10, 2026)**
+- Strengths: Clean token-aligned visuals, preserved data logic, motion consistent with reveal pattern, responsive grid work is solid.
+- Follow-ups: Remove page-level token imports, centralize reveal observer in shared hook, avoid per-item hover delay side effects.
+- Status: Awaiting Ngolo's final decision on continued engagement.
 
-**Parallelization (confirm with Ngolo):**
-- I can implement tokens + component system while Mbudzi handles trial pages.
-- After approval, we can split remaining screens across agents to compress timeline.
+**Order of Completion** ✅ **CONFIRMED by Ngolo:**
+1. Design tokens + component style guide (buttons/cards/tables/inputs) — Kante ✅ (Feb 10, 2026)
+2. Trial pages (Insights + Marketplace Suppliers) — Mbudzi
+3. Evaluate trial and decide on full refresh — Kante + Ngolo
+4. Rollout to remaining scoped pages — split based on trial results
+
+**Parallelization** ✅ **APPROVED by Ngolo:**
+- Kante: tokens + component system
+- Mbudzi: trial pages (in parallel)
+- Post-trial: split remaining screens across agents to compress timeline
+
+**Ngolo's Notes:**
+- Add Danger Red `#DC2626` to color system for destructive actions
+- Start with CSS intersection observer; only add Framer Motion if complex orchestration needed
+- Trial acceptance: I will review Mbudzi's output before expanding scope
   - Add a "Platform Features" section below the hero
   - Use scroll-triggered animations (staggered card reveals)
   - Consider Framer Motion or enhanced CSS animations
@@ -1131,4 +1179,71 @@ Design inspiration for feature section:
 
 Remember: Most critical bugs have been fixed by Ngolo. Focus on UI polish
 and the security audit (SEC-003) for remaining items.
+```
+
+---
+
+## Prompt for Mbudzi (Trial Task - Approved by Ngolo Feb 10, 2026)
+
+```
+You are Mbudzi, an agent working on ZimEstimate's UI refresh. This is a TRIAL task
+to evaluate your fit with the design direction before expanding scope.
+
+## Trial Scope
+Refresh the following 2 pages to match the new design system:
+1. Market Insights page: `src/app/insights/page.tsx`
+2. Marketplace Suppliers page: `src/app/marketplace/suppliers/page.tsx`
+
+## Design Tokens
+Import and use the design tokens from: `src/styles/design-tokens.css`
+All colors, spacing, typography, and motion should reference CSS custom properties.
+
+## Design Direction (Must Follow)
+**Typography:**
+- Headings: font-family: var(--font-heading) — Sora
+- Body: font-family: var(--font-body) — Instrument Sans
+- Data/Numerals: font-family: var(--font-mono) — IBM Plex Mono
+
+**Colors:**
+- Primary: var(--color-primary) — Deep Navy #0B1F3B
+- Accent: var(--color-accent) — Electric Blue #2E6CF6
+- Surfaces: var(--color-surface), var(--color-mist)
+- Borders: var(--color-border-light)
+
+**Layout:**
+- 12-column grid, max-width 1280px
+- Card radius: 18px (var(--card-radius))
+- Consistent spacing using --space-* tokens
+
+**Motion:**
+- Page load: fade-up stagger (150–220ms)
+- Use `.reveal` and `.reveal.in-view` classes for scroll animations
+- Respect prefers-reduced-motion
+
+**Tables:**
+- Sticky headers
+- Subtle zebra striping: var(--table-zebra-bg)
+- Row hover: var(--table-row-hover)
+
+## Acceptance Criteria (Ngolo will review)
+1. Mobile-responsive (test at 375px, 768px, 1280px)
+2. No visual regressions — existing functionality must work
+3. Consistent with design tokens (no hardcoded colors/spacing)
+4. Motion respects prefers-reduced-motion
+5. Tables have sticky headers and hover states
+6. Cards have proper shadows and border radius
+
+## Files to Reference
+- Design tokens: `src/styles/design-tokens.css`
+- Existing home page (for motion pattern): `src/app/home/page.tsx`
+- Supplier directory (pagination pattern): `src/app/marketplace/suppliers/page.tsx`
+
+## What NOT to Change
+- Do not modify business logic or data fetching
+- Do not add new dependencies (use CSS for animations)
+- Do not change API routes or database queries
+- Do not modify other pages outside your scope
+
+When complete, note any issues or inconsistencies you found in the existing code
+so Kante can address them in the component system.
 ```
