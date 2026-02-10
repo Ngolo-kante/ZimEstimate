@@ -681,6 +681,15 @@ Use this section to log daily progress:
 - Shipped animated feature showcase on home page
 - Added security/unit/integration tests and env validation tooling
 
+### February 10, 2026 - Procurement RFQ Load Fix ✅ (Kante)
+
+**Fix:**
+- `src/lib/services/rfq.ts` - Handle missing RFQ tables gracefully (avoid hard failure on load)
+- `src/components/projects/UnifiedProcurementView.tsx` - Surface real RFQ load errors when present
+
+**Outcome:**
+- Manual purchase logging no longer shows a generic RFQ load error when RFQ tables are unavailable.
+
 ### February 10, 2026 - Security & Code Quality Fixes ✅ (Ngolo)
 
 **Files Updated:**
@@ -925,6 +934,68 @@ const data = JSON.parse(event.data);
   - Files to update: `src/components/layout/TopNavbar.tsx`, `src/app/api/scraper/*/route.ts`
 
 - [x] **UI-002:** Redesign home page with animated feature showcase ✅ (Kante - Feb 10, 2026)
+- [x] **UI-003:** Draft design direction brief for full UI refresh ✅ (Kante - Feb 10, 2026)
+
+### Design Direction Draft (Proposed)
+
+**Objective:** Establish a cohesive visual system for a full-site refresh that feels premium, modern, and field‑ready.
+
+**Visual Tone**
+- Confident, professional, and practical (construction-tech, not fintech).
+- Clear hierarchy with bold headings, tight spacing, and high-contrast data surfaces.
+
+**Typography**
+- Headings: **Sora** (bold, geometric, modern).
+- Body: **Instrument Sans** (clean, readable at small sizes).
+- Numerals/Data: **IBM Plex Mono** for tables, IDs, pricing.
+
+**Color System**
+- Primary: Deep Navy `#0B1F3B`
+- Accent: Electric Blue `#2E6CF6`
+- Support: Clay `#D97A4A`, Emerald `#16A34A`, Warning Amber `#F59E0B`
+- Neutrals: Slate `#1F2937`, Mist `#F5F7FB`, Border `#E2E8F0`
+- Backgrounds: Soft gradients + subtle texture patterns (avoid flat white).
+
+**Layout & Components**
+- 12‑column grid, spacious cards, consistent edge radius (12–16px).
+- Data cards with fixed header + meta row + action row.
+- Consistent button sizing and icon alignment.
+- Tables: sticky headers, row hover, zebra subtle tint.
+
+**Motion**
+- Page-load: fade‑up stagger (150–220ms).
+- Scroll reveal for feature cards (intersection observer).
+- Micro-interactions on buttons and tabs (scale + glow).
+
+**Key Screens in Scope**
+1. Home
+2. Projects list + project detail
+3. Procurement hub
+4. Supplier dashboard
+5. Marketplace (materials + supplier directory)
+6. Market Insights
+
+**Deliverables**
+- Tokenized design variables in CSS.
+- Component system alignment (buttons, cards, tables, inputs).
+- Responsive breakpoints and layout rules.
+
+**Proposed Mbudzi (Gemini Pro) Trial + Sequencing (Needs Ngolo Approval)**
+- **Trial Task (1–2 pages):** Market Insights + Marketplace Suppliers
+  - Goal: prove alignment with design direction (type, color, motion, layout)
+  - Acceptance: mobile‑ready, no regressions, consistent styling
+- **If trial passes → expand scope:**
+  - Home → Projects list + detail → Procurement hub → Supplier dashboard → Marketplace materials
+
+**Order of Completion (request Ngolo’s call):**
+1. Design tokens + component style guide (buttons/cards/tables/inputs)
+2. Trial pages (Insights + Marketplace Suppliers)
+3. Evaluate trial and decide on full refresh
+4. Rollout to remaining scoped pages
+
+**Parallelization (confirm with Ngolo):**
+- I can implement tokens + component system while Mbudzi handles trial pages.
+- After approval, we can split remaining screens across agents to compress timeline.
   - Add a "Platform Features" section below the hero
   - Use scroll-triggered animations (staggered card reveals)
   - Consider Framer Motion or enhanced CSS animations

@@ -419,6 +419,12 @@ export async function getProjectRfqs(projectId: string): Promise<{ rfqs: RfqWith
     .order('created_at', { ascending: false });
 
   if (error) {
+    const code = (error as { code?: string }).code;
+    const message = error.message || '';
+    if (code === '42P01' || message.includes('does not exist')) {
+      logger.warn('RFQ tables not available. Skipping RFQ load.', { code, message });
+      return { rfqs: [], error: null };
+    }
     return { rfqs: [], error: new Error(error.message) };
   }
 

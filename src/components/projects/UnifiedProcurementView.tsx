@@ -208,7 +208,7 @@ export default function UnifiedProcurementView({ project, items, onItemsRefresh 
   const loadRfqs = useCallback(async () => {
     const { rfqs: nextRfqs, error } = await getProjectRfqs(project.id);
     if (error) {
-      showError('Failed to load RFQs');
+      showError(error.message || 'Failed to load RFQs');
     } else {
       setRfqs(nextRfqs);
     }
