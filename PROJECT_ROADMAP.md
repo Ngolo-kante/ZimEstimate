@@ -1036,6 +1036,11 @@ const data = JSON.parse(event.data);
 - Follow-ups: Remove page-level token imports, centralize reveal observer in shared hook, avoid per-item hover delay side effects.
 - Status: Awaiting Ngolo's final decision on continued engagement.
 
+**Post-Review Decision & Assignment (Ngolo - Pending Final Review)**
+- Decision: Mbudzi approved to continue with guardrails (UI-only, no prop changes, typecheck+build required).
+- Next pages: Supplier Dashboard (`src/app/supplier/dashboard/page.tsx`) and BOQ Wizard (`src/app/boq/new/page.tsx`).
+- Kante focus: review Mbudzi commits pre-merge, fix regressions, and update refresh status report.
+
 **Order of Completion** ✅ **CONFIRMED by Ngolo:**
 1. Design tokens + component style guide (buttons/cards/tables/inputs) — Kante ✅ (Feb 10, 2026)
 2. Trial pages (Insights + Marketplace Suppliers) — Mbudzi
@@ -1193,67 +1198,34 @@ and the security audit (SEC-003) for remaining items.
 
 ---
 
-## Prompt for Mbudzi (Trial Task - Approved by Ngolo Feb 10, 2026)
+## Prompt for Mbudzi (Next Assignment - Approved by Ngolo Feb 10, 2026)
 
 ```
-You are Mbudzi, an agent working on ZimEstimate's UI refresh. This is a TRIAL task
-to evaluate your fit with the design direction before expanding scope.
+You are Mbudzi, an agent working on ZimEstimate's UI refresh.
+Your Projects refresh work passed review after Kante fixed prop regressions.
+You are approved for continued engagement with MANDATORY guardrails:
 
-## Trial Scope
-Refresh the following 2 pages to match the new design system:
-1. Market Insights page: `src/app/insights/page.tsx`
-2. Marketplace Suppliers page: `src/app/marketplace/suppliers/page.tsx`
+## GUARDRAILS (MUST FOLLOW)
+1. UI-only scope — styling, layout, motion. NO component prop changes
+2. Pre-commit: run `npm run typecheck && npm run build` — must pass
+3. Do NOT add/remove/rename exported functions or types
+4. If a component doesn't match expected props → STOP and ask Kante
 
-## Design Tokens
-Import and use the design tokens from: `src/styles/design-tokens.css`
-All colors, spacing, typography, and motion should reference CSS custom properties.
+## Next Assignment
+Refresh the following pages to match the design system:
+1. Supplier Dashboard — `src/app/supplier/dashboard/page.tsx`
+2. BOQ Wizard — `src/app/boq/new/page.tsx`
 
-## Design Direction (Must Follow)
-**Typography:**
-- Headings: font-family: var(--font-heading) — Sora
-- Body: font-family: var(--font-body) — Instrument Sans
-- Data/Numerals: font-family: var(--font-mono) — IBM Plex Mono
+## Design Direction
+- Typography: Sora headers, Instrument Sans body, Plex Mono data
+- Colors: Deep Navy, Electric Blue, Mist/Surface backgrounds
+- Motion: Use `useReveal` hook for scroll-triggered animations
+- Tables: Sticky headers, zebra striping
+- Mobile: Fully responsive grid/flex layouts
 
-**Colors:**
-- Primary: var(--color-primary) — Deep Navy #0B1F3B
-- Accent: var(--color-accent) — Electric Blue #2E6CF6
-- Surfaces: var(--color-surface), var(--color-mist)
-- Borders: var(--color-border-light)
-
-**Layout:**
-- 12-column grid, max-width 1280px
-- Card radius: 18px (var(--card-radius))
-- Consistent spacing using --space-* tokens
-
-**Motion:**
-- Page load: fade-up stagger (150–220ms)
-- Use `.reveal` and `.reveal.in-view` classes for scroll animations
-- Respect prefers-reduced-motion
-
-**Tables:**
-- Sticky headers
-- Subtle zebra striping: var(--table-zebra-bg)
-- Row hover: var(--table-row-hover)
-
-## Acceptance Criteria (Ngolo will review)
-1. Mobile-responsive (test at 375px, 768px, 1280px)
-2. No visual regressions — existing functionality must work
-3. Consistent with design tokens (no hardcoded colors/spacing)
-4. Motion respects prefers-reduced-motion
-5. Tables have sticky headers and hover states
-6. Cards have proper shadows and border radius
-
-## Files to Reference
-- Design tokens: `src/styles/design-tokens.css`
-- Existing home page (for motion pattern): `src/app/home/page.tsx`
-- Supplier directory (pagination pattern): `src/app/marketplace/suppliers/page.tsx`
-
-## What NOT to Change
-- Do not modify business logic or data fetching
-- Do not add new dependencies (use CSS for animations)
-- Do not change API routes or database queries
-- Do not modify other pages outside your scope
-
-When complete, note any issues or inconsistencies you found in the existing code
-so Kante can address them in the component system.
+## Process
+1. Apply design tokens (use Tailwind classes mapped in globals.css)
+2. Use `useReveal` for entrance animations
+3. Verify no build errors or type mismatches
+4. Submit for Kante's review before merge
 ```
