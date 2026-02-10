@@ -711,6 +711,13 @@ Use this section to log daily progress:
 - Applied design tokens across both pages and aligned motion with `useReveal`.
 - Normalized card and table styling to match Market Insights / Supplier Directory patterns.
 
+### February 10, 2026 - Mbudzi Trial Alignment Fixes ✅ (Kante)
+
+**Fixes:**
+- Restored `ProtectedRoute` gating for Projects List.
+- Corrected component props in Project Detail (StageTab, BudgetPlanner, RunningTotalBar, ProjectUsageView, ShareModal, PhoneNumberModal).
+- Restored Budget view section and mobile sidebar FAB to avoid regressions.
+
 ### February 10, 2026 - Security & Code Quality Fixes ✅ (Ngolo)
 
 **Files Updated:**

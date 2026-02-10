@@ -7,6 +7,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import Card, { CardHeader, CardTitle, CardBadge } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { ProjectCardSkeleton, KpiSkeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -40,6 +41,14 @@ function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: numb
     return <>{formatPrice(priceUsd, priceZwg)}</>;
 }
 
+export default function ProjectsPage() {
+    return (
+        <ProtectedRoute>
+            <ProjectsContent />
+        </ProtectedRoute>
+    );
+}
+
 const STAGE_LABELS: Record<string, string> = {
     substructure: 'Site Preparation & Foundation',
     superstructure: 'Structural Walls & Frame',
@@ -59,7 +68,7 @@ const formatScopeLabel = (project: Project) => {
     return formatStageLabel(project.scope);
 };
 
-export default function ProjectsContent() {
+function ProjectsContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { profile, canCreateProject, projectCount } = useAuth();

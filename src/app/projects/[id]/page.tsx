@@ -53,16 +53,11 @@ import {
     ShareNetwork,
     ArrowLeft,
     MapPin,
-    DownloadSimple,
     Warning,
     List,
     Wallet,
     TrendUp,
-    Info,
     CheckCircle,
-    ChartLineUp,
-    Tag,
-    Stack,
 } from '@phosphor-icons/react';
 import { ProjectDetailSkeleton } from '@/components/ui/Skeleton';
 
@@ -773,11 +768,11 @@ function ProjectDetailContent() {
     const applicableStages = stages.filter(s => s.is_applicable);
     const hasLabor = project.labor_preference === 'with_labor';
 
-    const statusColors: Record<string, 'success' | 'accent' | 'default'> = {
-        active: 'success',
-        draft: 'default',
-        completed: 'accent',
-        archived: 'default',
+    const statusBadgeStyles: Record<string, { background: string; color: string }> = {
+        active: { background: 'rgba(22, 163, 74, 0.12)', color: 'var(--color-emerald)' },
+        draft: { background: 'var(--color-mist)', color: 'var(--color-text-secondary)' },
+        completed: { background: 'rgba(46, 108, 246, 0.12)', color: 'var(--color-accent)' },
+        archived: { background: 'var(--color-mist)', color: 'var(--color-text-muted)' },
     };
 
     return (
@@ -813,7 +808,10 @@ function ProjectDetailContent() {
                                         <MapPin size={16} />
                                         {project.location || 'No location set'}
                                         <span className="mx-2">•</span>
-                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium bg-${statusColors[project.status]}-soft text-${statusColors[project.status]}`}>
+                                        <span
+                                            className="px-2 py-0.5 rounded-full text-xs font-medium"
+                                            style={statusBadgeStyles[project.status] ?? statusBadgeStyles.draft}
+                                        >
                                             {project.status.toUpperCase()}
                                         </span>
                                     </div>
@@ -879,9 +877,12 @@ function ProjectDetailContent() {
                                 <h3 className="section-title mb-4">Construction Progress</h3>
                                 <StageProgressCards
                                     stages={stages}
-                                    usageByStage={usageByStage}
-                                    activeTab={activeTab}
-                                    onTabChange={setActiveTab}
+                                    items={items}
+                                    activeStage={activeTab}
+                                    onStageClick={(category) => {
+                                        setActiveTab(category);
+                                        setActiveView('boq');
+                                    }}
                                 />
                             </section>
 
@@ -901,15 +902,17 @@ function ProjectDetailContent() {
                                         </div>
 
                                         <BudgetPlanner
-                                            totalCost={project.total_usd || 0}
-                                            targetDate={project.target_purchase_date || null}
+                                            totalBudgetUsd={purchaseStats.estimatedTotal}
+                                            amountSpentUsd={purchaseStats.actualSpent}
+                                            targetDate={project.target_purchase_date}
                                             onTargetDateChange={handleSavingsTargetDateChange}
-                                            setReminder={handleSavingsReminder}
+                                            onSetReminder={handleSavingsReminder}
+                                            canUseMobileReminders={Boolean(profile?.phone_number)}
+                                            defaultChannel={preferredReminderChannel}
                                             onRequestPhone={handleRequestPhone}
-                                            hasPhone={!!profile?.phone_number}
-                                            scheduledReminder={savingsReminder}
+                                            reminderActive={Boolean(savingsReminder?.is_active)}
+                                            reminderFrequency={(savingsReminder?.frequency as 'daily' | 'weekly' | 'monthly' | null) ?? null}
                                             onToggleReminder={handleToggleSavingsReminder}
-                                            currency="USD"
                                         />
                                     </section>
 
@@ -966,10 +969,13 @@ function ProjectDetailContent() {
                                             </div>
                                             <div className="pt-2">
                                                 <RunningTotalBar
-                                                    total={purchaseStats.estimatedTotal}
-                                                    current={purchaseStats.actualSpent}
-                                                    label="Spend vs Budget"
-                                                    currency="USD"
+                                                    totalUSD={purchaseStats.estimatedTotal}
+                                                    totalZWG={purchaseStats.estimatedTotal * exchangeRate}
+                                                    budgetTargetUSD={project.budget_target_usd}
+                                                    completionPercentage={purchaseStats.totalItems > 0
+                                                        ? Math.round((purchaseStats.purchasedItems / purchaseStats.totalItems) * 100)
+                                                        : 0}
+                                                    projectName={project.name}
                                                 />
                                             </div>
                                         </div>
@@ -998,19 +1004,20 @@ function ProjectDetailContent() {
                     {/* BOQ View */}
                     {activeView === 'boq' && (
                         <div className="space-y-6 max-w-full mx-auto reveal">
-                            <StageTab
-                                stages={stages}
-                                activeTab={activeTab}
-                                setActiveTab={setActiveTab}
-                                items={activeStageItems}
-                                onUpdateItem={handleItemUpdate}
-                                onDeleteItem={handleDeleteItem}
-                                onAddItem={handleAddItem}
-                                projectId={projectId}
-                                category={activeTab as BOQCategory}
-                                laborRate={project.labor_rate || 0}
-                                showLabor={hasLabor}
-                            />
+                            {currentStage && (
+                                <StageTab
+                                    stage={currentStage}
+                                    projectId={projectId}
+                                    items={activeStageItems}
+                                    onStageUpdate={(u) => handleStageUpdate({ ...currentStage, ...u })}
+                                    onItemUpdate={handleItemUpdate}
+                                    onItemDelete={handleDeleteItem}
+                                    onItemAdded={handleAddItem}
+                                    showLabor={hasLabor}
+                                    usageByItem={usageByItem}
+                                    usageTrackingEnabled={project.usage_tracking_enabled}
+                                />
+                            )}
                         </div>
                     )}
 
@@ -1027,24 +1034,57 @@ function ProjectDetailContent() {
 
                     {/* USAGE View */}
                     {activeView === 'usage' && (
-                        <div className="reveal">
-                            <ProjectUsageView
-                                project={project}
-                                items={items}
-                                usageByItem={usageByItem}
-                                onUsageTrackingToggle={handleUsageTrackingToggle}
-                                onUsageRecorded={handleUsageRecorded}
-                                stages={stages}
-                            />
+                        <div className="space-y-6 reveal">
+                            {project.usage_tracking_enabled ? (
+                                <ProjectUsageView
+                                    project={project}
+                                    items={items}
+                                    usageByItem={usageByItem}
+                                    onUsageRecorded={handleUsageRecorded}
+                                    onRequestPhone={handleRequestPhone}
+                                    canUseMobileReminders={Boolean(profile?.phone_number)}
+                                />
+                            ) : (
+                                <div className="bg-surface border border-border rounded-xl p-6 shadow-card">
+                                    <h3 className="text-lg font-semibold text-primary mb-2">Enable usage tracking</h3>
+                                    <p className="text-secondary mb-4">
+                                        Turn on usage tracking to log materials used by builders.
+                                    </p>
+                                    <Button
+                                        variant="primary"
+                                        onClick={() => handleUsageTrackingToggle(true)}
+                                    >
+                                        Enable Usage Tracking
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     )}
 
                     {/* DOCUMENTS View */}
                     {activeView === 'documents' && (
-                        <div className="reveal">
-                            <DocumentsTab
-                                projectId={projectId}
-                                userId={profile?.id || ''}
+                        <div className="space-y-6 reveal">
+                            <h2 className="text-2xl font-bold text-primary font-heading mb-6">Documents</h2>
+                            <DocumentsTab projectId={projectId} />
+                        </div>
+                    )}
+
+                    {/* BUDGET View */}
+                    {activeView === 'budget' && (
+                        <div className="space-y-6 reveal">
+                            <h2 className="text-2xl font-bold text-primary font-heading mb-6">Budget Planner</h2>
+                            <BudgetPlanner
+                                totalBudgetUsd={purchaseStats.estimatedTotal}
+                                amountSpentUsd={purchaseStats.actualSpent}
+                                targetDate={project.target_purchase_date}
+                                onTargetDateChange={handleSavingsTargetDateChange}
+                                onSetReminder={handleSavingsReminder}
+                                canUseMobileReminders={Boolean(profile?.phone_number)}
+                                defaultChannel={preferredReminderChannel}
+                                onRequestPhone={handleRequestPhone}
+                                reminderActive={Boolean(savingsReminder?.is_active)}
+                                reminderFrequency={(savingsReminder?.frequency as 'daily' | 'weekly' | 'monthly' | null) ?? null}
+                                onToggleReminder={handleToggleSavingsReminder}
                             />
                         </div>
                     )}
@@ -1055,42 +1095,59 @@ function ProjectDetailContent() {
                             <ProjectSettings
                                 project={project}
                                 onUpdate={handleProjectUpdate}
-                                onDelete={() => router.push('/projects')}
-                                stages={stages}
-                                onStageUpdate={handleStageUpdate}
                             />
                         </div>
                     )}
                 </main>
             </div>
 
+            {/* Mobile hamburger FAB */}
+            {isMobileDetail && (
+                <button
+                    className="mobile-sidebar-fab"
+                    onClick={() => setIsMobileSidebarOpen(true)}
+                    aria-label="Open navigation"
+                >
+                    <List size={24} weight="bold" />
+                </button>
+            )}
+
             {/* Modals */}
+            <PhoneNumberModal
+                isOpen={showPhoneModal}
+                onClose={() => {
+                    setShowPhoneModal(false);
+                    setPendingReminder(null);
+                    setRequestedChannel(null);
+                }}
+                onSave={handleSavePhoneNumber}
+                initialValue={profile?.phone_number || ''}
+            />
+
             <ShareModal
                 isOpen={showShareModal}
                 onClose={() => setShowShareModal(false)}
-                project={project}
-                stats={{
-                    total: formatPrice(project.total_usd, project.total_zwg),
-                    items: items.length
+                projectId={projectId}
+                projectName={project.name}
+            />
+
+            <CelebrationModal
+                isOpen={showCelebration}
+                onClose={() => {
+                    setShowCelebration(false);
+                    setCelebrationData(null);
+                }}
+                title={celebrationData?.title || ''}
+                message={celebrationData?.message || ''}
+                stats={celebrationData?.stats}
+                variant="stage-complete"
+                actionLabel="Continue Building"
+                onAction={() => {
+                    setShowCelebration(false);
+                    setCelebrationData(null);
+                    setActiveView('boq');
                 }}
             />
-
-            <PhoneNumberModal
-                isOpen={showPhoneModal}
-                onClose={() => setShowPhoneModal(false)}
-                onSave={handleSavePhoneNumber}
-                isSaving={false}
-            />
-
-            {showCelebration && celebrationData && (
-                <CelebrationModal
-                    isOpen={showCelebration}
-                    onClose={() => setShowCelebration(false)}
-                    title={celebrationData.title}
-                    message={celebrationData.message}
-                    stats={celebrationData.stats}
-                />
-            )}
 
             <style jsx global>{`
                 :root {
@@ -1120,6 +1177,35 @@ function ProjectDetailContent() {
                 .shadow-card { box-shadow: var(--shadow-card); }
                 
                 .font-heading { font-family: var(--font-heading); }
+            `}</style>
+            <style jsx>{`
+                .mobile-sidebar-fab {
+                    display: none;
+                }
+
+                @media (max-width: 768px) {
+                    .mobile-sidebar-fab {
+                        display: flex;
+                        position: fixed;
+                        bottom: 24px;
+                        left: 16px;
+                        z-index: 100;
+                        width: 56px;
+                        height: 56px;
+                        border-radius: 50%;
+                        background: var(--color-accent);
+                        color: white;
+                        border: none;
+                        align-items: center;
+                        justify-content: center;
+                        box-shadow: 0 4px 14px rgba(46, 108, 246, 0.4);
+                        cursor: pointer;
+                    }
+
+                    .mobile-sidebar-fab:active {
+                        transform: scale(0.95);
+                    }
+                }
             `}</style>
         </MainLayout>
     );
