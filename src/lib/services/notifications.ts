@@ -247,9 +247,9 @@ export async function subscribeToPushNotifications(): Promise<{ subscription: Pu
 
     const payload: PushSubscriptionInsert = {
       user_id: authData.user.id,
-      endpoint: json.endpoint,
-      p256dh: keys.p256dh || null,
-      auth: keys.auth || null,
+      endpoint: json.endpoint || '',
+      p256dh: (keys.p256dh as string) || null,
+      auth: (keys.auth as string) || null,
       user_agent: navigator.userAgent,
     };
 
@@ -259,7 +259,7 @@ export async function subscribeToPushNotifications(): Promise<{ subscription: Pu
       return { subscription: null, error: new Error('Failed to save subscription') };
     }
 
-    return { subscription, error: null };
+    return { subscription: subscription as any, error: null };
   } catch (subError) {
     logger.error('Notifications: subscription failed', { error: subError });
     return { subscription: null, error: new Error('Failed to subscribe to push notifications') };

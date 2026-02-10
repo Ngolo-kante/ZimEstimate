@@ -216,8 +216,8 @@ export async function deleteSupplierProduct(
   return { success: true };
 }
 
-function bufferToHex(buffer: ArrayBuffer) {
-  return Array.from(new Uint8Array(buffer))
+function bufferToHex(buffer: Uint8Array | ArrayBuffer) {
+  return Array.from(buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }
@@ -281,7 +281,7 @@ export async function createSupplierApiKey(options: {
     return { success: false, error: mappedError.message };
   }
 
-  return { success: true, apiKey, key: data as SupplierApiKey };
+  return { success: true, apiKey, key: data as unknown as SupplierApiKey };
 }
 
 /** Revoke a supplier API key by id. */

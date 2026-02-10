@@ -54,7 +54,9 @@ function MetricCard({
   );
 }
 
-export default function AnalyticsPage() {
+import { Suspense } from 'react';
+
+function AnalyticsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { currency, exchangeRate, formatPrice } = useCurrency();
@@ -787,5 +789,13 @@ export default function AnalyticsPage() {
         `}</style>
       </MainLayout>
     </ProtectedRoute>
+  );
+}
+
+export default function AnalyticsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading analytics...</div>}>
+      <AnalyticsContent />
+    </Suspense>
   );
 }

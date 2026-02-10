@@ -71,7 +71,7 @@ export default function SupplierDirectoryPage() {
       .range(offset, offset + PAGE_SIZE - 1);
 
     if (!error && data) {
-      const newSuppliers = Array.isArray(data) ? data.filter(isSupplierRow) : [];
+      const newSuppliers: Supplier[] = Array.isArray(data) ? data.filter(isSupplierRow) : [];
       setSuppliers((prev) => (append ? [...prev, ...newSuppliers] : newSuppliers));
       setHasMore(newSuppliers.length === PAGE_SIZE);
 
@@ -86,7 +86,8 @@ export default function SupplierDirectoryPage() {
 
         if (products) {
           const counts: Record<string, number> = {};
-          (Array.isArray(products) ? products.filter(isSupplierProductRow) : []).forEach((product) => {
+          const filteredProducts: SupplierProduct[] = Array.isArray(products) ? products.filter(isSupplierProductRow) : [];
+          filteredProducts.forEach((product) => {
             const supplierId = product.supplier_id;
             counts[supplierId] = (counts[supplierId] || 0) + 1;
           });

@@ -36,22 +36,23 @@ interface CategoryScrapeResponse {
     itemsPending: number;
     items: ScrapedItem[];
     error?: string;
+    retryAfterSeconds?: number;
 }
 
-export async function POST(req: NextRequest): Promise<NextResponse<CategoryScrapeResponse>> {
+export async function POST(req: NextRequest): Promise<NextResponse<CategoryScrapeResponse | { error: string; retryAfterSeconds: number }>> {
     try {
         const rateLimit = enforceRateLimit(req, {
             keyPrefix: 'scraper:category',
             limit: 10,
             windowMs: 60_000,
         });
-        if (rateLimit) return rateLimit;
+        if (rateLimit) return rateLimit as NextResponse<any>;
 
         const csrf = enforceCsrf(req);
-        if (csrf) return csrf;
+        if (csrf) return csrf as NextResponse<any>;
 
         const auth = await requireAdmin(req);
-        if (auth instanceof NextResponse) return auth;
+        if (auth instanceof NextResponse) return auth as NextResponse<any>;
 
         const payload = await req.json() as CategoryScrapePayload;
         const {

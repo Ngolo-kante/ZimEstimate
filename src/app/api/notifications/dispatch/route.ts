@@ -91,7 +91,8 @@ export async function POST(request: Request) {
       }
 
       if (delivery.channel === 'whatsapp') {
-        await sendWhatsAppMessage(delivery.payload || {});
+        const payload = (delivery.payload || {}) as Record<string, unknown>;
+        await sendWhatsAppMessage(payload);
         await supabase
           .from('notification_deliveries')
           .update({ status: 'sent', sent_at: new Date().toISOString() })

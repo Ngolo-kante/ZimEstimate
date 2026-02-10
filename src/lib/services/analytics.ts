@@ -174,7 +174,7 @@ export async function getBuilderAnalytics(
 
   const records = (purchases || []) as PurchaseRecord[];
   const spendUsd = computeSpend(records);
-  const budgetUsd = Number(project?.budget_target_usd ?? project?.total_usd ?? 0);
+  const budgetUsd = Number((project as any)?.budget_target_usd ?? (project as any)?.total_usd ?? 0);
   const varianceUsd = budgetUsd - spendUsd;
   const completionPct = computeCompletion((stages || []) as ProjectStage[]);
   const spendTimeline = buildSpendTimeline(records, 6);
@@ -209,9 +209,9 @@ export async function getBuilderAnalytics(
 
   const { data: comparisonPurchases } = comparisonIds.length
     ? await supabase
-        .from('purchase_records')
-        .select('project_id, quantity, unit_price_usd')
-        .in('project_id', comparisonIds)
+      .from('purchase_records')
+      .select('project_id, quantity, unit_price_usd')
+      .in('project_id', comparisonIds)
     : { data: [] };
 
   const spendByProject = new Map<string, number>();
@@ -224,9 +224,9 @@ export async function getBuilderAnalytics(
 
   const { data: comparisonStages } = comparisonIds.length
     ? await supabase
-        .from('project_stages')
-        .select('*')
-        .in('project_id', comparisonIds)
+      .from('project_stages')
+      .select('*')
+      .in('project_id', comparisonIds)
     : { data: [] };
 
   const stagesByProject = new Map<string, ProjectStage[]>();
@@ -321,7 +321,7 @@ export async function getSupplierAnalytics(
     ? responseTimes.reduce((sum, value) => sum + value, 0) / responseTimes.length
     : 0;
 
-  const ratingBreakdown = buildRatingBreakdown(Number(supplier.rating || 0));
+  const ratingBreakdown = buildRatingBreakdown(Number((supplier as any)?.rating || 0));
 
   const quoteHistory = quoteRows.slice(0, 10).map((quote) => ({
     rfqId: quote.rfq_id,

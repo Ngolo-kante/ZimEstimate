@@ -286,7 +286,7 @@ export async function createRfqRequest(options: {
       p_notes: notes || null,
       p_items: itemsForTransaction,
       p_recipients: recipientsForTransaction,
-    });
+    } as any);
 
   if (transactionError) {
     logAsyncError('Create RFQ transaction', transactionError);
@@ -589,10 +589,10 @@ export async function submitSupplierQuote(options: {
         .eq('id', builderUserId)
         .single();
 
-      const allowUpdates = builderPrefs?.notify_quote_updates ?? true;
+      const allowUpdates = (builderPrefs as any)?.notify_quote_updates ?? true;
       const channels: Array<'email' | 'whatsapp'> = [];
-      if (allowUpdates && (builderPrefs?.notify_email ?? true)) channels.push('email');
-      if (allowUpdates && (builderPrefs?.notify_whatsapp ?? false) && builderPrefs?.phone_number) channels.push('whatsapp');
+      if (allowUpdates && ((builderPrefs as any)?.notify_email ?? true)) channels.push('email');
+      if (allowUpdates && ((builderPrefs as any)?.notify_whatsapp ?? false) && (builderPrefs as any)?.phone_number) channels.push('whatsapp');
 
       const projectName = (rfqRow as { project?: { name?: string | null } } | null)?.project?.name || 'Project';
       const templateData = {
@@ -694,10 +694,10 @@ export async function acceptRfqQuote(options: {
           .eq('id', supplierUserId)
           .single();
 
-        const allowUpdates = supplierPrefs?.notify_quote_updates ?? true;
+        const allowUpdates = (supplierPrefs as any)?.notify_quote_updates ?? true;
         const channels: Array<'email' | 'whatsapp'> = [];
-        if (allowUpdates && (supplierPrefs?.notify_email ?? true)) channels.push('email');
-        if (allowUpdates && (supplierPrefs?.notify_whatsapp ?? false) && supplierPrefs?.phone_number) channels.push('whatsapp');
+        if (allowUpdates && ((supplierPrefs as any)?.notify_email ?? true)) channels.push('email');
+        if (allowUpdates && ((supplierPrefs as any)?.notify_whatsapp ?? false) && (supplierPrefs as any)?.phone_number) channels.push('whatsapp');
 
         const { data: projectRow } = await supabase
           .from('rfq_requests')
