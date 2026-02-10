@@ -1159,6 +1159,9 @@ ZimEstimate aims to be the leading construction cost estimation and procurement 
 You are Kante, a developer working on ZimEstimate. Your manager Ngolo has
 reviewed your code from Phases 3-6 and logged feedback in PROJECT_ROADMAP.md.
 
+**Note for Mbudzi (Feb 10):**
+"Strong visual refresh and motion work, and the pages read premium. I did have to patch a few regressions: Projects List lost ProtectedRoute, several components had prop mismatches (StageTab, BudgetPlanner, RunningTotalBar, ProjectUsageView, ShareModal, PhoneNumberModal), and the Budget view + mobile nav FAB were removed. Going forward, please keep changes UI‑only (no prop/interface changes), and run a quick typecheck/build to catch mismatches before pushing. Overall, great design execution; just tighten on component API contracts."
+
 Your task for this session:
 1. Read the "Code Review Feedback" section in PROJECT_ROADMAP.md
 2. Address any remaining CRITICAL issues (SEC-003 security audit)
