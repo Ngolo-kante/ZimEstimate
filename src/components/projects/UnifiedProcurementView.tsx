@@ -101,9 +101,9 @@ export default function UnifiedProcurementView({
   // Computed Stats
   const stats = useMemo(() => {
     const totalBudget = project.total_usd || 0;
-    const totalSpent = purchases.reduce((sum, p) => sum + (Number(p.total_cost_usd) || 0), 0);
+    const totalSpent = purchases.reduce((sum, p) => sum + (Number(p.quantity * p.unit_price_usd) || 0), 0);
     const pendingRfqs = rfqs.filter(r => r.status === 'open' || r.status === 'draft').length;
-    const openOrders = purchases.filter(p => p.status === 'ordered' || p.status === 'pending_delivery').length;
+    const openOrders = (purchases as any[]).filter(p => p.status === 'ordered' || p.status === 'pending_delivery').length;
 
     return {
       totalBudget,
@@ -126,7 +126,7 @@ export default function UnifiedProcurementView({
         rows = rfqs;
         break;
       case 'delivery':
-        rows = purchases.filter(p => p.status === 'pending_delivery' || p.status === 'delivered');
+        rows = (purchases as any[]).filter(p => p.status === 'pending_delivery' || p.status === 'delivered');
         break;
       default:
         rows = [];
