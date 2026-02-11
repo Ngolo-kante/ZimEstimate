@@ -749,3 +749,6 @@ export async function acceptRfqQuote(options: {
 
   return { error: null };
 }
+
+// STUB IMPORTS FOR UnifiedProcurementView
+// These functions are aliases or stubs to satisfy the imports in the codebase

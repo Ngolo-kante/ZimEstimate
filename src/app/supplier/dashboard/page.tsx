@@ -322,11 +322,9 @@ export default function SupplierDashboardPage() {
 
   // Group products by category
   const productsByCategory = products.reduce((acc, product) => {
-    // Extract category from material_key (e.g., "cement_50kg" -> "Cement & Concrete")
     const materialKey = product.material_key;
     let category = 'Other';
 
-    // Simple category detection from material_key
     if (materialKey.includes('cement') || materialKey.includes('concrete')) {
       category = 'Cement & Concrete';
     } else if (materialKey.includes('brick') || materialKey.includes('block')) {
@@ -356,8 +354,8 @@ export default function SupplierDashboardPage() {
 
   if (loading) {
     return (
-      <div className="supplier-loading">
-        <Spinner size={32} className="animate-spin" style={{ color: 'var(--color-accent)' }} />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Spinner size={32} className="animate-spin text-accent" />
       </div>
     );
   }
@@ -377,38 +375,36 @@ export default function SupplierDashboardPage() {
   const VerificationIcon = verificationBadge.icon;
 
   return (
-    <div className="supplier-dashboard">
+    <div className="min-h-screen bg-background text-text font-body">
       {/* Header */}
-      <div className="supplier-header reveal" data-delay="1">
-        <div className="supplier-header-inner">
+      <div className="bg-surface border-b border-border-light">
+        <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <div className="supplier-title">
-              <Storefront size={28} style={{ color: 'var(--color-accent)' }} />
-              <h1>{supplier.name}</h1>
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.25rem',
-                padding: '0.25rem 0.75rem',
-                borderRadius: '20px',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                backgroundColor: `${verificationBadge.color}15`,
-                color: verificationBadge.color,
-              }}>
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              <Storefront size={28} className="text-accent" />
+              <h1 className="text-2xl md:text-3xl font-bold font-heading text-primary m-0">
+                {supplier.name}
+              </h1>
+              <span
+                className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold"
+                style={{
+                  backgroundColor: `${verificationBadge.color}15`,
+                  color: verificationBadge.color,
+                }}
+              >
                 <VerificationIcon size={14} weight="bold" />
                 {verificationBadge.label}
               </span>
             </div>
-            <div className="supplier-meta">
+            <div className="flex items-center gap-4 text-sm text-secondary flex-wrap">
               {supplier.location && (
-                <span className="supplier-meta-item">
+                <span className="inline-flex items-center gap-1">
                   <MapPin size={16} />
                   {supplier.location}
                 </span>
               )}
               {supplier.contact_phone && (
-                <span className="supplier-meta-item">
+                <span className="inline-flex items-center gap-1">
                   <Phone size={16} />
                   {supplier.contact_phone}
                 </span>
@@ -418,7 +414,7 @@ export default function SupplierDashboardPage() {
 
           <Link
             href="/"
-            className="supplier-back-link"
+            className="px-4 py-2 bg-mist rounded-md text-secondary text-sm border border-border-light hover:border-accent hover:text-accent transition-colors"
           >
             Back to Home
           </Link>
@@ -426,8 +422,8 @@ export default function SupplierDashboardPage() {
       </div>
 
       {/* Tabs */}
-      <div className="supplier-tabs">
-        <div className="supplier-tabs-inner">
+      <div className="bg-surface border-b border-border-light">
+        <div className="max-w-7xl mx-auto px-6 flex items-center gap-2 overflow-x-auto">
           {[
             { key: 'overview' as TabKey, label: 'Overview', icon: ChartLine },
             { key: 'products' as TabKey, label: 'Products', icon: Package },
@@ -440,7 +436,10 @@ export default function SupplierDashboardPage() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`supplier-tab ${isActive ? 'active' : ''}`}
+                className={`flex items-center gap-2 px-5 py-4 bg-transparent border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${isActive
+                    ? 'border-accent text-accent font-semibold'
+                    : 'border-transparent text-secondary hover:text-text'
+                  }`}
               >
                 <Icon size={20} />
                 {tab.label}
@@ -451,60 +450,60 @@ export default function SupplierDashboardPage() {
       </div>
 
       {/* Content */}
-      <div className="supplier-content">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Overview Tab */}
         {activeTab === 'overview' && (
-          <div className="overview-grid">
+          <div className="grid gap-6">
             {/* Stats Cards */}
-            <div className="stats-grid">
-              <div className="stat-card reveal" data-delay="1">
-                <div className="stat-label">Total Products</div>
-                <div className="stat-value">{products.length}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-surface rounded-xl p-5 shadow-card border border-border-light reveal" data-delay="1">
+                <div className="text-secondary text-sm font-semibold uppercase tracking-wider mb-2">Total Products</div>
+                <div className="text-3xl font-bold font-heading text-primary">{products.length}</div>
               </div>
 
-              <div className="stat-card reveal" data-delay="2">
-                <div className="stat-label">In Stock</div>
-                <div className="stat-value stat-value--success">
+              <div className="bg-surface rounded-xl p-5 shadow-card border border-border-light reveal" data-delay="2">
+                <div className="text-secondary text-sm font-semibold uppercase tracking-wider mb-2">In Stock</div>
+                <div className="text-3xl font-bold font-heading text-emerald-600">
                   {products.filter(p => p.stock_status === 'in_stock').length}
                 </div>
               </div>
 
-              <div className="stat-card reveal" data-delay="3">
-                <div className="stat-label">Low Stock</div>
-                <div className="stat-value stat-value--warning">
+              <div className="bg-surface rounded-xl p-5 shadow-card border border-border-light reveal" data-delay="3">
+                <div className="text-secondary text-sm font-semibold uppercase tracking-wider mb-2">Low Stock</div>
+                <div className="text-3xl font-bold font-heading text-amber-500">
                   {products.filter(p => p.stock_status === 'low_stock').length}
                 </div>
               </div>
 
-              <div className="stat-card reveal" data-delay="4">
-                <div className="stat-label">Delivery Radius</div>
-                <div className="stat-value">
+              <div className="bg-surface rounded-xl p-5 shadow-card border border-border-light reveal" data-delay="4">
+                <div className="text-secondary text-sm font-semibold uppercase tracking-wider mb-2">Delivery Radius</div>
+                <div className="text-3xl font-bold font-heading text-primary">
                   {supplier.delivery_radius_km || 50} km
                 </div>
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="panel-card reveal" data-delay="2">
-              <h2>Quick Actions</h2>
-              <div className="action-row">
+            <div className="bg-surface rounded-xl p-5 shadow-card border border-border-light grid gap-4 reveal" data-delay="2">
+              <h2 className="text-lg font-semibold font-heading text-primary m-0">Quick Actions</h2>
+              <div className="flex flex-wrap gap-4">
                 <button
                   onClick={() => setActiveTab('products')}
-                  className="action-btn action-btn--primary"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-white rounded-md font-semibold hover:bg-accent-dark transition-colors shadow-sm"
                 >
                   <Plus size={18} weight="bold" />
                   Add Product
                 </button>
                 <Link
                   href="/supplier/analytics"
-                  className="action-btn action-btn--secondary"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-mist text-text border border-border-light rounded-md font-semibold hover:bg-white hover:border-accent hover:text-accent transition-colors"
                 >
                   <ChartLine size={18} weight="bold" />
                   View Analytics
                 </Link>
                 <button
                   onClick={() => setActiveTab('settings')}
-                  className="action-btn action-btn--ghost"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-surface text-secondary border border-border-light rounded-md font-semibold hover:border-accent hover:text-accent transition-colors"
                 >
                   <PencilSimple size={18} />
                   Edit Profile
@@ -514,13 +513,13 @@ export default function SupplierDashboardPage() {
 
             {/* Categories */}
             {supplier.material_categories && supplier.material_categories.length > 0 && (
-              <div className="panel-card reveal" data-delay="3">
-                <h2>Your Categories</h2>
-                <div className="pill-row">
+              <div className="bg-surface rounded-xl p-5 shadow-card border border-border-light grid gap-4 reveal" data-delay="3">
+                <h2 className="text-lg font-semibold font-heading text-primary m-0">Your Categories</h2>
+                <div className="flex flex-wrap gap-2">
                   {supplier.material_categories.map(category => (
                     <span
                       key={category}
-                      className="category-pill"
+                      className="px-4 py-2 bg-accent-light text-accent rounded-full text-sm font-medium"
                     >
                       {category}
                     </span>
@@ -534,13 +533,13 @@ export default function SupplierDashboardPage() {
         {/* Products Tab */}
         {activeTab === 'products' && (
           <div>
-            <div className="section-header reveal" data-delay="1">
-              <h2 className="section-title">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 reveal" data-delay="1">
+              <h2 className="text-xl font-semibold font-heading text-primary m-0">
                 Your Products ({products.length})
               </h2>
               <Link
                 href={`/supplier/products/add`}
-                className="action-btn action-btn--primary"
+                className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-white rounded-md font-semibold hover:bg-accent-dark transition-colors shadow-sm"
               >
                 <Plus size={18} weight="bold" />
                 Add Product
@@ -548,88 +547,92 @@ export default function SupplierDashboardPage() {
             </div>
 
             {products.length === 0 ? (
-              <div className="empty-state reveal">
-                <Package size={48} style={{ color: 'var(--color-text-muted)', marginBottom: '1rem' }} />
-                <h3>No products yet</h3>
-                <p>
+              <div className="bg-surface rounded-xl p-12 text-center shadow-card border border-border-light grid gap-3 reveal">
+                <div className="flex justify-center">
+                  <Package size={48} className="text-muted mb-4" />
+                </div>
+                <h3 className="text-lg font-semibold m-0">No products yet</h3>
+                <p className="text-secondary m-0">
                   Add your first product to start appearing in search results.
                 </p>
-                <Link
-                  href={`/supplier/products/add`}
-                  className="action-btn action-btn--primary"
-                >
-                  <Plus size={18} weight="bold" />
-                  Add Your First Product
-                </Link>
+                <div className="flex justify-center mt-4">
+                  <Link
+                    href={`/supplier/products/add`}
+                    className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-white rounded-md font-semibold hover:bg-accent-dark transition-colors shadow-sm"
+                  >
+                    <Plus size={18} weight="bold" />
+                    Add Your First Product
+                  </Link>
+                </div>
               </div>
             ) : (
-              <div className="category-stack">
+              <div className="flex flex-col gap-4">
                 {Object.entries(productsByCategory).map(([category, categoryProducts]) => (
                   <div
                     key={category}
-                    className="category-card reveal"
+                    className="bg-surface rounded-xl overflow-hidden shadow-card border border-border-light reveal"
                   >
                     <button
                       onClick={() => toggleCategory(category)}
-                      className="category-toggle"
+                      className="w-full flex justify-between items-center px-6 py-4 bg-mist border-none cursor-pointer text-left hover:bg-surface transition-colors"
                     >
-                      <span className="category-title">
+                      <span className="font-semibold text-primary">
                         {category} ({categoryProducts.length})
                       </span>
                       {expandedCategories.has(category) ? (
-                        <CaretUp size={20} style={{ color: 'var(--color-text-secondary)' }} />
+                        <CaretUp size={20} className="text-secondary" />
                       ) : (
-                        <CaretDown size={20} style={{ color: 'var(--color-text-secondary)' }} />
+                        <CaretDown size={20} className="text-secondary" />
                       )}
                     </button>
 
                     {expandedCategories.has(category) && (
-                      <div className="category-body">
+                      <div className="p-2">
                         {categoryProducts.map(product => {
                           const statusInfo = STOCK_STATUS_LABELS[product.stock_status] || STOCK_STATUS_LABELS.in_stock;
                           return (
                             <div
                               key={product.id}
-                              className="product-row"
+                              className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border-b border-border-light last:border-0 gap-4"
                             >
                               <div>
-                                <div className="product-title">
+                                <div className="font-semibold mb-1">
                                   {product.material_name || product.material_key}
                                 </div>
-                                <div className="product-meta">
+                                <div className="text-sm text-secondary">
                                   {product.unit && `Per ${product.unit}`}
                                   {product.min_order_qty > 1 && ` · Min order: ${product.min_order_qty}`}
                                 </div>
                               </div>
 
-                              <div className="product-actions">
-                                <div className="product-price">
+                              <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                                <div className="text-right">
                                   {product.price_usd && (
-                                    <div className="product-price-value">
+                                    <div className="font-semibold">
                                       ${product.price_usd.toFixed(2)}
                                     </div>
                                   )}
-                                  <span style={{
-                                    fontSize: '0.75rem',
-                                    padding: '0.125rem 0.5rem',
-                                    borderRadius: '4px',
-                                    backgroundColor: `${statusInfo.color}15`,
-                                    color: statusInfo.color,
-                                  }}>
+                                  <span
+                                    className="inline-block text-xs px-2 py-0.5 rounded"
+                                    style={{
+                                      backgroundColor: `${statusInfo.color}15`,
+                                      color: statusInfo.color,
+                                    }}
+                                  >
                                     {statusInfo.label}
                                   </span>
                                 </div>
 
-                                <div className="icon-button-row">
+                                <div className="flex gap-2">
                                   <Link
                                     href={`/supplier/products/edit/${product.id}`}
-                                    className="icon-button"
+                                    className="p-2 bg-mist rounded text-secondary hover:bg-white hover:text-accent transition-colors"
                                   >
                                     <PencilSimple size={16} />
                                   </Link>
                                   <button
                                     onClick={() => handleDeleteProduct(product.id)}
-                                    className="icon-button icon-button--danger"
+                                    className="p-2 bg-error/10 rounded text-error hover:bg-error/20 transition-colors cursor-pointer border-none"
                                   >
                                     <Trash size={16} />
                                   </button>
@@ -649,9 +652,9 @@ export default function SupplierDashboardPage() {
 
         {/* RFQ Quotes Tab */}
         {activeTab === 'quotes' && (
-          <div className="quotes-grid">
-            <div className="section-header reveal" data-delay="1">
-              <h2 className="section-title">
+          <div className="grid gap-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 reveal" data-delay="1">
+              <h2 className="text-xl font-semibold font-heading text-primary m-0">
                 RFQ Quotes ({rfqInbox.length})
               </h2>
               <button
@@ -662,21 +665,23 @@ export default function SupplierDashboardPage() {
                   setRfqInbox(rfqs);
                   setRfqLoading(false);
                 }}
-                className="action-btn action-btn--ghost"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-surface text-secondary border border-border-light rounded-md font-medium hover:border-accent hover:text-accent transition-colors cursor-pointer"
               >
                 Refresh
               </button>
             </div>
 
             {rfqLoading ? (
-              <div className="panel-card reveal">
-                <Spinner size={24} className="animate-spin" style={{ color: 'var(--color-accent)' }} />
+              <div className="bg-surface rounded-xl p-8 flex justify-center shadow-card border border-border-light reveal">
+                <Spinner size={32} className="animate-spin text-accent" />
               </div>
             ) : rfqInbox.length === 0 ? (
-              <div className="empty-state reveal">
-                <ClipboardText size={48} style={{ color: 'var(--color-text-muted)', marginBottom: '1rem' }} />
-                <h3>No RFQs yet</h3>
-                <p>
+              <div className="bg-surface rounded-xl p-12 text-center shadow-card border border-border-light grid gap-3 reveal">
+                <div className="flex justify-center">
+                  <ClipboardText size={48} className="text-muted mb-4" />
+                </div>
+                <h3 className="text-lg font-semibold m-0">No RFQs yet</h3>
+                <p className="text-secondary m-0">
                   Matched requests will appear here once builders send RFQs.
                 </p>
               </div>
@@ -699,39 +704,32 @@ export default function SupplierDashboardPage() {
                 return (
                   <div
                     key={rfq.id}
-                    className="rfq-card reveal"
+                    className="bg-surface rounded-xl p-6 shadow-card border border-border-light grid gap-4 reveal"
                   >
-                    <div className="rfq-header">
+                    <div className="flex justify-between items-start gap-4 flex-wrap">
                       <div>
-                        <div className="rfq-title">
+                        <div className="font-semibold mb-1">
                           {rfq.project?.name || 'Project'} · RFQ #{rfq.id.slice(0, 8)}
                         </div>
-                        <div className="rfq-meta">
+                        <div className="text-sm text-secondary">
                           {rfq.project?.location || 'Location TBD'}
                           {rfq.required_by && ` · Needed by ${new Date(rfq.required_by).toLocaleDateString()}`}
                         </div>
                       </div>
-                      <span style={{
-                        fontSize: '0.75rem',
-                        padding: '0.25rem 0.75rem',
-                        borderRadius: '999px',
-                        backgroundColor: 'var(--color-mist)',
-                        color: 'var(--color-text-secondary)',
-                        fontWeight: 600,
-                      }}>
+                      <span className="text-xs font-semibold px-3 py-1 bg-mist text-secondary rounded-full uppercase tracking-wider">
                         {rfq.status.toUpperCase()}
                       </span>
                     </div>
 
-                    <div className="rfq-items">
+                    <div className="grid gap-3">
                       {rfq.rfq_items.map((item) => (
                         <div
                           key={item.id}
-                          className="rfq-item"
+                          className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-3 items-center p-3 rounded-md bg-mist"
                         >
                           <div>
-                            <div className="rfq-item-title">{item.material_name || item.material_key}</div>
-                            <div className="rfq-item-meta">
+                            <div className="font-semibold">{item.material_name || item.material_key}</div>
+                            <div className="text-xs text-secondary">
                               Requested: {Number(item.quantity).toFixed(2)} {item.unit || ''}
                             </div>
                           </div>
@@ -743,7 +741,7 @@ export default function SupplierDashboardPage() {
                             value={form?.items[item.id]?.unitPriceUsd || ''}
                             onChange={(e) => updateRfqItemField(rfq.id, item.id, 'unitPriceUsd', e.target.value)}
                             disabled={isLocked}
-                            className="rfq-input"
+                            className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
                           />
                           <input
                             type="number"
@@ -753,13 +751,13 @@ export default function SupplierDashboardPage() {
                             value={form?.items[item.id]?.availableQuantity || ''}
                             onChange={(e) => updateRfqItemField(rfq.id, item.id, 'availableQuantity', e.target.value)}
                             disabled={isLocked}
-                            className="rfq-input"
+                            className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
                           />
                         </div>
                       ))}
                     </div>
 
-                    <div className="rfq-input-row">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
                       <input
                         type="number"
                         min="0"
@@ -767,14 +765,14 @@ export default function SupplierDashboardPage() {
                         value={form?.deliveryDays || ''}
                         onChange={(e) => updateRfqField(rfq.id, 'deliveryDays', e.target.value)}
                         disabled={isLocked}
-                        className="rfq-input"
+                        className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
                       />
                       <input
                         type="date"
                         value={form?.validUntil || ''}
                         onChange={(e) => updateRfqField(rfq.id, 'validUntil', e.target.value)}
                         disabled={isLocked}
-                        className="rfq-input"
+                        className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
                       />
                       <input
                         type="text"
@@ -782,19 +780,21 @@ export default function SupplierDashboardPage() {
                         value={form?.notes || ''}
                         onChange={(e) => updateRfqField(rfq.id, 'notes', e.target.value)}
                         disabled={isLocked}
-                        className="rfq-input"
+                        className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
                       />
                     </div>
 
-                    <div className="rfq-footer">
-                      <div className="rfq-total">
+                    <div className="flex justify-between items-center mt-2 flex-wrap gap-3 border-t border-border-light pt-4">
+                      <div className="font-semibold text-primary">
                         Total: {formatPrice(totals.usd, totals.zwg)}
                       </div>
                       <button
                         onClick={() => handleSubmitQuote(rfq)}
                         disabled={isLocked}
-                        className={`action-btn action-btn--primary ${isLocked ? 'is-disabled' : ''}`}
-                        style={isLocked ? { backgroundColor: 'var(--color-border-light)', color: 'var(--color-text-muted)' } : undefined}
+                        className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-md font-semibold transition-colors shadow-sm ${isLocked
+                            ? 'bg-border-light text-muted cursor-not-allowed'
+                            : 'bg-accent text-white hover:bg-accent-dark'
+                          }`}
                       >
                         {rfq.supplier_quote ? 'Update Quote' : 'Submit Quote'}
                       </button>
@@ -808,72 +808,72 @@ export default function SupplierDashboardPage() {
 
         {/* Settings Tab */}
         {activeTab === 'settings' && (
-          <div className="panel-card reveal">
-            <h2 className="section-title">Business Profile</h2>
+          <div className="bg-surface rounded-xl p-6 shadow-card border border-border-light reveal">
+            <h2 className="text-xl font-semibold font-heading text-primary m-0 mb-6">Business Profile</h2>
 
-            <div className="settings-grid">
-              <div className="info-grid">
+            <div className="grid gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="info-label">
+                  <label className="block text-sm text-secondary mb-1">
                     Business Name
                   </label>
-                  <div className="info-value">{supplier.name}</div>
+                  <div className="font-medium">{supplier.name}</div>
                 </div>
 
                 {supplier.registration_number && (
                   <div>
-                    <label className="info-label">
+                    <label className="block text-sm text-secondary mb-1">
                       Registration Number
                     </label>
-                    <div className="info-value">{supplier.registration_number}</div>
+                    <div className="font-medium">{supplier.registration_number}</div>
                   </div>
                 )}
 
                 <div>
-                  <label className="info-label">
+                  <label className="block text-sm text-secondary mb-1">
                     Location
                   </label>
-                  <div className="info-value">{supplier.location || 'Not set'}</div>
+                  <div className="font-medium">{supplier.location || 'Not set'}</div>
                 </div>
 
                 <div>
-                  <label className="info-label">
+                  <label className="block text-sm text-secondary mb-1">
                     Physical Address
                   </label>
-                  <div className="info-value">{supplier.physical_address || 'Not set'}</div>
+                  <div className="font-medium">{supplier.physical_address || 'Not set'}</div>
                 </div>
               </div>
 
-              <hr className="section-divider" />
+              <hr className="border-t border-border-light" />
 
-              <div className="info-grid">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="info-label">
-                    <Phone size={16} className="inline-icon" />
+                  <label className="block text-sm text-secondary mb-1">
+                    <Phone size={16} className="inline mr-1" />
                     Phone
                   </label>
-                  <div className="info-value">{supplier.contact_phone || 'Not set'}</div>
+                  <div className="font-medium">{supplier.contact_phone || 'Not set'}</div>
                 </div>
 
                 <div>
-                  <label className="info-label">
-                    <Envelope size={16} className="inline-icon" />
+                  <label className="block text-sm text-secondary mb-1">
+                    <Envelope size={16} className="inline mr-1" />
                     Email
                   </label>
-                  <div className="info-value">{supplier.contact_email || 'Not set'}</div>
+                  <div className="font-medium">{supplier.contact_email || 'Not set'}</div>
                 </div>
 
                 {supplier.website && (
                   <div>
-                    <label className="info-label">
-                      <Globe size={16} className="inline-icon" />
+                    <label className="block text-sm text-secondary mb-1">
+                      <Globe size={16} className="inline mr-1" />
                       Website
                     </label>
                     <a
                       href={supplier.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="link-accent"
+                      className="text-accent font-medium hover:underline"
                     >
                       {supplier.website}
                     </a>
@@ -881,81 +881,81 @@ export default function SupplierDashboardPage() {
                 )}
               </div>
 
-              <hr className="section-divider" />
+              <hr className="border-t border-border-light" />
 
-              <div className="info-grid">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="info-label">
+                  <label className="block text-sm text-secondary mb-1">
                     Delivery Radius
                   </label>
-                  <div className="info-value">{supplier.delivery_radius_km || 50} km</div>
+                  <div className="font-medium">{supplier.delivery_radius_km || 50} km</div>
                 </div>
 
                 {supplier.payment_terms && (
                   <div>
-                    <label className="info-label">
+                    <label className="block text-sm text-secondary mb-1">
                       Payment Terms
                     </label>
-                    <div className="info-value">{supplier.payment_terms}</div>
+                    <div className="font-medium">{supplier.payment_terms}</div>
                   </div>
                 )}
               </div>
 
-              <div className="settings-actions">
+              <div className="mt-2">
                 <Link
                   href="/supplier/profile/edit"
-                  className="action-btn action-btn--primary"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-white rounded-md font-semibold hover:bg-accent-dark transition-colors shadow-sm"
                 >
                   <PencilSimple size={18} />
                   Edit Profile
                 </Link>
               </div>
 
-              <hr className="section-divider section-divider--spaced" />
+              <hr className="border-t border-border-light mt-4" />
 
-              <div className="api-keys">
-                <div className="api-keys-header">
-                  <Key size={18} />
-                  <h3>API Keys</h3>
+              <div className="grid gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <Key size={18} className="text-secondary" />
+                  <h3 className="text-lg font-semibold font-heading text-primary m-0">API Keys</h3>
                 </div>
-                <p className="muted">
+                <p className="text-secondary m-0">
                   Generate API keys to integrate your catalog and availability with ZimEstimate.
                 </p>
 
-                <div className="api-key-card">
-                  <label className="info-label">Key Label (optional)</label>
+                <div className="grid gap-3 p-4 border border-border-light rounded-md bg-mist">
+                  <label className="text-sm text-secondary">Key Label (optional)</label>
                   <input
                     type="text"
                     value={apiKeyLabel}
                     onChange={(e) => setApiKeyLabel(e.target.value)}
                     placeholder="e.g. Inventory sync"
-                    className="rfq-input"
+                    className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
                   />
                   <button
                     onClick={handleCreateApiKey}
                     disabled={apiKeyProcessing || apiKeysLoading}
-                    className={`action-btn action-btn--primary ${apiKeyProcessing ? 'is-disabled' : ''}`}
-                    style={apiKeyProcessing ? { backgroundColor: 'var(--color-border-light)' } : undefined}
+                    className={`inline-flex items-center justify-center gap-2 px-4 py-2 bg-accent text-white rounded-md font-semibold transition-colors shadow-sm w-full sm:w-auto ${apiKeyProcessing ? 'bg-border-light text-muted cursor-not-allowed' : 'hover:bg-accent-dark'
+                      }`}
                   >
                     {apiKeyProcessing ? 'Creating...' : 'Create API Key'}
                   </button>
                 </div>
 
                 {newApiKey && (
-                  <div className="api-key-new">
-                    <div className="api-key-new-title">
+                  <div className="mt-4 p-4 rounded-md border border-accent-light bg-accent-light">
+                    <div className="font-semibold text-primary mb-2">
                       New key created — copy it now. You won’t see it again.
                     </div>
-                    <div className="api-key-row">
+                    <div className="flex gap-2 flex-wrap">
                       <input
                         type="text"
                         readOnly
                         value={newApiKey}
-                        className="api-key-input"
+                        className="flex-1 px-3 py-2 rounded-md border border-border bg-white font-mono text-sm"
                       />
                       <button
                         onClick={handleCopyApiKey}
-                        className="action-btn action-btn--secondary"
+                        className="px-4 py-2 bg-white border border-border-light text-text rounded-md hover:border-accent hover:text-accent transition-colors flex items-center gap-2"
                       >
                         <ClipboardText size={16} /> Copy
                       </button>
@@ -964,46 +964,46 @@ export default function SupplierDashboardPage() {
                 )}
 
                 {apiKeyError && (
-                  <div className="error-text">{apiKeyError}</div>
+                  <div className="text-error mt-2">{apiKeyError}</div>
                 )}
 
-                <div className="api-key-table">
-                  <h4>Active Keys</h4>
+                <div className="mt-4">
+                  <h4 className="text-base font-semibold mb-3">Active Keys</h4>
                   {apiKeysLoading ? (
-                    <div className="muted">Loading API keys...</div>
+                    <div className="text-secondary">Loading API keys...</div>
                   ) : apiKeys.length === 0 ? (
-                    <div className="muted">No API keys created yet.</div>
+                    <div className="text-secondary">No API keys created yet.</div>
                   ) : (
-                    <div style={{ overflowX: 'auto' }}>
-                      <table className="api-table">
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse min-w-[520px]">
                         <thead>
                           <tr>
-                            <th>Label</th>
-                            <th>Prefix</th>
-                            <th>Created</th>
-                            <th>Last Used</th>
-                            <th>Status</th>
+                            <th className="text-left text-xs uppercase tracking-wider text-secondary py-2">Label</th>
+                            <th className="text-left text-xs uppercase tracking-wider text-secondary py-2">Prefix</th>
+                            <th className="text-left text-xs uppercase tracking-wider text-secondary py-2">Created</th>
+                            <th className="text-left text-xs uppercase tracking-wider text-secondary py-2">Last Used</th>
+                            <th className="text-left text-xs uppercase tracking-wider text-secondary py-2">Status</th>
                             <th />
                           </tr>
                         </thead>
                         <tbody>
                           {apiKeys.map((key) => (
-                            <tr key={key.id}>
-                              <td>{key.label || '—'}</td>
-                              <td className="mono">
+                            <tr key={key.id} className="border-t border-border-light">
+                              <td className="py-3 pr-4">{key.label || '—'}</td>
+                              <td className="py-3 pr-4 font-mono text-sm">
                                 {key.key_prefix}…
                               </td>
-                              <td>{formatTimestamp(key.created_at)}</td>
-                              <td>{formatTimestamp(key.last_used_at)}</td>
-                              <td>
+                              <td className="py-3 pr-4 text-sm">{formatTimestamp(key.created_at)}</td>
+                              <td className="py-3 pr-4 text-sm">{formatTimestamp(key.last_used_at)}</td>
+                              <td className="py-3 pr-4 text-sm">
                                 {key.revoked_at ? 'Revoked' : 'Active'}
                               </td>
-                              <td className="align-right">
+                              <td className="py-3 text-right">
                                 {!key.revoked_at && (
                                   <button
                                     onClick={() => handleRevokeApiKey(key.id)}
                                     disabled={apiKeyProcessing}
-                                    className="danger-button"
+                                    className="px-3 py-1 bg-error/10 text-error border border-error/30 rounded text-sm font-semibold hover:bg-error/20 transition-colors"
                                   >
                                     Revoke
                                   </button>
@@ -1021,673 +1021,6 @@ export default function SupplierDashboardPage() {
           </div>
         )}
       </div>
-      <style jsx>{`
-        .supplier-dashboard {
-          min-height: 100vh;
-          background: var(--color-background);
-          color: var(--color-text);
-          font-family: var(--font-body);
-        }
-
-        .supplier-loading {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: var(--color-background);
-        }
-
-        .supplier-header {
-          background: var(--color-surface);
-          border-bottom: 1px solid var(--color-border-light);
-        }
-
-        .supplier-header-inner {
-          max-width: var(--container-max);
-          margin: 0 auto;
-          padding: var(--space-6) var(--container-padding);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: var(--space-4);
-        }
-
-        .supplier-title {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          margin-bottom: var(--space-2);
-          flex-wrap: wrap;
-        }
-
-        .supplier-title h1 {
-          font-size: var(--text-h3);
-          font-weight: var(--font-bold);
-          margin: 0;
-          font-family: var(--font-heading);
-          color: var(--color-primary);
-        }
-
-        .supplier-meta {
-          display: flex;
-          align-items: center;
-          gap: var(--space-4);
-          font-size: var(--text-sm);
-          color: var(--color-text-secondary);
-          flex-wrap: wrap;
-        }
-
-        .supplier-meta-item {
-          display: inline-flex;
-          align-items: center;
-          gap: var(--space-1);
-        }
-
-        .supplier-back-link {
-          padding: var(--space-2) var(--space-4);
-          background: var(--color-mist);
-          border-radius: var(--radius-md);
-          color: var(--color-text-secondary);
-          text-decoration: none;
-          font-size: var(--text-sm);
-          border: 1px solid var(--color-border-light);
-          transition: all var(--duration-fast);
-        }
-
-        .supplier-back-link:hover {
-          border-color: var(--color-accent);
-          color: var(--color-accent);
-        }
-
-        .supplier-tabs {
-          background: var(--color-surface);
-          border-bottom: 1px solid var(--color-border-light);
-        }
-
-        .supplier-tabs-inner {
-          max-width: var(--container-max);
-          margin: 0 auto;
-          display: flex;
-          gap: var(--space-2);
-          padding: 0 var(--container-padding);
-          flex-wrap: wrap;
-        }
-
-        .supplier-tab {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          padding: var(--space-4) var(--space-5);
-          background: transparent;
-          border: none;
-          border-bottom: 2px solid transparent;
-          color: var(--color-text-secondary);
-          font-weight: var(--font-medium);
-          cursor: pointer;
-          transition: all var(--duration-fast) var(--ease-out);
-        }
-
-        .supplier-tab.active {
-          border-bottom-color: var(--color-accent);
-          color: var(--color-accent);
-          font-weight: var(--font-semibold);
-        }
-
-        .supplier-content {
-          max-width: var(--container-max);
-          margin: 0 auto;
-          padding: var(--space-8) var(--container-padding);
-        }
-
-        .overview-grid {
-          display: grid;
-          gap: var(--space-6);
-        }
-
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: var(--space-4);
-        }
-
-        .stat-card {
-          background: var(--color-surface);
-          border-radius: var(--card-radius);
-          padding: var(--card-padding);
-          box-shadow: var(--shadow-card);
-          border: 1px solid var(--color-border-light);
-        }
-
-        .stat-label {
-          color: var(--color-text-secondary);
-          font-size: var(--text-sm);
-          margin-bottom: var(--space-2);
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          font-weight: var(--font-semibold);
-        }
-
-        .stat-value {
-          font-size: var(--text-h2);
-          font-weight: var(--font-bold);
-          font-family: var(--font-heading);
-          color: var(--color-text);
-        }
-
-        .stat-value--success {
-          color: var(--color-emerald);
-        }
-
-        .stat-value--warning {
-          color: var(--color-amber);
-        }
-
-        .panel-card {
-          background: var(--color-surface);
-          border-radius: var(--card-radius);
-          padding: var(--card-padding);
-          box-shadow: var(--shadow-card);
-          border: 1px solid var(--color-border-light);
-          display: grid;
-          gap: var(--space-4);
-        }
-
-        .panel-card h2 {
-          font-size: var(--text-h5);
-          font-weight: var(--font-semibold);
-          margin: 0;
-          font-family: var(--font-heading);
-          color: var(--color-primary);
-        }
-
-        .action-row {
-          display: flex;
-          gap: var(--space-4);
-          flex-wrap: wrap;
-        }
-
-        .action-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: var(--space-2);
-          padding: var(--space-3) var(--space-5);
-          border-radius: var(--radius-md);
-          border: 1px solid transparent;
-          font-weight: var(--font-semibold);
-          cursor: pointer;
-          text-decoration: none;
-          transition: all var(--duration-fast) var(--ease-out);
-        }
-
-        .action-btn--primary {
-          background: var(--color-accent);
-          color: var(--color-text-inverse);
-          box-shadow: var(--shadow-button);
-        }
-
-        .action-btn--primary:hover {
-          background: var(--color-accent-dark);
-        }
-
-        .action-btn--secondary {
-          background: var(--color-mist);
-          color: var(--color-text);
-          border-color: var(--color-border-light);
-        }
-
-        .action-btn--secondary:hover {
-          border-color: var(--color-accent);
-          color: var(--color-accent);
-        }
-
-        .action-btn--ghost {
-          background: var(--color-surface);
-          color: var(--color-text-secondary);
-          border-color: var(--color-border-light);
-        }
-
-        .action-btn--ghost:hover {
-          border-color: var(--color-accent);
-          color: var(--color-accent);
-        }
-
-        .action-btn.is-disabled {
-          cursor: not-allowed;
-          opacity: 0.6;
-        }
-
-        .pill-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: var(--space-2);
-        }
-
-        .category-pill {
-          padding: var(--space-2) var(--space-4);
-          background: rgba(46, 108, 246, 0.08);
-          color: var(--color-accent);
-          border-radius: var(--radius-full);
-          font-size: var(--text-sm);
-          font-weight: var(--font-medium);
-        }
-
-        .section-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: var(--space-6);
-          gap: var(--space-4);
-          flex-wrap: wrap;
-        }
-
-        .section-title {
-          font-size: var(--text-h4);
-          font-weight: var(--font-semibold);
-          margin: 0;
-          font-family: var(--font-heading);
-          color: var(--color-primary);
-        }
-
-        .empty-state {
-          background: var(--color-surface);
-          border-radius: var(--card-radius);
-          padding: var(--space-12);
-          text-align: center;
-          box-shadow: var(--shadow-card);
-          border: 1px solid var(--color-border-light);
-          display: grid;
-          gap: var(--space-3);
-        }
-
-        .empty-state h3 {
-          margin: 0;
-          font-size: var(--text-h5);
-          font-weight: var(--font-semibold);
-        }
-
-        .empty-state p {
-          margin: 0;
-          color: var(--color-text-secondary);
-        }
-
-        .category-stack {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-4);
-        }
-
-        .category-card {
-          background: var(--color-surface);
-          border-radius: var(--card-radius);
-          overflow: hidden;
-          box-shadow: var(--shadow-card);
-          border: 1px solid var(--color-border-light);
-        }
-
-        .category-toggle {
-          width: 100%;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: var(--space-4) var(--space-6);
-          background: var(--color-mist);
-          border: none;
-          cursor: pointer;
-          text-align: left;
-        }
-
-        .category-title {
-          font-weight: var(--font-semibold);
-          color: var(--color-primary);
-        }
-
-        .category-body {
-          padding: var(--space-2);
-        }
-
-        .product-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: var(--space-4);
-          border-bottom: 1px solid var(--color-border-light);
-          gap: var(--space-4);
-          flex-wrap: wrap;
-        }
-
-        .product-row:last-child {
-          border-bottom: none;
-        }
-
-        .product-title {
-          font-weight: var(--font-semibold);
-          margin-bottom: var(--space-1);
-        }
-
-        .product-meta {
-          font-size: var(--text-sm);
-          color: var(--color-text-secondary);
-        }
-
-        .product-actions {
-          display: flex;
-          align-items: center;
-          gap: var(--space-4);
-        }
-
-        .product-price {
-          text-align: right;
-        }
-
-        .product-price-value {
-          font-weight: var(--font-semibold);
-        }
-
-        .icon-button-row {
-          display: flex;
-          gap: var(--space-2);
-        }
-
-        .icon-button {
-          padding: var(--space-2);
-          background: var(--color-mist);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-secondary);
-          display: inline-flex;
-          align-items: center;
-        }
-
-        .icon-button--danger {
-          background: rgba(220, 38, 38, 0.1);
-          color: var(--color-danger);
-          border: none;
-          cursor: pointer;
-        }
-
-        .quotes-grid {
-          display: grid;
-          gap: var(--space-6);
-        }
-
-        .rfq-card {
-          background: var(--color-surface);
-          border-radius: var(--card-radius);
-          padding: var(--card-padding);
-          box-shadow: var(--shadow-card);
-          border: 1px solid var(--color-border-light);
-          display: grid;
-          gap: var(--space-4);
-        }
-
-        .rfq-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          gap: var(--space-4);
-          flex-wrap: wrap;
-        }
-
-        .rfq-title {
-          font-weight: var(--font-semibold);
-          margin-bottom: var(--space-1);
-        }
-
-        .rfq-meta {
-          font-size: var(--text-sm);
-          color: var(--color-text-secondary);
-        }
-
-        .rfq-items {
-          display: grid;
-          gap: var(--space-3);
-        }
-
-        .rfq-item {
-          display: grid;
-          grid-template-columns: 2fr 1fr 1fr;
-          gap: var(--space-3);
-          align-items: center;
-          padding: var(--space-3);
-          border-radius: var(--radius-md);
-          background: var(--color-mist);
-        }
-
-        .rfq-item-title {
-          font-weight: var(--font-semibold);
-        }
-
-        .rfq-item-meta {
-          font-size: var(--text-xs);
-          color: var(--color-text-secondary);
-        }
-
-        .rfq-input {
-          padding: var(--space-2) var(--space-3);
-          border-radius: var(--radius-md);
-          border: 1px solid var(--color-border);
-          background: var(--color-surface);
-          font-size: var(--text-sm);
-        }
-
-        .rfq-input:focus {
-          outline: none;
-          border-color: var(--color-accent);
-          box-shadow: 0 0 0 3px rgba(46, 108, 246, 0.12);
-        }
-
-        .rfq-input-row {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: var(--space-3);
-          margin-top: var(--space-4);
-        }
-
-        .rfq-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-top: var(--space-4);
-          flex-wrap: wrap;
-          gap: var(--space-3);
-        }
-
-        .rfq-total {
-          font-weight: var(--font-semibold);
-        }
-
-        .settings-grid {
-          display: grid;
-          gap: var(--space-6);
-        }
-
-        .info-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: var(--space-6);
-        }
-
-        .info-label {
-          display: block;
-          font-size: var(--text-sm);
-          color: var(--color-text-secondary);
-          margin-bottom: var(--space-1);
-        }
-
-        .info-value {
-          font-weight: var(--font-medium);
-        }
-
-        .inline-icon {
-          display: inline;
-          margin-right: var(--space-1);
-        }
-
-        .link-accent {
-          color: var(--color-accent);
-          font-weight: var(--font-medium);
-        }
-
-        .settings-actions {
-          margin-top: var(--space-4);
-        }
-
-        .section-divider {
-          border: none;
-          border-top: 1px solid var(--color-border-light);
-        }
-
-        .section-divider--spaced {
-          margin-top: var(--space-8);
-        }
-
-        .api-keys {
-          margin-top: var(--space-4);
-          display: grid;
-          gap: var(--space-4);
-        }
-
-        .api-keys-header {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-        }
-
-        .api-keys-header h3 {
-          margin: 0;
-          font-size: var(--text-h5);
-          font-weight: var(--font-semibold);
-        }
-
-        .muted {
-          color: var(--color-text-secondary);
-        }
-
-        .api-key-card {
-          display: grid;
-          gap: var(--space-3);
-          padding: var(--space-4);
-          border: 1px solid var(--color-border-light);
-          border-radius: var(--radius-md);
-          background: var(--color-mist);
-        }
-
-        .api-key-new {
-          margin-top: var(--space-4);
-          padding: var(--space-4);
-          border-radius: var(--radius-md);
-          border: 1px solid rgba(46, 108, 246, 0.25);
-          background: rgba(46, 108, 246, 0.08);
-        }
-
-        .api-key-new-title {
-          font-weight: var(--font-semibold);
-          margin-bottom: var(--space-2);
-        }
-
-        .api-key-row {
-          display: flex;
-          gap: var(--space-2);
-          flex-wrap: wrap;
-        }
-
-        .api-key-input {
-          flex: 1 1 260px;
-          padding: var(--space-2) var(--space-3);
-          border-radius: var(--radius-md);
-          border: 1px solid var(--color-border);
-          font-family: var(--font-mono);
-        }
-
-        .api-key-table h4 {
-          margin: 0 0 var(--space-3);
-          font-size: var(--text-base);
-          font-weight: var(--font-semibold);
-        }
-
-        .api-table {
-          width: 100%;
-          border-collapse: collapse;
-          min-width: 520px;
-        }
-
-        .api-table th {
-          text-align: left;
-          font-size: var(--text-xs);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          color: var(--color-text-secondary);
-          padding: var(--space-2) 0;
-        }
-
-        .api-table td {
-          padding: var(--space-3) 0;
-          border-top: 1px solid var(--color-border-light);
-        }
-
-        .mono {
-          font-family: var(--font-mono);
-        }
-
-        .align-right {
-          text-align: right;
-        }
-
-        .danger-button {
-          padding: var(--space-1) var(--space-3);
-          border-radius: var(--radius-sm);
-          border: 1px solid rgba(220, 38, 38, 0.35);
-          background: rgba(220, 38, 38, 0.1);
-          color: var(--color-danger);
-          font-weight: var(--font-semibold);
-          cursor: pointer;
-        }
-
-        .error-text {
-          color: var(--color-danger);
-          margin-top: var(--space-3);
-        }
-
-        @media (max-width: 1280px) {
-          .supplier-header-inner,
-          .supplier-tabs-inner,
-          .supplier-content {
-            padding-left: var(--space-6);
-            padding-right: var(--space-6);
-          }
-        }
-
-        @media (max-width: 768px) {
-          .supplier-header-inner {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-
-          .section-header {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-
-          .rfq-item {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .supplier-content {
-            padding: var(--space-6) var(--space-4);
-          }
-
-          .action-row {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .action-btn {
-            width: 100%;
-            justify-content: center;
-          }
-        }
-      `}</style>
     </div>
   );
 }

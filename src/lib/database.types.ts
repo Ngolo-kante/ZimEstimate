@@ -1615,3 +1615,6 @@ export type SupplierProductUpdate = Database['public']['Tables']['supplier_produ
 
 // Stage with tasks helper type
 export type ProjectStageWithTasks = ProjectStage & { tasks: StageTask[] };
+
+// Alias for legacy/inconsistent usage
+export type RequestForQuotation = RfqRequest;

@@ -13,8 +13,8 @@ This report tracks the multi-page UI refresh aligned with the new design system.
 | Market Insights | `src/app/market-insights/page.tsx` | Mbudzi | Complete | Motion/Token alignment finalized |
 | Marketplace Suppliers | `src/app/marketplace/suppliers/page.tsx` | Mbudzi | Complete | Motion/Token alignment finalized |
 | Marketplace Materials | `src/app/marketplace/page.tsx` | Kante | Complete | Tokenized cards/tables + reveal patterns |
-| Supplier Dashboard | `src/app/supplier/dashboard/page.tsx` | Mbudzi | Pending | Next Assignment |
-| BOQ Wizard | `src/app/boq/new/page.tsx` | Mbudzi | Pending | Next Assignment |
+| Supplier Dashboard | `src/app/supplier/dashboard/page.tsx` | Kante | Complete | Tokenized visuals + reveal patterns |
+| BOQ Wizard | `src/app/boq/new/page.tsx` | Kante | Complete | Tokenized surfaces + reveal steps |
 
 ## Regression Fixes Applied
 - Restored Projects List auth gating.
@@ -24,6 +24,7 @@ This report tracks the multi-page UI refresh aligned with the new design system.
 ## Global Updates
 - `src/app/globals.css`: tokens + component guide imported globally; token mapping for Tailwind utility classes.
 - `src/hooks/useReveal.ts`: shared reveal animation hook for consistent motion.
+- `src/components/projects/UnifiedProcurementView.tsx`: restored real service wiring (removed stub service usage).
 
 ## Open Items / Risks
 1. **Font Loading Mismatch**  
@@ -32,6 +33,3 @@ This report tracks the multi-page UI refresh aligned with the new design system.
 
 2. **Procurement Hub QA**  
    - UI refresh complete; run a quick functional smoke check after merge (RFQ create/compare/accept).
-
-3. **BOQ Wizard Refresh**  
-   - Pending Mbudzi update after review approval.

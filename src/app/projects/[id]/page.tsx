@@ -58,6 +58,7 @@ import {
     Wallet,
     TrendUp,
     CheckCircle,
+    PencilSimple,
 } from '@phosphor-icons/react';
 import { ProjectDetailSkeleton } from '@/components/ui/Skeleton';
 
@@ -863,7 +864,7 @@ function ProjectDetailContent() {
                                         <Button
                                             size="sm"
                                             onClick={handleApplyPriceUpdates}
-                                            isLoading={isPriceUpdateLoading}
+                                            loading={isPriceUpdateLoading}
                                             className="bg-blue-600 hover:bg-blue-700 text-white border-none"
                                         >
                                             Apply Updates

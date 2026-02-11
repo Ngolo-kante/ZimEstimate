@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useProjectAutoSave } from '@/hooks/useProjectAutoSave';
+import { useReveal } from '@/hooks/useReveal';
 import { useAuth } from '@/components/providers/AuthProvider';
 import {
   Plus,
@@ -650,8 +651,7 @@ function BOQBuilderContent() {
   // Validation Error State
   const [validationError, setValidationError] = useState<string | null>(null);
 
-
-
+  useReveal({ deps: [currentStep, projectScope, showRoomPicker, isAuthenticated] });
 
   const locationLabel = useMemo(
     () => buildLocationLabel(projectDetails.locationType, projectDetails.locationCity, projectDetails.specificLocation),
@@ -2218,7 +2218,7 @@ function BOQBuilderContent() {
 
             {/* Step 1: Project Details */}
             {currentStep === 1 && (
-              <div className="wizard-step">
+              <div className="wizard-step reveal">
                 <div className="wizard-content-split">
                   <div className="wizard-form-area">
                     <div className="step-header">
@@ -2328,7 +2328,7 @@ function BOQBuilderContent() {
 
             {/* Step 2: Floor Plan */}
             {currentStep === 2 && (
-              <div className="wizard-step">
+              <div className="wizard-step reveal">
                 <div className="wizard-content-split">
                   <div className="wizard-form-area">
                     <div className="step-header">
@@ -2845,7 +2845,7 @@ function BOQBuilderContent() {
 
             {/* Step 3: Scope */}
             {currentStep === 3 && (
-              <div className="wizard-step">
+              <div className="wizard-step reveal">
                 <div className="wizard-content-split">
                   <div className="wizard-form-area">
                     <div className="step-header">
@@ -2967,7 +2967,7 @@ function BOQBuilderContent() {
 
             {/* Step 4: Builder Settings */}
             {currentStep === 4 && (
-              <div className="wizard-step">
+              <div className="wizard-step reveal">
                 <div className="wizard-content-split">
                   <div className="wizard-form-area">
                     <div className="step-header">

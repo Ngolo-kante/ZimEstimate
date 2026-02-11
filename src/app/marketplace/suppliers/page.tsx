@@ -48,7 +48,7 @@ export default function SupplierDirectoryPage() {
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
 
-  useReveal({ deps: [filteredSuppliers.length, loading, loadingMore] });
+
 
   const loadSuppliers = useCallback(async (offset = 0, append = false) => {
     if (offset === 0) {
@@ -135,6 +135,8 @@ export default function SupplierDirectoryPage() {
       return haystack.includes(query);
     });
   }, [suppliers, searchQuery, selectedCategory]);
+
+  useReveal({ deps: [filteredSuppliers.length, loading, loadingMore] });
 
   return (
     <MainLayout title="Supplier Directory">

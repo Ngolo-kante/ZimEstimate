@@ -7,20 +7,10 @@ import EmptyState from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import {
-  createPurchaseRecord,
-  getProjectPurchases,
-  updatePurchaseRecord,
-  deletePurchaseRecord,
-} from '@/lib/services/purchases';
-import {
-  getRequestsForQuotations,
-  createRequestForQuotation,
-  updateRequestForQuotation,
-} from '@/lib/services/rfq';
-import {
+  getPurchaseRecords,
   getSuppliers,
-  createSupplier,
-} from '@/lib/services/suppliers';
+} from '@/lib/services/projects';
+import { getProjectRfqs } from '@/lib/services/rfq';
 import {
   Project,
   BOQItem,
@@ -89,12 +79,12 @@ export default function UnifiedProcurementView({
       setIsLoading(true);
       try {
         const [purchasesData, rfqsData, suppliersData] = await Promise.all([
-          getProjectPurchases(project.id),
-          getRequestsForQuotations(project.id),
+          getPurchaseRecords(project.id),
+          getProjectRfqs(project.id),
           getSuppliers(),
         ]);
 
-        if (purchasesData.purchases) setPurchases(purchasesData.purchases);
+        if (purchasesData.records) setPurchases(purchasesData.records);
         if (rfqsData.rfqs) setRfqs(rfqsData.rfqs);
         if (suppliersData.suppliers) setSuppliers(suppliersData.suppliers);
       } catch (err) {

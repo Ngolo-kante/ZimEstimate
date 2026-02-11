@@ -17,7 +17,7 @@ const WizardStyles = () => (
 
     .boq-wizard-container,
     .boq-builder {
-      font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+      font-family: var(--font-body);
     }
 
     .wizard-shell {
@@ -25,7 +25,6 @@ const WizardStyles = () => (
       background: var(--color-background);
       display: flex;
     }
-
     .wizard-shell.has-sidebar {
       padding-bottom: 0;
     }
@@ -66,7 +65,7 @@ const WizardStyles = () => (
     }
 
     .wizard-form-area {
-      background: #ffffff;
+      background: var(--color-surface);
       border-radius: 24px;
       padding: 40px 48px;
       box-shadow: 0 16px 34px rgba(6, 20, 47, 0.08);
@@ -95,7 +94,7 @@ const WizardStyles = () => (
     }
 
     .summary-card {
-      background: #ffffff;
+      background: var(--color-surface);
       border: 1px solid var(--color-border-light);
       border-radius: 22px;
       padding: 24px;
@@ -345,6 +344,7 @@ const WizardStyles = () => (
       font-size: 2rem;
       font-weight: 700;
       color: var(--color-text);
+      font-family: var(--font-heading);
       margin: 0 0 8px 0;
       letter-spacing: -0.02em;
     }
@@ -489,7 +489,7 @@ const WizardStyles = () => (
       padding: 16px;
       border-radius: 16px;
       border: 1px solid var(--color-border-light);
-      background: #ffffff;
+      background: var(--color-surface);
       cursor: pointer;
       transition: all 0.2s ease;
       text-align: left;
@@ -545,7 +545,7 @@ const WizardStyles = () => (
       margin-left: 6px;
       font-size: 0.7rem;
       font-weight: 600;
-      color: #ef4444;
+      color: var(--color-danger);
     }
 
     .optional {
@@ -571,7 +571,7 @@ const WizardStyles = () => (
 
     .pill-option {
       border: 1px solid var(--color-border-light);
-      background: #fff;
+      background: var(--color-surface);
       border-radius: 14px;
       padding: 12px;
       display: flex;
@@ -603,7 +603,7 @@ const WizardStyles = () => (
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #2563eb;
+      color: var(--color-accent-dark);
       flex-shrink: 0;
     }
 
@@ -643,7 +643,7 @@ const WizardStyles = () => (
       gap: 6px;
       padding: 10px 16px 12px;
       border: 2px solid var(--color-border-light);
-      background: #fff;
+      background: var(--color-surface);
       border-radius: 14px;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -669,7 +669,7 @@ const WizardStyles = () => (
       height: 56px;
       border-radius: 50%;
       /* overflow: hidden; Removed to allow tick to show */
-      background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+      background: linear-gradient(135deg, var(--color-background), var(--color-border));
       border: 2px solid var(--color-border-light);
     }
 
@@ -785,7 +785,7 @@ const WizardStyles = () => (
       border-radius: 999px;
       border: 1px solid var(--color-border);
       color: var(--color-text-secondary);
-      background: #fff;
+      background: var(--color-surface);
       font-weight: 600;
       flex-shrink: 0;
     }
@@ -801,7 +801,7 @@ const WizardStyles = () => (
     }
 
     .room-input {
-      background: #fff;
+      background: var(--color-surface);
       border: 1px solid var(--color-border);
       border-radius: 12px;
       padding: 10px 12px;
@@ -868,7 +868,7 @@ const WizardStyles = () => (
     }
 
     .plan-inputs {
-      background: #f8fafc;
+      background: var(--color-background);
       border: 1px solid var(--color-border);
       border-radius: 16px;
       padding: var(--spacing-lg);
@@ -898,7 +898,7 @@ const WizardStyles = () => (
     .plan-preview {
       border-radius: 18px;
       border: 1px solid var(--color-border);
-      background: linear-gradient(135deg, #ffffff, #f1f5f9);
+      background: linear-gradient(135deg, var(--color-surface), var(--color-mist));
       padding: var(--spacing-lg);
       box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
     }
@@ -964,7 +964,7 @@ const WizardStyles = () => (
       position: absolute;
       top: 36px;
       right: 0;
-      background: #fff;
+      background: var(--color-surface);
       border: 1px solid var(--color-border-light);
       border-radius: 12px;
       box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
@@ -999,7 +999,7 @@ const WizardStyles = () => (
       height: 24px;
       border-radius: 8px;
       border: 1px solid var(--color-border);
-      background: #fff;
+      background: var(--color-surface);
       font-size: 0.85rem;
       font-weight: 700;
       cursor: pointer;
@@ -1047,7 +1047,7 @@ const WizardStyles = () => (
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #f8fafc;
+      background: var(--color-background);
     }
 
     .plan-empty {
@@ -1061,11 +1061,11 @@ const WizardStyles = () => (
       position: absolute;
       font-size: 0.7rem;
       font-weight: 700;
-      color: #4b6b8a;
+      color: var(--color-text-secondary);
       background: #edf2f7;
       padding: 4px 8px;
       border-radius: 999px;
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--color-border-dark);
     }
 
     .plan-dimension--x {
@@ -1081,13 +1081,13 @@ const WizardStyles = () => (
     }
 
     .plan-room {
-      background: #fff;
+      background: var(--color-surface);
       border-radius: 12px;
       border: 1px solid #dbeafe;
       padding: 10px;
       font-size: 0.8rem;
       font-weight: 600;
-      color: #1e293b;
+      color: var(--color-text);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1101,7 +1101,7 @@ const WizardStyles = () => (
     .plan-room--kitchen { background: #fff7ed; }
     .plan-room--livingRoom { background: #fef9c3; }
     .plan-room--diningRoom { background: #fce7f3; }
-    .plan-room--veranda { background: #f1f5f9; }
+    .plan-room--veranda { background: var(--color-mist); }
     .plan-room--garage1,
     .plan-room--garage2 { background: #ede9fe; }
     .plan-room--pantry { background: #ecfeff; }
@@ -1597,7 +1597,7 @@ const WizardStyles = () => (
       justify-content: center;
       gap: 8px;
       background: #F0F9FF; /* Light Blue */
-      border: 1px dashed #3B82F6;
+      border: 1px dashed var(--color-accent);
       border-radius: 8px;
       color: #2563EB;
       font-weight: 500;
@@ -1801,13 +1801,13 @@ const WizardStyles = () => (
       margin: 0;
       font-size: 1rem;
       font-weight: 700;
-      color: #0f172a;
+      color: var(--color-text);
     }
 
     .price-update-text p {
       margin: 6px 0 0;
       font-size: 0.85rem;
-      color: #334155;
+      color: var(--color-text-secondary);
     }
 
     .price-update-actions {
@@ -1938,8 +1938,8 @@ const WizardStyles = () => (
 
     /* AI Suggest Button - Indigo Theme */
     .ai-suggest-btn {
-      color: #6366F1 !important;
-      border-color: #6366F1 !important;
+      color: var(--color-accent) !important;
+      border-color: var(--color-accent) !important;
     }
 
     .ai-suggest-btn:hover {
@@ -1947,7 +1947,7 @@ const WizardStyles = () => (
     }
 
     .ai-suggest-btn svg {
-      color: #6366F1 !important;
+      color: var(--color-accent) !important;
     }
 
     /* Material Dropdown Container Fix */
@@ -1982,11 +1982,11 @@ const WizardStyles = () => (
       border-radius: 10px;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
+      background: var(--color-border-dark);
       border-radius: 10px;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
+      background: var(--color-text-muted);
     }
 
     /* Animations */
@@ -2089,11 +2089,11 @@ const WizardStyles = () => (
     }
 
     .dropdown-item:hover {
-      background: #f8fafc !important;
+      background: var(--color-background) !important;
     }
 
     .dropdown-item:active {
-      background: #f1f5f9 !important;
+      background: var(--color-mist) !important;
     }
     /* Sidebar Layout - New Design */
     .wizard-layout {
@@ -2154,7 +2154,7 @@ const WizardStyles = () => (
     }
 
     .progress-card.completed {
-      background: #f8fafc;
+      background: var(--color-background);
       border-color: transparent;
     }
 
@@ -2162,7 +2162,7 @@ const WizardStyles = () => (
       width: 24px;
       height: 24px;
       border-radius: 50%;
-      border: 2px solid #cbd5e1;
+      border: 2px solid var(--color-border-dark);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2257,7 +2257,7 @@ const WizardStyles = () => (
     .step-illustration {
       width: 100%;
       aspect-ratio: 1;
-      background: #f8fafc;
+      background: var(--color-background);
       border-radius: 24px;
       display: flex;
       align-items: center;
