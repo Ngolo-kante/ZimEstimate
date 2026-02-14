@@ -4,6 +4,11 @@
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { mapSupabaseError } from '@/lib/services/supabase-helpers';
+import {
+  getNotificationPreferences,
+  queueNotificationDelivery,
+  renderNotificationTemplate,
+} from '@/lib/services/notifications';
 import type {
   SupplierApplication,
   SupplierApplicationInsert,
@@ -13,7 +18,11 @@ import type {
   SupplierProduct,
   SupplierProductInsert,
   SupplierApplicationStatus,
+  SupplierDocument,
+  SupplierDocumentInsert,
+  SupplierDocumentUpdate,
 } from '@/lib/database.types';
+import type { NotificationChannel, NotificationTemplateKey } from '@/lib/services/notifications';
 
 export interface SupplierRegistrationData {
   businessName: string;
@@ -29,6 +38,95 @@ export interface SupplierRegistrationData {
   paymentTerms?: string;
   yearsInBusiness?: number;
   customerReferences?: string[];
+}
+
+export type SupplierDocumentType =
+  | 'business_license'
+  | 'tax_clearance'
+  | 'proof_of_address'
+  | 'bank_confirmation'
+  | 'other';
+
+export type SupplierDocumentStatus = 'pending' | 'verified' | 'rejected';
+
+const SUPPLIER_STATUS_TEMPLATE: Record<SupplierApplicationStatus, NotificationTemplateKey | null> = {
+  pending: 'supplier_application_submitted',
+  under_review: 'supplier_application_under_review',
+  approved: 'supplier_application_approved',
+  rejected: 'supplier_application_rejected',
+};
+
+async function queueSupplierNotification(options: {
+  userId: string;
+  templateKey: NotificationTemplateKey;
+  payload: Record<string, string | number | null | undefined>;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+}): Promise<{ queued: number; error?: string }> {
+  const { preferences, error } = await getNotificationPreferences(options.userId);
+  if (error) {
+    logger.error('Supplier notifications: preference lookup failed', { error });
+  }
+
+  const channels: NotificationChannel[] = [];
+  if (preferences?.notify_email) channels.push('email');
+  if (preferences?.notify_whatsapp) channels.push('whatsapp');
+  if (preferences?.notify_push) channels.push('push');
+
+  if (channels.length === 0) {
+    return { queued: 0 };
+  }
+
+  let queued = 0;
+  for (const channel of channels) {
+    const message = renderNotificationTemplate(options.templateKey, channel, options.payload);
+    const { error: deliveryError } = await queueNotificationDelivery({
+      user_id: options.userId,
+      channel,
+      template_key: options.templateKey,
+      payload: {
+        ...options.payload,
+        title: message.title,
+        body: message.body,
+        contact_email: options.contactEmail,
+        contact_phone: options.contactPhone,
+      },
+      status: 'queued',
+    });
+    if (deliveryError) {
+      logger.error('Supplier notifications: queue failed', { error: deliveryError });
+      continue;
+    }
+    queued += 1;
+  }
+
+  return { queued };
+}
+
+export async function notifySupplierApplicationStatus(
+  application: SupplierApplication,
+  status: SupplierApplicationStatus,
+  reason?: string | null
+): Promise<{ queued: number }> {
+  const templateKey = SUPPLIER_STATUS_TEMPLATE[status];
+  if (!templateKey) {
+    return { queued: 0 };
+  }
+
+  const payload = {
+    businessName: application.business_name,
+    reason: reason || application.rejection_reason || 'Not specified',
+  };
+
+  const { queued } = await queueSupplierNotification({
+    userId: application.user_id,
+    templateKey,
+    payload,
+    contactEmail: application.contact_email,
+    contactPhone: application.contact_phone,
+  });
+
+  return { queued };
 }
 
 /**
@@ -60,7 +158,7 @@ export async function submitSupplierApplication(
   const { data: result, error } = await supabase
     .from('supplier_applications')
     .insert(applicationData as never)
-    .select('id')
+    .select('*')
     .single();
 
   if (error) {
@@ -68,7 +166,10 @@ export async function submitSupplierApplication(
     return { success: false, error: error.message };
   }
 
-  return { success: true, applicationId: (result as { id: string }).id };
+  const application = result as SupplierApplication;
+  await notifySupplierApplicationStatus(application, 'pending');
+
+  return { success: true, applicationId: application.id };
 }
 
 /**
@@ -327,6 +428,132 @@ export async function uploadBusinessLicense(
     .getPublicUrl(fileName);
 
   return { success: true, url: urlData.publicUrl };
+}
+
+/** Upload a supplier document for verification. */
+export async function uploadSupplierDocument(options: {
+  userId: string;
+  documentType: SupplierDocumentType;
+  file: File;
+  applicationId?: string;
+  supplierId?: string;
+}): Promise<{ success: boolean; document?: SupplierDocument; url?: string; error?: string }> {
+  if (!options.applicationId && !options.supplierId) {
+    return { success: false, error: 'Missing application or supplier reference' };
+  }
+
+  const fileExt = options.file.name.split('.').pop() || 'bin';
+  const ownerPath = options.applicationId ? `applications/${options.applicationId}` : `suppliers/${options.supplierId}`;
+  const fileName = `${ownerPath}/${options.documentType}-${Date.now()}.${fileExt}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('supplier-documents')
+    .upload(fileName, options.file);
+
+  if (uploadError) {
+    logger.error('Upload supplier document failed', { error: uploadError });
+    return { success: false, error: uploadError.message };
+  }
+
+  const { data: urlData } = supabase.storage
+    .from('supplier-documents')
+    .getPublicUrl(fileName);
+
+  const payload: SupplierDocumentInsert = {
+    application_id: options.applicationId || null,
+    supplier_id: options.supplierId || null,
+    document_type: options.documentType,
+    file_name: options.file.name,
+    file_path: fileName,
+    file_url: urlData.publicUrl,
+    status: 'pending',
+    uploaded_by: options.userId,
+  };
+
+  const { data: document, error: insertError } = await supabase
+    .from('supplier_documents')
+    .insert(payload as never)
+    .select('*')
+    .single();
+
+  if (insertError) {
+    logger.error('Insert supplier document failed', { error: insertError });
+    return { success: false, error: insertError.message };
+  }
+
+  if (options.documentType === 'business_license' && options.applicationId) {
+    await supabase
+      .from('supplier_applications')
+      .update({ business_license_url: urlData.publicUrl } as never)
+      .eq('id', options.applicationId);
+  }
+
+  return { success: true, document: document as SupplierDocument, url: urlData.publicUrl };
+}
+
+/** Fetch documents for a supplier application. */
+export async function getSupplierApplicationDocuments(
+  applicationId: string
+): Promise<SupplierDocument[]> {
+  const { data, error } = await supabase
+    .from('supplier_documents')
+    .select('*')
+    .eq('application_id', applicationId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    logger.error('Fetch supplier documents failed', { error });
+    return [];
+  }
+
+  return (data || []) as SupplierDocument[];
+}
+
+/** Fetch documents for an approved supplier profile. */
+export async function getSupplierDocuments(
+  supplierId: string
+): Promise<SupplierDocument[]> {
+  const { data, error } = await supabase
+    .from('supplier_documents')
+    .select('*')
+    .eq('supplier_id', supplierId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    logger.error('Fetch supplier documents failed', { error });
+    return [];
+  }
+
+  return (data || []) as SupplierDocument[];
+}
+
+/** Review a supplier document. */
+export async function reviewSupplierDocument(
+  documentId: string,
+  updates: {
+    status: SupplierDocumentStatus;
+    reviewerId?: string | null;
+    notes?: string | null;
+  }
+): Promise<{ success: boolean; error?: string }> {
+  const payload: SupplierDocumentUpdate = {
+    status: updates.status,
+    reviewed_by: updates.reviewerId || null,
+    reviewed_at: new Date().toISOString(),
+    notes: updates.notes || null,
+  };
+
+  const { error } = await supabase
+    .from('supplier_documents')
+    .update(payload as never)
+    .eq('id', documentId);
+
+  if (error) {
+    logger.error('Review supplier document failed', { error });
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
 }
 
 // Material categories available for suppliers

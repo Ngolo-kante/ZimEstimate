@@ -97,7 +97,14 @@ export default function MarketplacePage() {
   const [isRequestingQuote, setIsRequestingQuote] = useState(false);
   const [isLoadingPrices, setIsLoadingPrices] = useState(true);
   const [livePrices, setLivePrices] = useState<Map<string, LivePrice>>(new Map());
-  const [priceAlerts, setPriceAlerts] = useState<Set<string>>(new Set());
+  const [priceAlerts, setPriceAlerts] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    const saved = localStorage.getItem('priceAlerts');
+    if (saved) {
+      try { return new Set(JSON.parse(saved)); } catch { return new Set(); }
+    }
+    return new Set();
+  });
   const [selectedPriceDetail, setSelectedPriceDetail] = useState<PriceWithTrend | null>(null);
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const [comparisonLoading, setComparisonLoading] = useState(false);
@@ -117,12 +124,6 @@ export default function MarketplacePage() {
       setIsLoadingPrices(false);
     };
     loadPrices();
-
-    // Load saved price alerts from localStorage
-    const savedAlerts = localStorage.getItem('priceAlerts');
-    if (savedAlerts) {
-      setPriceAlerts(new Set(JSON.parse(savedAlerts)));
-    }
   }, []);
 
   // Load detailed price when material is selected
@@ -134,6 +135,7 @@ export default function MarketplacePage() {
       };
       loadDetail();
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset derived state when selection clears
       setSelectedPriceDetail(null);
     }
   }, [selectedMaterial]);
@@ -306,6 +308,7 @@ export default function MarketplacePage() {
   useEffect(() => {
     if (!selectedMaterial) return;
     if (alternativeMaterials.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset derived state
       setCompareTargetId(null);
       return;
     }

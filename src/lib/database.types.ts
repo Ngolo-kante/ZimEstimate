@@ -355,6 +355,7 @@ export interface Database {
                     payment_terms: string | null;
                     verification_status: VerificationStatus;
                     verified_at: string | null;
+                    verification_expires_at: string | null;
                     is_trusted: boolean;
                     rating: number;
                     deleted_at: string | null;
@@ -377,6 +378,7 @@ export interface Database {
                     payment_terms?: string | null;
                     verification_status?: VerificationStatus;
                     verified_at?: string | null;
+                    verification_expires_at?: string | null;
                     is_trusted?: boolean;
                     rating?: number;
                     deleted_at?: string | null;
@@ -399,6 +401,7 @@ export interface Database {
                     payment_terms?: string | null;
                     verification_status?: VerificationStatus;
                     verified_at?: string | null;
+                    verification_expires_at?: string | null;
                     is_trusted?: boolean;
                     rating?: number;
                     deleted_at?: string | null;
@@ -805,6 +808,7 @@ export interface Database {
                     supplier_email: string | null;
                     supplier_phone: string | null;
                     status: string;
+                    workflow_state: string | null;
                     notes: string | null;
                     items: Json;
                     created_at: string;
@@ -819,6 +823,7 @@ export interface Database {
                     supplier_email?: string | null;
                     supplier_phone?: string | null;
                     status?: string;
+                    workflow_state?: string | null;
                     notes?: string | null;
                     items: Json;
                     created_at?: string;
@@ -833,6 +838,7 @@ export interface Database {
                     supplier_email?: string | null;
                     supplier_phone?: string | null;
                     status?: string;
+                    workflow_state?: string | null;
                     notes?: string | null;
                     items?: Json;
                     created_at?: string;
@@ -1059,6 +1065,8 @@ export interface Database {
                     quantity: number;
                     unit_price_usd: number;
                     purchased_at: string;
+                    receipt_document_id: string | null;
+                    rfq_quote_id: string | null;
                     notes: string | null;
                     created_by: string;
                     created_at: string;
@@ -1073,6 +1081,8 @@ export interface Database {
                     quantity: number;
                     unit_price_usd: number;
                     purchased_at?: string;
+                    receipt_document_id?: string | null;
+                    rfq_quote_id?: string | null;
                     notes?: string | null;
                     created_by: string;
                     created_at?: string;
@@ -1087,6 +1097,8 @@ export interface Database {
                     quantity?: number;
                     unit_price_usd?: number;
                     purchased_at?: string;
+                    receipt_document_id?: string | null;
+                    rfq_quote_id?: string | null;
                     notes?: string | null;
                     created_by?: string;
                     created_at?: string;
@@ -1456,6 +1468,53 @@ export interface Database {
                     updated_at?: string;
                 };
             };
+            supplier_documents: {
+                Row: {
+                    id: string;
+                    application_id: string | null;
+                    supplier_id: string | null;
+                    document_type: string;
+                    file_name: string | null;
+                    file_path: string;
+                    file_url: string | null;
+                    status: string;
+                    notes: string | null;
+                    uploaded_by: string | null;
+                    reviewed_by: string | null;
+                    reviewed_at: string | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    application_id?: string | null;
+                    supplier_id?: string | null;
+                    document_type: string;
+                    file_name?: string | null;
+                    file_path: string;
+                    file_url?: string | null;
+                    status?: string;
+                    notes?: string | null;
+                    uploaded_by?: string | null;
+                    reviewed_by?: string | null;
+                    reviewed_at?: string | null;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    application_id?: string | null;
+                    supplier_id?: string | null;
+                    document_type?: string;
+                    file_name?: string | null;
+                    file_path?: string;
+                    file_url?: string | null;
+                    status?: string;
+                    notes?: string | null;
+                    uploaded_by?: string | null;
+                    reviewed_by?: string | null;
+                    reviewed_at?: string | null;
+                    created_at?: string;
+                };
+            };
             supplier_products: {
                 Row: {
                     id: string;
@@ -1560,6 +1619,7 @@ export type ScraperLog = Database['public']['Tables']['scraper_logs']['Row'];
 export type ProjectStage = Database['public']['Tables']['project_stages']['Row'];
 export type StageTask = Database['public']['Tables']['stage_tasks']['Row'];
 export type SupplierApplication = Database['public']['Tables']['supplier_applications']['Row'];
+export type SupplierDocument = Database['public']['Tables']['supplier_documents']['Row'];
 export type SupplierProduct = Database['public']['Tables']['supplier_products']['Row'];
 
 // Insert types
@@ -1586,6 +1646,7 @@ export type StageTaskInsert = Database['public']['Tables']['stage_tasks']['Inser
 export type SupplierInsert = Database['public']['Tables']['suppliers']['Insert'];
 export type SupplierApiKeyInsert = Database['public']['Tables']['supplier_api_keys']['Insert'];
 export type SupplierApplicationInsert = Database['public']['Tables']['supplier_applications']['Insert'];
+export type SupplierDocumentInsert = Database['public']['Tables']['supplier_documents']['Insert'];
 export type SupplierProductInsert = Database['public']['Tables']['supplier_products']['Insert'];
 
 // Update types
@@ -1611,6 +1672,7 @@ export type StageTaskUpdate = Database['public']['Tables']['stage_tasks']['Updat
 export type SupplierUpdate = Database['public']['Tables']['suppliers']['Update'];
 export type SupplierApiKeyUpdate = Database['public']['Tables']['supplier_api_keys']['Update'];
 export type SupplierApplicationUpdate = Database['public']['Tables']['supplier_applications']['Update'];
+export type SupplierDocumentUpdate = Database['public']['Tables']['supplier_documents']['Update'];
 export type SupplierProductUpdate = Database['public']['Tables']['supplier_products']['Update'];
 
 // Stage with tasks helper type

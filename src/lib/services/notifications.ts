@@ -3,7 +3,6 @@ import { logger } from '@/lib/logger';
 import type {
   NotificationDelivery,
   NotificationDeliveryInsert,
-  PushSubscription,
   PushSubscriptionInsert,
   Profile,
 } from '@/lib/database.types';
@@ -16,7 +15,12 @@ export type NotificationTemplateKey =
   | 'quote_submitted'
   | 'quote_accepted'
   | 'price_drop'
-  | 'project_reminder';
+  | 'project_reminder'
+  | 'supplier_application_submitted'
+  | 'supplier_application_under_review'
+  | 'supplier_application_approved'
+  | 'supplier_application_rejected'
+  | 'supplier_reverification_due';
 
 type TemplateVariant = {
   title: string;
@@ -104,6 +108,81 @@ const templates: Record<NotificationTemplateKey, NotificationTemplate> = {
     push: {
       title: 'Project reminder',
       body: '{{message}}',
+    },
+  },
+  supplier_application_submitted: {
+    description: 'Supplier application confirmation',
+    email: {
+      title: 'We received your supplier application',
+      body: 'Thanks for registering {{businessName}}. Our team will review your documents and get back to you within 3-5 days.',
+    },
+    whatsapp: {
+      title: 'Supplier application received',
+      body: 'We received your supplier application for {{businessName}}. Review takes 3-5 days.',
+    },
+    push: {
+      title: 'Application received',
+      body: 'We received your supplier application for {{businessName}}.',
+    },
+  },
+  supplier_application_under_review: {
+    description: 'Supplier application moved to review',
+    email: {
+      title: 'Your supplier application is under review',
+      body: '{{businessName}} is now under review. We will notify you once verification is complete.',
+    },
+    whatsapp: {
+      title: 'Application under review',
+      body: '{{businessName}} is under review. We will update you once verification is complete.',
+    },
+    push: {
+      title: 'Application under review',
+      body: '{{businessName}} is under review.',
+    },
+  },
+  supplier_application_approved: {
+    description: 'Supplier application approved',
+    email: {
+      title: 'Your supplier application was approved',
+      body: 'Congratulations! {{businessName}} has been approved. You can now access your supplier dashboard.',
+    },
+    whatsapp: {
+      title: 'Application approved',
+      body: 'Congrats! {{businessName}} is approved. You can now access your supplier dashboard.',
+    },
+    push: {
+      title: 'Application approved',
+      body: '{{businessName}} is now approved.',
+    },
+  },
+  supplier_application_rejected: {
+    description: 'Supplier application rejected',
+    email: {
+      title: 'Update on your supplier application',
+      body: 'We could not approve {{businessName}} at this time. Reason: {{reason}}. You can re-apply once updates are ready.',
+    },
+    whatsapp: {
+      title: 'Application update',
+      body: 'We could not approve {{businessName}}. Reason: {{reason}}. You can re-apply once ready.',
+    },
+    push: {
+      title: 'Application update',
+      body: '{{businessName}} was not approved. Reason: {{reason}}.',
+    },
+  },
+  supplier_reverification_due: {
+    description: 'Supplier re-verification due',
+    email: {
+      title: 'Supplier re-verification due',
+      body: '{{businessName}} is due for annual verification. Please upload updated documents by {{dueDate}}.',
+    },
+    whatsapp: {
+      title: 'Re-verification due',
+      body: '{{businessName}} is due for annual verification. Upload updated documents by {{dueDate}}.',
+    },
+    push: {
+      title: 'Re-verification due',
+      body: '{{businessName}} verification due by {{dueDate}}.',
     },
   },
 };
@@ -200,7 +279,7 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 /** Register the current browser for push notifications. */
-export async function subscribeToPushNotifications(): Promise<{ subscription: PushSubscription | null; error: Error | null }> {
+export async function subscribeToPushNotifications(): Promise<{ subscription: globalThis.PushSubscription | null; error: Error | null }> {
   // NOTIF-001 FIX: Add browser feature detection and proper error handling
   if (typeof window === 'undefined') {
     return { subscription: null, error: new Error('Push not supported') };
@@ -259,7 +338,7 @@ export async function subscribeToPushNotifications(): Promise<{ subscription: Pu
       return { subscription: null, error: new Error('Failed to save subscription') };
     }
 
-    return { subscription: subscription as any, error: null };
+    return { subscription, error: null };
   } catch (subError) {
     logger.error('Notifications: subscription failed', { error: subError });
     return { subscription: null, error: new Error('Failed to subscribe to push notifications') };

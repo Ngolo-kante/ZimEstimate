@@ -67,34 +67,30 @@ function AnalyticsContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
-  const [watchedMaterials, setWatchedMaterials] = useState<string[]>([]);
+  const [watchedMaterials] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem('priceAlerts');
+    if (stored) {
+      try { return JSON.parse(stored); } catch { return []; }
+    }
+    return [];
+  });
   const [areaSqm, setAreaSqm] = useState<string>('');
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const param = searchParams.get('project');
     if (param) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync URL param to state
       setProjectId(param);
     }
   }, [searchParams]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const stored = localStorage.getItem('priceAlerts');
-    if (stored) {
-      try {
-        setWatchedMaterials(JSON.parse(stored));
-      } catch {
-        setWatchedMaterials([]);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
     if (!projectId || typeof window === 'undefined') return;
     const stored = localStorage.getItem(`analytics_area_${projectId}`);
     if (stored) {
-      setAreaSqm(stored);
+      setAreaSqm(stored); // eslint-disable-line react-hooks/set-state-in-effect -- sync localStorage
     } else {
       setAreaSqm('');
     }

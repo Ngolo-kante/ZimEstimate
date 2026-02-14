@@ -1,6 +1,6 @@
 # ZimEstimate Project Roadmap
 
-> **Last Updated:** February 10, 2026
+> **Last Updated:** February 12, 2026
 > **Status:** Active Development
 > **Target Completion:** Q2 2026
 
@@ -9,6 +9,15 @@
 ## Executive Summary
 
 ZimEstimate is a construction cost estimation platform for the Zimbabwean market. This roadmap outlines the path from current state (~65% complete) to a fully-featured marketplace connecting homebuilders with verified suppliers.
+
+---
+
+## Parked Initiatives (Feb 12, 2026)
+
+The directors requested a focus on core marketplace and procurement features. The following initiatives are **paused** and removed from active scope until further notice:
+
+- **Utilities Framework (Phase 7)** — all utilities configuration and wizard integration work is on hold.
+- **Quick Projects** — guided solar/borehole/septic/rainwater micro‑flows are parked.
 
 ---
 
@@ -69,14 +78,15 @@ ZimEstimate is a construction cost estimation platform for the Zimbabwean market
 - [x] Create consolidated purchase history view ✅
 - [x] Integrate supplier management into unified view ✅
 - [x] Update sidebar navigation (removed duplicate entries) ✅
-- [ ] Link quotes to actual purchases (foreign key: quote_id → purchase_record)
-- [ ] Add supplier response tracking (time to respond, quote validity)
-- [ ] Database migration for workflow_state column
+- [x] Link quotes to actual purchases (foreign key: rfq_quote_id → purchase_record) ✅ (Feb 12, 2026)
+- [x] Add supplier response tracking (time to respond, quote validity) ✅ (Feb 12, 2026)
+- [x] Database migration for workflow_state column ✅ (Feb 12, 2026)
 
 **Database Changes:**
 ```sql
 -- Add quote linking to purchases
-ALTER TABLE purchase_records ADD COLUMN procurement_request_id UUID REFERENCES procurement_requests(id);
+ALTER TABLE purchase_records ADD COLUMN rfq_quote_id UUID REFERENCES rfq_quotes(id);
+ALTER TABLE purchase_records ADD COLUMN receipt_document_id UUID REFERENCES project_documents(id);
 
 -- Add workflow state to procurement
 ALTER TABLE procurement_requests ADD COLUMN workflow_state TEXT DEFAULT 'draft';
@@ -143,7 +153,7 @@ ALTER TABLE procurement_requests ADD COLUMN workflow_state TEXT DEFAULT 'draft';
 - [x] Create `/supplier/dashboard` for suppliers ✅
 - [x] Build supplier profile edit page ✅
 - [x] Add product/price management interface ✅
-- [ ] Create supplier notification system
+- [x] Create supplier notification system ✅ (Feb 12, 2026)
 
 **New Database Tables:**
 ```sql
@@ -195,9 +205,9 @@ CREATE TABLE supplier_products (
 - [x] Build application review interface ✅
 - [x] Add approve/reject workflow with database functions ✅
 - [x] Implement verification status badge system ✅
-- [ ] Add document verification workflow
-- [ ] Create approval/rejection email templates
-- [ ] Add periodic re-verification (annual)
+- [x] Add document verification workflow ✅ (Feb 12, 2026)
+- [x] Create approval/rejection email templates ✅ (Feb 12, 2026)
+- [x] Add periodic re-verification (annual) ✅ (Feb 12, 2026)
 
 **Verification Levels:**
 | Level | Badge | Requirements |
@@ -554,6 +564,34 @@ Use this section to log daily progress:
 ---
 
 ## Completed Work Log
+
+### February 12, 2026 - Sprint 1: Procurement Enhancements ✅
+
+**Files Updated/Created:**
+- `supabase/migrations/023_procurement_enhancements.sql` - Added receipt + RFQ quote linking + workflow_state
+- `src/lib/database.types.ts` - Updated procurement_requests and purchase_records types
+- `src/components/projects/UnifiedProcurementView.tsx` - Manual purchase entry, receipt upload, RFQ response tracking
+
+**Highlights:**
+- Added manual purchase logging (supplier, price, quantity, date, notes)
+- Added receipt uploads and “View receipt” in purchase table
+- Added RFQ response tracking (responses count, avg response time, quote validity)
+- Added optional RFQ quote link when recording purchases
+
+### February 12, 2026 - Sprint 2: Supplier Verification & Notifications ✅
+
+**Files Updated/Created:**
+- `supabase/migrations/024_supplier_document_verification.sql` - Supplier documents table + verification expiry
+- `src/lib/database.types.ts` - Added supplier_documents + verification_expires_at
+- `src/lib/services/suppliers.ts` - Document uploads + supplier status notifications
+- `src/app/supplier/register/page.tsx` - Added document upload step
+- `src/app/admin/suppliers/page.tsx` - Document review UI + applicant notifications
+- `src/app/supplier/dashboard/page.tsx` - Re-verification due callout + document uploads
+
+**Highlights:**
+- Added supplier document upload + admin verification workflow
+- Added approval/rejection/under review notification templates
+- Added annual verification expiry tracking + due reminder callout
 
 ### February 10, 2026 - Phase 2: Supplier Portal ✅
 

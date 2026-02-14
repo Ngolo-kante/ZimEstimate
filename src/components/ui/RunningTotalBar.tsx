@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
-import { TrendUp, TrendDown, Minus } from '@phosphor-icons/react';
+import { TrendUp, TrendDown } from '@phosphor-icons/react';
 
 interface RunningTotalBarProps {
     totalUSD: number;
@@ -29,21 +29,21 @@ export function RunningTotalBar({
 
     // Animate total changes
     useEffect(() => {
-        if (displayTotal !== totalUSD) {
-            setIsAnimating(true);
-            const timer = setTimeout(() => {
-                setDisplayTotal(totalUSD);
-                setIsAnimating(false);
-            }, 300);
-            return () => clearTimeout(timer);
-        }
-    }, [totalUSD, displayTotal]);
+        if (displayTotal === totalUSD) return;
+        const timer = setTimeout(() => {
+            setDisplayTotal(totalUSD);
+            setIsAnimating(false);
+        }, 300);
+        setIsAnimating(true);
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [totalUSD]);
 
     const formattedTotal = formatPrice(totalUSD, totalZWG || totalUSD * exchangeRate);
 
     // Calculate budget status
     const isOverBudget = budgetTargetUSD && totalUSD > budgetTargetUSD;
-    const budgetPercentage = budgetTargetUSD ? (totalUSD / budgetTargetUSD) * 100 : 0;
+    const budgetPercentage = budgetTargetUSD ? (totalUSD / budgetTargetUSD) * 100 : 0; // eslint-disable-line @typescript-eslint/no-unused-vars -- reserved for progress bar
 
     // Trend indicator
     const showTrend = previousTotal !== undefined && previousTotal !== totalUSD;

@@ -77,8 +77,8 @@ export async function POST(req: NextRequest) {
         }
 
         return NextResponse.json({ success: true, data });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Create scraper error:', err);
-        return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: err instanceof Error ? err.message : 'Internal Server Error' }, { status: 500 });
     }
 }

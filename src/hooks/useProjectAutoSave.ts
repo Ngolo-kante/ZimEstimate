@@ -5,7 +5,6 @@ import {
     createProject,
     getProjectWithItems,
     saveProjectWithItems,
-    updateProject,
 } from '@/lib/services/projects';
 import { createDefaultStages, setProjectStagesApplicability } from '@/lib/services/stages';
 import { Project, BOQItem, ProjectScope, LaborPreference } from '@/lib/database.types';
@@ -88,6 +87,7 @@ export function useProjectAutoSave(
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isInitializedRef = useRef(false);
     const projectRef = useRef<Project | null>(null);
+    const lastSavedStageSignatureRef = useRef<string | null>(null);
 
     // Convert local BOQ items to database format
     const convertItemsForSave = useCallback((milestones: MilestoneData[]) => {
@@ -145,6 +145,8 @@ export function useProjectAutoSave(
                 laborType === 'materials_labor' ? 'with_labor' : 'materials_only';
 
             const items = convertItemsForSave(milestonesState);
+            const totalUsd = items.reduce((sum, item) => sum + (item.quantity * item.unit_price_usd), 0);
+            const totalZwg = items.reduce((sum, item) => sum + (item.quantity * item.unit_price_zwg), 0);
 
             const { project: savedProject, error: saveError } = await saveProjectWithItems(
                 currentProject.id,
@@ -155,6 +157,8 @@ export function useProjectAutoSave(
                     labor_preference,
                     selected_stages: selectedStagesForSave.length > 0 ? selectedStagesForSave : null,
                     status: 'draft',
+                    total_usd: totalUsd,
+                    total_zwg: totalZwg,
                 },
                 items
             );
@@ -164,27 +168,23 @@ export function useProjectAutoSave(
             }
 
             if (savedProject) {
-                // Ensure default stage records exist in the database
-                await createDefaultStages(currentProject.id, scope);
-
-                // Determine which stages to mark as applicable
-                let stagesToEnable = selectedStagesForSave;
-                if (stagesToEnable.length === 0) {
-                    // For "entire_house" scope, enable stages that have BOQ items
-                    const stagesWithItems = new Set<string>();
-                    milestonesState.forEach(m => {
-                        if (m.items.length > 0) stagesWithItems.add(m.id);
-                    });
-                    stagesToEnable = Array.from(stagesWithItems);
+                const stageSignature = `${scope}:${[...selectedStagesForSave].sort().join(',')}`;
+                if (lastSavedStageSignatureRef.current !== stageSignature) {
+                    // Determine which stages to mark as applicable only when scope/stages changed
+                    let stagesToEnable = selectedStagesForSave;
+                    if (stagesToEnable.length === 0) {
+                        // For "entire_house" scope, enable stages that have BOQ items
+                        const stagesWithItems = new Set<string>();
+                        milestonesState.forEach(m => {
+                            if (m.items.length > 0) stagesWithItems.add(m.id);
+                        });
+                        stagesToEnable = Array.from(stagesWithItems);
+                    }
+                    if (stagesToEnable.length > 0) {
+                        await setProjectStagesApplicability(currentProject.id, stagesToEnable);
+                    }
+                    lastSavedStageSignatureRef.current = stageSignature;
                 }
-                if (stagesToEnable.length > 0) {
-                    await setProjectStagesApplicability(currentProject.id, stagesToEnable);
-                }
-
-                // Update project totals from saved items
-                const totalUsd = items.reduce((sum, item) => sum + (item.quantity * item.unit_price_usd), 0);
-                const totalZwg = items.reduce((sum, item) => sum + (item.quantity * item.unit_price_zwg), 0);
-                await updateProject(currentProject.id, { total_usd: totalUsd, total_zwg: totalZwg });
 
                 setProject(savedProject);
                 projectRef.current = savedProject;
@@ -238,6 +238,7 @@ export function useProjectAutoSave(
             if (newProject) {
                 // Create default stage records for this project
                 await createDefaultStages(newProject.id, scope);
+                lastSavedStageSignatureRef.current = `${scope}:${[...selectedStagesForSave].sort().join(',')}`;
 
                 setProject(newProject);
                 projectRef.current = newProject;
@@ -278,6 +279,8 @@ export function useProjectAutoSave(
                 if (loadedProject) {
                     setProject(loadedProject);
                     projectRef.current = loadedProject;
+                    const loadedStages = loadedProject.selected_stages ?? [];
+                    lastSavedStageSignatureRef.current = `${loadedProject.scope}:${[...loadedStages].sort().join(',')}`;
                     setLastSaved(new Date(loadedProject.updated_at));
                     isInitializedRef.current = true;
                     onLoadComplete?.(loadedProject, items);

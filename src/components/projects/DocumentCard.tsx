@@ -105,7 +105,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
             <style jsx>{`
                 .document-card {
                     background: #ffffff;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid #d7e6f5;
                     border-radius: 16px;
                     padding: 20px;
                     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -117,8 +117,8 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                 }
 
                 .document-card:hover {
-                    border-color: #cbd5e1;
-                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+                    border-color: #b9d4ef;
+                    box-shadow: 0 12px 20px -8px rgba(22, 77, 131, 0.24), 0 4px 8px -2px rgba(22, 77, 131, 0.08);
                     transform: translateY(-2px);
                 }
 
@@ -177,7 +177,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     right: 0;
                     margin-top: 8px;
                     background: #ffffff;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid #d3e3f3;
                     border-radius: 10px;
                     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
                     min-width: 140px;
@@ -252,8 +252,8 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
                     padding: 4px 8px;
-                    background: #f1f5f9;
-                    color: #475569;
+                    background: #ecf4ff;
+                    color: #356a9f;
                     border-radius: 99px;
                 }
 

@@ -104,6 +104,7 @@ export default function SupplierDirectoryPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch
     loadSuppliers(0, false);
   }, [loadSuppliers]);
 

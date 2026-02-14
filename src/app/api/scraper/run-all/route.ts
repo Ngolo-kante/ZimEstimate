@@ -52,13 +52,13 @@ export async function POST(req: NextRequest): Promise<NextResponse<RunAllRespons
             limit: 5,
             windowMs: 60_000,
         });
-        if (rateLimit) return rateLimit as NextResponse<any>;
+        if (rateLimit) return rateLimit as NextResponse<never>;
 
         const csrf = enforceCsrf(req);
-        if (csrf) return csrf as NextResponse<any>;
+        if (csrf) return csrf as NextResponse<never>;
 
         const auth = await requireAdmin(req);
-        if (auth instanceof NextResponse) return auth as NextResponse<any>;
+        if (auth instanceof NextResponse) return auth as NextResponse<never>;
 
         const payload = await req.json() as RunAllPayload;
         const category = sanitizeText(payload.category, { maxLength: 50 });

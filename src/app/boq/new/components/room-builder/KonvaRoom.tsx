@@ -90,23 +90,14 @@ export default function KonvaRoom({
                 onDragEnd(room.id, node.x(), node.y());
             }}
             onTransformEnd={() => {
-                // Read the new scale from the group and apply to dimensions
                 const node = groupRef.current;
                 if (!node) return;
-                const scaleX = node.scaleX();
-                const scaleY = node.scaleY();
 
-                // Reset scale to 1 and update room dimensions
+                // Reset scale to 1 — dimensions are handled through onTransformEnd in the canvas
                 node.scaleX(1);
                 node.scaleY(1);
 
-                const newWidth = Math.max(0.5, Number((room.width * scaleX).toFixed(1)));
-                const newLength = Math.max(0.5, Number((room.length * scaleY).toFixed(1)));
-
                 onDragEnd(room.id, node.x(), node.y());
-                // The parent will handle updating dimensions via the callback
-                // We fire a custom-like approach: store in a data attribute pattern
-                // Actually, we handle it through onTransformEnd in the canvas
             }}
         >
             {/* Room fill */}

@@ -37,6 +37,8 @@ import {
     upsertProjectRecurringReminder,
     updateProjectRecurringReminder,
 } from '@/lib/services/projects';
+import { supabase } from '@/lib/supabase';
+import { clearCreatedProjectSnapshot, getCreatedProjectSnapshot } from '@/lib/projectCreationCache';
 import { materials, getBestPrice } from '@/lib/materials';
 import {
     getProjectStages,
@@ -61,11 +63,6 @@ import {
     PencilSimple,
 } from '@phosphor-icons/react';
 import { ProjectDetailSkeleton } from '@/components/ui/Skeleton';
-
-function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: number }) {
-    const { formatPrice } = useCurrency();
-    return <>{formatPrice(priceUsd, priceZwg)}</>;
-}
 
 // Stage categories in order
 const STAGE_CATEGORIES: BOQCategory[] = ['substructure', 'superstructure', 'roofing', 'finishing', 'exterior'];
@@ -122,6 +119,8 @@ function ProjectDetailContent() {
     const [priceUpdates, setPriceUpdates] = useState<PriceUpdate[]>([]);
     const [isPriceUpdateLoading, setIsPriceUpdateLoading] = useState(false);
     const priceNotificationSentRef = useRef(false);
+    const projectRealtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const stagesRealtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [showCelebration, setShowCelebration] = useState(false);
     const [celebrationData, setCelebrationData] = useState<{
         title: string;
@@ -248,40 +247,73 @@ function ProjectDetailContent() {
         return allUsage;
     }, [usageByStage]);
 
-    // Load project data
-    useEffect(() => {
-        async function loadProject() {
+    const applyStages = useCallback((nextStages: ProjectStageWithTasks[], forcePrimaryStage = false) => {
+        setStages(nextStages);
+        const firstApplicable = nextStages.find((stage) => stage.is_applicable);
+        if (!firstApplicable) return;
+
+        setActiveTab((currentTab) => {
+            if (forcePrimaryStage) return firstApplicable.boq_category;
+            const stillApplicable = nextStages.some(
+                (stage) => stage.is_applicable && stage.boq_category === currentTab
+            );
+            return stillApplicable ? currentTab : firstApplicable.boq_category;
+        });
+    }, []);
+
+    const refreshStages = useCallback(async (forcePrimaryStage = false) => {
+        const stagesResult = await getProjectStages(projectId);
+        if (!stagesResult.error) {
+            applyStages(stagesResult.stages, forcePrimaryStage);
+        }
+    }, [applyStages, projectId]);
+
+    const loadProjectData = useCallback(async (showLoading = true, forcePrimaryStage = false) => {
+        if (showLoading) {
             setIsLoading(true);
             setError(null);
-
-            const [projectResult, stagesResult] = await Promise.all([
-                getProjectWithItems(projectId),
-                getProjectStages(projectId),
-            ]);
-
-            if (projectResult.error) {
-                setError(projectResult.error.message);
-            } else if (projectResult.project) {
-                setProject(projectResult.project);
-                setItems(projectResult.items);
-            } else {
-                setError('Project not found');
-            }
-
-            if (!stagesResult.error) {
-                setStages(stagesResult.stages);
-                // Set initial active tab to first applicable stage
-                const firstApplicable = stagesResult.stages.find(s => s.is_applicable);
-                if (firstApplicable) {
-                    setActiveTab(firstApplicable.boq_category);
-                }
-            }
-
-            setIsLoading(false);
         }
 
-        loadProject();
+        const [projectResult, stagesResult] = await Promise.all([
+            getProjectWithItems(projectId),
+            getProjectStages(projectId),
+        ]);
+
+        if (projectResult.error) {
+            if (showLoading) setError(projectResult.error.message);
+        } else if (projectResult.project) {
+            setProject(projectResult.project);
+            setItems(projectResult.items);
+            clearCreatedProjectSnapshot(projectResult.project.id);
+        } else if (showLoading) {
+            setError('Project not found');
+        }
+
+        if (!stagesResult.error) {
+            applyStages(stagesResult.stages, forcePrimaryStage);
+        }
+
+        if (showLoading) {
+            setIsLoading(false);
+        }
+    }, [applyStages, projectId]);
+
+    const hydrateFromCreatedSnapshot = useCallback(() => {
+        const snapshot = getCreatedProjectSnapshot(projectId);
+        if (!snapshot) return false;
+
+        setProject(snapshot.project);
+        setItems(snapshot.items);
+        setError(null);
+        setIsLoading(false);
+        return true;
     }, [projectId]);
+
+    // Load project data
+    useEffect(() => {
+        const hydrated = hydrateFromCreatedSnapshot();
+        loadProjectData(!hydrated, true);
+    }, [hydrateFromCreatedSnapshot, loadProjectData]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -391,6 +423,89 @@ function ProjectDetailContent() {
 
         setUsageByStage(nextUsage);
     }, [projectId, stages]);
+
+    // Realtime sync for project detail data
+    useEffect(() => {
+        const shouldRefreshUsage =
+            project?.usage_tracking_enabled &&
+            (activeView === 'procurement' || activeView === 'boq' || activeView === 'usage');
+
+        const scheduleProjectRefresh = () => {
+            if (projectRealtimeTimeoutRef.current) {
+                clearTimeout(projectRealtimeTimeoutRef.current);
+            }
+            projectRealtimeTimeoutRef.current = setTimeout(() => {
+                void loadProjectData(false, false);
+                if (shouldRefreshUsage) {
+                    void loadUsageData();
+                }
+            }, 250);
+        };
+
+        const scheduleStageRefresh = () => {
+            if (stagesRealtimeTimeoutRef.current) {
+                clearTimeout(stagesRealtimeTimeoutRef.current);
+            }
+            stagesRealtimeTimeoutRef.current = setTimeout(() => {
+                void refreshStages(false);
+                if (shouldRefreshUsage) {
+                    void loadUsageData();
+                }
+            }, 250);
+        };
+
+        const channel = supabase
+            .channel(`project-detail-${projectId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'projects',
+                    filter: `id=eq.${projectId}`,
+                },
+                () => {
+                    scheduleProjectRefresh();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'boq_items',
+                    filter: `project_id=eq.${projectId}`,
+                },
+                () => {
+                    scheduleProjectRefresh();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'project_stages',
+                    filter: `project_id=eq.${projectId}`,
+                },
+                () => {
+                    scheduleStageRefresh();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            if (projectRealtimeTimeoutRef.current) {
+                clearTimeout(projectRealtimeTimeoutRef.current);
+                projectRealtimeTimeoutRef.current = null;
+            }
+            if (stagesRealtimeTimeoutRef.current) {
+                clearTimeout(stagesRealtimeTimeoutRef.current);
+                stagesRealtimeTimeoutRef.current = null;
+            }
+            void supabase.removeChannel(channel);
+        };
+    }, [activeView, loadProjectData, loadUsageData, project?.usage_tracking_enabled, projectId, refreshStages]);
 
     useEffect(() => {
         if (!project?.usage_tracking_enabled) return;
@@ -766,7 +881,6 @@ function ProjectDetailContent() {
 
     // Get current stage
     const currentStage = stages.find(s => s.boq_category === activeTab);
-    const applicableStages = stages.filter(s => s.is_applicable);
     const hasLabor = project.labor_preference === 'with_labor';
 
     const statusBadgeStyles: Record<string, { background: string; color: string }> = {
@@ -775,10 +889,41 @@ function ProjectDetailContent() {
         completed: { background: 'rgba(46, 108, 246, 0.12)', color: 'var(--color-accent)' },
         archived: { background: 'var(--color-mist)', color: 'var(--color-text-muted)' },
     };
+    const completionRate = purchaseStats.totalItems > 0
+        ? Math.round((purchaseStats.purchasedItems / purchaseStats.totalItems) * 100)
+        : 0;
+    const pendingItemsCount = Math.max(items.length - purchaseStats.purchasedItems, 0);
+    const viewDetails: Record<Exclude<ProjectView, 'overview'>, { title: string; description: string }> = {
+        budget: {
+            title: 'Planner',
+            description: 'Shape your savings pace and stay aligned to your target purchase date.',
+        },
+        boq: {
+            title: 'Bill of Quantities',
+            description: 'Manage stage timelines, tasks, and material line items in one place.',
+        },
+        procurement: {
+            title: 'Procurement Hub',
+            description: 'Track purchases, RFQs, and suppliers with real-time cost visibility.',
+        },
+        usage: {
+            title: 'Usage Tracking',
+            description: 'Log site consumption and monitor burn-down before materials run low.',
+        },
+        documents: {
+            title: 'Documents',
+            description: 'Store plans, permits, receipts, and site records for your team.',
+        },
+        settings: {
+            title: 'Configurations',
+            description: 'Adjust project scope, visibility, and low-stock alert settings.',
+        },
+    };
+    const activeViewDetails = activeView === 'overview' ? null : viewDetails[activeView];
 
     return (
         <MainLayout title={project.name} fullWidth>
-            <div className="flex bg-background min-h-[calc(100vh-64px)]">
+            <div className="project-shell project-dashboard-shell">
                 <SidebarSpine
                     project={project}
                     activeView={activeView}
@@ -787,22 +932,46 @@ function ProjectDetailContent() {
                     onMobileClose={() => setIsMobileSidebarOpen(false)}
                 />
 
-                <main className="flex-1 overflow-y-auto h-[calc(100vh-64px)] p-6 md:p-8 bg-background">
+                <main className="project-main">
+                    {activeViewDetails && (
+                        <section className="view-header reveal">
+                            <div>
+                                <p className="view-eyebrow">{project.name}</p>
+                                <h1 className="view-title">{activeViewDetails.title}</h1>
+                                <p className="view-description">{activeViewDetails.description}</p>
+                            </div>
+                            <div className="view-stats">
+                                <div className="view-stat">
+                                    <span>Materials</span>
+                                    <strong>{items.length}</strong>
+                                </div>
+                                <div className="view-stat">
+                                    <span>Pending</span>
+                                    <strong>{pendingItemsCount}</strong>
+                                </div>
+                                <div className="view-stat">
+                                    <span>Completion</span>
+                                    <strong>{completionRate}%</strong>
+                                </div>
+                            </div>
+                        </section>
+                    )}
+
                     {/* OVERVIEW View */}
                     {activeView === 'overview' && (
-                        <div className="space-y-8 max-w-6xl mx-auto reveal" data-delay="1">
-                            <div className="flex justify-between items-start">
+                        <div className="overview-view space-y-8 max-w-6xl mx-auto reveal" data-delay="1">
+                            <div className="overview-header">
                                 <div>
                                     {/* Breadcrumbs */}
-                                    <div className="flex items-center gap-2 text-sm text-secondary mb-2">
+                                    <div className="overview-breadcrumb">
                                         <Link
                                             href="/projects"
                                             className="hover:text-accent transition-colors"
                                         >
                                             My Projects
                                         </Link>
-                                        <span className="text-secondary">/</span>
-                                        <span className="text-primary font-medium">{project.name}</span>
+                                        <span>/</span>
+                                        <span className="font-medium text-primary">{project.name}</span>
                                     </div>
                                     <h1 className="text-3xl font-bold text-primary font-heading">{project.name}</h1>
                                     <div className="flex items-center gap-2 text-sm text-secondary mt-1">
@@ -817,7 +986,7 @@ function ProjectDetailContent() {
                                         </span>
                                     </div>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="overview-actions">
                                     <Button
                                         variant="secondary"
                                         size="sm"
@@ -839,9 +1008,9 @@ function ProjectDetailContent() {
 
                             {/* Price Update Alert */}
                             {priceUpdates.length > 0 && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 reveal" data-delay="2">
+                                <div className="price-update-alert reveal" data-delay="2">
                                     <div className="flex items-start gap-3">
-                                        <div className="bg-white p-2 rounded-lg text-blue-600 shadow-sm">
+                                        <div className="price-update-icon">
                                             <TrendUp size={20} weight="bold" />
                                         </div>
                                         <div>
@@ -857,7 +1026,7 @@ function ProjectDetailContent() {
                                             size="sm"
                                             variant="secondary"
                                             onClick={handleIgnorePriceUpdates}
-                                            className="bg-white hover:bg-blue-50 text-blue-700 border-blue-200"
+                                            className="bg-white text-blue-700 border-blue-200"
                                         >
                                             Ignore
                                         </Button>
@@ -865,7 +1034,7 @@ function ProjectDetailContent() {
                                             size="sm"
                                             onClick={handleApplyPriceUpdates}
                                             loading={isPriceUpdateLoading}
-                                            className="bg-blue-600 hover:bg-blue-700 text-white border-none"
+                                            className="bg-blue-500 hover:bg-blue-600 text-white border-none"
                                         >
                                             Apply Updates
                                         </Button>
@@ -891,7 +1060,7 @@ function ProjectDetailContent() {
                                 {/* Left Column - Budget & Planning */}
                                 <div className="lg:col-span-2 space-y-8">
                                     {/* Budget Planner */}
-                                    <section className="bg-surface border border-border rounded-xl p-6 shadow-card reveal" data-delay="4">
+                                    <section className="overview-card reveal" data-delay="4">
                                         <div className="flex items-center gap-3 mb-6">
                                             <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
                                                 <Wallet size={24} weight="duotone" />
@@ -918,11 +1087,11 @@ function ProjectDetailContent() {
                                     </section>
 
                                     {/* Recent Activity / Next Steps */}
-                                    <section className="bg-surface border border-border rounded-xl p-6 shadow-card reveal" data-delay="5">
+                                    <section className="overview-card reveal" data-delay="5">
                                         <h3 className="text-lg font-bold text-primary mb-4 font-heading">Next Steps</h3>
                                         <div className="space-y-4">
                                             {items.filter(i => !i.is_purchased).slice(0, 3).map(item => (
-                                                <div key={item.id} className="flex items-center justify-between p-3 bg-mist rounded-lg">
+                                                <div key={item.id} className="next-step-item">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-2 h-2 rounded-full bg-accent"></div>
                                                         <span className="font-medium text-primary">{item.material_name}</span>
@@ -961,28 +1130,21 @@ function ProjectDetailContent() {
                                             </div>
                                             <div className="flex justify-between items-center py-2 border-b border-border-light">
                                                 <span className="text-sm text-secondary">Completion</span>
-                                                <span className="font-medium text-primary">
-                                                    {(purchaseStats.totalItems > 0
-                                                        ? (purchaseStats.purchasedItems / purchaseStats.totalItems) * 100
-                                                        : 0
-                                                    ).toFixed(0)}%
-                                                </span>
+                                                <span className="font-medium text-primary">{completionRate}%</span>
                                             </div>
                                             <div className="pt-2">
                                                 <RunningTotalBar
                                                     totalUSD={purchaseStats.estimatedTotal}
                                                     totalZWG={purchaseStats.estimatedTotal * exchangeRate}
                                                     budgetTargetUSD={project.budget_target_usd}
-                                                    completionPercentage={purchaseStats.totalItems > 0
-                                                        ? Math.round((purchaseStats.purchasedItems / purchaseStats.totalItems) * 100)
-                                                        : 0}
+                                                    completionPercentage={completionRate}
                                                     projectName={project.name}
                                                 />
                                             </div>
                                         </div>
                                     </Card>
 
-                                    <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100 reveal" data-delay="7">
+                                    <Card className="pro-tip-card reveal" data-delay="7">
                                         <div className="p-4">
                                             <h4 className="font-bold text-blue-900 mb-2">Pro Tip</h4>
                                             <p className="text-sm text-blue-700">
@@ -990,7 +1152,7 @@ function ProjectDetailContent() {
                                             </p>
                                             <Button
                                                 size="sm"
-                                                className="mt-3 bg-blue-600 hover:bg-blue-700 text-white w-full border-none"
+                                                className="mt-3 bg-blue-500 hover:bg-blue-600 text-white w-full border-none"
                                                 onClick={() => setActiveView('procurement')}
                                             >
                                                 Go to Procurement
@@ -1004,7 +1166,7 @@ function ProjectDetailContent() {
 
                     {/* BOQ View */}
                     {activeView === 'boq' && (
-                        <div className="space-y-6 max-w-full mx-auto reveal">
+                        <div className="view-panel space-y-6 max-w-full mx-auto reveal">
                             {currentStage && (
                                 <StageTab
                                     stage={currentStage}
@@ -1024,7 +1186,7 @@ function ProjectDetailContent() {
 
                     {/* PROCUREMENT View */}
                     {activeView === 'procurement' && (
-                        <div className="reveal">
+                        <div className="view-panel reveal">
                             <UnifiedProcurementView
                                 project={project}
                                 items={items}
@@ -1035,7 +1197,7 @@ function ProjectDetailContent() {
 
                     {/* USAGE View */}
                     {activeView === 'usage' && (
-                        <div className="space-y-6 reveal">
+                        <div className="view-panel space-y-6 reveal">
                             {project.usage_tracking_enabled ? (
                                 <ProjectUsageView
                                     project={project}
@@ -1064,16 +1226,14 @@ function ProjectDetailContent() {
 
                     {/* DOCUMENTS View */}
                     {activeView === 'documents' && (
-                        <div className="space-y-6 reveal">
-                            <h2 className="text-2xl font-bold text-primary font-heading mb-6">Documents</h2>
+                        <div className="view-panel space-y-6 reveal">
                             <DocumentsTab projectId={projectId} />
                         </div>
                     )}
 
                     {/* BUDGET View */}
                     {activeView === 'budget' && (
-                        <div className="space-y-6 reveal">
-                            <h2 className="text-2xl font-bold text-primary font-heading mb-6">Budget Planner</h2>
+                        <div className="view-panel space-y-6 reveal">
                             <BudgetPlanner
                                 totalBudgetUsd={purchaseStats.estimatedTotal}
                                 amountSpentUsd={purchaseStats.actualSpent}
@@ -1092,7 +1252,7 @@ function ProjectDetailContent() {
 
                     {/* SETTINGS View */}
                     {activeView === 'settings' && (
-                        <div className="reveal">
+                        <div className="view-panel reveal">
                             <ProjectSettings
                                 project={project}
                                 onUpdate={handleProjectUpdate}
@@ -1178,13 +1338,296 @@ function ProjectDetailContent() {
                 .shadow-card { box-shadow: var(--shadow-card); }
                 
                 .font-heading { font-family: var(--font-heading); }
+
+                .project-dashboard-shell {
+                    --dashboard-ease: cubic-bezier(0.22, 1, 0.36, 1);
+                    --dashboard-fast: 180ms;
+                    --dashboard-medium: 280ms;
+                }
+
+                .project-dashboard-shell h1,
+                .project-dashboard-shell h2,
+                .project-dashboard-shell h3,
+                .project-dashboard-shell h4 {
+                    letter-spacing: -0.015em;
+                    line-height: 1.18;
+                }
+
+                .project-dashboard-shell p {
+                    line-height: 1.55;
+                }
+
+                .project-dashboard-shell button,
+                .project-dashboard-shell a,
+                .project-dashboard-shell input,
+                .project-dashboard-shell select,
+                .project-dashboard-shell textarea {
+                    transition:
+                        transform var(--dashboard-fast) var(--dashboard-ease),
+                        box-shadow var(--dashboard-fast) var(--dashboard-ease),
+                        border-color var(--dashboard-fast) var(--dashboard-ease),
+                        background-color var(--dashboard-fast) var(--dashboard-ease),
+                        color var(--dashboard-fast) var(--dashboard-ease),
+                        opacity var(--dashboard-fast) var(--dashboard-ease);
+                }
+
+                .project-dashboard-shell button:focus-visible,
+                .project-dashboard-shell a:focus-visible,
+                .project-dashboard-shell input:focus-visible,
+                .project-dashboard-shell select:focus-visible,
+                .project-dashboard-shell textarea:focus-visible {
+                    outline: none;
+                    box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.24);
+                }
             `}</style>
             <style jsx>{`
+                .project-shell {
+                    display: flex;
+                    background:
+                        radial-gradient(1200px 480px at 80% -140px, rgba(78, 154, 247, 0.18), transparent 62%),
+                        radial-gradient(900px 400px at -10% -120px, rgba(6, 20, 47, 0.07), transparent 55%),
+                        var(--color-background);
+                    min-height: calc(100vh - 64px);
+                }
+
+                .project-main {
+                    flex: 1;
+                    overflow-y: auto;
+                    height: calc(100vh - 64px);
+                    padding: 24px 28px 48px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 20px;
+                }
+
+                .view-header {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    width: 100%;
+                    background: rgba(255, 255, 255, 0.76);
+                    border: 1px solid rgba(211, 211, 215, 0.8);
+                    border-radius: 24px;
+                    padding: 20px 24px;
+                    display: flex;
+                    align-items: flex-end;
+                    justify-content: space-between;
+                    gap: 20px;
+                    backdrop-filter: blur(10px);
+                    -webkit-backdrop-filter: blur(10px);
+                    box-shadow: 0 16px 30px rgba(6, 20, 47, 0.05);
+                    transition:
+                        transform var(--dashboard-medium) var(--dashboard-ease),
+                        box-shadow var(--dashboard-medium) var(--dashboard-ease);
+                }
+
+                .view-eyebrow {
+                    margin: 0 0 6px 0;
+                    font-size: 0.72rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.08em;
+                    color: var(--color-text-secondary);
+                    font-weight: 700;
+                }
+
+                .view-title {
+                    margin: 0;
+                    font-size: clamp(1.5rem, 2vw, 2rem);
+                    line-height: 1.1;
+                    color: var(--color-text);
+                    letter-spacing: -0.02em;
+                }
+
+                .view-description {
+                    margin: 10px 0 0 0;
+                    color: #5f6b7e;
+                    max-width: 680px;
+                }
+
+                .view-stats {
+                    display: flex;
+                    gap: 12px;
+                    flex-wrap: wrap;
+                    justify-content: flex-end;
+                }
+
+                .view-stat {
+                    min-width: 108px;
+                    background: #f3f8ff;
+                    border: 1px solid #d6e8ff;
+                    border-radius: 14px;
+                    padding: 10px 12px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    text-align: right;
+                }
+
+                .view-stat span {
+                    font-size: 0.72rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    color: #53739a;
+                    font-weight: 700;
+                }
+
+                .view-stat strong {
+                    font-size: 1rem;
+                    color: #16385d;
+                }
+
+                .view-panel {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    width: 100%;
+                    padding: 2px 2px 4px;
+                    border-radius: 26px;
+                    background: linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.4));
+                    border: 1px solid rgba(211, 211, 215, 0.55);
+                    box-shadow: 0 14px 28px rgba(6, 20, 47, 0.03);
+                    transition:
+                        transform var(--dashboard-medium) var(--dashboard-ease),
+                        box-shadow var(--dashboard-medium) var(--dashboard-ease);
+                }
+
+                .overview-view {
+                    padding: 8px 2px;
+                }
+
+                .overview-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    gap: 18px;
+                    flex-wrap: wrap;
+                }
+
+                .overview-breadcrumb {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin-bottom: 8px;
+                    font-size: 0.88rem;
+                    color: var(--color-text-secondary);
+                }
+
+                .overview-actions {
+                    display: flex;
+                    gap: 8px;
+                    align-items: center;
+                    flex-wrap: wrap;
+                }
+
+                .price-update-alert {
+                    background: linear-gradient(135deg, #eaf3ff, #f3f8ff);
+                    border: 1px solid #cfe2fb;
+                    border-radius: 16px;
+                    padding: 14px 16px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 14px;
+                    justify-content: space-between;
+                    transition:
+                        transform var(--dashboard-medium) var(--dashboard-ease),
+                        box-shadow var(--dashboard-medium) var(--dashboard-ease);
+                }
+
+                .price-update-icon {
+                    background: rgba(255, 255, 255, 0.95);
+                    border: 1px solid rgba(159, 200, 248, 0.7);
+                    padding: 8px;
+                    border-radius: 10px;
+                    color: #2e6cf6;
+                    box-shadow: 0 3px 10px rgba(46, 108, 246, 0.12);
+                }
+
+                .overview-card {
+                    background: rgba(255, 255, 255, 0.92);
+                    border: 1px solid rgba(211, 211, 215, 0.7);
+                    border-radius: 20px;
+                    padding: 24px;
+                    box-shadow: 0 8px 20px rgba(6, 20, 47, 0.03);
+                    transition:
+                        transform var(--dashboard-medium) var(--dashboard-ease),
+                        box-shadow var(--dashboard-medium) var(--dashboard-ease),
+                        border-color var(--dashboard-medium) var(--dashboard-ease);
+                }
+
+                .next-step-item {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 12px;
+                    padding: 12px 14px;
+                    background: #f7faff;
+                    border: 1px solid #dceafb;
+                    border-radius: 12px;
+                    transition:
+                        transform var(--dashboard-fast) var(--dashboard-ease),
+                        border-color var(--dashboard-fast) var(--dashboard-ease),
+                        box-shadow var(--dashboard-fast) var(--dashboard-ease);
+                }
+
+                .pro-tip-card {
+                    background: linear-gradient(145deg, #eef6ff, #f8fbff) !important;
+                    border: 1px solid #d1e6ff !important;
+                    transition:
+                        transform var(--dashboard-medium) var(--dashboard-ease),
+                        box-shadow var(--dashboard-medium) var(--dashboard-ease),
+                        border-color var(--dashboard-medium) var(--dashboard-ease);
+                }
+
+                .view-header:hover,
+                .view-panel:hover,
+                .overview-card:hover,
+                .price-update-alert:hover,
+                .pro-tip-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 20px 30px rgba(6, 20, 47, 0.08);
+                }
+
+                .next-step-item:hover {
+                    transform: translateY(-1px);
+                    border-color: #b7d7f7;
+                    box-shadow: 0 10px 18px rgba(17, 56, 95, 0.08);
+                }
+
                 .mobile-sidebar-fab {
                     display: none;
                 }
 
+                @media (max-width: 1024px) {
+                    .project-main {
+                        padding: 18px 16px 40px;
+                        gap: 16px;
+                    }
+                }
+
                 @media (max-width: 768px) {
+                    .project-main {
+                        padding: 14px 12px 34px;
+                        gap: 14px;
+                    }
+
+                    .view-header {
+                        padding: 16px;
+                        border-radius: 18px;
+                        align-items: flex-start;
+                    }
+
+                    .view-stats {
+                        width: 100%;
+                        justify-content: flex-start;
+                    }
+
+                    .view-panel {
+                        border-radius: 18px;
+                    }
+
+                    .next-step-item {
+                        flex-direction: column;
+                        align-items: flex-start;
+                    }
+
                     .mobile-sidebar-fab {
                         display: flex;
                         position: fixed;
@@ -1205,6 +1648,32 @@ function ProjectDetailContent() {
 
                     .mobile-sidebar-fab:active {
                         transform: scale(0.95);
+                    }
+                }
+
+                @media (max-width: 640px) {
+                    .view-title {
+                        font-size: 1.38rem;
+                    }
+
+                    .view-description {
+                        font-size: 0.9rem;
+                    }
+
+                    .overview-breadcrumb {
+                        font-size: 0.8rem;
+                    }
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .view-header,
+                    .view-panel,
+                    .overview-card,
+                    .price-update-alert,
+                    .next-step-item,
+                    .pro-tip-card {
+                        transition: none;
+                        transform: none !important;
                     }
                 }
             `}</style>

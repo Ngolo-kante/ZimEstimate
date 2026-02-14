@@ -48,9 +48,9 @@ export async function DELETE(
         }
 
         return NextResponse.json({ success: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Delete scraper error:', err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
     }
 }
 
@@ -112,8 +112,8 @@ export async function PATCH(
         }
 
         return NextResponse.json({ success: true, data });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Update scraper error:', err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
     }
 }

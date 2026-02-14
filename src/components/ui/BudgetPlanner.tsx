@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Calendar, Wallet, TrendUp, Target, Info, WhatsappLogo, PaperPlaneTilt, Envelope, ChatCircleText, PiggyBank, Bell, CheckCircle } from '@phosphor-icons/react';
+import { Calendar, TrendUp, Target, Info, WhatsappLogo, Envelope, ChatCircleText, PiggyBank, Bell, CheckCircle } from '@phosphor-icons/react';
 import { useCurrency } from './CurrencyToggle';
 
 export type NotificationChannel = 'sms' | 'whatsapp' | 'telegram' | 'email';
@@ -291,12 +291,18 @@ export default function BudgetPlanner({
 
       <style jsx>{`
         .budget-planner {
-          background: #ffffff;
-          border: 1px solid var(--color-border-light);
+          background: rgba(255, 255, 255, 0.94);
+          border: 1px solid #d8e7f6;
           border-radius: 20px;
           padding: 24px;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+          box-shadow: 0 14px 22px rgba(6, 20, 47, 0.04);
           font-family: var(--font-sans);
+          transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .budget-planner:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 18px 28px rgba(6, 20, 47, 0.08);
         }
 
         .planner-header {
@@ -311,13 +317,13 @@ export default function BudgetPlanner({
         .header-icon-wrapper {
             width: 56px;
             height: 56px;
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            color: #3b82f6;
+            background: linear-gradient(135deg, #ecf4ff 0%, #d5e8ff 100%);
+            color: #2f76c5;
             border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 8px 16px rgba(47, 118, 197, 0.16);
         }
 
         .header-content {
@@ -351,8 +357,8 @@ export default function BudgetPlanner({
 
         /* Progress Card */
         .progress-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            background: #f4f9ff;
+            border: 1px solid #d8e7f6;
             border-radius: 16px;
             padding: 20px;
             margin-bottom: 24px;
@@ -483,6 +489,15 @@ export default function BudgetPlanner({
         .modern-input:focus {
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .modern-input:focus-visible,
+        .toggle-btn:focus-visible,
+        .set-reminder-sm:focus-visible,
+        .channel-chip:focus-visible,
+        .toggle-switch:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.22);
         }
 
         .date-input-wrapper {
@@ -767,6 +782,15 @@ export default function BudgetPlanner({
         }
 
         @media (max-width: 768px) {
+            .budget-planner {
+                padding: 16px;
+                border-radius: 16px;
+            }
+
+            .header-content h3 {
+                font-size: 1.1rem;
+            }
+
             .planner-grid {
                 grid-template-columns: 1fr;
             }
@@ -778,6 +802,17 @@ export default function BudgetPlanner({
             .budget-values {
                 width: 100%;
                 justify-content: space-between;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .budget-planner,
+            .savings-card,
+            .set-reminder-sm,
+            .channel-chip,
+            .toggle-btn {
+                transition: none;
+                transform: none !important;
             }
         }
       `}</style>

@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
         } catch { /* ignore logging error */ }
 
         // Simplify error message
-        let errorMessage = err.message;
+        const errorMessage = err.message;
 
         return NextResponse.json({
             success: false,

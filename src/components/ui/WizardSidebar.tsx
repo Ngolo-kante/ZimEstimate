@@ -13,7 +13,7 @@ export interface WizardStep {
     label: string;
     shortLabel?: string;
     description?: string;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<Record<string, unknown>>;
     status: StepStatus;
     isOptional?: boolean;
     isIncluded?: boolean;
@@ -53,7 +53,6 @@ export function WizardSidebar({
     onStepClick,
     totalUSD,
     totalZWG,
-    projectSummary,
     formatPrice,
 }: WizardSidebarProps) {
     const [isCollapsed, setIsCollapsed] = useState(false);

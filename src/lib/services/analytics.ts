@@ -174,7 +174,8 @@ export async function getBuilderAnalytics(
 
   const records = (purchases || []) as PurchaseRecord[];
   const spendUsd = computeSpend(records);
-  const budgetUsd = Number((project as any)?.budget_target_usd ?? (project as any)?.total_usd ?? 0);
+  const projectRow = project as Record<string, unknown> | null;
+  const budgetUsd = Number(projectRow?.budget_target_usd ?? projectRow?.total_usd ?? 0);
   const varianceUsd = budgetUsd - spendUsd;
   const completionPct = computeCompletion((stages || []) as ProjectStage[]);
   const spendTimeline = buildSpendTimeline(records, 6);
@@ -321,7 +322,7 @@ export async function getSupplierAnalytics(
     ? responseTimes.reduce((sum, value) => sum + value, 0) / responseTimes.length
     : 0;
 
-  const ratingBreakdown = buildRatingBreakdown(Number((supplier as any)?.rating || 0));
+  const ratingBreakdown = buildRatingBreakdown(Number((supplier as Record<string, unknown> | null)?.rating || 0));
 
   const quoteHistory = quoteRows.slice(0, 10).map((quote) => ({
     rfqId: quote.rfq_id,

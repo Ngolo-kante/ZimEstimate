@@ -13,6 +13,8 @@ import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { getProjects, deleteProject, archiveProject } from '@/lib/services/projects';
+import { clearOptimisticProjectCard, getOptimisticProjectCard } from '@/lib/projectCreationCache';
+import { supabase } from '@/lib/supabase';
 import { Project, ProjectStatus, ProjectScope } from '@/lib/database.types';
 import { useReveal } from '@/hooks/useReveal';
 import {
@@ -73,18 +75,20 @@ function ProjectsContent() {
     const searchParams = useSearchParams();
     const { profile, canCreateProject, projectCount } = useAuth();
     const { success, error: showError } = useToast();
+    const readOptimisticProject = () => getOptimisticProjectCard();
     const [projects, setProjects] = useState<Project[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [optimisticProject, setOptimisticProject] = useState<{ id: string; name: string; location: string } | null>(() => readOptimisticProject());
+    const [isLoading, setIsLoading] = useState(() => !readOptimisticProject());
     const [error, setError] = useState<string | null>(null);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
-    const [optimisticProject, setOptimisticProject] = useState<{ id: string; name: string; location: string } | null>(null);
     const [highlightedProjectId, setHighlightedProjectId] = useState<string | null>(null);
     const [showFilters, setShowFilters] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [mobileMenuProjectId, setMobileMenuProjectId] = useState<string | null>(null);
+    const realtimeRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Filter and sort state
     const [searchQuery, setSearchQuery] = useState('');
@@ -277,20 +281,22 @@ function ProjectsContent() {
 
     // Initial load
     useEffect(() => {
-        loadProjects();
+        loadProjects(!optimisticProject);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Handle optimistic project creation
     useEffect(() => {
         if (searchParams.get('created') === '1') {
-            try {
-                const stored = sessionStorage.getItem('zimestimate_optimistic_project');
-                if (stored) {
-                    const data = JSON.parse(stored);
-                    setOptimisticProject({ id: data.id, name: data.name, location: data.location });
-                }
-            } catch { }
+            const optimistic = getOptimisticProjectCard();
+            if (optimistic) {
+                setOptimisticProject({
+                    id: optimistic.id,
+                    name: optimistic.name,
+                    location: optimistic.location || '',
+                });
+                setIsLoading(false);
+            }
             router.replace('/projects');
         }
     }, [searchParams, router]);
@@ -302,7 +308,7 @@ function ProjectsContent() {
         if (found) {
             setOptimisticProject(null);
             setHighlightedProjectId(found.id);
-            try { sessionStorage.removeItem('zimestimate_optimistic_project'); } catch { }
+            clearOptimisticProjectCard(found.id);
             setTimeout(() => setHighlightedProjectId(null), 3000);
         }
     }, [projects, optimisticProject, isLoading]);
@@ -334,6 +340,44 @@ function ProjectsContent() {
         return () => clearInterval(interval);
     }, [loadProjects]);
 
+    // Realtime sync: refresh dashboard when project records change
+    useEffect(() => {
+        if (!profile?.id) return;
+
+        const scheduleRefresh = () => {
+            if (realtimeRefreshTimeoutRef.current) {
+                clearTimeout(realtimeRefreshTimeoutRef.current);
+            }
+            realtimeRefreshTimeoutRef.current = setTimeout(() => {
+                loadProjects(false);
+            }, 250);
+        };
+
+        const channel = supabase
+            .channel(`projects-dashboard-${profile.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'projects',
+                    filter: `owner_id=eq.${profile.id}`,
+                },
+                () => {
+                    scheduleRefresh();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            if (realtimeRefreshTimeoutRef.current) {
+                clearTimeout(realtimeRefreshTimeoutRef.current);
+                realtimeRefreshTimeoutRef.current = null;
+            }
+            void supabase.removeChannel(channel);
+        };
+    }, [profile?.id, loadProjects]);
+
     const statusColors: Record<string, 'success' | 'accent' | 'default'> = {
         active: 'success',
         draft: 'default',
@@ -348,7 +392,7 @@ function ProjectsContent() {
                 <div className="hero-kpi-section reveal" data-delay="1">
                     <div className="kpi-card highlight">
                         <div className="kpi-icon">
-                            <Crown size={24} weight="duotone" className="text-blue-200" />
+                            <Crown size={24} weight="duotone" className="text-blue-600" />
                         </div>
                         {isLoading ? (
                             <KpiSkeleton />
@@ -371,7 +415,7 @@ function ProjectsContent() {
                         ) : (
                             <>
                                 <div className="kpi-label">Combined Budget vs Actual</div>
-                                <div className="kpi-value">$0.00 <span className="kpi-sub-value">/ {useCurrency().formatPrice(projectStats.totalBudget, projectStats.totalBudget * 30)}</span></div>
+                                <div className="kpi-value">$0.00 <span className="kpi-sub-value">/ <PriceDisplay priceUsd={projectStats.totalBudget} priceZwg={projectStats.totalBudget * 30} /></span></div>
                                 <div className="kpi-bar-container">
                                     <div className="kpi-bar-bg">
                                         <div className="kpi-bar-fill" style={{ width: '0%' }}></div>
@@ -506,7 +550,7 @@ function ProjectsContent() {
                 )}
 
                 {/* Loading State - Skeleton Cards */}
-                {isLoading && (
+                {isLoading && !optimisticProject && (
                     <div className="projects-grid">
                         {Array.from({ length: 6 }).map((_, i) => (
                             <ProjectCardSkeleton key={i} />
@@ -525,7 +569,7 @@ function ProjectsContent() {
                 )}
 
                 {/* Empty State */}
-                {!isLoading && !error && projects.length === 0 && (
+                {!isLoading && !error && projects.length === 0 && !optimisticProject && (
                     <Card className="empty-state">
                         <FolderOpen size={64} weight="light" />
                         <h3>No projects yet</h3>
@@ -539,7 +583,7 @@ function ProjectsContent() {
                 )}
 
                 {/* No Results State */}
-                {!isLoading && !error && projects.length > 0 && filteredProjects.length === 0 && (
+                {!isLoading && !error && projects.length > 0 && filteredProjects.length === 0 && !optimisticProject && (
                     <Card className="empty-state">
                         <MagnifyingGlass size={48} weight="light" />
                         <h3>No matching projects</h3>
@@ -551,7 +595,7 @@ function ProjectsContent() {
                 )}
 
                 {/* Projects Grid */}
-                {!isLoading && !error && (filteredProjects.length > 0 || optimisticProject) && (
+                {!error && (optimisticProject || (!isLoading && filteredProjects.length > 0)) && (
                     <div className="projects-grid">
                         {/* Optimistic "Creating..." card */}
                         {optimisticProject && (
@@ -740,18 +784,19 @@ function ProjectsContent() {
                 }
 
                 .kpi-card.highlight {
-                    background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary-dark) 100%);
-                    border: none;
-                    color: white;
+                    background: linear-gradient(155deg, #f0f8ff 0%, #dbeeff 100%);
+                    border: 1px solid rgba(116, 176, 255, 0.35);
+                    color: var(--color-primary);
+                    box-shadow: 0 10px 22px rgba(83, 137, 205, 0.16);
                 }
 
                 .kpi-card.highlight .kpi-label,
                 .kpi-card.highlight .kpi-trend {
-                    color: rgba(255, 255, 255, 0.8);
+                    color: #3f6f9f;
                 }
 
                 .kpi-card.highlight .kpi-value {
-                    color: white;
+                    color: #113d67;
                 }
 
                 .kpi-card.actions-card {
@@ -774,7 +819,8 @@ function ProjectsContent() {
                 }
 
                 .kpi-card.highlight .kpi-icon {
-                    background: rgba(255, 255, 255, 0.2);
+                    background: rgba(74, 144, 226, 0.16);
+                    border: 1px solid rgba(74, 144, 226, 0.25);
                 }
 
                 .kpi-label {

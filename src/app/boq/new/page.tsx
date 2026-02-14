@@ -63,6 +63,9 @@ import { applyAveragePriceUpdate, getScaledPriceZwg } from '@/lib/boqPricing';
 import { exportBOQToPDF } from '@/lib/pdf-export';
 import { generateBOQFromBasics, ManualBuilderConfig } from '@/lib/calculations';
 import { BrickType, CementType, ProjectScope } from '@/lib/vision/types';
+import { getProjectWithItems } from '@/lib/services/projects';
+import { setCreatedProjectSnapshot, setOptimisticProjectCard } from '@/lib/projectCreationCache';
+import { validateBOQWizardStep, type BOQWizardFieldValidation } from './wizardValidation';
 import WizardStyles from './WizardStyles';
 
 
@@ -489,127 +492,6 @@ const STEP_HINTS: Record<number, string> = {
   4: 'Next: generate your BOQ.',
 };
 
-const WizardSummaryPanel = ({
-  currentStep,
-  projectDetails,
-  projectScope,
-  selectedStages,
-  laborType,
-  locationLabel,
-}: {
-  currentStep: number;
-  projectDetails: ProjectDetailsState;
-  projectScope: string;
-  selectedStages: string[];
-  laborType: string | null;
-  locationLabel: string;
-}) => {
-  const buildingTypeLabel = BUILDING_TYPES.find((type) => type.value === projectDetails.buildingType)?.label || '';
-  const roomSummary = ROOM_INPUTS
-    .map((room) => ({
-      label: room.label,
-      count: Number(projectDetails.roomInputs[room.key]) || 0,
-    }))
-    .filter((room) => room.count > 0);
-
-  const stageLabels = milestones
-    .filter((stage) => stage.id !== 'labor' && selectedStages.includes(stage.id))
-    .map((stage) => stage.label);
-
-  const scopeLabel = projectScope === 'stage'
-    ? (stageLabels.length > 0 ? stageLabels.join(', ') : 'Choose stages')
-    : projectScope === 'full'
-      ? 'Entire House'
-      : '';
-
-  const laborLabel = laborType === 'materials_only'
-    ? 'Materials Only'
-    : 'Materials + Labor';
-
-  return (
-    <div className="wizard-summary-area">
-      <div className="summary-card">
-        <div className="summary-header">
-          <span className="summary-kicker">Project Summary</span>
-          <span className="summary-step">Step {Math.min(currentStep, 4)} of 4</span>
-        </div>
-
-        <div className="summary-section">
-          <div className="summary-item">
-            <span className="summary-label">Project Name</span>
-            <span className={`summary-value ${projectDetails.name ? 'is-filled' : 'is-empty'}`}>
-              {projectDetails.name || 'Not set'}
-            </span>
-          </div>
-          <div className="summary-item">
-            <span className="summary-label">Location</span>
-            <span className={`summary-value ${locationLabel ? 'is-filled' : 'is-empty'}`}>
-              {locationLabel || 'Not set'}
-            </span>
-          </div>
-        </div>
-
-        <div className="summary-divider" />
-
-        <div className="summary-section">
-          <div className="summary-item">
-            <span className="summary-label">Floor Area</span>
-            <span className={`summary-value ${projectDetails.floorPlanSize ? 'is-filled' : 'is-empty'}`}>
-              {projectDetails.floorPlanSize ? `${projectDetails.floorPlanSize} m²` : 'Not set'}
-            </span>
-          </div>
-          <div className="summary-item">
-            <span className="summary-label">Building Type</span>
-            <span className={`summary-value ${buildingTypeLabel ? 'is-filled' : 'is-empty'}`}>
-              {buildingTypeLabel || 'Not set'}
-            </span>
-          </div>
-        </div>
-
-        <div className="summary-divider" />
-
-        <div className="summary-section">
-          <div className="summary-item">
-            <span className="summary-label">Scope</span>
-            <span className={`summary-value ${scopeLabel ? 'is-filled' : 'is-empty'}`}>
-              {scopeLabel || 'Not set'}
-            </span>
-          </div>
-          <div className="summary-item">
-            <span className="summary-label">Labor</span>
-            <span className={`summary-value ${laborType ? 'is-filled' : 'is-empty'}`}>
-              {laborLabel || 'Not set'}
-            </span>
-          </div>
-        </div>
-
-        <div className="summary-divider" />
-
-        <div className="summary-section">
-          <span className="summary-label">Room Mix</span>
-          {roomSummary.length === 0 ? (
-            <span className="summary-value is-empty">No room counts yet</span>
-          ) : (
-            <div className="summary-room-grid">
-              {roomSummary.map((room) => (
-                <div key={room.label} className="summary-room">
-                  <span>{room.label}</span>
-                  <span>{room.count}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="summary-next">
-          <span>Next up</span>
-          <p>{STEP_HINTS[Math.min(currentStep, 4)]}</p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 function BOQBuilderContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -650,6 +532,17 @@ function BOQBuilderContent() {
 
   // Validation Error State
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [fieldValidation, setFieldValidation] = useState<BOQWizardFieldValidation>({});
+
+  const clearValidationField = (field: keyof BOQWizardFieldValidation) => {
+    setFieldValidation((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+    setValidationError(null);
+  };
 
   useReveal({ deps: [currentStep, projectScope, showRoomPicker, isAuthenticated] });
 
@@ -668,11 +561,6 @@ function BOQBuilderContent() {
 
   // Labor Preference
   const [laborType, setLaborType] = useState<'materials_only' | 'materials_labor' | null>(null);
-
-  // Clear validation error when inputs change
-  useEffect(() => {
-    if (validationError) setValidationError(null);
-  }, [projectDetails, projectScope, laborType, validationError]);
 
   // Plan Sketch State
   const [planSketchEnabled, setPlanSketchEnabled] = useState(false);
@@ -741,31 +629,17 @@ function BOQBuilderContent() {
   }, [milestonesState]);
 
   // Calculate totals for sidebar
-  const { totalUSD, totalZWG, totalItems } = useMemo(() => {
+  const { totalUSD, totalZWG } = useMemo(() => {
     let usd = 0;
     let zwg = 0;
-    let items = 0;
     milestonesState.forEach(m => {
       m.items.forEach(item => {
         const qty = item.quantity || 0;
         usd += item.averagePriceUsd * qty;
         zwg += item.averagePriceZwg * qty;
-        items++;
       });
     });
-    return { totalUSD: usd, totalZWG: zwg, totalItems: items };
-  }, [milestonesState]);
-
-  // Calculate stats per milestone for sidebar
-  const milestoneStats = useMemo(() => {
-    return milestonesState.reduce((acc, m) => {
-      const subtotal = m.items.reduce((sum, item) => sum + (item.averagePriceUsd * (item.quantity || 0)), 0);
-      acc[m.id] = {
-        itemCount: m.items.length,
-        subtotal
-      };
-      return acc;
-    }, {} as Record<string, { itemCount: number; subtotal: number }>);
+    return { totalUSD: usd, totalZWG: zwg };
   }, [milestonesState]);
 
   // Build wizard steps for sidebar
@@ -821,7 +695,7 @@ function BOQBuilderContent() {
     ];
 
     return baseSteps;
-  }, [currentStep, selectedStages, milestoneStats]);
+  }, [currentStep]);
 
   const handleSidebarStepClick = (stepId: string) => {
     const stepIndex = ['project-details', 'floor-plan', 'scope', 'labor'].indexOf(stepId);
@@ -893,7 +767,7 @@ function BOQBuilderContent() {
     milestonesState,
     {
       projectId: projectIdFromUrl,
-      autoSaveInterval: 30000, // 30 seconds
+      autoSaveInterval: 5000, // 5 seconds for faster cross-screen availability
       onLoadComplete: (loadedProject, items) => {
         // Restore project details
         const parsedLocation = parseLocation(loadedProject.location);
@@ -1044,7 +918,6 @@ function BOQBuilderContent() {
         }));
       }
     } catch { }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-save after returning from auth (pendingAutoSave was set from restored session)
@@ -1125,49 +998,22 @@ function BOQBuilderContent() {
     return true;
   });
 
-  const goToNextStep = async () => {
-    setValidationError(null);
+  const validateCurrentStep = () => {
+    const { errors, message } = validateBOQWizardStep({
+      currentStep,
+      projectDetails,
+      projectScope,
+      selectedStages,
+      laborType,
+    });
+    setFieldValidation(errors);
+    setValidationError(message);
+    return Object.keys(errors).length === 0;
+  };
 
-    if (currentStep === 1) {
-      if (!projectDetails.name.trim()) {
-        setValidationError('Please enter a project name.');
-        return;
-      }
-      if (!projectDetails.locationType) {
-        setValidationError('Please select a location type.');
-        return;
-      }
-    }
-    if (currentStep === 2) {
-      const floorPlanValue = Number(projectDetails.floorPlanSize);
-      if (!projectDetails.floorPlanSize || floorPlanValue <= 0) {
-        setValidationError('Please enter a valid floor plan size.');
-        return;
-      }
-      if (!projectDetails.buildingType) {
-        setValidationError('Please select a building type.');
-        return;
-      }
-      if (!projectDetails.brickType) {
-        setValidationError('Please select a brick type.');
-        return;
-      }
-    }
-    if (currentStep === 3) {
-      if (!projectScope) {
-        setValidationError('Please select a project scope.');
-        return;
-      }
-      if (projectScope === 'stage' && selectedStages.length === 0) {
-        setValidationError('Please select at least one stage.');
-        return;
-      }
-    }
-    if (currentStep === 4) {
-      if (!laborType) {
-        setValidationError('Please select a labor option.');
-        return;
-      }
+  const goToNextStep = async () => {
+    if (!validateCurrentStep()) {
+      return;
     }
 
     // Create project in database when moving from step 1 (if authenticated and no project yet)
@@ -1195,6 +1041,9 @@ function BOQBuilderContent() {
   };
 
   const goToPrevStep = () => {
+    setValidationError(null);
+    setFieldValidation({});
+
     // Handle back from Step 2B
     if (currentStep === 2.5) {
       setCurrentStep(2);
@@ -1341,6 +1190,9 @@ function BOQBuilderContent() {
       cementType: projectDetails.cementType,
       scope: scope,
       includeLabor: laborType === 'materials_labor',
+      locationType: projectDetails.locationType === 'urban' || projectDetails.locationType === 'peri-urban' || projectDetails.locationType === 'rural'
+        ? projectDetails.locationType
+        : undefined,
       rooms: detailedRooms,
     };
 
@@ -1399,6 +1251,7 @@ function BOQBuilderContent() {
       ]);
 
       try {
+        let savedProjectId = project?.id ?? null;
         const setStepState = (activeIndex: number, message: string) => {
           setSaveOverlayMessage(message);
           setSaveOverlaySteps(prev => prev.map((step, index) => {
@@ -1415,6 +1268,7 @@ function BOQBuilderContent() {
           if (!newProjectId) {
             throw new Error('Failed to create project');
           }
+          savedProjectId = newProjectId;
         }
 
         // Step 2: Timelines
@@ -1438,7 +1292,26 @@ function BOQBuilderContent() {
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Redirect to projects page after save
-        router.push('/projects');
+        if (savedProjectId) {
+          setOptimisticProjectCard({
+            id: savedProjectId,
+            name: projectDetailsForSave.name,
+            location: projectDetailsForSave.location,
+            type: 'manual',
+          });
+
+          // Prime detail views with a warm project snapshot while navigation happens.
+          void (async () => {
+            const { project: snapshotProject, items: snapshotItems } = await getProjectWithItems(savedProjectId);
+            if (snapshotProject) {
+              setCreatedProjectSnapshot({
+                project: snapshotProject,
+                items: snapshotItems,
+              });
+            }
+          })();
+        }
+        router.push('/projects?created=1&refresh=1');
       } catch {
         setShowSaveOverlay(false);
         // Error handling is done by the hook
@@ -2240,7 +2113,11 @@ function BOQBuilderContent() {
                           label="Project Name"
                           placeholder="e.g. Borrowdale 4-Bedroom House"
                           value={projectDetails.name}
-                          onChange={(e) => setProjectDetails({ ...projectDetails, name: e.target.value })}
+                          onChange={(e) => {
+                            clearValidationField('projectName');
+                            setProjectDetails({ ...projectDetails, name: e.target.value });
+                          }}
+                          error={fieldValidation.projectName}
                           required
                         />
                       </div>
@@ -2256,11 +2133,11 @@ function BOQBuilderContent() {
                           </div>
                         </div>
 
-                        <div className="form-group">
+                        <div className={`form-group ${fieldValidation.locationType ? 'has-error' : ''}`}>
                           <label className="wizard-label">
                             Location Type <span className="required">*</span>
                           </label>
-                          <div className="pill-grid" role="radiogroup" aria-label="Location Type">
+                          <div className={`pill-grid ${fieldValidation.locationType ? 'has-error' : ''}`} role="radiogroup" aria-label="Location Type">
                             {LOCATION_TYPES.map((type) => {
                               const Icon = type.icon;
                               const isSelected = projectDetails.locationType === type.value;
@@ -2270,7 +2147,10 @@ function BOQBuilderContent() {
                                   type="button"
                                   className={`pill-option ${isSelected ? 'selected' : ''}`}
                                   data-testid={`location-type-${type.value}`}
-                                  onClick={() => setProjectDetails({ ...projectDetails, locationType: type.value })}
+                                  onClick={() => {
+                                    clearValidationField('locationType');
+                                    setProjectDetails({ ...projectDetails, locationType: type.value });
+                                  }}
                                   aria-pressed={isSelected}
                                 >
                                   <span className="pill-icon">
@@ -2284,6 +2164,7 @@ function BOQBuilderContent() {
                               );
                             })}
                           </div>
+                          {fieldValidation.locationType && <p className="field-error">{fieldValidation.locationType}</p>}
                         </div>
 
                         <div className="wizard-grid">
@@ -2310,7 +2191,7 @@ function BOQBuilderContent() {
 
                     <div className="wizard-actions wizard-actions--right flex-col items-end gap-2">
                       {validationError && (
-                        <p className="text-sm text-red-500 font-medium animate-fadeIn">{validationError}</p>
+                        <p className="wizard-validation-banner">{validationError}</p>
                       )}
                       <Button
                         variant="primary"
@@ -2338,8 +2219,9 @@ function BOQBuilderContent() {
                     </div>
 
                     <div className="wizard-card wizard-card--stack">
+                      {validationError && <p className="wizard-validation-banner">{validationError}</p>}
                       <div className="wizard-grid">
-                        <div className="form-group">
+                        <div className={`form-group ${fieldValidation.floorPlanSize ? 'has-error' : ''}`}>
                           <label className="wizard-label">
                             Floor Plan Size <span className="required">*</span>
                           </label>
@@ -2348,21 +2230,25 @@ function BOQBuilderContent() {
                               type="number"
                               min="1"
                               step="0.1"
-                              className="wizard-select"
+                              className={`wizard-select ${fieldValidation.floorPlanSize ? 'wizard-input-error' : ''}`}
                               placeholder="e.g. 240"
                               value={projectDetails.floorPlanSize}
-                              onChange={(e) => setProjectDetails({ ...projectDetails, floorPlanSize: e.target.value })}
+                              onChange={(e) => {
+                                clearValidationField('floorPlanSize');
+                                setProjectDetails({ ...projectDetails, floorPlanSize: e.target.value });
+                              }}
                               required
                             />
                             <span className="input-suffix">m²</span>
                           </div>
                           <span className="wizard-hint">Total floor area of the plan.</span>
+                          {fieldValidation.floorPlanSize && <p className="field-error">{fieldValidation.floorPlanSize}</p>}
                         </div>
-                        <div className="form-group">
+                        <div className={`form-group ${fieldValidation.buildingType ? 'has-error' : ''}`}>
                           <label className="wizard-label">
                             Building Type <span className="required">*</span>
                           </label>
-                          <div className="pill-grid pill-grid--two" role="radiogroup" aria-label="Building Type">
+                          <div className={`pill-grid pill-grid--two ${fieldValidation.buildingType ? 'has-error' : ''}`} role="radiogroup" aria-label="Building Type">
                             {BUILDING_TYPES.map((option) => {
                               const Icon = option.icon;
                               const isSelected = projectDetails.buildingType === option.value;
@@ -2372,7 +2258,10 @@ function BOQBuilderContent() {
                                   type="button"
                                   className={`pill-option ${isSelected ? 'selected' : ''}`}
                                   data-testid={`building-type-${option.value}`}
-                                  onClick={() => setProjectDetails({ ...projectDetails, buildingType: option.value })}
+                                  onClick={() => {
+                                    clearValidationField('buildingType');
+                                    setProjectDetails({ ...projectDetails, buildingType: option.value });
+                                  }}
                                   aria-pressed={isSelected}
                                 >
                                   <span className="pill-icon">
@@ -2386,6 +2275,7 @@ function BOQBuilderContent() {
                               );
                             })}
                           </div>
+                          {fieldValidation.buildingType && <p className="field-error">{fieldValidation.buildingType}</p>}
                         </div>
                       </div>
 
@@ -2411,11 +2301,11 @@ function BOQBuilderContent() {
                           <span className="wizard-hint">Standard is 2.7m. Adjust if you know your wall plate height.</span>
                         </div>
 
-                        <div className="form-group">
+                        <div className={`form-group ${fieldValidation.brickType ? 'has-error' : ''}`}>
                           <label className="wizard-label">
                             Brick / Block Type <span className="required">*</span>
                           </label>
-                          <div className="brick-strip" role="radiogroup" aria-label="Brick Type">
+                          <div className={`brick-strip ${fieldValidation.brickType ? 'has-error' : ''}`} role="radiogroup" aria-label="Brick Type">
                             {[
                               { value: 'common', label: 'Red Common', desc: '50/m²', img: '/images/materials/red-common-brick.png' },
                               { value: 'farm', label: 'Farm Brick', desc: '48/m²', img: '/images/materials/farm-brick.png' },
@@ -2428,7 +2318,10 @@ function BOQBuilderContent() {
                                   key={option.value}
                                   type="button"
                                   className={`brick-chip ${isSelected ? 'selected' : ''}`}
-                                  onClick={() => setProjectDetails({ ...projectDetails, brickType: option.value as BrickType })}
+                                  onClick={() => {
+                                    clearValidationField('brickType');
+                                    setProjectDetails({ ...projectDetails, brickType: option.value as BrickType });
+                                  }}
                                   aria-pressed={isSelected}
                                 >
                                   <div className="brick-chip-thumb">
@@ -2442,6 +2335,7 @@ function BOQBuilderContent() {
                               );
                             })}
                           </div>
+                          {fieldValidation.brickType && <p className="field-error">{fieldValidation.brickType}</p>}
                         </div>
 
 
@@ -2452,8 +2346,8 @@ function BOQBuilderContent() {
                           </label>
                           <div className="pill-grid pill-grid--two" role="radiogroup" aria-label="Cement Type">
                             {[
-                              { value: 'cement_325', label: '32.5N Standard', desc: 'General building • 8 bags/m³' },
-                              { value: 'cement_425', label: '42.5R Rapid', desc: 'Foundation/ringbeam • 7 bags/m³' },
+                              { value: 'cement_325', label: '32.5N Standard', desc: 'General building • 6.5 bags/m³ concrete' },
+                              { value: 'cement_425', label: '42.5R Rapid', desc: 'Foundation/ringbeam • 7 bags/m³ concrete' },
                             ].map((option) => {
                               const isSelected = projectDetails.cementType === option.value;
                               return (
@@ -2819,7 +2713,6 @@ function BOQBuilderContent() {
                         variant="primary"
                         onClick={goToNextStep}
                         icon={<ArrowRight size={18} />}
-                        disabled={!projectDetails.floorPlanSize || !projectDetails.buildingType}
                       >
                         Continue
                       </Button>
@@ -2855,6 +2748,7 @@ function BOQBuilderContent() {
                     </div>
 
                     <div className="wizard-card wizard-card--stack">
+                      {validationError && <p className="wizard-validation-banner">{validationError}</p>}
                       <div className="wizard-section">
                         <div className="wizard-section-header">
                           <div>
@@ -2869,11 +2763,14 @@ function BOQBuilderContent() {
                           portion of the project.
                         </p>
 
-                        <div className="scope-selection">
+                        <div className={`scope-selection ${fieldValidation.projectScope ? 'has-error' : ''}`}>
                           <button
                             type="button"
                             className={`scope-card ${projectScope === 'stage' ? 'selected' : ''}`}
-                            onClick={() => setProjectScope('stage')}
+                            onClick={() => {
+                              clearValidationField('projectScope');
+                              setProjectScope('stage');
+                            }}
                           >
                             <Stack size={28} weight={projectScope === 'stage' ? 'fill' : 'light'} className="scope-icon" />
                             <div className="scope-content">
@@ -2886,7 +2783,11 @@ function BOQBuilderContent() {
                           <button
                             type="button"
                             className={`scope-card ${projectScope === 'full' ? 'selected' : ''}`}
-                            onClick={() => setProjectScope('full')}
+                            onClick={() => {
+                              clearValidationField('projectScope');
+                              clearValidationField('selectedStages');
+                              setProjectScope('full');
+                            }}
                           >
                             <HouseSimple size={28} weight={projectScope === 'full' ? 'fill' : 'light'} className="scope-icon" />
                             <div className="scope-content">
@@ -2896,6 +2797,7 @@ function BOQBuilderContent() {
                             {projectScope === 'full' && <CheckCircle className="check-icon" size={24} weight="fill" />}
                           </button>
                         </div>
+                        {fieldValidation.projectScope && <p className="field-error">{fieldValidation.projectScope}</p>}
                       </div>
 
                       {projectScope === 'stage' && (
@@ -2908,7 +2810,7 @@ function BOQBuilderContent() {
                             </div>
                           </div>
 
-                          <div className="stage-selector-container">
+                          <div className={`stage-selector-container ${fieldValidation.selectedStages ? 'has-error' : ''}`}>
                             <div className="stage-grid">
                               {milestones.filter(m => m.id !== 'labor').map((stage) => {
                                 const isChecked = selectedStages.includes(stage.id);
@@ -2919,6 +2821,7 @@ function BOQBuilderContent() {
                                     type="button"
                                     className={`stage-card ${isChecked ? 'selected' : ''}`}
                                     onClick={() => {
+                                      clearValidationField('selectedStages');
                                       if (isChecked) {
                                         setSelectedStages(selectedStages.filter(id => id !== stage.id));
                                       } else {
@@ -2933,20 +2836,13 @@ function BOQBuilderContent() {
                                 );
                               })}
                             </div>
-                            {selectedStages.length === 0 && (
-                              <p className="wizard-hint" style={{ color: 'var(--color-error)', marginTop: '12px' }}>
-                                Please select at least one stage.
-                              </p>
-                            )}
+                            {fieldValidation.selectedStages && <p className="field-error">{fieldValidation.selectedStages}</p>}
                           </div>
                         </div>
                       )}
                     </div>
 
                     <div className="wizard-actions flex-col items-end gap-2">
-                      {validationError && (
-                        <p className="text-sm text-red-500 font-medium animate-fadeIn w-full text-right">{validationError}</p>
-                      )}
                       <div className="flex gap-3 w-full justify-end">
                         <Button variant="secondary" onClick={goToPrevStep}>Back</Button>
                         <Button
@@ -2977,6 +2873,7 @@ function BOQBuilderContent() {
                     </div>
 
                     <div className="wizard-card wizard-card--stack">
+                      {validationError && <p className="wizard-validation-banner">{validationError}</p>}
                       <div className="wizard-section">
                         <div className="wizard-section-header">
                           <div>
@@ -2986,11 +2883,14 @@ function BOQBuilderContent() {
                           </div>
                         </div>
 
-                        <div className="choice-grid" role="radiogroup" aria-label="Labor Options">
+                        <div className={`choice-grid ${fieldValidation.laborType ? 'has-error' : ''}`} role="radiogroup" aria-label="Labor Options">
                           <button
                             type="button"
                             className={`choice-card ${laborType === 'materials_only' ? 'selected' : ''}`}
-                            onClick={() => setLaborType('materials_only')}
+                            onClick={() => {
+                              clearValidationField('laborType');
+                              setLaborType('materials_only');
+                            }}
                             aria-pressed={laborType === 'materials_only'}
                           >
                             <div className="choice-icon">
@@ -3007,7 +2907,10 @@ function BOQBuilderContent() {
                           <button
                             type="button"
                             className={`choice-card ${laborType === 'materials_labor' ? 'selected' : ''}`}
-                            onClick={() => setLaborType('materials_labor')}
+                            onClick={() => {
+                              clearValidationField('laborType');
+                              setLaborType('materials_labor');
+                            }}
                             aria-pressed={laborType === 'materials_labor'}
                           >
                             <div className="choice-icon">
@@ -3021,6 +2924,7 @@ function BOQBuilderContent() {
                             </div>
                           </button>
                         </div>
+                        {fieldValidation.laborType && <p className="field-error">{fieldValidation.laborType}</p>}
                       </div>
 
                       <div className="tips-section">
@@ -3033,9 +2937,6 @@ function BOQBuilderContent() {
                     </div>
 
                     <div className="wizard-actions flex-col items-end gap-2">
-                      {validationError && (
-                        <p className="text-sm text-red-500 font-medium animate-fadeIn w-full text-right">{validationError}</p>
-                      )}
                       <div className="flex gap-3 w-full justify-end">
                         <Button variant="secondary" onClick={goToPrevStep}>Back</Button>
                         <Button

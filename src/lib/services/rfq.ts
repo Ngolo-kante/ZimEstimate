@@ -3,11 +3,8 @@ import { materials } from '@/lib/materials';
 import type {
   BOQItem,
   RfqRequest,
-  RfqRequestInsert,
   RfqItem,
-  RfqItemInsert,
   RfqRecipient,
-  RfqRecipientInsert,
   RfqQuote,
   RfqQuoteInsert,
   RfqQuoteItem,
@@ -286,7 +283,7 @@ export async function createRfqRequest(options: {
       p_notes: notes || null,
       p_items: itemsForTransaction,
       p_recipients: recipientsForTransaction,
-    } as any);
+    } as never);
 
   if (transactionError) {
     logAsyncError('Create RFQ transaction', transactionError);
@@ -595,10 +592,11 @@ export async function submitSupplierQuote(options: {
         .eq('id', builderUserId)
         .single();
 
-      const allowUpdates = (builderPrefs as any)?.notify_quote_updates ?? true;
+      const prefs = builderPrefs as Record<string, unknown> | null;
+      const allowUpdates = prefs?.notify_quote_updates ?? true;
       const channels: Array<'email' | 'whatsapp'> = [];
-      if (allowUpdates && ((builderPrefs as any)?.notify_email ?? true)) channels.push('email');
-      if (allowUpdates && ((builderPrefs as any)?.notify_whatsapp ?? false) && (builderPrefs as any)?.phone_number) channels.push('whatsapp');
+      if (allowUpdates && (prefs?.notify_email ?? true)) channels.push('email');
+      if (allowUpdates && (prefs?.notify_whatsapp ?? false) && prefs?.phone_number) channels.push('whatsapp');
 
       const projectName = (rfqRow as { project?: { name?: string | null } } | null)?.project?.name || 'Project';
       const templateData = {
@@ -700,10 +698,11 @@ export async function acceptRfqQuote(options: {
           .eq('id', supplierUserId)
           .single();
 
-        const allowUpdates = (supplierPrefs as any)?.notify_quote_updates ?? true;
+        const sPrefs = supplierPrefs as Record<string, unknown> | null;
+        const allowUpdates = sPrefs?.notify_quote_updates ?? true;
         const channels: Array<'email' | 'whatsapp'> = [];
-        if (allowUpdates && ((supplierPrefs as any)?.notify_email ?? true)) channels.push('email');
-        if (allowUpdates && ((supplierPrefs as any)?.notify_whatsapp ?? false) && (supplierPrefs as any)?.phone_number) channels.push('whatsapp');
+        if (allowUpdates && (sPrefs?.notify_email ?? true)) channels.push('email');
+        if (allowUpdates && (sPrefs?.notify_whatsapp ?? false) && sPrefs?.phone_number) channels.push('whatsapp');
 
         const { data: projectRow } = await supabase
           .from('rfq_requests')

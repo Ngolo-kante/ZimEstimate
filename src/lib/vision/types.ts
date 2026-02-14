@@ -205,7 +205,7 @@ export const BRICK_INFO: Record<BrickType, {
   blocks_6inch: {
     name: '6" Cement Block',
     materialId: 'block-6inch',
-    bricksPerSqm: 12,
+    bricksPerSqm: 12.5,
     description: '150mm hollow concrete blocks, faster construction',
   },
   blocks_8inch: {
@@ -232,14 +232,14 @@ export const CEMENT_INFO: Record<CementType, {
   cement_325: {
     name: 'Standard Cement 32.5N',
     materialId: 'cement-325',
-    bagsPerM3Mortar: 8,
-    description: 'Standard strength for general building',
+    bagsPerM3Mortar: 4.5,
+    description: 'General building (economy mortar profile)',
   },
   cement_425: {
     name: 'Rapid Cement 42.5R',
     materialId: 'cement-425',
-    bagsPerM3Mortar: 7,
-    description: 'High strength, faster setting',
+    bagsPerM3Mortar: 5,
+    description: 'High strength (standard mortar profile)',
   },
 };
 

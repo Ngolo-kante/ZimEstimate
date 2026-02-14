@@ -4,7 +4,7 @@ import Konva from 'konva';
 import KonvaGridLayer from './KonvaGridLayer';
 import KonvaAlignmentGuides from './KonvaAlignmentGuides';
 import KonvaRoom from './KonvaRoom';
-import { RoomInstance, PIXELS_PER_METER, GRID_SNAP_SIZE } from './types';
+import { RoomInstance } from './types';
 
 interface KonvaCanvasProps {
     rooms: RoomInstance[];

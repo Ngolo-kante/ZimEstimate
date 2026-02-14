@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-type QueryHandler = (state: { table: string }) => { data: any; error: any };
+type QueryResult = { data: unknown; error: unknown };
+type QueryHandler = (state: { table: string }) => QueryResult;
 
 const createSupabaseMock = (handlers: Record<string, QueryHandler>) => {
   return {
     from: (table: string) => {
       const state = { table };
       const exec = () => (handlers[table] ? handlers[table](state) : { data: null, error: null });
-      const builder: any = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock builder requires self-referencing any
+      const builder: Record<string, (...args: unknown[]) => any> = {
         select: () => builder,
         eq: () => builder,
         gte: () => builder,
@@ -17,8 +19,8 @@ const createSupabaseMock = (handlers: Record<string, QueryHandler>) => {
         single: () => builder,
         maybeSingle: () => builder,
       };
-      builder.then = (resolve: any, reject: any) => Promise.resolve(exec()).then(resolve, reject);
-      builder.catch = (reject: any) => Promise.resolve(exec()).catch(reject);
+      builder.then = (resolve: (v: QueryResult) => void, reject: (e: unknown) => void) => Promise.resolve(exec()).then(resolve, reject);
+      builder.catch = (reject: (e: unknown) => void) => Promise.resolve(exec()).catch(reject);
       return builder;
     },
   };

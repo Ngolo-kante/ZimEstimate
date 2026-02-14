@@ -7,6 +7,7 @@ import SavingOverlay from '@/components/ui/SavingOverlay';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { createProject, saveProjectWithItems } from '@/lib/services/projects';
+import { setCreatedProjectSnapshot, setOptimisticProjectCard } from '@/lib/projectCreationCache';
 import {
   ArrowLeft,
   DownloadSimple,
@@ -218,7 +219,7 @@ export default function BOQResultsStep({
         }));
 
         // Save BOQ items
-        const { error: saveError } = await saveProjectWithItems(
+        const { project: savedProject, items: savedItems, error: saveError } = await saveProjectWithItems(
           project.id,
           { status: 'active' },
           boqItems
@@ -242,8 +243,19 @@ export default function BOQResultsStep({
         // Wait a moment to show success, then redirect
         await new Promise(resolve => setTimeout(resolve, 1000));
 
+        setOptimisticProjectCard({
+          id: project.id,
+          name: projectInfo.name || 'Vision Takeoff Project',
+          location: projectInfo.location || '',
+          type: 'vision',
+        });
+        setCreatedProjectSnapshot({
+          project: savedProject || project,
+          items: savedItems || [],
+        });
+
         // Redirect to projects page
-        router.push('/projects?refresh=1');
+        router.push('/projects?created=1&refresh=1');
       } catch (err) {
         setSaveError(err instanceof Error ? err.message : 'Failed to save project');
         setIsSaving(false);

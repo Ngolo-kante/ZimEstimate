@@ -149,6 +149,8 @@
   --stagger-3: 160ms;
   --stagger-4: 240ms;
   --stagger-5: 320ms;
+  --stagger-6: 400ms;
+  --stagger-7: 480ms;
 
   /* ========================================
    * Z-INDEX SCALE
@@ -257,6 +259,8 @@
 .reveal[data-delay="3"] { transition-delay: var(--stagger-3); }
 .reveal[data-delay="4"] { transition-delay: var(--stagger-4); }
 .reveal[data-delay="5"] { transition-delay: var(--stagger-5); }
+.reveal[data-delay="6"] { transition-delay: var(--stagger-6); }
+.reveal[data-delay="7"] { transition-delay: var(--stagger-7); }
 
 /* Respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {

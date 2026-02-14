@@ -10,6 +10,7 @@ import {
     FileArrowUp,
     PencilSimple,
     Camera,
+    Calculator,
     ArrowRight,
     ArrowLeft,
     MapPin,
@@ -24,7 +25,7 @@ import {
     CheckCircle,
 } from '@phosphor-icons/react';
 
-type BOQMethod = 'upload' | 'manual' | 'photo' | null;
+type BOQMethod = 'upload' | 'manual' | 'photo' | 'budget-checker' | null;
 type ProjectType = 'new-house' | 'extension' | 'renovation' | 'commercial' | null;
 type Priority = 'budget' | 'quality' | 'speed' | null;
 
@@ -36,8 +37,12 @@ interface ProjectFormData {
     boqMethod: BOQMethod;
 }
 
+type ProjectWizardField = 'projectType' | 'priority' | 'name' | 'location' | 'boqMethod';
+type ProjectWizardErrors = Partial<Record<ProjectWizardField, string>>;
+
 import { createProject } from '@/lib/services/projects';
 import { useToast } from '@/components/ui/Toast';
+import { setCreatedProjectSnapshot, setOptimisticProjectCard } from '@/lib/projectCreationCache';
 
 export default function NewProject() {
     const router = useRouter();
@@ -51,31 +56,88 @@ export default function NewProject() {
         priority: null,
         boqMethod: null,
     });
+    const [fieldErrors, setFieldErrors] = useState<ProjectWizardErrors>({});
+    const [stepMessage, setStepMessage] = useState<string | null>(null);
+
+    const clearFieldError = (field: ProjectWizardField) => {
+        setFieldErrors((prev) => {
+            if (!prev[field]) return prev;
+            const next = { ...prev };
+            delete next[field];
+            return next;
+        });
+        setStepMessage(null);
+    };
 
     const handleInputChange = (field: keyof ProjectFormData, value: string) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
+        if (field === 'name' || field === 'location') {
+            clearFieldError(field);
+        }
     };
 
     const handleTypeSelect = (type: ProjectType) => {
         setFormData((prev) => ({ ...prev, projectType: type }));
+        clearFieldError('projectType');
     };
 
     const handlePrioritySelect = (priority: Priority) => {
         setFormData((prev) => ({ ...prev, priority: priority }));
+        clearFieldError('priority');
     };
 
     const handleMethodSelect = (method: BOQMethod) => {
         setFormData((prev) => ({ ...prev, boqMethod: method }));
+        clearFieldError('boqMethod');
+    };
+
+    const validateCurrentStep = () => {
+        const errors: ProjectWizardErrors = {};
+        let message = '';
+
+        if (step === 1 && !formData.projectType) {
+            errors.projectType = 'Please choose what type of project you are building.';
+            message = 'Choose a project type to continue.';
+        }
+
+        if (step === 2 && !formData.priority) {
+            errors.priority = 'Please choose your top priority for this estimate.';
+            message = 'Select one priority option to continue.';
+        }
+
+        if (step === 3) {
+            if (!formData.name.trim()) {
+                errors.name = 'Project name is required.';
+            }
+            if (!formData.location.trim()) {
+                errors.location = 'Project location is required.';
+            }
+            if (errors.name || errors.location) {
+                message = 'Complete the required project details before continuing.';
+            }
+        }
+
+        if (step === 4 && !formData.boqMethod) {
+            errors.boqMethod = 'Select the method you want to use for creating your estimate.';
+            message = 'Choose an estimate method to create the project.';
+        }
+
+        setFieldErrors(errors);
+        setStepMessage(message || null);
+        return Object.keys(errors).length === 0;
     };
 
     const handleContinue = async () => {
-        if (step === 1 && formData.projectType) {
-            setStep(2);
-        } else if (step === 2 && formData.priority) {
-            setStep(3);
-        } else if (step === 3 && formData.name && formData.location) {
-            setStep(4);
-        } else if (step === 4 && formData.boqMethod) {
+        if (!validateCurrentStep()) {
+            return;
+        }
+
+        if (step < 4) {
+            setStep((prev) => prev + 1);
+            return;
+        }
+
+        if (step === 4 && formData.boqMethod) {
             if (formData.boqMethod === 'manual') {
                 // Manual builder: store form data in sessionStorage and redirect (no auth required)
                 try {
@@ -88,6 +150,12 @@ export default function NewProject() {
                 } catch {}
                 showSuccess('Great choice! Let\'s build your estimate.');
                 router.push('/boq/new');
+                return;
+            }
+
+            if (formData.boqMethod === 'budget-checker') {
+                showSuccess('Opening budget checker.');
+                router.push('/quick-budget');
                 return;
             }
 
@@ -109,14 +177,16 @@ export default function NewProject() {
                 }
 
                 if (project) {
-                    try {
-                        sessionStorage.setItem('zimestimate_optimistic_project', JSON.stringify({
-                            id: project.id,
-                            name: formData.name,
-                            location: formData.location,
-                            type: formData.projectType,
-                        }));
-                    } catch {}
+                    setOptimisticProjectCard({
+                        id: project.id,
+                        name: formData.name,
+                        location: formData.location,
+                        type: formData.projectType ?? undefined,
+                    });
+                    setCreatedProjectSnapshot({
+                        project,
+                        items: [],
+                    });
                     router.push(`/projects?created=1`);
                 }
             } catch (err) {
@@ -127,11 +197,21 @@ export default function NewProject() {
         }
     };
 
-    const canContinue =
-        (step === 1 && formData.projectType !== null) ||
-        (step === 2 && formData.priority !== null) ||
-        (step === 3 && formData.name && formData.location) ||
-        (step === 4 && formData.boqMethod !== null);
+    const stepRequirements = (() => {
+        if (step === 1) {
+            return [{ label: 'Project Type', done: Boolean(formData.projectType) }];
+        }
+        if (step === 2) {
+            return [{ label: 'Priority', done: Boolean(formData.priority) }];
+        }
+        if (step === 3) {
+            return [
+                { label: 'Project Name', done: Boolean(formData.name.trim()) },
+                { label: 'Location', done: Boolean(formData.location.trim()) },
+            ];
+        }
+        return [{ label: 'Estimate Method', done: Boolean(formData.boqMethod) }];
+    })();
 
     const getStepTitle = () => {
         switch (step) {
@@ -167,11 +247,20 @@ export default function NewProject() {
                     <h1>{stepInfo.title}</h1>
                     <p>{stepInfo.subtitle}</p>
                 </div>
+                <div className="step-meta">
+                    {stepRequirements.map((requirement) => (
+                        <span key={requirement.label} className={`meta-chip ${requirement.done ? 'done' : ''}`}>
+                            {requirement.done ? <CheckCircle size={14} weight="fill" /> : <span className="meta-dot">•</span>}
+                            {requirement.label}
+                        </span>
+                    ))}
+                </div>
+                {stepMessage && <div className="step-alert">{stepMessage}</div>}
 
                 {/* Step 1: Project Type Selection */}
                 {step === 1 && (
                     <div className="step-content">
-                        <div className="tiles-grid four-cols">
+                        <div className={`tiles-grid four-cols ${fieldErrors.projectType ? 'has-error' : ''}`}>
                             <div
                                 className={`tile ${formData.projectType === 'new-house' ? 'selected' : ''}`}
                                 onClick={() => handleTypeSelect('new-house')}
@@ -216,13 +305,14 @@ export default function NewProject() {
                                 <p>Shop, office, or business</p>
                             </div>
                         </div>
+                        {fieldErrors.projectType && <p className="field-error">{fieldErrors.projectType}</p>}
                     </div>
                 )}
 
                 {/* Step 2: Priority Selection */}
                 {step === 2 && (
                     <div className="step-content">
-                        <div className="tiles-grid three-cols">
+                        <div className={`tiles-grid three-cols ${fieldErrors.priority ? 'has-error' : ''}`}>
                             <div
                                 className={`tile priority-tile ${formData.priority === 'budget' ? 'selected' : ''}`}
                                 onClick={() => handlePrioritySelect('budget')}
@@ -259,6 +349,7 @@ export default function NewProject() {
                                 <span className="tile-hint">Best for tight deadlines</span>
                             </div>
                         </div>
+                        {fieldErrors.priority && <p className="field-error">{fieldErrors.priority}</p>}
                     </div>
                 )}
 
@@ -274,8 +365,9 @@ export default function NewProject() {
                                         value={formData.name}
                                         onChange={(e) => handleInputChange('name', e.target.value)}
                                         icon={<Buildings size={18} weight="light" />}
+                                        error={fieldErrors.name}
                                     />
-                                    <span className="field-hint">Give it a memorable name you'll recognize</span>
+                                    <span className="field-hint">Give it a memorable name you&apos;ll recognize</span>
                                 </div>
 
                                 <div className="form-field">
@@ -285,6 +377,7 @@ export default function NewProject() {
                                         value={formData.location}
                                         onChange={(e) => handleInputChange('location', e.target.value)}
                                         icon={<MapPin size={18} weight="light" />}
+                                        error={fieldErrors.location}
                                     />
                                     <span className="field-hint">Helps us show local supplier prices</span>
                                 </div>
@@ -296,7 +389,7 @@ export default function NewProject() {
                 {/* Step 4: BOQ Method Selection */}
                 {step === 4 && (
                     <div className="step-content">
-                        <div className="tiles-grid three-cols">
+                        <div className={`tiles-grid four-cols ${fieldErrors.boqMethod ? 'has-error' : ''}`}>
                             <div
                                 className={`tile method-tile ${formData.boqMethod === 'manual' ? 'selected' : ''}`}
                                 onClick={() => handleMethodSelect('manual')}
@@ -332,7 +425,20 @@ export default function NewProject() {
                                 <p>Scan a handwritten quote from your hardware store</p>
                                 <CardBadge variant="default">OCR Powered</CardBadge>
                             </div>
+
+                            <div
+                                className={`tile method-tile ${formData.boqMethod === 'budget-checker' ? 'selected' : ''}`}
+                                onClick={() => handleMethodSelect('budget-checker')}
+                            >
+                                <div className="tile-icon">
+                                    <Calculator size={40} weight="duotone" />
+                                </div>
+                                <h3>Quick Budget Checker</h3>
+                                <p>Estimate how far your budget can go by stage before you start BOQ.</p>
+                                <CardBadge variant="accent">Fast Planning</CardBadge>
+                            </div>
                         </div>
+                        {fieldErrors.boqMethod && <p className="field-error">{fieldErrors.boqMethod}</p>}
                     </div>
                 )}
 
@@ -342,7 +448,11 @@ export default function NewProject() {
                         <Button
                             variant="secondary"
                             icon={<ArrowLeft size={18} weight="bold" />}
-                            onClick={() => setStep(step - 1)}
+                            onClick={() => {
+                                setFieldErrors({});
+                                setStepMessage(null);
+                                setStep(step - 1);
+                            }}
                         >
                             Back
                         </Button>
@@ -352,10 +462,11 @@ export default function NewProject() {
                         icon={<ArrowRight size={18} weight="bold" />}
                         iconPosition="right"
                         onClick={handleContinue}
-                        disabled={!canContinue}
                         loading={isLoading}
                     >
-                        {step === 4 ? 'Create Project' : 'Continue'}
+                        {step === 4
+                            ? (formData.boqMethod === 'budget-checker' ? 'Open Budget Checker' : 'Create Project')
+                            : 'Continue'}
                     </Button>
                 </div>
             </div>
@@ -365,6 +476,11 @@ export default function NewProject() {
                     max-width: 900px;
                     margin: 0 auto;
                     padding-bottom: 40px;
+                    background: rgba(255, 255, 255, 0.68);
+                    border: 1px solid rgba(211, 211, 215, 0.72);
+                    border-radius: 24px;
+                    padding: 24px;
+                    box-shadow: 0 18px 32px rgba(6, 20, 47, 0.06);
                 }
 
                 /* Progress Bar */
@@ -419,7 +535,7 @@ export default function NewProject() {
                 /* Step Header */
                 .step-header {
                     text-align: center;
-                    margin-bottom: 40px;
+                    margin-bottom: 12px;
                 }
 
                 .step-header h1 {
@@ -436,10 +552,61 @@ export default function NewProject() {
                     margin: 0;
                 }
 
+                .step-meta {
+                    display: flex;
+                    justify-content: center;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                    margin-bottom: 14px;
+                }
+
+                .meta-chip {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 6px 10px;
+                    border-radius: 999px;
+                    border: 1px solid #d7e6f5;
+                    background: #f8fbff;
+                    color: #6b7f98;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                }
+
+                .meta-chip.done {
+                    border-color: rgba(22, 163, 74, 0.35);
+                    background: rgba(240, 253, 244, 0.9);
+                    color: #166534;
+                }
+
+                .meta-dot {
+                    color: #9aa9bd;
+                    font-size: 0.9rem;
+                    line-height: 1;
+                }
+
+                .step-alert {
+                    margin: 0 auto 18px auto;
+                    max-width: 720px;
+                    padding: 10px 12px;
+                    border-radius: 12px;
+                    border: 1px solid rgba(220, 38, 38, 0.3);
+                    background: rgba(254, 242, 242, 0.95);
+                    color: #991b1b;
+                    font-size: 0.86rem;
+                    font-weight: 600;
+                    text-align: center;
+                }
+
                 /* Tiles Grid */
                 .tiles-grid {
                     display: grid;
                     gap: 20px;
+                }
+
+                .tiles-grid.has-error .tile {
+                    border-color: rgba(220, 38, 38, 0.45);
+                    background: rgba(254, 242, 242, 0.65);
                 }
 
                 .tiles-grid.four-cols {
@@ -560,6 +727,13 @@ export default function NewProject() {
                     color: #94a3b8;
                 }
 
+                .field-error {
+                    margin: 10px 2px 0;
+                    color: #b91c1c;
+                    font-size: 0.84rem;
+                    font-weight: 600;
+                }
+
                 /* Navigation */
                 .step-navigation {
                     display: flex;
@@ -585,6 +759,11 @@ export default function NewProject() {
                 }
 
                 @media (max-width: 768px) {
+                    .new-project {
+                        padding: 16px;
+                        border-radius: 16px;
+                    }
+
                     .tiles-grid.three-cols {
                         grid-template-columns: 1fr;
                     }

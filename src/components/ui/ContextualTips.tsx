@@ -184,6 +184,7 @@ export function ContextualTips({
     useEffect(() => {
         const stored = localStorage.getItem(`dismissed-tips-${contextKey}`);
         if (stored) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- sync localStorage on contextKey change
             setDismissedTips(new Set(JSON.parse(stored)));
         }
     }, [contextKey]);

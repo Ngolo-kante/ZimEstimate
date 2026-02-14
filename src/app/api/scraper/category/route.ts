@@ -46,13 +46,13 @@ export async function POST(req: NextRequest): Promise<NextResponse<CategoryScrap
             limit: 10,
             windowMs: 60_000,
         });
-        if (rateLimit) return rateLimit as NextResponse<any>;
+        if (rateLimit) return rateLimit as NextResponse<never>;
 
         const csrf = enforceCsrf(req);
-        if (csrf) return csrf as NextResponse<any>;
+        if (csrf) return csrf as NextResponse<never>;
 
         const auth = await requireAdmin(req);
-        if (auth instanceof NextResponse) return auth as NextResponse<any>;
+        if (auth instanceof NextResponse) return auth as NextResponse<never>;
 
         const payload = await req.json() as CategoryScrapePayload;
         const {
@@ -235,7 +235,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<CategoryScrap
         const err = error instanceof Error ? error : new Error('Unknown error');
         console.error('Category Scraper Error:', err);
 
-        let errorMessage = err.message;
+        const errorMessage = err.message;
 
         return NextResponse.json({
             success: false,

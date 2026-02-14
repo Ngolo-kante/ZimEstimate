@@ -3,7 +3,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
-import { getBestPrice as getStaticBestPrice, getPricesForMaterial, MaterialPrice } from '@/lib/materials';
+import { getBestPrice as getStaticBestPrice, getPricesForMaterial } from '@/lib/materials';
 
 type PriceObservation = Database['public']['Tables']['price_observations']['Row'];
 type PriceWeekly = Database['public']['Tables']['price_weekly']['Row'];

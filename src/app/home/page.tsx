@@ -1,977 +1,849 @@
 'use client';
 
+import { type CSSProperties, type ComponentType } from 'react';
 import { useReveal } from '@/hooks/useReveal';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
+import { useAuth } from '@/components/providers/AuthProvider';
 import {
   Scan,
   Camera,
   NotePencil,
+  Calculator,
   ArrowRight,
   ChartLine,
   Package,
   CurrencyDollar,
-  UserPlus,
-  FileText,
-  TrendUp,
   Wallet,
   ChartLineUp,
   Stack,
   CheckCircle,
   Storefront,
-  UsersThree,
-  ChartBar,
-  Bell,
   DownloadSimple,
-  DeviceMobile,
+  ShieldCheck,
+  FileText,
 } from '@phosphor-icons/react';
 
-const boqMethods = [
-  {
-    id: 'upload',
-    icon: Scan,
-    title: 'Vision AI Takeoff',
-    description: 'Transform PDF blueprints into precise Bill of Quantities instantly. Our Vision AI detects walls, doors, and window schedules automatically to save hours of manual measuring.',
-    badge: 'HIGH PRECISION',
-    href: '/ai/vision-takeoff',
-  },
-  {
-    id: 'ocr',
-    icon: Camera,
-    title: 'Smart Quote Scanner',
-    description: 'Digitize handwritten contractor quotes and invoices in seconds. Advanced OCR extracts line items, prices, and quantities into a clean, actionable digital format.',
-    badge: 'FIELD READY',
-    href: '/ai/quote-scanner',
-  },
-  {
-    id: 'manual',
-    icon: NotePencil,
-    title: 'Manual Builder',
-    description: 'Create estimates from scratch using Zimbabwe’s largest pre-built material database. Access verified pricing and templates for accurate project planning.',
-    badge: 'PRO CONTROL',
-    href: '/boq/new?method=manual',
-  },
-];
+type IconType = ComponentType<{ size?: number; weight?: 'regular' | 'duotone' | 'fill' | 'light' | 'bold' | 'thin' }>;
 
-const stats = [
-  {
-    icon: ChartLine,
-    label: 'MARKET ACCURACY',
-    value: '98.2%',
-    change: '+0.4%',
-    subtext: 'Price verification rate this week',
-  },
-  {
-    icon: Package,
-    label: 'MATERIAL INDEX',
-    value: '2.8k+',
-    subtext: 'Tracked vendors across Zimbabwe',
-  },
-  {
-    icon: CurrencyDollar,
-    label: 'GLOBAL PRICING',
-    value: 'USD/ZiG',
-    subtext: 'Real-time exchange conversions',
-  },
-];
+const workflows: Array<{
+  id: string;
+  icon: IconType;
+  title: string;
+  label: string;
+  href: string;
+}> = [
+    {
+      id: 'vision',
+      icon: Scan,
+      title: 'Vision AI Takeoff',
+      label: 'HIGH PRECISION',
+      href: '/ai/vision-takeoff',
+    },
+    {
+      id: 'scanner',
+      icon: Camera,
+      title: 'Smart Quote Scanner',
+      label: 'FIELD READY',
+      href: '/ai/quote-scanner',
+    },
+    {
+      id: 'manual',
+      icon: NotePencil,
+      title: 'Manual Builder',
+      label: 'PRO CONTROL',
+      href: '/boq/new?method=manual',
+    },
+    {
+      id: 'budget-checker',
+      icon: Calculator,
+      title: 'Budget Check',
+      label: 'FEASIBILITY',
+      href: '/quick-budget',
+    },
+  ];
 
-const platformFeatures = [
-  {
-    title: 'Budget Planner',
-    description: 'Set savings targets, track progress, and stay on budget with automated reminders.',
-    icon: Wallet,
-  },
-  {
-    title: 'Material Usage Tracker',
-    description: 'Log on-site material consumption and keep procurement aligned with real usage.',
-    icon: Package,
-  },
-  {
-    title: 'Budget vs Actual',
-    description: 'See variance breakdowns across materials, labor, and overhead in seconds.',
-    icon: ChartLineUp,
-  },
-  {
-    title: 'Stage-Based BOQ',
-    description: 'Organize materials by construction phases for clear sequencing and approvals.',
-    icon: Stack,
-  },
-  {
-    title: 'Progress Tracking',
-    description: 'Visualize completion percentages per stage with live status updates.',
-    icon: CheckCircle,
-  },
-  {
-    title: 'Live Price Alerts',
-    description: 'Monitor price swings and act quickly when market rates change.',
-    icon: TrendUp,
-  },
-  {
-    title: 'RFQ & Procurement',
-    description: 'Request quotes, compare suppliers, and accept bids without leaving the platform.',
-    icon: Storefront,
-  },
-  {
-    title: 'Document Storage',
-    description: 'Keep drawings, invoices, and RFQs organized with secure storage.',
-    icon: FileText,
-  },
-  {
-    title: 'Team Collaboration',
-    description: 'Share project visibility with stakeholders and teams safely.',
-    icon: UsersThree,
-  },
-  {
-    title: 'Variance Analysis',
-    description: 'Break down cost variance by price, quantity, and scope.',
-    icon: ChartBar,
-  },
-  {
-    title: 'Multi-Currency',
-    description: 'Switch between USD and ZiG with live exchange rates.',
-    icon: CurrencyDollar,
-  },
-  {
-    title: 'Savings Reminders',
-    description: 'Schedule daily, weekly, or monthly nudges via WhatsApp and email.',
-    icon: Bell,
-  },
-  {
-    title: 'PDF/Excel Export',
-    description: 'Generate professional reports and share with clients instantly.',
-    icon: DownloadSimple,
-  },
-  {
-    title: 'Mobile PWA',
-    description: 'Use ZimEstimate offline in the field with installable PWA access.',
-    icon: DeviceMobile,
-  },
+const signals: Array<{
+  icon: IconType;
+  label: string;
+  value: string;
+  subtext: string;
+}> = [
+    {
+      icon: ChartLine,
+      label: 'MARKET ACCURACY',
+      value: '98.2%',
+      subtext: 'Weekly material price verification',
+    },
+    {
+      icon: Package,
+      label: 'MATERIAL COVERAGE',
+      value: '2.8k+',
+      subtext: 'Tracked products and vendor references',
+    },
+    {
+      icon: CurrencyDollar,
+      label: 'DUAL CURRENCY',
+      value: 'USD + ZiG',
+      subtext: 'Live conversion across all project views',
+    },
+  ];
+
+// Platform capabilities for the offers section
+const offerings: Array<{
+  icon: IconType;
+  title: string;
+  description: string;
+  href: string;
+}> = [
+    {
+      icon: Wallet,
+      title: 'Budget Planner',
+      description: 'Set savings targets and forecast required daily or weekly contributions.',
+      href: '/projects',
+    },
+    {
+      icon: ChartLineUp,
+      title: 'Budget vs Actual',
+      description: 'Track variance by quantity and unit price in real-time.',
+      href: '/projects',
+    },
+    {
+      icon: Stack,
+      title: 'Stage-Based BOQ',
+      description: 'Organize costs by substructure, superstructure, roofing, and finishing.',
+      href: '/boq/new?method=manual',
+    },
+    {
+      icon: CheckCircle,
+      title: 'Usage Tracking',
+      description: 'Record consumption against BOQ quantities and trigger low-stock actions.',
+      href: '/projects',
+    },
+    {
+      icon: Storefront,
+      title: 'Procurement Hub',
+      description: 'Create RFQs, compare supplier responses, and log purchases.',
+      href: '/projects',
+    },
+    {
+      icon: DownloadSimple,
+      title: 'PDF/Excel Exports',
+      description: 'Generate share-ready reports for clients, QS, and site teams.',
+      href: '/export',
+    },
+  ];
+
+const workflowLine = [
+  { step: '01', title: 'Estimate', desc: 'Generate BOQ quickly from drawings, scans, or manual input.' },
+  { step: '02', title: 'Price', desc: 'Pull current market pricing and compare budget scenarios.' },
+  { step: '03', title: 'Procure', desc: 'Run RFQ cycles and record purchases from selected suppliers.' },
+  { step: '04', title: 'Track', desc: 'Monitor usage, variance, and progress by construction stage.' },
 ];
 
 export default function HomePage() {
   const router = useRouter();
-  const heroMetrics = stats.slice(0, 2);
+  const { profile } = useAuth();
 
-  useReveal({ selector: '.feature-card', threshold: 0.2, once: true });
+  const isAdmin =
+    profile?.tier === 'admin' ||
+    (profile?.email?.toLowerCase() === 'demo@zimestimate.com');
+
+  useReveal({ selector: '.reveal-item', threshold: 0.16, once: true });
 
   return (
     <MainLayout fullWidth>
       <div className="home-page">
-        {/* Hero Section */}
-        <section className="hero-section">
-          <div className="hero-shell">
-            <div className="hero-grid">
-              <div className="hero-copy">
-                <span className="hero-eyebrow">ESTIMATION HUB</span>
-                <h1>Accurate estimates. Faster decisions.</h1>
-                <p className="hero-subtitle">
-                  AI-powered BOQ workflows, live material pricing, and project management for
-                  Zimbabwe&apos;s construction teams.
-                </p>
-                <div className="hero-actions">
-                  <Button
-                    onClick={() => router.push('/boq/new?method=manual')}
-                    icon={<ArrowRight size={18} />}
-                    iconPosition="right"
-                    size="lg"
-                    className="hero-primary"
-                  >
-                    Start a BOQ
-                  </Button>
-                  <Link href="/market-insights" className="hero-link">
-                    View Market Insights
-                  </Link>
-                </div>
-                <div className="hero-metrics">
-                  {heroMetrics.map((stat) => (
-                    <div key={stat.label} className="hero-metric">
-                      <span className="metric-label">{stat.label}</span>
-                      <span className="metric-value">{stat.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+        <section className="hero reveal-item" data-delay="1">
+          <div className="hero-grid">
+            <div className="hero-copy">
+              <span className="hero-eyebrow">ESTIMATE. PROCURE. TRACK.</span>
+              <h1>One operating screen for Zimbabwe construction projects.</h1>
+              <p>
+                ZimEstimate connects BOQ generation, live pricing, procurement, and usage tracking so your
+                team can move from estimate to execution without context switching.
+              </p>
 
-              <aside className="hero-panel">
-                <div className="panel-header">
-                  <span className="panel-eyebrow">QUICK START</span>
-                  <h3>Smart BOQ Builder</h3>
-                  <p>Pick a workflow to begin in minutes.</p>
-                </div>
-                <div className="panel-list">
-                  {boqMethods.map((method) => {
-                    const Icon = method.icon;
-                    return (
-                      <Link key={method.id} href={method.href} className="panel-item">
-                        <div className="panel-icon">
-                          <Icon size={20} weight="bold" />
-                        </div>
-                        <div className="panel-text">
-                          <span className="panel-title">{method.title}</span>
-                          <span className="panel-badge">{method.badge}</span>
-                        </div>
-                        <ArrowRight size={16} weight="bold" className="panel-arrow" />
-                      </Link>
-                    );
-                  })}
-                </div>
-              </aside>
+              <div className="hero-actions">
+                <Button
+                  onClick={() => router.push('/boq/new?method=manual')}
+                  icon={<ArrowRight size={18} />}
+                  iconPosition="right"
+                  size="lg"
+                  className="hero-primary"
+                >
+                  Create Estimate Now
+                </Button>
+                <Link href="/market-insights" className="hero-link">
+                  Check Live Material Prices
+                </Link>
+                {isAdmin && (
+                  <Link href="/admin/suppliers" className="hero-link hero-link-admin">
+                    <ShieldCheck size={16} weight="bold" />
+                    Open Admin Portal
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Platform Features */}
-        <section className="features-section">
-          <div className="features-shell">
-            <div className="section-header">
-              <div className="section-title">
-                <span className="section-badge">PLATFORM FEATURES</span>
-                <h2>Everything you need to run a modern build.</h2>
-                <p>From RFQs to live pricing, ZimEstimate keeps your team aligned and ahead.</p>
-              </div>
-              <div className="section-actions">
-                <Link href="/projects" className="hero-link">
-                  Explore Projects
-                </Link>
-              </div>
+        <section className="quick-start-section reveal-item" data-delay="2">
+          <div className="quick-start-card">
+            <div className="quick-start-header">
+              <span className="qs-kicker">QUICK START</span>
+              <h2>Smart BOQ Builder</h2>
+              <p>Pick a workflow to begin in minutes.</p>
             </div>
 
-            <div className="features-grid">
-              {platformFeatures.map((feature, index) => {
-                const Icon = feature.icon;
+            <div className="qs-workflows">
+              {workflows.map((workflow, index) => {
+                const Icon = workflow.icon;
                 return (
-                  <div
-                    key={feature.title}
-                    className="feature-card"
-                    style={{ '--delay': `${index * 80}ms` } as React.CSSProperties}
+                  <Link
+                    key={workflow.id}
+                    href={workflow.href}
+                    className="qs-item reveal-item"
+                    style={{ '--delay': `${index * 80}ms` } as CSSProperties}
                   >
-                    <div className="feature-icon">
-                      <Icon size={24} weight="duotone" />
+                    <div className="qs-icon-box">
+                      <Icon size={24} weight="bold" />
                     </div>
-                    <h3>{feature.title}</h3>
-                    <p>{feature.description}</p>
-                  </div>
+                    <div className="qs-content">
+                      <h3>{workflow.title}</h3>
+                      <span className="qs-label">{workflow.label}</span>
+                      <div className="qs-arrow">
+                        <ArrowRight size={20} />
+                      </div>
+                    </div>
+                  </Link>
                 );
               })}
             </div>
           </div>
         </section>
 
-        {/* Smart BOQ Builder Section */}
-        <section className="boq-section">
-          <div className="section-header">
-            <div className="section-title">
-              <span className="section-badge">SMART BOQ BUILDER</span>
-              <h2>Choose the best way to build a BOQ.</h2>
-              <p>Three workflows tuned for speed, accuracy, and field-ready data.</p>
+        <section className="cta-section reveal-item" data-delay="3">
+          <div className="cta-shell">
+            <div className="cta-copy">
+              <FileText size={24} weight="duotone" />
+              <div>
+                <h3>Ready to move this from estimate to execution?</h3>
+                <p>Create your account to save projects, run procurement, and export client-ready reports.</p>
+              </div>
+            </div>
+            <div className="cta-actions">
+              <Button
+                onClick={() => router.push('/auth/signup')}
+                icon={<ArrowRight size={16} />}
+                iconPosition="right"
+                size="lg"
+              >
+                Create Free Account
+              </Button>
+              <Button
+                onClick={() => router.push('/boq/new?method=manual')}
+                variant="secondary"
+                size="lg"
+              >
+                Start BOQ First
+              </Button>
             </div>
           </div>
+        </section>
 
-          <div className="boq-cards">
-            {boqMethods.map((method) => {
-              const Icon = method.icon;
+        <section className="proof-section reveal-item" data-delay="4">
+          <div className="proof-head">
+            <span className="section-kicker">TRUST PROOF</span>
+            <h2>Built for real pricing pressure and procurement timelines.</h2>
+          </div>
+          <div className="proof-grid">
+            {signals.map((signal, index) => {
+              const Icon = signal.icon;
               return (
-                <div key={method.id} className="boq-card">
-                  <div className="card-top">
-                    <div className="card-icon-wrapper">
-                      <div className="card-icon">
-                        <Icon size={32} weight="light" />
-                      </div>
-                    </div>
-
-                    <h3>{method.title}</h3>
-                    <p>{method.description}</p>
-
-                    <div className="badge-wrapper">
-                      <span className="method-badge">
-                        {method.badge}
-                      </span>
-                    </div>
+                <div
+                  key={signal.label}
+                  className="proof-card reveal-item"
+                  style={{ '--delay': `${index * 80}ms` } as CSSProperties}
+                >
+                  <div className="proof-top">
+                    <Icon size={18} weight="duotone" />
+                    <span>{signal.label}</span>
                   </div>
-
-                  <div className="card-bottom">
-                    <Link href={method.href} className="get-started-link">
-                      Get Started <ArrowRight size={16} weight="bold" />
-                    </Link>
-                  </div>
+                  <strong>{signal.value}</strong>
+                  <p>{signal.subtext}</p>
                 </div>
               );
             })}
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="cta-section">
-          <div className="cta-content">
-            <div className="cta-left">
-              <div className="cta-icon">
-                <FileText size={28} weight="light" />
-              </div>
-              <div className="cta-text">
-                <h3>Sign up to download or share your PDF reports</h3>
-                <p>Keep your project estimates organized and shareable with stakeholders.</p>
-              </div>
-            </div>
-            <Button
-              onClick={() => router.push('/export')}
-              icon={<UserPlus size={18} />}
-              variant="secondary"
-              size="lg"
-              className="cta-button"
-            >
-              Create Account
-            </Button>
+        <section className="offers-section reveal-item" data-delay="5">
+          <div className="section-head">
+            <span className="section-kicker">PLATFORM CAPABILITIES</span>
+            <h2>Everything after the estimate is already connected.</h2>
+            <p>Core capabilities designed to reduce rework and improve cost control.</p>
+          </div>
+
+          <div className="offers-grid">
+            {offerings.map((offer, index) => {
+              const Icon = offer.icon;
+              return (
+                <Link
+                  key={offer.title}
+                  href={offer.href}
+                  className="offer-card reveal-item"
+                  style={{ '--delay': `${index * 70}ms` } as CSSProperties}
+                >
+                  <div className="offer-icon">
+                    <Icon size={20} weight="duotone" />
+                  </div>
+                  <h4>{offer.title}</h4>
+                  <p>{offer.description}</p>
+                </Link>
+              );
+            })}
           </div>
         </section>
 
-        {/* Stats Section */}
-        <section className="stats-section">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <div key={index} className="stat-card">
-                <div className="stat-header">
-                  <Icon size={18} weight="fill" className="stat-icon" />
-                  <span className="stat-label">{stat.label}</span>
-                </div>
-                <div className="stat-value">
-                  {stat.value}
-                  {stat.change && (
-                    <span className="stat-change">
-                      <TrendUp size={14} weight="bold" />
-                      {stat.change}
-                    </span>
-                  )}
-                </div>
-                <p className="stat-subtext">{stat.subtext}</p>
+        <section className="flowline-section reveal-item" data-delay="6">
+          <div className="section-head">
+            <span className="section-kicker">HOW IT FLOWS</span>
+            <h2>One pipeline from planning to site execution.</h2>
+          </div>
+
+          <div className="flowline-grid">
+            {workflowLine.map((item, index) => (
+              <div key={item.step} className="flow-step">
+                <span className="flow-step-no">{item.step}</span>
+                <h4>{item.title}</h4>
+                <p>{item.desc}</p>
+                {index < workflowLine.length - 1 && <span className="flow-connector" />}
               </div>
-            );
-          })}
+            ))}
+          </div>
         </section>
+
       </div>
 
       <style jsx>{`
         .home-page {
-          max-width: 1120px;
+          max-width: 1200px;
           margin: 0 auto;
-          padding: 32px 24px 80px;
+          padding: 28px 22px 84px;
           display: flex;
           flex-direction: column;
-          gap: 56px;
+          gap: 48px;
         }
 
-        /* Hero Section */
-        .hero-section {
+        .hero {
           position: relative;
-          padding: 56px 48px;
-          border-radius: 26px;
-          background: linear-gradient(140deg, #ffffff 20%, rgba(78, 154, 247, 0.08));
-          border: 1px solid var(--color-border-light);
-          box-shadow: 0 18px 40px rgba(6, 20, 47, 0.08);
+          border-radius: 28px;
+          padding: 42px;
+          border: 1px solid rgba(148, 163, 184, 0.34);
+          background:
+            radial-gradient(circle at 85% -10%, rgba(78, 154, 247, 0.22), rgba(78, 154, 247, 0)),
+            radial-gradient(circle at 0% 100%, rgba(15, 23, 42, 0.09), rgba(15, 23, 42, 0)),
+            linear-gradient(145deg, #ffffff 12%, #f7fbff 70%, #eef6ff 100%);
+          box-shadow: 0 24px 50px rgba(15, 23, 42, 0.1);
           overflow: hidden;
         }
 
-        .hero-section::before {
+        .hero::after {
           content: '';
           position: absolute;
           inset: 0;
-          background-image: linear-gradient(rgba(78, 154, 247, 0.08) 1px, transparent 1px),
+          background-image:
+            linear-gradient(rgba(78, 154, 247, 0.08) 1px, transparent 1px),
             linear-gradient(90deg, rgba(78, 154, 247, 0.08) 1px, transparent 1px);
-          background-size: 56px 56px;
-          opacity: 0.22;
+          background-size: 44px 44px;
+          opacity: 0.18;
           pointer-events: none;
-        }
-
-        .hero-section::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at 20% 0%, rgba(78, 154, 247, 0.18), transparent 55%);
-          opacity: 0.28;
-          pointer-events: none;
-        }
-
-        .hero-shell {
-          position: relative;
-          z-index: 1;
         }
 
         .hero-grid {
+          position: relative;
+          z-index: 1;
           display: grid;
-          grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-          gap: 40px;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 26px;
           align-items: stretch;
         }
 
         .hero-copy {
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 16px;
         }
 
         .hero-eyebrow {
-          font-size: 0.7rem;
-          letter-spacing: 0.22em;
+          font-size: 0.71rem;
+          letter-spacing: 0.2em;
           font-weight: 700;
-          color: var(--color-primary-light);
+          color: var(--color-accent-dark);
         }
 
-        .hero-section h1 {
-          font-size: 2.7rem;
-          font-weight: 700;
+        .hero-copy h1 {
+          margin: 0;
+          font-size: clamp(2rem, 4vw, 3rem);
+          line-height: 1.05;
+          letter-spacing: -0.025em;
           color: var(--color-primary-dark);
-          margin: 0;
-          line-height: 1.1;
-          letter-spacing: -0.02em;
         }
 
-        .hero-subtitle {
-          font-size: 1.02rem;
-          color: var(--color-text-secondary);
+        .hero-copy p {
           margin: 0;
-          line-height: 1.8;
-          max-width: 520px;
+          max-width: 620px;
+          color: var(--color-text-secondary);
+          line-height: 1.7;
         }
 
         .hero-actions {
           display: flex;
           align-items: center;
-          gap: 16px;
           flex-wrap: wrap;
+          gap: 14px;
+          margin-top: 6px;
         }
 
         .hero-link {
-          font-size: 0.95rem;
-          font-weight: 600;
-          color: var(--color-primary);
           text-decoration: none;
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
+          color: var(--color-primary);
+          font-size: 0.92rem;
+          font-weight: 700;
         }
 
         .hero-link:hover {
           color: var(--color-accent-dark);
         }
 
-        .hero-metrics {
-          display: flex;
-          gap: 16px;
-          flex-wrap: wrap;
-        }
-
-        .hero-metric {
-          background: rgba(255, 255, 255, 0.9);
-          border: 1px solid var(--color-border-light);
-          border-radius: 999px;
-          padding: 8px 14px;
-          display: inline-flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-
-        .metric-label {
-          font-size: 0.65rem;
-          letter-spacing: 0.12em;
-          color: var(--color-text-muted);
-          font-weight: 700;
-        }
-
-        .metric-value {
-          font-size: 0.95rem;
-          font-weight: 700;
-          color: var(--color-primary);
-        }
-
-        .hero-panel {
-          background: #ffffff;
-          border-radius: 20px;
-          padding: 24px;
-          border: 1px solid var(--color-border-light);
-          box-shadow: 0 12px 26px rgba(6, 20, 47, 0.08);
-          display: flex;
-          flex-direction: column;
-          gap: 18px;
-        }
-
-        .panel-header h3 {
-          margin: 0 0 6px 0;
-          font-size: 1.25rem;
-          color: var(--color-primary);
-        }
-
-        .panel-header p {
-          margin: 0;
-          color: var(--color-text-secondary);
-          font-size: 0.9rem;
-        }
-
-        .panel-eyebrow {
-          font-size: 0.7rem;
-          letter-spacing: 0.2em;
-          color: var(--color-accent-dark);
-          font-weight: 700;
-        }
-
-        .panel-list {
-          display: grid;
-          gap: 12px;
-        }
-
-        .panel-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px 14px;
-          border-radius: 14px;
-          border: 1px solid var(--color-border-light);
-          background: rgba(6, 20, 47, 0.02);
-          text-decoration: none;
-          transition: all 0.2s ease;
-        }
-
-        .panel-item:hover {
-          border-color: var(--color-accent);
-          background: rgba(78, 154, 247, 0.08);
-          transform: translateX(2px);
-        }
-
-        .panel-icon {
-          width: 38px;
-          height: 38px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(78, 154, 247, 0.08);
-          border: 1px solid rgba(78, 154, 247, 0.2);
-          color: var(--color-primary);
-          flex-shrink: 0;
-        }
-
-        .panel-text {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .panel-title {
-          font-size: 0.95rem;
-          font-weight: 600;
-          color: var(--color-primary);
-        }
-
-        .panel-badge {
-          font-size: 0.6rem;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          color: var(--color-accent-dark);
-        }
-
-        .panel-arrow {
-          margin-left: auto;
-          color: var(--color-primary-light);
-        }
-
-        /* Features Section */
-        .features-section {
-          padding: 72px 24px;
-          background: linear-gradient(180deg, rgba(10, 24, 52, 0.04), rgba(255, 255, 255, 0.9));
-          position: relative;
-          overflow: hidden;
-        }
-
-        .features-section::before {
-          content: '';
-          position: absolute;
-          width: 420px;
-          height: 420px;
-          right: -120px;
-          top: -160px;
-          background: radial-gradient(circle, rgba(78, 154, 247, 0.18), rgba(78, 154, 247, 0));
-          pointer-events: none;
-        }
-
-        .features-shell {
-          max-width: 1280px;
-          margin: 0 auto;
-        }
-
-        .section-actions {
-          display: flex;
-          align-items: center;
-        }
-
-        .features-grid {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 20px;
-          margin-top: 32px;
-        }
-
-        .feature-card {
-          background: #ffffff;
-          border: 1px solid rgba(148, 163, 184, 0.25);
-          border-radius: 18px;
-          padding: 20px;
-          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
-          opacity: 0;
-          transform: translateY(20px) scale(0.98);
-          transition: opacity 0.5s ease, transform 0.5s ease;
-          transition-delay: var(--delay);
-        }
-
-        .feature-card.in-view {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
-
-        .feature-icon {
-          width: 44px;
-          height: 44px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(15, 23, 42, 0.06);
-          color: var(--color-primary);
-          margin-bottom: 14px;
-        }
-
-        .feature-card h3 {
-          margin: 0 0 8px 0;
-          font-size: 1rem;
-          color: var(--color-primary);
-        }
-
-        .feature-card p {
-          margin: 0;
-          font-size: 0.85rem;
-          color: var(--color-text-secondary);
-          line-height: 1.5;
-        }
-
-        /* BOQ Section */
-        .boq-section {
-          margin-bottom: 8px;
-        }
-
-        .section-header {
-          margin-bottom: 32px;
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-end;
-          gap: 24px;
-        }
-
-        .section-title h2 {
-          margin: 12px 0 8px 0;
-          font-size: 1.75rem;
-          color: var(--color-primary);
-        }
-
-        .section-title p {
-          margin: 0;
-          color: var(--color-text-secondary);
-          font-size: 0.95rem;
-        }
-
-        .section-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 0.75rem;
-          font-weight: 700;
-          letter-spacing: 0.05em;
-          color: var(--color-accent-dark);
-        }
-
-        .section-badge::before {
-          content: '';
-          display: inline-block;
-          width: 24px;
-          height: 2px;
-          background: var(--color-accent);
-        }
-
-        .boq-cards {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 28px;
-        }
-
-        .boq-card {
-          position: relative;
-          background: white;
-          border: 1px solid var(--color-border-light);
-          border-radius: 18px;
-          padding: 26px;
-          transition: all 0.25s ease;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          height: 100%;
-          box-shadow: 0 12px 26px rgba(6, 20, 47, 0.06);
-          overflow: hidden;
-        }
-
-        .boq-card::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          right: 0;
-          top: 0;
-          height: 2px;
-          background: var(--color-accent);
-          opacity: 0.7;
-        }
-
-        .boq-card:hover {
-          border-color: var(--color-accent);
-          box-shadow: 0 16px 32px rgba(6, 20, 47, 0.12);
-          transform: translateY(-2px);
-        }
-
-        .card-top {
-          flex: 1;
-        }
-
-        .card-icon-wrapper {
-          margin-bottom: 20px;
-        }
-
-        .card-icon {
-          width: 64px;
-          height: 64px;
-          background: rgba(78, 154, 247, 0.08);
-          border-radius: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--color-primary);
-          position: relative;
-          border: 1px solid rgba(78, 154, 247, 0.2);
-        }
-
-        .boq-card h3 {
-          font-size: 1.15rem;
-          font-weight: 700;
-          color: var(--color-primary);
-          margin: 0 0 8px 0;
-        }
-
-        .boq-card p {
-          font-size: 0.875rem;
-          color: var(--color-text-secondary);
-          margin: 0 0 16px 0;
-          line-height: 1.6;
-        }
-
-        .badge-wrapper {
-          margin-bottom: 24px;
-        }
-
-        .method-badge {
-          display: inline-block;
-          padding: 6px 12px;
-          font-size: 0.6rem;
-          font-weight: 700;
-          letter-spacing: 0.05em;
-          border-radius: 999px;
-          background: rgba(78, 154, 247, 0.12);
-          color: var(--color-accent-dark);
-        }
-
-        .get-started-link {
+        .hero-link-admin {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          color: var(--color-primary);
-          font-size: 0.875rem;
-          font-weight: 600;
-          text-decoration: none;
-          transition: all 0.2s ease;
-          background: rgba(6, 20, 47, 0.04);
-          padding: 8px 14px;
+          padding: 8px 12px;
+          border: 1px dashed rgba(15, 23, 42, 0.3);
           border-radius: 999px;
-          border: 1px solid var(--color-border);
+          background: rgba(15, 23, 42, 0.04);
         }
 
-        .get-started-link:hover {
-          background: rgba(78, 154, 247, 0.12);
-          border-color: var(--color-accent);
-        }
-
-        /* CTA Section */
-        .cta-section {
-          margin-bottom: 16px;
-        }
-
-        .cta-content {
-          background: linear-gradient(120deg, rgba(6, 20, 47, 0.04), rgba(78, 154, 247, 0.08));
-          border-radius: 20px;
-          padding: 32px 36px;
+        /* NEW QUICK START SECTION STYLES */
+        .quick-start-section {
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 28px;
-          color: var(--color-primary);
-          border: 1px solid var(--color-border-light);
-          box-shadow: 0 16px 30px rgba(6, 20, 47, 0.1);
-        }
-
-        .cta-left {
-          display: flex;
-          align-items: center;
-          gap: 20px;
-        }
-
-        .cta-icon {
-          width: 56px;
-          height: 56px;
-          background: rgba(78, 154, 247, 0.12);
-          border-radius: 16px;
-          display: flex;
-          align-items: center;
           justify-content: center;
-          color: var(--color-primary);
-          flex-shrink: 0;
         }
 
-        .cta-text {
-          flex: 1;
-        }
-
-        .cta-text h3 {
-          font-size: 1.2rem;
-          font-weight: 700;
-          color: var(--color-primary);
-          margin: 0 0 4px 0;
-        }
-
-        .cta-text p {
-          font-size: 0.9rem;
-          color: var(--color-text-secondary);
-          margin: 0;
-        }
-
-        /* Stats Section */
-        .stats-section {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 0;
+        .quick-start-card {
           background: #ffffff;
-          border: 1px solid var(--color-border-light);
-          border-radius: 16px;
+          border: 1px solid rgba(148, 163, 184, 0.15);
+          border-radius: 24px;
+          padding: 32px;
+          box-shadow: 
+            0 10px 30px -5px rgba(15, 23, 42, 0.04),
+            0 4px 12px -2px rgba(15, 23, 42, 0.02);
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 32px;
+        }
+
+        .quick-start-header {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          max-width: 100%;
+        }
+
+        .qs-kicker {
+          font-size: 0.75rem;
+          letter-spacing: 0.15em;
+          font-weight: 700;
+          color: var(--color-primary-light, #3b82f6);
+          text-transform: uppercase;
+        }
+
+        .quick-start-header h2 {
+          margin: 0;
+          font-size: 1.75rem;
+          font-weight: 600;
+          color: var(--color-primary-dark);
+          line-height: 1.2;
+        }
+
+        .quick-start-header p {
+          margin: 0;
+          color: var(--color-text-secondary);
+          font-size: 1rem;
+        }
+
+        .qs-workflows {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 24px;
+        }
+
+        .qs-item {
+          text-decoration: none;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 16px;
+          padding: 24px;
+          border-radius: 18px;
+          background: #f8fafc;
+          border: 1px solid transparent;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
           overflow: hidden;
         }
 
-        .stat-card {
-          padding: 22px 26px;
-          border-right: 1px solid var(--color-border-light);
-          background: rgba(6, 20, 47, 0.02);
+        .qs-item::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 4px;
+          background: linear-gradient(90deg, var(--color-primary, #2563eb), var(--color-accent-dark, #3b82f6));
+          transform: scaleX(0);
+          transform-origin: left;
+          transition: transform 0.3s ease;
         }
 
-        .stat-card:last-child {
-          border-right: none;
+        .qs-item:hover {
+          background: #ffffff;
+          border-color: rgba(59, 130, 246, 0.3);
+          box-shadow: 0 12px 24px -6px rgba(59, 130, 246, 0.12);
+          transform: translateY(-6px);
         }
 
-        .stat-header {
+        .qs-item:hover::before {
+          transform: scaleX(1);
+        }
+
+        .qs-icon-box {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          background: #eff6ff;
+          border: 1px solid #dbeafe;
           display: flex;
           align-items: center;
-          gap: 8px;
+          justify-content: center;
+          color: #0f172a;
+          transition: all 0.3s ease;
+        }
+
+        .qs-item:hover .qs-icon-box {
+          background: #dbeafe;
+          transform: scale(1.05) rotate(-3deg);
+          color: var(--color-primary, #2563eb);
+          border-color: rgba(59, 130, 246, 0.2);
+        }
+
+        .qs-content {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          width: 100%;
+        }
+
+        .qs-content h3 {
+          margin: 0;
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #0f172a;
+          transition: color 0.2s ease;
+        }
+
+        .qs-item:hover h3 {
+          color: var(--color-primary, #2563eb);
+        }
+
+        .qs-label {
+          font-size: 0.7rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #64748b;
+          padding: 2px 0;
+          transition: color 0.2s ease;
+        }
+
+        .qs-item:hover .qs-label {
+          color: var(--color-accent-dark, #3b82f6);
+        }
+
+        .qs-arrow {
+          margin-top: 12px;
+          color: #0f172a;
+          align-self: flex-end;
+          opacity: 0.3;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transform: translateX(0);
+        }
+
+        .qs-item:hover .qs-arrow {
+          opacity: 1;
+          color: var(--color-primary, #2563eb);
+          transform: translateX(6px);
+        }
+
+        @media (max-width: 860px) {
+          .qs-workflows {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        .section-head {
+          margin-bottom: 22px;
+        }
+
+        .section-kicker {
+          font-size: 0.72rem;
+          letter-spacing: 0.16em;
+          font-weight: 700;
+          color: var(--color-accent-dark);
+        }
+
+        .section-head h2 {
+          margin: 9px 0 8px;
+          font-size: clamp(1.55rem, 2.9vw, 2.12rem);
+          line-height: 1.2;
+          color: var(--color-primary);
+        }
+
+        .section-head p {
+          margin: 0;
+          color: var(--color-text-secondary);
+          line-height: 1.6;
+        }
+
+        .proof-section {
+          border-radius: 20px;
+          padding: 20px;
+          border: 1px solid rgba(148, 163, 184, 0.24);
+          background: linear-gradient(155deg, rgba(255, 255, 255, 0.98), rgba(242, 248, 255, 0.84));
+          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .proof-head {
+          margin-bottom: 14px;
+        }
+
+        .proof-head h2 {
+          margin: 8px 0 0;
+          font-size: clamp(1.35rem, 2.5vw, 1.8rem);
+          line-height: 1.25;
+          color: var(--color-primary);
+        }
+
+        .proof-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .proof-card {
+          border-radius: 14px;
+          padding: 14px;
+          border: 1px solid rgba(148, 163, 184, 0.26);
+          background: rgba(255, 255, 255, 0.9);
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+          transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .proof-card:hover {
+          transform: translateY(-2px);
+          border-color: rgba(78, 154, 247, 0.48);
+        }
+
+        .proof-top {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          color: var(--color-text-muted);
+          font-size: 0.68rem;
+          letter-spacing: 0.08em;
+          font-weight: 700;
+        }
+
+        .proof-card strong {
+          display: block;
+          margin-top: 8px;
+          font-size: 1.08rem;
+          color: var(--color-primary);
+        }
+
+        .proof-card p {
+          margin: 5px 0 0;
+          font-size: 0.8rem;
+          line-height: 1.45;
+          color: var(--color-text-muted);
+        }
+
+        .offers-section {
+          padding: 22px;
+          border-radius: 24px;
+          background:
+            radial-gradient(circle at 6% 0%, rgba(78, 154, 247, 0.2), rgba(78, 154, 247, 0)),
+            linear-gradient(180deg, rgba(10, 24, 52, 0.05), rgba(255, 255, 255, 0.9));
+          border: 1px solid rgba(148, 163, 184, 0.25);
+        }
+
+        .offers-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 14px;
+        }
+
+        .offer-card {
+          text-decoration: none;
+          border-radius: 14px;
+          padding: 18px;
+          border: 1px solid rgba(148, 163, 184, 0.22);
+          background: rgba(255, 255, 255, 0.85);
+          box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+          opacity: 0;
+          transform: translateY(10px);
+          animation: rise-in 0.45s ease both;
+          animation-delay: var(--delay);
+          transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .offer-card:hover {
+          border-color: rgba(78, 154, 247, 0.5);
+          transform: translateY(-3px);
+          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+        }
+
+        .offer-icon {
+          width: 38px;
+          height: 38px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, rgba(78, 154, 247, 0.15), rgba(78, 154, 247, 0.06));
+          color: var(--color-accent-dark);
+          display: flex;
+          align-items: center;
+          justify-content: center;
           margin-bottom: 12px;
         }
 
-        .stat-header :global(.stat-icon) {
-          color: var(--color-accent);
-        }
-
-        .stat-label {
-          font-size: 0.75rem;
+        .offer-card h4 {
+          margin: 0 0 6px;
+          font-size: 0.95rem;
           font-weight: 600;
-          letter-spacing: 0.05em;
-          color: var(--color-text-muted);
-        }
-
-        .stat-value {
-          display: flex;
-          align-items: baseline;
-          gap: 8px;
-          font-size: 2rem;
-          font-weight: 700;
           color: var(--color-primary);
-          margin-bottom: 4px;
         }
 
-        .stat-change {
-          display: inline-flex;
-          align-items: center;
-          gap: 2px;
-          font-size: 0.8rem;
-          font-weight: 600;
-          color: var(--color-success);
-          background: rgba(16, 185, 129, 0.12);
-          padding: 2px 8px;
-          border-radius: 999px;
-        }
-
-        .stat-subtext {
-          font-size: 0.875rem;
-          color: var(--color-text-muted);
+        .offer-card p {
           margin: 0;
+          color: var(--color-text-secondary);
+          font-size: 0.82rem;
+          line-height: 1.5;
         }
 
-        .hero-section :global(.hero-primary) {
-          box-shadow: 0 8px 18px rgba(6, 20, 47, 0.15);
+        .flowline-section {
+          padding: 8px 0 2px;
         }
 
-        .cta-section :global(.cta-button) {
-          background: var(--color-primary);
-          color: white;
-          border: none;
-          box-shadow: 0 8px 18px rgba(6, 20, 47, 0.18);
+        .flowline-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 14px;
         }
 
-        .cta-section :global(.cta-button:hover:not(:disabled)) {
-          background: var(--color-primary-light);
+        .flow-step {
+          position: relative;
+          border-radius: 14px;
+          border: 1px solid rgba(148, 163, 184, 0.3);
+          background: #ffffff;
+          padding: 15px;
+          box-shadow: 0 10px 18px rgba(15, 23, 42, 0.05);
         }
 
-        .hero-copy,
-        .hero-panel,
-        .boq-card,
-        .cta-content,
-        .stat-card {
-          animation: fade-up 0.7s ease both;
+        .flow-step-no {
+          display: inline-flex;
+          width: fit-content;
+          padding: 4px 9px;
+          border-radius: 999px;
+          background: rgba(78, 154, 247, 0.14);
+          color: var(--color-accent-dark);
+          font-size: 0.67rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
         }
 
-        .hero-panel {
-          animation-delay: 120ms;
+        .flow-step h4 {
+          margin: 10px 0 6px;
+          color: var(--color-primary);
+          font-size: 0.96rem;
         }
 
-        .boq-card:nth-child(2) {
-          animation-delay: 80ms;
+        .flow-step p {
+          margin: 0;
+          color: var(--color-text-secondary);
+          font-size: 0.82rem;
+          line-height: 1.52;
         }
 
-        .boq-card:nth-child(3) {
-          animation-delay: 160ms;
+        .flow-connector {
+          position: absolute;
+          top: 50%;
+          right: -13px;
+          width: 13px;
+          height: 2px;
+          background: rgba(78, 154, 247, 0.45);
         }
 
-        .cta-content {
-          animation-delay: 120ms;
+        .cta-section {
+          margin-top: 8px;
         }
 
-        .stat-card:nth-child(2) {
-          animation-delay: 60ms;
+        .cta-shell {
+          border-radius: 18px;
+          padding: 22px;
+          border: 1px solid rgba(148, 163, 184, 0.28);
+          background: linear-gradient(130deg, rgba(6, 20, 47, 0.05), rgba(78, 154, 247, 0.08));
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 14px;
+          box-shadow: 0 14px 24px rgba(15, 23, 42, 0.08);
         }
 
-        .stat-card:nth-child(3) {
-          animation-delay: 120ms;
+        .cta-copy {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          color: var(--color-primary);
         }
 
-        @keyframes fade-up {
+        .cta-copy h3 {
+          margin: 0 0 4px;
+          font-size: 1.15rem;
+        }
+
+        .cta-copy p {
+          margin: 0;
+          color: var(--color-text-secondary);
+          font-size: 0.9rem;
+        }
+
+        .cta-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .hero :global(.hero-primary) {
+          box-shadow: 0 12px 22px rgba(15, 23, 42, 0.18);
+        }
+
+        @keyframes rise-in {
           from {
             opacity: 0;
             transform: translateY(12px);
@@ -983,97 +855,79 @@ export default function HomePage() {
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .hero-copy,
-          .hero-panel,
-          .boq-card,
-          .cta-content,
-          .stat-card {
+          .offer-card {
             animation: none;
-          }
-
-          .feature-card {
             opacity: 1;
             transform: none;
-            transition: none;
           }
 
-          .panel-item,
-          .boq-card,
-          .get-started-link {
+          .offer-card {
             transition: none;
           }
         }
 
-        @media (max-width: 1100px) {
-          .hero-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .hero-subtitle {
-            max-width: 100%;
-          }
-
-          .features-grid {
+        @media (max-width: 1080px) {
+          .offers-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
-        }
 
-        @media (max-width: 900px) {
-          .boq-cards {
+          .proof-grid {
             grid-template-columns: 1fr;
           }
 
-          .features-grid {
-            grid-template-columns: 1fr;
+          .workflow-proof-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
-          .stats-section {
-            grid-template-columns: 1fr;
+          .flowline-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
-          .stat-card {
-            border-right: none;
-            border-bottom: 1px solid var(--color-border-light);
-          }
-
-          .stat-card:last-child {
-            border-bottom: none;
-          }
-
-          .hero-section {
-            padding: 40px 28px;
-          }
-
-          .hero-section h1 {
-            font-size: 2.2rem;
-          }
-
-          .cta-content {
-            flex-direction: column;
-            text-align: center;
-          }
-
-          .cta-left {
-            flex-direction: column;
+          .flow-step:nth-child(2n) .flow-connector {
+            display: none;
           }
         }
 
-        @media (max-width: 640px) {
-          .hero-section {
-            padding: 32px 22px;
+        @media (max-width: 860px) {
+          .offers-grid {
+            grid-template-columns: 1fr;
           }
 
-          .hero-actions {
+          .cta-shell {
             flex-direction: column;
             align-items: flex-start;
           }
 
-          .hero-metrics {
+          .cta-actions {
+            width: 100%;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .home-page {
+            padding: 18px 14px 74px;
+            gap: 34px;
+          }
+
+          .hero {
+            padding: 24px;
+          }
+
+          .hero-actions {
+            align-items: flex-start;
             flex-direction: column;
           }
 
-          .features-section {
-            padding: 56px 20px;
+          .workflow-proof-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .flowline-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .flow-connector {
+            display: none;
           }
         }
       `}</style>

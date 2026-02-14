@@ -11,34 +11,34 @@ import {
   Plus,
   PencilSimple,
   Trash,
-  Check,
   Warning,
   Clock,
-  CurrencyDollar,
   MapPin,
   Phone,
   Envelope,
   Globe,
   ShieldCheck,
   Spinner,
-  Eye,
-  ArrowRight,
   CaretDown,
   CaretUp,
   ClipboardText,
   Key,
+  Certificate,
 } from '@phosphor-icons/react';
 import { supabase } from '@/lib/supabase';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useReveal } from '@/hooks/useReveal';
 import {
   getUserSupplierProfile,
+  getUserSupplierApplication,
   getSupplierProducts,
   deleteSupplierProduct,
-  MATERIAL_CATEGORIES,
   listSupplierApiKeys,
   createSupplierApiKey,
   revokeSupplierApiKey,
+  getSupplierApplicationDocuments,
+  getSupplierDocuments,
+  uploadSupplierDocument,
 } from '@/lib/services/suppliers';
 import {
   getSupplierRfqInbox,
@@ -46,7 +46,7 @@ import {
   submitSupplierQuote,
   type SupplierInboxRfq,
 } from '@/lib/services/rfq';
-import type { Supplier, SupplierApiKey, SupplierProduct } from '@/lib/database.types';
+import type { Supplier, SupplierApiKey, SupplierProduct, SupplierApplication, SupplierDocument } from '@/lib/database.types';
 
 type TabKey = 'overview' | 'products' | 'quotes' | 'settings';
 
@@ -60,8 +60,10 @@ const STOCK_STATUS_LABELS: Record<string, { label: string; color: string }> = {
 export default function SupplierDashboardPage() {
   const router = useRouter();
   const { formatPrice, exchangeRate } = useCurrency();
+  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [supplier, setSupplier] = useState<Supplier | null>(null);
+  const [supplierApplication, setSupplierApplication] = useState<SupplierApplication | null>(null);
   const [products, setProducts] = useState<SupplierProduct[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -79,8 +81,30 @@ export default function SupplierDashboardPage() {
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
   const [apiKeyProcessing, setApiKeyProcessing] = useState(false);
+  const [documents, setDocuments] = useState<SupplierDocument[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [documentUploading, setDocumentUploading] = useState(false);
+  const [documentError, setDocumentError] = useState<string | null>(null);
+  const [documentFiles, setDocumentFiles] = useState<{
+    businessLicense: File | null;
+    taxClearance: File | null;
+    proofOfAddress: File | null;
+  }>({
+    businessLicense: null,
+    taxClearance: null,
+    proofOfAddress: null,
+  });
 
   useReveal({ deps: [activeTab, products.length, rfqInbox.length, apiKeys.length, loading, rfqLoading] });
+
+  const loadSupplierDocuments = async (supplierId: string, applicationId?: string | null) => {
+    setDocumentsLoading(true);
+    const docs = applicationId
+      ? await getSupplierApplicationDocuments(applicationId)
+      : await getSupplierDocuments(supplierId);
+    setDocuments(docs);
+    setDocumentsLoading(false);
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -91,6 +115,8 @@ export default function SupplierDashboardPage() {
         return;
       }
 
+      setUserId(user.id);
+
       const supplierProfile = await getUserSupplierProfile(user.id);
 
       if (!supplierProfile) {
@@ -100,6 +126,9 @@ export default function SupplierDashboardPage() {
       }
 
       setSupplier(supplierProfile);
+
+      const application = await getUserSupplierApplication(user.id);
+      setSupplierApplication(application);
 
       // Load products
       const supplierProducts = await getSupplierProducts(supplierProfile.id);
@@ -118,6 +147,8 @@ export default function SupplierDashboardPage() {
         setRfqInbox(rfqs);
       }
       setRfqLoading(false);
+
+      await loadSupplierDocuments(supplierProfile.id, application?.id);
 
       setLoading(false);
     }
@@ -239,6 +270,64 @@ export default function SupplierDashboardPage() {
     } catch {
       // ignore clipboard errors
     }
+  };
+
+  const handleDocumentChange = (field: keyof typeof documentFiles) => (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0] || null;
+    setDocumentFiles(prev => ({ ...prev, [field]: file }));
+  };
+
+  const handleDocumentUpload = async () => {
+    if (!supplier || !userId) return;
+    setDocumentError(null);
+    setDocumentUploading(true);
+
+    const uploads = [
+      documentFiles.businessLicense
+        ? uploadSupplierDocument({
+          userId,
+          supplierId: supplierApplication ? undefined : supplier.id,
+          applicationId: supplierApplication?.id,
+          documentType: 'business_license',
+          file: documentFiles.businessLicense,
+        })
+        : Promise.resolve({ success: true }),
+      documentFiles.taxClearance
+        ? uploadSupplierDocument({
+          userId,
+          supplierId: supplierApplication ? undefined : supplier.id,
+          applicationId: supplierApplication?.id,
+          documentType: 'tax_clearance',
+          file: documentFiles.taxClearance,
+        })
+        : Promise.resolve({ success: true }),
+      documentFiles.proofOfAddress
+        ? uploadSupplierDocument({
+          userId,
+          supplierId: supplierApplication ? undefined : supplier.id,
+          applicationId: supplierApplication?.id,
+          documentType: 'proof_of_address',
+          file: documentFiles.proofOfAddress,
+        })
+        : Promise.resolve({ success: true }),
+    ];
+
+    const results = await Promise.all(uploads);
+    const failed = results.filter(r => !r.success);
+    if (failed.length > 0) {
+      setDocumentError('Some documents failed to upload. Please try again.');
+    }
+
+    setDocumentFiles({
+      businessLicense: null,
+      taxClearance: null,
+      proofOfAddress: null,
+    });
+
+    await loadSupplierDocuments(supplier.id, supplierApplication?.id);
+    setDocumentUploading(false);
   };
 
   const updateRfqField = (rfqId: string, field: 'deliveryDays' | 'validUntil' | 'notes', value: string) => {
@@ -373,6 +462,29 @@ export default function SupplierDashboardPage() {
   }[supplier.verification_status || 'unverified'];
 
   const VerificationIcon = verificationBadge.icon;
+  const verificationExpiry = (() => {
+    if (supplier.verification_expires_at) {
+      const date = new Date(supplier.verification_expires_at);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+    if (supplier.verified_at) {
+      const date = new Date(supplier.verified_at);
+      if (Number.isNaN(date.getTime())) return null;
+      date.setFullYear(date.getFullYear() + 1);
+      return date;
+    }
+    return null;
+  })();
+  /* eslint-disable react-hooks/purity -- Date.now() for day-level comparison is safe */
+  const daysToExpiry = verificationExpiry
+    ? Math.ceil((verificationExpiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+  /* eslint-enable react-hooks/purity */
+  const isVerificationDueSoon = daysToExpiry !== null && daysToExpiry <= 30 && daysToExpiry >= 0;
+  const isVerificationExpired = daysToExpiry !== null && daysToExpiry < 0;
+  const hasSelectedDocs = Boolean(
+    documentFiles.businessLicense || documentFiles.taxClearance || documentFiles.proofOfAddress
+  );
 
   return (
     <div className="min-h-screen bg-background text-text font-body">
@@ -454,6 +566,40 @@ export default function SupplierDashboardPage() {
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="grid gap-6">
+            {(isVerificationDueSoon || isVerificationExpired) && (
+              <div
+                className="reveal"
+                data-delay="1"
+                style={{
+                  display: 'flex',
+                  gap: '0.75rem',
+                  alignItems: 'flex-start',
+                  padding: '1rem',
+                  borderRadius: '12px',
+                  backgroundColor: '#fefce8',
+                  border: '1px solid #fde68a',
+                  color: '#713f12',
+                }}
+              >
+                <Warning size={22} style={{ marginTop: '0.1rem' }} />
+                <div>
+                  <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
+                    {isVerificationExpired ? 'Verification expired' : 'Verification due soon'}
+                  </div>
+                  <div style={{ fontSize: '0.875rem' }}>
+                    {verificationExpiry && (
+                      <>
+                        Your annual supplier verification is
+                        {isVerificationExpired ? ' overdue' : ' due'} on{' '}
+                        {verificationExpiry.toLocaleDateString()}. Please upload updated
+                        documents to maintain your verified status.
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-surface rounded-xl p-5 shadow-card border border-border-light reveal" data-delay="1">
@@ -914,6 +1060,102 @@ export default function SupplierDashboardPage() {
               <hr className="border-t border-border-light mt-4" />
 
               <div className="grid gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <Certificate size={18} className="text-secondary" />
+                  <h3 className="text-lg font-semibold font-heading text-primary m-0">Verification Documents</h3>
+                </div>
+                <p className="text-secondary m-0">
+                  Upload updated documents to keep your supplier verification active.
+                </p>
+
+                <div className="grid gap-4 p-4 border border-border-light rounded-md bg-mist">
+                  <div className="grid gap-2">
+                    <label className="text-sm text-secondary">Business License</label>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={handleDocumentChange('businessLicense')}
+                      className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <label className="text-sm text-secondary">Tax Clearance (optional)</label>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={handleDocumentChange('taxClearance')}
+                      className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <label className="text-sm text-secondary">Proof of Address (optional)</label>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={handleDocumentChange('proofOfAddress')}
+                      className="w-full px-3 py-2 rounded-md border border-border bg-surface text-sm"
+                    />
+                  </div>
+                  <button
+                    onClick={handleDocumentUpload}
+                    disabled={documentUploading || !hasSelectedDocs}
+                    className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md font-semibold transition-colors shadow-sm w-full sm:w-auto ${documentUploading || !hasSelectedDocs
+                        ? 'bg-border-light text-muted cursor-not-allowed'
+                        : 'bg-accent text-white hover:bg-accent-dark'
+                      }`}
+                  >
+                    {documentUploading ? 'Uploading...' : 'Upload Documents'}
+                  </button>
+                  {documentError && <div className="text-error text-sm">{documentError}</div>}
+                </div>
+
+                <div className="mt-2">
+                  <h4 className="text-base font-semibold mb-3">Uploaded Documents</h4>
+                  {documentsLoading ? (
+                    <div className="text-secondary">Loading documents...</div>
+                  ) : documents.length === 0 ? (
+                    <div className="text-secondary">No documents uploaded yet.</div>
+                  ) : (
+                    <div className="grid gap-2">
+                      {documents.map((doc) => {
+                        const statusColor = doc.status === 'verified'
+                          ? 'text-emerald-600'
+                          : doc.status === 'rejected'
+                            ? 'text-red-600'
+                            : 'text-amber-600';
+                        return (
+                          <div
+                            key={doc.id}
+                            className="flex flex-wrap items-center justify-between gap-3 border border-border-light rounded-md px-4 py-3 bg-white"
+                          >
+                            <div>
+                              <div className="font-medium text-primary">
+                                {doc.document_type.replace(/_/g, ' ')}
+                              </div>
+                              <div className="text-xs text-secondary">{doc.file_name || 'Document'}</div>
+                              {doc.file_url && (
+                                <a
+                                  href={doc.file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-accent hover:underline"
+                                >
+                                  View file
+                                </a>
+                              )}
+                            </div>
+                            <span className={`text-xs font-semibold uppercase ${statusColor}`}>
+                              {doc.status}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <hr className="border-t border-border-light mt-4" />
+
                 <div className="flex items-center gap-2">
                   <Key size={18} className="text-secondary" />
                   <h3 className="text-lg font-semibold font-heading text-primary m-0">API Keys</h3>

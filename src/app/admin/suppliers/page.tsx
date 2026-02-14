@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Storefront,
-  Clock,
   CheckCircle,
   XCircle,
   Eye,
@@ -17,13 +16,16 @@ import {
   Envelope,
   MapPin,
   Globe,
-  Buildings,
   Calendar,
-  ShieldCheck,
   X,
 } from '@phosphor-icons/react';
 import { supabase } from '@/lib/supabase';
-import type { SupplierApplication, SupplierApplicationStatus } from '@/lib/database.types';
+import type { SupplierApplication, SupplierApplicationStatus, SupplierDocument } from '@/lib/database.types';
+import {
+  getSupplierApplicationDocuments,
+  notifySupplierApplicationStatus,
+  reviewSupplierDocument,
+} from '@/lib/services/suppliers';
 
 type FilterStatus = SupplierApplicationStatus | 'all';
 
@@ -34,6 +36,14 @@ const STATUS_CONFIG: Record<SupplierApplicationStatus, { label: string; color: s
   rejected: { label: 'Rejected', color: '#ef4444', bgColor: '#fef2f2' },
 };
 
+const DOCUMENT_LABELS: Record<string, string> = {
+  business_license: 'Business License',
+  tax_clearance: 'Tax Clearance',
+  proof_of_address: 'Proof of Address',
+  bank_confirmation: 'Bank Confirmation',
+  other: 'Other Document',
+};
+
 export default function AdminSuppliersPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -41,9 +51,42 @@ export default function AdminSuppliersPage() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('pending');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedApp, setSelectedApp] = useState<SupplierApplication | null>(null);
+  const [documents, setDocuments] = useState<SupplierDocument[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [documentActionId, setDocumentActionId] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
+
+  const loadApplications = async () => {
+    setLoading(true);
+
+    let query = supabase
+      .from('supplier_applications')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (filterStatus !== 'all') {
+      query = query.eq('status', filterStatus);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error loading applications:', error);
+    } else {
+      setApplications((data || []) as SupplierApplication[]);
+    }
+
+    setLoading(false);
+  };
+
+  const loadDocuments = async (applicationId: string) => {
+    setDocumentsLoading(true);
+    const docs = await getSupplierApplicationDocuments(applicationId);
+    setDocuments(docs);
+    setDocumentsLoading(false);
+  };
 
   useEffect(() => {
     async function checkAdmin() {
@@ -72,36 +115,24 @@ export default function AdminSuppliersPage() {
     }
 
     checkAdmin();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
-
-  const loadApplications = async () => {
-    setLoading(true);
-
-    let query = supabase
-      .from('supplier_applications')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (filterStatus !== 'all') {
-      query = query.eq('status', filterStatus);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error loading applications:', error);
-    } else {
-      setApplications((data || []) as SupplierApplication[]);
-    }
-
-    setLoading(false);
-  };
 
   useEffect(() => {
     if (!loading) {
       loadApplications();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus]);
+
+  useEffect(() => {
+    if (!selectedApp) {
+      setDocuments([]);
+      return;
+    }
+    loadDocuments(selectedApp.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedApp?.id]);
 
   const filteredApplications = applications.filter(app =>
     app.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -128,6 +159,10 @@ export default function AdminSuppliersPage() {
       console.error('Error approving application:', error);
       alert('Failed to approve application: ' + error.message);
     } else {
+      const application = applications.find(app => app.id === applicationId) || selectedApp;
+      if (application) {
+        await notifySupplierApplicationStatus(application, 'approved');
+      }
       await loadApplications();
       setSelectedApp(null);
     }
@@ -152,6 +187,7 @@ export default function AdminSuppliersPage() {
       console.error('Error rejecting application:', error);
       alert('Failed to reject application: ' + error.message);
     } else {
+      await notifySupplierApplicationStatus(selectedApp, 'rejected', rejectionReason.trim());
       await loadApplications();
       setSelectedApp(null);
       setShowRejectModal(false);
@@ -168,8 +204,37 @@ export default function AdminSuppliersPage() {
     if (error) {
       console.error('Error updating status:', error);
     } else {
+      const application = applications.find(app => app.id === applicationId) || selectedApp;
+      if (application) {
+        await notifySupplierApplicationStatus(application, 'under_review');
+      }
       await loadApplications();
     }
+  };
+
+  const handleDocumentReview = async (documentId: string, status: 'verified' | 'rejected') => {
+    if (!selectedApp) return;
+    const notes = status === 'rejected'
+      ? prompt('Reason for rejecting this document?')?.trim() || null
+      : null;
+
+    setDocumentActionId(documentId);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    const result = await reviewSupplierDocument(documentId, {
+      status,
+      reviewerId: user?.id,
+      notes,
+    });
+
+    setDocumentActionId(null);
+
+    if (!result.success) {
+      alert(result.error || 'Failed to update document status.');
+      return;
+    }
+
+    await loadDocuments(selectedApp.id);
   };
 
   if (loading) {
@@ -567,6 +632,109 @@ export default function AdminSuppliersPage() {
                   </ul>
                 </div>
               )}
+
+              {/* Documents */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem' }}>
+                  Documents
+                </h4>
+                {documentsLoading ? (
+                  <div style={{ color: '#64748b', fontSize: '0.875rem' }}>Loading documents...</div>
+                ) : documents.length === 0 ? (
+                  <div style={{ color: '#94a3b8', fontSize: '0.875rem' }}>No documents uploaded yet.</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {documents.map((doc) => {
+                      const statusColor = doc.status === 'verified'
+                        ? '#16a34a'
+                        : doc.status === 'rejected'
+                          ? '#ef4444'
+                          : '#f59e0b';
+                      return (
+                        <div
+                          key={doc.id}
+                          style={{
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            padding: '0.75rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.35rem',
+                          }}
+                        >
+                          <div style={{ fontWeight: 500 }}>
+                            {DOCUMENT_LABELS[doc.document_type] || doc.document_type}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                            {doc.file_name || 'Document'}
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                            {doc.file_url && (
+                              <a
+                                href={doc.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ fontSize: '0.75rem', color: '#2563eb', textDecoration: 'none' }}
+                              >
+                                View file
+                              </a>
+                            )}
+                            <span style={{
+                              fontSize: '0.7rem',
+                              fontWeight: 600,
+                              padding: '0.15rem 0.5rem',
+                              borderRadius: '999px',
+                              backgroundColor: `${statusColor}15`,
+                              color: statusColor,
+                            }}>
+                              {doc.status.toUpperCase()}
+                            </span>
+                            {doc.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleDocumentReview(doc.id, 'verified')}
+                                  disabled={documentActionId === doc.id}
+                                  style={{
+                                    border: 'none',
+                                    backgroundColor: '#dcfce7',
+                                    color: '#15803d',
+                                    padding: '0.25rem 0.6rem',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    cursor: documentActionId === doc.id ? 'not-allowed' : 'pointer',
+                                  }}
+                                >
+                                  Verify
+                                </button>
+                                <button
+                                  onClick={() => handleDocumentReview(doc.id, 'rejected')}
+                                  disabled={documentActionId === doc.id}
+                                  style={{
+                                    border: '1px solid #fecaca',
+                                    backgroundColor: '#fef2f2',
+                                    color: '#b91c1c',
+                                    padding: '0.25rem 0.6rem',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    cursor: documentActionId === doc.id ? 'not-allowed' : 'pointer',
+                                  }}
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                          </div>
+                          {doc.notes && (
+                            <div style={{ fontSize: '0.75rem', color: '#b91c1c' }}>
+                              Notes: {doc.notes}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
               {/* Actions */}
               {(selectedApp.status === 'pending' || selectedApp.status === 'under_review') && (

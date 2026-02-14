@@ -18,7 +18,7 @@ import {
   getUserSupplierProfile,
   upsertSupplierProduct,
 } from '@/lib/services/suppliers';
-import { materials, searchMaterials } from '@/lib/materials';
+import { searchMaterials } from '@/lib/materials';
 import type { Supplier, StockStatus } from '@/lib/database.types';
 
 const STOCK_STATUS_OPTIONS: { value: StockStatus; label: string }[] = [

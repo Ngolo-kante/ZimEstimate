@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CheckCircle, Confetti as ConfettiIcon, TrendDown, ArrowRight, X } from '@phosphor-icons/react';
 import Button from './Button';
 
@@ -46,6 +46,7 @@ function ConfettiAnimation({ isActive }: { isActive: boolean }) {
 
     useEffect(() => {
         if (!isActive) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- reset animation state
             setParticles([]);
             return;
         }
@@ -149,6 +150,7 @@ export function CelebrationModal({
             const timer = setTimeout(() => setShowConfetti(true), 200);
             return () => clearTimeout(timer);
         } else {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- reset animation on close
             setShowConfetti(false);
         }
     }, [isOpen]);

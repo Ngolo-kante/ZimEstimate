@@ -170,32 +170,33 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
 
                 <style jsx>{`
                     .sidebar-spine {
-                        width: 280px;
+                        width: 272px;
                         height: calc(100vh - 64px);
-                        background: rgba(255, 255, 255, 0.85);
-                        backdrop-filter: blur(12px);
-                        -webkit-backdrop-filter: blur(12px);
-                        border-right: 1px solid rgba(226, 232, 240, 0.6);
+                        background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(246, 250, 255, 0.9));
+                        backdrop-filter: blur(16px);
+                        -webkit-backdrop-filter: blur(16px);
+                        border-right: 1px solid rgba(211, 211, 215, 0.75);
                         display: flex;
                         flex-direction: column;
                         flex-shrink: 0;
                         position: sticky;
                         top: 64px;
                         z-index: 40;
+                        box-shadow: 18px 0 30px rgba(6, 20, 47, 0.035);
                         transition: width 0.3s cubic-bezier(0.2, 0, 0, 1);
                     }
 
                     .sidebar-spine.collapsed {
-                        width: 80px;
+                        width: 84px;
                     }
 
                     .project-switcher {
-                        padding: 24px 20px;
+                        padding: 22px 16px 18px;
                         position: relative;
                     }
 
                     .sidebar-spine.collapsed .project-switcher {
-                        padding: 24px 12px;
+                        padding: 22px 10px 18px;
                     }
 
                     .switcher-btn {
@@ -203,16 +204,17 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                         align-items: center;
                         gap: 12px;
                         width: 100%;
-                        background: #ffffff;
-                        border: 1px solid var(--color-border-light);
+                        background: rgba(255, 255, 255, 0.9);
+                        border: 1px solid #d4e6ff;
                         padding: 12px;
-                        border-radius: 16px;
+                        border-radius: 14px;
                         cursor: pointer;
                         transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
                         text-align: left;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+                        box-shadow: 0 8px 18px rgba(6, 20, 47, 0.04);
                         overflow: hidden;
                         white-space: nowrap;
+                        font-family: var(--font-body);
                     }
 
                     .sidebar-spine.collapsed .switcher-btn {
@@ -222,20 +224,25 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                     }
 
                     .switcher-btn:hover {
-                        border-color: var(--color-primary);
-                        box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+                        border-color: #a7ccf9;
+                        box-shadow: 0 10px 22px rgba(31, 96, 174, 0.14);
                         transform: translateY(-1px);
+                    }
+
+                    .switcher-btn:focus-visible {
+                        outline: none;
+                        box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.25);
                     }
 
                     .project-icon {
                         width: 40px;
                         height: 40px;
-                        background: linear-gradient(135deg, rgba(78, 154, 247, 0.1), rgba(78, 154, 247, 0.2));
-                        color: var(--color-primary);
+                        background: linear-gradient(135deg, #ecf4ff, #d6e8ff);
+                        color: #19508a;
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        border-radius: 12px;
+                        border-radius: 10px;
                         flex-shrink: 0;
                     }
 
@@ -254,25 +261,25 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                     }
 
                     .label {
-                        font-size: 0.7rem;
+                        font-size: 0.68rem;
                         text-transform: uppercase;
                         letter-spacing: 0.05em;
-                        color: var(--color-text-secondary);
+                        color: #7689a5;
                         font-weight: 600;
                         margin-bottom: 2px;
                     }
 
                     .name {
-                        font-size: 0.95rem;
+                        font-size: 0.92rem;
                         font-weight: 600;
-                        color: var(--color-text);
+                        color: #0f294b;
                         white-space: nowrap;
                         overflow: hidden;
                         text-overflow: ellipsis;
                     }
 
                     .caret {
-                        color: var(--color-text-secondary);
+                        color: #7891b5;
                         transition: transform 0.2s, opacity 0.2s;
                         flex-shrink: 0;
                     }
@@ -289,12 +296,12 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                     .switcher-dropdown {
                         position: absolute;
                         top: calc(100% - 10px);
-                        left: 20px;
-                        right: 20px;
+                        left: 16px;
+                        right: 16px;
                         background: white;
-                        border: 1px solid var(--color-border-light);
-                        border-radius: 16px;
-                        box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+                        border: 1px solid #d3e4f8;
+                        border-radius: 14px;
+                        box-shadow: 0 18px 36px rgba(15, 52, 94, 0.12);
                         z-index: 50;
                         padding: 6px;
                         max-height: 300px;
@@ -311,9 +318,9 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                         display: flex;
                         align-items: center;
                         gap: 12px;
-                        padding: 12px;
+                        padding: 10px 12px;
                         font-size: 0.9rem;
-                        color: var(--color-text-secondary);
+                        color: #516b8e;
                         border-radius: 10px;
                         cursor: pointer;
                         transition: all 0.2s;
@@ -321,14 +328,19 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                     }
 
                     .dropdown-item:hover {
-                        background: #f8fafc;
-                        color: var(--color-text);
+                        background: #eff6ff;
+                        color: #173f6a;
                         transform: translateX(2px);
                     }
 
+                    .dropdown-item:focus-visible {
+                        outline: none;
+                        box-shadow: inset 0 0 0 2px rgba(78, 154, 247, 0.22);
+                    }
+
                     .dropdown-item.active {
-                        background: rgba(78, 154, 247, 0.08);
-                        color: var(--color-primary);
+                        background: #e7f2ff;
+                        color: #17467a;
                         font-weight: 600;
                     }
 
@@ -340,36 +352,36 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
 
                     .dropdown-item.view-all {
                         justify-content: center;
-                        color: var(--color-primary);
+                        color: #225f9b;
                         font-size: 0.85rem;
                         font-weight: 600;
                     }
 
                     .spine-nav {
                         flex: 1;
-                        padding: 0 20px 24px;
+                        padding: 0 14px 20px;
                         display: flex;
                         flex-direction: column;
-                        gap: 4px;
+                        gap: 6px;
                         overflow-y: auto;
                         overflow-x: hidden;
                     }
                     
                     .sidebar-spine.collapsed .spine-nav {
-                        padding: 0 12px 24px;
+                        padding: 0 10px 20px;
                     }
 
                     .nav-item {
                         display: flex;
                         align-items: center;
-                        gap: 14px;
-                        padding: 12px 16px;
+                        gap: 12px;
+                        padding: 11px 14px;
                         border-radius: 12px;
-                        background: transparent;
+                        background: rgba(255, 255, 255, 0.55);
                         border: none;
                         text-align: left;
                         cursor: pointer;
-                        color: #64748b;
+                        color: #5a6f8d;
                         transition: all 0.2s ease;
                         position: relative;
                         font-weight: 500;
@@ -383,15 +395,21 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                     }
 
                     .nav-item:hover {
-                        background: #f1f5f9;
-                        color: #1e293b;
+                        background: #edf6ff;
+                        color: #164d83;
+                        transform: translateX(2px);
                     }
 
                     .nav-item.active {
-                        background: white;
-                        color: var(--color-primary);
+                        background: linear-gradient(135deg, #e9f4ff, #f3f9ff);
+                        color: #164d83;
                         font-weight: 600;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                        box-shadow: 0 10px 18px rgba(22, 77, 131, 0.14);
+                    }
+
+                    .nav-item:focus-visible {
+                        outline: none;
+                        box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.25);
                     }
 
                     .nav-icon {
@@ -426,16 +444,22 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                     
                     .active-indicator {
                         position: absolute;
-                        right: 12px;
+                        right: 10px;
                         top: 50%;
                         transform: translateY(-50%);
-                        width: 6px;
-                        height: 6px;
-                        background: var(--color-primary);
+                        width: 5px;
+                        height: 5px;
+                        background: #2f76c5;
                         border-radius: 50%;
-                        box-shadow: 0 0 8px rgba(78, 154, 247, 0.5);
+                        box-shadow: 0 0 8px rgba(47, 118, 197, 0.4);
                         opacity: 1;
                         transition: opacity 0.2s;
+                        animation: pulseIndicator 1.8s ease-in-out infinite;
+                    }
+
+                    @keyframes pulseIndicator {
+                        0%, 100% { opacity: 0.95; filter: brightness(1); }
+                        50% { opacity: 0.55; filter: brightness(1.2); }
                     }
 
                     .sidebar-spine.collapsed .active-indicator {
@@ -448,18 +472,23 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        padding: 16px;
+                        padding: 14px;
                         border: none;
-                        border-top: 1px solid var(--color-border-light);
+                        border-top: 1px solid rgba(211, 211, 215, 0.8);
                         background: transparent;
-                        color: var(--color-text-secondary);
+                        color: #6f86a9;
                         cursor: pointer;
                         transition: all 0.2s;
                     }
 
                     .collapse-toggle:hover {
-                        background: #f8fafc;
-                        color: var(--color-primary);
+                        background: rgba(233, 244, 255, 0.65);
+                        color: #255f9b;
+                    }
+
+                    .collapse-toggle:focus-visible {
+                        outline: none;
+                        box-shadow: inset 0 0 0 3px rgba(78, 154, 247, 0.24);
                     }
 
                     .toggle-icon {
@@ -473,10 +502,10 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
 
                     @media (max-width: 1024px) {
                         .sidebar-spine {
-                            width: 250px;
+                            width: 252px;
                         }
                         .sidebar-spine.collapsed {
-                            width: 80px;
+                            width: 84px;
                         }
                     }
 
@@ -489,8 +518,8 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                             z-index: 1000;
                             transform: translateX(-100%);
                             transition: transform 0.3s ease;
-                            width: 280px;
-                            background: white;
+                            width: 278px;
+                            background: linear-gradient(180deg, #fdfefe, #f4f9ff);
                         }
 
                         .sidebar-spine.mobile-open {
@@ -510,7 +539,7 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                         }
                         
                         .sidebar-spine.collapsed {
-                            width: 280px; /* Reset width for mobile */
+                            width: 278px; /* Reset width for mobile */
                         }
                         
                         .sidebar-spine.collapsed .project-info,
@@ -528,6 +557,19 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                         .sidebar-spine.collapsed .nav-item {
                             width: 100%;
                             justify-content: flex-start;
+                        }
+                    }
+
+                    @media (prefers-reduced-motion: reduce) {
+                        .sidebar-spine,
+                        .switcher-btn,
+                        .nav-item,
+                        .dropdown-item,
+                        .collapse-toggle,
+                        .active-indicator {
+                            transition: none;
+                            animation: none;
+                            transform: none !important;
                         }
                     }
                 `}</style>

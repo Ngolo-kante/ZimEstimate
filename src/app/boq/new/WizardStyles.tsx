@@ -365,11 +365,26 @@ const WizardStyles = () => (
       padding: var(--spacing-xl);
     }
 
+    .wizard-validation-banner {
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(220, 38, 38, 0.32);
+      background: rgba(254, 242, 242, 0.9);
+      color: #991b1b;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
     /* Enhanced Form Group */
     .form-group {
       display: flex;
       flex-direction: column;
       gap: var(--spacing-xs);
+    }
+
+    .form-group.has-error .wizard-label {
+      color: #991b1b;
     }
 
     .wizard-label {
@@ -389,6 +404,13 @@ const WizardStyles = () => (
       font-size: 0.75rem;
       color: var(--color-text-muted);
       margin-top: var(--spacing-xs);
+    }
+
+    .field-error {
+      margin: 4px 0 0;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #b91c1c;
     }
 
     .wizard-grid {
@@ -506,6 +528,11 @@ const WizardStyles = () => (
       box-shadow: 0 12px 24px rgba(6, 20, 47, 0.12);
     }
 
+    .choice-grid.has-error .choice-card:not(.selected) {
+      border-color: rgba(220, 38, 38, 0.4);
+      background: rgba(254, 242, 242, 0.46);
+    }
+
     .choice-icon {
       width: 44px;
       height: 44px;
@@ -567,6 +594,11 @@ const WizardStyles = () => (
 
     .pill-grid--three {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .pill-grid.has-error .pill-option:not(.selected) {
+      border-color: rgba(220, 38, 38, 0.45);
+      background: rgba(254, 242, 242, 0.65);
     }
 
     .pill-option {
@@ -661,6 +693,11 @@ const WizardStyles = () => (
       border-color: var(--color-primary);
       background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(255, 255, 255, 1));
       box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    }
+
+    .brick-strip.has-error .brick-chip:not(.selected) {
+      border-color: rgba(220, 38, 38, 0.45);
+      background: rgba(254, 242, 242, 0.65);
     }
 
     .brick-chip-thumb {
@@ -1145,6 +1182,11 @@ const WizardStyles = () => (
       color: var(--color-text-muted);
     }
 
+    .wizard-select.wizard-input-error {
+      border-color: rgba(220, 38, 38, 0.62);
+      background: rgba(254, 242, 242, 0.45);
+    }
+
     .select-icon {
       position: absolute;
       right: 16px;
@@ -1205,6 +1247,11 @@ const WizardStyles = () => (
       background: var(--color-accent-bg);
     }
 
+    .scope-selection.has-error .scope-card:not(.selected) {
+      border-color: rgba(220, 38, 38, 0.4);
+      background: rgba(254, 242, 242, 0.52);
+    }
+
     .scope-icon {
       color: var(--color-text-muted);
       min-width: 32px;
@@ -1244,6 +1291,11 @@ const WizardStyles = () => (
       max-width: 100%;
       width: 100%;
       margin: 0;
+    }
+
+    .stage-selector-container.has-error {
+      border-color: rgba(220, 38, 38, 0.4);
+      background: rgba(254, 242, 242, 0.36);
     }
 
     .stage-grid {

@@ -128,9 +128,9 @@ export default function ScraperPage() {
             const response = await fetchWithAuth(`/api/scraper/${id}`, { method: 'DELETE' });
             if (!response.ok) throw new Error('Failed to delete');
             fetchConfigs();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Delete error:', error);
-            alert('Error deleting scraper: ' + error.message);
+            alert('Error deleting scraper: ' + (error instanceof Error ? error.message : String(error)));
         }
     };
 
@@ -143,9 +143,9 @@ export default function ScraperPage() {
             });
             if (!response.ok) throw new Error('Failed to update status');
             fetchConfigs();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Toggle error:', error);
-            alert('Error updating scraper status: ' + error.message);
+            alert('Error updating scraper status: ' + (error instanceof Error ? error.message : String(error)));
         }
     };
 
@@ -294,9 +294,9 @@ export default function ScraperPage() {
             } else {
                 throw new Error(result.error || 'Unknown error');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error creating scraper:', error);
-            alert('Error creating scraper: ' + error.message);
+            alert('Error creating scraper: ' + (error instanceof Error ? error.message : String(error)));
         }
     };
 

@@ -1,0 +1,46 @@
+Assumption_Key,Value,Unit,Description
+Concrete_Mix_Ratio_Structural,1:2:3,ratio,Structural concrete mix
+Concrete_Cement_Bags_per_m3_Structural,7,bags,50kg bags per cubic metre
+Concrete_Mix_Ratio_Economy,1:2.5:3.5,ratio,Economy slab concrete
+Concrete_Cement_Bags_per_m3_Economy,6.5,bags,50kg bags per cubic metre
+Mortar_Mix_Ratio_Standard,1:6,ratio,Standard bricklaying mortar
+Mortar_Mix_Ratio_Economy,1:7,ratio,Economy bricklaying mortar
+Mortar_Cement_Bags_per_m3_Standard,5,bags,50kg bags per cubic metre
+Mortar_Cement_Bags_per_m3_Economy,4.5,bags,50kg bags per cubic metre
+Plaster_Mix_Ratio_Standard,1:4,ratio,Standard plaster mix
+Plaster_Mix_Ratio_Economy,1:5,ratio,Economy plaster mix
+Plaster_Cement_Bags_per_m3_Standard,6,bags,50kg bags per cubic metre
+Plaster_Cement_Bags_per_m3_Economy,5,bags,50kg bags per cubic metre
+Bricks_per_m2_Clay,50,bricks,Clay bricks 220x110x75mm
+Blocks_per_m2_Cement,12.5,blocks,Cement blocks 390x190x140mm
+Roof_Sheet_Effective_Coverage,0.85,m2,After overlap
+Roofing_Waste_Urban,0.10,ratio,Urban roofing waste
+Roofing_Waste_PeriUrban,0.12,ratio,Peri-urban roofing waste
+Roofing_Waste_Rural,0.15,ratio,Rural roofing waste
+Paint_Coverage_per_Litre,8,m2_per_litre_per_coat,Paint coverage per coat
+Paint_Coats_Standard,2,coats,Standard finish
+Paint_Coats_Economy,1.5,coats,Economy finish
+Tile_Waste_Standard,0.10,ratio,Tile cutting allowance
+Tile_Waste_Economy,0.15,ratio,Economy tile allowance
+Tile_Adhesive_Coverage,4.5,m2_per_bag,20kg bag
+Strip_Footing_Width_Urban,600,mm,Urban standard footing
+Strip_Footing_Width_PeriUrban,550,mm,Peri-urban footing
+Strip_Footing_Width_Rural,500,mm,Rural footing good soil only
+Strip_Footing_Depth,200,mm,Concrete depth
+Slab_Thickness_Standard,100,mm,Standard slab
+Slab_Thickness_Economy,85,mm,Economy slab
+Wall_Height_Standard,3.0,m,Standard wall height
+Wall_Height_Economy,2.7,m,Economy wall height
+Ring_Beam_Width,230,mm,Standard ring beam
+Ring_Beam_Depth_Standard,150,mm,Standard ring beam
+Ring_Beam_Depth_Economy,125,mm,Economy ring beam
+Foundation_Waste_Urban,0.05,ratio,Urban foundation waste
+Foundation_Waste_PeriUrban,0.07,ratio,Peri-urban foundation waste
+Foundation_Waste_Rural,0.10,ratio,Rural foundation waste
+Concrete_Waste_Urban,0.05,ratio,Urban concrete waste
+Concrete_Waste_Rural,0.08,ratio,Rural concrete waste
+Masonry_Waste_Urban,0.08,ratio,Urban masonry waste
+Masonry_Waste_PeriUrban,0.10,ratio,Peri-urban masonry waste
+Masonry_Waste_Rural,0.15,ratio,Rural masonry waste
+Finishes_Waste_Standard,0.12,ratio,Standard finishes waste
+Finishes_Waste_Economy,0.15,ratio,Economy finishes waste

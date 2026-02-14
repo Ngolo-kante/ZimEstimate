@@ -11,6 +11,12 @@ import {
   ProjectScope,
 } from '@/lib/vision/types';
 import { getBestPrice } from '@/lib/materials';
+import {
+  BOQ_ASSUMPTIONS,
+  DEFAULT_LOCATION_TYPE,
+  LocationType,
+  normalizeLocationType,
+} from '@/lib/calculations/assumptions';
 
 // Helper to get first value from array or single value
 function getFirstValue<T>(value: T | T[]): T {
@@ -52,6 +58,7 @@ export interface ManualBuilderConfig {
   cementType: CementType;
   scope: ProjectScope | ProjectScope[];
   includeLabor: boolean;
+  locationType?: LocationType;
   rooms?: DetailedRoom[];   // NEW: Detailed room data
 }
 
@@ -80,10 +87,13 @@ function estimateDimensions(floorArea: number, roomCount: number): {
 function calculateSuperstructureFromRooms(
   config: ManualBuilderConfig,
   perimeter: number,
-  internalWallLength: number
+  internalWallLength: number,
+  locationType: LocationType
 ): GeneratedBOQItem[] {
   const items: GeneratedBOQItem[] = [];
   const { rooms, wallHeight, cementType } = config;
+  const masonryWasteMultiplier = getMasonryWasteMultiplier(locationType);
+  const mortarCementBagsPerM3 = getMortarCementBagsPerM3(cementType);
 
   if (!rooms || rooms.length === 0) return items;
 
@@ -111,7 +121,7 @@ function calculateSuperstructureFromRooms(
     const info = getBrickInfoById(materialId);
 
     // Calculate bricks
-    const bricks = Math.ceil(wallArea * info.bricksPerSqm * WASTAGE_FACTOR);
+    const bricks = Math.ceil(wallArea * info.bricksPerSqm * masonryWasteMultiplier);
 
     items.push(createBOQItem(
       info.materialId,
@@ -125,8 +135,8 @@ function calculateSuperstructureFromRooms(
     // Calculate Mortar
     const mortarVolume = (bricks / 1000) * MORTAR_M3_PER_1000_BRICKS;
     const cementInfo = CEMENT_INFO[cementType];
-    const cementBags = Math.ceil(mortarVolume * cementInfo.bagsPerM3Mortar * WASTAGE_FACTOR);
-    const sandCubes = Math.ceil(mortarVolume * SAND_M3_PER_M3_MORTAR * 10) / 10;
+    const cementBags = Math.ceil(mortarVolume * mortarCementBagsPerM3 * masonryWasteMultiplier);
+    const sandCubes = Math.ceil(mortarVolume * SAND_M3_PER_M3_MORTAR * masonryWasteMultiplier * 10) / 10;
 
     items.push(createBOQItem(
       cementInfo.materialId,
@@ -164,8 +174,12 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   const scopes: ProjectScope[] = Array.isArray(config.scope) ? config.scope : [config.scope];
   const hasScope = (s: ProjectScope) => scopes.includes(s) || scopes.includes('full_house');
 
+  const locationType = normalizeLocationType(config.locationType);
+  const masonryWasteMultiplier = getMasonryWasteMultiplier(locationType);
   const brickInfo = BRICK_INFO[brickType];
   const cementInfo = CEMENT_INFO[cementType];
+  const concreteCementBagsPerM3 = getConcreteCementBagsPerM3(cementType);
+  const mortarCementBagsPerM3 = getMortarCementBagsPerM3(cementType);
 
   // ============================================
   // SUBSTRUCTURE
@@ -176,18 +190,20 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
 
     items.push(createBOQItem('dpm-500', 'DPM 500 Gauge', 'substructure', Math.ceil(floorArea * DPM_SHEETS_PER_SQM / 50), 'per roll', 'Floor membrane'));
 
-    const conc = perimeter * CONCRETE_M3_PER_LM_FOUNDATION;
-    items.push(createBOQItem(cementInfo.materialId, cementInfo.name, 'substructure', Math.ceil(conc * 7), 'per 50kg bag', 'Foundation concrete'));
+    const conc = calculateFoundationConcreteVolume(perimeter, locationType);
+    const footingWidthMm = BOQ_ASSUMPTIONS.stripFooting.widthMm[locationType];
+    const footingDepthMm = BOQ_ASSUMPTIONS.stripFooting.depthMm;
+    items.push(createBOQItem(cementInfo.materialId, cementInfo.name, 'substructure', Math.ceil(conc * concreteCementBagsPerM3), 'per 50kg bag', `Foundation concrete (${footingWidthMm}mm x ${footingDepthMm}mm strip footing)`));
     items.push(createBOQItem('sand-river', 'River Sand', 'substructure', Math.ceil(conc * 0.5), 'per cube', 'Foundation concrete'));
     items.push(createBOQItem('aggregate-19mm', 'Crushed Stone 19mm', 'substructure', Math.ceil(conc * 0.8), 'per cube', 'Foundation concrete'));
 
     const subWallArea = perimeter * 1.0;
-    const subBricks = Math.ceil(subWallArea * brickInfo.bricksPerSqm * WASTAGE_FACTOR);
+    const subBricks = Math.ceil(subWallArea * brickInfo.bricksPerSqm * masonryWasteMultiplier);
     items.push(createBOQItem(brickInfo.materialId, brickInfo.name, 'substructure', subBricks, 'each', 'Substructure walls'));
 
     const subMortar = (subBricks / 1000) * MORTAR_M3_PER_1000_BRICKS;
-    items.push(createBOQItem(cementInfo.materialId, cementInfo.name, 'substructure', Math.ceil(subMortar * cementInfo.bagsPerM3Mortar), 'per 50kg bag', 'Substructure mortar'));
-    items.push(createBOQItem('sand-bricks', 'Brick Sand', 'substructure', Math.ceil(subMortar * SAND_M3_PER_M3_MORTAR), 'per cube', 'Substructure mortar'));
+    items.push(createBOQItem(cementInfo.materialId, cementInfo.name, 'substructure', Math.ceil(subMortar * mortarCementBagsPerM3 * masonryWasteMultiplier), 'per 50kg bag', 'Substructure mortar'));
+    items.push(createBOQItem('sand-bricks', 'Brick Sand', 'substructure', Math.ceil(subMortar * SAND_M3_PER_M3_MORTAR * masonryWasteMultiplier), 'per cube', 'Substructure mortar'));
 
     items.push(createBOQItem('mesh-ref193', 'Welded Mesh Ref 193', 'substructure', Math.ceil(floorArea * MESH_SHEETS_PER_SQM), 'per sheet', 'Slab reinforcement'));
   }
@@ -198,7 +214,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   if (hasScope('superstructure')) {
     // Use Detailed logic if rooms exist, else Fallback
     if (rooms && rooms.length > 0) {
-      items.push(...calculateSuperstructureFromRooms(config, perimeter, internalWallLength));
+      items.push(...calculateSuperstructureFromRooms(config, perimeter, internalWallLength, locationType));
 
       // Add Global Items (Lintel, Reinforcement)
       const totalWallLen = perimeter + internalWallLength;
@@ -210,16 +226,16 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
 
     } else {
       const superH = wallHeight - 1.0;
-      const extBricks = Math.ceil(perimeter * superH * brickInfo.bricksPerSqm * WASTAGE_FACTOR);
+      const extBricks = Math.ceil(perimeter * superH * brickInfo.bricksPerSqm * masonryWasteMultiplier);
       items.push(createBOQItem(brickInfo.materialId, brickInfo.name, 'superstructure', extBricks, 'each', 'External walls'));
 
-      const intBricks = Math.ceil(internalWallLength * wallHeight * brickInfo.bricksPerSqm * WASTAGE_FACTOR);
+      const intBricks = Math.ceil(internalWallLength * wallHeight * brickInfo.bricksPerSqm * masonryWasteMultiplier);
       items.push(createBOQItem(brickInfo.materialId, brickInfo.name, 'superstructure', intBricks, 'each', 'Internal walls'));
 
       const totalB = extBricks + intBricks;
       const mort = (totalB / 1000) * MORTAR_M3_PER_1000_BRICKS;
-      items.push(createBOQItem(cementInfo.materialId, cementInfo.name, 'superstructure', Math.ceil(mort * cementInfo.bagsPerM3Mortar), 'per 50kg bag', 'Superstructure mortar'));
-      items.push(createBOQItem('sand-bricks', 'Brick Sand', 'superstructure', Math.ceil(mort * SAND_M3_PER_M3_MORTAR), 'per cube', 'Superstructure mortar'));
+      items.push(createBOQItem(cementInfo.materialId, cementInfo.name, 'superstructure', Math.ceil(mort * mortarCementBagsPerM3 * masonryWasteMultiplier), 'per 50kg bag', 'Superstructure mortar'));
+      items.push(createBOQItem('sand-bricks', 'Brick Sand', 'superstructure', Math.ceil(mort * SAND_M3_PER_M3_MORTAR * masonryWasteMultiplier), 'per cube', 'Superstructure mortar'));
 
       const totalLen = perimeter + internalWallLength;
       items.push(createBOQItem('brickforce', 'Brickforce', 'superstructure', Math.ceil(totalLen / 15), 'per roll', ''));
@@ -231,7 +247,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   // ROOFING (Simple Area based)
   // ============================================
   if (hasScope('roofing')) {
-    items.push(...calculateRoofing(floorArea));
+    items.push(...calculateRoofing(floorArea, locationType));
   }
 
   // ============================================
@@ -264,17 +280,14 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
 
 const MORTAR_M3_PER_1000_BRICKS = 0.5;
 const SAND_M3_PER_M3_MORTAR = 1.2;
-const WASTAGE_FACTOR = 1.05;
 
 const HARDCORE_M3_PER_SQM = 0.15;
 const DPM_SHEETS_PER_SQM = 1.1;
-const CONCRETE_M3_PER_LM_FOUNDATION = 0.18;
 
 const REBAR_Y12_PER_LM_RINGBEAM = 4;
 const STIRRUPS_PER_LM = 4;
 const MESH_SHEETS_PER_SQM = 0.07;
 
-const IBR_SHEETS_PER_SQM = 0.49;
 const ROOF_SCREWS_PER_SHEET = 8;
 const ROOF_PITCH_FACTOR = 1.15;
 
@@ -290,6 +303,48 @@ const LABOR_DAYS_PER_SQM: Record<string, number> = {
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
+
+function getBuildQuality(cementType: CementType): 'standard' | 'economy' {
+  return cementType === 'cement_425' ? 'standard' : 'economy';
+}
+
+function getConcreteProfile(cementType: CementType): 'structural' | 'economy' {
+  return cementType === 'cement_425' ? 'structural' : 'economy';
+}
+
+function getMasonryWasteMultiplier(locationType: LocationType): number {
+  return 1 + BOQ_ASSUMPTIONS.masonry.waste[locationType];
+}
+
+function getRoofingWasteMultiplier(locationType: LocationType): number {
+  return 1 + BOQ_ASSUMPTIONS.roofing.waste[locationType];
+}
+
+function getFoundationConcreteWasteMultiplier(locationType: LocationType): number {
+  const foundationWaste = BOQ_ASSUMPTIONS.foundation.waste[locationType];
+  const concreteWaste = BOQ_ASSUMPTIONS.concrete.waste[locationType];
+  return (1 + foundationWaste) * (1 + concreteWaste);
+}
+
+function getMortarCementBagsPerM3(cementType: CementType): number {
+  const buildQuality = getBuildQuality(cementType);
+  return BOQ_ASSUMPTIONS.mortar.cementBagsPerM3[buildQuality];
+}
+
+function getConcreteCementBagsPerM3(cementType: CementType): number {
+  const profile = getConcreteProfile(cementType);
+  return BOQ_ASSUMPTIONS.concrete.cementBagsPerM3[profile];
+}
+
+function calculateFoundationConcreteVolume(
+  perimeterLength: number,
+  locationType: LocationType
+): number {
+  const widthM = BOQ_ASSUMPTIONS.stripFooting.widthMm[locationType] / 1000;
+  const depthM = BOQ_ASSUMPTIONS.stripFooting.depthMm / 1000;
+  const concreteVolume = perimeterLength * widthM * depthM;
+  return concreteVolume * getFoundationConcreteWasteMultiplier(locationType);
+}
 
 let itemIdCounter = 0;
 function generateItemId(): string {
@@ -336,11 +391,12 @@ function createBOQItem(
 export function calculateWallBricks(
   wallLength: number,
   wallHeight: number,
-  brickType: BrickType
+  brickType: BrickType,
+  masonryWasteMultiplier: number = getMasonryWasteMultiplier(DEFAULT_LOCATION_TYPE)
 ): { bricks: number; note: string } {
   const wallArea = wallLength * wallHeight;
   const bricksPerSqm = BRICK_INFO[brickType].bricksPerSqm;
-  const bricks = Math.ceil(wallArea * bricksPerSqm * WASTAGE_FACTOR);
+  const bricks = Math.ceil(wallArea * bricksPerSqm * masonryWasteMultiplier);
 
   return {
     bricks,
@@ -350,13 +406,15 @@ export function calculateWallBricks(
 
 export function calculateMortar(
   totalBricks: number,
-  cementType: CementType
+  cementType: CementType,
+  locationType: LocationType = DEFAULT_LOCATION_TYPE
 ): { cement: number; sand: number } {
   const mortarVolume = (totalBricks / 1000) * MORTAR_M3_PER_1000_BRICKS;
+  const masonryWasteMultiplier = getMasonryWasteMultiplier(locationType);
   const cementBags = Math.ceil(
-    mortarVolume * CEMENT_INFO[cementType].bagsPerM3Mortar * WASTAGE_FACTOR
+    mortarVolume * getMortarCementBagsPerM3(cementType) * masonryWasteMultiplier
   );
-  const sandCubes = Math.ceil(mortarVolume * SAND_M3_PER_M3_MORTAR * 10) / 10;
+  const sandCubes = Math.ceil(mortarVolume * SAND_M3_PER_M3_MORTAR * masonryWasteMultiplier * 10) / 10;
 
   return { cement: cementBags, sand: sandCubes };
 }
@@ -368,7 +426,8 @@ export function calculateMortar(
 function calculateSubstructure(
   totalArea: number,
   perimeterLength: number,
-  config: VisionConfig
+  config: VisionConfig,
+  locationType: LocationType = DEFAULT_LOCATION_TYPE
 ): GeneratedBOQItem[] {
   const items: GeneratedBOQItem[] = [];
   const cfg = normalizeConfig(config);
@@ -379,9 +438,11 @@ function calculateSubstructure(
   const dpmSheets = Math.ceil(totalArea * DPM_SHEETS_PER_SQM / 50);
   items.push(createBOQItem('dpm-500', 'DPM 500 Gauge', 'substructure', dpmSheets, 'per roll', `${totalArea}m² coverage with overlaps`));
 
-  const concreteM3 = perimeterLength * CONCRETE_M3_PER_LM_FOUNDATION;
-  const concreteCement = Math.ceil(concreteM3 * 7);
-  items.push(createBOQItem(cfg.cementType === 'cement_425' ? 'cement-425' : 'cement-325', CEMENT_INFO[cfg.cementType].name, 'substructure', concreteCement, 'per 50kg bag', `Foundation: ${perimeterLength.toFixed(1)}m perimeter`));
+  const concreteM3 = calculateFoundationConcreteVolume(perimeterLength, locationType);
+  const footingWidthMm = BOQ_ASSUMPTIONS.stripFooting.widthMm[locationType];
+  const footingDepthMm = BOQ_ASSUMPTIONS.stripFooting.depthMm;
+  const concreteCement = Math.ceil(concreteM3 * getConcreteCementBagsPerM3(cfg.cementType));
+  items.push(createBOQItem(cfg.cementType === 'cement_425' ? 'cement-425' : 'cement-325', CEMENT_INFO[cfg.cementType].name, 'substructure', concreteCement, 'per 50kg bag', `Foundation: ${perimeterLength.toFixed(1)}m perimeter (${footingWidthMm}mm x ${footingDepthMm}mm)`));
 
   const foundationSand = Math.ceil(concreteM3 * 0.5 * 10) / 10;
   items.push(createBOQItem('sand-river', 'River Sand', 'substructure', foundationSand, 'per cube', 'Foundation concrete mix'));
@@ -389,10 +450,11 @@ function calculateSubstructure(
   const foundationStone = Math.ceil(concreteM3 * 0.8 * 10) / 10;
   items.push(createBOQItem('aggregate-19mm', 'Crushed Stone 19mm', 'substructure', foundationStone, 'per cube', 'Foundation concrete mix'));
 
-  const { bricks: subBricks, note: brickNote } = calculateWallBricks(perimeterLength, 1.0, cfg.brickType);
+  const masonryWasteMultiplier = getMasonryWasteMultiplier(locationType);
+  const { bricks: subBricks, note: brickNote } = calculateWallBricks(perimeterLength, 1.0, cfg.brickType, masonryWasteMultiplier);
   items.push(createBOQItem(BRICK_INFO[cfg.brickType].materialId, BRICK_INFO[cfg.brickType].name, 'substructure', subBricks, 'each', `Substructure walls: ${brickNote}`));
 
-  const { cement: subCement, sand: subSand } = calculateMortar(subBricks, cfg.cementType);
+  const { cement: subCement, sand: subSand } = calculateMortar(subBricks, cfg.cementType, locationType);
   items.push(createBOQItem(cfg.cementType === 'cement_425' ? 'cement-425' : 'cement-325', CEMENT_INFO[cfg.cementType].name, 'substructure', subCement, 'per 50kg bag', `Mortar for ${subBricks} bricks`));
   items.push(createBOQItem('sand-bricks', 'Bricklaying Sand', 'substructure', subSand, 'per cube', 'Mortar sand'));
 
@@ -409,26 +471,29 @@ function calculateSubstructure(
 function calculateSuperstructure(
   rooms: DetectedRoom[],
   walls: DetectedWall[],
-  config: VisionConfig
+  config: VisionConfig,
+  locationType: LocationType = DEFAULT_LOCATION_TYPE
 ): GeneratedBOQItem[] {
   const items: GeneratedBOQItem[] = [];
   const cfg = normalizeConfig(config);
 
   const externalWallLength = walls.filter((w) => w.type === 'external').reduce((sum, w) => sum + w.length, 0) / 4;
   const internalWallLength = walls.filter((w) => w.type === 'internal').reduce((sum, w) => sum + w.length, 0) / 4;
+  const masonryWasteMultiplier = getMasonryWasteMultiplier(locationType);
 
   const superWallHeight = cfg.wallHeight - 1.0;
-  const { bricks: extBricks } = calculateWallBricks(externalWallLength, superWallHeight, cfg.brickType);
+  const { bricks: extBricks } = calculateWallBricks(externalWallLength, superWallHeight, cfg.brickType, masonryWasteMultiplier);
   items.push(createBOQItem(BRICK_INFO[cfg.brickType].materialId, BRICK_INFO[cfg.brickType].name, 'superstructure', extBricks, 'each', `External walls: ${externalWallLength.toFixed(1)}m x ${superWallHeight}m`));
 
+  let intBricks = 0;
   if (internalWallLength > 0) {
-    const { bricks: intBricks } = calculateWallBricks(internalWallLength, cfg.wallHeight, cfg.brickType);
+    intBricks = calculateWallBricks(internalWallLength, cfg.wallHeight, cfg.brickType, masonryWasteMultiplier).bricks;
     items.push(createBOQItem(BRICK_INFO[cfg.brickType].materialId, BRICK_INFO[cfg.brickType].name, 'superstructure', intBricks, 'each', `Internal walls: ${internalWallLength.toFixed(1)}m x ${cfg.wallHeight}m`));
   }
 
-  const totalSuperBricks = extBricks + (internalWallLength > 0 ? calculateWallBricks(internalWallLength, cfg.wallHeight, cfg.brickType).bricks : 0);
+  const totalSuperBricks = extBricks + intBricks;
 
-  const { cement, sand } = calculateMortar(totalSuperBricks, cfg.cementType);
+  const { cement, sand } = calculateMortar(totalSuperBricks, cfg.cementType, locationType);
   items.push(createBOQItem(cfg.cementType === 'cement_425' ? 'cement-425' : 'cement-325', CEMENT_INFO[cfg.cementType].name, 'superstructure', cement, 'per 50kg bag', `Mortar for superstructure walls`));
   items.push(createBOQItem('sand-bricks', 'Bricklaying Sand', 'superstructure', sand, 'per cube', 'Mortar sand'));
 
@@ -449,13 +514,18 @@ function calculateSuperstructure(
 // ROOFING CALCULATIONS
 // ============================================
 
-function calculateRoofing(totalArea: number): GeneratedBOQItem[] {
+function calculateRoofing(
+  totalArea: number,
+  locationType: LocationType = DEFAULT_LOCATION_TYPE
+): GeneratedBOQItem[] {
   const items: GeneratedBOQItem[] = [];
 
   const roofArea = totalArea * ROOF_PITCH_FACTOR;
+  const roofAreaWithWaste = roofArea * getRoofingWasteMultiplier(locationType);
+  const sheetCoverage = BOQ_ASSUMPTIONS.roofing.effectiveSheetCoverageM2;
 
-  const ibrSheets = Math.ceil(roofArea * IBR_SHEETS_PER_SQM * WASTAGE_FACTOR);
-  items.push(createBOQItem('ibr-05-3m', 'IBR Sheets 0.5mm x 3m', 'roofing', ibrSheets, 'per sheet', `Roof area: ${roofArea.toFixed(1)}m²`));
+  const ibrSheets = Math.ceil(roofAreaWithWaste / sheetCoverage);
+  items.push(createBOQItem('ibr-05-3m', 'IBR Sheets 0.5mm x 3m', 'roofing', ibrSheets, 'per sheet', `Roof area: ${roofArea.toFixed(1)}m² + waste, ${sheetCoverage}m² effective coverage per sheet`));
 
   const screwBoxes = Math.ceil((ibrSheets * ROOF_SCREWS_PER_SHEET) / 100);
   items.push(createBOQItem('screws-roof', 'Roof Screws 65mm', 'roofing', screwBoxes, 'per 100', `${ibrSheets} sheets @ ${ROOF_SCREWS_PER_SHEET} screws each`));
@@ -520,17 +590,18 @@ export function generateBOQ(
   const { includeLabor } = config;
   const scopes: ProjectScope[] = Array.isArray(config.scope) ? config.scope : [config.scope];
   const hasScope = (s: ProjectScope) => scopes.includes(s) || scopes.includes('full_house');
+  const locationType = DEFAULT_LOCATION_TYPE;
 
   if (hasScope('substructure')) {
-    allItems.push(...calculateSubstructure(totalArea, perimeterLength, config));
+    allItems.push(...calculateSubstructure(totalArea, perimeterLength, config, locationType));
   }
 
   if (hasScope('superstructure')) {
-    allItems.push(...calculateSuperstructure(rooms, walls, config));
+    allItems.push(...calculateSuperstructure(rooms, walls, config, locationType));
   }
 
   if (hasScope('roofing')) {
-    allItems.push(...calculateRoofing(totalArea));
+    allItems.push(...calculateRoofing(totalArea, locationType));
   }
 
   if (includeLabor) {

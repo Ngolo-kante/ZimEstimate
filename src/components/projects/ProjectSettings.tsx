@@ -223,60 +223,80 @@ export default function ProjectSettings({ project, onUpdate }: ProjectSettingsPr
                 .settings-page {
                     display: flex;
                     flex-direction: column;
-                    gap: 24px;
-                    max-width: 900px;
+                    gap: 18px;
+                    max-width: 1040px;
                     margin: 0 auto;
+                    background: rgba(255, 255, 255, 0.54);
+                    border: 1px solid rgba(211, 211, 215, 0.72);
+                    border-radius: 22px;
+                    padding: 18px;
+                    box-shadow: 0 14px 24px rgba(6, 20, 47, 0.04);
+                    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+                }
+
+                .settings-page:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 18px 28px rgba(6, 20, 47, 0.08);
                 }
 
                 .settings-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: flex-start;
+                    gap: 14px;
+                    flex-wrap: wrap;
                     margin-bottom: 8px;
                 }
 
                 .settings-header h2 {
                     margin: 0;
-                    font-size: 1.75rem;
-                    color: #0f172a;
+                    font-size: 1.6rem;
+                    color: #0f294b;
                     font-weight: 700;
                     letter-spacing: -0.02em;
                 }
 
                 .settings-header p {
                     margin: 4px 0 0;
-                    font-size: 1rem;
-                    color: #64748b;
+                    font-size: 0.95rem;
+                    color: #617c9f;
                 }
 
                 .settings-card {
-                    background: #ffffff;
-                    border: 1px solid rgba(226, 232, 240, 0.6);
-                    border-radius: 20px;
+                    background: rgba(255, 255, 255, 0.9);
+                    border: 1px solid #d8e6f5;
+                    border-radius: 18px;
                     overflow: hidden;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01);
+                    box-shadow: 0 10px 18px rgba(6, 20, 47, 0.04);
+                    transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1), border-color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+                }
+
+                .settings-card:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 14px 24px rgba(17, 56, 95, 0.08);
+                    border-color: #c5ddf3;
                 }
 
                 .card-header {
-                    padding: 24px;
-                    border-bottom: 1px solid #f1f5f9;
+                    padding: 20px 22px;
+                    border-bottom: 1px solid #e8f0f8;
                 }
 
                 .card-header h3 {
                     margin: 0;
-                    font-size: 1.1rem;
+                    font-size: 1.02rem;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: #11385f;
                 }
 
                 .card-header p {
                     margin: 4px 0 0;
-                    font-size: 0.9rem;
-                    color: #64748b;
+                    font-size: 0.85rem;
+                    color: #67829f;
                 }
 
                 .card-content {
-                    padding: 24px;
+                    padding: 20px 22px;
                 }
 
                 /* Form Styles */
@@ -310,7 +330,7 @@ export default function ProjectSettings({ project, onUpdate }: ProjectSettingsPr
                     width: 100%;
                     padding: 12px 14px;
                     padding-right: 40px;
-                    border: 1px solid #cbd5e1;
+                    border: 1px solid #d3e3f3;
                     border-radius: 10px;
                     font-size: 0.95rem;
                     outline: none;
@@ -320,8 +340,8 @@ export default function ProjectSettings({ project, onUpdate }: ProjectSettingsPr
                 }
 
                 .input-wrapper input:focus {
-                    border-color: #3b82f6;
-                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                    border-color: #7db2ea;
+                    box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.12);
                 }
 
                 .input-wrapper svg {
@@ -343,16 +363,16 @@ export default function ProjectSettings({ project, onUpdate }: ProjectSettingsPr
                     justify-content: space-between;
                     align-items: center;
                     padding: 16px;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid #d7e5f3;
                     border-radius: 12px;
                     transition: all 0.2s;
-                    background: #f8fafc;
+                    background: #f5faff;
                 }
 
                 .stage-toggle.active {
                     background: #ffffff;
-                    border-color: #cbd5e1;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+                    border-color: #bdd7f0;
+                    box-shadow: 0 8px 14px rgba(17, 56, 95, 0.06);
                 }
 
                 .toggle-info {
@@ -374,8 +394,8 @@ export default function ProjectSettings({ project, onUpdate }: ProjectSettingsPr
                 }
 
                 .icon-box.active {
-                    background: #eff6ff;
-                    color: #2563eb;
+                    background: #e8f3ff;
+                    color: #2c6eaf;
                 }
 
                 .toggle-info h4 {
@@ -404,8 +424,13 @@ export default function ProjectSettings({ project, onUpdate }: ProjectSettingsPr
                     padding: 2px;
                 }
 
+                .switch:focus-visible {
+                    outline: none;
+                    box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.22);
+                }
+
                 .switch.on {
-                    background: #2563eb;
+                    background: #3d86d8;
                 }
 
                 .slider {
@@ -487,6 +512,16 @@ export default function ProjectSettings({ project, onUpdate }: ProjectSettingsPr
                 }
 
                 @media (max-width: 640px) {
+                    .settings-page {
+                        padding: 14px;
+                        border-radius: 16px;
+                        gap: 14px;
+                    }
+
+                    .settings-header h2 {
+                        font-size: 1.35rem;
+                    }
+
                     .stage-toggle {
                         flex-direction: column;
                         align-items: flex-start;
@@ -495,6 +530,15 @@ export default function ProjectSettings({ project, onUpdate }: ProjectSettingsPr
                     
                     .switch {
                         align-self: flex-end;
+                    }
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .settings-page,
+                    .settings-card,
+                    .stage-toggle {
+                        transition: none;
+                        transform: none !important;
                     }
                 }
             `}</style>

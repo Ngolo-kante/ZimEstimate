@@ -613,7 +613,18 @@ export default function ProjectUsageView({
         .usage-page {
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: 18px;
+          background: rgba(255, 255, 255, 0.56);
+          border: 1px solid rgba(211, 211, 215, 0.72);
+          border-radius: 22px;
+          padding: 18px;
+          box-shadow: 0 14px 24px rgba(6, 20, 47, 0.04);
+          transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .usage-page:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 18px 28px rgba(6, 20, 47, 0.08);
         }
 
         .usage-header {
@@ -627,24 +638,25 @@ export default function ProjectUsageView({
 
         .usage-header h2 {
             margin: 0;
-            font-size: 1.75rem;
-            color: #0f172a;
+            font-size: 1.62rem;
+            color: #0f294b;
             font-weight: 700;
             letter-spacing: -0.02em;
         }
 
         .usage-header p {
             margin: 4px 0 0;
-            color: #64748b;
-            font-size: 1rem;
+            color: #617c9f;
+            font-size: 0.95rem;
         }
 
         .view-toggle {
           display: flex;
           gap: 4px;
-          background: #f1f5f9;
+          background: #edf6ff;
           padding: 4px;
-          border-radius: 12px;
+          border-radius: 10px;
+          border: 1px solid #d5e6f7;
         }
 
         .view-toggle button {
@@ -663,6 +675,7 @@ export default function ProjectUsageView({
           background: #ffffff;
           color: #0f172a;
           box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          transform: translateY(-1px);
         }
 
         .usage-kpis {
@@ -679,8 +692,8 @@ export default function ProjectUsageView({
 
         .kpi-card {
             background: #ffffff;
-            border: 1px solid rgba(226, 232, 240, 0.6);
-            border-radius: 20px;
+            border: 1px solid #d9e7f5;
+            border-radius: 16px;
             padding: 20px;
             display: flex;
             flex-direction: column;
@@ -719,8 +732,8 @@ export default function ProjectUsageView({
 
         .donut-card {
             background: #ffffff;
-            border: 1px solid rgba(226, 232, 240, 0.6);
-            border-radius: 20px;
+            border: 1px solid #d9e7f5;
+            border-radius: 16px;
             padding: 24px;
             display: flex;
             flex-direction: column;
@@ -778,8 +791,8 @@ export default function ProjectUsageView({
 
         .usage-reminder {
             background: #ffffff;
-            border: 1px solid rgba(226, 232, 240, 0.6);
-            border-radius: 20px;
+            border: 1px solid #d9e7f5;
+            border-radius: 16px;
             padding: 20px 24px;
             display: flex;
             justify-content: space-between;
@@ -864,6 +877,12 @@ export default function ProjectUsageView({
           color: #3b82f6;
           box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
+
+        .channel-btn:focus-visible,
+        .toggle-btn:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.22);
+        }
         
         .toggle-btn {
             padding: 8px 16px;
@@ -895,8 +914,8 @@ export default function ProjectUsageView({
 
         .usage-log {
             background: #ffffff;
-            border: 1px solid rgba(226, 232, 240, 0.6);
-            border-radius: 20px;
+            border: 1px solid #d9e7f5;
+            border-radius: 16px;
             padding: 24px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01);
         }
@@ -950,8 +969,8 @@ export default function ProjectUsageView({
         
         .form-group input:focus,
         .form-group select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
         
         .form-actions {
@@ -962,8 +981,8 @@ export default function ProjectUsageView({
 
         .usage-table-card {
             background: #ffffff;
-            border: 1px solid rgba(226, 232, 240, 0.6);
-            border-radius: 20px;
+            border: 1px solid #d9e7f5;
+            border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01);
         }
@@ -1073,8 +1092,8 @@ export default function ProjectUsageView({
 
         .usage-history {
             background: #ffffff;
-            border: 1px solid rgba(226, 232, 240, 0.6);
-            border-radius: 20px;
+            border: 1px solid #d9e7f5;
+            border-radius: 16px;
             padding: 24px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01);
         }
@@ -1166,9 +1185,17 @@ export default function ProjectUsageView({
         }
         
         @media (max-width: 640px) {
+            .usage-page {
+                padding: 14px;
+                border-radius: 16px;
+                gap: 14px;
+            }
             .usage-header {
                 flex-direction: column;
                 align-items: flex-start;
+            }
+            .usage-header h2 {
+                font-size: 1.38rem;
             }
             .reminder-left {
                 width: 100%;
@@ -1177,6 +1204,24 @@ export default function ProjectUsageView({
             .reminder-controls {
                 width: 100%;
                 justify-content: space-between;
+            }
+            .usage-log,
+            .usage-reminder,
+            .usage-history {
+                padding: 16px;
+                border-radius: 14px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .usage-page,
+            .kpi-card,
+            .history-item,
+            .view-toggle button,
+            .channel-btn,
+            .toggle-btn {
+                transition: none;
+                transform: none !important;
             }
         }
       `}</style>

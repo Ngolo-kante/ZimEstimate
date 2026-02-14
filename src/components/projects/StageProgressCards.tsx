@@ -4,7 +4,6 @@ import React from 'react';
 import {
     CheckCircle,
     HourglassSimple,
-    Circle,
     Warehouse,
     Wall,
     House,

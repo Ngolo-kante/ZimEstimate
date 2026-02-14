@@ -27,17 +27,19 @@ import { supabase } from '@/lib/supabase';
 import {
   submitSupplierApplication,
   getUserSupplierApplication,
+  uploadSupplierDocument,
   MATERIAL_CATEGORIES,
   PAYMENT_TERMS_OPTIONS,
   ZIMBABWE_CITIES,
 } from '@/lib/services/suppliers';
 
-type Step = 'business' | 'contact' | 'products' | 'review';
+type Step = 'business' | 'contact' | 'products' | 'documents' | 'review';
 
 const STEPS: { key: Step; label: string; icon: React.ElementType }[] = [
   { key: 'business', label: 'Business Info', icon: Storefront },
   { key: 'contact', label: 'Contact Details', icon: User },
   { key: 'products', label: 'Products & Delivery', icon: Package },
+  { key: 'documents', label: 'Documents', icon: Certificate },
   { key: 'review', label: 'Review & Submit', icon: Check },
 ];
 
@@ -67,6 +69,15 @@ export default function SupplierRegisterPage() {
     deliveryRadiusKm: 50,
     paymentTerms: '',
     customerReferences: ['', '', ''],
+  });
+  const [documentFiles, setDocumentFiles] = useState<{
+    businessLicense: File | null;
+    taxClearance: File | null;
+    proofOfAddress: File | null;
+  }>({
+    businessLicense: null,
+    taxClearance: null,
+    proofOfAddress: null,
   });
 
   useEffect(() => {
@@ -115,6 +126,13 @@ export default function SupplierRegisterPage() {
         ? prev.materialCategories.filter(c => c !== category)
         : [...prev.materialCategories, category],
     }));
+  };
+
+  const handleDocumentChange = (field: keyof typeof documentFiles) => (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0] || null;
+    setDocumentFiles(prev => ({ ...prev, [field]: file }));
   };
 
   const validateStep = (step: Step): boolean => {
@@ -192,9 +210,43 @@ export default function SupplierRegisterPage() {
       customerReferences: formData.customerReferences.filter(r => r.trim()),
     });
 
-    setSubmitting(false);
-
     if (result.success) {
+      const applicationId = result.applicationId;
+      if (applicationId) {
+        const uploads = [
+          documentFiles.businessLicense
+            ? uploadSupplierDocument({
+              userId: user.id,
+              applicationId,
+              documentType: 'business_license',
+              file: documentFiles.businessLicense,
+            })
+            : Promise.resolve({ success: true }),
+          documentFiles.taxClearance
+            ? uploadSupplierDocument({
+              userId: user.id,
+              applicationId,
+              documentType: 'tax_clearance',
+              file: documentFiles.taxClearance,
+            })
+            : Promise.resolve({ success: true }),
+          documentFiles.proofOfAddress
+            ? uploadSupplierDocument({
+              userId: user.id,
+              applicationId,
+              documentType: 'proof_of_address',
+              file: documentFiles.proofOfAddress,
+            })
+            : Promise.resolve({ success: true }),
+        ];
+
+        const results = await Promise.all(uploads);
+        const failed = results.filter(r => !r.success);
+        if (failed.length > 0) {
+          setErrors({ submit: 'Application submitted, but some documents failed to upload.' });
+        }
+      }
+
       setExistingApplication({
         status: 'pending',
         created_at: new Date().toISOString(),
@@ -202,6 +254,8 @@ export default function SupplierRegisterPage() {
     } else {
       setErrors({ submit: result.error || 'Failed to submit application' });
     }
+
+    setSubmitting(false);
   };
 
   if (loading) {
@@ -822,7 +876,91 @@ export default function SupplierRegisterPage() {
             </div>
           )}
 
-          {/* Step 4: Review */}
+          {/* Step 4: Documents */}
+          {currentStep === 'documents' && (
+            <div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.75rem' }}>
+                Verification Documents
+              </h2>
+              <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '1.5rem' }}>
+                Uploading your documents helps us verify your business faster. You can submit now and upload later, but
+                verification will only be completed once documents are reviewed.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+                    <Upload size={18} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                    Business Registration / License
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleDocumentChange('businessLicense')}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem',
+                      backgroundColor: 'white',
+                    }}
+                  />
+                  <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                    {documentFiles.businessLicense ? `Selected: ${documentFiles.businessLicense.name}` : 'PDF or image file'}
+                  </p>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+                    <Upload size={18} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                    Tax Clearance (optional)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleDocumentChange('taxClearance')}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem',
+                      backgroundColor: 'white',
+                    }}
+                  />
+                  <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                    {documentFiles.taxClearance ? `Selected: ${documentFiles.taxClearance.name}` : 'Optional but recommended'}
+                  </p>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+                    <Upload size={18} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                    Proof of Address (optional)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleDocumentChange('proofOfAddress')}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem',
+                      backgroundColor: 'white',
+                    }}
+                  />
+                  <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                    {documentFiles.proofOfAddress ? `Selected: ${documentFiles.proofOfAddress.name}` : 'Utility bill, lease, or municipal statement'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Review */}
           {currentStep === 'review' && (
             <div>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>
@@ -898,6 +1036,30 @@ export default function SupplierRegisterPage() {
                     {formData.paymentTerms && (
                       <div><strong>Payment Terms:</strong> {formData.paymentTerms}</div>
                     )}
+                  </div>
+                </div>
+
+                <div style={{
+                  backgroundColor: '#f8fafc',
+                  borderRadius: '8px',
+                  padding: '1rem',
+                }}>
+                  <h3 style={{ fontWeight: 600, marginBottom: '0.75rem', color: '#475569' }}>
+                    Verification Documents
+                  </h3>
+                  <div style={{ display: 'grid', gap: '0.5rem', fontSize: '0.875rem' }}>
+                    <div>
+                      <strong>Business License:</strong>{' '}
+                      {documentFiles.businessLicense ? documentFiles.businessLicense.name : 'Not uploaded'}
+                    </div>
+                    <div>
+                      <strong>Tax Clearance:</strong>{' '}
+                      {documentFiles.taxClearance ? documentFiles.taxClearance.name : 'Not uploaded'}
+                    </div>
+                    <div>
+                      <strong>Proof of Address:</strong>{' '}
+                      {documentFiles.proofOfAddress ? documentFiles.proofOfAddress.name : 'Not uploaded'}
+                    </div>
                   </div>
                 </div>
 

@@ -206,19 +206,19 @@ export default function DocumentUploader({ onUpload, isUploading }: DocumentUplo
                 }
 
                 .drop-zone {
-                    border: 2px dashed var(--color-border);
-                    border-radius: var(--radius-lg);
+                    border: 2px dashed #c9ddf1;
+                    border-radius: 14px;
                     padding: var(--spacing-2xl);
                     text-align: center;
                     cursor: pointer;
                     transition: all 0.2s ease;
-                    background: var(--color-background);
+                    background: rgba(248, 252, 255, 0.9);
                 }
 
                 .drop-zone:hover,
                 .drop-zone.dragging {
-                    border-color: var(--color-primary);
-                    background: rgba(78, 154, 247, 0.05);
+                    border-color: #7eafe3;
+                    background: rgba(78, 154, 247, 0.08);
                 }
 
                 .drop-zone :global(.upload-icon) {
@@ -247,8 +247,8 @@ export default function DocumentUploader({ onUpload, isUploading }: DocumentUplo
                 }
 
                 .file-preview {
-                    border: 1px solid var(--color-border);
-                    border-radius: var(--radius-lg);
+                    border: 1px solid #d3e4f4;
+                    border-radius: 14px;
                     padding: var(--spacing-lg);
                     background: var(--color-surface);
                 }
@@ -325,7 +325,7 @@ export default function DocumentUploader({ onUpload, isUploading }: DocumentUplo
                 .category-select,
                 .description-input {
                     padding: var(--spacing-sm) var(--spacing-md);
-                    border: 1px solid var(--color-border);
+                    border: 1px solid #d3e4f4;
                     border-radius: var(--radius-md);
                     font-size: 0.875rem;
                     background: var(--color-surface);
@@ -335,8 +335,8 @@ export default function DocumentUploader({ onUpload, isUploading }: DocumentUplo
                 .category-select:focus,
                 .description-input:focus {
                     outline: none;
-                    border-color: var(--color-primary);
-                    box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.1);
+                    border-color: #7fb3ea;
+                    box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.12);
                 }
 
                 .upload-actions {

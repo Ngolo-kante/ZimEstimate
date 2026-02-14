@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { Profile, TIER_LIMITS } from '@/lib/database.types';
@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [projectCount, setProjectCount] = useState(0);
+    const projectCountRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Fetch user profile from database
     const fetchProfile = useCallback(async (userId: string) => {
@@ -219,6 +220,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!profile) return false;
         return TIER_LIMITS[profile.tier].advancedExport;
     };
+
+    // Keep project usage counters fresh after create/archive/delete operations.
+    useEffect(() => {
+        if (!user?.id) return;
+
+        const scheduleCountRefresh = () => {
+            if (projectCountRefreshTimeoutRef.current) {
+                clearTimeout(projectCountRefreshTimeoutRef.current);
+            }
+            projectCountRefreshTimeoutRef.current = setTimeout(async () => {
+                const count = await fetchProjectCount(user.id);
+                setProjectCount(count);
+            }, 250);
+        };
+
+        const channel = supabase
+            .channel(`auth-project-count-${user.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'projects',
+                    filter: `owner_id=eq.${user.id}`,
+                },
+                () => {
+                    scheduleCountRefresh();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            if (projectCountRefreshTimeoutRef.current) {
+                clearTimeout(projectCountRefreshTimeoutRef.current);
+                projectCountRefreshTimeoutRef.current = null;
+            }
+            void supabase.removeChannel(channel);
+        };
+    }, [fetchProjectCount, user?.id]);
 
     const value: AuthContextType = {
         user,
