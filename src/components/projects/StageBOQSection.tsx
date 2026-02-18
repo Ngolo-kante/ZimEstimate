@@ -13,6 +13,17 @@ import { Package, CaretDown, CaretUp, Trash, ShoppingCart, Plus, TrendUp, TrendD
 
 type StageCategory = BOQCategory | 'labor';
 type ItemStatus = 'pending' | 'in_progress' | 'purchased' | 'over_purchased';
+const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
+
+const isEnablementItem = (notes?: string | null) =>
+    (notes || '').startsWith(ENABLEMENT_ITEM_TAG);
+
+const stripEnablementTag = (notes?: string | null) => {
+    if (!notes) return '';
+    return notes.startsWith(ENABLEMENT_ITEM_TAG)
+        ? notes.replace(ENABLEMENT_ITEM_TAG, '').trim()
+        : notes;
+};
 
 interface StageBOQSectionProps {
     projectId: string;
@@ -703,13 +714,17 @@ export default function StageBOQSection({
                                         };
 
                                         const rowStatus = getItemStatus(item, purchases);
+                                        const enablement = isEnablementItem(item.notes);
                                         return (
-                                            <tr key={item.id} className={`item-row status-${rowStatus}`}>
+                                            <tr key={item.id} className={`item-row status-${rowStatus}${enablement ? ' enablement' : ''}`}>
                                                 {visibleColumns.item && (
                                                     <td className="col-item">
                                                         <div className="item-info">
                                                             <span className="item-name">{item.material_name}</span>
-                                                            {item.notes && <span className="item-notes">{item.notes}</span>}
+                                                            {enablement && (
+                                                                <span className="enablement-pill">Enablement Cost</span>
+                                                            )}
+                                                            {item.notes && <span className="item-notes">{stripEnablementTag(item.notes)}</span>}
                                                         </div>
                                                     </td>
                                                 )}
@@ -1328,6 +1343,24 @@ export default function StageBOQSection({
 
                 .item-row.status-over_purchased {
                     background: linear-gradient(90deg, rgba(239, 68, 68, 0.04), transparent 50%);
+                }
+
+                .item-row.enablement {
+                    background: linear-gradient(90deg, rgba(125, 211, 252, 0.2), transparent 60%);
+                }
+
+                .enablement-pill {
+                    display: inline-flex;
+                    width: fit-content;
+                    font-size: 0.62rem;
+                    font-weight: 600;
+                    letter-spacing: 0.04em;
+                    text-transform: uppercase;
+                    color: #0369a1;
+                    background: rgba(125, 211, 252, 0.35);
+                    border: 1px solid rgba(14, 116, 144, 0.22);
+                    border-radius: 999px;
+                    padding: 2px 6px;
                 }
                 
                 .variance-badge {

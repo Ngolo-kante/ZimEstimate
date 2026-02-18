@@ -28,6 +28,7 @@ import {
     getProjectWithItems,
     getBOQItems,
     getPurchaseRecords,
+    getProjectDocuments,
     getLatestWeeklyPrices,
     getLatestProjectNotification,
     createProjectNotification,
@@ -42,6 +43,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { clearCreatedProjectSnapshot, getCreatedProjectSnapshot } from '@/lib/projectCreationCache';
 import { materials, getBestPrice } from '@/lib/materials';
+import { LOCATION_PROCEDURE_RULES } from '@/lib/buildFlowRules';
 import {
     getProjectStages,
     getStageUsageData,
@@ -76,6 +78,37 @@ const categoryLabels: Record<BOQCategory, string> = {
     roofing: 'Roofing',
     finishing: 'Interior & Finishing',
     exterior: 'External Work',
+};
+
+const CHECKLIST_TASK_PREFIX = 'boq_checklist:';
+const CERTIFICATE_TASK_PREFIX = 'boq_certificate:';
+const GEOTECH_DOC_TAG = 'geotech_report';
+
+const CERTIFICATE_ITEMS = [
+    { id: 'approved_site_plan', label: 'Approved Site Plan' },
+    { id: 'slab_foundation_certificate', label: 'Slab/Foundation Certificate' },
+    { id: 'completion_occupation_certificate', label: 'Completion/Occupation Certificate' },
+] as const;
+
+const SOIL_LABELS: Record<string, string> = {
+    sandy: 'Sandy',
+    clay_black_mountain: 'Clay / Black Mountain',
+    loam: 'Loam',
+    rock: 'Rock',
+};
+
+const SLOPE_LABELS: Record<string, string> = {
+    flat: 'Flat',
+    gentle: 'Gentle Slope',
+    moderate: 'Moderate Slope',
+    steep: 'Steep',
+};
+
+const parseCertificateStatus = (marker?: string | null): 'pending' | 'in_progress' | 'done' => {
+    if (!marker) return 'pending';
+    if (marker.includes('|status:done')) return 'done';
+    if (marker.includes('|status:in_progress')) return 'in_progress';
+    return 'pending';
 };
 
 type PriceUpdate = {
@@ -139,6 +172,11 @@ function ProjectDetailContent() {
     const [selectedItemForPurchase, setSelectedItemForPurchase] = useState<BOQItem | null>(null);
     const [selectedItemForUsage, setSelectedItemForUsage] = useState<BOQItem | null>(null);
     const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
+    const [geotechDocumentSummary, setGeotechDocumentSummary] = useState<{
+        id: string;
+        fileName: string;
+        createdAt: string;
+    } | null>(null);
 
     useReveal({ deps: [isLoading, activeView, activeTab] });
 
@@ -253,6 +291,61 @@ function ProjectDetailContent() {
         return allUsage;
     }, [usageByStage]);
 
+    const substructureStage = useMemo(
+        () => stages.find((stage) => stage.boq_category === 'substructure'),
+        [stages]
+    );
+
+    const checklistSummary = useMemo(() => {
+        const checklistTasks = (substructureStage?.tasks || []).filter((task) =>
+            (task.verification_note || '').startsWith(CHECKLIST_TASK_PREFIX)
+        );
+        const completed = checklistTasks.filter((task) => task.is_completed).length;
+        return {
+            completed,
+            total: checklistTasks.length,
+        };
+    }, [substructureStage?.tasks]);
+
+    const checklistEntries = useMemo(() => {
+        return (substructureStage?.tasks || [])
+            .filter((task) => (task.verification_note || '').startsWith(CHECKLIST_TASK_PREFIX))
+            .map((task) => {
+                const ruleId = (task.verification_note || '').replace(CHECKLIST_TASK_PREFIX, '').split('|')[0];
+                const ruleLabel = LOCATION_PROCEDURE_RULES.find((rule) => rule.id === ruleId)?.label || ruleId;
+                return {
+                    id: ruleId,
+                    label: ruleLabel,
+                    completed: task.is_completed,
+                };
+            });
+    }, [substructureStage?.tasks]);
+
+    const certificateSummary = useMemo(() => {
+        const certificateState = CERTIFICATE_ITEMS.reduce<Record<string, 'pending' | 'in_progress' | 'done'>>(
+            (acc, certificate) => {
+                acc[certificate.id] = 'pending';
+                return acc;
+            },
+            {}
+        );
+
+        (substructureStage?.tasks || []).forEach((task) => {
+            const marker = task.verification_note || '';
+            if (!marker.startsWith(CERTIFICATE_TASK_PREFIX)) return;
+            const certificateId = marker.replace(CERTIFICATE_TASK_PREFIX, '').split('|')[0];
+            if (!(certificateId in certificateState)) return;
+            certificateState[certificateId] = task.is_completed ? 'done' : parseCertificateStatus(marker);
+        });
+
+        const completed = Object.values(certificateState).filter((status) => status === 'done').length;
+        return {
+            completed,
+            total: CERTIFICATE_ITEMS.length,
+            state: certificateState,
+        };
+    }, [substructureStage?.tasks]);
+
     const applyStages = useCallback((nextStages: ProjectStageWithTasks[], forcePrimaryStage = false) => {
         setStages(nextStages);
         const firstApplicable = nextStages.find((stage) => stage.is_applicable);
@@ -280,10 +373,11 @@ function ProjectDetailContent() {
             setError(null);
         }
 
-        const [projectResult, stagesResult, purchasesResult] = await Promise.all([
+        const [projectResult, stagesResult, purchasesResult, docsResult] = await Promise.all([
             getProjectWithItems(projectId),
             getProjectStages(projectId),
             getPurchaseRecords(projectId),
+            getProjectDocuments(projectId, 'permit'),
         ]);
 
         if (projectResult.error) {
@@ -302,6 +396,21 @@ function ProjectDetailContent() {
 
         if (purchasesResult.records) {
             setPurchases(purchasesResult.records);
+        }
+
+        if (!docsResult.error) {
+            const geotechDoc = docsResult.documents.find((document) =>
+                (document.description || '').includes(GEOTECH_DOC_TAG)
+            );
+            if (geotechDoc) {
+                setGeotechDocumentSummary({
+                    id: geotechDoc.id,
+                    fileName: geotechDoc.file_name,
+                    createdAt: geotechDoc.created_at,
+                });
+            } else {
+                setGeotechDocumentSummary(null);
+            }
         }
 
         if (showLoading) {
@@ -465,6 +574,8 @@ function ProjectDetailContent() {
             }, 250);
         };
 
+        const stageIds = new Set(stages.map((stage) => stage.id));
+
         const channel = supabase
             .channel(`project-detail-${projectId}`)
             .on(
@@ -503,6 +614,32 @@ function ProjectDetailContent() {
                     scheduleStageRefresh();
                 }
             )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'stage_tasks',
+                },
+                (payload) => {
+                    const candidate = (payload.new as { stage_id?: string } | null)?.stage_id
+                        || (payload.old as { stage_id?: string } | null)?.stage_id;
+                    if (candidate && stageIds.size > 0 && !stageIds.has(candidate)) return;
+                    scheduleStageRefresh();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'project_documents',
+                    filter: `project_id=eq.${projectId}`,
+                },
+                () => {
+                    scheduleProjectRefresh();
+                }
+            )
             .subscribe();
 
         return () => {
@@ -516,7 +653,7 @@ function ProjectDetailContent() {
             }
             void supabase.removeChannel(channel);
         };
-    }, [activeView, loadProjectData, loadUsageData, project?.usage_tracking_enabled, projectId, refreshStages]);
+    }, [activeView, loadProjectData, loadUsageData, project?.usage_tracking_enabled, projectId, refreshStages, stages]);
 
     useEffect(() => {
         if (!project?.usage_tracking_enabled) return;
@@ -1182,7 +1319,90 @@ function ProjectDetailContent() {
                                         </div>
                                     </Card>
 
-                                    <Card className="pro-tip-card reveal" data-delay="7">
+                                    <Card className="reveal" data-delay="7">
+                                        <CardHeader>
+                                            <CardTitle>Compliance Snapshot</CardTitle>
+                                        </CardHeader>
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center py-2 border-b border-border-light">
+                                                <span className="text-sm text-secondary">Checklist Tasks</span>
+                                                <span className="font-medium text-primary">
+                                                    {checklistSummary.completed}/{checklistSummary.total}
+                                                </span>
+                                            </div>
+                                            {checklistEntries.slice(0, 3).map((entry, index) => (
+                                                <div key={`${entry.id}-${index}`} className="flex justify-between items-center text-xs">
+                                                    <span className="text-secondary">{entry.label}</span>
+                                                    <span className={`px-2 py-0.5 rounded-full font-medium ${
+                                                        entry.completed ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
+                                                    }`}>
+                                                        {entry.completed ? 'Done' : 'Pending'}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                            {checklistSummary.total === 0 && (
+                                                <div className="text-xs text-secondary">
+                                                    No checklist tasks synced yet.
+                                                </div>
+                                            )}
+
+                                            <div className="flex justify-between items-center py-2 border-y border-border-light">
+                                                <span className="text-sm text-secondary">Certificates</span>
+                                                <span className="font-medium text-primary">
+                                                    {certificateSummary.completed}/{certificateSummary.total}
+                                                </span>
+                                            </div>
+                                            {CERTIFICATE_ITEMS.map((certificate) => {
+                                                const status = certificateSummary.state[certificate.id];
+                                                const badgeClass = status === 'done'
+                                                    ? 'bg-green-100 text-green-700'
+                                                    : status === 'in_progress'
+                                                        ? 'bg-amber-100 text-amber-700'
+                                                        : 'bg-slate-100 text-slate-600';
+                                                const statusLabel = status === 'done'
+                                                    ? 'Received'
+                                                    : status === 'in_progress'
+                                                        ? 'In Progress'
+                                                        : 'Pending';
+                                                return (
+                                                    <div key={certificate.id} className="flex justify-between items-center text-xs">
+                                                        <span className="text-secondary">{certificate.label}</span>
+                                                        <span className={`px-2 py-0.5 rounded-full font-medium ${badgeClass}`}>
+                                                            {statusLabel}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+
+                                            <div className="pt-2 border-t border-border-light space-y-2">
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-secondary">Soil Type</span>
+                                                    <span className="font-medium text-primary">
+                                                        {project.soil_type ? (SOIL_LABELS[project.soil_type] || project.soil_type) : 'Not set'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-secondary">Site Slope</span>
+                                                    <span className="font-medium text-primary">
+                                                        {project.site_slope ? (SLOPE_LABELS[project.site_slope] || project.site_slope) : 'Not set'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-secondary">Geotech Report</span>
+                                                    <span className={`font-medium ${project.geotech_report_uploaded ? 'text-green-700' : 'text-slate-600'}`}>
+                                                        {project.geotech_report_uploaded ? 'Uploaded' : 'Not uploaded'}
+                                                    </span>
+                                                </div>
+                                                {geotechDocumentSummary && (
+                                                    <div className="text-xs text-secondary">
+                                                        {geotechDocumentSummary.fileName} ({new Date(geotechDocumentSummary.createdAt).toLocaleDateString()})
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </Card>
+
+                                    <Card className="pro-tip-card reveal" data-delay="8">
                                         <div className="p-4">
                                             <h4 className="font-bold text-blue-900 mb-2">Pro Tip</h4>
                                             <p className="text-sm text-blue-700">

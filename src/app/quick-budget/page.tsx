@@ -190,6 +190,12 @@ export default function QuickBudgetPage() {
         description: `Budget check: $${Math.round(parsedBudget).toLocaleString()} budget, ${overallPercent}% coverage.`,
         scope: 'entire_house',
         labor_preference: 'materials_only',
+        soil_type: null,
+        site_slope: null,
+        geotech_report_uploaded: false,
+        geotech_report_uploaded_at: null,
+        geotech_report_document_id: null,
+        geotech_analysis_mode: 'manual',
       });
 
       if (createError || !project) {

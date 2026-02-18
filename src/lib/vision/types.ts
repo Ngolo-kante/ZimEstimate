@@ -1,3 +1,5 @@
+import type { ProjectSoilType, SiteSlopeType } from '@/lib/database.types';
+
 // Vision Takeoff Types
 // TypeScript interfaces for floor plan analysis and BOQ generation
 
@@ -131,9 +133,14 @@ export type WizardStep =
   | 'calculating'
   | 'results';
 
+export type VisionLocationType = 'urban' | 'peri-urban' | 'rural';
+
 export interface ProjectInfo {
   name: string;
   location: string;
+  locationType: VisionLocationType | '';
+  soilType: ProjectSoilType | '';
+  siteSlope: SiteSlopeType | '';
 }
 
 export interface VisionTakeoffState {
@@ -157,7 +164,13 @@ export const INITIAL_STATE: VisionTakeoffState = {
   analysisResult: null,
   editedRooms: [],
   editedWalls: [],
-  projectInfo: { name: '', location: '' },
+  projectInfo: {
+    name: '',
+    location: '',
+    locationType: '',
+    soilType: '',
+    siteSlope: '',
+  },
   config: DEFAULT_CONFIG,
   generatedBOQ: [],
   error: null,

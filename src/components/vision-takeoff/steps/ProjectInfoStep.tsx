@@ -66,9 +66,31 @@ export default function ProjectInfoStep({
           </div>
 
           <div className="form-group">
+            <label htmlFor="project-location-type">
+              <MapPin size={18} weight="light" />
+              Location Type (Optional)
+            </label>
+            <div className="select-wrapper">
+              <select
+                id="project-location-type"
+                value={projectInfo.locationType}
+                onChange={(e) => onUpdate({ locationType: e.target.value as ProjectInfo['locationType'] })}
+              >
+                <option value="">Select Location Type</option>
+                <option value="urban">Urban</option>
+                <option value="peri-urban">Peri-Urban</option>
+                <option value="rural">Rural</option>
+              </select>
+            </div>
+            <span className="hint-text">
+              Used for approval and temporary works recommendations.
+            </span>
+          </div>
+
+          <div className="form-group">
             <label htmlFor="project-location">
               <MapPin size={18} weight="light" />
-              Location (Optional)
+              City / Area (Optional)
             </label>
             <div className="select-wrapper">
               <select
@@ -92,6 +114,52 @@ export default function ProjectInfoStep({
             </div>
             <span className="hint-text">
               Location helps you track projects and may affect material pricing in future versions.
+            </span>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="soil-type">
+              <House size={18} weight="light" />
+              Soil Type (Optional)
+            </label>
+            <div className="select-wrapper">
+              <select
+                id="soil-type"
+                value={projectInfo.soilType}
+                onChange={(e) => onUpdate({ soilType: e.target.value as ProjectInfo['soilType'] })}
+              >
+                <option value="">Select Soil Type</option>
+                <option value="sandy">Sandy</option>
+                <option value="clay_black_mountain">Clay / Black Mountain</option>
+                <option value="loam">Loam</option>
+                <option value="rock">Rock</option>
+              </select>
+            </div>
+            <span className="hint-text">
+              Soil type drives risk warnings and substructure assumptions.
+            </span>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="site-slope">
+              <House size={18} weight="light" />
+              Site Slope (Optional)
+            </label>
+            <div className="select-wrapper">
+              <select
+                id="site-slope"
+                value={projectInfo.siteSlope}
+                onChange={(e) => onUpdate({ siteSlope: e.target.value as ProjectInfo['siteSlope'] })}
+              >
+                <option value="">Select Site Slope</option>
+                <option value="flat">Flat</option>
+                <option value="gentle">Gentle Slope</option>
+                <option value="moderate">Moderate Slope</option>
+                <option value="steep">Steep</option>
+              </select>
+            </div>
+            <span className="hint-text">
+              Slope helps with excavation and drainage risk checks.
             </span>
           </div>
 

@@ -43,6 +43,42 @@ interface EditingState {
   value: string;
 }
 
+const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
+
+const LOCATION_TYPE_LABELS: Record<string, string> = {
+  urban: 'Urban',
+  'peri-urban': 'Peri-Urban',
+  rural: 'Rural',
+};
+
+const SOIL_LABELS: Record<string, string> = {
+  sandy: 'Sandy',
+  clay_black_mountain: 'Clay / Black Mountain',
+  loam: 'Loam',
+  rock: 'Rock',
+};
+
+const SLOPE_LABELS: Record<string, string> = {
+  flat: 'Flat',
+  gentle: 'Gentle Slope',
+  moderate: 'Moderate Slope',
+  steep: 'Steep',
+};
+
+const stripEnablementTag = (note: string) =>
+  note.startsWith(ENABLEMENT_ITEM_TAG)
+    ? note.replace(ENABLEMENT_ITEM_TAG, '').trim()
+    : note;
+
+const buildLocationLabel = (projectInfo: ProjectInfo) => {
+  const parts = [
+    projectInfo.locationType ? LOCATION_TYPE_LABELS[projectInfo.locationType] || projectInfo.locationType : '',
+    projectInfo.location || '',
+  ].filter(Boolean);
+
+  return parts.join(' - ');
+};
+
 export default function BOQResultsStep({
   items,
   totals,
@@ -65,6 +101,14 @@ export default function BOQResultsStep({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveMessage, setSaveMessage] = useState('Creating your project...');
   const [saveSteps, setSaveSteps] = useState<Array<{ label: string; status: 'pending' | 'active' | 'done' }>>([]);
+  const locationLabel = useMemo(() => buildLocationLabel(projectInfo), [projectInfo]);
+  const profileLabel = useMemo(() => {
+    const parts = [
+      projectInfo.soilType ? SOIL_LABELS[projectInfo.soilType] || projectInfo.soilType : '',
+      projectInfo.siteSlope ? SLOPE_LABELS[projectInfo.siteSlope] || projectInfo.siteSlope : '',
+    ].filter(Boolean);
+    return parts.join(' | ');
+  }, [projectInfo.siteSlope, projectInfo.soilType]);
 
   // Group items by category
   const groupedItems = useMemo(() => {
@@ -135,7 +179,7 @@ export default function BOQResultsStep({
   const handleExportPDF = () => {
     const boqData = {
       projectName: projectInfo.name || 'Vision Takeoff Project',
-      location: projectInfo.location,
+      location: locationLabel,
       totalArea,
       items: items.map((item) => ({
         material_name: item.materialName,
@@ -154,7 +198,8 @@ export default function BOQResultsStep({
 
   const handleWhatsAppShare = () => {
     const summary = `*${projectInfo.name || 'Vision Takeoff BOQ'}*\n` +
-      `Location: ${projectInfo.location || 'Not specified'}\n` +
+      `Location: ${locationLabel || 'Not specified'}\n` +
+      `${profileLabel ? `Site Profile: ${profileLabel}\n` : ''}` +
       `Floor Area: ${totalArea.toFixed(0)}m²\n\n` +
       `*Total Estimate:*\n` +
       `USD: $${totals.usd.toLocaleString()}\n` +
@@ -188,10 +233,16 @@ export default function BOQResultsStep({
         // Create project
         const { project, error: createError } = await createProject({
           name: projectInfo.name || 'Vision Takeoff Project',
-          location: projectInfo.location,
+          location: locationLabel,
           scope: projectScope,
           labor_preference: config.includeLabor ? 'with_labor' : 'materials_only',
           selected_stages: !hasFullHouse && selectedStages.length > 0 ? selectedStages : null,
+          soil_type: projectInfo.soilType || null,
+          site_slope: projectInfo.siteSlope || null,
+          geotech_report_uploaded: false,
+          geotech_report_uploaded_at: null,
+          geotech_report_document_id: null,
+          geotech_analysis_mode: 'manual',
         });
 
         if (createError || !project) {
@@ -207,7 +258,7 @@ export default function BOQResultsStep({
 
         // Convert items to database format
         const boqItems = items.map((item, index) => ({
-          material_id: item.id,
+          material_id: item.materialId,
           material_name: item.materialName,
           category: item.category,
           quantity: item.quantity,
@@ -246,7 +297,7 @@ export default function BOQResultsStep({
         setOptimisticProjectCard({
           id: project.id,
           name: projectInfo.name || 'Vision Takeoff Project',
-          location: projectInfo.location || '',
+          location: locationLabel || '',
           type: 'vision',
         });
         setCreatedProjectSnapshot({
@@ -271,7 +322,8 @@ export default function BOQResultsStep({
       <div className="results-header">
         <div className="header-content">
           <h1>{projectInfo.name || 'Vision Takeoff Results'}</h1>
-          {projectInfo.location && <p className="location">{projectInfo.location}</p>}
+          {locationLabel && <p className="location">{locationLabel}</p>}
+          {profileLabel && <p className="profile">{profileLabel}</p>}
           <p className="meta">{totalArea.toFixed(0)}m² floor area</p>
         </div>
 
@@ -355,13 +407,18 @@ export default function BOQResultsStep({
                     </tr>
                   </thead>
                   <tbody>
-                    {groupedItems[category].map((item) => (
-                      <tr key={item.id} className={item.isEdited ? 'edited' : ''}>
+                    {groupedItems[category].map((item) => {
+                      const isEnablement = item.calculationNote.startsWith(ENABLEMENT_ITEM_TAG);
+                      return (
+                      <tr key={item.id} className={`${item.isEdited ? 'edited' : ''} ${isEnablement ? 'enablement' : ''}`.trim()}>
                         <td>
                           <div className="material-cell">
                             <span className="material-name">{item.materialName}</span>
+                            {isEnablement && (
+                              <span className="enablement-chip">Enablement Cost</span>
+                            )}
                             {item.calculationNote && (
-                              <span className="calc-note">{item.calculationNote}</span>
+                              <span className="calc-note">{stripEnablementTag(item.calculationNote)}</span>
                             )}
                           </div>
                         </td>
@@ -428,13 +485,13 @@ export default function BOQResultsStep({
                           <button
                             className="remove-btn"
                             onClick={() => onItemRemove(item.id)}
-                            title="Remove item"
+                            title={isEnablement ? 'Remove suggested enablement cost' : 'Remove item'}
                           >
                             <Trash size={16} weight="light" />
                           </button>
                         </td>
                       </tr>
-                    ))}
+                    )})}
                   </tbody>
                 </table>
               )}
@@ -524,6 +581,12 @@ export default function BOQResultsStep({
         .meta {
           font-size: 0.75rem;
           color: var(--color-text-muted);
+          margin: var(--spacing-xs) 0 0;
+        }
+
+        .profile {
+          font-size: 0.75rem;
+          color: var(--color-text-secondary);
           margin: var(--spacing-xs) 0 0;
         }
 
@@ -705,6 +768,10 @@ export default function BOQResultsStep({
           background: rgba(78, 154, 247, 0.12);
         }
 
+        .boq-table tr.enablement {
+          background: rgba(125, 211, 252, 0.2);
+        }
+
         .col-qty,
         .col-unit,
         .col-price,
@@ -731,6 +798,20 @@ export default function BOQResultsStep({
         .calc-note {
           font-size: 0.75rem;
           color: var(--color-text-muted);
+        }
+
+        .enablement-chip {
+          display: inline-flex;
+          align-items: center;
+          width: fit-content;
+          font-size: 0.65rem;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          color: #0369a1;
+          background: rgba(125, 211, 252, 0.3);
+          padding: 2px 6px;
+          border-radius: 999px;
+          font-weight: 600;
         }
 
         .editable {

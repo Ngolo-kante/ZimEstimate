@@ -34,7 +34,85 @@ import {
     X,
     CaretDown,
     TrendUp,
+    ChartBar,
+    Folders,
 } from '@phosphor-icons/react';
+
+// Sub-navigation for My Projects section
+function ProjectsSubNav({ active }: { active: 'dashboard' | 'all' }) {
+  return (
+    <div className="projects-subnav">
+      <nav className="subnav-tabs">
+        <Link
+          href="/projects/dashboard"
+          className={`subnav-tab ${active === 'dashboard' ? 'active' : ''}`}
+        >
+          <ChartBar size={18} />
+          Dashboard
+        </Link>
+        <Link
+          href="/projects"
+          className={`subnav-tab ${active === 'all' ? 'active' : ''}`}
+        >
+          <Folders size={18} />
+          All Projects
+        </Link>
+      </nav>
+
+      <style jsx>{`
+        .projects-subnav {
+          margin-bottom: 24px;
+        }
+
+        .subnav-tabs {
+          display: flex;
+          gap: 8px;
+          background: #f1f5f9;
+          padding: 4px;
+          border-radius: 12px;
+          width: fit-content;
+        }
+
+        .subnav-tab {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 20px;
+          font-size: 0.9rem;
+          font-weight: 500;
+          color: #64748b;
+          text-decoration: none;
+          border-radius: 8px;
+          transition: all 0.2s;
+        }
+
+        .subnav-tab:hover {
+          color: #0f172a;
+          background: rgba(255, 255, 255, 0.5);
+        }
+
+        .subnav-tab.active {
+          background: white;
+          color: #0f172a;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 480px) {
+          .subnav-tabs {
+            width: 100%;
+          }
+
+          .subnav-tab {
+            flex: 1;
+            justify-content: center;
+            padding: 10px 12px;
+            font-size: 0.85rem;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
 
 type SortOption = 'updated_desc' | 'updated_asc' | 'name_asc' | 'name_desc' | 'budget_desc' | 'budget_asc';
 
@@ -68,6 +146,38 @@ const formatScopeLabel = (project: Project) => {
         return project.selected_stages.map(formatStageLabel).join(', ');
     }
     return formatStageLabel(project.scope);
+};
+
+const SOIL_LABELS: Record<string, string> = {
+    sandy: 'Sandy Soil',
+    clay_black_mountain: 'Clay/Black Mountain',
+    loam: 'Loam Soil',
+    rock: 'Rock Soil',
+};
+
+const SLOPE_LABELS: Record<string, string> = {
+    flat: 'Flat Site',
+    gentle: 'Gentle Slope',
+    moderate: 'Moderate Slope',
+    steep: 'Steep Slope',
+};
+
+const getComplianceChips = (project: Project): Array<{ label: string; tone: 'ok' | 'info' | 'warn' }> => {
+    const chips: Array<{ label: string; tone: 'ok' | 'info' | 'warn' }> = [];
+
+    if (project.soil_type) {
+        chips.push({ label: SOIL_LABELS[project.soil_type] || project.soil_type, tone: 'info' });
+    }
+    if (project.site_slope) {
+        chips.push({ label: SLOPE_LABELS[project.site_slope] || project.site_slope, tone: 'info' });
+    }
+
+    chips.push({
+        label: project.geotech_report_uploaded ? 'Geotech Uploaded' : 'Geotech Pending',
+        tone: project.geotech_report_uploaded ? 'ok' : 'warn',
+    });
+
+    return chips;
 };
 
 function ProjectsContent() {
@@ -387,6 +497,7 @@ function ProjectsContent() {
 
     return (
         <MainLayout title="My Projects" fullWidth>
+            <ProjectsSubNav active="all" />
             <div className="projects-page">
                 {/* Hero KPI Section */}
                 <div className="hero-kpi-section reveal" data-delay="1">
@@ -685,6 +796,13 @@ function ProjectsContent() {
                                         <span className="detail-item">
                                             {project.labor_preference === 'with_labor' ? 'With Labor' : 'Materials Only'}
                                         </span>
+                                    </div>
+                                    <div className="compliance-chips">
+                                        {getComplianceChips(project).map((chip) => (
+                                            <span key={`${project.id}-${chip.label}`} className={`compliance-chip ${chip.tone}`}>
+                                                {chip.label}
+                                            </span>
+                                        ))}
                                     </div>
                                 </Card>
                             </Link>
@@ -1185,6 +1303,39 @@ function ProjectsContent() {
                     font-size: 11px;
                     color: var(--color-text-secondary);
                     font-weight: var(--font-medium);
+                }
+
+                .compliance-chips {
+                    margin-top: 10px;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                }
+
+                .compliance-chip {
+                    font-size: 10px;
+                    font-weight: 600;
+                    padding: 4px 8px;
+                    border-radius: 999px;
+                    border: 1px solid transparent;
+                }
+
+                .compliance-chip.info {
+                    background: #eff6ff;
+                    color: #1d4ed8;
+                    border-color: #bfdbfe;
+                }
+
+                .compliance-chip.ok {
+                    background: #dcfce7;
+                    color: #166534;
+                    border-color: #86efac;
+                }
+
+                .compliance-chip.warn {
+                    background: #fef3c7;
+                    color: #92400e;
+                    border-color: #fcd34d;
                 }
 
                 .empty-state {
