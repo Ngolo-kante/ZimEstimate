@@ -50,4 +50,37 @@ describe('generateBOQFromBasics assumptions', () => {
     const standardMortarCement = getItemQuantity(standard, 'Superstructure mortar');
     expect(standardMortarCement).toBeGreaterThan(economyMortarCement);
   });
+
+  it('assigns usable prices to generated stage materials', () => {
+    const items = generateBOQFromBasics({
+      floorArea: 120,
+      roomCount: 6,
+      wallHeight: 2.7,
+      brickType: 'common',
+      cementType: 'cement_325',
+      scope: ['substructure', 'superstructure', 'roofing'],
+      includeLabor: false,
+      locationType: 'urban',
+    });
+
+    const pricedMaterialIds = [
+      'hardcore',
+      'dpc',
+      'termite-poison',
+      'stone-19mm',
+      'mesh-ref193',
+      'rebar-10',
+      'ibr-05-3m',
+      'timber-50x76',
+      'timber-38x38',
+      'fascia-pvc',
+    ];
+
+    pricedMaterialIds.forEach((materialId) => {
+      const item = items.find((entry) => entry.materialId === materialId);
+      expect(item, `Missing generated item for ${materialId}`).toBeDefined();
+      expect(item!.unitPriceUsd, `Expected non-zero price for ${materialId}`).toBeGreaterThan(0);
+      expect(item!.totalUsd).toBeCloseTo(item!.quantity * item!.unitPriceUsd, 2);
+    });
+  });
 });

@@ -9,6 +9,7 @@ import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useProjectAutoSave } from '@/hooks/useProjectAutoSave';
 import { useReveal } from '@/hooks/useReveal';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { DocumentCategory } from '@/lib/database.types';
 import {
   Plus,
   Trash,
@@ -63,10 +64,20 @@ import { applyAveragePriceUpdate, getScaledPriceZwg } from '@/lib/boqPricing';
 import { exportBOQToPDF } from '@/lib/pdf-export';
 import { generateBOQFromBasics, ManualBuilderConfig } from '@/lib/calculations';
 import { BrickType, CementType, ProjectScope } from '@/lib/vision/types';
-import { getProjectWithItems } from '@/lib/services/projects';
+import { getProjectWithItems, getProjectDocuments, updateProject as updateProjectRecord, uploadDocument } from '@/lib/services/projects';
+import { createStageTask, getStageByCategory, toggleStageTask, updateStageTask } from '@/lib/services/stages';
 import { setCreatedProjectSnapshot, setOptimisticProjectCard } from '@/lib/projectCreationCache';
 import { validateBOQWizardStep, type BOQWizardFieldValidation } from './wizardValidation';
 import WizardStyles from './WizardStyles';
+import { calculateBoqHealth, type BoqHealthCategory } from '@/lib/boqHealth';
+import {
+  LOCATION_PROCEDURE_RULES,
+  SOIL_RISK_PROFILES,
+  TEMPORARY_WORKS_SUGGESTIONS,
+  type LocationProcedureStatus,
+  type LocationTypeRule,
+  type SoilType,
+} from '@/lib/buildFlowRules';
 
 
 
@@ -76,7 +87,7 @@ const milestones = [
     id: 'substructure',
     label: 'Site Preparation & Foundation',
     icon: Cube,
-    description: '🏗️ Foundation strips, hardcore filling, DPC/DPM, substructure bricks to window level, floor slab, mesh reinforcement',
+    description: 'Foundation strips, hardcore filling, DPC/DPM, substructure bricks to window level, floor slab, mesh reinforcement',
     suggestedMaterials: [
       'sand-river', 'sand-pit', 'stone-19mm', 'hardcore',
       'brick-common', 'cement-325', 'cement-425',
@@ -88,35 +99,35 @@ const milestones = [
     id: 'superstructure',
     label: 'Structural Walls & Frame',
     icon: Wall,
-    description: '🧱 External & internal walls, window/door lintels, ring beam rebar & stirrups, brickforce, mortar (cement + sand)',
-    suggestedMaterials: ['cement-brick', 'cement-32n', 'river-sand', 'rebar-y10', 'mesh-ref-193'],
+    description: 'External and internal walls, window and door lintels, ring beam rebar and stirrups, brickforce, mortar (cement + sand)',
+    suggestedMaterials: ['brick-common', 'cement-325', 'sand-river', 'rebar-10', 'mesh-ref193'],
   },
   {
     id: 'roofing',
     label: 'Roofing',
     icon: HouseSimple,
-    description: '🏠 Timber rafters & brandering, IBR/corrugated sheets, roof screws, fascia boards, guttering',
-    suggestedMaterials: ['ibr-sheet-3m', 'timber-50x76', 'timber-38x38', 'fascia-pvc', 'roof-screws'],
+    description: 'Timber rafters and brandering, IBR/corrugated sheets, roof screws, fascia boards, guttering',
+    suggestedMaterials: ['ibr-05-3m', 'timber-50x76', 'timber-38x38', 'fascia-pvc', 'screws-roof'],
   },
   {
     id: 'finishing',
     label: 'Interior & Finishing',
     icon: PaintBrush,
-    description: '🎨 Plastering (render + skim), painting (interior/exterior), tiling, door/window frames, electrical & plumbing fittings',
-    suggestedMaterials: ['plaster-sand', 'cement-32n', 'pva-20l'],
+    description: 'Plastering (render + skim), painting (interior and exterior), tiling, door/window frames, electrical and plumbing fittings',
+    suggestedMaterials: ['sand-pit', 'cement-325', 'paint-pva'],
   },
   {
     id: 'exterior',
     label: 'External Work',
     icon: ShieldCheck,
-    description: '🔒 Boundary walls, durawall precast, gates, driveway paving, security features',
-    suggestedMaterials: ['durawall', 'cement-brick', 'cement-32n'],
+    description: 'Boundary walls, durawall precast, gates, driveway paving, security features',
+    suggestedMaterials: ['durawall-panel', 'brick-common', 'cement-325'],
   },
   {
     id: 'labor',
     label: 'Labor & Services',
     icon: UserCircle,
-    description: '👷 Builder daily rates, general hands, food allowances, transport, site supervision',
+    description: 'Builder daily rates, general hands, food allowances, transport, site supervision',
     suggestedMaterials: ['labor-builder', 'labor-assistant', 'labor-foreman', 'service-food', 'service-transport'],
   },
 ];
@@ -155,6 +166,11 @@ const SYSTEM_PRICE_VERSION = materialCatalog.reduce((latest, material) => {
   return latest;
 }, '');
 
+const MATERIAL_NAME_BY_ID = materialCatalog.reduce<Record<string, string>>((acc, material) => {
+  acc[material.id] = material.name;
+  return acc;
+}, {});
+
 const LOCATION_TYPES = [
   { value: 'urban', label: 'Urban', description: 'City & town locations', icon: HouseSimple },
   { value: 'peri-urban', label: 'Peri-Urban', description: 'Outer city and growth areas', icon: House },
@@ -178,6 +194,61 @@ const BUILDING_TYPES = [
   { value: 'single_storey', label: 'Single Storey', description: 'One level above ground', icon: House },
   { value: 'double_storey', label: 'Double Storey', description: 'Two levels above ground', icon: Stack },
 ];
+
+const SOIL_TYPES: Array<{ value: SoilType; label: string }> = [
+  { value: 'sandy', label: 'Sandy' },
+  { value: 'clay_black_mountain', label: 'Clay / Black Mountain' },
+  { value: 'loam', label: 'Loam' },
+  { value: 'rock', label: 'Rock' },
+];
+
+type SiteSlopeType = 'flat' | 'gentle' | 'moderate' | 'steep';
+
+const SITE_SLOPE_OPTIONS: Array<{ value: SiteSlopeType; label: string; description: string }> = [
+  { value: 'flat', label: 'Flat', description: 'Minimal cut/fill expected' },
+  { value: 'gentle', label: 'Gentle Slope', description: 'Minor level adjustments likely' },
+  { value: 'moderate', label: 'Moderate Slope', description: 'Retaining and fill planning advised' },
+  { value: 'steep', label: 'Steep', description: 'Higher excavation and retaining risk' },
+];
+
+const CERTIFICATE_TRACKER_ITEMS = [
+  {
+    id: 'approved_site_plan',
+    label: 'Approved Site Plan',
+    description: 'Baseline approved drawing used for quantity and compliance checks.',
+  },
+  {
+    id: 'slab_foundation_certificate',
+    label: 'Slab/Foundation Certificate',
+    description: 'Engineer sign-off for foundation and slab structural integrity.',
+  },
+  {
+    id: 'completion_occupation_certificate',
+    label: 'Completion/Occupation Certificate',
+    description: 'Final local-authority completion approval for occupation.',
+  },
+] as const;
+
+const CERTIFICATE_STATUS_META = {
+  pending: { label: 'Pending', badge: 'bg-slate-100 text-slate-700' },
+  in_progress: { label: 'In Progress', badge: 'bg-amber-100 text-amber-700' },
+  done: { label: 'Received', badge: 'bg-emerald-100 text-emerald-700' },
+} as const;
+
+const PROCEDURE_STATUS_META: Record<LocationProcedureStatus, { label: string; badge: string }> = {
+  required: { label: 'Required', badge: 'bg-red-100 text-red-700' },
+  recommended: { label: 'Recommended', badge: 'bg-blue-100 text-blue-700' },
+  not_applicable: { label: 'N/A', badge: 'bg-slate-100 text-slate-600' },
+};
+
+const LOCATION_TYPE_RULES: LocationTypeRule[] = ['urban', 'peri-urban', 'rural'];
+const CHECKLIST_TASK_PREFIX = 'boq_checklist:';
+const CERTIFICATE_TASK_PREFIX = 'boq_certificate:';
+const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
+const GEOTECH_DOC_TAG = 'geotech_report';
+
+const isLocationTypeRule = (value: string): value is LocationTypeRule =>
+  LOCATION_TYPE_RULES.includes(value as LocationTypeRule);
 
 const DEFAULT_ROOM_INPUTS = {
   bedrooms: '',
@@ -240,6 +311,24 @@ const parseLocation = (location?: string | null) => {
   return { locationType: '', locationCity: '', specificLocation: location };
 };
 
+const buildChecklistMarker = (ruleId: string) => `${CHECKLIST_TASK_PREFIX}${ruleId}`;
+const buildCertificateMarker = (certificateId: string, status: CertificateStatus) =>
+  `${CERTIFICATE_TASK_PREFIX}${certificateId}|status:${status}`;
+
+const parseCertificateStatusFromMarker = (marker?: string | null): CertificateStatus => {
+  if (!marker) return 'pending';
+  if (marker.includes('|status:in_progress')) return 'in_progress';
+  if (marker.includes('|status:done')) return 'done';
+  return 'pending';
+};
+
+const stripEnablementTag = (description: string) =>
+  description === ENABLEMENT_ITEM_TAG
+    ? ''
+    : description.startsWith(`${ENABLEMENT_ITEM_TAG} `)
+      ? description.replace(`${ENABLEMENT_ITEM_TAG} `, '')
+      : description;
+
 interface BOQItem {
   id: string;
   materialId: string;
@@ -254,6 +343,7 @@ interface BOQItem {
   category?: string;
   calculatedQuantity?: number; // Original calculated value
   isOverridden?: boolean; // Track if user edited
+  isEnablementCost?: boolean;
 }
 
 
@@ -264,11 +354,21 @@ interface MilestoneData {
   expanded: boolean;
 }
 
+type CertificateStatus = 'pending' | 'in_progress' | 'done';
+
+interface GeotechDocumentSummary {
+  id: string;
+  fileName: string;
+  createdAt: string;
+}
+
 interface ProjectDetailsState {
   name: string;
   locationType: string;
   locationCity: string;
   specificLocation: string;
+  soilType: SoilType | '';
+  siteSlope: SiteSlopeType | '';
   floorPlanSize: string;
   buildingType: string;
   wallHeight: string;
@@ -276,6 +376,10 @@ interface ProjectDetailsState {
   cementType: CementType;
   roomInputs: Record<RoomInputKey, string>;
 }
+
+type ProcedureChecklistItem = (typeof LOCATION_PROCEDURE_RULES)[number] & {
+  status: LocationProcedureStatus;
+};
 
 
 // Searchable Material Dropdown Component
@@ -326,7 +430,7 @@ const MaterialDropdown = ({
   }, []);
 
   return (
-    <div className="relative w-full" ref={wrapperRef} style={{ zIndex: 1000 }} data-testid="material-dropdown">
+    <div className="relative w-full" ref={wrapperRef} style={{ zIndex: 4000 }} data-testid="material-dropdown">
       <div
         className={`wizard-select flex items-center justify-between cursor-pointer transition-all duration-200 ${isOpen ? 'ring-2 ring-blue-100 border-blue-400' : 'border-slate-200'}`}
         onClick={() => setIsOpen(!isOpen)}
@@ -353,7 +457,7 @@ const MaterialDropdown = ({
 
       {isOpen && (
         <div
-          className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl z-[1001] animate-fadeIn"
+          className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl z-[5000] animate-fadeIn"
           style={{ maxHeight: '320px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
         >
           <div className="p-3 bg-slate-50 border-b border-slate-100">
@@ -495,13 +599,14 @@ const STEP_HINTS: Record<number, string> = {
 function BOQBuilderContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, profile } = useAuth();
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [pendingAutoSave, setPendingAutoSave] = useState(false);
   const [showSaveOverlay, setShowSaveOverlay] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showRoomPicker, setShowRoomPicker] = useState(false);
+  const [isHydratingAdminState, setIsHydratingAdminState] = useState(false);
   const [saveOverlayMessage, setSaveOverlayMessage] = useState('Creating your project...');
   const [saveOverlaySuccess, setSaveOverlaySuccess] = useState(false);
   const [saveOverlaySteps, setSaveOverlaySteps] = useState<Array<{ label: string; status: 'pending' | 'active' | 'done' }>>([]);
@@ -522,6 +627,8 @@ function BOQBuilderContent() {
     locationType: '',
     locationCity: '',
     specificLocation: '',
+    soilType: '',
+    siteSlope: '',
     floorPlanSize: '',
     buildingType: '',
     wallHeight: '2.7',
@@ -533,6 +640,9 @@ function BOQBuilderContent() {
   // Validation Error State
   const [validationError, setValidationError] = useState<string | null>(null);
   const [fieldValidation, setFieldValidation] = useState<BOQWizardFieldValidation>({});
+  const [isUploadingGeotech, setIsUploadingGeotech] = useState(false);
+  const [geotechDocument, setGeotechDocument] = useState<GeotechDocumentSummary | null>(null);
+  const [geotechNotice, setGeotechNotice] = useState<string | null>(null);
 
   const clearValidationField = (field: keyof BOQWizardFieldValidation) => {
     setFieldValidation((prev) => {
@@ -552,11 +662,24 @@ function BOQBuilderContent() {
   );
 
   const projectDetailsForSave = useMemo(
-    () => ({
-      name: projectDetails.name,
-      location: locationLabel,
-    }),
-    [projectDetails.name, locationLabel]
+    () => {
+      const hasProTier = profile?.tier === 'pro' || profile?.tier === 'admin';
+      const geotechAnalysisMode: 'manual' | 'pro_available' | 'pro_applied' = geotechDocument?.id
+        ? (hasProTier ? 'pro_available' : 'manual')
+        : 'manual';
+
+      return {
+        name: projectDetails.name,
+        location: locationLabel,
+        soilType: projectDetails.soilType,
+        siteSlope: projectDetails.siteSlope,
+        geotechReportUploaded: Boolean(geotechDocument?.id),
+        geotechReportUploadedAt: geotechDocument?.createdAt || null,
+        geotechReportDocumentId: geotechDocument?.id || null,
+        geotechAnalysisMode,
+      };
+    },
+    [projectDetails.name, locationLabel, projectDetails.soilType, projectDetails.siteSlope, geotechDocument?.id, geotechDocument?.createdAt, profile?.tier]
   );
 
   // Labor Preference
@@ -568,6 +691,37 @@ function BOQBuilderContent() {
   const [totalWindows, setTotalWindows] = useState(8);
   const [totalDoors, setTotalDoors] = useState(5);
   const [detailedRooms, setDetailedRooms] = useState<RoomInstance[]>([]);
+  const [soilAdjustmentApplied, setSoilAdjustmentApplied] = useState(false);
+  const [preConstructionChecks, setPreConstructionChecks] = useState<Record<string, boolean>>({});
+  const [certificateTracker, setCertificateTracker] = useState<Record<string, CertificateStatus>>(
+    () =>
+      CERTIFICATE_TRACKER_ITEMS.reduce<Record<string, CertificateStatus>>(
+        (acc, cert) => {
+          acc[cert.id] = 'pending';
+          return acc;
+        },
+        {}
+      )
+  );
+  const [adminStageId, setAdminStageId] = useState<string | null>(null);
+  const [checklistTaskIdByRule, setChecklistTaskIdByRule] = useState<Record<string, string>>({});
+  const [certificateTaskIdById, setCertificateTaskIdById] = useState<Record<string, string>>({});
+
+  const selectedSoilProfile = useMemo(
+    () => (projectDetails.soilType ? SOIL_RISK_PROFILES[projectDetails.soilType] : null),
+    [projectDetails.soilType]
+  );
+
+  const locationProcedureChecklist = useMemo<ProcedureChecklistItem[]>(() => {
+    const locationType = projectDetails.locationType;
+    if (!isLocationTypeRule(locationType)) return [];
+    return LOCATION_PROCEDURE_RULES.map((rule) => ({
+      ...rule,
+      status: rule.statusByLocation[locationType],
+    }));
+  }, [projectDetails.locationType]);
+
+  const hasProGeotechAnalysis = profile?.tier === 'pro' || profile?.tier === 'admin';
 
   const handleDetailedContinue = (rooms: RoomInstance[], totals: { area: number, walls: number, bricks: number }) => {
     setDetailedRooms(rooms);
@@ -776,6 +930,8 @@ function BOQBuilderContent() {
           locationType: parsedLocation.locationType,
           locationCity: parsedLocation.locationCity,
           specificLocation: parsedLocation.specificLocation,
+          soilType: (loadedProject.soil_type as SoilType | null) || '',
+          siteSlope: loadedProject.site_slope || '',
           floorPlanSize: '',
           buildingType: '',
           wallHeight: '2.7',
@@ -783,6 +939,14 @@ function BOQBuilderContent() {
           cementType: 'cement_325',
           roomInputs: { ...DEFAULT_ROOM_INPUTS },
         });
+        const geotechDocumentId = loadedProject.geotech_report_document_id;
+        if (loadedProject.geotech_report_uploaded && geotechDocumentId) {
+          setGeotechDocument((prev) => prev || {
+            id: geotechDocumentId,
+            fileName: 'Geotech Report',
+            createdAt: loadedProject.geotech_report_uploaded_at || new Date().toISOString(),
+          });
+        }
 
 
         // Restore scope and labor preference
@@ -821,7 +985,8 @@ function BOQBuilderContent() {
                   averagePriceZwg,
                   actualPriceUsd,
                   actualPriceZwg,
-                  description: item.notes || undefined,
+                  description: item.notes ? stripEnablementTag(item.notes) : undefined,
+                  isEnablementCost: Boolean(item.notes?.startsWith(ENABLEMENT_ITEM_TAG)),
                   category: item.category,
                 });
               }
@@ -856,6 +1021,98 @@ function BOQBuilderContent() {
     localStorage.setItem(projectPriceKey, projectPriceVersion);
   }, [projectPriceKey, projectPriceVersion, priceVersionReady]);
 
+  useEffect(() => {
+    setSoilAdjustmentApplied(false);
+  }, [projectDetails.soilType]);
+
+  useEffect(() => {
+    if (!project?.id) {
+      setAdminStageId(null);
+      setChecklistTaskIdByRule({});
+      setCertificateTaskIdById({});
+      setGeotechDocument(null);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const hydrateAdminState = async () => {
+      setIsHydratingAdminState(true);
+      try {
+        const [stageResult, docsResult] = await Promise.all([
+          getStageByCategory(project.id, 'substructure'),
+          getProjectDocuments(project.id, 'permit'),
+        ]);
+
+        if (isCancelled) return;
+
+        if (stageResult.stage) {
+          setAdminStageId(stageResult.stage.id);
+
+          const nextChecklistState: Record<string, boolean> = {};
+          const nextChecklistTaskIds: Record<string, string> = {};
+          const nextCertificateTaskIds: Record<string, string> = {};
+          const nextCertificateState = CERTIFICATE_TRACKER_ITEMS.reduce<Record<string, CertificateStatus>>(
+            (acc, cert) => {
+              acc[cert.id] = 'pending';
+              return acc;
+            },
+            {}
+          );
+
+          stageResult.stage.tasks.forEach((task) => {
+            const marker = task.verification_note || '';
+            if (marker.startsWith(CHECKLIST_TASK_PREFIX)) {
+              const ruleId = marker.replace(CHECKLIST_TASK_PREFIX, '').split('|')[0];
+              nextChecklistState[ruleId] = Boolean(task.is_completed);
+              nextChecklistTaskIds[ruleId] = task.id;
+              return;
+            }
+
+            if (marker.startsWith(CERTIFICATE_TASK_PREFIX)) {
+              const certificateId = marker.replace(CERTIFICATE_TASK_PREFIX, '').split('|')[0];
+              if (certificateId in nextCertificateState) {
+                nextCertificateState[certificateId] = task.is_completed
+                  ? 'done'
+                  : parseCertificateStatusFromMarker(marker);
+                nextCertificateTaskIds[certificateId] = task.id;
+              }
+            }
+          });
+
+          setChecklistTaskIdByRule(nextChecklistTaskIds);
+          setCertificateTaskIdById(nextCertificateTaskIds);
+          setPreConstructionChecks((prev) => ({ ...prev, ...nextChecklistState }));
+          setCertificateTracker(nextCertificateState);
+        }
+
+        if (!docsResult.error) {
+          const geotechDoc = docsResult.documents.find((doc) =>
+            (doc.description || '').includes(GEOTECH_DOC_TAG)
+          );
+
+          if (geotechDoc) {
+            setGeotechDocument({
+              id: geotechDoc.id,
+              fileName: geotechDoc.file_name,
+              createdAt: geotechDoc.created_at,
+            });
+          }
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsHydratingAdminState(false);
+        }
+      }
+    };
+
+    void hydrateAdminState();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [project?.id]);
+
   // Mark changes when milestone data changes (after initial load)
   useEffect(() => {
     if (project && currentStep === 5) {
@@ -868,6 +1125,12 @@ function BOQBuilderContent() {
       markChanged();
     }
   }, [projectScope, selectedStages, laborType, project, currentStep, markChanged]);
+
+  useEffect(() => {
+    if (project) {
+      markChanged();
+    }
+  }, [projectDetails.soilType, projectDetails.siteSlope, geotechDocument?.id, geotechDocument?.createdAt, project, markChanged]);
 
   // Close dropdown menus when clicking outside
   useEffect(() => {
@@ -892,7 +1155,13 @@ function BOQBuilderContent() {
         const data = JSON.parse(boqSession);
         sessionStorage.removeItem('zimestimate_boq_session');
         if (data.currentStep) setCurrentStep(data.currentStep);
-        if (data.projectDetails) setProjectDetails(data.projectDetails);
+        if (data.projectDetails) {
+          setProjectDetails((prev) => ({
+            ...prev,
+            ...data.projectDetails,
+            siteSlope: data.projectDetails.siteSlope || '',
+          }));
+        }
         if (data.projectScope) setProjectScope(data.projectScope);
         if (data.selectedStages) setSelectedStages(data.selectedStages);
         if (data.laborType) setLaborType(data.laborType);
@@ -998,6 +1267,34 @@ function BOQBuilderContent() {
     return true;
   });
 
+  const boqHealth = useMemo(() => {
+    const healthCategories = new Set<BoqHealthCategory>([
+      'substructure',
+      'superstructure',
+      'roofing',
+      'finishing',
+      'exterior',
+    ]);
+
+    const inputs = visibleMilestones
+      .filter((milestone): milestone is typeof milestone & { id: BoqHealthCategory } =>
+        healthCategories.has(milestone.id as BoqHealthCategory)
+      )
+      .map((milestone) => {
+        const stage = milestonesState.find((m) => m.id === milestone.id);
+        const itemIdsWithQty = (stage?.items || [])
+          .filter((item) => Number(item.quantity) > 0)
+          .map((item) => item.materialId);
+
+        return {
+          category: milestone.id,
+          itemIdsWithQty,
+        };
+      });
+
+    return calculateBoqHealth(inputs);
+  }, [milestonesState, visibleMilestones]);
+
   const validateCurrentStep = () => {
     const { errors, message } = validateBOQWizardStep({
       currentStep,
@@ -1095,6 +1392,229 @@ function BOQBuilderContent() {
     setProjectPriceVersion(SYSTEM_PRICE_VERSION);
   };
 
+  const handleApplySoilAdjustment = () => {
+    if (!selectedSoilProfile || selectedSoilProfile.adjustmentPct <= 0 || soilAdjustmentApplied) {
+      return;
+    }
+
+    const factor = 1 + (selectedSoilProfile.adjustmentPct / 100);
+    setMilestonesState((prev) => prev.map((milestone) => {
+      if (milestone.id !== 'substructure') return milestone;
+      return {
+        ...milestone,
+        items: milestone.items.map((item) => {
+          if (!item.quantity || item.quantity <= 0) return item;
+          return {
+            ...item,
+            quantity: Number((item.quantity * factor).toFixed(2)),
+            isOverridden: true,
+          };
+        }),
+      };
+    }));
+
+    setSoilAdjustmentApplied(true);
+  };
+
+  const addOrIncrementMilestoneMaterial = (
+    milestoneId: string,
+    materialId: string,
+    qty: number,
+    options?: { isEnablementCost?: boolean; description?: string }
+  ) => {
+    const material = materialCatalog.find((m) => m.id === materialId);
+    if (!material) return false;
+
+    const safeQty = Number.isFinite(qty) && qty > 0 ? qty : 1;
+    setMilestonesState((prev) =>
+      prev.map((milestone) => {
+        if (milestone.id !== milestoneId) return milestone;
+
+        const existingItem = milestone.items.find((item) => item.materialId === materialId);
+        if (existingItem) {
+          return {
+            ...milestone,
+            items: milestone.items.map((item) =>
+              item.materialId === materialId
+                ? {
+                    ...item,
+                    quantity: Number(((item.quantity || 0) + safeQty).toFixed(2)),
+                    isEnablementCost: options?.isEnablementCost ? true : item.isEnablementCost,
+                  }
+                : item
+            ),
+          };
+        }
+
+        const newItemObj: BOQItem = {
+          id: getNextId(),
+          materialId: material.id,
+          materialName: material.name,
+          quantity: safeQty,
+          unit: material.unit,
+          averagePriceUsd: material.priceUsd,
+          averagePriceZwg: material.priceZwg,
+          actualPriceUsd: material.priceUsd,
+          actualPriceZwg: material.priceZwg,
+          description: options?.description || material.description,
+          isEnablementCost: options?.isEnablementCost || false,
+        };
+
+        return { ...milestone, items: [newItemObj, ...milestone.items] };
+      })
+    );
+
+    return true;
+  };
+
+  const ensureChecklistTask = async (ruleId: string, label: string): Promise<string | null> => {
+    if (!adminStageId) return null;
+
+    const existingTaskId = checklistTaskIdByRule[ruleId];
+    if (existingTaskId) return existingTaskId;
+
+    const { task, error } = await createStageTask(adminStageId, {
+      title: `Checklist: ${label}`,
+      description: 'Pre-construction advisory item from manual builder.',
+    });
+
+    if (error || !task) return null;
+
+    const marker = buildChecklistMarker(ruleId);
+    const { task: updatedTask } = await updateStageTask(task.id, {
+      verification_note: marker,
+    });
+    const persistedTaskId = updatedTask?.id || task.id;
+
+    setChecklistTaskIdByRule((prev) => ({
+      ...prev,
+      [ruleId]: persistedTaskId,
+    }));
+
+    return persistedTaskId;
+  };
+
+  const persistChecklistItem = async (ruleId: string, completed: boolean) => {
+    if (!project?.id || !adminStageId || isHydratingAdminState) return;
+
+    const rule = LOCATION_PROCEDURE_RULES.find((candidate) => candidate.id === ruleId);
+    const taskId = await ensureChecklistTask(ruleId, rule?.label || ruleId);
+    if (!taskId) return;
+    await toggleStageTask(taskId, completed);
+  };
+
+  const handleToggleChecklistItem = (ruleId: string) => {
+    const nextCompleted = !preConstructionChecks[ruleId];
+    setPreConstructionChecks((prev) => ({
+      ...prev,
+      [ruleId]: nextCompleted,
+    }));
+    void persistChecklistItem(ruleId, nextCompleted);
+  };
+
+  const handleAddTemporaryWorksPack = () => {
+    TEMPORARY_WORKS_SUGGESTIONS.forEach((suggestion) => {
+      const material = materialCatalog.find((item) => item.id === suggestion.id);
+      const description = suggestion.description || material?.description || '';
+      addOrIncrementMilestoneMaterial('substructure', suggestion.id, suggestion.defaultQty, {
+        isEnablementCost: true,
+        description,
+      });
+    });
+  };
+
+  const ensureCertificateTask = async (certificateId: string, label: string, status: CertificateStatus): Promise<string | null> => {
+    if (!adminStageId) return null;
+
+    const existingTaskId = certificateTaskIdById[certificateId];
+    if (existingTaskId) return existingTaskId;
+
+    const { task, error } = await createStageTask(adminStageId, {
+      title: `Certificate: ${label}`,
+      description: 'Critical certificate tracker from manual builder.',
+    });
+
+    if (error || !task) return null;
+
+    const marker = buildCertificateMarker(certificateId, status);
+    const { task: updatedTask } = await updateStageTask(task.id, {
+      verification_note: marker,
+      is_completed: status === 'done',
+      completed_at: status === 'done' ? new Date().toISOString() : null,
+    });
+    const persistedTaskId = updatedTask?.id || task.id;
+
+    setCertificateTaskIdById((prev) => ({
+      ...prev,
+      [certificateId]: persistedTaskId,
+    }));
+
+    return persistedTaskId;
+  };
+
+  const persistCertificateStatus = async (certificateId: string, status: CertificateStatus) => {
+    if (!project?.id || !adminStageId || isHydratingAdminState) return;
+
+    const certificate = CERTIFICATE_TRACKER_ITEMS.find((item) => item.id === certificateId);
+    const taskId = await ensureCertificateTask(certificateId, certificate?.label || certificateId, status);
+    if (!taskId) return;
+
+    await updateStageTask(taskId, {
+      verification_note: buildCertificateMarker(certificateId, status),
+      is_completed: status === 'done',
+      completed_at: status === 'done' ? new Date().toISOString() : null,
+    });
+  };
+
+  const handleCertificateStatusChange = (certificateId: string, status: CertificateStatus) => {
+    setCertificateTracker((prev) => ({
+      ...prev,
+      [certificateId]: status,
+    }));
+    void persistCertificateStatus(certificateId, status);
+  };
+
+  const handleGeotechUpload = async (file: File) => {
+    if (!project?.id) {
+      return;
+    }
+
+    setIsUploadingGeotech(true);
+    setGeotechNotice(null);
+
+    const category: DocumentCategory = 'permit';
+    const descriptor = `${GEOTECH_DOC_TAG}|soil:${projectDetails.soilType || 'unspecified'}|source:manual_builder`;
+    const { document, error: uploadError } = await uploadDocument(project.id, file, category, descriptor);
+
+    if (uploadError) {
+      setGeotechNotice(`Upload failed: ${uploadError.message}`);
+      setIsUploadingGeotech(false);
+      return;
+    }
+
+    if (document) {
+      setGeotechDocument({
+        id: document.id,
+        fileName: document.file_name,
+        createdAt: document.created_at,
+      });
+      const analysisMode = hasProGeotechAnalysis ? 'pro_available' : 'manual';
+      const { error: projectUpdateError } = await updateProjectRecord(project.id, {
+        geotech_report_uploaded: true,
+        geotech_report_uploaded_at: document.created_at,
+        geotech_report_document_id: document.id,
+        geotech_analysis_mode: analysisMode,
+      });
+
+      if (projectUpdateError) {
+        setGeotechNotice(`Geotech uploaded, but metadata update failed: ${projectUpdateError.message}`);
+      } else {
+        setGeotechNotice('Geotech report uploaded.');
+      }
+    }
+
+    setIsUploadingGeotech(false);
+  };
 
 
   const handleAdjustRoom = (key: RoomInputKey, delta: number) => {
@@ -1113,40 +1633,9 @@ function BOQBuilderContent() {
 
   const handleAddMaterial = (milestoneId: string) => {
     if (!newItem.materialId) return;
-
-    const material = materialCatalog.find(m => m.id === newItem.materialId);
-    if (!material) return;
-
-    setMilestonesState(prev => prev.map(m => {
-      if (m.id !== milestoneId) return m;
-
-      const existingItem = m.items.find(i => i.materialId === newItem.materialId);
-      if (existingItem) {
-        const addedQty = parseFloat(newItem.quantity) || 1;
-        return {
-          ...m,
-          items: m.items.map(i => i.materialId === newItem.materialId ? {
-            ...i,
-            quantity: (i.quantity || 0) + addedQty
-          } : i)
-        };
-      }
-
-      const newItemObj: BOQItem = {
-        id: getNextId(),
-        materialId: material.id,
-        materialName: material.name,
-        quantity: parseFloat(newItem.quantity) || 1,
-        unit: material.unit,
-        averagePriceUsd: material.priceUsd,
-        averagePriceZwg: material.priceZwg,
-        actualPriceUsd: material.priceUsd,
-        actualPriceZwg: material.priceZwg,
-        description: material.description
-      };
-
-      return { ...m, items: [newItemObj, ...m.items] };
-    }));
+    const addedQty = parseFloat(newItem.quantity) || 1;
+    const didAdd = addOrIncrementMilestoneMaterial(milestoneId, newItem.materialId, addedQty);
+    if (!didAdd) return;
 
     setNewItem({ materialId: '', quantity: '' });
     setShowAddMaterial(null);
@@ -1221,14 +1710,43 @@ function BOQBuilderContent() {
       isOverridden: false,
     }));
 
+    const enablementItems: BOQItem[] = milestoneId === 'substructure'
+      ? TEMPORARY_WORKS_SUGGESTIONS.reduce<BOQItem[]>((acc, suggestion) => {
+          const material = materialCatalog.find((entry) => entry.id === suggestion.id);
+          if (!material) return acc;
+          acc.push({
+            id: getNextId(),
+            materialId: material.id,
+            materialName: material.name,
+            quantity: suggestion.defaultQty,
+            unit: material.unit,
+            averagePriceUsd: material.priceUsd,
+            averagePriceZwg: material.priceZwg,
+            actualPriceUsd: material.priceUsd,
+            actualPriceZwg: material.priceZwg,
+            description: suggestion.description || material.description,
+            isEnablementCost: true,
+            isOverridden: false,
+          });
+          return acc;
+        }, [])
+      : [];
+
+    const generatedWithEnablement = [...newItems];
+    enablementItems.forEach((enablementItem) => {
+      if (!generatedWithEnablement.some((item) => item.materialId === enablementItem.materialId)) {
+        generatedWithEnablement.push(enablementItem);
+      }
+    });
+
     setMilestonesState(prev => prev.map(m => {
       if (m.id !== milestoneId) return m;
       // Merge with existing items or replace if empty
       const existingIds = m.items.map(i => i.materialId);
-      const itemsToAdd = newItems.filter(ni => !existingIds.includes(ni.materialId));
+      const itemsToAdd = generatedWithEnablement.filter(ni => !existingIds.includes(ni.materialId));
       return {
         ...m,
-        items: m.items.length > 0 ? [...m.items, ...itemsToAdd] : newItems,
+        items: m.items.length > 0 ? [...m.items, ...itemsToAdd] : generatedWithEnablement,
         expanded: true
       };
     }));
@@ -1340,6 +1858,40 @@ function BOQBuilderContent() {
     const totalItems = milestonesState.reduce((acc, m) => acc + m.items.length, 0);
     const itemsWithQty = milestonesState.reduce((acc, m) =>
       acc + m.items.filter(i => i.quantity && i.quantity > 0).length, 0);
+    const hasSubstructureItems = milestonesState.some(
+      (milestone) => milestone.id === 'substructure' && milestone.items.some((item) => Number(item.quantity) > 0)
+    );
+    const healthTone = boqHealth.status === 'high_risk'
+      ? { badge: 'bg-red-100 text-red-700', progress: 'bg-red-500', panel: 'border-red-200 bg-red-50/60' }
+      : boqHealth.status === 'work_in_progress'
+        ? { badge: 'bg-amber-100 text-amber-700', progress: 'bg-amber-500', panel: 'border-amber-200 bg-amber-50/60' }
+        : { badge: 'bg-emerald-100 text-emerald-700', progress: 'bg-emerald-500', panel: 'border-emerald-200 bg-emerald-50/60' };
+    const actionableLocationProcedures = locationProcedureChecklist.filter(
+      (rule) => rule.status !== 'not_applicable'
+    );
+    const completedLocationProcedures = actionableLocationProcedures.filter(
+      (rule) => preConstructionChecks[rule.id]
+    ).length;
+    const substructureMilestone = milestonesState.find((milestone) => milestone.id === 'substructure');
+    const temporaryWorksRows = TEMPORARY_WORKS_SUGGESTIONS.map((suggestion) => {
+      const material = materialCatalog.find((m) => m.id === suggestion.id);
+      const currentQty = substructureMilestone?.items.find((item) => item.materialId === suggestion.id)?.quantity || 0;
+      return {
+        ...suggestion,
+        material,
+        currentQty,
+      };
+    });
+    const availableTemporaryWorks = temporaryWorksRows.filter((row) => row.material);
+    const temporaryWorksAddedCount = availableTemporaryWorks.filter((row) => Number(row.currentQty) > 0).length;
+    const temporaryWorksEstimatedUsd = availableTemporaryWorks.reduce(
+      (sum, row) => sum + (row.material!.priceUsd * row.defaultQty),
+      0
+    );
+    const missingTemporaryMaterials = temporaryWorksRows.filter((row) => !row.material);
+    const completedCertificates = CERTIFICATE_TRACKER_ITEMS.filter(
+      (certificate) => certificateTracker[certificate.id] === 'done'
+    ).length;
 
     return (
       <MainLayout title="Build BOQ">
@@ -1350,7 +1902,7 @@ function BOQBuilderContent() {
             <div className="price-update-banner">
               <div className="price-update-content">
                 <div className="price-update-text">
-                  <h4>🇿🇼 Average prices have been updated this week.</h4>
+                  <h4>Average prices have been updated this week.</h4>
                   <p>Would you like to update your project costing?</p>
                 </div>
               </div>
@@ -1733,7 +2285,12 @@ function BOQBuilderContent() {
               const mTotal = calculateMilestoneTotal(mData.items);
 
               return (
-                <div key={milestone.id} className="milestone-card bg-white border border-slate-200 rounded-xl overflow-hidden mb-6">
+                <div
+                  key={milestone.id}
+                  className={`milestone-card bg-white border border-slate-200 rounded-xl overflow-visible mb-6 relative ${
+                    showAddMaterial === milestone.id ? 'z-[2500]' : ''
+                  }`}
+                >
                   <div
                     className="milestone-header flex items-center p-4 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors"
                     onClick={() => toggleMilestone(milestone.id)}
@@ -1772,12 +2329,23 @@ function BOQBuilderContent() {
                             <div
                               key={item.id}
                               data-testid="boq-row"
-                              className="material-row-modern group grid grid-cols-1 md:grid-cols-[1fr_140px_110px_90px_120px_40px] gap-3 md:gap-3 items-start md:items-center p-4 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300"
+                              className={`material-row-modern group grid grid-cols-1 md:grid-cols-[1fr_140px_110px_90px_120px_40px] gap-3 md:gap-3 items-start md:items-center p-4 border rounded-xl transition-all duration-300 ${
+                                item.isEnablementCost
+                                  ? 'bg-blue-50/70 border-blue-200 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-500/10'
+                                  : 'bg-white border-slate-100 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5'
+                              }`}
                             >
                               {/* Name & Desc */}
                               <div className="flex items-center gap-3 min-w-0">
                                 <div className="flex flex-col min-w-0 flex-1">
-                                  <span className="font-medium text-slate-800 truncate leading-tight">{item.materialName}</span>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="font-medium text-slate-800 truncate leading-tight">{item.materialName}</span>
+                                    {item.isEnablementCost && (
+                                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-blue-100 text-blue-700 flex-shrink-0">
+                                        Enablement
+                                      </span>
+                                    )}
+                                  </div>
                                   <span className="text-xs text-slate-500 truncate mt-0.5">{item.description}</span>
                                 </div>
                                 {/* Mobile delete button */}
@@ -1874,7 +2442,7 @@ function BOQBuilderContent() {
 
                       {/* Add Item Form */}
                       {showAddMaterial === milestone.id ? (
-                        <div className="mt-4 p-6 bg-white border-2 border-blue-100 rounded-2xl shadow-xl shadow-blue-500/5 animate-fadeIn relative z-[50]">
+                        <div className="mt-4 p-6 bg-white border-2 border-blue-100 rounded-2xl shadow-xl shadow-blue-500/5 animate-fadeIn relative z-[3000]">
                           <div className="flex items-center gap-2 mb-4">
                             <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
                               <Plus size={18} weight="bold" />
@@ -1949,6 +2517,335 @@ function BOQBuilderContent() {
               );
             })}
           </div>
+
+          <div className={`rounded-xl border p-5 mb-6 ${healthTone.panel}`}>
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">BOQ Health Score</div>
+                <div className="mt-1 flex items-center gap-3">
+                  <span className="text-2xl font-bold text-slate-900">{boqHealth.weightedScorePct.toFixed(1)}%</span>
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${healthTone.badge}`}>
+                    {boqHealth.statusLabel}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-slate-600">{boqHealth.statusMessage}</p>
+              </div>
+              <div className="w-full md:w-[360px]">
+                <div className="h-2.5 w-full rounded-full bg-slate-200 overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-500 ${healthTone.progress}`}
+                    style={{ width: `${Math.max(0, Math.min(100, boqHealth.weightedScorePct))}%` }}
+                  />
+                </div>
+                <div className="mt-2 text-xs text-slate-500">
+                  Weighted by category criticality: Substructure 35, Superstructure 25, Roofing 15, Finishing 15, Exterior 10.
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+              {boqHealth.categories.map((category) => {
+                const stageLabel = milestones.find((m) => m.id === category.category)?.label || category.category;
+                return (
+                  <div key={category.category} className="rounded-lg border border-slate-200 bg-white p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-slate-800">{stageLabel}</span>
+                      <span className="text-xs font-semibold text-slate-500">
+                        {category.matchedCritical}/{category.totalCritical} critical items
+                      </span>
+                    </div>
+                    <div className="mt-2 h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 transition-all duration-300"
+                        style={{ width: `${category.completionPct}%` }}
+                      />
+                    </div>
+                    <div className="mt-1 text-xs text-slate-600">{category.completionPct.toFixed(1)}% complete</div>
+                    {category.missingCriticalGroups.length > 0 && (
+                      <div className="mt-2 text-xs text-slate-500">
+                        Missing: {category.missingCriticalGroups
+                          .slice(0, 2)
+                          .map((group) => group.map((id) => MATERIAL_NAME_BY_ID[id] || id).join(' or '))
+                          .join(' | ')}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-5 mb-6">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pre-Construction Checklist</div>
+                <h4 className="text-base font-semibold text-slate-900 mt-1">Location-Aware Advisory Tasks</h4>
+                <p className="text-sm text-slate-600 mt-2">
+                  Highlighted for planning only. These tasks do not block your BOQ or totals.
+                </p>
+              </div>
+              {isLocationTypeRule(projectDetails.locationType) ? (
+                <div className="text-sm font-medium text-slate-700">
+                  {completedLocationProcedures}/{actionableLocationProcedures.length} marked complete
+                </div>
+              ) : (
+                <div className="text-sm text-slate-500">Select a location type in Step 1 to personalize this checklist.</div>
+              )}
+            </div>
+
+            {isLocationTypeRule(projectDetails.locationType) && (
+              <div className="mt-4 grid grid-cols-1 gap-3">
+                {locationProcedureChecklist.map((rule) => {
+                  const statusMeta = PROCEDURE_STATUS_META[rule.status];
+                  const isApplicable = rule.status !== 'not_applicable';
+                  const isChecked = Boolean(preConstructionChecks[rule.id]);
+
+                  return (
+                    <div key={rule.id} className="rounded-lg border border-slate-200 p-3 bg-slate-50/40">
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <button
+                            type="button"
+                            onClick={() => isApplicable && handleToggleChecklistItem(rule.id)}
+                            disabled={!isApplicable}
+                            className={`mt-0.5 h-5 w-5 rounded border flex items-center justify-center transition-colors ${
+                              isApplicable
+                                ? isChecked
+                                  ? 'bg-blue-600 border-blue-600 text-white'
+                                  : 'border-slate-300 bg-white text-transparent'
+                                : 'border-slate-200 bg-slate-100 text-transparent'
+                            }`}
+                            aria-label={`Mark ${rule.label} as complete`}
+                          >
+                            <Check size={12} weight="bold" />
+                          </button>
+                          <div>
+                            <div className="text-sm font-semibold text-slate-800">{rule.label}</div>
+                            <p className="text-xs text-slate-600 mt-1">{rule.description}</p>
+                          </div>
+                        </div>
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusMeta.badge}`}>
+                          {statusMeta.label}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-5 mb-6">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Temporary Works Suggestions</div>
+                <h4 className="text-base font-semibold text-slate-900 mt-1">One-Click Early Site Setup</h4>
+                <p className="text-sm text-slate-600 mt-2">
+                  Adds common temporary works to Substructure so first-time builders do not miss them.
+                </p>
+              </div>
+              <div className="text-sm text-slate-700">
+                {temporaryWorksAddedCount}/{availableTemporaryWorks.length} added
+                <div className="text-xs text-slate-500 mt-1">Suggested pack: {formatCurrency(temporaryWorksEstimatedUsd)}</div>
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+              {temporaryWorksRows.map((row) => (
+                <div key={row.id} className="rounded-lg border border-slate-200 p-3 bg-slate-50/40">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-800">{row.label}</div>
+                      <div className="text-xs text-slate-600 mt-1">{row.description}</div>
+                    </div>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        row.currentQty > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {row.currentQty > 0 ? 'Added' : 'Not Added'}
+                    </span>
+                  </div>
+                  <div className="mt-2 text-xs text-slate-500">
+                    Default: {row.defaultQty} {row.unit}
+                    {row.material ? ` • Unit: ${formatCurrency(row.material.priceUsd)}` : ' • Catalog item missing'}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {missingTemporaryMaterials.length > 0 && (
+              <p className="mt-3 text-xs text-amber-700">
+                Some temporary works are not yet in the catalog: {missingTemporaryMaterials.map((row) => row.label).join(', ')}.
+              </p>
+            )}
+
+            <div className="mt-4">
+              <Button
+                variant="secondary"
+                onClick={handleAddTemporaryWorksPack}
+                disabled={availableTemporaryWorks.length === 0 || temporaryWorksAddedCount === availableTemporaryWorks.length}
+              >
+                {temporaryWorksAddedCount === availableTemporaryWorks.length
+                  ? 'Temporary Works Already Added'
+                  : 'Add Suggested Temporary Works'}
+              </Button>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-5 mb-6">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Certificate Tracker</div>
+                <h4 className="text-base font-semibold text-slate-900 mt-1">Trust & Compliance Milestones</h4>
+                <p className="text-sm text-slate-600 mt-2">
+                  Track the top 3 certificates that matter most for structural confidence and legal completion.
+                </p>
+              </div>
+              <div className="text-sm font-medium text-slate-700">
+                {completedCertificates}/{CERTIFICATE_TRACKER_ITEMS.length} received
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3">
+              {CERTIFICATE_TRACKER_ITEMS.map((certificate) => {
+                const status = certificateTracker[certificate.id];
+                const statusMeta = CERTIFICATE_STATUS_META[status];
+                return (
+                  <div key={certificate.id} className="rounded-lg border border-slate-200 p-3 bg-slate-50/40">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-semibold text-slate-800">{certificate.label}</div>
+                        <p className="text-xs text-slate-600 mt-1">{certificate.description}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusMeta.badge}`}>
+                          {statusMeta.label}
+                        </span>
+                        <select
+                          className="wizard-select"
+                          value={status}
+                          onChange={(e) => handleCertificateStatusChange(certificate.id, e.target.value as 'pending' | 'in_progress' | 'done')}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="done">Received</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-5 mb-6">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Geotech Report</div>
+                <h4 className="text-base font-semibold text-slate-900 mt-1">Upload and Store Site Soil Report</h4>
+                <p className="text-sm text-slate-600 mt-2">
+                  Upload is available to all users. Advanced BOQ analysis from geotech findings is available on Pro.
+                </p>
+              </div>
+              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
+                hasProGeotechAnalysis ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+              }`}>
+                {hasProGeotechAnalysis ? 'Advanced Analysis Enabled' : 'Advanced Analysis: Pro'}
+              </span>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-3">
+              <div className="flex flex-col md:flex-row md:items-center gap-3">
+                <label className="inline-flex">
+                  <input
+                    type="file"
+                    accept=".pdf,image/png,image/jpeg"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) {
+                        void handleGeotechUpload(file);
+                      }
+                      event.currentTarget.value = '';
+                    }}
+                    disabled={!isAuthenticated || !project?.id || isUploadingGeotech}
+                  />
+                  <span className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium cursor-pointer transition-colors ${
+                    !isAuthenticated || !project?.id || isUploadingGeotech
+                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}>
+                    {isUploadingGeotech ? 'Uploading...' : 'Upload Geotech Report'}
+                  </span>
+                </label>
+                {!isAuthenticated && (
+                  <span className="text-xs text-slate-500">Sign in to persist uploads per project.</span>
+                )}
+                {isAuthenticated && !project?.id && (
+                  <span className="text-xs text-slate-500">Save project first to attach documents.</span>
+                )}
+              </div>
+
+              {geotechDocument ? (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                  Uploaded: <span className="font-semibold">{geotechDocument.fileName}</span>
+                  <span className="text-xs text-emerald-700 ml-2">
+                    ({new Date(geotechDocument.createdAt).toLocaleDateString()})
+                  </span>
+                  {!hasProGeotechAnalysis && (
+                    <p className="text-xs mt-2 text-amber-700">
+                      Report uploaded. Upgrade to Pro to automatically adjust foundation BOQ using report density and drainage findings.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                  No geotech report uploaded yet.
+                </div>
+              )}
+
+              {geotechNotice && (
+                <div className={`text-xs font-medium ${geotechNotice.toLowerCase().includes('failed') ? 'text-red-600' : 'text-emerald-700'}`}>
+                  {geotechNotice}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {selectedSoilProfile && (
+            <div className={`rounded-xl border p-5 mb-6 ${
+              selectedSoilProfile.severity === 'high'
+                ? 'border-red-200 bg-red-50'
+                : selectedSoilProfile.severity === 'medium'
+                  ? 'border-amber-200 bg-amber-50'
+                  : 'border-emerald-200 bg-emerald-50'
+            }`}>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Soil Risk Advisory</div>
+                  <h4 className="text-base font-semibold text-slate-900 mt-1">{selectedSoilProfile.label}</h4>
+                  <p className="text-sm text-slate-700 mt-2">{selectedSoilProfile.warning}</p>
+                  <p className="text-sm text-slate-600 mt-1">{selectedSoilProfile.recommendation}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedSoilProfile.adjustmentPct > 0 ? (
+                    <Button
+                      variant="secondary"
+                      onClick={handleApplySoilAdjustment}
+                      disabled={soilAdjustmentApplied || !hasSubstructureItems}
+                    >
+                      {soilAdjustmentApplied
+                        ? 'Adjustment Applied'
+                        : `Apply ${selectedSoilProfile.adjustmentPct}% to Substructure`}
+                    </Button>
+                  ) : (
+                    <span className="text-sm font-medium text-emerald-700">No adjustment required</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Grand Total Summary Card - Placed BELOW stage cards as per requirement */}
           <div className="grand-total-section">
@@ -2366,6 +3263,44 @@ function BOQBuilderContent() {
                               );
                             })}
                           </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="wizard-label">
+                            Soil Type <span className="optional">(Recommended)</span>
+                          </label>
+                          <select
+                            className="wizard-select"
+                            value={projectDetails.soilType}
+                            onChange={(e) => setProjectDetails({ ...projectDetails, soilType: e.target.value as SoilType })}
+                          >
+                            <option value="">Select soil type</option>
+                            {SOIL_TYPES.map((soil) => (
+                              <option key={soil.value} value={soil.value}>
+                                {soil.label}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="wizard-hint">Used for advisory risk warnings and optional quantity adjustments.</span>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="wizard-label">
+                            Site Slope <span className="optional">(Recommended)</span>
+                          </label>
+                          <select
+                            className="wizard-select"
+                            value={projectDetails.siteSlope}
+                            onChange={(e) => setProjectDetails({ ...projectDetails, siteSlope: e.target.value as SiteSlopeType })}
+                          >
+                            <option value="">Select site slope</option>
+                            {SITE_SLOPE_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label} - {option.description}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="wizard-hint">Used for excavation and retaining risk guidance in future releases.</span>
                         </div>
                       </div>
 

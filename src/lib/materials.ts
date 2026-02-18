@@ -1,6 +1,8 @@
 // Material types and data for ZimEstimate
 // Zimbabwe-specific construction materials with local pricing
 
+import { getCsvDerivedPrice } from '@/lib/boq/csvPricing';
+
 export interface Material {
     id: string;
     name: string;
@@ -156,6 +158,10 @@ export const materials: Material[] = [
     { id: 'dpc', name: 'DPC (Damp Proof Course)', category: 'finishes', subcategory: 'Waterproofing', unit: 'per roll', specifications: '110mm / 150mm PVC DPC', milestones: ['substructure'] },
     { id: 'dpm', name: 'DPM (Damp Proof Membrane)', category: 'finishes', subcategory: 'Waterproofing', unit: 'per roll', specifications: '250 micron under-slab membrane (30m)', milestones: ['substructure'] },
     { id: 'termite-poison', name: 'Termite Poison', category: 'finishes', subcategory: 'Chemicals', unit: 'per litre', specifications: 'Soil poisoning treatment', milestones: ['substructure'] },
+    { id: 'temp-cabin-6x3', name: 'Site Cabin 6x3 (Temporary)', category: 'labor', subcategory: 'Temporary Works', unit: 'each', specifications: 'Temporary cabin for storage and site guard shelter', milestones: ['substructure'] },
+    { id: 'temp-toilet', name: 'Temporary Toilet Setup', category: 'labor', subcategory: 'Temporary Works', unit: 'each', specifications: 'Portable/fixed temporary toilet setup for workers', milestones: ['substructure'] },
+    { id: 'water-tank-50000l', name: 'Water Tank 50,000L (Temporary)', category: 'plumbing', subcategory: 'Temporary Works', unit: 'each', specifications: 'Temporary site water tank when no municipal connection exists', milestones: ['substructure'] },
+    { id: 'site-clear-level', name: 'Site Clear and Level', category: 'labor', subcategory: 'Temporary Works', unit: 'lot', specifications: 'Clearing vegetation, rubble, and level preparation before works', milestones: ['substructure'] },
 
     // LABOR & SERVICES
     { id: 'labor-builder', name: 'Builder (Daily Rate)', category: 'labor', subcategory: 'Labor', unit: 'per day', specifications: 'Skilled builder daily rate', milestones: ['substructure', 'superstructure', 'finishing'] },
@@ -167,6 +173,16 @@ export const materials: Material[] = [
 
 // Supplier database
 export const suppliers: Supplier[] = [
+    {
+        id: 'sup-csv-baseline',
+        name: 'CSV Baseline Market Rates',
+        location: 'Zimbabwe',
+        phone: '',
+        isTrusted: true,
+        rating: 4.5,
+        deliveryAreas: ['Nationwide'],
+        specialties: ['bricks', 'cement', 'sand', 'aggregates', 'steel', 'roofing', 'timber'],
+    },
     {
         id: 'sup-1',
         name: 'Halsteds Hardware',
@@ -289,6 +305,10 @@ export const materialPrices: MaterialPrice[] = [
     { materialId: 'dpc', supplierId: 'sup-1', priceUsd: 5, priceZwg: 150, lastUpdated: '2026-01-31', inStock: true },
     { materialId: 'dpm', supplierId: 'sup-1', priceUsd: 15, priceZwg: 450, lastUpdated: '2026-01-31', inStock: true },
     { materialId: 'termite-poison', supplierId: 'sup-6', priceUsd: 12, priceZwg: 360, lastUpdated: '2026-01-31', inStock: true },
+    { materialId: 'temp-cabin-6x3', supplierId: 'sup-csv-baseline', priceUsd: 350, priceZwg: 10500, lastUpdated: '2026-02-18', inStock: true },
+    { materialId: 'temp-toilet', supplierId: 'sup-csv-baseline', priceUsd: 180, priceZwg: 5400, lastUpdated: '2026-02-18', inStock: true },
+    { materialId: 'water-tank-50000l', supplierId: 'sup-csv-baseline', priceUsd: 550, priceZwg: 16500, lastUpdated: '2026-02-18', inStock: true },
+    { materialId: 'site-clear-level', supplierId: 'sup-csv-baseline', priceUsd: 250, priceZwg: 7500, lastUpdated: '2026-02-18', inStock: true },
     // LABOR PRICES (Estimated averages)
     { materialId: 'labor-builder', supplierId: 'sup-6', priceUsd: 25, priceZwg: 750, lastUpdated: '2026-01-31', inStock: true },
     { materialId: 'labor-assistant', supplierId: 'sup-6', priceUsd: 10, priceZwg: 300, lastUpdated: '2026-01-31', inStock: true },
@@ -318,6 +338,11 @@ export function getPricesForMaterial(materialId: string): (MaterialPrice & { sup
 }
 
 export function getBestPrice(materialId: string): MaterialPrice | undefined {
+    const csvPrice = getCsvDerivedPrice(materialId);
+    if (csvPrice) {
+        return csvPrice;
+    }
+
     const prices = materialPrices.filter((p) => p.materialId === materialId && p.inStock);
     return prices.sort((a, b) => a.priceUsd - b.priceUsd)[0];
 }

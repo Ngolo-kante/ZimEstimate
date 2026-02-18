@@ -186,16 +186,22 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   // ============================================
   if (hasScope('substructure')) {
     const hardcoreM3 = floorArea * HARDCORE_M3_PER_SQM;
-    items.push(createBOQItem('hardcore', 'Hardcore (Filling)', 'substructure', Math.ceil(hardcoreM3), 'per cube', `${floorArea}m² floor`));
+    items.push(createBOQItem('hardcore', 'Hardcore (Filling)', 'substructure', hardcoreM3, 'per cube', `${floorArea}m² floor`));
 
-    items.push(createBOQItem('dpm-500', 'DPM 500 Gauge', 'substructure', Math.ceil(floorArea * DPM_SHEETS_PER_SQM / 50), 'per roll', 'Floor membrane'));
+    const dpcRolls = Math.max(1, Math.ceil(perimeter / DPC_ROLL_LENGTH_M));
+    items.push(createBOQItem('dpc', 'DPC Roll', 'substructure', dpcRolls, 'per roll', `DPC for ${perimeter.toFixed(1)}m perimeter`));
+
+    items.push(createBOQItem('dpm', 'DPM 500 Gauge', 'substructure', Math.ceil(floorArea * DPM_SHEETS_PER_SQM / 50), 'per roll', 'Floor membrane'));
+
+    const termitePoisonLitres = floorArea * TERMITE_POISON_L_PER_SQM;
+    items.push(createBOQItem('termite-poison', 'Termite Poison', 'substructure', termitePoisonLitres, 'per litre', 'Soil treatment for foundation and slab'));
 
     const conc = calculateFoundationConcreteVolume(perimeter, locationType);
     const footingWidthMm = BOQ_ASSUMPTIONS.stripFooting.widthMm[locationType];
     const footingDepthMm = BOQ_ASSUMPTIONS.stripFooting.depthMm;
     items.push(createBOQItem(cementInfo.materialId, cementInfo.name, 'substructure', Math.ceil(conc * concreteCementBagsPerM3), 'per 50kg bag', `Foundation concrete (${footingWidthMm}mm x ${footingDepthMm}mm strip footing)`));
-    items.push(createBOQItem('sand-river', 'River Sand', 'substructure', Math.ceil(conc * 0.5), 'per cube', 'Foundation concrete'));
-    items.push(createBOQItem('aggregate-19mm', 'Crushed Stone 19mm', 'substructure', Math.ceil(conc * 0.8), 'per cube', 'Foundation concrete'));
+    items.push(createBOQItem('sand-river', 'River Sand', 'substructure', conc * 0.5, 'per cube', 'Foundation concrete'));
+    items.push(createBOQItem('stone-19mm', 'Crushed Stone 19mm', 'substructure', conc * 0.8, 'per cube', 'Foundation concrete'));
 
     const subWallArea = perimeter * 1.0;
     const subBricks = Math.ceil(subWallArea * brickInfo.bricksPerSqm * masonryWasteMultiplier);
@@ -203,7 +209,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
 
     const subMortar = (subBricks / 1000) * MORTAR_M3_PER_1000_BRICKS;
     items.push(createBOQItem(cementInfo.materialId, cementInfo.name, 'substructure', Math.ceil(subMortar * mortarCementBagsPerM3 * masonryWasteMultiplier), 'per 50kg bag', 'Substructure mortar'));
-    items.push(createBOQItem('sand-bricks', 'Brick Sand', 'substructure', Math.ceil(subMortar * SAND_M3_PER_M3_MORTAR * masonryWasteMultiplier), 'per cube', 'Substructure mortar'));
+    items.push(createBOQItem('sand-bricks', 'Brick Sand', 'substructure', subMortar * SAND_M3_PER_M3_MORTAR * masonryWasteMultiplier, 'per cube', 'Substructure mortar'));
 
     items.push(createBOQItem('mesh-ref193', 'Welded Mesh Ref 193', 'substructure', Math.ceil(floorArea * MESH_SHEETS_PER_SQM), 'per sheet', 'Slab reinforcement'));
   }
@@ -235,11 +241,12 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
       const totalB = extBricks + intBricks;
       const mort = (totalB / 1000) * MORTAR_M3_PER_1000_BRICKS;
       items.push(createBOQItem(cementInfo.materialId, cementInfo.name, 'superstructure', Math.ceil(mort * mortarCementBagsPerM3 * masonryWasteMultiplier), 'per 50kg bag', 'Superstructure mortar'));
-      items.push(createBOQItem('sand-bricks', 'Brick Sand', 'superstructure', Math.ceil(mort * SAND_M3_PER_M3_MORTAR * masonryWasteMultiplier), 'per cube', 'Superstructure mortar'));
+      items.push(createBOQItem('sand-bricks', 'Brick Sand', 'superstructure', mort * SAND_M3_PER_M3_MORTAR * masonryWasteMultiplier, 'per cube', 'Superstructure mortar'));
 
       const totalLen = perimeter + internalWallLength;
       items.push(createBOQItem('brickforce', 'Brickforce', 'superstructure', Math.ceil(totalLen / 15), 'per roll', ''));
       items.push(createBOQItem('rebar-12', 'Rebar Y12', 'superstructure', Math.ceil(totalLen * 4 / 6), 'per length', ''));
+      items.push(createBOQItem('rebar-10', 'Rebar Y10', 'superstructure', Math.ceil(totalLen * STIRRUPS_PER_LM / 6), 'per length', ''));
     }
   }
 
@@ -283,6 +290,8 @@ const SAND_M3_PER_M3_MORTAR = 1.2;
 
 const HARDCORE_M3_PER_SQM = 0.15;
 const DPM_SHEETS_PER_SQM = 1.1;
+const DPC_ROLL_LENGTH_M = 30;
+const TERMITE_POISON_L_PER_SQM = 0.05;
 
 const REBAR_Y12_PER_LM_RINGBEAM = 4;
 const STIRRUPS_PER_LM = 4;
@@ -359,6 +368,30 @@ function getMaterialPrice(materialId: string): { usd: number; zwg: number } {
   return { usd: 0, zwg: 0 };
 }
 
+function roundTo(value: number, decimals: number): number {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
+
+function normalizeQuantityByUnit(quantity: number, unit: string): number {
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    return 0;
+  }
+
+  const normalizedUnit = unit.trim().toLowerCase();
+  const isDiscreteUnit = /each|bag|roll|sheet|day|length|per 100/.test(normalizedUnit);
+  if (isDiscreteUnit) {
+    return Math.ceil(quantity);
+  }
+
+  const isContinuousUnit = /cube|m3|m²|m2|meter|metre|litre|kg/.test(normalizedUnit);
+  if (isContinuousUnit) {
+    return roundTo(quantity, 1);
+  }
+
+  return roundTo(quantity, 2);
+}
+
 function createBOQItem(
   materialId: string,
   materialName: string,
@@ -368,17 +401,21 @@ function createBOQItem(
   calculationNote: string
 ): GeneratedBOQItem {
   const prices = getMaterialPrice(materialId);
+  const normalizedQuantity = normalizeQuantityByUnit(quantity, unit);
+  const totalUsd = roundTo(normalizedQuantity * prices.usd, 2);
+  const totalZwg = roundTo(normalizedQuantity * prices.zwg, 2);
+
   return {
     id: generateItemId(),
     materialId,
     materialName,
     category,
-    quantity: Math.ceil(quantity),
+    quantity: normalizedQuantity,
     unit,
     unitPriceUsd: prices.usd,
     unitPriceZwg: prices.zwg,
-    totalUsd: Math.ceil(quantity) * prices.usd,
-    totalZwg: Math.ceil(quantity) * prices.zwg,
+    totalUsd,
+    totalZwg,
     calculationNote,
     isEdited: false,
   };
@@ -433,10 +470,16 @@ function calculateSubstructure(
   const cfg = normalizeConfig(config);
 
   const hardcoreM3 = totalArea * HARDCORE_M3_PER_SQM;
-  items.push(createBOQItem('aggregate-hardcore', 'Hardcore', 'substructure', hardcoreM3, 'per cube', `${totalArea}m² floor @ 150mm thick`));
+  items.push(createBOQItem('hardcore', 'Hardcore', 'substructure', hardcoreM3, 'per cube', `${totalArea}m² floor @ 150mm thick`));
+
+  const dpcRolls = Math.max(1, Math.ceil(perimeterLength / DPC_ROLL_LENGTH_M));
+  items.push(createBOQItem('dpc', 'DPC Roll', 'substructure', dpcRolls, 'per roll', `DPC for ${perimeterLength.toFixed(1)}m perimeter`));
 
   const dpmSheets = Math.ceil(totalArea * DPM_SHEETS_PER_SQM / 50);
-  items.push(createBOQItem('dpm-500', 'DPM 500 Gauge', 'substructure', dpmSheets, 'per roll', `${totalArea}m² coverage with overlaps`));
+  items.push(createBOQItem('dpm', 'DPM 500 Gauge', 'substructure', dpmSheets, 'per roll', `${totalArea}m² coverage with overlaps`));
+
+  const termitePoisonLitres = totalArea * TERMITE_POISON_L_PER_SQM;
+  items.push(createBOQItem('termite-poison', 'Termite Poison', 'substructure', termitePoisonLitres, 'per litre', 'Soil treatment for foundation and slab'));
 
   const concreteM3 = calculateFoundationConcreteVolume(perimeterLength, locationType);
   const footingWidthMm = BOQ_ASSUMPTIONS.stripFooting.widthMm[locationType];
@@ -448,7 +491,7 @@ function calculateSubstructure(
   items.push(createBOQItem('sand-river', 'River Sand', 'substructure', foundationSand, 'per cube', 'Foundation concrete mix'));
 
   const foundationStone = Math.ceil(concreteM3 * 0.8 * 10) / 10;
-  items.push(createBOQItem('aggregate-19mm', 'Crushed Stone 19mm', 'substructure', foundationStone, 'per cube', 'Foundation concrete mix'));
+  items.push(createBOQItem('stone-19mm', 'Crushed Stone 19mm', 'substructure', foundationStone, 'per cube', 'Foundation concrete mix'));
 
   const masonryWasteMultiplier = getMasonryWasteMultiplier(locationType);
   const { bricks: subBricks, note: brickNote } = calculateWallBricks(perimeterLength, 1.0, cfg.brickType, masonryWasteMultiplier);
@@ -537,7 +580,7 @@ function calculateRoofing(
   items.push(createBOQItem('timber-38x38', 'Timber 38x38mm', 'roofing', branderingCount, 'per 6m length', 'Brandering @ 400mm spacing'));
 
   const fasciaLength = Math.ceil(Math.sqrt(roofArea) * 4 / 6);
-  items.push(createBOQItem('fascia-board', 'Fascia Board 228mm', 'roofing', fasciaLength, 'per 6m length', 'Perimeter fascia'));
+  items.push(createBOQItem('fascia-pvc', 'Fascia Board 228mm', 'roofing', fasciaLength, 'per 6m length', 'Perimeter fascia'));
 
   return items;
 }
