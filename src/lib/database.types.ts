@@ -28,6 +28,9 @@ export type AccessLevel = 'view' | 'edit';
 
 export type Currency = 'USD' | 'ZWG';
 
+export type ProjectSoilType = 'sandy' | 'clay_black_mountain' | 'loam' | 'rock';
+
+export type SiteSlopeType = 'flat' | 'gentle' | 'moderate' | 'steep';
 
 export type StageStatus = 'planning' | 'pending_approval' | 'in_progress' | 'on_hold' | 'completed';
 
@@ -153,6 +156,12 @@ export interface Database {
                     target_completion_date: string | null;
                     target_purchase_date: string | null;
                     savings_frequency: SavingsFrequency;
+                    soil_type: ProjectSoilType | null;
+                    site_slope: SiteSlopeType | null;
+                    geotech_report_uploaded: boolean;
+                    geotech_report_uploaded_at: string | null;
+                    geotech_report_document_id: string | null;
+                    geotech_analysis_mode: 'manual' | 'pro_available' | 'pro_applied';
                     created_at: string;
                     updated_at: string;
                 };
@@ -177,6 +186,12 @@ export interface Database {
                     target_completion_date?: string | null;
                     target_purchase_date?: string | null;
                     savings_frequency?: SavingsFrequency;
+                    soil_type?: ProjectSoilType | null;
+                    site_slope?: SiteSlopeType | null;
+                    geotech_report_uploaded?: boolean;
+                    geotech_report_uploaded_at?: string | null;
+                    geotech_report_document_id?: string | null;
+                    geotech_analysis_mode?: 'manual' | 'pro_available' | 'pro_applied';
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -201,6 +216,12 @@ export interface Database {
                     target_completion_date?: string | null;
                     target_purchase_date?: string | null;
                     savings_frequency?: SavingsFrequency;
+                    soil_type?: ProjectSoilType | null;
+                    site_slope?: SiteSlopeType | null;
+                    geotech_report_uploaded?: boolean;
+                    geotech_report_uploaded_at?: string | null;
+                    geotech_report_document_id?: string | null;
+                    geotech_analysis_mode?: 'manual' | 'pro_available' | 'pro_applied';
                     created_at?: string;
                     updated_at?: string;
                 };
