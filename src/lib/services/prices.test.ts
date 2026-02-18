@@ -9,7 +9,7 @@ const createSupabaseMock = (handlers: Record<string, QueryHandler>) => {
       const state = { table };
       const exec = () => (handlers[table] ? handlers[table](state) : { data: null, error: null });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock builder requires self-referencing any
-      const builder: Record<string, (...args: unknown[]) => any> = {
+      const builder: Record<string, any> = {
         select: () => builder,
         eq: () => builder,
         gte: () => builder,

@@ -54,7 +54,12 @@ async function addFirstMaterial(page: Page) {
   const searchInput = page.getByTestId('material-search-input');
   await expect(searchInput).toBeVisible();
   await searchInput.fill('cement');
-  await page.getByText('Standard Cement 32.5N').click();
+  await page
+    .getByTestId('material-dropdown')
+    .locator('span.text-sm.font-semibold')
+    .filter({ hasText: 'Standard Cement 32.5N' })
+    .first()
+    .click();
   await page.getByPlaceholder('0.00').fill('10');
   await page.getByRole('button', { name: /^Add$/ }).click();
 }
