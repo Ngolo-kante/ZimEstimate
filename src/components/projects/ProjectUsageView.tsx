@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
@@ -14,6 +14,7 @@ import {
   upsertProjectRecurringReminder,
   updateProjectRecurringReminder,
 } from '@/lib/services/projects';
+import { supabase } from '@/lib/supabase';
 import { BOQItem, MaterialUsage, Project } from '@/lib/database.types';
 import {
   Calendar,
@@ -23,9 +24,15 @@ import {
   WhatsappLogo,
   PaperPlaneTilt,
   Envelope,
+  Package,
+  Receipt,
+  Plus,
+  CaretDown,
+  CaretUp,
 } from '@phosphor-icons/react';
 
 type UsageViewMode = 'daily' | 'weekly';
+type UsageTab = 'log' | 'materials' | 'ledger';
 type ReminderFrequency = 'daily' | 'weekly' | 'monthly';
 type NotificationChannel = 'sms' | 'whatsapp' | 'telegram' | 'email';
 
@@ -36,6 +43,8 @@ interface ProjectUsageViewProps {
   onUsageRecorded?: () => void | Promise<void>;
   onRequestPhone?: (payload?: { channel?: NotificationChannel }) => void;
   canUseMobileReminders?: boolean;
+  selectedItemForUsage?: BOQItem | null;
+  onClearSelectedItem?: () => void;
 }
 
 interface UsageFormState {
@@ -52,13 +61,17 @@ export default function ProjectUsageView({
   onUsageRecorded,
   onRequestPhone,
   canUseMobileReminders = true,
+  selectedItemForUsage,
+  onClearSelectedItem,
 }: ProjectUsageViewProps) {
   const { profile, user } = useAuth();
   const { formatPrice, exchangeRate } = useCurrency();
   const { success, error: showError } = useToast();
+  const [activeTab, setActiveTab] = useState<UsageTab>('log');
   const [viewMode, setViewMode] = useState<UsageViewMode>('daily');
   const [isLoading, setIsLoading] = useState(false);
   const [usageHistory, setUsageHistory] = useState<MaterialUsage[]>([]);
+  const [expandedMaterials, setExpandedMaterials] = useState<Set<string>>(new Set());
   const [formState, setFormState] = useState<UsageFormState>({
     itemId: '',
     quantity: '',
@@ -73,20 +86,60 @@ export default function ProjectUsageView({
     channel: NotificationChannel;
   } | null>(null);
 
-  useEffect(() => {
+  // Ref for debouncing realtime updates
+  const realtimeRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load usage history
+  const loadUsage = useCallback(async () => {
     if (!user?.id) return;
-    const loadUsage = async () => {
-      setIsLoading(true);
-      const { usage, error } = await getUsageHistory(project.id);
-      if (error) {
-        showError(error.message || 'Failed to load usage history');
-      } else {
-        setUsageHistory(usage);
-      }
-      setIsLoading(false);
-    };
-    loadUsage();
+    setIsLoading(true);
+    const { usage, error } = await getUsageHistory(project.id);
+    if (error) {
+      showError(error.message || 'Failed to load usage history');
+    } else {
+      setUsageHistory(usage);
+    }
+    setIsLoading(false);
   }, [project.id, showError, user?.id]);
+
+  useEffect(() => {
+    void loadUsage();
+  }, [loadUsage]);
+
+  // Realtime subscription for material_usage changes
+  useEffect(() => {
+    const scheduleRefresh = () => {
+      if (realtimeRefreshTimeoutRef.current) {
+        clearTimeout(realtimeRefreshTimeoutRef.current);
+      }
+      realtimeRefreshTimeoutRef.current = setTimeout(() => {
+        void loadUsage();
+        onUsageRecorded?.();
+      }, 250);
+    };
+
+    const channel = supabase
+      .channel(`usage-${project.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'material_usage',
+          filter: `project_id=eq.${project.id}`,
+        },
+        () => scheduleRefresh()
+      )
+      .subscribe();
+
+    return () => {
+      if (realtimeRefreshTimeoutRef.current) {
+        clearTimeout(realtimeRefreshTimeoutRef.current);
+        realtimeRefreshTimeoutRef.current = null;
+      }
+      void supabase.removeChannel(channel);
+    };
+  }, [loadUsage, project.id, onUsageRecorded]);
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -105,6 +158,18 @@ export default function ProjectUsageView({
     };
     loadReminder();
   }, [project.id, profile?.id]);
+
+  // Handle external item selection (from BOQ quick action)
+  useEffect(() => {
+    if (selectedItemForUsage) {
+      setActiveTab('log');
+      setFormState(prev => ({
+        ...prev,
+        itemId: selectedItemForUsage.id,
+      }));
+      onClearSelectedItem?.();
+    }
+  }, [selectedItemForUsage, onClearSelectedItem]);
 
   const itemLookup = useMemo(() => {
     const map = new Map<string, BOQItem>();
@@ -182,6 +247,58 @@ export default function ProjectUsageView({
       lowStockCount,
     };
   }, [usageStats, usageThreshold]);
+
+  // Group usage history by material for per-material view
+  const usageByMaterial = useMemo(() => {
+    const grouped: Record<string, MaterialUsage[]> = {};
+    usageHistory.forEach((usage) => {
+      const itemId = usage.boq_item_id;
+      if (!grouped[itemId]) grouped[itemId] = [];
+      grouped[itemId].push(usage);
+    });
+    // Sort each material's history by date descending
+    Object.keys(grouped).forEach(key => {
+      grouped[key].sort((a, b) =>
+        new Date(b.usage_date).getTime() - new Date(a.usage_date).getTime()
+      );
+    });
+    return grouped;
+  }, [usageHistory]);
+
+  // Ledger-style view: all usage sorted by date descending
+  const ledgerEntries = useMemo(() => {
+    return [...usageHistory].sort((a, b) =>
+      new Date(b.usage_date).getTime() - new Date(a.usage_date).getTime()
+    );
+  }, [usageHistory]);
+
+  // Group ledger entries by date
+  const ledgerByDate = useMemo(() => {
+    const grouped: Record<string, MaterialUsage[]> = {};
+    ledgerEntries.forEach((usage) => {
+      const dateKey = new Date(usage.usage_date).toLocaleDateString('en-GB', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+      if (!grouped[dateKey]) grouped[dateKey] = [];
+      grouped[dateKey].push(usage);
+    });
+    return grouped;
+  }, [ledgerEntries]);
+
+  const toggleMaterialExpanded = (itemId: string) => {
+    setExpandedMaterials((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  };
 
   const isMobileChannel = (channel: NotificationChannel) =>
     channel === 'sms' || channel === 'whatsapp' || channel === 'telegram';
@@ -335,22 +452,54 @@ export default function ProjectUsageView({
           <h2>Usage Tracking</h2>
           <p>Log material usage and track remaining stock on site.</p>
         </div>
-        <div className="view-toggle">
-          <button
-            className={viewMode === 'daily' ? 'active' : ''}
-            onClick={() => setViewMode('daily')}
-          >
-            Daily
-          </button>
-          <button
-            className={viewMode === 'weekly' ? 'active' : ''}
-            onClick={() => setViewMode('weekly')}
-          >
-            Weekly
-          </button>
+        <div className="header-actions">
+          <div className="view-toggle">
+            <button
+              className={viewMode === 'daily' ? 'active' : ''}
+              onClick={() => setViewMode('daily')}
+            >
+              Daily
+            </button>
+            <button
+              className={viewMode === 'weekly' ? 'active' : ''}
+              onClick={() => setViewMode('weekly')}
+            >
+              Weekly
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="usage-tabs">
+        <button
+          className={`usage-tab ${activeTab === 'log' ? 'active' : ''}`}
+          onClick={() => setActiveTab('log')}
+        >
+          <Plus size={16} weight="duotone" />
+          <span>Log Usage</span>
+        </button>
+        <button
+          className={`usage-tab ${activeTab === 'materials' ? 'active' : ''}`}
+          onClick={() => setActiveTab('materials')}
+        >
+          <Package size={16} weight="duotone" />
+          <span>Materials</span>
+          <span className="tab-count">{items.length}</span>
+        </button>
+        <button
+          className={`usage-tab ${activeTab === 'ledger' ? 'active' : ''}`}
+          onClick={() => setActiveTab('ledger')}
+        >
+          <Receipt size={16} weight="duotone" />
+          <span>Usage Ledger</span>
+          {usageHistory.length > 0 && <span className="tab-count">{usageHistory.length}</span>}
+        </button>
+      </div>
+
+      {/* Log Usage Tab Content */}
+      {activeTab === 'log' && (
+        <>
       <div className="usage-kpis">
         <div className="kpi-grid">
           <div className="kpi-card">
@@ -608,23 +757,207 @@ export default function ProjectUsageView({
           ))
         )}
       </div>
+        </>
+      )}
+
+      {/* Materials Tab - Per-material usage history */}
+      {activeTab === 'materials' && (
+        <div className="materials-tab">
+          <div className="materials-header">
+            <h3>Material Usage History</h3>
+            <p>Click on a material to see its usage history.</p>
+          </div>
+          <div className="materials-list">
+            {usageStats.map((stat) => {
+              const isExpanded = expandedMaterials.has(stat.item.id);
+              const materialHistory = usageByMaterial[stat.item.id] || [];
+              const hasHistory = materialHistory.length > 0;
+
+              return (
+                <div key={stat.item.id} className={`material-card ${isExpanded ? 'expanded' : ''}`}>
+                  <div
+                    className="material-header"
+                    onClick={() => hasHistory && toggleMaterialExpanded(stat.item.id)}
+                    role={hasHistory ? 'button' : undefined}
+                    tabIndex={hasHistory ? 0 : undefined}
+                  >
+                    <div className="material-expand">
+                      {hasHistory ? (
+                        isExpanded ? <CaretUp size={16} weight="bold" /> : <CaretDown size={16} weight="bold" />
+                      ) : (
+                        <span className="expand-placeholder" />
+                      )}
+                    </div>
+                    <div className="material-info">
+                      <span className="material-name">{stat.item.material_name}</span>
+                      <span className="material-unit">{stat.item.unit}</span>
+                    </div>
+                    <div className="material-stats">
+                      <div className="stat-group">
+                        <span className="stat-label">Available</span>
+                        <span className="stat-value">{stat.availableQty.toFixed(1)}</span>
+                      </div>
+                      <div className="stat-group">
+                        <span className="stat-label">Used</span>
+                        <span className="stat-value used">{stat.usedQty.toFixed(1)}</span>
+                      </div>
+                      <div className="stat-group">
+                        <span className="stat-label">Remaining</span>
+                        <span className={`stat-value ${stat.remainingQty <= 0 ? 'depleted' : ''}`}>
+                          {stat.remainingQty.toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="material-progress">
+                      <div className="progress-bar">
+                        <div
+                          className="progress-fill"
+                          style={{ width: `${Math.min(stat.usagePercent, 100)}%` }}
+                        />
+                      </div>
+                      <span className="progress-text">{stat.usagePercent.toFixed(0)}%</span>
+                    </div>
+                    {hasHistory && (
+                      <span className="history-count">{materialHistory.length} log{materialHistory.length !== 1 ? 's' : ''}</span>
+                    )}
+                  </div>
+
+                  {isExpanded && hasHistory && (
+                    <div className="material-history">
+                      <table className="history-table">
+                        <thead>
+                          <tr>
+                            <th className="col-date">Date</th>
+                            <th className="col-qty">Quantity</th>
+                            <th className="col-notes">Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {materialHistory.map((usage) => (
+                            <tr key={usage.id}>
+                              <td className="col-date">
+                                {new Date(usage.usage_date).toLocaleDateString('en-GB', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
+                              </td>
+                              <td className="col-qty">{usage.quantity_used} {stat.item.unit}</td>
+                              <td className="col-notes">{usage.notes || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr>
+                            <td className="footer-label">Total Used</td>
+                            <td className="col-qty bold">{stat.usedQty.toFixed(2)} {stat.item.unit}</td>
+                            <td></td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {usageStats.length === 0 && (
+              <div className="empty-materials">
+                <Package size={32} />
+                <p>No materials to track.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Ledger Tab - Overall usage history */}
+      {activeTab === 'ledger' && (
+        <div className="ledger-tab">
+          <div className="ledger-header-bar">
+            <h3>Usage Ledger</h3>
+            <span className="ledger-total">
+              {usageHistory.length} entries • Total: {formatPrice(totalUsedCost, totalUsedCost * exchangeRate)}
+            </span>
+          </div>
+
+          {Object.keys(ledgerByDate).length === 0 ? (
+            <div className="empty-ledger">
+              <Receipt size={48} />
+              <p>No usage records yet.</p>
+              <span>Log material usage to see entries here.</span>
+            </div>
+          ) : (
+            <div className="ledger-container">
+              {Object.entries(ledgerByDate).map(([dateKey, records]) => {
+                const dayTotal = records.reduce((sum, r) => {
+                  const item = itemLookup.get(r.boq_item_id);
+                  const price = Number(item?.unit_price_usd || 0);
+                  return sum + (r.quantity_used * price);
+                }, 0);
+
+                return (
+                  <div key={dateKey} className="ledger-date-group">
+                    <div className="ledger-date-header">
+                      <span className="ledger-date">{dateKey}</span>
+                      <span className="ledger-date-total">{formatPrice(dayTotal, dayTotal * exchangeRate)}</span>
+                    </div>
+                    <table className="ledger-table">
+                      <thead>
+                        <tr>
+                          <th className="col-material">Material</th>
+                          <th className="col-qty">Quantity</th>
+                          <th className="col-unit">Unit</th>
+                          <th className="col-price">Unit Price</th>
+                          <th className="col-total">Value</th>
+                          <th className="col-notes">Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {records.map((record) => {
+                          const item = itemLookup.get(record.boq_item_id);
+                          const unitPrice = Number(item?.unit_price_usd || 0);
+                          const recordValue = record.quantity_used * unitPrice;
+
+                          return (
+                            <tr key={record.id}>
+                              <td className="col-material">
+                                <span className="material-name">{item?.material_name || 'Unknown'}</span>
+                                {item?.category && <span className="material-cat">{item.category}</span>}
+                              </td>
+                              <td className="col-qty mono">{record.quantity_used.toFixed(2)}</td>
+                              <td className="col-unit">{item?.unit || '—'}</td>
+                              <td className="col-price mono">{formatPrice(unitPrice, unitPrice * exchangeRate)}</td>
+                              <td className="col-total mono bold">{formatPrice(recordValue, recordValue * exchangeRate)}</td>
+                              <td className="col-notes">{record.notes || '—'}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       <style jsx>{`
         .usage-page {
           display: flex;
           flex-direction: column;
-          gap: 18px;
-          background: rgba(255, 255, 255, 0.56);
-          border: 1px solid rgba(211, 211, 215, 0.72);
-          border-radius: 22px;
-          padding: 18px;
-          box-shadow: 0 14px 24px rgba(6, 20, 47, 0.04);
-          transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+          gap: 20px;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.8));
+          border: 1px solid rgba(226, 232, 240, 0.8);
+          border-radius: 20px;
+          padding: 24px;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+          transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .usage-page:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 18px 28px rgba(6, 20, 47, 0.08);
+          transform: translateY(-2px);
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
         }
 
         .usage-header {
@@ -633,20 +966,20 @@ export default function ProjectUsageView({
             align-items: flex-start;
             gap: 20px;
             flex-wrap: wrap;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
 
         .usage-header h2 {
             margin: 0;
-            font-size: 1.62rem;
-            color: #0f294b;
+            font-size: 1.5rem;
+            color: #0f172a;
             font-weight: 700;
             letter-spacing: -0.02em;
         }
 
         .usage-header p {
-            margin: 4px 0 0;
-            color: #617c9f;
+            margin: 6px 0 0;
+            color: #64748b;
             font-size: 0.95rem;
         }
 
@@ -691,55 +1024,58 @@ export default function ProjectUsageView({
         }
 
         .kpi-card {
-            background: #ffffff;
-            border: 1px solid #d9e7f5;
-            border-radius: 16px;
-            padding: 20px;
+            background: linear-gradient(135deg, #ffffff, #f8fafc);
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 18px 20px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01);
-            transition: transform 0.2s;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+            transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
         }
-        
+
         .kpi-card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+            border-color: rgba(59, 130, 246, 0.2);
         }
 
         .kpi-card.alert {
-            border-color: rgba(239, 68, 68, 0.2);
-            background: #fef2f2;
+            border-color: rgba(239, 68, 68, 0.25);
+            background: linear-gradient(135deg, #fef2f2, #fff5f5);
         }
-        
+
         .kpi-card.alert .value {
-            color: #ef4444;
+            color: #dc2626;
         }
 
         .kpi-card .label {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: #64748b;
-            font-weight: 700;
+            font-weight: 600;
         }
 
         .kpi-card .value {
-            font-size: 1.75rem;
+            font-size: 1.5rem;
             font-weight: 700;
             color: #0f172a;
-            line-height: 1;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
         }
 
         .donut-card {
-            background: #ffffff;
-            border: 1px solid #d9e7f5;
-            border-radius: 16px;
-            padding: 24px;
+            background: linear-gradient(135deg, #ffffff, #f8fafc);
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01);
+            gap: 14px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
         }
 
         .donut {
@@ -1173,6 +1509,423 @@ export default function ProjectUsageView({
           font-weight: 700;
           color: #0f172a;
           font-size: 0.95rem;
+        }
+
+        /* Tab Navigation */
+        .usage-tabs {
+          display: flex;
+          gap: 6px;
+          background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+          padding: 6px;
+          border-radius: 14px;
+          border: 1px solid #e2e8f0;
+        }
+
+        .usage-tab {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 18px;
+          background: transparent;
+          border: none;
+          border-radius: 10px;
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #64748b;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .usage-tab:hover {
+          background: rgba(255, 255, 255, 0.7);
+          color: #334155;
+        }
+
+        .usage-tab.active {
+          background: #ffffff;
+          color: #0f172a;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .tab-count {
+          background: rgba(100, 116, 139, 0.15);
+          color: #64748b;
+          font-size: 0.7rem;
+          padding: 3px 8px;
+          border-radius: 99px;
+          font-weight: 700;
+        }
+
+        .usage-tab.active .tab-count {
+          background: rgba(59, 130, 246, 0.15);
+          color: #2563eb;
+        }
+
+        /* Materials Tab */
+        .materials-tab {
+          background: linear-gradient(135deg, #ffffff, #f8fafc);
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        .materials-header {
+          padding: 20px 24px;
+          border-bottom: 1px solid #f1f5f9;
+        }
+
+        .materials-header h3 {
+          margin: 0;
+          font-size: 1.1rem;
+          color: #0f172a;
+          font-weight: 700;
+        }
+
+        .materials-header p {
+          margin: 4px 0 0;
+          color: #64748b;
+          font-size: 0.9rem;
+        }
+
+        .materials-list {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .material-card {
+          border-bottom: 1px solid #f1f5f9;
+        }
+
+        .material-card:last-child {
+          border-bottom: none;
+        }
+
+        .material-header {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 16px 24px;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .material-header:hover {
+          background: #f8fafc;
+        }
+
+        .material-expand {
+          width: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #94a3b8;
+        }
+
+        .expand-placeholder {
+          width: 16px;
+        }
+
+        .material-info {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .materials-tab .material-name {
+          display: block;
+          font-weight: 600;
+          color: #0f172a;
+          font-size: 0.95rem;
+        }
+
+        .materials-tab .material-unit {
+          font-size: 0.75rem;
+          color: #94a3b8;
+        }
+
+        .material-stats {
+          display: flex;
+          gap: 24px;
+        }
+
+        .stat-group {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 2px;
+        }
+
+        .stat-label {
+          font-size: 0.65rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #94a3b8;
+          font-weight: 600;
+        }
+
+        .stat-value {
+          font-size: 0.95rem;
+          font-weight: 600;
+          color: #0f172a;
+        }
+
+        .stat-value.used {
+          color: #3b82f6;
+        }
+
+        .stat-value.depleted {
+          color: #ef4444;
+        }
+
+        .material-progress {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 120px;
+        }
+
+        .material-progress .progress-bar {
+          flex: 1;
+          height: 6px;
+          background: #f1f5f9;
+          border-radius: 999px;
+          overflow: hidden;
+        }
+
+        .material-progress .progress-fill {
+          height: 100%;
+          background: #3b82f6;
+          border-radius: 999px;
+        }
+
+        .material-progress .progress-text {
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: #64748b;
+          min-width: 36px;
+          text-align: right;
+        }
+
+        .history-count {
+          font-size: 0.75rem;
+          color: #64748b;
+          background: #f1f5f9;
+          padding: 4px 10px;
+          border-radius: 99px;
+        }
+
+        .material-history {
+          background: #f8fafc;
+          border-top: 1px solid #f1f5f9;
+          padding: 0;
+        }
+
+        .history-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .history-table th {
+          text-align: left;
+          font-size: 0.7rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #64748b;
+          padding: 12px 24px;
+          background: #f1f5f9;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        .history-table td {
+          padding: 12px 24px;
+          font-size: 0.9rem;
+          color: #334155;
+          border-bottom: 1px solid #f1f5f9;
+        }
+
+        .history-table tr:last-child td {
+          border-bottom: none;
+        }
+
+        .history-table tfoot td {
+          background: #f8fafc;
+          font-weight: 600;
+          border-top: 1px solid #e2e8f0;
+        }
+
+        .history-table .footer-label {
+          color: #64748b;
+        }
+
+        .history-table .bold {
+          font-weight: 700;
+          color: #0f172a;
+        }
+
+        .empty-materials {
+          padding: 48px 24px;
+          text-align: center;
+          color: #94a3b8;
+        }
+
+        .empty-materials p {
+          margin: 12px 0 0;
+          font-weight: 500;
+          color: #64748b;
+        }
+
+        /* Ledger Tab */
+        .ledger-tab {
+          background: #ffffff;
+          border: 1px solid #d9e7f5;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01);
+        }
+
+        .ledger-header-bar {
+          padding: 20px 24px;
+          border-bottom: 1px solid #f1f5f9;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+
+        .ledger-header-bar h3 {
+          margin: 0;
+          font-size: 1.1rem;
+          color: #0f172a;
+          font-weight: 700;
+        }
+
+        .ledger-total {
+          font-size: 0.85rem;
+          color: #64748b;
+        }
+
+        .ledger-container {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .ledger-date-group {
+          border-bottom: 1px solid #f1f5f9;
+        }
+
+        .ledger-date-group:last-child {
+          border-bottom: none;
+        }
+
+        .ledger-date-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 14px 24px;
+          background: #f8fafc;
+          border-bottom: 1px solid #f1f5f9;
+        }
+
+        .ledger-date {
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: #0f172a;
+          text-transform: uppercase;
+          letter-spacing: 0.02em;
+        }
+
+        .ledger-date-total {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: #3b82f6;
+        }
+
+        .ledger-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .ledger-table th {
+          text-align: left;
+          font-size: 0.7rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #94a3b8;
+          padding: 10px 24px;
+          background: #ffffff;
+          border-bottom: 1px solid #f1f5f9;
+        }
+
+        .ledger-table td {
+          padding: 14px 24px;
+          font-size: 0.9rem;
+          color: #334155;
+          border-bottom: 1px solid #f8fafc;
+        }
+
+        .ledger-table tr:last-child td {
+          border-bottom: none;
+        }
+
+        .ledger-table .col-material {
+          min-width: 180px;
+        }
+
+        .ledger-table .material-name {
+          display: block;
+          font-weight: 500;
+          color: #0f172a;
+        }
+
+        .ledger-table .material-cat {
+          display: block;
+          font-size: 0.75rem;
+          color: #94a3b8;
+          text-transform: capitalize;
+        }
+
+        .ledger-table .mono {
+          font-variant-numeric: tabular-nums;
+        }
+
+        .ledger-table .bold {
+          font-weight: 700;
+          color: #0f172a;
+        }
+
+        .ledger-table .col-qty,
+        .ledger-table .col-price,
+        .ledger-table .col-total {
+          text-align: right;
+          white-space: nowrap;
+        }
+
+        .ledger-table .col-notes {
+          color: #94a3b8;
+          max-width: 200px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .empty-ledger {
+          padding: 64px 24px;
+          text-align: center;
+          color: #94a3b8;
+        }
+
+        .empty-ledger p {
+          margin: 16px 0 4px;
+          font-weight: 600;
+          color: #64748b;
+          font-size: 1rem;
+        }
+
+        .empty-ledger span {
+          font-size: 0.875rem;
         }
 
         @media (max-width: 900px) {

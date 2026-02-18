@@ -12,6 +12,7 @@ import {
     BOQItem,
     BOQCategory,
     ProjectStageUpdate,
+    PurchaseRecord,
 } from '@/lib/database.types';
 import {
     updateStage,
@@ -29,10 +30,13 @@ interface StageTabProps {
     stage: ProjectStageWithTasks;
     projectId: string;
     items: BOQItem[];
+    purchases?: PurchaseRecord[];
     onStageUpdate: (stage: ProjectStageWithTasks) => void;
     onItemUpdate: (itemId: string, updates: Partial<BOQItem>) => Promise<void>;
     onItemDelete?: (itemId: string) => void;
     onItemAdded?: (item: BOQItem) => void;
+    onLogPurchase?: (item: BOQItem) => void;
+    onRecordUsage?: (item: BOQItem) => void;
     showLabor?: boolean;
     primaryStageCategory?: BOQCategory;
     usageByItem?: Record<string, number>;
@@ -51,10 +55,13 @@ export default function StageTab({
     stage,
     projectId,
     items,
+    purchases = [],
     onStageUpdate,
     onItemUpdate,
     onItemDelete,
     onItemAdded,
+    onLogPurchase,
+    onRecordUsage,
     showLabor = false,
     primaryStageCategory,
     usageByItem,
@@ -277,9 +284,12 @@ export default function StageTab({
                         categoryLabel={categoryLabels[stage.boq_category]}
                         items={stageItems}
                         stats={budgetStats}
+                        purchases={purchases}
                         onItemUpdate={handleItemUpdate}
                         onItemDelete={onItemDelete ? handleItemDelete : undefined}
                         onItemAdded={handleItemAdded}
+                        onLogPurchase={onLogPurchase}
+                        onRecordUsage={onRecordUsage}
                         usageByItem={usageByItem}
                         usageTrackingEnabled={usageTrackingEnabled}
                     />
@@ -293,9 +303,12 @@ export default function StageTab({
                             categoryLabel="Labor & Services"
                             items={stageLaborItems}
                             stats={laborStats}
+                            purchases={purchases}
                             onItemUpdate={handleItemUpdate}
                             onItemDelete={onItemDelete ? handleItemDelete : undefined}
                             onItemAdded={handleItemAdded}
+                            onLogPurchase={onLogPurchase}
+                            onRecordUsage={onRecordUsage}
                             stageScope={stage.boq_category}
                             usageByItem={usageByItem}
                             usageTrackingEnabled={usageTrackingEnabled}

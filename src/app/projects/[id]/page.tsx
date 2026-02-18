@@ -17,6 +17,7 @@ import BudgetPlanner, { NotificationChannel } from '@/components/ui/BudgetPlanne
 import PhoneNumberModal from '@/components/ui/PhoneNumberModal';
 import ProjectUsageView from '@/components/projects/ProjectUsageView';
 import UnifiedProcurementView from '@/components/projects/UnifiedProcurementView';
+import ProjectKPIDashboard from '@/components/projects/ProjectKPIDashboard';
 import SidebarSpine, { ProjectView } from '@/components/projects/SidebarSpine';
 import ProjectSettings from '@/components/projects/ProjectSettings';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
@@ -26,6 +27,7 @@ import { useReveal } from '@/hooks/useReveal';
 import {
     getProjectWithItems,
     getBOQItems,
+    getPurchaseRecords,
     getLatestWeeklyPrices,
     getLatestProjectNotification,
     createProjectNotification,
@@ -47,6 +49,7 @@ import {
 import {
     Project,
     BOQItem,
+    PurchaseRecord,
     ProjectStageWithTasks,
     BOQCategory,
     ProjectRecurringReminder,
@@ -133,6 +136,9 @@ function ProjectDetailContent() {
     const [activeTab, setActiveTab] = useState<BOQCategory>('substructure');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [isMobileDetail, setIsMobileDetail] = useState(false);
+    const [selectedItemForPurchase, setSelectedItemForPurchase] = useState<BOQItem | null>(null);
+    const [selectedItemForUsage, setSelectedItemForUsage] = useState<BOQItem | null>(null);
+    const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
 
     useReveal({ deps: [isLoading, activeView, activeTab] });
 
@@ -274,9 +280,10 @@ function ProjectDetailContent() {
             setError(null);
         }
 
-        const [projectResult, stagesResult] = await Promise.all([
+        const [projectResult, stagesResult, purchasesResult] = await Promise.all([
             getProjectWithItems(projectId),
             getProjectStages(projectId),
+            getPurchaseRecords(projectId),
         ]);
 
         if (projectResult.error) {
@@ -291,6 +298,10 @@ function ProjectDetailContent() {
 
         if (!stagesResult.error) {
             applyStages(stagesResult.stages, forcePrimaryStage);
+        }
+
+        if (purchasesResult.records) {
+            setPurchases(purchasesResult.records);
         }
 
         if (showLoading) {
@@ -814,9 +825,16 @@ function ProjectDetailContent() {
     };
 
     const refreshItems = useCallback(async () => {
-        const { items: refreshed, error } = await getBOQItems(projectId);
-        if (!error) {
-            setItems(refreshed);
+        // Refresh both items and purchases for instant updates across all views
+        const [itemsResult, purchasesResult] = await Promise.all([
+            getBOQItems(projectId),
+            getPurchaseRecords(projectId),
+        ]);
+        if (!itemsResult.error) {
+            setItems(itemsResult.items);
+        }
+        if (purchasesResult.records) {
+            setPurchases(purchasesResult.records);
         }
     }, [projectId]);
 
@@ -877,6 +895,16 @@ function ProjectDetailContent() {
 
     const handleUsageRecorded = () => {
         loadUsageData();
+    };
+
+    const handleLogPurchase = (item: BOQItem) => {
+        setSelectedItemForPurchase(item);
+        setActiveView('procurement');
+    };
+
+    const handleRecordUsage = (item: BOQItem) => {
+        setSelectedItemForUsage(item);
+        setActiveView('usage');
     };
 
     // Get current stage
@@ -995,14 +1023,13 @@ function ProjectDetailContent() {
                                     >
                                         Share
                                     </Button>
-                                    <Link href={`/boq/edit/${project.id}`}>
-                                        <Button
-                                            size="sm"
-                                            icon={<PencilSimple size={16} />}
-                                        >
-                                            Edit Project
-                                        </Button>
-                                    </Link>
+                                    <Button
+                                        size="sm"
+                                        icon={<PencilSimple size={16} />}
+                                        onClick={() => setActiveView('settings')}
+                                    >
+                                        Edit Project
+                                    </Button>
                                 </div>
                             </div>
 
@@ -1056,47 +1083,50 @@ function ProjectDetailContent() {
                                 />
                             </section>
 
+                            {/* KPI Dashboard */}
+                            <section className="overview-card reveal" data-delay="4">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                                        <Wallet size={24} weight="duotone" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-primary font-heading">Project KPIs</h3>
+                                        <p className="text-sm text-secondary">Key performance indicators at a glance</p>
+                                    </div>
+                                </div>
+
+                                <ProjectKPIDashboard
+                                    items={items}
+                                    purchases={purchases}
+                                    usageByItem={usageByItem}
+                                    totalBudget={project.budget_target_usd || purchaseStats.estimatedTotal}
+                                    onNavigate={(view) => setActiveView(view as ProjectView)}
+                                />
+                            </section>
+
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                {/* Left Column - Budget & Planning */}
+                                {/* Left Column - Next Steps */}
                                 <div className="lg:col-span-2 space-y-8">
-                                    {/* Budget Planner */}
-                                    <section className="overview-card reveal" data-delay="4">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
-                                                <Wallet size={24} weight="duotone" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-lg font-bold text-primary font-heading">Budget Planner</h3>
-                                                <p className="text-sm text-secondary">Track savings towards your construction goals</p>
-                                            </div>
-                                        </div>
-
-                                        <BudgetPlanner
-                                            totalBudgetUsd={purchaseStats.estimatedTotal}
-                                            amountSpentUsd={purchaseStats.actualSpent}
-                                            targetDate={project.target_purchase_date}
-                                            onTargetDateChange={handleSavingsTargetDateChange}
-                                            onSetReminder={handleSavingsReminder}
-                                            canUseMobileReminders={Boolean(profile?.phone_number)}
-                                            defaultChannel={preferredReminderChannel}
-                                            onRequestPhone={handleRequestPhone}
-                                            reminderActive={Boolean(savingsReminder?.is_active)}
-                                            reminderFrequency={(savingsReminder?.frequency as 'daily' | 'weekly' | 'monthly' | null) ?? null}
-                                            onToggleReminder={handleToggleSavingsReminder}
-                                        />
-                                    </section>
-
-                                    {/* Recent Activity / Next Steps */}
+                                    {/* Next Steps */}
                                     <section className="overview-card reveal" data-delay="5">
                                         <h3 className="text-lg font-bold text-primary mb-4 font-heading">Next Steps</h3>
                                         <div className="space-y-4">
-                                            {items.filter(i => !i.is_purchased).slice(0, 3).map(item => (
+                                            {items.filter(i => !i.is_purchased).slice(0, 5).map(item => (
                                                 <div key={item.id} className="next-step-item">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-2 h-2 rounded-full bg-accent"></div>
                                                         <span className="font-medium text-primary">{item.material_name}</span>
+                                                        <span className="text-xs text-secondary">
+                                                            {formatPrice(
+                                                                Number(item.quantity) * Number(item.unit_price_usd),
+                                                                Number(item.quantity) * Number(item.unit_price_usd) * exchangeRate
+                                                            )}
+                                                        </span>
                                                     </div>
-                                                    <Button size="sm" variant="secondary" onClick={() => setActiveView('procurement')}>
+                                                    <Button size="sm" variant="secondary" onClick={() => {
+                                                        setSelectedItemForPurchase(item);
+                                                        setActiveView('procurement');
+                                                    }}>
                                                         Purchase
                                                     </Button>
                                                 </div>
@@ -1106,6 +1136,14 @@ function ProjectDetailContent() {
                                                     <CheckCircle size={32} className="mx-auto mb-2 text-green-500" />
                                                     <p>All items purchased! Great job.</p>
                                                 </div>
+                                            )}
+                                            {items.filter(i => !i.is_purchased).length > 5 && (
+                                                <button
+                                                    className="view-all-btn"
+                                                    onClick={() => setActiveView('procurement')}
+                                                >
+                                                    View all {items.filter(i => !i.is_purchased).length} pending items
+                                                </button>
                                             )}
                                         </div>
                                     </section>
@@ -1172,10 +1210,13 @@ function ProjectDetailContent() {
                                     stage={currentStage}
                                     projectId={projectId}
                                     items={activeStageItems}
+                                    purchases={purchases}
                                     onStageUpdate={(u) => handleStageUpdate({ ...currentStage, ...u })}
                                     onItemUpdate={handleItemUpdate}
                                     onItemDelete={handleDeleteItem}
                                     onItemAdded={handleAddItem}
+                                    onLogPurchase={handleLogPurchase}
+                                    onRecordUsage={handleRecordUsage}
                                     showLabor={hasLabor}
                                     usageByItem={usageByItem}
                                     usageTrackingEnabled={project.usage_tracking_enabled}
@@ -1191,6 +1232,8 @@ function ProjectDetailContent() {
                                 project={project}
                                 items={items}
                                 onItemsRefresh={refreshItems}
+                                selectedItemForPurchase={selectedItemForPurchase}
+                                onClearSelectedItem={() => setSelectedItemForPurchase(null)}
                             />
                         </div>
                     )}
@@ -1206,6 +1249,8 @@ function ProjectDetailContent() {
                                     onUsageRecorded={handleUsageRecorded}
                                     onRequestPhone={handleRequestPhone}
                                     canUseMobileReminders={Boolean(profile?.phone_number)}
+                                    selectedItemForUsage={selectedItemForUsage}
+                                    onClearSelectedItem={() => setSelectedItemForUsage(null)}
                                 />
                             ) : (
                                 <div className="bg-surface border border-border rounded-xl p-6 shadow-card">
@@ -1589,6 +1634,25 @@ function ProjectDetailContent() {
                     transform: translateY(-1px);
                     border-color: #b7d7f7;
                     box-shadow: 0 10px 18px rgba(17, 56, 95, 0.08);
+                }
+
+                .view-all-btn {
+                    width: 100%;
+                    padding: 12px 16px;
+                    background: transparent;
+                    border: 1px dashed #cbd5e1;
+                    border-radius: 10px;
+                    color: #64748b;
+                    font-size: 0.9rem;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+
+                .view-all-btn:hover {
+                    background: #f8fafc;
+                    border-color: #94a3b8;
+                    color: #475569;
                 }
 
                 .mobile-sidebar-fab {
