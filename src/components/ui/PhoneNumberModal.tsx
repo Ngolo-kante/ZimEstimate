@@ -57,7 +57,7 @@ export default function PhoneNumberModal({
         </div>
 
         <p className="modal-description">
-          Add a phone number to receive SMS, WhatsApp, or Telegram reminders. Include your country code if possible.
+          Add a phone number to receive SMS and WhatsApp reminders. Include your country code if possible.
         </p>
 
         <Input

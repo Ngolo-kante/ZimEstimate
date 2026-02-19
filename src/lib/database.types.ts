@@ -81,6 +81,7 @@ export interface Database {
                     tier: UserTier;
                     preferred_currency: Currency;
                     phone_number: string | null;
+                    telegram_chat_id: string | null;
                     whatsapp_reminders: boolean;
                     notify_email: boolean;
                     notify_whatsapp: boolean;
@@ -101,6 +102,7 @@ export interface Database {
                     tier?: UserTier;
                     preferred_currency?: Currency;
                     phone_number?: string | null;
+                    telegram_chat_id?: string | null;
                     whatsapp_reminders?: boolean;
                     notify_email?: boolean;
                     notify_whatsapp?: boolean;
@@ -121,6 +123,7 @@ export interface Database {
                     tier?: UserTier;
                     preferred_currency?: Currency;
                     phone_number?: string | null;
+                    telegram_chat_id?: string | null;
                     whatsapp_reminders?: boolean;
                     notify_email?: boolean;
                     notify_whatsapp?: boolean;

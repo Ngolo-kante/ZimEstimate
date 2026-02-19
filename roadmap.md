@@ -64,6 +64,16 @@
 - [x] Add geotech-specific quick filter in project documents tab.
 - [x] Add realtime refresh triggers for stage task and project document updates on project detail screen.
 
+### G. Current Build (Temporary Works + Compliance UX)
+- [x] Add dedicated pre-final "Temporary Works" step in manual BOQ builder.
+- [x] Add septic-tank path from temporary toilet with L/W/H inputs and editable USD rate.
+- [x] Persist temporary works + septic selections in session restore flow.
+- [x] Apply temporary works selections into BOQ as editable enablement line items.
+- [x] Add My Project "Compliance Tracker" tab with per-stage requirements.
+- [x] Move stage admin tasks out of BOQ tab display (BOQ now materials-focused).
+- [x] Surface warning-only approval/compliance alerts in BOQ and Usage views.
+- [ ] Update E2E tests for new step order and temporary works flow.
+
 ## Already Completed in Current Branch
 - [x] Fixed final-stage material dropdown layering in manual builder.
 - [x] Removed emoji from final-stage milestone descriptions/banner.

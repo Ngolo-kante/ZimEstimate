@@ -4,26 +4,25 @@ import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
+import type { NotificationChannel } from '@/components/ui/BudgetPlanner';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import {
   recordUsage,
   getUsageHistory,
   createProjectNotification,
-  getProjectRecurringReminder,
-  upsertProjectRecurringReminder,
-  updateProjectRecurringReminder,
 } from '@/lib/services/projects';
 import { supabase } from '@/lib/supabase';
 import { BOQItem, MaterialUsage, Project } from '@/lib/database.types';
 import {
   Calendar,
   Check,
-  ClipboardText,
+  EnvelopeSimple,
   ChatCircleText,
   WhatsappLogo,
   PaperPlaneTilt,
-  Envelope,
+  BellRinging,
+  Gear,
   Package,
   Receipt,
   Plus,
@@ -33,8 +32,6 @@ import {
 
 type UsageViewMode = 'daily' | 'weekly';
 type UsageTab = 'log' | 'materials' | 'ledger';
-type ReminderFrequency = 'daily' | 'weekly' | 'monthly';
-type NotificationChannel = 'sms' | 'whatsapp' | 'telegram' | 'email';
 
 interface ProjectUsageViewProps {
   project: Project;
@@ -45,6 +42,8 @@ interface ProjectUsageViewProps {
   canUseMobileReminders?: boolean;
   selectedItemForUsage?: BOQItem | null;
   onClearSelectedItem?: () => void;
+  preferredChannel?: NotificationChannel;
+  onNavigateToSettings?: () => void;
 }
 
 interface UsageFormState {
@@ -54,15 +53,22 @@ interface UsageFormState {
   notes: string;
 }
 
+const CHANNEL_INFO: Record<NotificationChannel, { icon: React.ReactNode; label: string }> = {
+  email: { icon: <EnvelopeSimple size={15} weight="duotone" />, label: 'Email' },
+  sms: { icon: <ChatCircleText size={15} weight="duotone" />, label: 'SMS' },
+  whatsapp: { icon: <WhatsappLogo size={15} weight="duotone" />, label: 'WhatsApp' },
+  telegram: { icon: <PaperPlaneTilt size={15} weight="duotone" />, label: 'Telegram' },
+};
+
 export default function ProjectUsageView({
   project,
   items,
   usageByItem,
   onUsageRecorded,
-  onRequestPhone,
-  canUseMobileReminders = true,
   selectedItemForUsage,
   onClearSelectedItem,
+  preferredChannel = 'email',
+  onNavigateToSettings,
 }: ProjectUsageViewProps) {
   const { profile, user } = useAuth();
   const { formatPrice, exchangeRate } = useCurrency();
@@ -79,12 +85,8 @@ export default function ProjectUsageView({
     notes: '',
   });
 
-  const [usageReminder, setUsageReminder] = useState<{
-    id?: string;
-    is_active: boolean;
-    frequency: ReminderFrequency;
-    channel: NotificationChannel;
-  } | null>(null);
+  // Reminder state is now managed centrally in Settings / Notification Centre
+  // We only read the preferredChannel prop for display purposes
 
   // Ref for debouncing realtime updates
   const realtimeRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -103,7 +105,10 @@ export default function ProjectUsageView({
   }, [project.id, showError, user?.id]);
 
   useEffect(() => {
-    void loadUsage();
+    const timeoutId = setTimeout(() => {
+      void loadUsage();
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, [loadUsage]);
 
   // Realtime subscription for material_usage changes
@@ -141,33 +146,20 @@ export default function ProjectUsageView({
     };
   }, [loadUsage, project.id, onUsageRecorded]);
 
-  useEffect(() => {
-    if (!profile?.id) return;
-    const loadReminder = async () => {
-      const { reminder } = await getProjectRecurringReminder(project.id, profile.id, 'usage');
-      if (!reminder) {
-        setUsageReminder(null);
-        return;
-      }
-      setUsageReminder({
-        id: reminder.id,
-        is_active: reminder.is_active,
-        frequency: reminder.frequency as ReminderFrequency,
-        channel: reminder.channel as NotificationChannel,
-      });
-    };
-    loadReminder();
-  }, [project.id, profile?.id]);
+  // Reminder loading removed — now managed in Settings / Notification Centre
 
   // Handle external item selection (from BOQ quick action)
   useEffect(() => {
     if (selectedItemForUsage) {
-      setActiveTab('log');
-      setFormState(prev => ({
-        ...prev,
-        itemId: selectedItemForUsage.id,
-      }));
-      onClearSelectedItem?.();
+      const timeoutId = setTimeout(() => {
+        setActiveTab('log');
+        setFormState(prev => ({
+          ...prev,
+          itemId: selectedItemForUsage.id,
+        }));
+        onClearSelectedItem?.();
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
   }, [selectedItemForUsage, onClearSelectedItem]);
 
@@ -300,78 +292,7 @@ export default function ProjectUsageView({
     });
   };
 
-  const isMobileChannel = (channel: NotificationChannel) =>
-    channel === 'sms' || channel === 'whatsapp' || channel === 'telegram';
-
-  const handleChannelSelect = (channel: NotificationChannel) => {
-    if (isMobileChannel(channel) && !canUseMobileReminders) {
-      onRequestPhone?.({ channel });
-      return;
-    }
-    setUsageReminder((prev) => ({
-      id: prev?.id,
-      is_active: prev?.is_active ?? false,
-      frequency: prev?.frequency || 'daily',
-      channel,
-    }));
-  };
-
-  const handleReminderSave = async () => {
-    if (!profile?.id) {
-      showError('Please sign in again to save reminders.');
-      return;
-    }
-    if (!usageReminder) return;
-    if (isMobileChannel(usageReminder.channel) && !canUseMobileReminders) {
-      onRequestPhone?.({ channel: usageReminder.channel });
-      return;
-    }
-
-    const nextRunAt = new Date();
-    nextRunAt.setDate(nextRunAt.getDate() + (usageReminder.frequency === 'weekly' ? 7 : 1));
-    nextRunAt.setHours(9, 0, 0, 0);
-
-    const { reminder, error } = await upsertProjectRecurringReminder({
-      project_id: project.id,
-      user_id: profile.id,
-      reminder_type: 'usage',
-      frequency: usageReminder.frequency,
-      channel: usageReminder.channel,
-      amount_usd: null,
-      target_date: null,
-      next_run_at: nextRunAt.toISOString(),
-      is_active: true,
-
-    });
-
-    if (error) {
-      showError('Failed to save usage reminder');
-      return;
-    }
-
-    setUsageReminder({
-      id: reminder?.id,
-      is_active: reminder?.is_active ?? true,
-      frequency: reminder?.frequency as ReminderFrequency,
-      channel: reminder?.channel as NotificationChannel,
-    });
-    success('Usage reminder saved');
-  };
-
-  const handleReminderToggle = async (active: boolean) => {
-    if (!usageReminder?.id) return;
-    const { reminder, error } = await updateProjectRecurringReminder(usageReminder.id, { is_active: active });
-    if (error) {
-      showError('Failed to update reminder');
-      return;
-    }
-    setUsageReminder({
-      id: reminder?.id,
-      is_active: reminder?.is_active ?? active,
-      frequency: reminder?.frequency as ReminderFrequency,
-      channel: reminder?.channel as NotificationChannel,
-    });
-  };
+  // Channel & reminder handlers removed — now managed centrally in Settings
 
   const handleLogUsage = async () => {
     if (!formState.itemId || !formState.quantity) {
@@ -500,263 +421,216 @@ export default function ProjectUsageView({
       {/* Log Usage Tab Content */}
       {activeTab === 'log' && (
         <>
-      <div className="usage-kpis">
-        <div className="kpi-grid">
-          <div className="kpi-card">
-            <span className="label">Used value</span>
-            <span className="value">{formatPrice(totalUsedCost, totalUsedCost * exchangeRate)}</span>
-          </div>
-          <div className="kpi-card">
-            <span className="label">Remaining value</span>
-            <span className="value">{formatPrice(remainingCost, remainingCost * exchangeRate)}</span>
-          </div>
-          <div className="kpi-card">
-            <span className="label">Usage %</span>
-            <span className="value">{usageSummary.overallPercent.toFixed(0)}%</span>
-          </div>
-          <div className="kpi-card alert">
-            <span className="label">Low stock</span>
-            <span className="value">{usageSummary.lowStockCount}</span>
-          </div>
-        </div>
-        <div className="donut-card">
-          <div
-            className="donut"
-            style={{ '--percent': `${usageSummary.overallPercent}%` } as React.CSSProperties}
-          >
-            <div className="donut-center">
-              <span>{usageSummary.overallPercent.toFixed(0)}%</span>
-              <small>used</small>
+          <div className="usage-kpis">
+            <div className="kpi-grid">
+              <div className="kpi-card">
+                <span className="label">Used value</span>
+                <span className="value">{formatPrice(totalUsedCost, totalUsedCost * exchangeRate)}</span>
+              </div>
+              <div className="kpi-card">
+                <span className="label">Remaining value</span>
+                <span className="value">{formatPrice(remainingCost, remainingCost * exchangeRate)}</span>
+              </div>
+              <div className="kpi-card">
+                <span className="label">Usage %</span>
+                <span className="value">{usageSummary.overallPercent.toFixed(0)}%</span>
+              </div>
+              <div className="kpi-card alert">
+                <span className="label">Low stock</span>
+                <span className="value">{usageSummary.lowStockCount}</span>
+              </div>
+            </div>
+            <div className="donut-card">
+              <div
+                className="donut"
+                style={{ '--percent': `${usageSummary.overallPercent}%` } as React.CSSProperties}
+              >
+                <div className="donut-center">
+                  <span>{usageSummary.overallPercent.toFixed(0)}%</span>
+                  <small>used</small>
+                </div>
+              </div>
+              <div className="donut-meta">
+                <span>{usageSummary.totalUsed.toFixed(2)} used</span>
+                <span>{usageSummary.totalRemaining.toFixed(2)} remaining</span>
+              </div>
             </div>
           </div>
-          <div className="donut-meta">
-            <span>{usageSummary.totalUsed.toFixed(2)} used</span>
-            <span>{usageSummary.totalRemaining.toFixed(2)} remaining</span>
-          </div>
-        </div>
-      </div>
 
-      <div className="usage-reminder">
-        <div className="reminder-left">
-          <ClipboardText size={18} />
-          <div>
-            <h4>Usage reminders</h4>
-            <p>Set a cadence to remind builders to log usage.</p>
-          </div>
-        </div>
-        <div className="reminder-controls">
-          <select
-            value={usageReminder?.frequency || 'daily'}
-            onChange={(e) =>
-              setUsageReminder((prev) => ({
-                id: prev?.id,
-                is_active: prev?.is_active ?? false,
-                frequency: e.target.value as ReminderFrequency,
-                channel: prev?.channel || 'email',
-              }))
-            }
-          >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-          </select>
-          <div className="channel-options">
-            <button
-              className={`channel-btn ${(usageReminder?.channel || 'email') === 'sms' ? 'active' : ''}`}
-              onClick={() => handleChannelSelect('sms')}
-            >
-              <ChatCircleText size={16} weight={(usageReminder?.channel || 'email') === 'sms' ? 'fill' : 'light'} />
-            </button>
-            <button
-              className={`channel-btn ${(usageReminder?.channel || 'email') === 'whatsapp' ? 'active' : ''}`}
-              onClick={() => handleChannelSelect('whatsapp')}
-            >
-              <WhatsappLogo size={16} weight={(usageReminder?.channel || 'email') === 'whatsapp' ? 'fill' : 'light'} />
-            </button>
-            <button
-              className={`channel-btn ${(usageReminder?.channel || 'email') === 'telegram' ? 'active' : ''}`}
-              onClick={() => handleChannelSelect('telegram')}
-            >
-              <PaperPlaneTilt size={16} weight={(usageReminder?.channel || 'email') === 'telegram' ? 'fill' : 'light'} />
-            </button>
-            <button
-              className={`channel-btn ${(usageReminder?.channel || 'email') === 'email' ? 'active' : ''}`}
-              onClick={() => handleChannelSelect('email')}
-            >
-              <Envelope size={16} weight={(usageReminder?.channel || 'email') === 'email' ? 'fill' : 'light'} />
-            </button>
-          </div>
-          <div className="reminder-actions">
-            {usageReminder?.id ? (
+          {/* Usage reminder status — managed centrally in Settings */}
+          <div className="usage-reminder">
+            <div className="reminder-left">
+              <BellRinging size={18} weight="duotone" />
+              <div>
+                <h4>Usage Alerts</h4>
+                <p>
+                  Alerts via <strong>{CHANNEL_INFO[preferredChannel].label}</strong>
+                  {' '}{CHANNEL_INFO[preferredChannel].icon}
+                </p>
+              </div>
+            </div>
+            {onNavigateToSettings && (
               <button
-                className={`toggle-btn ${usageReminder.is_active ? 'off' : 'on'}`}
-                onClick={() => handleReminderToggle(!usageReminder?.is_active)}
+                type="button"
+                className="reminder-settings-link"
+                onClick={onNavigateToSettings}
               >
-                {usageReminder?.is_active ? 'Turn Off' : 'Turn On'}
+                <Gear size={16} />
+                Configure in Settings
               </button>
+            )}
+          </div>
+
+          <div className="usage-log">
+            <div className="log-header">
+              <h3>Log Usage</h3>
+            </div>
+            <div className="log-form">
+              <div className="form-row">
+                <div className="form-group flex-2">
+                  <label>Material</label>
+                  <select
+                    value={formState.itemId}
+                    onChange={(e) => setFormState({ ...formState, itemId: e.target.value })}
+                  >
+                    <option value="">Select material...</option>
+                    {items.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.material_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Quantity Used</label>
+                  <input
+                    type="number"
+                    value={formState.quantity}
+                    onChange={(e) => setFormState({ ...formState, quantity: e.target.value })}
+                    min="0"
+                    step="0.01"
+                    placeholder="0"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Date</label>
+                  <input
+                    type="date"
+                    value={formState.date}
+                    onChange={(e) => setFormState({ ...formState, date: e.target.value })}
+                    max={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group flex-2">
+                  <label>Notes (optional)</label>
+                  <Input
+                    value={formState.notes}
+                    onChange={(e) => setFormState({ ...formState, notes: e.target.value })}
+                    placeholder="e.g., slab pour day 1"
+                  />
+                </div>
+                <div className="form-actions">
+                  <Button onClick={handleLogUsage} icon={<Check size={16} />}>
+                    Save Usage
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="usage-table-card">
+            <div className="table-header">
+              <h3>Burn-down by material</h3>
+              <p>Track how each material is being consumed on site.</p>
+            </div>
+            <div className="table-wrap">
+              <table className="usage-table">
+                <thead>
+                  <tr>
+                    <th>Material</th>
+                    <th className="num">Available</th>
+                    <th className="num">Used</th>
+                    <th className="num">Remaining</th>
+                    <th className="num">Usage %</th>
+                    <th>Burn-down</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usageStats.map((stat) => (
+                    <tr key={stat.item.id}>
+                      <td>
+                        <div className="material-cell">
+                          <span className="material-name">{stat.item.material_name}</span>
+                          <span className="material-unit">{stat.item.unit}</span>
+                        </div>
+                      </td>
+                      <td className="num">{stat.availableQty.toFixed(2)}</td>
+                      <td className="num">{stat.usedQty.toFixed(2)}</td>
+                      <td className="num">{stat.remainingQty.toFixed(2)}</td>
+                      <td className="num">{stat.usagePercent.toFixed(0)}%</td>
+                      <td>
+                        <div className="burn-bar">
+                          <div className="burn-fill" style={{ width: `${Math.min(stat.usagePercent, 100)}%` }} />
+                        </div>
+                        {stat.availableQty > 0 && (
+                          <span className="burn-label">
+                            {stat.remainingQty.toFixed(2)} {stat.item.unit} left
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {usageStats.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="empty-row">
+                        No materials found for usage tracking.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="usage-history">
+            <div className="history-header">
+              <h3>Recent usage logs</h3>
+              {isLoading && <span>Loading...</span>}
+            </div>
+            {Object.keys(groupedUsage).length === 0 && !isLoading ? (
+              <div className="empty-state">
+                <Calendar size={32} />
+                <p>No usage logged yet.</p>
+              </div>
             ) : (
-              <Button size="sm" onClick={handleReminderSave}>
-                Save
-              </Button>
+              Object.entries(groupedUsage).map(([dateKey, records]) => (
+                <div key={dateKey} className="history-group">
+                  <div className="group-header">
+                    <Calendar size={14} />
+                    <span>{dateKey}</span>
+                  </div>
+                  <div className="group-list">
+                    {records.map((record) => {
+                      const item = itemLookup.get(record.boq_item_id);
+                      return (
+                        <div key={record.id} className="history-item">
+                          <div>
+                            <span className="item-name">{item?.material_name || 'Material'}</span>
+                            <span className="item-notes">{record.notes || '—'}</span>
+                          </div>
+                          <div className="item-qty">
+                            {record.quantity_used} {item?.unit || ''}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))
             )}
-            {usageReminder?.id && (
-              <Button size="sm" variant="secondary" onClick={handleReminderSave}>
-                Update
-              </Button>
-            )}
           </div>
-        </div>
-      </div>
-
-      <div className="usage-log">
-        <div className="log-header">
-          <h3>Log Usage</h3>
-        </div>
-        <div className="log-form">
-          <div className="form-row">
-            <div className="form-group flex-2">
-              <label>Material</label>
-              <select
-                value={formState.itemId}
-                onChange={(e) => setFormState({ ...formState, itemId: e.target.value })}
-              >
-                <option value="">Select material...</option>
-                {items.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.material_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Quantity Used</label>
-              <input
-                type="number"
-                value={formState.quantity}
-                onChange={(e) => setFormState({ ...formState, quantity: e.target.value })}
-                min="0"
-                step="0.01"
-                placeholder="0"
-              />
-            </div>
-            <div className="form-group">
-              <label>Date</label>
-              <input
-                type="date"
-                value={formState.date}
-                onChange={(e) => setFormState({ ...formState, date: e.target.value })}
-                max={new Date().toISOString().split('T')[0]}
-              />
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group flex-2">
-              <label>Notes (optional)</label>
-              <Input
-                value={formState.notes}
-                onChange={(e) => setFormState({ ...formState, notes: e.target.value })}
-                placeholder="e.g., slab pour day 1"
-              />
-            </div>
-            <div className="form-actions">
-              <Button onClick={handleLogUsage} icon={<Check size={16} />}>
-                Save Usage
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="usage-table-card">
-        <div className="table-header">
-          <h3>Burn-down by material</h3>
-          <p>Track how each material is being consumed on site.</p>
-        </div>
-        <div className="table-wrap">
-          <table className="usage-table">
-            <thead>
-              <tr>
-                <th>Material</th>
-                <th className="num">Available</th>
-                <th className="num">Used</th>
-                <th className="num">Remaining</th>
-                <th className="num">Usage %</th>
-                <th>Burn-down</th>
-              </tr>
-            </thead>
-            <tbody>
-              {usageStats.map((stat) => (
-                <tr key={stat.item.id}>
-                  <td>
-                    <div className="material-cell">
-                      <span className="material-name">{stat.item.material_name}</span>
-                      <span className="material-unit">{stat.item.unit}</span>
-                    </div>
-                  </td>
-                  <td className="num">{stat.availableQty.toFixed(2)}</td>
-                  <td className="num">{stat.usedQty.toFixed(2)}</td>
-                  <td className="num">{stat.remainingQty.toFixed(2)}</td>
-                  <td className="num">{stat.usagePercent.toFixed(0)}%</td>
-                  <td>
-                    <div className="burn-bar">
-                      <div className="burn-fill" style={{ width: `${Math.min(stat.usagePercent, 100)}%` }} />
-                    </div>
-                    {stat.availableQty > 0 && (
-                      <span className="burn-label">
-                        {stat.remainingQty.toFixed(2)} {stat.item.unit} left
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {usageStats.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="empty-row">
-                    No materials found for usage tracking.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="usage-history">
-        <div className="history-header">
-          <h3>Recent usage logs</h3>
-          {isLoading && <span>Loading...</span>}
-        </div>
-        {Object.keys(groupedUsage).length === 0 && !isLoading ? (
-          <div className="empty-state">
-            <Calendar size={32} />
-            <p>No usage logged yet.</p>
-          </div>
-        ) : (
-          Object.entries(groupedUsage).map(([dateKey, records]) => (
-            <div key={dateKey} className="history-group">
-              <div className="group-header">
-                <Calendar size={14} />
-                <span>{dateKey}</span>
-              </div>
-              <div className="group-list">
-                {records.map((record) => {
-                  const item = itemLookup.get(record.boq_item_id);
-                  return (
-                    <div key={record.id} className="history-item">
-                      <div>
-                        <span className="item-name">{item?.material_name || 'Material'}</span>
-                        <span className="item-notes">{record.notes || '—'}</span>
-                      </div>
-                      <div className="item-qty">
-                        {record.quantity_used} {item?.unit || ''}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
         </>
       )}
 
@@ -1167,85 +1041,35 @@ export default function ProjectUsageView({
             color: #64748b;
         }
 
-        .reminder-controls {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
-        }
-        
-        .reminder-controls select {
-            padding: 8px 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            color: #334155;
-            background: #ffffff;
-            outline: none;
-            cursor: pointer;
-        }
-        
-        .channel-options {
-            background: #f8fafc;
-            padding: 4px;
-            border-radius: 10px;
-            border: 1px solid #e2e8f0;
-            display: flex;
-            gap: 2px;
+        .reminder-left p strong {
+            font-weight: 600;
+            color: #1e293b;
         }
 
-        .channel-btn {
-          width: 32px;
-          height: 32px;
-          border-radius: 8px;
-          border: none;
-          background: transparent;
-          color: #94a3b8;
-          display: flex;
+        .reminder-settings-link {
+          display: inline-flex;
           align-items: center;
-          justify-content: center;
+          gap: 6px;
+          padding: 8px 16px;
+          border-radius: 10px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          border: 1px solid #d9e7f5;
+          background: #f8fafc;
+          color: #3b82f6;
           cursor: pointer;
           transition: all 0.2s;
+          white-space: nowrap;
         }
 
-        .channel-btn.active {
-          background: #ffffff;
-          color: #3b82f6;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        .reminder-settings-link:hover {
+          background: #eff6ff;
+          border-color: #bfdbfe;
         }
 
-        .channel-btn:focus-visible,
-        .toggle-btn:focus-visible {
+        .reminder-settings-link:focus-visible {
           outline: none;
           box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.22);
-        }
-        
-        .toggle-btn {
-            padding: 8px 16px;
-            border-radius: 10px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .toggle-btn.on {
-            background: #eff6ff;
-            color: #3b82f6;
-        }
-        
-        .toggle-btn.on:hover {
-            background: #dbeafe;
-        }
-        
-        .toggle-btn.off {
-            background: #fef2f2;
-            color: #ef4444;
-        }
-        
-        .toggle-btn.off:hover {
-            background: #fee2e2;
         }
 
         .usage-log {

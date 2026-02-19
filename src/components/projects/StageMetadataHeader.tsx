@@ -151,14 +151,16 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
 
             <style jsx>{`
                 .stage-header {
+                    position: relative;
                     background: #ffffff;
                     border: 1px solid var(--color-border-light);
                     border-radius: 20px;
-                    overflow: hidden;
+                    overflow: visible;
                     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 
                                 0 2px 4px -1px rgba(0, 0, 0, 0.01);
                     transition: all 0.2s ease;
                     margin-bottom: 24px;
+                    z-index: 3;
                 }
 
                 .stage-description {
@@ -194,6 +196,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                 }
 
                 .stage-body {
+                    position: relative;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
@@ -208,13 +211,15 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
 
                 .stage-controls {
                     display: flex;
-                    align-items: flex-end;
-                    gap: 24px;
+                    align-items: flex-start;
+                    gap: 16px;
                 }
 
                 /* Status Dropdown */
                 .status-dropdown {
                     position: relative;
+                    min-width: 220px;
+                    z-index: 8;
                 }
 
                 .status-field {
@@ -245,6 +250,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     cursor: pointer;
                     transition: all 0.2s ease;
                     min-width: 180px;
+                    width: 100%;
                     justify-content: space-between;
                 }
 
@@ -273,14 +279,14 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                 .status-menu {
                     position: absolute;
                     top: calc(100% + 6px);
-                    right: 0;
+                    left: 0;
                     min-width: 200px;
                     background: #ffffff;
                     border: 1px solid #e2e8f0;
                     border-radius: 12px;
                     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
                                 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-                    z-index: 50;
+                    z-index: 120;
                     padding: 6px;
                 }
 
@@ -325,6 +331,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     background: #f8fafc;
                     border: 1px solid #e2e8f0;
                     border-radius: 10px;
+                    min-height: 46px;
                 }
 
                 .date-field {
@@ -350,7 +357,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     font-size: 0.85rem;
                     color: #1e293b;
                     background: transparent;
-                    width: 110px;
+                    width: 128px;
                     font-weight: 500;
                     outline: none;
                 }
@@ -408,6 +415,11 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     
                     .status-trigger {
                         width: 100%;
+                    }
+
+                    .status-dropdown {
+                        width: 100%;
+                        min-width: 0;
                     }
 
                     .date-range {

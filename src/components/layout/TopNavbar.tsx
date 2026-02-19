@@ -26,10 +26,9 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Home', href: '/home' },
-  { label: 'My Projects', href: '/projects' },
-  { label: 'Analytics', href: '/analytics' },
-  { label: 'Insights', href: '/market-insights' },
-  { label: 'Templates', href: '/templates' },
+  { label: 'My Projects', href: '/projects/dashboard' },
+  { label: 'Materials Insights', href: '/market-insights' },
+  { label: 'Project Templates', href: '/templates' },
   { label: 'Scraper', href: '/scraper', adminOnly: true },
   { label: 'Marketplace', href: '/marketplace' },
 ];

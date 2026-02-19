@@ -9,7 +9,7 @@ import { BOQItem, BOQCategory, PurchaseRecord } from '@/lib/database.types';
 import { StageBudgetStats } from '@/lib/services/stages';
 import { addBOQItem } from '@/lib/services/projects';
 import { materials, getBestPrice } from '@/lib/materials';
-import { Package, CaretDown, CaretUp, Trash, ShoppingCart, Plus, TrendUp, TrendDown, Minus, MagnifyingGlass, ClipboardText, Check, Warning, Clock } from '@phosphor-icons/react';
+import { Package, CaretDown, CaretUp, Trash, ShoppingCart, Plus, TrendUp, TrendDown, Minus, MagnifyingGlass, ClipboardText, Check, Warning, Clock, Funnel } from '@phosphor-icons/react';
 
 type StageCategory = BOQCategory | 'labor';
 type ItemStatus = 'pending' | 'in_progress' | 'purchased' | 'over_purchased';
@@ -45,7 +45,9 @@ interface StageBOQSectionProps {
 // Helper to compute item status based on purchase records
 function getItemStatus(item: BOQItem, purchases: PurchaseRecord[]): ItemStatus {
     const itemPurchases = purchases.filter(p => p.boq_item_id === item.id);
-    const totalPurchased = itemPurchases.reduce((sum, p) => sum + Number(p.quantity), 0);
+    const purchasedFromRecords = itemPurchases.reduce((sum, p) => sum + Number(p.quantity), 0);
+    const purchasedFromItem = Number(item.actual_quantity ?? 0);
+    const totalPurchased = Math.max(purchasedFromRecords, purchasedFromItem);
     const estimatedQty = Number(item.quantity) || 0;
     const epsilon = 0.01;
 
@@ -558,6 +560,7 @@ export default function StageBOQSection({
                                     />
                                 </div>
                                 <div className="select-wrapper filter-select">
+                                    <Funnel size={14} className="filter-icon" />
                                     <select
                                         value={statusFilter}
                                         onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'in_progress' | 'purchased' | 'over_purchased')}
@@ -575,14 +578,14 @@ export default function StageBOQSection({
                                 <div className="view-toggle">
                                     <button
                                         type="button"
-                                        className={viewPreset === 'simple' ? 'active' : ''}
+                                        className={`simple-btn ${viewPreset === 'simple' ? 'active' : ''}`}
                                         onClick={() => applyPreset('simple')}
                                     >
                                         Simple
                                     </button>
                                     <button
                                         type="button"
-                                        className={viewPreset === 'detailed' ? 'active' : ''}
+                                        className={`detailed-btn ${viewPreset === 'detailed' ? 'active' : ''}`}
                                         onClick={() => applyPreset('detailed')}
                                     >
                                         Detailed
@@ -1035,14 +1038,16 @@ export default function StageBOQSection({
                     justify-content: space-between;
                     align-items: center;
                     padding: 16px 24px;
-                    background: #ffffff;
+                    background: linear-gradient(180deg, #ffffff, #f8fbff);
                     gap: 16px;
+                    border-bottom: 1px solid #eef2f7;
                 }
 
                 .toolbar-left, .toolbar-right {
                     display: flex;
                     align-items: center;
                     gap: 12px;
+                    flex-wrap: wrap;
                 }
 
                 .search-input {
@@ -1055,6 +1060,7 @@ export default function StageBOQSection({
                     border: 1px solid transparent;
                     transition: all 0.2s;
                     width: 240px;
+                    height: 40px;
                 }
                 
                 .search-input:focus-within {
@@ -1072,7 +1078,8 @@ export default function StageBOQSection({
 
                 .search-input input {
                     width: 100%;
-                    padding: 10px 12px 10px 36px;
+                    height: 100%;
+                    padding: 0 12px 0 36px;
                     background: transparent;
                     border: none;
                     font-size: 0.875rem;
@@ -1080,33 +1087,77 @@ export default function StageBOQSection({
                     outline: none;
                 }
 
+                .filter-select {
+                    min-width: 180px;
+                }
+
+                .filter-select .filter-icon {
+                    position: absolute;
+                    left: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    pointer-events: none;
+                    color: #64748b;
+                }
+
+                .filter-select select {
+                    height: 40px;
+                    padding: 0 34px 0 34px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    font-size: 0.85rem;
+                    font-weight: 500;
+                    color: #64748b;
+                    background: #fff;
+                    appearance: none;
+                }
+
+                .filter-select select:hover {
+                    background: #f8fafc;
+                    border-color: #cbd5e1;
+                    color: #475569;
+                }
+
+                .filter-select select:focus {
+                    border-color: #cbd5e1;
+                    box-shadow: 0 0 0 3px rgba(226, 232, 240, 0.35);
+                    color: #334155;
+                }
+
                 .view-toggle {
                     display: flex;
-                    background: #f1f5f9;
-                    padding: 3px;
+                    background: linear-gradient(180deg, #e2e8f0, #f1f5f9);
+                    border: 1px solid #d7dee9;
+                    padding: 4px;
                     border-radius: 10px;
                 }
 
                 .view-toggle button {
-                    padding: 6px 12px;
+                    padding: 6px 14px;
                     font-size: 0.8rem;
-                    font-weight: 500;
+                    font-weight: 600;
                     color: #64748b;
                     background: transparent;
                     border: none;
-                    border-radius: 7px;
+                    border-radius: 8px;
                     cursor: pointer;
-                    transition: all 0.2s;
+                    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
                 }
 
                 .view-toggle button:hover {
                     color: #1e293b;
                 }
 
-                .view-toggle button.active {
-                    background: #fff;
-                    color: #0f172a;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                .view-toggle .simple-btn.active {
+                    background: #dbeafe;
+                    color: #1d4ed8;
+                    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.22), 0 1px 2px rgba(15, 23, 42, 0.06);
+                }
+
+                .view-toggle .detailed-btn.active {
+                    background: #dcfce7;
+                    color: #166534;
+                    box-shadow: inset 0 0 0 1px rgba(22, 163, 74, 0.2), 0 1px 2px rgba(15, 23, 42, 0.06);
                 }
 
                 .columns-dropdown {
@@ -1203,7 +1254,7 @@ export default function StageBOQSection({
                     position: relative;
                 }
 
-                select, .form-group input {
+                .add-form select, .form-group input {
                     width: 100%;
                     padding: 12px;
                     border: 1px solid #cbd5e1;
@@ -1215,7 +1266,7 @@ export default function StageBOQSection({
                     appearance: none;
                 }
 
-                select:focus, .form-group input:focus {
+                .add-form select:focus, .form-group input:focus {
                     border-color: #0ea5e9;
                     box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
                 }
@@ -1463,6 +1514,15 @@ export default function StageBOQSection({
                     }
 
                     .search-input {
+                        width: 100%;
+                    }
+
+                    .filter-select {
+                        flex: 1;
+                        min-width: 0;
+                    }
+
+                    .filter-select select {
                         width: 100%;
                     }
 

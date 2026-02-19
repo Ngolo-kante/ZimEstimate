@@ -204,12 +204,64 @@ const SOIL_TYPES: Array<{ value: SoilType; label: string }> = [
 
 type SiteSlopeType = 'flat' | 'gentle' | 'moderate' | 'steep';
 
-const SITE_SLOPE_OPTIONS: Array<{ value: SiteSlopeType; label: string; description: string }> = [
-  { value: 'flat', label: 'Flat', description: 'Minimal cut/fill expected' },
-  { value: 'gentle', label: 'Gentle Slope', description: 'Minor level adjustments likely' },
-  { value: 'moderate', label: 'Moderate Slope', description: 'Retaining and fill planning advised' },
-  { value: 'steep', label: 'Steep', description: 'Higher excavation and retaining risk' },
+const SITE_SLOPE_OPTIONS: Array<{
+  value: SiteSlopeType;
+  label: string;
+  description: string;
+  icon: typeof HouseSimple;
+  iconClass: string;
+}> = [
+  {
+    value: 'flat',
+    label: 'Flat',
+    description: 'Minimal cut/fill expected',
+    icon: HouseSimple,
+    iconClass: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  },
+  {
+    value: 'gentle',
+    label: 'Gentle Slope',
+    description: 'Minor level adjustments likely',
+    icon: Graph,
+    iconClass: 'bg-blue-50 text-blue-700 border-blue-100',
+  },
+  {
+    value: 'moderate',
+    label: 'Moderate Slope',
+    description: 'Retaining and fill planning advised',
+    icon: Stack,
+    iconClass: 'bg-amber-50 text-amber-700 border-amber-100',
+  },
+  {
+    value: 'steep',
+    label: 'Steep',
+    description: 'Higher excavation and retaining risk',
+    icon: Warning,
+    iconClass: 'bg-rose-50 text-rose-700 border-rose-100',
+  },
 ];
+
+const TEMPORARY_WORK_OPTION_META: Record<
+  string,
+  { icon: typeof HouseSimple; iconClass: string }
+> = {
+  'temp-cabin-6x3': {
+    icon: HouseSimple,
+    iconClass: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  },
+  'temp-toilet': {
+    icon: Door,
+    iconClass: 'bg-cyan-50 text-cyan-700 border-cyan-100',
+  },
+  'water-tank-50000l': {
+    icon: CloudArrowUp,
+    iconClass: 'bg-blue-50 text-blue-700 border-blue-100',
+  },
+  'site-clear-level': {
+    icon: HardHat,
+    iconClass: 'bg-amber-50 text-amber-700 border-amber-100',
+  },
+};
 
 const CERTIFICATE_TRACKER_ITEMS = [
   {
@@ -243,9 +295,12 @@ const PROCEDURE_STATUS_META: Record<LocationProcedureStatus, { label: string; ba
 
 const LOCATION_TYPE_RULES: LocationTypeRule[] = ['urban', 'peri-urban', 'rural'];
 const CHECKLIST_TASK_PREFIX = 'boq_checklist:';
-const CERTIFICATE_TASK_PREFIX = 'boq_certificate:';
+const CERTIFICATE_TASK_PREFIX = 'compliance_certificate:';
+const LEGACY_CERTIFICATE_TASK_PREFIX = 'boq_certificate:';
 const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
 const GEOTECH_DOC_TAG = 'geotech_report';
+const SEPTIC_TANK_ITEM_ID = 'custom-septic-tank';
+const SEPTIC_TANK_DEFAULT_RATE_USD = 95;
 
 const isLocationTypeRule = (value: string): value is LocationTypeRule =>
   LOCATION_TYPE_RULES.includes(value as LocationTypeRule);
@@ -352,6 +407,16 @@ interface MilestoneData {
   label?: string;
   items: BOQItem[];
   expanded: boolean;
+}
+
+interface TemporaryWorkSelection {
+  id: string;
+  label: string;
+  description: string;
+  unit: string;
+  enabled: boolean;
+  quantity: string;
+  unitPriceUsd: string;
 }
 
 type CertificateStatus = 'pending' | 'in_progress' | 'done';
@@ -593,8 +658,23 @@ const STEP_HINTS: Record<number, string> = {
   1: 'Next: floor plan size and building type.',
   2: 'Next: choose the project scope.',
   3: 'Next: pick a labor option.',
-  4: 'Next: generate your BOQ.',
+  4: 'Next: configure temporary works.',
+  5: 'Next: generate your BOQ.',
 };
+
+const buildTemporaryWorksDefaults = (): TemporaryWorkSelection[] =>
+  TEMPORARY_WORKS_SUGGESTIONS.map((suggestion) => {
+    const catalogItem = materialCatalog.find((material) => material.id === suggestion.id);
+    return {
+      id: suggestion.id,
+      label: suggestion.label,
+      description: suggestion.description,
+      unit: suggestion.unit,
+      enabled: false,
+      quantity: String(suggestion.defaultQty),
+      unitPriceUsd: String(catalogItem?.priceUsd ?? 0),
+    };
+  });
 
 function BOQBuilderContent() {
   const searchParams = useSearchParams();
@@ -706,6 +786,16 @@ function BOQBuilderContent() {
   const [adminStageId, setAdminStageId] = useState<string | null>(null);
   const [checklistTaskIdByRule, setChecklistTaskIdByRule] = useState<Record<string, string>>({});
   const [certificateTaskIdById, setCertificateTaskIdById] = useState<Record<string, string>>({});
+  const [temporaryWorksSelections, setTemporaryWorksSelections] = useState<TemporaryWorkSelection[]>(
+    () => buildTemporaryWorksDefaults()
+  );
+  const [includeSepticTank, setIncludeSepticTank] = useState(false);
+  const [septicDimensions, setSepticDimensions] = useState({
+    length: '3',
+    width: '2',
+    height: '2',
+    unitPriceUsd: String(SEPTIC_TANK_DEFAULT_RATE_USD),
+  });
 
   const selectedSoilProfile = useMemo(
     () => (projectDetails.soilType ? SOIL_RISK_PROFILES[projectDetails.soilType] : null),
@@ -722,6 +812,39 @@ function BOQBuilderContent() {
   }, [projectDetails.locationType]);
 
   const hasProGeotechAnalysis = profile?.tier === 'pro' || profile?.tier === 'admin';
+  const isTemporaryToiletEnabled = useMemo(
+    () => temporaryWorksSelections.some((option) => option.id === 'temp-toilet' && option.enabled),
+    [temporaryWorksSelections]
+  );
+  const septicVolumeM3 = useMemo(() => {
+    if (!includeSepticTank || !isTemporaryToiletEnabled) return 0;
+    const length = Number(septicDimensions.length);
+    const width = Number(septicDimensions.width);
+    const height = Number(septicDimensions.height);
+    if (!Number.isFinite(length) || !Number.isFinite(width) || !Number.isFinite(height)) return 0;
+    if (length <= 0 || width <= 0 || height <= 0) return 0;
+    return Number((length * width * height).toFixed(2));
+  }, [includeSepticTank, isTemporaryToiletEnabled, septicDimensions.height, septicDimensions.length, septicDimensions.width]);
+  const selectedTemporaryWorks = useMemo(
+    () => temporaryWorksSelections.filter((option) => option.enabled),
+    [temporaryWorksSelections]
+  );
+  const temporaryWorksSubtotalUsd = useMemo(
+    () =>
+      selectedTemporaryWorks.reduce((sum, option) => {
+        const quantity = Number(option.quantity);
+        const unitPriceUsd = Number(option.unitPriceUsd);
+        if (!Number.isFinite(quantity) || !Number.isFinite(unitPriceUsd)) return sum;
+        return sum + quantity * unitPriceUsd;
+      }, 0),
+    [selectedTemporaryWorks]
+  );
+  const septicSubtotalUsd = useMemo(() => {
+    if (!includeSepticTank || !isTemporaryToiletEnabled) return 0;
+    const unitPriceUsd = Number(septicDimensions.unitPriceUsd);
+    if (!Number.isFinite(unitPriceUsd) || unitPriceUsd < 0) return 0;
+    return septicVolumeM3 * unitPriceUsd;
+  }, [includeSepticTank, isTemporaryToiletEnabled, septicDimensions.unitPriceUsd, septicVolumeM3]);
 
   const handleDetailedContinue = (rooms: RoomInstance[], totals: { area: number, walls: number, bricks: number }) => {
     setDetailedRooms(rooms);
@@ -752,7 +875,6 @@ function BOQBuilderContent() {
 
   // Currency context - must be called at top level (not inside conditionals)
   const { currency, setCurrency, exchangeRate, formatPrice } = useCurrency();
-  const loading = isGenerating;
 
   // Helper for currency formatting
   const formatCurrency = (amount: number) => {
@@ -761,26 +883,6 @@ function BOQBuilderContent() {
       currency: currency === 'USD' ? 'USD' : 'ZWG', // Assuming ZWG is the other currency code or use symbol logic
     }).format(amount);
   };
-
-  const estimatedMaterials = useMemo(() => {
-    return milestonesState
-      .filter(m => m.id !== 'labor')
-      .map(m => ({
-        category: m.label || m.id,
-        items: m.items
-      }))
-      .filter(c => c.items.length > 0);
-  }, [milestonesState]);
-
-  const estimatedLabor = useMemo(() => {
-    return milestonesState
-      .filter(m => m.id === 'labor')
-      .map(m => ({
-        category: 'Labor & Services',
-        items: m.items
-      }))
-      .filter(c => c.items.length > 0);
-  }, [milestonesState]);
 
   // Calculate totals for sidebar
   const { totalUSD, totalZWG } = useMemo(() => {
@@ -839,12 +941,20 @@ function BOQBuilderContent() {
         status: getStepStatus(4),
       },
       {
+        id: 'temporary-works',
+        label: 'Temporary Works',
+        shortLabel: 'Site Setup',
+        description: 'Enablement costs',
+        icon: HardHat,
+        status: getStepStatus(5),
+      },
+      {
         id: 'boq-estimate',
         label: 'BOQ Estimate',
         shortLabel: 'Estimate',
         description: 'Review and finalize',
         icon: Sparkle,
-        status: getStepStatus(5),
+        status: getStepStatus(6),
       },
     ];
 
@@ -852,10 +962,18 @@ function BOQBuilderContent() {
   }, [currentStep]);
 
   const handleSidebarStepClick = (stepId: string) => {
-    const stepIndex = ['project-details', 'floor-plan', 'scope', 'labor'].indexOf(stepId);
+    const stepIndex = ['project-details', 'floor-plan', 'scope', 'labor', 'temporary-works'].indexOf(stepId);
     if (stepIndex >= 0) {
       setCurrentStep(stepIndex + 1);
-    } else if (currentStep === 5) {
+      return;
+    }
+
+    if (stepId === 'boq-estimate') {
+      setCurrentStep(6);
+      return;
+    }
+
+    if (currentStep === 6) {
       // Scroll to milestone section
       const element = document.getElementById(`milestone-${stepId}`);
       element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -899,7 +1017,7 @@ function BOQBuilderContent() {
       scope: scopeLabel,
       labor: laborLabel,
       rooms: roomSummary,
-      nextHint: STEP_HINTS[Math.min(currentStep, 4)]
+      nextHint: STEP_HINTS[Math.min(currentStep, 5)]
     };
   }, [projectDetails, projectScope, selectedStages, laborType, currentStep]);
 
@@ -961,6 +1079,40 @@ function BOQBuilderContent() {
         }
         setLaborType(loadedProject.labor_preference === 'with_labor' ? 'materials_labor' : 'materials_only');
 
+        const substructureItems = items.filter((item) => item.category === 'substructure');
+        setTemporaryWorksSelections((prev) =>
+          prev.map((option) => {
+            const matchingItem = substructureItems.find((item) => item.material_id === option.id);
+            if (!matchingItem) {
+              return { ...option, enabled: false };
+            }
+
+            return {
+              ...option,
+              enabled: Number(matchingItem.quantity) > 0,
+              quantity: String(matchingItem.quantity ?? option.quantity),
+              unitPriceUsd: String(matchingItem.unit_price_usd ?? option.unitPriceUsd),
+            };
+          })
+        );
+
+        const septicItem = substructureItems.find((item) => item.material_id === SEPTIC_TANK_ITEM_ID);
+        if (septicItem) {
+          setIncludeSepticTank(true);
+          const septicNote = septicItem.notes || '';
+          const length = septicNote.match(/L:(\d+(?:\.\d+)?)m/i)?.[1];
+          const width = septicNote.match(/W:(\d+(?:\.\d+)?)m/i)?.[1];
+          const height = septicNote.match(/H:(\d+(?:\.\d+)?)m/i)?.[1];
+          setSepticDimensions((prev) => ({
+            length: length || prev.length,
+            width: width || prev.width,
+            height: height || prev.height,
+            unitPriceUsd: String(septicItem.unit_price_usd ?? prev.unitPriceUsd),
+          }));
+        } else {
+          setIncludeSepticTank(false);
+        }
+
         // Restore BOQ items grouped by category/milestone
         if (items.length > 0) {
           setMilestonesState(prev => {
@@ -994,8 +1146,8 @@ function BOQBuilderContent() {
             return newState;
           });
 
-          // Jump to step 5 if we have items
-          setCurrentStep(5);
+          // Jump to final BOQ step if saved items already exist
+          setCurrentStep(6);
         }
       },
     }
@@ -1077,6 +1229,17 @@ function BOQBuilderContent() {
                   : parseCertificateStatusFromMarker(marker);
                 nextCertificateTaskIds[certificateId] = task.id;
               }
+              return;
+            }
+
+            if (marker.startsWith(LEGACY_CERTIFICATE_TASK_PREFIX)) {
+              const certificateId = marker.replace(LEGACY_CERTIFICATE_TASK_PREFIX, '').split('|')[0];
+              if (certificateId in nextCertificateState) {
+                nextCertificateState[certificateId] = task.is_completed
+                  ? 'done'
+                  : parseCertificateStatusFromMarker(marker);
+                nextCertificateTaskIds[certificateId] = task.id;
+              }
             }
           });
 
@@ -1115,7 +1278,7 @@ function BOQBuilderContent() {
 
   // Mark changes when milestone data changes (after initial load)
   useEffect(() => {
-    if (project && currentStep === 5) {
+    if (project && currentStep === 6) {
       markChanged();
     }
   }, [milestonesState, project, currentStep, markChanged]);
@@ -1131,6 +1294,46 @@ function BOQBuilderContent() {
       markChanged();
     }
   }, [projectDetails.soilType, projectDetails.siteSlope, geotechDocument?.id, geotechDocument?.createdAt, project, markChanged]);
+
+  useEffect(() => {
+    if (currentStep !== 5) return;
+
+    const substructureMilestone = milestonesState.find((milestone) => milestone.id === 'substructure');
+    if (!substructureMilestone) return;
+
+    setTemporaryWorksSelections((prev) =>
+      prev.map((option) => {
+        const matchingItem = substructureMilestone.items.find((item) => item.materialId === option.id);
+        if (!matchingItem) {
+          return { ...option, enabled: false };
+        }
+        return {
+          ...option,
+          enabled: Number(matchingItem.quantity) > 0,
+          quantity: String(matchingItem.quantity ?? option.quantity),
+          unitPriceUsd: String(matchingItem.averagePriceUsd ?? option.unitPriceUsd),
+        };
+      })
+    );
+
+    const septicItem = substructureMilestone.items.find((item) => item.materialId === SEPTIC_TANK_ITEM_ID);
+    if (!septicItem) {
+      setIncludeSepticTank(false);
+      return;
+    }
+
+    setIncludeSepticTank(true);
+    const septicNote = septicItem.description || '';
+    const length = septicNote.match(/L:(\d+(?:\.\d+)?)m/i)?.[1];
+    const width = septicNote.match(/W:(\d+(?:\.\d+)?)m/i)?.[1];
+    const height = septicNote.match(/H:(\d+(?:\.\d+)?)m/i)?.[1];
+    setSepticDimensions((prev) => ({
+      length: length || prev.length,
+      width: width || prev.width,
+      height: height || prev.height,
+      unitPriceUsd: String(septicItem.averagePriceUsd ?? prev.unitPriceUsd),
+    }));
+  }, [currentStep, milestonesState]);
 
   // Close dropdown menus when clicking outside
   useEffect(() => {
@@ -1170,6 +1373,9 @@ function BOQBuilderContent() {
         if (data.planSketchMode) setPlanSketchMode(data.planSketchMode);
         if (data.totalWindows !== undefined) setTotalWindows(data.totalWindows);
         if (data.totalDoors !== undefined) setTotalDoors(data.totalDoors);
+        if (data.temporaryWorksSelections) setTemporaryWorksSelections(data.temporaryWorksSelections);
+        if (data.includeSepticTank !== undefined) setIncludeSepticTank(data.includeSepticTank);
+        if (data.septicDimensions) setSepticDimensions(data.septicDimensions);
         if (data.pendingSave) setPendingAutoSave(true);
         return;
       }
@@ -1212,6 +1418,9 @@ function BOQBuilderContent() {
         planSketchMode,
         totalWindows,
         totalDoors,
+        temporaryWorksSelections,
+        includeSepticTank,
+        septicDimensions,
         pendingSave: true,
       }));
     } catch { }
@@ -1332,6 +1541,14 @@ function BOQBuilderContent() {
     if (currentStep === 2.5) {
       setCurrentStep(3);
       return;
+    }
+
+    if (currentStep === 5) {
+      if (includeSepticTank && isTemporaryToiletEnabled && septicVolumeM3 <= 0) {
+        setValidationError('Enter valid septic tank dimensions (L, W, H) before continuing.');
+        return;
+      }
+      applyTemporaryWorksToBoq();
     }
 
     setCurrentStep(prev => prev + 1);
@@ -1467,6 +1684,76 @@ function BOQBuilderContent() {
     return true;
   };
 
+  const handleTemporaryWorkChange = (
+    optionId: string,
+    updates: Partial<Pick<TemporaryWorkSelection, 'enabled' | 'quantity' | 'unitPriceUsd'>>
+  ) => {
+    setTemporaryWorksSelections((prev) =>
+      prev.map((option) => (option.id === optionId ? { ...option, ...updates } : option))
+    );
+  };
+
+  const applyTemporaryWorksToBoq = () => {
+    const managedIds = new Set([...temporaryWorksSelections.map((option) => option.id), SEPTIC_TANK_ITEM_ID]);
+    const septicUnitPriceUsd = Number(septicDimensions.unitPriceUsd);
+    const septicTotalUsd = septicVolumeM3 * (Number.isFinite(septicUnitPriceUsd) ? septicUnitPriceUsd : 0);
+
+    setMilestonesState((prev) =>
+      prev.map((milestone) => {
+        if (milestone.id !== 'substructure') return milestone;
+
+        const preservedItems = milestone.items.filter((item) => !managedIds.has(item.materialId));
+        const temporaryItems: BOQItem[] = [];
+
+        temporaryWorksSelections.forEach((option) => {
+          if (!option.enabled) return;
+          const catalogItem = materialCatalog.find((material) => material.id === option.id);
+          const quantity = Number(option.quantity);
+          const unitPriceUsd = Number(option.unitPriceUsd);
+          if (!Number.isFinite(quantity) || quantity <= 0) return;
+          if (!Number.isFinite(unitPriceUsd) || unitPriceUsd < 0) return;
+
+          temporaryItems.push({
+            id: getNextId(),
+            materialId: option.id,
+            materialName: catalogItem?.name || option.label,
+            quantity,
+            unit: catalogItem?.unit || option.unit,
+            averagePriceUsd: unitPriceUsd,
+            averagePriceZwg: unitPriceUsd * exchangeRate,
+            actualPriceUsd: unitPriceUsd,
+            actualPriceZwg: unitPriceUsd * exchangeRate,
+            description: option.description,
+            isEnablementCost: true,
+            category: 'substructure',
+          });
+        });
+
+        if (includeSepticTank && isTemporaryToiletEnabled && septicVolumeM3 > 0 && septicTotalUsd >= 0) {
+          temporaryItems.push({
+            id: getNextId(),
+            materialId: SEPTIC_TANK_ITEM_ID,
+            materialName: 'Septic Tank Construction',
+            quantity: septicVolumeM3,
+            unit: 'm3',
+            averagePriceUsd: septicUnitPriceUsd,
+            averagePriceZwg: septicUnitPriceUsd * exchangeRate,
+            actualPriceUsd: septicUnitPriceUsd,
+            actualPriceZwg: septicUnitPriceUsd * exchangeRate,
+            description: `L:${septicDimensions.length}m W:${septicDimensions.width}m H:${septicDimensions.height}m`,
+            isEnablementCost: true,
+            category: 'substructure',
+          });
+        }
+
+        return {
+          ...milestone,
+          items: [...temporaryItems, ...preservedItems],
+        };
+      })
+    );
+  };
+
   const ensureChecklistTask = async (ruleId: string, label: string): Promise<string | null> => {
     if (!adminStageId) return null;
 
@@ -1510,17 +1797,6 @@ function BOQBuilderContent() {
       [ruleId]: nextCompleted,
     }));
     void persistChecklistItem(ruleId, nextCompleted);
-  };
-
-  const handleAddTemporaryWorksPack = () => {
-    TEMPORARY_WORKS_SUGGESTIONS.forEach((suggestion) => {
-      const material = materialCatalog.find((item) => item.id === suggestion.id);
-      const description = suggestion.description || material?.description || '';
-      addOrIncrementMilestoneMaterial('substructure', suggestion.id, suggestion.defaultQty, {
-        isEnablementCost: true,
-        description,
-      });
-    });
   };
 
   const ensureCertificateTask = async (certificateId: string, label: string, status: CertificateStatus): Promise<string | null> => {
@@ -1841,7 +2117,7 @@ function BOQBuilderContent() {
 
   const showPriceUpdateBanner = priceVersionReady && projectPriceVersion !== SYSTEM_PRICE_VERSION;
 
-  if (currentStep === 5) {
+  if (currentStep === 6) {
     // Format currency based on current mode (currency, setCurrency, exchangeRate are from top-level hook)
     const formatCurrency = (valueUsd: number, showZig: boolean = false): string => {
       const useZig = showZig || currency === 'ZWG';
@@ -1875,20 +2151,26 @@ function BOQBuilderContent() {
     const substructureMilestone = milestonesState.find((milestone) => milestone.id === 'substructure');
     const temporaryWorksRows = TEMPORARY_WORKS_SUGGESTIONS.map((suggestion) => {
       const material = materialCatalog.find((m) => m.id === suggestion.id);
-      const currentQty = substructureMilestone?.items.find((item) => item.materialId === suggestion.id)?.quantity || 0;
+      const boqItem = substructureMilestone?.items.find((item) => item.materialId === suggestion.id);
+      const currentQty = boqItem?.quantity || 0;
       return {
         ...suggestion,
         material,
+        boqItem,
         currentQty,
       };
     });
+    const temporarySepticItem = substructureMilestone?.items.find(
+      (item) => item.materialId === SEPTIC_TANK_ITEM_ID
+    );
     const availableTemporaryWorks = temporaryWorksRows.filter((row) => row.material);
     const temporaryWorksAddedCount = availableTemporaryWorks.filter((row) => Number(row.currentQty) > 0).length;
-    const temporaryWorksEstimatedUsd = availableTemporaryWorks.reduce(
-      (sum, row) => sum + (row.material!.priceUsd * row.defaultQty),
-      0
-    );
-    const missingTemporaryMaterials = temporaryWorksRows.filter((row) => !row.material);
+    const temporaryWorksEstimatedUsd =
+      temporaryWorksRows.reduce((sum, row) => {
+        if (!row.boqItem) return sum;
+        return sum + (Number(row.boqItem.quantity) || 0) * (Number(row.boqItem.averagePriceUsd) || 0);
+      }, 0) +
+      ((Number(temporarySepticItem?.quantity) || 0) * (Number(temporarySepticItem?.averagePriceUsd) || 0));
     const completedCertificates = CERTIFICATE_TRACKER_ITEMS.filter(
       (certificate) => certificateTracker[certificate.id] === 'done'
     ).length;
@@ -2638,25 +2920,36 @@ function BOQBuilderContent() {
           <div className="rounded-xl border border-slate-200 bg-white p-5 mb-6">
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Temporary Works Suggestions</div>
-                <h4 className="text-base font-semibold text-slate-900 mt-1">One-Click Early Site Setup</h4>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Temporary Works</div>
+                <h4 className="text-base font-semibold text-slate-900 mt-1">Configured in Step 5</h4>
                 <p className="text-sm text-slate-600 mt-2">
-                  Adds common temporary works to Substructure so first-time builders do not miss them.
+                  These enablement costs are included in Substructure and can be edited here.
                 </p>
               </div>
               <div className="text-sm text-slate-700">
                 {temporaryWorksAddedCount}/{availableTemporaryWorks.length} added
-                <div className="text-xs text-slate-500 mt-1">Suggested pack: {formatCurrency(temporaryWorksEstimatedUsd)}</div>
+                <div className="text-xs text-slate-500 mt-1">Current total: {formatCurrency(temporaryWorksEstimatedUsd)}</div>
               </div>
             </div>
 
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-              {temporaryWorksRows.map((row) => (
+              {temporaryWorksRows.map((row) => {
+                const meta = TEMPORARY_WORK_OPTION_META[row.id] || {
+                  icon: Package,
+                  iconClass: 'bg-slate-100 text-slate-700 border-slate-200',
+                };
+                const Icon = meta.icon;
+                return (
                 <div key={row.id} className="rounded-lg border border-slate-200 p-3 bg-slate-50/40">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-slate-800">{row.label}</div>
-                      <div className="text-xs text-slate-600 mt-1">{row.description}</div>
+                    <div className="flex items-start gap-3">
+                      <span className={`inline-flex h-9 w-9 rounded-lg border items-center justify-center ${meta.iconClass}`}>
+                        <Icon size={18} weight="duotone" />
+                      </span>
+                      <div>
+                        <div className="text-sm font-semibold text-slate-800">{row.label}</div>
+                        <div className="text-xs text-slate-600 mt-1">{row.description}</div>
+                      </div>
                     </div>
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -2667,28 +2960,37 @@ function BOQBuilderContent() {
                     </span>
                   </div>
                   <div className="mt-2 text-xs text-slate-500">
-                    Default: {row.defaultQty} {row.unit}
-                    {row.material ? ` • Unit: ${formatCurrency(row.material.priceUsd)}` : ' • Catalog item missing'}
+                    {row.currentQty > 0
+                      ? `${row.currentQty} ${row.unit}`
+                      : `Default: ${row.defaultQty} ${row.unit}`}
+                    {row.material ? ` • Unit: ${formatCurrency(row.material.priceUsd)}` : ''}
                   </div>
                 </div>
-              ))}
+              )})}
+              {temporarySepticItem && (
+                <div className="rounded-lg border border-slate-200 p-3 bg-slate-50/40">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-800">Septic Tank Construction</div>
+                      <div className="text-xs text-slate-600 mt-1">{temporarySepticItem.description || 'Dimension-based septic tank BOQ item.'}</div>
+                    </div>
+                    <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700">
+                      Added
+                    </span>
+                  </div>
+                  <div className="mt-2 text-xs text-slate-500">
+                    {temporarySepticItem.quantity || 0} {temporarySepticItem.unit} • Unit: {formatCurrency(temporarySepticItem.averagePriceUsd)}
+                  </div>
+                </div>
+              )}
             </div>
-
-            {missingTemporaryMaterials.length > 0 && (
-              <p className="mt-3 text-xs text-amber-700">
-                Some temporary works are not yet in the catalog: {missingTemporaryMaterials.map((row) => row.label).join(', ')}.
-              </p>
-            )}
 
             <div className="mt-4">
               <Button
                 variant="secondary"
-                onClick={handleAddTemporaryWorksPack}
-                disabled={availableTemporaryWorks.length === 0 || temporaryWorksAddedCount === availableTemporaryWorks.length}
+                onClick={() => setCurrentStep(5)}
               >
-                {temporaryWorksAddedCount === availableTemporaryWorks.length
-                  ? 'Temporary Works Already Added'
-                  : 'Add Suggested Temporary Works'}
+                Edit Temporary Works
               </Button>
             </div>
           </div>
@@ -2967,16 +3269,16 @@ function BOQBuilderContent() {
                 currentStep === 2 ? 'floor-plan' :
                   currentStep === 3 ? 'scope' :
                     currentStep === 4 ? 'labor' :
-                      'boq-estimate'
+                      currentStep === 5 ? 'temporary-works' : 'boq-estimate'
             }
-            currentStepNumber={Math.min(currentStep, 5)}
-            totalSetupSteps={5}
+            currentStepNumber={Math.min(currentStep, 6)}
+            totalSetupSteps={6}
             onStepClick={handleSidebarStepClick}
-            onToggleStep={currentStep >= 5 ? handleToggleMilestone : undefined}
+            onToggleStep={currentStep >= 6 ? handleToggleMilestone : undefined}
             totalUSD={totalUSD}
             totalZWG={totalZWG}
             projectSummary={projectSummary}
-            completionPercentage={((currentStep - 1) / 5) * 100}
+            completionPercentage={((currentStep - 1) / 6) * 100}
             formatPrice={formatPrice}
           />
         </div>
@@ -2992,7 +3294,7 @@ function BOQBuilderContent() {
                 <div className="wizard-content-split">
                   <div className="wizard-form-area">
                     <div className="step-header">
-                      <span className="step-kicker">Step 1 of 4</span>
+                      <span className="step-kicker">Step 1 of 5</span>
                       <h2 className="step-title">Project Details</h2>
                       <p className="step-subtitle">Give your project a name and choose the location type.</p>
                     </div>
@@ -3110,7 +3412,7 @@ function BOQBuilderContent() {
                 <div className="wizard-content-split">
                   <div className="wizard-form-area">
                     <div className="step-header">
-                      <span className="step-kicker">Step 2 of 4</span>
+                      <span className="step-kicker">Step 2 of 5</span>
                       <h2 className="step-title">Floor Plan Details</h2>
                       <p className="step-subtitle">Capture the total floor area, building type, and room mix.</p>
                     </div>
@@ -3288,18 +3590,40 @@ function BOQBuilderContent() {
                           <label className="wizard-label">
                             Site Slope <span className="optional">(Recommended)</span>
                           </label>
-                          <select
-                            className="wizard-select"
-                            value={projectDetails.siteSlope}
-                            onChange={(e) => setProjectDetails({ ...projectDetails, siteSlope: e.target.value as SiteSlopeType })}
-                          >
-                            <option value="">Select site slope</option>
-                            {SITE_SLOPE_OPTIONS.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label} - {option.description}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {SITE_SLOPE_OPTIONS.map((option) => {
+                              const Icon = option.icon;
+                              const isSelected = projectDetails.siteSlope === option.value;
+                              return (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  className={`w-full text-left rounded-xl border px-3 py-3 transition-all ${
+                                    isSelected
+                                      ? 'border-blue-500 bg-blue-50/70 shadow-sm'
+                                      : 'border-slate-200 bg-white hover:border-slate-300'
+                                  }`}
+                                  onClick={() =>
+                                    setProjectDetails({
+                                      ...projectDetails,
+                                      siteSlope: isSelected ? '' : (option.value as SiteSlopeType),
+                                    })
+                                  }
+                                  aria-pressed={isSelected}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <span className={`inline-flex h-9 w-9 rounded-lg border items-center justify-center ${option.iconClass}`}>
+                                      <Icon size={18} weight={isSelected ? 'fill' : 'duotone'} />
+                                    </span>
+                                    <span>
+                                      <span className="block text-sm font-semibold text-slate-800">{option.label}</span>
+                                      <span className="block text-xs text-slate-600 mt-0.5">{option.description}</span>
+                                    </span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
                           <span className="wizard-hint">Used for excavation and retaining risk guidance in future releases.</span>
                         </div>
                       </div>
@@ -3677,7 +4001,7 @@ function BOQBuilderContent() {
                 <div className="wizard-content-split">
                   <div className="wizard-form-area">
                     <div className="step-header">
-                      <span className="step-kicker">Step 3 of 4</span>
+                      <span className="step-kicker">Step 3 of 5</span>
                       <h2 className="step-title">Scope of Work</h2>
                       <p className="step-subtitle">Choose what to include in this estimate.</p>
                     </div>
@@ -3802,7 +4126,7 @@ function BOQBuilderContent() {
                 <div className="wizard-content-split">
                   <div className="wizard-form-area">
                     <div className="step-header">
-                      <span className="step-kicker">Step 4 of 4</span>
+                      <span className="step-kicker">Step 4 of 5</span>
                       <h2 className="step-title">Labor Options</h2>
                       <p className="step-subtitle">Choose how you want labor handled in the estimate.</p>
                     </div>
@@ -3877,9 +4201,9 @@ function BOQBuilderContent() {
                         <Button
                           variant="primary"
                           onClick={goToNextStep}
-                          icon={<Sparkle size={18} />}
+                          icon={<ArrowRight size={18} />}
                         >
-                          Start Building BOQ
+                          Continue to Temporary Works
                         </Button>
                       </div>
                     </div>
@@ -3890,134 +4214,249 @@ function BOQBuilderContent() {
               </div>
             )}
 
-            {/* Step 5: Estimate (Full width) */}
+            {/* Step 5: Temporary Works */}
             {currentStep === 5 && (
-              <div className="wizard-step">
-                {/* Existing Step 5 content - keeping it full width as it is complex */}
-                <div className="step-content">
-                  <div className="estimate-header">
-                    <span className="step-kicker">Estimate</span>
-                    <h2 className="step-title">Build BOQ</h2>
-                    <p className="step-subtitle">Review, adjust quantities, and finalize your Bill of Quantities.</p>
-                  </div>
-
-                  {/* Main Calculation View */}
-                  {loading ? (
-                    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-                      <p className="text-slate-500 font-medium">Calculating materials & costs...</p>
+              <div className="wizard-step reveal">
+                <div className="wizard-content-split">
+                  <div className="wizard-form-area">
+                    <div className="step-header">
+                      <span className="step-kicker">Step 5 of 5</span>
+                      <h2 className="step-title">Temporary Works & Site Setup</h2>
+                      <p className="step-subtitle">
+                        Add enablement costs before final BOQ review. These items remain editable in the BOQ.
+                      </p>
                     </div>
-                  ) : (
-                    <div className="boq-builder w-full">
-                      {/* Floating Summary Bar */}
-                      <div className="floating-summary-bar">
-                        <div className="floating-summary-content">
-                          <div className="floating-summary-info">
-                            <Stack size={20} className="text-blue-500" />
-                            <span className="floating-total">{formatCurrency((estimatedMaterials?.reduce((acc, cat) => acc + cat.items.reduce((s, i) => s + ((currency === 'USD' ? i.averagePriceUsd : i.averagePriceZwg) * (i.quantity || 0)), 0), 0) || 0) + (estimatedLabor?.reduce((acc, cat) => acc + cat.items.reduce((s, i) => s + ((currency === 'USD' ? i.averagePriceUsd : i.averagePriceZwg) * (i.quantity || 0)), 0), 0) || 0))}</span>
-                            <span className="floating-items">{estimatedMaterials?.reduce((acc, cat) => acc + cat.items.length, 0) || 0} items</span>
+
+                    <div className="wizard-card wizard-card--stack">
+                      {validationError && <p className="wizard-validation-banner">{validationError}</p>}
+                      <div className="wizard-section">
+                        <div className="wizard-section-header">
+                          <div>
+                            <span className="section-kicker">Temporary Works</span>
+                            <h3>Choose Site Enablement Items</h3>
+                            <p>Select what applies and edit quantity and unit rates.</p>
                           </div>
-                          <Button
-                            variant="primary"
-                            icon={<DownloadSimple size={16} />}
-                            size="sm"
-                            onClick={() => alert('Download feature coming soon!')}
-                          >
-                            Export PDF
-                          </Button>
+                        </div>
+
+                        <div className="space-y-3">
+                          {temporaryWorksSelections.map((option) => {
+                            const quantity = Number(option.quantity);
+                            const unitPriceUsd = Number(option.unitPriceUsd);
+                            const lineTotalUsd =
+                              Number.isFinite(quantity) && Number.isFinite(unitPriceUsd) ? quantity * unitPriceUsd : 0;
+                            const meta = TEMPORARY_WORK_OPTION_META[option.id] || {
+                              icon: Package,
+                              iconClass: 'bg-slate-100 text-slate-700 border-slate-200',
+                            };
+                            const Icon = meta.icon;
+
+                            return (
+                              <div
+                                key={option.id}
+                                className={`rounded-xl border p-4 transition-all ${
+                                  option.enabled
+                                    ? 'border-blue-200 bg-blue-50/40 shadow-sm'
+                                    : 'border-slate-200 bg-slate-50/60'
+                                }`}
+                              >
+                                <button
+                                  type="button"
+                                  className="w-full text-left"
+                                  onClick={() => {
+                                    setValidationError(null);
+                                    const nextEnabled = !option.enabled;
+                                    handleTemporaryWorkChange(option.id, { enabled: nextEnabled });
+                                    if (option.id === 'temp-toilet' && !nextEnabled) {
+                                      setIncludeSepticTank(false);
+                                    }
+                                  }}
+                                  aria-pressed={option.enabled}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <span className={`inline-flex h-10 w-10 rounded-lg border items-center justify-center ${meta.iconClass}`}>
+                                      <Icon size={20} weight={option.enabled ? 'fill' : 'duotone'} />
+                                    </span>
+                                    <div className="flex-1">
+                                      <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <span className="text-sm font-semibold text-slate-800">{option.label}</span>
+                                        <span
+                                          className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                                            option.enabled
+                                              ? 'bg-blue-100 text-blue-700'
+                                              : 'bg-slate-100 text-slate-600'
+                                          }`}
+                                        >
+                                          {option.enabled ? 'Selected' : 'Tap to add'}
+                                        </span>
+                                      </div>
+                                      <p className="text-xs text-slate-600 mt-1">{option.description}</p>
+                                    </div>
+                                  </div>
+                                </button>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3">
+                                  <div>
+                                    <label className="block text-xs text-slate-500 mb-1">Quantity</label>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      className="wizard-select"
+                                      value={option.quantity}
+                                      disabled={!option.enabled}
+                                      onChange={(event) =>
+                                        handleTemporaryWorkChange(option.id, { quantity: event.target.value })
+                                      }
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs text-slate-500 mb-1">Unit Rate (USD)</label>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      className="wizard-select"
+                                      value={option.unitPriceUsd}
+                                      disabled={!option.enabled}
+                                      onChange={(event) =>
+                                        handleTemporaryWorkChange(option.id, { unitPriceUsd: event.target.value })
+                                      }
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs text-slate-500 mb-1">Line Total</label>
+                                    <div className="wizard-select bg-slate-100 text-slate-700">
+                                      {formatCurrency(lineTotalUsd)}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
 
-                      <div className="space-y-8 pb-32">
-                        {/* Materials Section */}
-                        {estimatedMaterials && estimatedMaterials.length > 0 && (
-                          <section>
-                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                              <Package size={24} className="text-blue-500" />
-                              Materials Breakdown
-                            </h3>
-                            <div className="space-y-6">
-                              {estimatedMaterials.map((category) => (
-                                <div key={category.category} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                                  <div className="bg-slate-50 px-6 py-3 border-b border-slate-200 flex justify-between items-center">
-                                    <h4 className="font-semibold text-slate-700 capitalize">{category.category}</h4>
-                                    <div className="text-sm font-medium text-slate-600">
-                                      {formatCurrency(category.items.reduce((sum, item) => sum + ((currency === 'USD' ? item.averagePriceUsd : item.averagePriceZwg) * (item.quantity || 0)), 0))}
-                                    </div>
-                                  </div>
-                                  <div className="divide-y divide-slate-100">
-                                    {category.items.map((item, idx) => (
-                                      <div key={`${category.category}-${idx}`} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors group">
-                                        <div className="flex-1 pr-4">
-                                          <div className="font-medium text-slate-900">{item.materialName}</div>
-                                          <div className="text-xs text-slate-500 mt-1">{item.description}</div>
-                                        </div>
-                                        <div className="flex items-center gap-6">
-                                          <div className="text-right">
-                                            <div className="text-sm font-medium text-slate-900">
-                                              {Math.ceil(item.quantity || 0)} <span className="text-slate-500 font-normal">{item.unit}</span>
-                                            </div>
-                                            <div className="text-xs text-slate-400">Qty</div>
-                                          </div>
-                                          <div className="text-right w-24">
-                                            <div className="text-sm font-bold text-slate-900">
-                                              {formatCurrency((currency === 'USD' ? item.averagePriceUsd : item.averagePriceZwg) * (item.quantity || 0))}
-                                            </div>
-                                            <div className="text-xs text-slate-400">
-                                              {formatCurrency(currency === 'USD' ? item.averagePriceUsd : item.averagePriceZwg)}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </section>
+                      <div className="wizard-divider" />
+
+                      <div className="wizard-section">
+                        <div className="wizard-section-header">
+                          <div>
+                            <span className="section-kicker">Sanitation</span>
+                            <h3>Optional Septic Tank Project</h3>
+                            <p>Enable this if your temporary toilet setup needs septic works included in BOQ.</p>
+                          </div>
+                        </div>
+
+                        <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={includeSepticTank}
+                            disabled={!isTemporaryToiletEnabled}
+                            onChange={(event) => {
+                              setValidationError(null);
+                              setIncludeSepticTank(event.target.checked);
+                            }}
+                          />
+                          Include septic tank project
+                        </label>
+                        {!isTemporaryToiletEnabled && (
+                          <p className="text-xs text-slate-500 mt-2">
+                            Enable Temporary Toilet Setup first to add septic tank works.
+                          </p>
                         )}
 
-                        {/* Labor Section */}
-                        {estimatedLabor && estimatedLabor.length > 0 && (
-                          <section>
-                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                              <HardHat size={24} className="text-orange-500" />
-                              Labor Breakdown
-                            </h3>
-                            <div className="space-y-6">
-                              {estimatedLabor.map((category) => (
-                                <div key={category.category} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                                  <div className="bg-orange-50 px-6 py-3 border-b border-orange-100 flex justify-between items-center">
-                                    <h4 className="font-semibold text-orange-800 capitalize">{category.category}</h4>
-                                    <div className="text-sm font-medium text-orange-700">
-                                      {formatCurrency(category.items.reduce((sum, item) => sum + ((currency === 'USD' ? item.averagePriceUsd : item.averagePriceZwg) * (item.quantity || 0)), 0))}
-                                    </div>
-                                  </div>
-                                  <div className="divide-y divide-slate-100">
-                                    {category.items.map((item, idx) => (
-                                      <div key={`${category.category}-${idx}`} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                                        <div className="flex-1 pr-4">
-                                          <div className="font-medium text-slate-900">{item.materialName}</div>
-                                          <div className="text-xs text-slate-500 mt-1">{item.description}</div>
-                                        </div>
-                                        <div className="flex items-center gap-6">
-                                          <div className="text-right w-24">
-                                            <div className="text-sm font-bold text-slate-900">
-                                              {formatCurrency((currency === 'USD' ? item.averagePriceUsd : item.averagePriceZwg) * (item.quantity || 0))}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
+                        {includeSepticTank && isTemporaryToiletEnabled && (
+                          <div className="mt-3 grid grid-cols-1 md:grid-cols-5 gap-2">
+                            <div>
+                              <label className="block text-xs text-slate-500 mb-1">Length (m)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                className="wizard-select"
+                                value={septicDimensions.length}
+                                onChange={(event) =>
+                                  setSepticDimensions((prev) => ({ ...prev, length: event.target.value }))
+                                }
+                              />
                             </div>
-                          </section>
+                            <div>
+                              <label className="block text-xs text-slate-500 mb-1">Width (m)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                className="wizard-select"
+                                value={septicDimensions.width}
+                                onChange={(event) =>
+                                  setSepticDimensions((prev) => ({ ...prev, width: event.target.value }))
+                                }
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-slate-500 mb-1">Height (m)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                className="wizard-select"
+                                value={septicDimensions.height}
+                                onChange={(event) =>
+                                  setSepticDimensions((prev) => ({ ...prev, height: event.target.value }))
+                                }
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-slate-500 mb-1">Rate (USD/m3)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                className="wizard-select"
+                                value={septicDimensions.unitPriceUsd}
+                                onChange={(event) =>
+                                  setSepticDimensions((prev) => ({ ...prev, unitPriceUsd: event.target.value }))
+                                }
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-slate-500 mb-1">Projected Total</label>
+                              <div className="wizard-select bg-slate-100 text-slate-700">
+                                {formatCurrency(septicSubtotalUsd)}
+                              </div>
+                            </div>
+                            <div className="md:col-span-5 text-xs text-slate-600">
+                              Calculated volume: {septicVolumeM3.toFixed(2)} m3
+                            </div>
+                          </div>
                         )}
                       </div>
+
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600">
+                            {selectedTemporaryWorks.length} temporary work items selected
+                          </span>
+                          <span className="font-semibold text-slate-900">
+                            {formatCurrency(temporaryWorksSubtotalUsd + septicSubtotalUsd)}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  )}
+
+                    <div className="wizard-actions flex-col items-end gap-2">
+                      <div className="flex gap-3 w-full justify-end">
+                        <Button variant="secondary" onClick={goToPrevStep}>Back</Button>
+                        <Button
+                          variant="primary"
+                          onClick={goToNextStep}
+                          icon={<Sparkle size={18} />}
+                        >
+                          Continue to Final BOQ
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

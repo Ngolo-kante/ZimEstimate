@@ -101,7 +101,7 @@ const toIsoMidday = (dateString: string) => {
 interface UnifiedProcurementViewProps {
   project: Project;
   items: BOQItem[];
-  onItemsRefresh: () => void;
+  onItemsRefresh: () => Promise<void>;
   selectedItemForPurchase?: BOQItem | null;
   onClearSelectedItem?: () => void;
 }
@@ -336,7 +336,7 @@ export default function UnifiedProcurementView({
       }
       realtimeRefreshTimeoutRef.current = setTimeout(() => {
         void loadData();
-        onItemsRefresh();
+        void onItemsRefresh();
       }, 250);
     };
 
@@ -518,12 +518,16 @@ export default function UnifiedProcurementView({
       const newTotalPurchased = (currentItem?.totalPurchased || 0) + quantity;
       const estimatedQty = Number(selectedItemForPurchase.quantity) || 0;
 
-      await updateBOQItem(itemId, {
+      const { error: boqUpdateError } = await updateBOQItem(itemId, {
         actual_quantity: newTotalPurchased,
         actual_price_usd: unitPrice,
         is_purchased: newTotalPurchased >= estimatedQty,
         purchased_date: new Date().toISOString(),
       });
+
+      if (boqUpdateError) {
+        showError(boqUpdateError.message || 'Purchase was saved, but BOQ item sync failed');
+      }
 
       // Replace optimistic record with real record
       if (record) {
@@ -532,10 +536,10 @@ export default function UnifiedProcurementView({
       setOptimisticPurchase(null);
       setSavingItemId(null);
 
+      await onItemsRefresh();
       success('Purchase recorded successfully');
       setSelectedItemForPurchase(null);
       resetPurchaseForm();
-      onItemsRefresh();
     }
 
     setIsSavingPurchase(false);

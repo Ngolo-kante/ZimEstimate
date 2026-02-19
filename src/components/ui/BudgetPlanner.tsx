@@ -1,12 +1,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Calendar, TrendUp, Target, Info, WhatsappLogo, Envelope, ChatCircleText, PiggyBank, Bell, CheckCircle } from '@phosphor-icons/react';
+import { Calendar, TrendUp, Target, PiggyBank } from '@phosphor-icons/react';
 import { useCurrency } from './CurrencyToggle';
 
 export type NotificationChannel = 'sms' | 'whatsapp' | 'telegram' | 'email';
-
-type ReminderFrequency = 'daily' | 'weekly' | 'monthly';
 
 interface BudgetPlannerProps {
   totalBudgetUsd: number;
@@ -14,13 +12,6 @@ interface BudgetPlannerProps {
   targetDate?: string | null;
   onTargetDateChange?: (date: string) => void;
   criticalItemsUsd?: number;
-  onSetReminder?: (type: ReminderFrequency, amount: number, channel: NotificationChannel) => void;
-  canUseMobileReminders?: boolean;
-  defaultChannel?: NotificationChannel;
-  onRequestPhone?: (payload?: { channel?: NotificationChannel; pendingReminder?: { frequency: ReminderFrequency; amount: number } }) => void;
-  reminderActive?: boolean;
-  reminderFrequency?: ReminderFrequency | null;
-  onToggleReminder?: (active: boolean) => void;
 }
 
 type PlanMode = 'all' | 'critical' | 'custom';
@@ -31,19 +22,11 @@ export default function BudgetPlanner({
   targetDate,
   onTargetDateChange,
   criticalItemsUsd = 0,
-  onSetReminder,
-  canUseMobileReminders = true,
-  defaultChannel = 'sms',
-  onRequestPhone,
-  reminderActive = false,
-  reminderFrequency = null,
-  onToggleReminder,
 }: BudgetPlannerProps) {
   const { exchangeRate, formatPrice } = useCurrency();
   const [planMode, setPlanMode] = useState<PlanMode>('all');
   const [customAmount, setCustomAmount] = useState('');
   const [localTargetDate, setLocalTargetDate] = useState(targetDate || '');
-  const [channelOverride, setChannelOverride] = useState<NotificationChannel | null>(null);
 
   const remainingBudget = totalBudgetUsd - amountSpentUsd;
   const percentComplete = totalBudgetUsd > 0 ? (amountSpentUsd / totalBudgetUsd) * 100 : 0;
@@ -74,33 +57,6 @@ export default function BudgetPlanner({
   const handleDateChange = (date: string) => {
     setLocalTargetDate(date);
     onTargetDateChange?.(date);
-  };
-
-  const isMobileChannel = (channel: NotificationChannel) =>
-    channel === 'sms' || channel === 'whatsapp' || channel === 'telegram';
-
-  const selectedChannel = useMemo(() => {
-    const baseChannel = channelOverride ?? defaultChannel;
-    if (!canUseMobileReminders && isMobileChannel(baseChannel)) {
-      return 'email';
-    }
-    return baseChannel;
-  }, [channelOverride, defaultChannel, canUseMobileReminders]);
-
-  const handleChannelSelect = (channel: NotificationChannel) => {
-    if (isMobileChannel(channel) && !canUseMobileReminders) {
-      onRequestPhone?.({ channel });
-      return;
-    }
-    setChannelOverride(channel);
-  };
-
-  const handleReminder = (frequency: ReminderFrequency, amount: number) => {
-    if (isMobileChannel(selectedChannel) && !canUseMobileReminders) {
-      onRequestPhone?.({ channel: selectedChannel, pendingReminder: { frequency, amount } });
-      return;
-    }
-    onSetReminder?.(frequency, amount, selectedChannel);
   };
 
   return (
@@ -224,61 +180,16 @@ export default function BudgetPlanner({
                 <div className="savings-card">
                   <span className="period">Daily</span>
                   <span className="amount">{formatPrice(savingsPerDay, savingsPerDay * exchangeRate)}</span>
-                  {onSetReminder && (
-                    <button className="set-reminder-sm" onClick={() => handleReminder('daily', savingsPerDay)}>
-                      <Bell size={14} /> Set
-                    </button>
-                  )}
                 </div>
                 <div className="savings-card featured">
                   <span className="period">Weekly</span>
                   <span className="amount">{formatPrice(savingsPerWeek, savingsPerWeek * exchangeRate)}</span>
-                  {onSetReminder && (
-                    <button className="set-reminder-sm" onClick={() => handleReminder('weekly', savingsPerWeek)}>
-                      <Bell size={14} /> Set
-                    </button>
-                  )}
                 </div>
                 <div className="savings-card">
                   <span className="period">Monthly</span>
                   <span className="amount">{formatPrice(savingsPerMonth, savingsPerMonth * exchangeRate)}</span>
-                  {onSetReminder && (
-                    <button className="set-reminder-sm" onClick={() => handleReminder('monthly', savingsPerMonth)}>
-                      <Bell size={14} /> Set
-                    </button>
-                  )}
                 </div>
               </div>
-
-              <div className="channel-section">
-                <span className="channel-label">Notify via:</span>
-                <div className="channel-row">
-                  <button className={`channel-chip ${selectedChannel === 'sms' ? 'active' : ''}`} onClick={() => handleChannelSelect('sms')}>
-                    <ChatCircleText size={16} weight="fill" /> SMS
-                  </button>
-                  <button className={`channel-chip ${selectedChannel === 'whatsapp' ? 'active' : ''}`} onClick={() => handleChannelSelect('whatsapp')}>
-                    <WhatsappLogo size={16} weight="fill" /> WhatsApp
-                  </button>
-                  <button className={`channel-chip ${selectedChannel === 'email' ? 'active' : ''}`} onClick={() => handleChannelSelect('email')}>
-                    <Envelope size={16} weight="fill" /> Email
-                  </button>
-                </div>
-              </div>
-
-              {reminderFrequency && onToggleReminder && (
-                <div className={`reminder-banner ${reminderActive ? 'active' : 'inactive'}`}>
-                  <div className="banner-icon">
-                    {reminderActive ? <CheckCircle size={20} weight="fill" /> : <Info size={20} weight="fill" />}
-                  </div>
-                  <div className="banner-content">
-                    <span className="banner-title">{reminderActive ? 'Reminder Active' : 'Reminder Paused'}</span>
-                    <span className="banner-desc">{reminderActive ? `Scheduled ${reminderFrequency}` : 'Resume to stay on track'}</span>
-                  </div>
-                  <button className="toggle-switch" onClick={() => onToggleReminder(!reminderActive)}>
-                    {reminderActive ? 'Off' : 'On'}
-                  </button>
-                </div>
-              )}
             </>
           ) : (
             <div className="empty-state">

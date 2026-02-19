@@ -41,6 +41,7 @@ interface StageTabProps {
     primaryStageCategory?: BOQCategory;
     usageByItem?: Record<string, number>;
     usageTrackingEnabled?: boolean;
+    showTasks?: boolean;
 }
 
 const categoryLabels: Record<BOQCategory, string> = {
@@ -66,6 +67,7 @@ export default function StageTab({
     primaryStageCategory,
     usageByItem,
     usageTrackingEnabled = false,
+    showTasks = true,
 }: StageTabProps) {
     const { success, error: showError } = useToast();
     const [budgetStats, setBudgetStats] = useState<StageBudgetStats>({
@@ -265,16 +267,17 @@ export default function StageTab({
                     customTitle={categoryLabels[stage.boq_category]}
                 />
 
-                {/* Admin & Compliance Tasks */}
-                <div className="tasks-section">
-                    <StageTaskList
-                        tasks={stage.tasks}
-                        onAddTask={handleAddTask}
-                        onToggleTask={handleToggleTask}
-                        onUpdateTask={handleUpdateTask}
-                        onDeleteTask={handleDeleteTask}
-                    />
-                </div>
+                {showTasks && (
+                    <div className="tasks-section">
+                        <StageTaskList
+                            tasks={stage.tasks}
+                            onAddTask={handleAddTask}
+                            onToggleTask={handleToggleTask}
+                            onUpdateTask={handleUpdateTask}
+                            onDeleteTask={handleDeleteTask}
+                        />
+                    </div>
+                )}
 
                 {/* Bill of Quantities for this stage */}
                 <div className="boq-section">

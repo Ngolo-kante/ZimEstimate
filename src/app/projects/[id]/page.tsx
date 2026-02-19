@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import StageTab from '@/components/projects/StageTab';
 import DocumentsTab from '@/components/projects/DocumentsTab';
+import ComplianceTrackerTab from '@/components/projects/ComplianceTrackerTab';
 import ShareModal from '@/components/projects/ShareModal';
 import { RunningTotalBar } from '@/components/ui/RunningTotalBar';
 import { StageProgressCards } from '@/components/projects/StageProgressCards';
@@ -44,6 +45,8 @@ import { supabase } from '@/lib/supabase';
 import { clearCreatedProjectSnapshot, getCreatedProjectSnapshot } from '@/lib/projectCreationCache';
 import { materials, getBestPrice } from '@/lib/materials';
 import { LOCATION_PROCEDURE_RULES } from '@/lib/buildFlowRules';
+import type { LocationTypeRule } from '@/lib/buildFlowRules';
+import { getComplianceRequirementStatus, getStageRequirements } from '@/lib/compliance';
 import {
     getProjectStages,
     getStageUsageData,
@@ -61,11 +64,13 @@ import {
     ArrowLeft,
     MapPin,
     Warning,
+    WarningCircle,
     List,
     Wallet,
     TrendUp,
     CheckCircle,
     PencilSimple,
+    X,
 } from '@phosphor-icons/react';
 import { ProjectDetailSkeleton } from '@/components/ui/Skeleton';
 
@@ -81,7 +86,6 @@ const categoryLabels: Record<BOQCategory, string> = {
 };
 
 const CHECKLIST_TASK_PREFIX = 'boq_checklist:';
-const CERTIFICATE_TASK_PREFIX = 'boq_certificate:';
 const GEOTECH_DOC_TAG = 'geotech_report';
 
 const CERTIFICATE_ITEMS = [
@@ -89,6 +93,12 @@ const CERTIFICATE_ITEMS = [
     { id: 'slab_foundation_certificate', label: 'Slab/Foundation Certificate' },
     { id: 'completion_occupation_certificate', label: 'Completion/Occupation Certificate' },
 ] as const;
+
+const CERTIFICATE_STATUS_PRIORITY: Record<'pending' | 'in_progress' | 'done', number> = {
+    pending: 0,
+    in_progress: 1,
+    done: 2,
+};
 
 const SOIL_LABELS: Record<string, string> = {
     sandy: 'Sandy',
@@ -104,11 +114,17 @@ const SLOPE_LABELS: Record<string, string> = {
     steep: 'Steep',
 };
 
-const parseCertificateStatus = (marker?: string | null): 'pending' | 'in_progress' | 'done' => {
-    if (!marker) return 'pending';
-    if (marker.includes('|status:done')) return 'done';
-    if (marker.includes('|status:in_progress')) return 'in_progress';
-    return 'pending';
+const LOCATION_TYPE_LABELS: Record<LocationTypeRule, string> = {
+    urban: 'Urban',
+    'peri-urban': 'Peri-Urban',
+    rural: 'Rural',
+};
+
+const parseProjectLocationType = (location?: string | null): LocationTypeRule | null => {
+    if (!location) return null;
+    const [prefix] = location.split(' — ');
+    const entry = Object.entries(LOCATION_TYPE_LABELS).find(([, label]) => label === prefix.trim());
+    return entry ? (entry[0] as LocationTypeRule) : null;
 };
 
 type PriceUpdate = {
@@ -157,12 +173,14 @@ function ProjectDetailContent() {
     const priceNotificationSentRef = useRef(false);
     const projectRealtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const stagesRealtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const materialRealtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [showCelebration, setShowCelebration] = useState(false);
     const [celebrationData, setCelebrationData] = useState<{
         title: string;
         message: string;
         stats?: { label: string; value: string; highlight?: boolean }[];
     } | null>(null);
+    const [isComplianceBannerDismissed, setIsComplianceBannerDismissed] = useState(false);
 
     // View state
     const [activeView, setActiveView] = useState<ProjectView>('overview');
@@ -330,12 +348,14 @@ function ProjectDetailContent() {
             {}
         );
 
-        (substructureStage?.tasks || []).forEach((task) => {
-            const marker = task.verification_note || '';
-            if (!marker.startsWith(CERTIFICATE_TASK_PREFIX)) return;
-            const certificateId = marker.replace(CERTIFICATE_TASK_PREFIX, '').split('|')[0];
-            if (!(certificateId in certificateState)) return;
-            certificateState[certificateId] = task.is_completed ? 'done' : parseCertificateStatus(marker);
+        stages.forEach((stage) => {
+            CERTIFICATE_ITEMS.forEach((certificate) => {
+                const nextStatus = getComplianceRequirementStatus(stage.tasks, certificate.id);
+                const currentStatus = certificateState[certificate.id];
+                if (CERTIFICATE_STATUS_PRIORITY[nextStatus] > CERTIFICATE_STATUS_PRIORITY[currentStatus]) {
+                    certificateState[certificate.id] = nextStatus;
+                }
+            });
         });
 
         const completed = Object.values(certificateState).filter((status) => status === 'done').length;
@@ -344,7 +364,7 @@ function ProjectDetailContent() {
             total: CERTIFICATE_ITEMS.length,
             state: certificateState,
         };
-    }, [substructureStage?.tasks]);
+    }, [stages]);
 
     const applyStages = useCallback((nextStages: ProjectStageWithTasks[], forcePrimaryStage = false) => {
         setStages(nextStages);
@@ -447,7 +467,13 @@ function ProjectDetailContent() {
 
     useEffect(() => {
         if (!profile) return;
-        if (!profile.phone_number && preferredReminderChannel !== 'email') {
+        const phoneRequired = preferredReminderChannel === 'sms' || preferredReminderChannel === 'whatsapp';
+        const telegramRequired = preferredReminderChannel === 'telegram';
+        const missingContact =
+            (phoneRequired && !profile.phone_number)
+            || (telegramRequired && !profile.telegram_chat_id);
+
+        if (missingContact) {
             setPreferredReminderChannel('email');
         }
     }, [profile, preferredReminderChannel]);
@@ -544,6 +570,27 @@ function ProjectDetailContent() {
         setUsageByStage(nextUsage);
     }, [projectId, stages]);
 
+    const refreshItems = useCallback(async () => {
+        // Refresh both items and purchases for instant updates across all views
+        const [itemsResult, purchasesResult] = await Promise.all([
+            getBOQItems(projectId),
+            getPurchaseRecords(projectId),
+        ]);
+        if (!itemsResult.error) {
+            setItems(itemsResult.items);
+        }
+        if (purchasesResult.records) {
+            setPurchases(purchasesResult.records);
+        }
+    }, [projectId]);
+
+    const refreshProjectMaterialState = useCallback(async () => {
+        await refreshItems();
+        if (project?.usage_tracking_enabled) {
+            await loadUsageData();
+        }
+    }, [loadUsageData, project?.usage_tracking_enabled, refreshItems]);
+
     // Realtime sync for project detail data
     useEffect(() => {
         const shouldRefreshUsage =
@@ -572,6 +619,17 @@ function ProjectDetailContent() {
                     void loadUsageData();
                 }
             }, 250);
+        };
+
+        const scheduleUsageRefresh = () => {
+            if (materialRealtimeTimeoutRef.current) {
+                clearTimeout(materialRealtimeTimeoutRef.current);
+            }
+            materialRealtimeTimeoutRef.current = setTimeout(() => {
+                if (shouldRefreshUsage) {
+                    void loadUsageData();
+                }
+            }, 200);
         };
 
         const stageIds = new Set(stages.map((stage) => stage.id));
@@ -640,6 +698,30 @@ function ProjectDetailContent() {
                     scheduleProjectRefresh();
                 }
             )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'purchase_records',
+                    filter: `project_id=eq.${projectId}`,
+                },
+                () => {
+                    scheduleProjectRefresh();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'material_usage',
+                    filter: `project_id=eq.${projectId}`,
+                },
+                () => {
+                    scheduleUsageRefresh();
+                }
+            )
             .subscribe();
 
         return () => {
@@ -651,6 +733,10 @@ function ProjectDetailContent() {
                 clearTimeout(stagesRealtimeTimeoutRef.current);
                 stagesRealtimeTimeoutRef.current = null;
             }
+            if (materialRealtimeTimeoutRef.current) {
+                clearTimeout(materialRealtimeTimeoutRef.current);
+                materialRealtimeTimeoutRef.current = null;
+            }
             void supabase.removeChannel(channel);
         };
     }, [activeView, loadProjectData, loadUsageData, project?.usage_tracking_enabled, projectId, refreshStages, stages]);
@@ -660,6 +746,11 @@ function ProjectDetailContent() {
         if (activeView !== 'procurement' && activeView !== 'boq' && activeView !== 'usage') return;
         loadUsageData();
     }, [activeView, project?.usage_tracking_enabled, loadUsageData]);
+
+    useEffect(() => {
+        if (activeView !== 'procurement' && activeView !== 'boq' && activeView !== 'usage') return;
+        void refreshProjectMaterialState();
+    }, [activeView, refreshProjectMaterialState]);
 
     useEffect(() => {
         if (!project || items.length === 0) return;
@@ -831,10 +922,14 @@ function ProjectDetailContent() {
             return;
         }
 
-        const isMobileChannel = channel === 'sms' || channel === 'whatsapp' || channel === 'telegram';
+        const isPhoneChannel = channel === 'sms' || channel === 'whatsapp';
         const effectivePhone = phoneOverride || profile?.phone_number || '';
-        if (isMobileChannel && !effectivePhone) {
+        if (isPhoneChannel && !effectivePhone) {
             showError('Add a phone number to schedule mobile reminders.');
+            return;
+        }
+        if (channel === 'telegram' && !profile?.telegram_chat_id) {
+            showError('Add your Telegram chat ID in Account Settings to schedule Telegram reminders.');
             return;
         }
 
@@ -961,19 +1056,43 @@ function ProjectDetailContent() {
         }
     };
 
-    const refreshItems = useCallback(async () => {
-        // Refresh both items and purchases for instant updates across all views
-        const [itemsResult, purchasesResult] = await Promise.all([
-            getBOQItems(projectId),
-            getPurchaseRecords(projectId),
-        ]);
-        if (!itemsResult.error) {
-            setItems(itemsResult.items);
+    const currentStage = stages.find(s => s.boq_category === activeTab);
+    const hasLabor = project?.labor_preference === 'with_labor';
+    const projectLocationType = parseProjectLocationType(project?.location);
+    const activeStageComplianceWarnings = useMemo(() => {
+        if (!currentStage) return [] as string[];
+        const warnings: string[] = [];
+
+        const requirements = getStageRequirements(currentStage.boq_category).filter((requirement) => requirement.required);
+        requirements.forEach((requirement) => {
+            const requirementStage = stages.find((stage) => stage.boq_category === requirement.stage);
+            const status = getComplianceRequirementStatus(requirementStage?.tasks || [], requirement.id);
+            if (status !== 'done') {
+                warnings.push(`${requirement.label} (${categoryLabels[requirement.stage]})`);
+            }
+        });
+
+        if (currentStage.boq_category === 'substructure' && projectLocationType) {
+            const requiredRules = LOCATION_PROCEDURE_RULES.filter(
+                (rule) => rule.statusByLocation[projectLocationType] === 'required'
+            );
+            requiredRules.forEach((rule) => {
+                const marker = `${CHECKLIST_TASK_PREFIX}${rule.id}`;
+                const checklistTask = (substructureStage?.tasks || []).find(
+                    (task) => (task.verification_note || '').startsWith(marker)
+                );
+                if (!checklistTask?.is_completed) {
+                    warnings.push(`${rule.label} (required for ${LOCATION_TYPE_LABELS[projectLocationType]})`);
+                }
+            });
         }
-        if (purchasesResult.records) {
-            setPurchases(purchasesResult.records);
-        }
-    }, [projectId]);
+
+        return warnings;
+    }, [currentStage, stages, projectLocationType, substructureStage?.tasks]);
+
+    useEffect(() => {
+        setIsComplianceBannerDismissed(false);
+    }, [activeTab, activeStageComplianceWarnings.length]);
 
     // Loading state - skeleton layout
     if (isLoading) {
@@ -1030,8 +1149,8 @@ function ProjectDetailContent() {
         setItems([...items, item]);
     };
 
-    const handleUsageRecorded = () => {
-        loadUsageData();
+    const handleUsageRecorded = async () => {
+        await refreshProjectMaterialState();
     };
 
     const handleLogPurchase = (item: BOQItem) => {
@@ -1043,10 +1162,6 @@ function ProjectDetailContent() {
         setSelectedItemForUsage(item);
         setActiveView('usage');
     };
-
-    // Get current stage
-    const currentStage = stages.find(s => s.boq_category === activeTab);
-    const hasLabor = project.labor_preference === 'with_labor';
 
     const statusBadgeStyles: Record<string, { background: string; color: string }> = {
         active: { background: 'rgba(22, 163, 74, 0.12)', color: 'var(--color-emerald)' },
@@ -1066,6 +1181,10 @@ function ProjectDetailContent() {
         boq: {
             title: 'Bill of Quantities',
             description: 'Manage stage timelines, tasks, and material line items in one place.',
+        },
+        compliance: {
+            title: 'Compliance Tracker',
+            description: 'Track certificates, approvals, admin tasks, and set reminders by stage.',
         },
         procurement: {
             title: 'Procurement Hub',
@@ -1092,7 +1211,12 @@ function ProjectDetailContent() {
                 <SidebarSpine
                     project={project}
                     activeView={activeView}
-                    onViewChange={setActiveView}
+                    onViewChange={(view) => {
+                        setActiveView(view);
+                        if (view === 'procurement' || view === 'boq' || view === 'usage') {
+                            void refreshProjectMaterialState();
+                        }
+                    }}
                     isMobileOpen={isMobileSidebarOpen}
                     onMobileClose={() => setIsMobileSidebarOpen(false)}
                 />
@@ -1333,9 +1457,8 @@ function ProjectDetailContent() {
                                             {checklistEntries.slice(0, 3).map((entry, index) => (
                                                 <div key={`${entry.id}-${index}`} className="flex justify-between items-center text-xs">
                                                     <span className="text-secondary">{entry.label}</span>
-                                                    <span className={`px-2 py-0.5 rounded-full font-medium ${
-                                                        entry.completed ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
-                                                    }`}>
+                                                    <span className={`px-2 py-0.5 rounded-full font-medium ${entry.completed ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
+                                                        }`}>
                                                         {entry.completed ? 'Done' : 'Pending'}
                                                     </span>
                                                 </div>
@@ -1425,6 +1548,43 @@ function ProjectDetailContent() {
                     {/* BOQ View */}
                     {activeView === 'boq' && (
                         <div className="view-panel space-y-6 max-w-full mx-auto reveal">
+                            {activeStageComplianceWarnings.length > 0 && !isComplianceBannerDismissed && (
+                                <div className="compliance-warning-banner" role="alert">
+                                    <div className="compliance-warning-content">
+                                        <span className="compliance-warning-icon" aria-hidden="true">
+                                            <WarningCircle size={18} weight="fill" />
+                                        </span>
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-amber-900">Missing stage approvals</h4>
+                                            <p className="text-xs text-amber-800 mt-1">
+                                                You can continue building, but these approvals are still pending.
+                                            </p>
+                                            <ul className="mt-2 list-disc pl-5 text-xs text-amber-800 space-y-1">
+                                                {activeStageComplianceWarnings.slice(0, 6).map((issue) => (
+                                                    <li key={issue}>{issue}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div className="compliance-warning-actions">
+                                        <Button
+                                            size="sm"
+                                            variant="secondary"
+                                            onClick={() => setActiveView('compliance')}
+                                        >
+                                            Open Compliance Tracker
+                                        </Button>
+                                        <button
+                                            type="button"
+                                            className="compliance-warning-dismiss"
+                                            onClick={() => setIsComplianceBannerDismissed(true)}
+                                            aria-label="Dismiss compliance warning"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                             {currentStage && (
                                 <StageTab
                                     stage={currentStage}
@@ -1440,8 +1600,26 @@ function ProjectDetailContent() {
                                     showLabor={hasLabor}
                                     usageByItem={usageByItem}
                                     usageTrackingEnabled={project.usage_tracking_enabled}
+                                    showTasks={false}
                                 />
                             )}
+                        </div>
+                    )}
+
+                    {/* COMPLIANCE View */}
+                    {activeView === 'compliance' && (
+                        <div className="view-panel space-y-6 reveal">
+                            <ComplianceTrackerTab
+                                projectId={projectId}
+                                projectName={project.name}
+                                stages={stages}
+                                onStageUpdate={handleStageUpdate}
+                                phoneNumber={profile?.phone_number}
+                                telegramChatId={profile?.telegram_chat_id}
+                                onRequestPhone={(payload) => handleRequestPhone({ channel: payload?.channel })}
+                                preferredChannel={preferredReminderChannel}
+                                onNavigateToSettings={() => setActiveView('settings')}
+                            />
                         </div>
                     )}
 
@@ -1451,7 +1629,7 @@ function ProjectDetailContent() {
                             <UnifiedProcurementView
                                 project={project}
                                 items={items}
-                                onItemsRefresh={refreshItems}
+                                onItemsRefresh={refreshProjectMaterialState}
                                 selectedItemForPurchase={selectedItemForPurchase}
                                 onClearSelectedItem={() => setSelectedItemForPurchase(null)}
                             />
@@ -1471,6 +1649,8 @@ function ProjectDetailContent() {
                                     canUseMobileReminders={Boolean(profile?.phone_number)}
                                     selectedItemForUsage={selectedItemForUsage}
                                     onClearSelectedItem={() => setSelectedItemForUsage(null)}
+                                    preferredChannel={preferredReminderChannel}
+                                    onNavigateToSettings={() => setActiveView('settings')}
                                 />
                             ) : (
                                 <div className="bg-surface border border-border rounded-xl p-6 shadow-card">
@@ -1504,13 +1684,6 @@ function ProjectDetailContent() {
                                 amountSpentUsd={purchaseStats.actualSpent}
                                 targetDate={project.target_purchase_date}
                                 onTargetDateChange={handleSavingsTargetDateChange}
-                                onSetReminder={handleSavingsReminder}
-                                canUseMobileReminders={Boolean(profile?.phone_number)}
-                                defaultChannel={preferredReminderChannel}
-                                onRequestPhone={handleRequestPhone}
-                                reminderActive={Boolean(savingsReminder?.is_active)}
-                                reminderFrequency={(savingsReminder?.frequency as 'daily' | 'weekly' | 'monthly' | null) ?? null}
-                                onToggleReminder={handleToggleSavingsReminder}
                             />
                         </div>
                     )}
@@ -1521,6 +1694,15 @@ function ProjectDetailContent() {
                             <ProjectSettings
                                 project={project}
                                 onUpdate={handleProjectUpdate}
+                                onSetReminder={handleSavingsReminder}
+                                canUseMobileReminders={Boolean(profile?.phone_number)}
+                                defaultReminderChannel={preferredReminderChannel}
+                                onRequestPhone={handleRequestPhone}
+                                reminderActive={Boolean(savingsReminder?.is_active)}
+                                reminderFrequency={(savingsReminder?.frequency as 'daily' | 'weekly' | 'monthly' | null) ?? null}
+                                onToggleReminder={handleToggleSavingsReminder}
+                                defaultReminderAmountUsd={Math.max(purchaseStats.estimatedTotal - purchaseStats.actualSpent, 0)}
+                                onReminderChannelChange={setPreferredReminderChannel}
                             />
                         </div>
                     )}
@@ -1754,6 +1936,62 @@ function ProjectDetailContent() {
                         box-shadow var(--dashboard-medium) var(--dashboard-ease);
                 }
 
+                .compliance-warning-banner {
+                    border: 1px solid #fcd34d;
+                    background: #fffbeb;
+                    border-radius: 14px;
+                    padding: 14px 16px;
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: space-between;
+                    gap: 12px;
+                }
+
+                .compliance-warning-content {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 10px;
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .compliance-warning-icon {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 999px;
+                    background: #fef3c7;
+                    color: #b45309;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                    margin-top: 1px;
+                }
+
+                .compliance-warning-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    flex-shrink: 0;
+                }
+
+                .compliance-warning-dismiss {
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 8px;
+                    border: 1px solid #fcd34d;
+                    background: #fff;
+                    color: #92400e;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                }
+
+                .compliance-warning-dismiss:hover {
+                    background: #fef3c7;
+                }
+
                 .overview-view {
                     padding: 8px 2px;
                 }
@@ -1905,6 +2143,15 @@ function ProjectDetailContent() {
 
                     .view-panel {
                         border-radius: 18px;
+                    }
+
+                    .compliance-warning-banner {
+                        flex-direction: column;
+                    }
+
+                    .compliance-warning-actions {
+                        width: 100%;
+                        justify-content: space-between;
                     }
 
                     .next-step-item {

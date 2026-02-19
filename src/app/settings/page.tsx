@@ -21,7 +21,8 @@ import {
     WarningCircle,
     Bell,
     WhatsappLogo,
-    DeviceMobile
+    DeviceMobile,
+    PaperPlaneTilt
 } from '@phosphor-icons/react';
 import Link from 'next/link';
 
@@ -32,6 +33,7 @@ function SettingsContent() {
     // Profile form state
     const [fullName, setFullName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
+    const [telegramChatId, setTelegramChatId] = useState('');
     const [preferredCurrency, setPreferredCurrency] = useState<Currency>('USD');
     const [isSaving, setIsSaving] = useState(false);
 
@@ -57,6 +59,7 @@ function SettingsContent() {
         if (profile) {
             setFullName(profile.full_name || '');
             setPhoneNumber(profile.phone_number || '');
+            setTelegramChatId(profile.telegram_chat_id || '');
             setPreferredCurrency(profile.preferred_currency || 'USD');
             setNotifyEmail(profile.notify_email ?? true);
             setNotifyWhatsapp(profile.notify_whatsapp ?? false);
@@ -82,6 +85,7 @@ function SettingsContent() {
         const { error } = await updateProfile({
             full_name: fullName,
             phone_number: phoneNumber || null,
+            telegram_chat_id: telegramChatId || null,
             preferred_currency: preferredCurrency,
         });
 
@@ -255,6 +259,20 @@ function SettingsContent() {
                                         />
                                     </div>
                                 </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Telegram Chat ID (Optional)</label>
+                                <div className="input-box">
+                                    <PaperPlaneTilt size={18} />
+                                    <input
+                                        type="text"
+                                        value={telegramChatId}
+                                        onChange={(e) => setTelegramChatId(e.target.value)}
+                                        placeholder="e.g. 123456789"
+                                    />
+                                </div>
+                                <p className="field-hint">Needed only for Telegram reminders. Use Telegram bot <strong>@userinfobot</strong> to get your chat ID.</p>
                             </div>
 
                             <div className="card-actions">
@@ -708,6 +726,13 @@ function SettingsContent() {
                 .input-box input:disabled {
                     color: #64748b;
                     cursor: not-allowed;
+                }
+
+                .field-hint {
+                    margin: 8px 0 0;
+                    font-size: 0.8rem;
+                    color: #64748b;
+                    line-height: 1.45;
                 }
 
                 .badge {

@@ -1,22 +1,57 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Project, BOQCategory } from '@/lib/database.types';
 import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { updateProject } from '@/lib/services/projects';
+import type { NotificationChannel } from '@/components/ui/BudgetPlanner';
 import {
     MapPin,
     HouseLine,
     FloppyDisk,
     Check,
-    EyeSlash
+    EyeSlash,
+    BellRinging,
+    ChatCircleText,
+    WhatsappLogo,
+    EnvelopeSimple,
+    Gear,
+    PaperPlaneTilt,
+    Package,
+    CurrencyDollar,
+    TrendUp,
+    ListChecks,
+    CalendarCheck,
+    ShieldCheck,
+    CaretDown,
+    CaretUp,
 } from '@phosphor-icons/react';
+
+import '@/styles/project-settings.css';
+
+/* ================ TYPES ================ */
 
 interface ProjectSettingsProps {
     project: Project;
     onUpdate: (updatedProject: Project) => void;
+    onSetReminder?: (type: ReminderFrequency, amount: number, channel: NotificationChannel) => void;
+    canUseMobileReminders?: boolean;
+    defaultReminderChannel?: NotificationChannel;
+    onRequestPhone?: (payload?: {
+        channel?: NotificationChannel;
+        pendingReminder?: { frequency: ReminderFrequency; amount: number };
+    }) => void;
+    reminderActive?: boolean;
+    reminderFrequency?: ReminderFrequency | null;
+    onToggleReminder?: (active: boolean) => void;
+    defaultReminderAmountUsd?: number;
+    onReminderChannelChange?: (channel: NotificationChannel) => void;
 }
+
+type ReminderFrequency = 'daily' | 'weekly' | 'monthly';
+
+/* ================ CONSTANTS ================ */
 
 const STAGE_CATEGORIES: { id: BOQCategory; label: string; description: string }[] = [
     { id: 'substructure', label: 'Site Preparation & Foundation', description: 'Foundation work, excavation, and footing.' },
@@ -26,53 +61,378 @@ const STAGE_CATEGORIES: { id: BOQCategory; label: string; description: string }[
     { id: 'exterior', label: 'External Work', description: 'Landscaping, paving, and boundary walls.' },
 ];
 
-export default function ProjectSettings({ project, onUpdate }: ProjectSettingsProps) {
+const CHANNEL_OPTIONS: { id: NotificationChannel; label: string; icon: React.ReactNode }[] = [
+    { id: 'email', label: 'Email', icon: <EnvelopeSimple size={16} weight="duotone" /> },
+    { id: 'sms', label: 'SMS', icon: <ChatCircleText size={16} weight="duotone" /> },
+    { id: 'whatsapp', label: 'WhatsApp', icon: <WhatsappLogo size={16} weight="duotone" /> },
+    { id: 'telegram', label: 'Telegram', icon: <PaperPlaneTilt size={16} weight="duotone" /> },
+];
+
+const FREQUENCY_OPTIONS: { id: ReminderFrequency; label: string }[] = [
+    { id: 'daily', label: 'Daily' },
+    { id: 'weekly', label: 'Weekly' },
+    { id: 'monthly', label: 'Monthly' },
+];
+
+/* ================ NOTIFICATION ALERT DEFINITIONS ================ */
+
+interface AlertConfig {
+    id: string;
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+    color: string;              // CSS color for the icon badge
+    hasThreshold?: boolean;     // show threshold input
+    thresholdLabel?: string;
+    thresholdUnit?: string;
+    thresholdMin?: number;
+    thresholdMax?: number;
+    hasFrequency?: boolean;     // show frequency selector
+    hasAmount?: boolean;        // show amount input (budget)
+}
+
+const ALERT_DEFINITIONS: AlertConfig[] = [
+    {
+        id: 'low_stock',
+        icon: <Package size={20} weight="duotone" />,
+        title: 'Low Stock Alerts',
+        description: 'Get notified when remaining material drops below a set threshold.',
+        color: 'var(--color-amber)',
+        hasThreshold: true,
+        thresholdLabel: 'Alert when stock falls below',
+        thresholdUnit: '%',
+        thresholdMin: 1,
+        thresholdMax: 100,
+    },
+    {
+        id: 'price_change',
+        icon: <TrendUp size={20} weight="duotone" />,
+        title: 'Price Change Alerts',
+        description: 'Be alerted when supplier prices change significantly on your BOQ items.',
+        color: 'var(--color-danger)',
+        hasThreshold: true,
+        thresholdLabel: 'Alert when price changes by more than',
+        thresholdUnit: '%',
+        thresholdMin: 1,
+        thresholdMax: 100,
+    },
+    {
+        id: 'budget_reminder',
+        icon: <CurrencyDollar size={20} weight="duotone" />,
+        title: 'Budget Reminders',
+        description: 'Periodic reminders to help you stay on track with project savings targets.',
+        color: 'var(--color-accent)',
+        hasFrequency: true,
+        hasAmount: true,
+    },
+    {
+        id: 'upcoming_stage',
+        icon: <CalendarCheck size={20} weight="duotone" />,
+        title: 'Upcoming Stage Reminders',
+        description: 'Receive reminders before a construction stage is due to begin.',
+        color: 'var(--color-clay)',
+        hasFrequency: true,
+    },
+    {
+        id: 'admin_tasks',
+        icon: <ListChecks size={20} weight="duotone" />,
+        title: 'Admin Task Reminders',
+        description: 'Regular nudges for pending admin and compliance tasks on your project.',
+        color: 'var(--color-emerald)',
+        hasFrequency: true,
+    },
+    {
+        id: 'compliance',
+        icon: <ShieldCheck size={20} weight="duotone" />,
+        title: 'Compliance Deadline Alerts',
+        description: 'Alerts for upcoming certificate and approval deadlines.',
+        color: '#7C3AED',
+        hasFrequency: true,
+    },
+];
+
+/* ================ SUB-COMPONENT: AlertRow ================ */
+
+interface AlertRowState {
+    enabled: boolean;
+    threshold: number;
+    frequency: ReminderFrequency;
+    amount: string;
+}
+
+function AlertRow({
+    config,
+    state,
+    onChange,
+    expanded,
+    onToggleExpand,
+}: {
+    config: AlertConfig;
+    state: AlertRowState;
+    onChange: (updates: Partial<AlertRowState>) => void;
+    expanded: boolean;
+    onToggleExpand: () => void;
+}) {
+    return (
+        <div className={`alert-row ${state.enabled ? 'enabled' : ''}`}>
+            <div
+                className="alert-row-header"
+                onClick={onToggleExpand}
+            >
+                <div className="alert-row-left">
+                    <div
+                        className="alert-icon-badge"
+                        style={{ background: `color-mix(in srgb, ${config.color} 12%, transparent)`, color: config.color }}
+                    >
+                        {config.icon}
+                    </div>
+                    <div className="alert-row-text">
+                        <h4>{config.title}</h4>
+                        <p>{config.description}</p>
+                    </div>
+                </div>
+                <div className="alert-row-right">
+                    {state.enabled && (
+                        <span className="alert-active-dot" />
+                    )}
+                    <div
+                        className={`switch-btn ${state.enabled ? 'active' : ''}`}
+                        role="presentation"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onChange({ enabled: !state.enabled });
+                        }}
+                    >
+                        <span className="switch-slider" />
+                    </div>
+                    <span className="alert-caret">
+                        {expanded ? <CaretUp size={14} /> : <CaretDown size={14} />}
+                    </span>
+                </div>
+            </div>
+
+            {expanded && state.enabled && (
+                <div className="alert-row-body">
+                    {/* Threshold input */}
+                    {config.hasThreshold && (
+                        <div className="alert-config-field">
+                            <label className="form-label">{config.thresholdLabel}</label>
+                            <div className="threshold-input-row">
+                                <input
+                                    className="form-input compact"
+                                    type="number"
+                                    min={config.thresholdMin}
+                                    max={config.thresholdMax}
+                                    value={state.threshold}
+                                    onChange={(e) => onChange({ threshold: Number(e.target.value) })}
+                                />
+                                <span className="threshold-unit">{config.thresholdUnit}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Amount input (for budget) */}
+                    {config.hasAmount && (
+                        <div className="alert-config-field">
+                            <label className="form-label">Reminder Amount (USD)</label>
+                            <div className="form-input-wrapper" style={{ maxWidth: '200px' }}>
+                                <span className="currency-prefix">$</span>
+                                <input
+                                    className="form-input compact"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={state.amount}
+                                    onChange={(e) => onChange({ amount: e.target.value })}
+                                    style={{ paddingLeft: '26px' }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Frequency selector */}
+                    {config.hasFrequency && (
+                        <div className="alert-config-field">
+                            <label className="form-label">Frequency</label>
+                            <div className="frequency-selector">
+                                {FREQUENCY_OPTIONS.map((opt) => (
+                                    <button
+                                        key={opt.id}
+                                        type="button"
+                                        className={`freq-chip ${state.frequency === opt.id ? 'selected' : ''}`}
+                                        onClick={() => onChange({ frequency: opt.id })}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+/* ================ MAIN COMPONENT ================ */
+
+export default function ProjectSettings({
+    project,
+    onUpdate,
+    onSetReminder,
+    canUseMobileReminders = true,
+    defaultReminderChannel = 'email',
+    onRequestPhone,
+    reminderActive = false,
+    reminderFrequency = null,
+    onToggleReminder,
+    defaultReminderAmountUsd = 0,
+    onReminderChannelChange,
+}: ProjectSettingsProps) {
     const { success, error: showError } = useToast();
     const [isSaving, setIsSaving] = useState(false);
 
-    // Form State
+    // --- General Settings State ---
     const [name, setName] = useState(project.name);
     const [location, setLocation] = useState(project.location || '');
     const [selectedStages, setSelectedStages] = useState<string[]>(
         project.selected_stages || STAGE_CATEGORIES.map(s => s.id)
     );
-    const [lowStockAlertsEnabled, setLowStockAlertsEnabled] = useState(
-        project.usage_low_stock_alert_enabled ?? false
-    );
-    const [lowStockThreshold, setLowStockThreshold] = useState(
-        project.usage_low_stock_threshold ?? 20
-    );
 
+    // --- Notification Centre State ---
+    const [selectedChannel, setSelectedChannel] = useState<NotificationChannel>(defaultReminderChannel);
+    const [expandedAlerts, setExpandedAlerts] = useState<Set<string>>(new Set(['low_stock', 'budget_reminder']));
+    const [alertStates, setAlertStates] = useState<Record<string, AlertRowState>>(() => ({
+        low_stock: {
+            enabled: project.usage_low_stock_alert_enabled ?? false,
+            threshold: project.usage_low_stock_threshold ?? 20,
+            frequency: 'weekly',
+            amount: '0',
+        },
+        price_change: {
+            enabled: false,
+            threshold: 10,
+            frequency: 'daily',
+            amount: '0',
+        },
+        budget_reminder: {
+            enabled: reminderActive,
+            threshold: 0,
+            frequency: reminderFrequency ?? 'weekly',
+            amount: String(Math.max(defaultReminderAmountUsd, 0).toFixed(2)),
+        },
+        upcoming_stage: {
+            enabled: false,
+            threshold: 0,
+            frequency: 'weekly',
+            amount: '0',
+        },
+        admin_tasks: {
+            enabled: false,
+            threshold: 0,
+            frequency: 'daily',
+            amount: '0',
+        },
+        compliance: {
+            enabled: false,
+            threshold: 0,
+            frequency: 'weekly',
+            amount: '0',
+        },
+    }));
+
+    useEffect(() => {
+        setSelectedChannel(defaultReminderChannel);
+    }, [defaultReminderChannel]);
+
+    useEffect(() => {
+        setAlertStates(prev => ({
+            ...prev,
+            budget_reminder: {
+                ...prev.budget_reminder,
+                enabled: reminderActive,
+                frequency: reminderFrequency ?? prev.budget_reminder.frequency,
+                amount: String(Math.max(defaultReminderAmountUsd, 0).toFixed(2)),
+            },
+        }));
+    }, [reminderActive, reminderFrequency, defaultReminderAmountUsd]);
+
+    // --- Handlers ---
     const handleStageToggle = (stageId: string) => {
-        if (selectedStages.includes(stageId)) {
-            setSelectedStages(selectedStages.filter(id => id !== stageId));
-        } else {
-            setSelectedStages([...selectedStages, stageId]);
-        }
+        setSelectedStages(prev =>
+            prev.includes(stageId) ? prev.filter(id => id !== stageId) : [...prev, stageId]
+        );
     };
+
+    const isMobileChannel = (channel: NotificationChannel) =>
+        channel === 'sms' || channel === 'whatsapp';
+
+    const handleChannelSelect = (channel: NotificationChannel) => {
+        if (isMobileChannel(channel) && !canUseMobileReminders) {
+            onRequestPhone?.({ channel });
+            return;
+        }
+        setSelectedChannel(channel);
+        onReminderChannelChange?.(channel);
+    };
+
+    const toggleExpand = useCallback((id: string) => {
+        setExpandedAlerts(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    }, []);
+
+    const updateAlertState = useCallback((id: string, updates: Partial<AlertRowState>) => {
+        setAlertStates(prev => ({
+            ...prev,
+            [id]: { ...prev[id], ...updates },
+        }));
+    }, []);
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            const lowStockState = alertStates.low_stock;
+            const budgetState = alertStates.budget_reminder;
+
             const updates = {
                 name,
                 location,
                 scope: project.scope,
                 selected_stages: selectedStages,
-                usage_low_stock_alert_enabled: lowStockAlertsEnabled,
-                usage_low_stock_threshold: lowStockThreshold,
+                usage_low_stock_alert_enabled: lowStockState.enabled,
+                usage_low_stock_threshold: lowStockState.threshold,
             };
 
             const { project: updated, error } = await updateProject(project.id, updates);
-
             if (error) throw error;
 
             if (updated) {
-                // Merge updates into existing project object locally to avoid full refetch requirement
-                const updatedProject = { ...project, ...updates };
-                onUpdate(updatedProject);
-                success('Project configurations saved');
+                onUpdate({ ...project, ...updates });
             }
+
+            // Handle budget reminder scheduling
+            if (budgetState.enabled) {
+                const amount = Number(budgetState.amount);
+                if (Number.isFinite(amount) && amount > 0) {
+                    if (isMobileChannel(selectedChannel) && !canUseMobileReminders) {
+                        onRequestPhone?.({
+                            channel: selectedChannel,
+                            pendingReminder: { frequency: budgetState.frequency, amount },
+                        });
+                    } else {
+                        onSetReminder?.(budgetState.frequency, amount, selectedChannel);
+                    }
+                }
+            } else if (reminderActive) {
+                // User disabled budget reminders — toggle them off
+                onToggleReminder?.(false);
+            }
+
+            success('Project configurations saved');
         } catch (err) {
             showError('Failed to save changes');
             console.error(err);
@@ -81,467 +441,166 @@ export default function ProjectSettings({ project, onUpdate }: ProjectSettingsPr
         }
     };
 
+    const enabledCount = Object.values(alertStates).filter(s => s.enabled).length;
+
     return (
         <div className="settings-page">
+            {/* ========== HEADER ========== */}
             <div className="settings-header">
-                <div>
-                    <h2>Project Configurations</h2>
-                    <p>Manage visibility and core settings for this project.</p>
+                <div className="settings-header-content">
+                    <div className="settings-header-icon">
+                        <Gear size={24} weight="duotone" />
+                    </div>
+                    <div>
+                        <h2>Project Configurations</h2>
+                        <p>Manage stages, alerts, and notification preferences.</p>
+                    </div>
                 </div>
                 <Button
                     onClick={handleSave}
                     disabled={isSaving}
-                    icon={isSaving ? <div className="spinner-border animate-spin w-4 h-4 border-2 border-white rounded-full" /> : <FloppyDisk size={18} />}
+                    icon={isSaving
+                        ? <div className="spinner-border animate-spin w-4 h-4 border-2 border-white rounded-full" />
+                        : <FloppyDisk size={18} />
+                    }
                 >
                     {isSaving ? 'Saving...' : 'Save Changes'}
                 </Button>
             </div>
 
-            {/* General Settings */}
+            {/* ========== 1. GENERAL ========== */}
             <div className="settings-card">
-                <div className="card-header">
+                <div className="settings-card-header">
                     <h3>General Parameters</h3>
+                    <p>Basic project information and location details.</p>
                 </div>
-                <div className="card-content">
+                <div className="settings-card-content">
                     <div className="form-grid">
                         <div className="form-group">
-                            <label>Project Name</label>
-                            <div className="input-wrapper">
+                            <label className="form-label">Project Name</label>
+                            <div className="form-input-wrapper">
                                 <input
+                                    className="form-input"
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                 />
-                                <HouseLine size={18} />
+                                <HouseLine size={18} className="form-input-icon" />
                             </div>
                         </div>
-
                         <div className="form-group">
-                            <label>Location</label>
-                            <div className="input-wrapper">
+                            <label className="form-label">Location</label>
+                            <div className="form-input-wrapper">
                                 <input
+                                    className="form-input"
                                     type="text"
                                     value={location}
                                     onChange={(e) => setLocation(e.target.value)}
                                     placeholder="e.g. Borrowdale, Harare"
                                 />
-                                <MapPin size={18} />
+                                <MapPin size={18} className="form-input-icon" />
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Substage Manager (Visibility Toggles) */}
+            {/* ========== 2. STAGE VISIBILITY ========== */}
             <div className="settings-card">
-                <div className="card-header">
-                    <h3>Substage Visibility Manager</h3>
-                    <p>Toggle stages to hide or show them in the BOQ and Tracking views.</p>
+                <div className="settings-card-header">
+                    <h3>Substage Visibility</h3>
+                    <p>Toggle stages to show or hide throughout the project.</p>
                 </div>
-                <div className="card-content">
-                    <div className="stages-grid">
-                        {STAGE_CATEGORIES.map((stage) => {
-                            const isVisible = selectedStages.includes(stage.id);
-                            return (
-                                <div
-                                    key={stage.id}
-                                    className={`stage-toggle ${isVisible ? 'active' : ''}`}
-                                >
-                                    <div className="toggle-info">
-                                        <div className={`icon-box ${isVisible ? 'active' : ''}`}>
-                                            {isVisible ? <Check size={16} weight="bold" /> : <EyeSlash size={16} />}
-                                        </div>
-                                        <div>
-                                            <h4>{stage.label}</h4>
-                                            <p>{stage.description}</p>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={() => handleStageToggle(stage.id)}
-                                        className={`switch ${isVisible ? 'on' : 'off'}`}
-                                        role="switch"
-                                        aria-checked={isVisible}
-                                    >
-                                        <span className="slider" />
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            </div>
-
-            {/* Usage Alerts */}
-            <div className="settings-card">
-                <div className="card-header">
-                    <h3>Usage Alert Settings</h3>
-                    <p>Get notified when remaining material drops below a set threshold.</p>
-                </div>
-                <div className="card-content">
-                    <div className="alert-settings">
-                        <div className="setting-row">
-                            <div className="setting-info">
-                                <h4>Low stock alerts</h4>
-                                <p>Notify the project owner when stock is low.</p>
-                            </div>
-                            <button
-                                onClick={() => setLowStockAlertsEnabled(!lowStockAlertsEnabled)}
-                                className={`switch ${lowStockAlertsEnabled ? 'on' : 'off'}`}
-                                role="switch"
-                                aria-checked={lowStockAlertsEnabled}
+                <div className="settings-card-content">
+                    {STAGE_CATEGORIES.map((stage) => {
+                        const isVisible = selectedStages.includes(stage.id);
+                        return (
+                            <div
+                                key={stage.id}
+                                className={`stage-toggle-card ${isVisible ? 'active' : ''}`}
+                                onClick={() => handleStageToggle(stage.id)}
+                                style={{ cursor: 'pointer' }}
                             >
-                                <span className="slider" />
-                            </button>
-                        </div>
-
-                        {lowStockAlertsEnabled && (
-                            <div className="threshold-config">
-                                <div className="form-group">
-                                    <label>Alert threshold (% remaining)</label>
-                                    <div className="input-wrapper small">
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max="100"
-                                            value={lowStockThreshold}
-                                            onChange={(e) => setLowStockThreshold(Number(e.target.value))}
-                                        />
-                                        <span className="suffix">%</span>
+                                <div className="stage-info">
+                                    <div className="stage-icon">
+                                        {isVisible ? <Check size={18} weight="bold" /> : <EyeSlash size={18} />}
                                     </div>
-                                    <span className="help-text">
-                                        Example: 20 means alert when only 20% of the material remains.
-                                    </span>
+                                    <div className="stage-text">
+                                        <h4>{stage.label}</h4>
+                                        <p>{stage.description}</p>
+                                    </div>
+                                </div>
+                                <div
+                                    className={`switch-btn ${isVisible ? 'active' : ''}`}
+                                    role="presentation"
+                                >
+                                    <span className="switch-slider" />
                                 </div>
                             </div>
-                        )}
-                    </div>
+                        );
+                    })}
                 </div>
             </div>
 
-            <style jsx>{`
-                .settings-page {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 18px;
-                    max-width: 1040px;
-                    margin: 0 auto;
-                    background: rgba(255, 255, 255, 0.54);
-                    border: 1px solid rgba(211, 211, 215, 0.72);
-                    border-radius: 22px;
-                    padding: 18px;
-                    box-shadow: 0 14px 24px rgba(6, 20, 47, 0.04);
-                    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
-                }
+            {/* ========== 3. NOTIFICATION CENTRE ========== */}
+            <div className="settings-card notification-centre">
+                <div className="settings-card-header">
+                    <div className="notif-header-row">
+                        <div>
+                            <h3>
+                                <BellRinging size={18} weight="duotone" style={{ marginRight: '8px', verticalAlign: '-3px' }} />
+                                Notification Centre
+                            </h3>
+                            <p>Configure which alerts you receive and how.</p>
+                        </div>
+                        <div className="notif-count-badge">
+                            {enabledCount} active
+                        </div>
+                    </div>
+                </div>
 
-                .settings-page:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 18px 28px rgba(6, 20, 47, 0.08);
-                }
+                <div className="settings-card-content">
+                    {/* === Preferred Channel === */}
+                    <div className="notif-channel-section">
+                        <label className="form-label">Preferred Notification Method</label>
+                        <p className="notif-channel-desc">
+                            All alerts below will be sent through your selected channel.
+                        </p>
+                        <div className="channel-selector">
+                            {CHANNEL_OPTIONS.map((option) => (
+                                <button
+                                    key={option.id}
+                                    type="button"
+                                    className={`channel-option ${selectedChannel === option.id ? 'selected' : ''}`}
+                                    onClick={() => handleChannelSelect(option.id)}
+                                >
+                                    {option.icon}
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
 
-                .settings-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    gap: 14px;
-                    flex-wrap: wrap;
-                    margin-bottom: 8px;
-                }
+                    {/* === Divider === */}
+                    <div className="notif-divider">
+                        <span>Alert Types</span>
+                    </div>
 
-                .settings-header h2 {
-                    margin: 0;
-                    font-size: 1.6rem;
-                    color: #0f294b;
-                    font-weight: 700;
-                    letter-spacing: -0.02em;
-                }
-
-                .settings-header p {
-                    margin: 4px 0 0;
-                    font-size: 0.95rem;
-                    color: #617c9f;
-                }
-
-                .settings-card {
-                    background: rgba(255, 255, 255, 0.9);
-                    border: 1px solid #d8e6f5;
-                    border-radius: 18px;
-                    overflow: hidden;
-                    box-shadow: 0 10px 18px rgba(6, 20, 47, 0.04);
-                    transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1), border-color 200ms cubic-bezier(0.22, 1, 0.36, 1);
-                }
-
-                .settings-card:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 14px 24px rgba(17, 56, 95, 0.08);
-                    border-color: #c5ddf3;
-                }
-
-                .card-header {
-                    padding: 20px 22px;
-                    border-bottom: 1px solid #e8f0f8;
-                }
-
-                .card-header h3 {
-                    margin: 0;
-                    font-size: 1.02rem;
-                    font-weight: 600;
-                    color: #11385f;
-                }
-
-                .card-header p {
-                    margin: 4px 0 0;
-                    font-size: 0.85rem;
-                    color: #67829f;
-                }
-
-                .card-content {
-                    padding: 20px 22px;
-                }
-
-                /* Form Styles */
-                .form-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                    gap: 24px;
-                }
-
-                .form-group {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 8px;
-                }
-
-                .form-group label {
-                    font-size: 0.75rem;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    color: #64748b;
-                }
-
-                .input-wrapper {
-                    position: relative;
-                    display: flex;
-                    align-items: center;
-                }
-
-                .input-wrapper input {
-                    width: 100%;
-                    padding: 12px 14px;
-                    padding-right: 40px;
-                    border: 1px solid #d3e3f3;
-                    border-radius: 10px;
-                    font-size: 0.95rem;
-                    outline: none;
-                    transition: all 0.2s;
-                    color: #0f172a;
-                    background: #ffffff;
-                }
-
-                .input-wrapper input:focus {
-                    border-color: #7db2ea;
-                    box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.12);
-                }
-
-                .input-wrapper svg {
-                    position: absolute;
-                    right: 14px;
-                    color: #94a3b8;
-                    pointer-events: none;
-                }
-
-                /* Stages Grid */
-                .stages-grid {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 12px;
-                }
-
-                .stage-toggle {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: 16px;
-                    border: 1px solid #d7e5f3;
-                    border-radius: 12px;
-                    transition: all 0.2s;
-                    background: #f5faff;
-                }
-
-                .stage-toggle.active {
-                    background: #ffffff;
-                    border-color: #bdd7f0;
-                    box-shadow: 0 8px 14px rgba(17, 56, 95, 0.06);
-                }
-
-                .toggle-info {
-                    display: flex;
-                    align-items: center;
-                    gap: 16px;
-                }
-
-                .icon-box {
-                    width: 40px;
-                    height: 40px;
-                    border-radius: 10px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    background: #e2e8f0;
-                    color: #94a3b8;
-                    transition: all 0.2s;
-                }
-
-                .icon-box.active {
-                    background: #e8f3ff;
-                    color: #2c6eaf;
-                }
-
-                .toggle-info h4 {
-                    margin: 0;
-                    font-size: 0.95rem;
-                    font-weight: 600;
-                    color: #0f172a;
-                }
-
-                .toggle-info p {
-                    margin: 2px 0 0;
-                    font-size: 0.8rem;
-                    color: #64748b;
-                }
-
-                /* Switch Component */
-                .switch {
-                    position: relative;
-                    width: 44px;
-                    height: 24px;
-                    border-radius: 99px;
-                    border: none;
-                    cursor: pointer;
-                    background: #e2e8f0;
-                    transition: background 0.2s;
-                    padding: 2px;
-                }
-
-                .switch:focus-visible {
-                    outline: none;
-                    box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.22);
-                }
-
-                .switch.on {
-                    background: #3d86d8;
-                }
-
-                .slider {
-                    display: block;
-                    width: 20px;
-                    height: 20px;
-                    background: white;
-                    border-radius: 50%;
-                    transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
-                    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-                }
-
-                .switch.on .slider {
-                    transform: translateX(20px);
-                }
-
-                /* Alert Settings */
-                .alert-settings {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 24px;
-                }
-
-                .setting-row {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding-bottom: 24px;
-                    border-bottom: 1px solid #f1f5f9;
-                }
-                
-                .setting-row:last-child {
-                    border-bottom: none;
-                    padding-bottom: 0;
-                }
-
-                .setting-info h4 {
-                    margin: 0;
-                    font-size: 0.95rem;
-                    font-weight: 600;
-                    color: #0f172a;
-                }
-
-                .setting-info p {
-                    margin: 2px 0 0;
-                    font-size: 0.85rem;
-                    color: #64748b;
-                }
-
-                .threshold-config {
-                    animation: slideDown 0.2s ease-out;
-                }
-
-                @keyframes slideDown {
-                    from { opacity: 0; transform: translateY(-10px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-
-                .input-wrapper.small {
-                    max-width: 120px;
-                }
-                
-                .input-wrapper.small input {
-                    padding-right: 32px;
-                }
-
-                .suffix {
-                    position: absolute;
-                    right: 12px;
-                    color: #64748b;
-                    font-size: 0.9rem;
-                    font-weight: 500;
-                    pointer-events: none;
-                }
-                
-                .help-text {
-                    font-size: 0.8rem;
-                    color: #94a3b8;
-                }
-
-                @media (max-width: 640px) {
-                    .settings-page {
-                        padding: 14px;
-                        border-radius: 16px;
-                        gap: 14px;
-                    }
-
-                    .settings-header h2 {
-                        font-size: 1.35rem;
-                    }
-
-                    .stage-toggle {
-                        flex-direction: column;
-                        align-items: flex-start;
-                        gap: 16px;
-                    }
-                    
-                    .switch {
-                        align-self: flex-end;
-                    }
-                }
-
-                @media (prefers-reduced-motion: reduce) {
-                    .settings-page,
-                    .settings-card,
-                    .stage-toggle {
-                        transition: none;
-                        transform: none !important;
-                    }
-                }
-            `}</style>
+                    {/* === Alert Rows === */}
+                    <div className="alert-list">
+                        {ALERT_DEFINITIONS.map((config) => (
+                            <AlertRow
+                                key={config.id}
+                                config={config}
+                                state={alertStates[config.id]}
+                                onChange={(updates) => updateAlertState(config.id, updates)}
+                                expanded={expandedAlerts.has(config.id)}
+                                onToggleExpand={() => toggleExpand(config.id)}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
