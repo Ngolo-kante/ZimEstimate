@@ -1626,3 +1626,26 @@ export async function calculateSavingsPlan(
         error: null,
     };
 }
+
+// ============================================
+// PROJECT UTILITY CONFIG
+// ============================================
+
+import type { ProjectUtilityConfig } from '@/lib/database.types';
+
+/** Create or update the utility config for a project. */
+export async function upsertProjectUtilityConfig(
+    data: Partial<ProjectUtilityConfig> & { project_id: string }
+): Promise<{ config: ProjectUtilityConfig | null; error: Error | null }> {
+    const { data: config, error } = await db
+        .from('project_utility_configs')
+        .upsert(data, { onConflict: 'project_id' })
+        .select()
+        .single();
+
+    if (error) {
+        return { config: null, error: new Error(error.message) };
+    }
+
+    return { config, error: null };
+}

@@ -43,6 +43,9 @@ export type VerificationStatus = 'unverified' | 'pending' | 'verified' | 'truste
 
 export type SupplierApplicationStatus = 'pending' | 'under_review' | 'approved' | 'rejected';
 
+export type ProjectSoilType = 'loam' | 'sandy' | 'clay_black_mountain' | 'rock' | 'not_sure';
+export type SiteSlopeType = 'flat' | 'gentle' | 'moderate' | 'steep';
+
 export type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock' | 'discontinued';
 
 export type SolarSystemType = 'off-grid' | 'hybrid';
@@ -183,6 +186,7 @@ export interface Database {
                     notify_price_alerts: boolean;
                     notify_project_reminders: boolean;
                     user_type: UserType;
+                    telegram_chat_id: string | null;
                     created_at: string;
                     updated_at: string;
                 };
@@ -203,6 +207,7 @@ export interface Database {
                     notify_price_alerts?: boolean;
                     notify_project_reminders?: boolean;
                     user_type?: UserType;
+                    telegram_chat_id?: string | null;
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -223,6 +228,7 @@ export interface Database {
                     notify_price_alerts?: boolean;
                     notify_project_reminders?: boolean;
                     user_type?: UserType;
+                    telegram_chat_id?: string | null;
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -249,6 +255,12 @@ export interface Database {
                     target_completion_date: string | null;
                     target_purchase_date: string | null;
                     savings_frequency: SavingsFrequency;
+                    soil_type: ProjectSoilType | null;
+                    site_slope: SiteSlopeType | null;
+                    geotech_report_uploaded: boolean;
+                    geotech_report_uploaded_at: string | null;
+                    geotech_report_document_id: string | null;
+                    geotech_analysis_mode: 'manual' | 'pro_available' | 'pro_applied';
                     created_at: string;
                     updated_at: string;
                 };
@@ -273,6 +285,12 @@ export interface Database {
                     target_completion_date?: string | null;
                     target_purchase_date?: string | null;
                     savings_frequency?: SavingsFrequency;
+                    soil_type?: ProjectSoilType | null;
+                    site_slope?: SiteSlopeType | null;
+                    geotech_report_uploaded?: boolean;
+                    geotech_report_uploaded_at?: string | null;
+                    geotech_report_document_id?: string | null;
+                    geotech_analysis_mode?: 'manual' | 'pro_available' | 'pro_applied';
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -297,6 +315,12 @@ export interface Database {
                     target_completion_date?: string | null;
                     target_purchase_date?: string | null;
                     savings_frequency?: SavingsFrequency;
+                    soil_type?: ProjectSoilType | null;
+                    site_slope?: SiteSlopeType | null;
+                    geotech_report_uploaded?: boolean;
+                    geotech_report_uploaded_at?: string | null;
+                    geotech_report_document_id?: string | null;
+                    geotech_analysis_mode?: 'manual' | 'pro_available' | 'pro_applied';
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -451,6 +475,7 @@ export interface Database {
                     payment_terms: string | null;
                     verification_status: VerificationStatus;
                     verified_at: string | null;
+                    verification_expires_at: string | null;
                     is_trusted: boolean;
                     rating: number;
                     deleted_at: string | null;
@@ -473,6 +498,7 @@ export interface Database {
                     payment_terms?: string | null;
                     verification_status?: VerificationStatus;
                     verified_at?: string | null;
+                    verification_expires_at?: string | null;
                     is_trusted?: boolean;
                     rating?: number;
                     deleted_at?: string | null;
@@ -495,6 +521,7 @@ export interface Database {
                     payment_terms?: string | null;
                     verification_status?: VerificationStatus;
                     verified_at?: string | null;
+                    verification_expires_at?: string | null;
                     is_trusted?: boolean;
                     rating?: number;
                     deleted_at?: string | null;
@@ -1156,6 +1183,7 @@ export interface Database {
                     unit_price_usd: number;
                     purchased_at: string;
                     notes: string | null;
+                    receipt_document_id: string | null;
                     created_by: string;
                     created_at: string;
                     updated_at: string;
@@ -1170,6 +1198,7 @@ export interface Database {
                     unit_price_usd: number;
                     purchased_at?: string;
                     notes?: string | null;
+                    receipt_document_id?: string | null;
                     created_by: string;
                     created_at?: string;
                     updated_at?: string;
@@ -1184,6 +1213,7 @@ export interface Database {
                     unit_price_usd?: number;
                     purchased_at?: string;
                     notes?: string | null;
+                    receipt_document_id?: string | null;
                     created_by?: string;
                     created_at?: string;
                     updated_at?: string;
@@ -1714,3 +1744,32 @@ export type ProjectStageWithTasks = ProjectStage & { tasks: StageTask[] };
 
 // Alias for legacy/inconsistent usage
 export type RequestForQuotation = RfqRequest;
+
+// ── SupplierDocument (separate from DB schema — stored in supplier-documents storage) ──
+export interface SupplierDocument {
+    id: string;
+    application_id: string | null;
+    supplier_id: string | null;
+    document_type: string;
+    file_name: string;
+    file_path: string;
+    file_url: string;
+    status: 'pending' | 'verified' | 'rejected';
+    uploaded_by: string;
+    reviewed_by: string | null;
+    reviewed_at: string | null;
+    notes: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export type SupplierDocumentInsert = Omit<SupplierDocument, 'id' | 'reviewed_by' | 'reviewed_at' | 'notes' | 'created_at' | 'updated_at'> & {
+    id?: string;
+    reviewed_by?: string | null;
+    reviewed_at?: string | null;
+    notes?: string | null;
+    created_at?: string;
+    updated_at?: string;
+};
+
+export type SupplierDocumentUpdate = Partial<SupplierDocument>;

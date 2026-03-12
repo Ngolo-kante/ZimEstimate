@@ -272,8 +272,10 @@ export default function BoqNewPage() {
           locationType,
           locationCity,
           specificLocation,
-          soilType: loadedProject.soil_type || '',
-          siteSlope: loadedProject.site_slope || '',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          soilType: (loadedProject.soil_type || '') as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          siteSlope: (loadedProject.site_slope || '') as any,
         });
 
         const scopeRaw = loadedProject.scope;

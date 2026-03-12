@@ -455,7 +455,6 @@ export default function UnifiedProcurementView({
       purchased_at: toIsoMidday(purchaseForm.purchasedAt),
       notes: purchaseForm.notes || null,
       receipt_document_id: null,
-      rfq_quote_id: null,
       created_by: 'optimistic', // Placeholder for optimistic UI update
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
