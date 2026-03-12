@@ -561,8 +561,8 @@ export default function BoqNewPage() {
 
                     {currentStep === 1 && (
                       <>
-                        <ProjectLocationSection isCollapsed={false} onToggle={() => { }} />
-                        <SiteConditionsSection isCollapsed={false} onToggle={() => { }} />
+                        <ProjectLocationSection />
+                        <SiteConditionsSection />
                       </>
                     )}
 
@@ -572,15 +572,15 @@ export default function BoqNewPage() {
 
                     {currentStep === 3 && (
                       <>
-                        <ScopeSection isCollapsed={false} onToggle={() => { }} />
-                        <MaterialsSection isCollapsed={false} onToggle={() => { }} />
+                        <ScopeSection />
+                        <MaterialsSection />
                       </>
                     )}
 
                     {currentStep === 4 && (
                       <>
-                        <LaborSection isCollapsed={false} onToggle={() => { }} />
-                        <SiteSetupSection isCollapsed={false} onToggle={() => { }} />
+                        <LaborSection />
+                        <SiteSetupSection />
                       </>
                     )}
 

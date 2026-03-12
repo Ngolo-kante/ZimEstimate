@@ -1,20 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { CaretDown } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle, MinusCircle, Plus, Minus } from '@phosphor-icons/react';
 import { TEMPORARY_WORKS_SUGGESTIONS } from '@/lib/buildFlowRules';
 import { useBoqWizardStore } from '@/store/boqWizardStore';
 
-interface SiteSetupSectionProps {
-  isCollapsed?: boolean;
-  onToggle?: () => void;
-}
-
-export default function SiteSetupSection({ isCollapsed, onToggle }: SiteSetupSectionProps) {
-  const [internalCollapsed, setInternalCollapsed] = useState(false);
-  const collapsed = isCollapsed !== undefined ? isCollapsed : internalCollapsed;
-  const handleToggle = onToggle || (() => setInternalCollapsed((prev) => !prev));
+export default function SiteSetupSection() {
   const {
     temporaryWorksSelections,
     setTemporaryWorksSelections,
@@ -26,14 +18,11 @@ export default function SiteSetupSection({ isCollapsed, onToggle }: SiteSetupSec
   } = useBoqWizardStore();
 
   const [wantsSiteSetup, setWantsSiteSetup] = useState(() =>
-    temporaryWorksSelections.some(s => s.enabled) || includeSepticTank
+    temporaryWorksSelections.some((s) => s.enabled) || includeSepticTank
   );
 
   useEffect(() => {
-    if (temporaryWorksSelections.length > 0) {
-      return;
-    }
-
+    if (temporaryWorksSelections.length > 0) return;
     const defaults = TEMPORARY_WORKS_SUGGESTIONS.map((entry) => ({
       id: entry.id,
       label: entry.label,
@@ -43,158 +32,261 @@ export default function SiteSetupSection({ isCollapsed, onToggle }: SiteSetupSec
       quantity: String(entry.defaultQty),
       unitPriceUsd: '',
     }));
-
     setTemporaryWorksSelections(defaults);
   }, [temporaryWorksSelections, setTemporaryWorksSelections]);
 
-  return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <header className="flex items-start justify-between border-b border-slate-100 px-6 py-5">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">Site Setup</h2>
-          <p className="mt-1 text-sm text-slate-500">Optional temporary works and septic setup can be costed here.</p>
-        </div>
-        <button
-          type="button"
-          onClick={handleToggle}
-          className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
-          aria-label="Toggle section"
-        >
-          <CaretDown className={`h-4 w-4 transition-transform ${collapsed ? '' : 'rotate-180'}`} />
-        </button>
-      </header>
+  const enabledCount = temporaryWorksSelections.filter((s) => s.enabled).length;
 
-      {!collapsed && (
-        <div className="space-y-6 p-6">
-          <div className="rounded-xl border border-slate-200 p-5 bg-slate-50">
-            <h3 className="mb-1 text-sm font-semibold text-slate-800">Do you want to add temporary site setup items to your BOQ?</h3>
-            <p className="mb-4 text-xs text-slate-500">Temporary works like site toilets, fencing, or tool sheds are useful for accurate total project costing. If you&apos;re just getting a quick ballpark for materials, you can safely skip this for now.</p>
-            <div className="flex gap-3">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="button"
-                onClick={() => setWantsSiteSetup(true)}
-                className={`flex-1 rounded-lg border py-2.5 text-sm font-medium transition-colors shadow-sm ${wantsSiteSetup ? 'border-blue-500 bg-blue-600 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 hover:shadow-md'}`}
-              >
-                Yes, add site setup
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="button"
-                onClick={() => setWantsSiteSetup(false)}
-                className={`flex-1 rounded-lg border py-2.5 text-sm font-medium transition-colors shadow-sm ${!wantsSiteSetup ? 'border-slate-500 bg-slate-600 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 hover:shadow-md'}`}
-              >
-                No, skip this
-              </motion.button>
+  return (
+    <div className="space-y-8">
+
+      {/* Guided prompt */}
+      <div>
+        <h3 className="text-lg font-bold text-slate-900 mb-1">Any site setup or temporary works?</h3>
+        <p className="text-sm text-slate-500">
+          Optional items like site toilets, security fencing, and scaffolding can be added here. Skip if you're after a quick materials-only estimate.
+        </p>
+      </div>
+
+      {/* Yes / No toggle */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <motion.button
+          type="button"
+          whileHover={{ scale: 1.01, y: -2 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setWantsSiteSetup(true)}
+          className={`flex items-start gap-4 rounded-2xl border p-5 text-left transition-all duration-200 ${
+            wantsSiteSetup
+              ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-400/20'
+              : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
+          }`}
+        >
+          <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-xl ${
+            wantsSiteSetup ? 'bg-blue-600' : 'bg-slate-100'
+          }`}>
+            🏗️
+          </div>
+          <div>
+            <div className={`font-bold text-sm ${wantsSiteSetup ? 'text-blue-900' : 'text-slate-800'}`}>Yes, add site setup</div>
+            <div className={`mt-1 text-xs ${wantsSiteSetup ? 'text-blue-600' : 'text-slate-500'}`}>
+              Select individual items — only what applies to your project.
             </div>
           </div>
+        </motion.button>
 
-          {wantsSiteSetup && (
-            <>
-              <div className="grid gap-3 md:grid-cols-2">
-                {temporaryWorksSelections.map((selection) => (
-                  <div
-                    key={selection.id}
-                    className={`rounded-xl border p-4 transition ${selection.enabled ? 'border-blue-400 bg-blue-50' : 'border-slate-200'
-                      }`}
+        <motion.button
+          type="button"
+          whileHover={{ scale: 1.01, y: -2 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setWantsSiteSetup(false)}
+          className={`flex items-start gap-4 rounded-2xl border p-5 text-left transition-all duration-200 ${
+            !wantsSiteSetup
+              ? 'border-slate-400 bg-slate-50 ring-2 ring-slate-400/20'
+              : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+          }`}
+        >
+          <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-xl ${
+            !wantsSiteSetup ? 'bg-slate-600' : 'bg-slate-100'
+          }`}>
+            ⏭️
+          </div>
+          <div>
+            <div className={`font-bold text-sm ${!wantsSiteSetup ? 'text-slate-900' : 'text-slate-600'}`}>Skip for now</div>
+            <div className="mt-1 text-xs text-slate-500">
+              Materials estimate only — site setup can be added later.
+            </div>
+          </div>
+        </motion.button>
+      </div>
+
+      {/* Temporary works list */}
+      <AnimatePresence>
+        {wantsSiteSetup && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="space-y-6"
+          >
+            {/* Items counter */}
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">Site items</p>
+              {enabledCount > 0 && (
+                <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700">
+                  {enabledCount} selected
+                </span>
+              )}
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {temporaryWorksSelections.map((selection) => (
+                <motion.div
+                  key={selection.id}
+                  layout
+                  className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                    selection.enabled
+                      ? 'border-emerald-300 bg-emerald-50/60 shadow-sm'
+                      : 'border-slate-200 bg-white'
+                  }`}
+                >
+                  {/* Card header — clickable to toggle */}
+                  <button
+                    type="button"
+                    onClick={() => updateTemporaryWorkSelection(selection.id, { enabled: !selection.enabled })}
+                    className="flex w-full items-start gap-3 p-4 text-left"
                   >
-                    <label className="flex items-start gap-3">
-                      <input
-                        type="checkbox"
-                        checked={selection.enabled}
-                        onChange={(event) => updateTemporaryWorkSelection(selection.id, { enabled: event.target.checked })}
-                        className="mt-1"
-                      />
-                      <span>
-                        <span className="block text-sm font-semibold text-slate-800">{selection.label}</span>
-                        <span className="mt-0.5 block text-xs text-slate-500">{selection.description}</span>
-                      </span>
-                    </label>
-
-                    {selection.enabled && (
-                      <div className="mt-3 grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="mb-1 block text-xs font-medium text-slate-600">Qty</label>
-                          <input
-                            type="number"
-                            value={selection.quantity}
-                            onChange={(event) => updateTemporaryWorkSelection(selection.id, { quantity: event.target.value })}
-                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="mb-1 block text-xs font-medium text-slate-600">Unit Price USD</label>
-                          <input
-                            type="number"
-                            value={selection.unitPriceUsd}
-                            onChange={(event) => updateTemporaryWorkSelection(selection.id, { unitPriceUsd: event.target.value })}
-                            placeholder="Optional override"
-                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          />
-                        </div>
+                    <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
+                      selection.enabled ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'
+                    }`}>
+                      {selection.enabled
+                        ? <CheckCircle size={16} weight="bold" />
+                        : <MinusCircle size={16} weight="regular" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className={`text-sm font-semibold ${selection.enabled ? 'text-emerald-900' : 'text-slate-700'}`}>
+                        {selection.label}
                       </div>
+                      <div className="mt-0.5 text-xs text-slate-500">{selection.description}</div>
+                    </div>
+                  </button>
+
+                  {/* Inline qty/price inputs when enabled */}
+                  <AnimatePresence>
+                    {selection.enabled && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="border-t border-emerald-200 px-4 pb-4 pt-3"
+                      >
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                              Qty ({selection.unit})
+                            </label>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const prev = Math.max(0, Number(selection.quantity) - 1);
+                                  updateTemporaryWorkSelection(selection.id, { quantity: String(prev) });
+                                }}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                              >
+                                <Minus size={12} weight="bold" />
+                              </button>
+                              <input
+                                type="number"
+                                value={selection.quantity}
+                                onChange={(e) => updateTemporaryWorkSelection(selection.id, { quantity: e.target.value })}
+                                className="w-12 rounded-lg border border-emerald-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-slate-900 outline-none focus:border-emerald-400"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const next = Number(selection.quantity) + 1;
+                                  updateTemporaryWorkSelection(selection.id, { quantity: String(next) });
+                                }}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                              >
+                                <Plus size={12} weight="bold" />
+                              </button>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                              Unit Price (USD)
+                            </label>
+                            <input
+                              type="number"
+                              value={selection.unitPriceUsd}
+                              onChange={(e) => updateTemporaryWorkSelection(selection.id, { unitPriceUsd: e.target.value })}
+                              placeholder="Optional"
+                              className="w-full rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none focus:border-emerald-400 placeholder:text-slate-400"
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
                     )}
+                  </AnimatePresence>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Septic tank toggle */}
+            <motion.div
+              layout
+              className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                includeSepticTank ? 'border-indigo-300 bg-indigo-50/60' : 'border-slate-200 bg-white'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setIncludeSepticTank(!includeSepticTank)}
+                className="flex w-full items-center gap-3 p-5 text-left"
+              >
+                <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-lg ${
+                  includeSepticTank ? 'bg-indigo-600' : 'bg-slate-100'
+                }`}>
+                  🚿
+                </div>
+                <div className="flex-1">
+                  <div className={`font-semibold text-sm ${includeSepticTank ? 'text-indigo-900' : 'text-slate-800'}`}>
+                    Include custom septic tank
                   </div>
-                ))}
-              </div>
+                  <div className="mt-0.5 text-xs text-slate-500">Add a custom-dimensioned septic system to your BOQ.</div>
+                </div>
+                <div className={`ml-auto flex h-6 w-11 items-center rounded-full transition-colors ${
+                  includeSepticTank ? 'bg-indigo-600' : 'bg-slate-200'
+                }`}>
+                  <div className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    includeSepticTank ? 'translate-x-5' : 'translate-x-0.5'
+                  }`} />
+                </div>
+              </button>
 
-              <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
-                <label className="flex items-center gap-2 text-sm font-medium text-indigo-900">
-                  <input
-                    type="checkbox"
-                    checked={includeSepticTank}
-                    onChange={(event) => setIncludeSepticTank(event.target.checked)}
-                  />
-                  Include Custom Septic Tank
-                </label>
-
+              <AnimatePresence>
                 {includeSepticTank && (
-                  <div className="mt-3 grid gap-3 md:grid-cols-4">
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-indigo-700">Length (m)</label>
-                      <input
-                        type="number"
-                        value={septicDimensions.length}
-                        onChange={(event) => updateSepticDimensions({ length: event.target.value })}
-                        className="w-full rounded-lg border border-indigo-200 px-3 py-2 text-sm"
-                      />
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="border-t border-indigo-200 px-5 pb-5 pt-4"
+                  >
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-indigo-600">Septic dimensions</p>
+                    <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+                      {(['length', 'width', 'height'] as const).map((dim) => (
+                        <div key={dim}>
+                          <label className="mb-1 block text-xs font-medium capitalize text-indigo-700">{dim} (m)</label>
+                          <input
+                            type="number"
+                            value={septicDimensions[dim]}
+                            onChange={(e) => updateSepticDimensions({ [dim]: e.target.value })}
+                            className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-400"
+                          />
+                        </div>
+                      ))}
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-indigo-700">Unit Price (USD/m³)</label>
+                        <input
+                          type="number"
+                          value={septicDimensions.unitPriceUsd}
+                          onChange={(e) => updateSepticDimensions({ unitPriceUsd: e.target.value })}
+                          placeholder="e.g. 120"
+                          className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-400 placeholder:text-slate-400"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-indigo-700">Width (m)</label>
-                      <input
-                        type="number"
-                        value={septicDimensions.width}
-                        onChange={(event) => updateSepticDimensions({ width: event.target.value })}
-                        className="w-full rounded-lg border border-indigo-200 px-3 py-2 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-indigo-700">Height (m)</label>
-                      <input
-                        type="number"
-                        value={septicDimensions.height}
-                        onChange={(event) => updateSepticDimensions({ height: event.target.value })}
-                        className="w-full rounded-lg border border-indigo-200 px-3 py-2 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-indigo-700">Unit Price USD / m3</label>
-                      <input
-                        type="number"
-                        value={septicDimensions.unitPriceUsd}
-                        onChange={(event) => updateSepticDimensions({ unitPriceUsd: event.target.value })}
-                        className="w-full rounded-lg border border-indigo-200 px-3 py-2 text-sm"
-                      />
-                    </div>
-                  </div>
+                  </motion.div>
                 )}
-              </div>
-            </>
-          )}
-        </div>
-      )}
-    </section>
+              </AnimatePresence>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

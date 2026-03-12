@@ -1,46 +1,38 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { CaretDown, Warning, CheckCircle, Question, Mountains, TrendUp, type Icon } from '@phosphor-icons/react';
-import {
-  LOCATION_PROCEDURE_RULES,
-  SOIL_RISK_PROFILES,
-  type SoilType,
-} from '@/lib/buildFlowRules';
+import { useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Warning, CheckCircle, Question, Mountains, TrendUp, Info } from '@phosphor-icons/react';
+import { LOCATION_PROCEDURE_RULES, SOIL_RISK_PROFILES, type SoilType } from '@/lib/buildFlowRules';
 import { useBoqWizardStore, type SiteSlopeType } from '@/store/boqWizardStore';
 
-const SLOPE_OPTIONS: Array<{ value: SiteSlopeType; label: string; hint: string; img: string }> = [
-  { value: 'flat', label: 'Flat', hint: 'Minimal leveling needed', img: '/topo-flat.webp' },
-  { value: 'gentle', label: 'Gentle', hint: 'Slight gradient', img: '/topo-gentle.webp' },
-  { value: 'moderate', label: 'Moderate', hint: 'Noticeable slope', img: '/topo-moderate.webp' },
-  { value: 'steep', label: 'Steep', hint: 'Requires retaining walls', img: '/topo-steep.webp' },
+const SLOPE_OPTIONS: Array<{ value: SiteSlopeType; label: string; hint: string; img: string; emoji: string }> = [
+  { value: 'flat',     label: 'Flat',     hint: 'Minimal leveling',         img: '/topo-flat.webp',     emoji: '🟩' },
+  { value: 'gentle',   label: 'Gentle',   hint: 'Slight gradient',          img: '/topo-gentle.webp',   emoji: '📐' },
+  { value: 'moderate', label: 'Moderate', hint: 'Noticeable slope',         img: '/topo-moderate.webp', emoji: '⛰️' },
+  { value: 'steep',    label: 'Steep',    hint: 'Retaining walls required', img: '/topo-steep.webp',    emoji: '🏔️' },
 ];
 
-const SOIL_OPTIONS: Array<{ value: SoilType | 'not_sure'; label: string; icon: Icon; hint: string }> = [
-  { value: 'sandy', label: 'Sandy', icon: Warning, hint: 'High drainage, low bearing capacity' },
-  { value: 'clay_black_mountain', label: 'Clay / Black Cotton', icon: Mountains, hint: 'High risk of expansion / cracking' },
-  { value: 'loam', label: 'Loam / Standard', icon: CheckCircle, hint: 'Good stable balanced soil' },
-  { value: 'rock', label: 'Rock', icon: Mountains, hint: 'Hard excavation needed' },
-  { value: 'not_sure', label: 'Not Sure', icon: Question, hint: 'Safe, standard defaults' },
+const SOIL_OPTIONS: Array<{ value: SoilType | 'not_sure'; label: string; hint: string; risk: 'low' | 'medium' | 'high' | 'unknown' }> = [
+  { value: 'loam',              label: 'Loam / Standard',           hint: 'Good stable soil — most common',           risk: 'low' },
+  { value: 'sandy',             label: 'Sandy',                     hint: 'Low bearing capacity, high drainage',       risk: 'medium' },
+  { value: 'clay_black_mountain',label: 'Clay / Black Cotton',      hint: 'Expands with moisture, high crack risk',   risk: 'high' },
+  { value: 'rock',              label: 'Rock',                      hint: 'Hard excavation needed, but very stable',   risk: 'medium' },
+  { value: 'not_sure',          label: 'Not Sure',                  hint: 'We\'ll use safe conservative defaults',    risk: 'unknown' },
 ];
 
-interface SiteConditionsSectionProps {
-  isCollapsed?: boolean;
-  onToggle?: () => void;
-}
+const RISK_COLORS = {
+  low:     { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Low risk' },
+  medium:  { bg: 'bg-amber-100',   text: 'text-amber-700',   label: 'Medium risk' },
+  high:    { bg: 'bg-red-100',     text: 'text-red-700',     label: 'High risk' },
+  unknown: { bg: 'bg-slate-100',   text: 'text-slate-600',   label: 'Default' },
+};
 
-export default function SiteConditionsSection({ isCollapsed, onToggle }: SiteConditionsSectionProps) {
-  const [internalCollapsed, setInternalCollapsed] = useState(false);
-  const collapsed = isCollapsed !== undefined ? isCollapsed : internalCollapsed;
-  const handleToggle = onToggle || (() => setInternalCollapsed((prev) => !prev));
+export default function SiteConditionsSection() {
   const { projectDetails, updateProjectDetails } = useBoqWizardStore();
 
   const procedureNotes = useMemo(() => {
-    if (!projectDetails.locationType) {
-      return [];
-    }
-
+    if (!projectDetails.locationType) return [];
     return LOCATION_PROCEDURE_RULES.map((rule) => ({
       id: rule.id,
       label: rule.label,
@@ -48,104 +40,150 @@ export default function SiteConditionsSection({ isCollapsed, onToggle }: SiteCon
     }));
   }, [projectDetails.locationType]);
 
-  const soilRisk = projectDetails.soilType ? SOIL_RISK_PROFILES[projectDetails.soilType] : null;
+  const soilRisk = projectDetails.soilType ? SOIL_RISK_PROFILES[projectDetails.soilType as SoilType] : null;
+  const selectedSoil = SOIL_OPTIONS.find((s) => s.value === projectDetails.soilType);
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <header className="flex items-start justify-between border-b border-slate-100 px-6 py-5">
+    <div className="space-y-10">
+
+      {/* ── Hint callout ───────────────────────────────────────────────── */}
+      <div className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/60 p-4 text-sm text-blue-800">
+        <Info size={18} weight="fill" className="shrink-0 mt-0.5 text-blue-500" />
+        <p><strong>Not sure about these details?</strong> That's completely fine — select "Not Sure" or the nearest option. We'll use safe, conservative defaults to keep your estimate reliable.</p>
+      </div>
+
+      {/* ── Site Slope ─────────────────────────────────────────────────── */}
+      <div className="space-y-4">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Site Conditions</h2>
-          <p className="mt-1 text-sm text-slate-500">Capture geotechnical context and topography.</p>
+          <h3 className="text-lg font-bold text-slate-900 mb-1">What's the slope of the site?</h3>
+          <p className="text-sm text-slate-500">Slope affects excavation, fill, and substructure complexity.</p>
         </div>
-        <button
-          type="button"
-          onClick={handleToggle}
-          className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
-          aria-label="Toggle section"
-        >
-          <CaretDown className={`h-4 w-4 transition-transform ${collapsed ? '' : 'rotate-180'}`} />
-        </button>
-      </header>
 
-      {!collapsed && (
-        <div className="space-y-6 p-6">
-          <div className="mb-2 rounded-xl bg-blue-50/50 p-4 border border-blue-100 flex items-start gap-3 text-blue-800 text-sm">
-            <Question size={20} weight="fill" className="shrink-0 text-blue-500 mt-0.5" />
-            <div>
-              <p className="font-semibold mb-0.5">Not sure about these details?</p>
-              <p className="text-xs text-blue-700">That&apos;s completely fine. Select &quot;Not Sure&quot; or a middle ground. We&apos;ll use safe defaults to ensure your estimate is reliable.</p>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-3 block text-sm font-medium text-slate-700">What is the primary soil type on site?</label>
-            <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
-              {SOIL_OPTIONS.map((option) => {
-                const selected = projectDetails.soilType === option.value || (!projectDetails.soilType && option.value === 'not_sure');
-                const Icon = option.icon;
-                return (
-                  <motion.button
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    key={option.value}
-                    type="button"
-                    onClick={() => updateProjectDetails({ soilType: option.value as SoilType })}
-                    className={`flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-colors shadow-sm ${selected
-                      ? 'border-blue-500 bg-blue-50/50 text-blue-900 ring-2 ring-blue-500/20'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-slate-50 hover:shadow-md'
-                      }`}
-                  >
-                    <Icon size={24} className={selected ? 'text-blue-600' : 'text-slate-400'} weight={selected ? "duotone" : "regular"} />
-                    <div>
-                      <div className="text-sm font-semibold">{option.label}</div>
-                      <div className="mt-0.5 text-[10px] text-slate-500 hidden sm:block">{option.hint}</div>
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+          {SLOPE_OPTIONS.map((opt) => {
+            const isSelected = projectDetails.siteSlope === opt.value;
+            return (
+              <motion.button
+                key={opt.value}
+                type="button"
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => updateProjectDetails({ siteSlope: opt.value })}
+                className={`group relative flex flex-col overflow-hidden rounded-2xl border transition-all duration-200 ${
+                  isSelected
+                    ? 'border-blue-400 ring-2 ring-blue-400/20 shadow-md'
+                    : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-md'
+                }`}
+              >
+                {/* Topo image */}
+                <div className="relative h-20 w-full overflow-hidden bg-slate-100">
+                  <img
+                    src={opt.img}
+                    alt={opt.label}
+                    className="h-full w-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                  {isSelected && (
+                    <div className="absolute top-2 right-2">
+                      <CheckCircle weight="fill" size={18} className="text-white drop-shadow" />
                     </div>
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
+                  )}
+                </div>
+                {/* Label */}
+                <div className={`px-3 py-3 text-left ${isSelected ? 'bg-blue-50' : 'bg-white'}`}>
+                  <div className={`text-sm font-semibold ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{opt.label}</div>
+                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-blue-600' : 'text-slate-500'}`}>{opt.hint}</div>
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
 
-          {soilRisk && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <p className="text-sm font-semibold text-amber-900">{soilRisk.label} risk profile</p>
-              <p className="mt-1 text-xs text-amber-800">{soilRisk.warning}</p>
-              <p className="mt-1 text-xs text-amber-800">{soilRisk.recommendation}</p>
-            </div>
+      {/* ── Soil Type ──────────────────────────────────────────────────── */}
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-bold text-slate-900 mb-1">What type of soil is on site?</h3>
+          <p className="text-sm text-slate-500">Soil type affects foundation depth, reinforcement requirements, and excavation methods.</p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {SOIL_OPTIONS.map((opt) => {
+            const isSelected = projectDetails.soilType === opt.value || (!projectDetails.soilType && opt.value === 'not_sure');
+            const rc = RISK_COLORS[opt.risk];
+            return (
+              <motion.button
+                key={opt.value}
+                type="button"
+                whileHover={{ scale: 1.01, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => updateProjectDetails({ soilType: opt.value === 'not_sure' ? '' : opt.value })}
+                className={`group relative flex items-start gap-3 rounded-2xl border p-4 text-left transition-all duration-200 ${
+                  isSelected
+                    ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-400/20'
+                    : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
+                }`}
+              >
+                {isSelected && (
+                  <CheckCircle weight="fill" size={16} className="absolute top-3 right-3 text-blue-500" />
+                )}
+                <div className={`mt-0.5 flex-shrink-0 flex h-8 w-8 items-center justify-center rounded-lg ${
+                  isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'
+                }`}>
+                  {opt.value === 'not_sure' ? <Question size={16} weight="bold" /> :
+                   opt.value === 'loam' ? <CheckCircle size={16} weight="bold" /> :
+                   opt.value === 'rock' ? <Mountains size={16} weight="bold" /> :
+                   opt.value === 'sandy' ? <TrendUp size={16} weight="bold" /> :
+                   <Warning size={16} weight="bold" />}
+                </div>
+                <div className="min-w-0">
+                  <div className={`text-sm font-semibold ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{opt.label}</div>
+                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-blue-600' : 'text-slate-500'}`}>{opt.hint}</div>
+                  <span className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${rc.bg} ${rc.text}`}>
+                    {rc.label}
+                  </span>
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {/* Reactive risk callout */}
+        <AnimatePresence>
+          {soilRisk && selectedSoil?.risk === 'high' && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
+            >
+              <Warning size={18} weight="fill" className="shrink-0 mt-0.5 text-amber-500" />
+              <p>
+                <strong>High-risk soil detected.</strong> Clay / Black Cotton soil can expand and crack foundations. 
+                We recommend requesting a geotechnical report before pricing. Your estimate will include additional reinforcement allowances.
+              </p>
+            </motion.div>
           )}
+        </AnimatePresence>
 
-          <div className="pt-2">
-            <label className="mb-3 block text-sm font-medium text-slate-700">Site Topography (Slope)</label>
-            <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-              {SLOPE_OPTIONS.map((slope) => {
-                const selected = projectDetails.siteSlope === slope.value;
-                return (
-                  <motion.button
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    key={slope.value}
-                    type="button"
-                    onClick={() => updateProjectDetails({ siteSlope: slope.value })}
-                    className={`flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-colors shadow-sm ${selected
-                      ? 'border-blue-500 bg-blue-50/50 text-blue-900 ring-2 ring-blue-500/20'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-slate-50 hover:shadow-md'
-                      }`}
-                  >
-                    <div className={`w-full aspect-[4/3] rounded overflow-hidden mb-1 border transition-all ${selected ? 'border-blue-500 shadow-sm' : 'border-slate-100 opacity-80 group-hover:opacity-100'}`}>
-                      <img src={slope.img} alt={slope.label} className="w-full h-full object-cover scale-110" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold">{slope.label}</div>
-                      <div className="mt-0.5 text-[10px] text-slate-500">{slope.hint}</div>
-                    </div>
-                  </motion.button>
-                );
-              })}
+        {/* Procedure summary */}
+        {procedureNotes.length > 0 && (
+          <div className="rounded-xl bg-slate-50 border border-slate-100 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Regulatory notes for your location</p>
+            <div className="space-y-1.5">
+              {procedureNotes.map((note) => (
+                <div key={note.id} className="flex items-center gap-2 text-xs text-slate-600">
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                    note.status === 'required' ? 'bg-red-400' : note.status === 'recommended' ? 'bg-amber-400' : 'bg-slate-300'
+                  }`} />
+                  <span>{note.label} — <em className="text-slate-500">{note.status}</em></span>
+                </div>
+              ))}
             </div>
           </div>
-
-        </div>
-      )}
-    </section>
+        )}
+      </div>
+    </div>
   );
 }
