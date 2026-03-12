@@ -60,11 +60,11 @@ const workflows: Array<{
       href: '/boq/new?method=manual',
     },
     {
-      id: 'budget-checker',
-      icon: Calculator,
-      title: 'Budget Check',
-      label: 'FEASIBILITY',
-      href: '/quick-budget',
+      id: 'quick-projects',
+      icon: CheckCircle,
+      title: 'Quick Projects',
+      label: 'UTILITIES & ADD-ONS',
+      href: '/quick-projects',
     },
   ];
 

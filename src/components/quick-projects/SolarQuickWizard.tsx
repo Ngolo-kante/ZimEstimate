@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import Card from '@/components/ui/Card';
 import {
   Lightning,
   CheckCircle,
@@ -247,8 +247,8 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
   // ── BOQ results view ──────────────────────────────────────────────────────
   if (boqItems) {
     return (
-      <div className="solar-wizard">
-        <button onClick={goBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', marginBottom: 12 }}>
+      <div className="w-full max-w-5xl mx-auto animate-fade-in pb-24">
+        <button onClick={goBack} className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors mb-6">
           ← Back to wizard
         </button>
         <QuickBOQTable
@@ -263,43 +263,77 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
     );
   }
 
+  const progressPct = Math.round((stepIndex / activeSteps.length) * 100);
+
   return (
-    <div className="solar-wizard">
-      <div className="wizard-header">
-        <div>
-          <span className="wizard-kicker">SOLAR GUIDED SETUP</span>
-          <h3>{stepTitles[currentStep].title}</h3>
-          <p>{stepTitles[currentStep].subtitle}</p>
+    <div className="w-full max-w-3xl mx-auto pb-24">
+      {/* Progress */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+          <span>Step {stepIndex + 1} of {activeSteps.length}</span>
+          <span className="text-blue-600">{progressPct}%</span>
         </div>
-        <div className="wizard-progress">
-          Step {stepIndex + 1} of {activeSteps.length}
+        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full transition-all duration-500 ease-out" style={{ width: `${progressPct}%` }} />
         </div>
       </div>
 
+      {/* Header */}
+      <div className="mb-8">
+        <span className="text-xs font-bold uppercase tracking-[0.2em] text-blue-500 mb-2 block">SOLAR GUIDED SETUP</span>
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">{stepTitles[currentStep].title}</h2>
+        <p className="text-slate-600 text-base">{stepTitles[currentStep].subtitle}</p>
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentStep}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="w-full"
+        >
+
       {currentStep === 'intent' && (
-        <div className="option-grid">
-          {INTENTS.map((intent) => (
-            <Card
-              key={intent}
-              className={`option-card ${answers.intent === intent ? 'selected' : ''}`}
-              onClick={() => updateAnswers({ intent })}
-            >
-              <Lightning size={22} />
-              <span>{SOLAR_INTENT_LABELS[intent]}</span>
-            </Card>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+          {INTENTS.map((intent) => {
+            const active = answers.intent === intent;
+            return (
+              <button
+                key={intent}
+                type="button"
+                onClick={() => updateAnswers({ intent })}
+                className={`group relative flex flex-col items-start p-4 rounded-xl border transition-all duration-200 text-left ${active ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50'}`}
+              >
+                <div className="flex w-full items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                     <Lightning size={20} className={active ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500 transition-colors'} />
+                     <span className={`text-sm font-semibold ${active ? 'text-blue-900' : 'text-slate-800'}`}>
+                       {SOLAR_INTENT_LABELS[intent]}
+                     </span>
+                  </div>
+                  {active ? (
+                    <CheckCircle weight="fill" className="text-blue-600 flex-shrink-0" size={20} />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border border-slate-300 flex-shrink-0 group-hover:border-blue-300 transition-colors" />
+                  )}
+                </div>
+              </button>
+            );
+          })}
         </div>
       )}
 
       {currentStep === 'context' && (
-        <div className="form-grid">
+        <div className="grid gap-6">
           <Input
             label="City / Suburb"
             placeholder="e.g. Borrowdale, Harare"
             value={answers.location}
             onChange={(event) => updateAnswers({ location: event.target.value })}
           />
-          <div className="pill-grid">
+          <div className="flex flex-wrap gap-2">
             {[
               { id: 'apartment', label: 'Apartment' },
               { id: 'house', label: 'House' },
@@ -309,7 +343,7 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
               <button
                 key={item.id}
                 type="button"
-                className={`pill ${answers.propertyType === item.id ? 'active' : ''}`}
+                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full border text-sm transition-colors ${answers.propertyType === item.id ? 'border-blue-600 bg-blue-50 text-blue-800 font-medium' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'}`}
                 onClick={() => updateAnswers({ propertyType: item.id as any })}
               >
                 <HouseSimple size={16} />
@@ -321,30 +355,36 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
       )}
 
       {currentStep === 'backup' && (
-        <div className="option-grid">
-          {[2, 4, 6, 8, 12, 24].map((hours) => (
-            <Card
-              key={hours}
-              className={`option-card ${answers.backupHours === hours ? 'selected' : ''}`}
-              onClick={() => updateAnswers({ backupHours: hours })}
-            >
-              <SunDim size={22} />
-              <span>{hours} hrs backup</span>
-            </Card>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {[2, 4, 6, 8, 12, 24].map((hours) => {
+            const active = answers.backupHours === hours;
+            return (
+              <button
+                key={hours}
+                type="button"
+                onClick={() => updateAnswers({ backupHours: hours })}
+                className={`flex flex-col items-center justify-center p-6 rounded-xl border transition-all duration-200 ${active ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 shadow-sm text-blue-700' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50 text-slate-600'}`}
+              >
+                <SunDim size={28} className="mb-2" />
+                <span className="font-semibold">{hours} hrs</span>
+                <span className="text-xs opacity-70">backup</span>
+              </button>
+            );
+          })}
         </div>
       )}
 
       {currentStep === 'appliances' && (
-        <div className="appliance-grid">
+        <div className="grid gap-3">
           {SOLAR_APPLIANCES.map((appliance) => {
             const selection = answers.appliances[appliance.id];
             return (
-              <div key={appliance.id} className={`appliance-card ${selection.include ? 'active' : ''}`}>
-                <label>
+              <div key={appliance.id} className={`p-4 rounded-xl border transition-colors ${selection.include ? 'border-blue-500 bg-blue-50/20 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
+                <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selection.include}
+                    className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
                     onChange={(event) => {
                       const include = event.target.checked;
                       setAnswers((prev) => {
@@ -365,11 +405,11 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
                       });
                     }}
                   />
-                  <span>{appliance.label}</span>
-                  <small>{appliance.watts}W</small>
+                  <span className="font-semibold text-slate-900">{appliance.label}</span>
+                  <small className="ml-auto text-slate-500 font-medium">{appliance.watts}W</small>
                 </label>
                 {selection.include && (
-                  <div className="appliance-inputs">
+                  <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-blue-100/50">
                     <Input
                       label="Qty"
                       type="number"
@@ -425,10 +465,11 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
       )}
 
       {currentStep === 'simultaneous' && (
-        <div className="checklist">
-          <label className="checkline">
+        <div className="grid gap-3 p-6 rounded-2xl bg-white border border-slate-200/60 shadow-sm">
+          <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
             <input
               type="checkbox"
+              className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
               checked={answers.simultaneousLoads.kettleMicrowave}
               onChange={(event) => updateAnswers({
                 simultaneousLoads: {
@@ -437,11 +478,12 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
                 },
               })}
             />
-            Kettle and microwave run together
+            <span className="text-slate-700 font-medium">Kettle and microwave run together</span>
           </label>
-          <label className="checkline">
+          <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
             <input
               type="checkbox"
+              className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
               checked={answers.simultaneousLoads.pumpWithHouse}
               onChange={(event) => updateAnswers({
                 simultaneousLoads: {
@@ -450,11 +492,12 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
                 },
               })}
             />
-            Pump runs with household loads
+            <span className="text-slate-700 font-medium">Pump runs with household loads</span>
           </label>
-          <label className="checkline">
+          <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
             <input
               type="checkbox"
+              className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
               checked={answers.simultaneousLoads.geyserWithHouse}
               onChange={(event) => updateAnswers({
                 simultaneousLoads: {
@@ -463,13 +506,13 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
                 },
               })}
             />
-            Geyser runs with household loads
+            <span className="text-slate-700 font-medium">Geyser runs with household loads</span>
           </label>
         </div>
       )}
 
       {currentStep === 'roof' && (
-        <div className="form-grid">
+        <div className="grid gap-6">
           <Input
             label="Roof orientation"
             placeholder="e.g. North-facing"
@@ -755,280 +798,112 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
         </div>
       )}
 
+        </motion.div>
+      </AnimatePresence>
+
       {/* ── Brand Picker ─────────────────────────────────────────────────── */}
-      {currentStep === 'brands' && (
-        <div className="form-grid">
-          <div>
-            <label className="field-label">Solar Panel Brand</label>
-            <div className="pill-grid">
-              {[
-                { id: 'ja_solar', label: 'JA Solar' },
-                { id: 'canadian_solar', label: 'Canadian Solar' },
-                { id: 'no_pref', label: 'No preference' },
-                { id: 'cheapest', label: 'Cheapest available' },
-              ].map((b) => (
-                <button key={b.id} type="button" className={`pill ${panelBrand === b.id ? 'pill--active' : ''}`} onClick={() => setPanelBrand(b.id)}>
-                  {b.label}
-                </button>
-              ))}
+      <AnimatePresence mode="wait">
+        {currentStep === 'brands' && (
+          <motion.div
+            key="brands"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="form-grid"
+          >
+            <div>
+              <label className="field-label">Solar Panel Brand</label>
+              <div className="pill-grid">
+                {[
+                  { id: 'ja_solar', label: 'JA Solar' },
+                  { id: 'canadian_solar', label: 'Canadian Solar' },
+                  { id: 'no_pref', label: 'No preference' },
+                  { id: 'cheapest', label: 'Cheapest available' },
+                ].map((b) => (
+                  <button key={b.id} type="button" className={`pill ${panelBrand === b.id ? 'pill--active' : ''}`} onClick={() => setPanelBrand(b.id)}>
+                    {b.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          <div>
-            <label className="field-label">Inverter Brand</label>
-            <div className="pill-grid">
-              {[
-                { id: 'deye',    label: 'Deye' },
-                { id: 'victron', label: 'Victron' },
-                { id: 'solarmd', label: 'SolarMD' },
-                { id: 'no_pref', label: 'No preference' },
-              ].map((b) => (
-                <button key={b.id} type="button" className={`pill ${inverterBrand === b.id ? 'pill--active' : ''}`} onClick={() => setInverterBrand(b.id)}>
-                  {b.label}
-                </button>
-              ))}
+            <div>
+              <label className="field-label">Inverter Brand</label>
+              <div className="pill-grid">
+                {[
+                  { id: 'deye',    label: 'Deye' },
+                  { id: 'victron', label: 'Victron' },
+                  { id: 'solarmd', label: 'SolarMD' },
+                  { id: 'no_pref', label: 'No preference' },
+                ].map((b) => (
+                  <button key={b.id} type="button" className={`pill ${inverterBrand === b.id ? 'pill--active' : ''}`} onClick={() => setInverterBrand(b.id)}>
+                    {b.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          <div>
-            <label className="field-label">Battery Brand</label>
-            <div className="pill-grid">
-              {[
-                { id: 'pylontech',   label: 'Pylontech' },
-                { id: 'freedom_won', label: 'Freedom Won' },
-                { id: 'no_pref',     label: 'No preference' },
-              ].map((b) => (
-                <button key={b.id} type="button" className={`pill ${batteryBrand === b.id ? 'pill--active' : ''}`} onClick={() => setBatteryBrand(b.id)}>
-                  {b.label}
-                </button>
-              ))}
+            <div>
+              <label className="field-label">Battery Brand</label>
+              <div className="pill-grid">
+                {[
+                  { id: 'pylontech',   label: 'Pylontech' },
+                  { id: 'freedom_won', label: 'Freedom Won' },
+                  { id: 'no_pref',     label: 'No preference' },
+                ].map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm ${batteryBrand === b.id ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+                    onClick={() => setBatteryBrand(b.id)}
+                  >
+                    {b.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
 
-      {/* ── Optional Costs ───────────────────────────────────────────────── */}
-      {currentStep === 'optional_costs' && (
-        <div className="form-grid">
-          {[
-            { id: 'transport',   label: 'Equipment delivery / transport', val: includeTransport, set: setIncludeTransport },
-            { id: 'install',     label: 'Installation labor (25% of hardware)', val: includeInstall, set: setIncludeInstall },
-            { id: 'contingency', label: 'Contingency (5%)', val: includeContingency, set: setIncludeContingency },
-          ].map((opt) => (
-            <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '12px 0', borderBottom: '1px solid var(--color-border)' }}>
-              <input type="checkbox" checked={opt.val} onChange={(e) => opt.set(e.target.checked)} style={{ width: 18, height: 18 }} />
-              <span>{opt.label}</span>
-            </label>
-          ))}
-        </div>
-      )}
+        {/* ── Optional Costs ───────────────────────────────────────────────── */}
+        {currentStep === 'optional_costs' && (
+          <motion.div
+            key="optional-costs"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="grid gap-2"
+          >
+            {[
+              { id: 'transport',   label: 'Equipment delivery / transport', val: includeTransport, set: setIncludeTransport },
+              { id: 'install',     label: 'Installation labor (25% of hardware)', val: includeInstall, set: setIncludeInstall },
+              { id: 'contingency', label: 'Contingency (5%)', val: includeContingency, set: setIncludeContingency },
+            ].map((opt) => (
+              <label key={opt.id} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50">
+                <input type="checkbox" checked={opt.val} onChange={(e) => opt.set(e.target.checked)} className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0" />
+                <span className="font-medium text-slate-800">{opt.label}</span>
+              </label>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div className="wizard-actions">
-        <Button variant="secondary" onClick={goBack} disabled={isFirst && !boqItems}>
-          Back
-        </Button>
-        <Button variant="primary" onClick={goNext}>
+      <div className="mt-12 flex items-center justify-between border-t border-slate-200/50 pt-6">
+        <div>
+          {(!isFirst || boqItems) && (
+             <Button variant="secondary" onClick={goBack} className="bg-white">
+               Back
+             </Button>
+          )}
+        </div>
+        <Button
+          variant="primary"
+          onClick={goNext}
+          className={isLast ? "bg-emerald-600 shadow-lg shadow-emerald-500/25 hover:bg-emerald-700 text-white" : "shadow-lg shadow-blue-500/25"}
+        >
           {isLast ? 'Generate BOQ' : 'Continue'}
         </Button>
       </div>
-
-      <style jsx>{`
-        .solar-wizard {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-
-        .wizard-header {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: space-between;
-          gap: 12px;
-          align-items: center;
-        }
-
-        .wizard-kicker {
-          font-size: 0.7rem;
-          letter-spacing: 0.2em;
-          text-transform: uppercase;
-          color: var(--color-text-muted);
-          font-weight: 600;
-        }
-
-        .wizard-header h3 {
-          margin: 8px 0 4px;
-        }
-
-        .wizard-progress {
-          font-size: 0.85rem;
-          color: var(--color-text-secondary);
-        }
-
-        .option-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 12px;
-        }
-
-        :global(.option-card) {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 14px;
-          border: 2px solid transparent !important;
-          cursor: pointer;
-        }
-
-        :global(.option-card.selected) {
-          border-color: var(--color-accent) !important;
-          background: rgba(78, 154, 247, 0.08);
-        }
-
-        .form-grid {
-          display: grid;
-          gap: 16px;
-        }
-
-        .pill-grid {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-
-        .pill {
-          border: 1px solid var(--color-border);
-          background: var(--color-surface);
-          border-radius: 999px;
-          padding: 6px 12px;
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 0.85rem;
-        }
-
-        .pill.active {
-          border-color: var(--color-primary);
-          background: rgba(59, 130, 246, 0.1);
-        }
-
-        .appliance-grid {
-          display: grid;
-          gap: 12px;
-        }
-
-        .appliance-card {
-          border: 1px solid var(--color-border);
-          border-radius: 12px;
-          padding: 12px;
-          background: var(--color-surface);
-        }
-
-        .appliance-card.active {
-          border-color: var(--color-accent);
-          background: rgba(78, 154, 247, 0.05);
-        }
-
-        .appliance-card label {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-weight: 600;
-        }
-
-        .appliance-card small {
-          margin-left: auto;
-          color: var(--color-text-muted);
-        }
-
-        .appliance-inputs {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-          gap: 10px;
-          margin-top: 10px;
-        }
-
-        .checklist {
-          display: grid;
-          gap: 12px;
-        }
-
-        .checkline {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .results-grid {
-          display: grid;
-          gap: 16px;
-        }
-
-        .results-card {
-          border: 1px solid var(--color-border);
-          border-radius: 16px;
-          padding: 16px;
-          background: var(--color-surface);
-        }
-
-        .results-card.warning {
-          border-color: rgba(234, 179, 8, 0.5);
-          background: rgba(234, 179, 8, 0.1);
-        }
-
-        .results-card h4 {
-          margin: 0 0 12px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .results-row {
-          display: flex;
-          justify-content: space-between;
-          padding: 6px 0;
-        }
-
-        .tier-pill {
-          margin-top: 12px;
-          background: rgba(59, 130, 246, 0.1);
-          padding: 6px 12px;
-          border-radius: 999px;
-          width: fit-content;
-          font-weight: 600;
-        }
-
-        .summary-pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          margin-top: 12px;
-          padding: 6px 12px;
-          border-radius: 999px;
-          background: rgba(34, 197, 94, 0.1);
-          color: var(--color-success, #16a34a);
-          font-weight: 600;
-        }
-
-        .info-card {
-          display: flex;
-          gap: 10px;
-          align-items: center;
-          padding: 12px;
-          border-radius: 12px;
-          border: 1px dashed var(--color-border);
-          color: var(--color-text-secondary);
-        }
-
-        .wizard-actions {
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-        }
-
-        @media (max-width: 720px) {
-          .wizard-actions {
-            flex-direction: column;
-          }
-        }
-      `}</style>
     </div>
   );
 }
