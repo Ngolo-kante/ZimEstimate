@@ -1,4515 +1,654 @@
 'use client';
 
-import { useState, Suspense, useMemo, useRef, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FloppyDisk, X, CircleNotch, CaretLeft, CaretRight, Check } from '@phosphor-icons/react';
 import MainLayout from '@/components/layout/MainLayout';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
-import { useCurrency } from '@/components/ui/CurrencyToggle';
-import { useProjectAutoSave } from '@/hooks/useProjectAutoSave';
-import { useReveal } from '@/hooks/useReveal';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { DocumentCategory } from '@/lib/database.types';
-import {
-  Plus,
-  Trash,
-  Check,
-  CaretDown,
-  Cube,
-  Wall,
-  HouseSimple,
-  PaintBrush,
-  ShieldCheck,
-  UserCircle,
-  ArrowRight,
-  CheckCircle,
-  Sparkle,
-  DownloadSimple,
-  Stack,
-  Layout,
-  Package,
-  HardHat,
-  Graph,
-  House,
-  Tag,
-  MagnifyingGlass,
-  X,
-  CloudCheck,
-  CloudArrowUp,
-  Warning,
-  MapPin,
-  WhatsappLogo,
-  FloppyDisk,
-  EnvelopeSimple,
-  ChatText,
-  FilePdf,
-  FileXls,
-  FileDoc,
-  ShareNetwork,
-  ListDashes,
-  FrameCorners,
-  Door,
-  PencilSimple,
-} from '@phosphor-icons/react';
 import SavingOverlay from '@/components/ui/SavingOverlay';
-import { WizardSidebar, WizardStep, StepStatus, ProjectSummaryData } from '@/components/ui/WizardSidebar';
+import { useProjectAutoSave } from '@/hooks/useProjectAutoSave';
+import { useBoqWizardStore, type BoqMilestoneId, type MilestoneData, type BOQItem } from '@/store/boqWizardStore';
+import LiveEstimatorLayout from './components/LiveEstimatorLayout';
+import LiveEstimatePanel from './components/LiveEstimatePanel';
+import ReviewTabs from './components/ReviewTabs';
+import ProjectTypeSection from './components/sections/ProjectTypeSection';
+import ProjectLocationSection from './components/sections/ProjectLocationSection';
+import BuildingDesignSection from './components/sections/BuildingDesignSection';
+import MaterialsSection from './components/sections/MaterialsSection';
+import ScopeSection from './components/sections/ScopeSection';
+import LaborSection from './components/sections/LaborSection';
+import SiteSetupSection from './components/sections/SiteSetupSection';
+import SiteConditionsSection from './components/sections/SiteConditionsSection';
+import { InteractiveRoomBuilder, type RoomInstance } from './components/InteractiveRoomBuilder';
+import { buildLiveMilestones } from './utils/liveEstimator';
+import { validateBOQWizardStep, type BOQWizardValidationState } from './wizardValidation';
+import { inferProjectType } from './projectTypes';
+import { useToast } from '@/components/ui/Toast';
+import type { BOQItem as DbBOQItem, Project } from '@/lib/database.types';
 
-import { InteractiveRoomBuilder, RoomInstance } from './components/InteractiveRoomBuilder';
+function getLocationLabel(type: string, city: string, specific: string) {
+  const parts = [];
+  if (type) parts.push(type.charAt(0).toUpperCase() + type.slice(1));
+  if (city) parts.push(city);
+  if (specific) parts.push(specific);
+  return parts.join(' - ');
+}
 
-import {
-  materials as allMaterials,
-  getBestPrice,
-} from '@/lib/materials';
-import { applyAveragePriceUpdate, getScaledPriceZwg } from '@/lib/boqPricing';
-import { exportBOQToPDF } from '@/lib/pdf-export';
-import { generateBOQFromBasics, ManualBuilderConfig } from '@/lib/calculations';
-import { BrickType, CementType, ProjectScope } from '@/lib/vision/types';
-import { getProjectWithItems, getProjectDocuments, updateProject as updateProjectRecord, uploadDocument } from '@/lib/services/projects';
-import { createStageTask, getStageByCategory, toggleStageTask, updateStageTask } from '@/lib/services/stages';
-import { setCreatedProjectSnapshot, setOptimisticProjectCard } from '@/lib/projectCreationCache';
-import { validateBOQWizardStep, type BOQWizardFieldValidation } from './wizardValidation';
-import WizardStyles from './WizardStyles';
-import { calculateBoqHealth, type BoqHealthCategory } from '@/lib/boqHealth';
-import {
-  LOCATION_PROCEDURE_RULES,
-  SOIL_RISK_PROFILES,
-  TEMPORARY_WORKS_SUGGESTIONS,
-  type LocationProcedureStatus,
-  type LocationTypeRule,
-  type SoilType,
-} from '@/lib/buildFlowRules';
-
-
-
-// Milestone configuration with AI-suggested materials
-const milestones = [
-  {
-    id: 'substructure',
-    label: 'Site Preparation & Foundation',
-    icon: Cube,
-    description: 'Foundation strips, hardcore filling, DPC/DPM, substructure bricks to window level, floor slab, mesh reinforcement',
-    suggestedMaterials: [
-      'sand-river', 'sand-pit', 'stone-19mm', 'hardcore',
-      'brick-common', 'cement-325', 'cement-425',
-      'brickforce', 'rebar-12', 'bindwire',
-      'dpc', 'dpm', 'termite-poison'
-    ],
-  },
-  {
-    id: 'superstructure',
-    label: 'Structural Walls & Frame',
-    icon: Wall,
-    description: 'External and internal walls, window and door lintels, ring beam rebar and stirrups, brickforce, mortar (cement + sand)',
-    suggestedMaterials: ['brick-common', 'cement-325', 'sand-river', 'rebar-10', 'mesh-ref193'],
-  },
-  {
-    id: 'roofing',
-    label: 'Roofing',
-    icon: HouseSimple,
-    description: 'Timber rafters and brandering, IBR/corrugated sheets, roof screws, fascia boards, guttering',
-    suggestedMaterials: ['ibr-05-3m', 'timber-50x76', 'timber-38x38', 'fascia-pvc', 'screws-roof'],
-  },
-  {
-    id: 'finishing',
-    label: 'Interior & Finishing',
-    icon: PaintBrush,
-    description: 'Plastering (render + skim), painting (interior and exterior), tiling, door/window frames, electrical and plumbing fittings',
-    suggestedMaterials: ['sand-pit', 'cement-325', 'paint-pva'],
-  },
-  {
-    id: 'exterior',
-    label: 'External Work',
-    icon: ShieldCheck,
-    description: 'Boundary walls, durawall precast, gates, driveway paving, security features',
-    suggestedMaterials: ['durawall-panel', 'brick-common', 'cement-325'],
-  },
-  {
-    id: 'labor',
-    label: 'Labor & Services',
-    icon: UserCircle,
-    description: 'Builder daily rates, general hands, food allowances, transport, site supervision',
-    suggestedMaterials: ['labor-builder', 'labor-assistant', 'labor-foreman', 'service-food', 'service-transport'],
-  },
-];
-
-
-// Build material catalog with best prices and categories
-const materialCatalog = allMaterials.map((m) => {
-  const bestPrice = getBestPrice(m.id);
-  // Normalize prices for bricks (per 1000 -> per brick)
-  let unit = m.unit;
-  let priceUsd = bestPrice?.priceUsd || 0;
-  let priceZwg = bestPrice?.priceZwg || 0;
-
-  if (m.category === 'bricks' && m.unit.includes('1000')) {
-    unit = 'Brick';
-    priceUsd = priceUsd / 1000;
-    priceZwg = priceZwg / 1000;
+function normalizeLocationType(raw: string): 'urban' | 'peri-urban' | 'rural' | '' {
+  const value = raw.trim().toLowerCase().replace(/\s+/g, '-');
+  if (value === 'urban' || value === 'peri-urban' || value === 'rural') {
+    return value;
   }
 
-  return {
-    id: m.id,
-    name: m.name,
-    category: m.category,
-    unit: unit,
-    priceUsd: priceUsd,
-    priceZwg: priceZwg,
-    lastUpdated: bestPrice?.lastUpdated || '',
-    description: m.specifications || '',
-  };
-});
+  return '';
+}
 
-const SYSTEM_PRICE_VERSION = materialCatalog.reduce((latest, material) => {
-  if (material.lastUpdated && material.lastUpdated > latest) {
-    return material.lastUpdated;
+function normalizeMilestone(category: string | null | undefined): BoqMilestoneId {
+  if (
+    category === 'substructure' ||
+    category === 'superstructure' ||
+    category === 'roofing' ||
+    category === 'finishing' ||
+    category === 'exterior' ||
+    category === 'labor'
+  ) {
+    return category;
   }
-  return latest;
-}, '');
 
-const MATERIAL_NAME_BY_ID = materialCatalog.reduce<Record<string, string>>((acc, material) => {
-  acc[material.id] = material.name;
-  return acc;
-}, {});
-
-const LOCATION_TYPES = [
-  { value: 'urban', label: 'Urban', description: 'City & town locations', icon: HouseSimple },
-  { value: 'peri-urban', label: 'Peri-Urban', description: 'Outer city and growth areas', icon: House },
-  { value: 'rural', label: 'Rural', description: 'Farms, villages & remote sites', icon: MapPin },
-];
-
-const LOCATION_OPTIONS = [
-  'Harare',
-  'Bulawayo',
-  'Mutare',
-  'Gweru',
-  'Chitungwiza',
-  'Masvingo',
-  'Kwekwe',
-  'Kadoma',
-  'Hwange',
-  'Victoria Falls',
-];
-
-const BUILDING_TYPES = [
-  { value: 'single_storey', label: 'Single Storey', description: 'One level above ground', icon: House },
-  { value: 'double_storey', label: 'Double Storey', description: 'Two levels above ground', icon: Stack },
-];
-
-const SOIL_TYPES: Array<{ value: SoilType; label: string }> = [
-  { value: 'sandy', label: 'Sandy' },
-  { value: 'clay_black_mountain', label: 'Clay / Black Mountain' },
-  { value: 'loam', label: 'Loam' },
-  { value: 'rock', label: 'Rock' },
-];
-
-type SiteSlopeType = 'flat' | 'gentle' | 'moderate' | 'steep';
-
-const SITE_SLOPE_OPTIONS: Array<{
-  value: SiteSlopeType;
-  label: string;
-  description: string;
-  icon: typeof HouseSimple;
-  iconClass: string;
-}> = [
-  {
-    value: 'flat',
-    label: 'Flat',
-    description: 'Minimal cut/fill expected',
-    icon: HouseSimple,
-    iconClass: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-  },
-  {
-    value: 'gentle',
-    label: 'Gentle Slope',
-    description: 'Minor level adjustments likely',
-    icon: Graph,
-    iconClass: 'bg-blue-50 text-blue-700 border-blue-100',
-  },
-  {
-    value: 'moderate',
-    label: 'Moderate Slope',
-    description: 'Retaining and fill planning advised',
-    icon: Stack,
-    iconClass: 'bg-amber-50 text-amber-700 border-amber-100',
-  },
-  {
-    value: 'steep',
-    label: 'Steep',
-    description: 'Higher excavation and retaining risk',
-    icon: Warning,
-    iconClass: 'bg-rose-50 text-rose-700 border-rose-100',
-  },
-];
-
-const TEMPORARY_WORK_OPTION_META: Record<
-  string,
-  { icon: typeof HouseSimple; iconClass: string }
-> = {
-  'temp-cabin-6x3': {
-    icon: HouseSimple,
-    iconClass: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-  },
-  'temp-toilet': {
-    icon: Door,
-    iconClass: 'bg-cyan-50 text-cyan-700 border-cyan-100',
-  },
-  'water-tank-50000l': {
-    icon: CloudArrowUp,
-    iconClass: 'bg-blue-50 text-blue-700 border-blue-100',
-  },
-  'site-clear-level': {
-    icon: HardHat,
-    iconClass: 'bg-amber-50 text-amber-700 border-amber-100',
-  },
-};
-
-const CERTIFICATE_TRACKER_ITEMS = [
-  {
-    id: 'approved_site_plan',
-    label: 'Approved Site Plan',
-    description: 'Baseline approved drawing used for quantity and compliance checks.',
-  },
-  {
-    id: 'slab_foundation_certificate',
-    label: 'Slab/Foundation Certificate',
-    description: 'Engineer sign-off for foundation and slab structural integrity.',
-  },
-  {
-    id: 'completion_occupation_certificate',
-    label: 'Completion/Occupation Certificate',
-    description: 'Final local-authority completion approval for occupation.',
-  },
-] as const;
-
-const CERTIFICATE_STATUS_META = {
-  pending: { label: 'Pending', badge: 'bg-slate-100 text-slate-700' },
-  in_progress: { label: 'In Progress', badge: 'bg-amber-100 text-amber-700' },
-  done: { label: 'Received', badge: 'bg-emerald-100 text-emerald-700' },
-} as const;
-
-const PROCEDURE_STATUS_META: Record<LocationProcedureStatus, { label: string; badge: string }> = {
-  required: { label: 'Required', badge: 'bg-red-100 text-red-700' },
-  recommended: { label: 'Recommended', badge: 'bg-blue-100 text-blue-700' },
-  not_applicable: { label: 'N/A', badge: 'bg-slate-100 text-slate-600' },
-};
-
-const LOCATION_TYPE_RULES: LocationTypeRule[] = ['urban', 'peri-urban', 'rural'];
-const CHECKLIST_TASK_PREFIX = 'boq_checklist:';
-const CERTIFICATE_TASK_PREFIX = 'compliance_certificate:';
-const LEGACY_CERTIFICATE_TASK_PREFIX = 'boq_certificate:';
-const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
-const GEOTECH_DOC_TAG = 'geotech_report';
-const SEPTIC_TANK_ITEM_ID = 'custom-septic-tank';
-const SEPTIC_TANK_DEFAULT_RATE_USD = 95;
-
-const isLocationTypeRule = (value: string): value is LocationTypeRule =>
-  LOCATION_TYPE_RULES.includes(value as LocationTypeRule);
-
-const DEFAULT_ROOM_INPUTS = {
-  bedrooms: '',
-  diningRoom: '',
-  veranda: '',
-  bathrooms: '',
-  kitchen: '',
-  pantry: '',
-  livingRoom: '',
-  garage1: '',
-  garage2: '',
-  passage: '',
-};
-
-type RoomInputKey = keyof typeof DEFAULT_ROOM_INPUTS;
-
-const ROOM_INPUTS: Array<{ key: RoomInputKey; label: string }> = [
-  { key: 'bedrooms', label: 'Bedrooms' },
-  { key: 'diningRoom', label: 'Dining Room' },
-  { key: 'veranda', label: 'Veranda' },
-  { key: 'bathrooms', label: 'Bathrooms' },
-  { key: 'kitchen', label: 'Kitchen' },
-  { key: 'pantry', label: 'Pantry' },
-  { key: 'livingRoom', label: 'Living Room' },
-  { key: 'garage1', label: 'Garage 1' },
-  { key: 'garage2', label: 'Garage 2' },
-  { key: 'passage', label: 'Passage' },
-];
-
-// Plan Sketch Mode Types
-type PlanSketchMode = 'simplified' | 'detailed';
-
-const LOCATION_TYPE_LABELS: Record<string, string> = {
-  urban: 'Urban',
-  'peri-urban': 'Peri-Urban',
-  rural: 'Rural',
-};
-
-const buildLocationLabel = (locationType: string, locationCity: string, specificLocation: string) => {
-  const label = LOCATION_TYPE_LABELS[locationType] || '';
-  const parts = [label, locationCity, specificLocation].filter(Boolean);
-  if (parts.length === 0) return '';
-  return parts.join(' — ');
-};
-
-const parseLocation = (location?: string | null) => {
-  if (!location) return { locationType: '', locationCity: '', specificLocation: '' };
-  const parts = location.split(' — ');
-  const possibleLabel = parts[0];
-  const matchedType = Object.keys(LOCATION_TYPE_LABELS).find(
-    (key) => LOCATION_TYPE_LABELS[key] === possibleLabel
-  );
-  if (matchedType) {
-    return {
-      locationType: matchedType,
-      locationCity: parts[1] || '',
-      specificLocation: parts.slice(2).join(' — ').trim(),
-    };
-  }
-  return { locationType: '', locationCity: '', specificLocation: location };
-};
-
-const buildChecklistMarker = (ruleId: string) => `${CHECKLIST_TASK_PREFIX}${ruleId}`;
-const buildCertificateMarker = (certificateId: string, status: CertificateStatus) =>
-  `${CERTIFICATE_TASK_PREFIX}${certificateId}|status:${status}`;
-
-const parseCertificateStatusFromMarker = (marker?: string | null): CertificateStatus => {
-  if (!marker) return 'pending';
-  if (marker.includes('|status:in_progress')) return 'in_progress';
-  if (marker.includes('|status:done')) return 'done';
-  return 'pending';
-};
-
-const stripEnablementTag = (description: string) =>
-  description === ENABLEMENT_ITEM_TAG
-    ? ''
-    : description.startsWith(`${ENABLEMENT_ITEM_TAG} `)
-      ? description.replace(`${ENABLEMENT_ITEM_TAG} `, '')
-      : description;
-
-interface BOQItem {
-  id: string;
-  materialId: string;
-  materialName: string;
-  quantity: number | null;
-  unit: string;
-  averagePriceUsd: number;
-  averagePriceZwg: number;
-  actualPriceUsd: number;
-  actualPriceZwg: number;
-  description?: string;
-  category?: string;
-  calculatedQuantity?: number; // Original calculated value
-  isOverridden?: boolean; // Track if user edited
-  isEnablementCost?: boolean;
+  return 'substructure';
 }
 
+function mapLoadedItemsToMilestones(items: DbBOQItem[], previous: MilestoneData[]): MilestoneData[] {
+  const byMilestone = new Map<BoqMilestoneId, BOQItem[]>();
 
-interface MilestoneData {
-  id: string;
-  label?: string;
-  items: BOQItem[];
-  expanded: boolean;
-}
-
-interface TemporaryWorkSelection {
-  id: string;
-  label: string;
-  description: string;
-  unit: string;
-  enabled: boolean;
-  quantity: string;
-  unitPriceUsd: string;
-}
-
-type CertificateStatus = 'pending' | 'in_progress' | 'done';
-
-interface GeotechDocumentSummary {
-  id: string;
-  fileName: string;
-  createdAt: string;
-}
-
-interface ProjectDetailsState {
-  name: string;
-  locationType: string;
-  locationCity: string;
-  specificLocation: string;
-  soilType: SoilType | '';
-  siteSlope: SiteSlopeType | '';
-  floorPlanSize: string;
-  buildingType: string;
-  wallHeight: string;
-  brickType: BrickType;
-  cementType: CementType;
-  roomInputs: Record<RoomInputKey, string>;
-}
-
-type ProcedureChecklistItem = (typeof LOCATION_PROCEDURE_RULES)[number] & {
-  status: LocationProcedureStatus;
-};
-
-
-// Searchable Material Dropdown Component
-// Helper to get category icon
-const getCategoryIcon = (category: string) => {
-  switch (category.toLowerCase()) {
-    case 'bricks': return <Layout size={16} weight="duotone" className="text-blue-600" />;
-    case 'cement': return <Package size={16} weight="duotone" className="text-blue-500" />;
-    case 'sand':
-    case 'aggregates': return <HardHat size={16} weight="duotone" className="text-blue-400" />;
-    case 'steel': return <Graph size={16} weight="duotone" className="text-blue-700" />;
-    case 'roofing': return <House size={16} weight="duotone" className="text-blue-500" />;
-    default: return <Tag size={16} weight="duotone" className="text-slate-400" />;
-  }
-};
-
-const MaterialDropdown = ({
-  value,
-  onChange,
-  placeholder = 'Search materials...',
-}: {
-  value: string;
-  onChange: (materialId: string) => void;
-  placeholder?: string;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  const filteredMaterials = useMemo(() => {
-    if (!search) return materialCatalog.slice(0, 50); // Show first 50 as suggestions if no search
-    return materialCatalog.filter((m) =>
-      m.name.toLowerCase().includes(search.toLowerCase()) ||
-      m.category.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [search]);
-
-  const selectedMaterial = materialCatalog.find((m) => m.id === value);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  return (
-    <div className="relative w-full" ref={wrapperRef} style={{ zIndex: 4000 }} data-testid="material-dropdown">
-      <div
-        className={`wizard-select flex items-center justify-between cursor-pointer transition-all duration-200 ${isOpen ? 'ring-2 ring-blue-100 border-blue-400' : 'border-slate-200'}`}
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          border: '1px solid',
-          padding: '12px 16px',
-          borderRadius: '12px',
-          background: '#fff',
-          boxShadow: isOpen ? '0 4px 12px rgba(78, 154, 247, 0.1)' : 'none',
-        }}
-      >
-        <div className="flex items-center gap-2 overflow-hidden">
-          {selectedMaterial ? (
-            <>
-              {getCategoryIcon(selectedMaterial.category)}
-              <span className="font-medium text-slate-900 truncate">{selectedMaterial.name}</span>
-            </>
-          ) : (
-            <span className="text-slate-400">{placeholder}</span>
-          )}
-        </div>
-        <CaretDown size={18} className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-      </div>
-
-      {isOpen && (
-        <div
-          className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl z-[5000] animate-fadeIn"
-          style={{ maxHeight: '320px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
-        >
-          <div className="p-3 bg-slate-50 border-b border-slate-100">
-            <div className="relative">
-              <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
-                placeholder="Search by name or category..."
-                data-testid="material-search-input"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                autoFocus
-              />
-            </div>
-          </div>
-
-          <div className="overflow-y-auto flex-1 custom-scrollbar">
-            {filteredMaterials.length === 0 ? (
-              <div className="p-8 text-center">
-                <div className="text-slate-300 mb-2 flex justify-center"><Tag size={32} /></div>
-                <p className="text-sm text-slate-500">No matching materials found</p>
-              </div>
-            ) : (
-              <div className="p-1">
-                {filteredMaterials.map((m) => (
-                  <div
-                    key={m.id}
-                    className={`group p-3 hover:bg-blue-50 rounded-lg cursor-pointer transition-colors flex items-center gap-3 ${value === m.id ? 'bg-blue-50' : ''}`}
-                    onClick={() => {
-                      onChange(m.id);
-                      setIsOpen(false);
-                      setSearch('');
-                    }}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center shadow-sm group-hover:border-blue-200">
-                      {getCategoryIcon(m.category)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center mb-0.5">
-                        <span className="text-sm font-semibold text-slate-800 truncate">{m.name}</span>
-                        <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">${m.priceUsd.toFixed(2)}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">{m.category}</span>
-                        <span className="w-1 h-1 rounded-full bg-slate-200"></span>
-                        <span className="text-[10px] text-slate-400">{m.unit}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const LocationSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select a city...',
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: string[];
-  placeholder?: string;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  return (
-    <div className="relative w-full" ref={wrapperRef} style={{ zIndex: 900 }}>
-      <div
-        className={`wizard-select flex items-center justify-between cursor-pointer transition-all duration-200 ${isOpen ? 'ring-2 ring-blue-100 border-blue-400' : 'border-slate-200'}`}
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          border: '1px solid',
-          borderColor: isOpen ? '#60a5fa' : '#e2e8f0', // blue-400 : slate-200
-          padding: '12px 16px',
-          borderRadius: '12px',
-          background: '#fff',
-          boxShadow: isOpen ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
-          minHeight: '48px',
-        }}
-      >
-        <span className={value ? 'text-slate-900 font-medium' : 'text-slate-400'}>
-          {value || placeholder}
-        </span>
-        <CaretDown size={18} className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-      </div>
-
-      {isOpen && (
-        <div
-          className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-xl z-[1000] animate-fadeIn overflow-hidden"
-          style={{ maxHeight: '250px', overflowY: 'auto' }}
-        >
-          {options.map((option) => (
-            <div
-              key={option}
-              className={`px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors flex items-center justify-between ${value === option ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-700'}`}
-              onClick={() => {
-                onChange(option);
-                setIsOpen(false);
-              }}
-            >
-              <span>{option}</span>
-              {value === option && <Check size={16} weight="bold" />}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-
-
-const STEP_HINTS: Record<number, string> = {
-  1: 'Next: floor plan size and building type.',
-  2: 'Next: choose the project scope.',
-  3: 'Next: pick a labor option.',
-  4: 'Next: configure temporary works.',
-  5: 'Next: generate your BOQ.',
-};
-
-const buildTemporaryWorksDefaults = (): TemporaryWorkSelection[] =>
-  TEMPORARY_WORKS_SUGGESTIONS.map((suggestion) => {
-    const catalogItem = materialCatalog.find((material) => material.id === suggestion.id);
-    return {
-      id: suggestion.id,
-      label: suggestion.label,
-      description: suggestion.description,
-      unit: suggestion.unit,
-      enabled: false,
-      quantity: String(suggestion.defaultQty),
-      unitPriceUsd: String(catalogItem?.priceUsd ?? 0),
-    };
+  previous.forEach((milestone) => {
+    byMilestone.set(milestone.id, []);
   });
 
-function BOQBuilderContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const { isAuthenticated, profile } = useAuth();
-  const [showSavePrompt, setShowSavePrompt] = useState(false);
-  const [pendingAutoSave, setPendingAutoSave] = useState(false);
-  const [showSaveOverlay, setShowSaveOverlay] = useState(false);
-  const [showShareMenu, setShowShareMenu] = useState(false);
-  const [showExportMenu, setShowExportMenu] = useState(false);
-  const [showRoomPicker, setShowRoomPicker] = useState(false);
-  const [isHydratingAdminState, setIsHydratingAdminState] = useState(false);
-  const [saveOverlayMessage, setSaveOverlayMessage] = useState('Creating your project...');
-  const [saveOverlaySuccess, setSaveOverlaySuccess] = useState(false);
-  const [saveOverlaySteps, setSaveOverlaySteps] = useState<Array<{ label: string; status: 'pending' | 'active' | 'done' }>>([]);
+  items.forEach((item) => {
+    const milestoneId = normalizeMilestone(item.category);
+    const group = byMilestone.get(milestoneId) || [];
 
-  // Get project ID from URL if editing existing project
-  const projectIdFromUrl = searchParams.get('id');
-  const [projectPriceVersion, setProjectPriceVersion] = useState<string>(SYSTEM_PRICE_VERSION);
-  const [priceVersionReady, setPriceVersionReady] = useState(false);
-
-  const [projectScope, setProjectScope] = useState(searchParams.get('scope') || '');
-
-  const [currentStep, setCurrentStep] = useState(1);
-  const [selectedStages, setSelectedStages] = useState<string[]>(['substructure']);
-
-  // Project Details State
-  const [projectDetails, setProjectDetails] = useState<ProjectDetailsState>({
-    name: '',
-    locationType: '',
-    locationCity: '',
-    specificLocation: '',
-    soilType: '',
-    siteSlope: '',
-    floorPlanSize: '',
-    buildingType: '',
-    wallHeight: '2.7',
-    brickType: 'common',
-    cementType: 'cement_325',
-    roomInputs: { ...DEFAULT_ROOM_INPUTS },
-  });
-
-  // Validation Error State
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [fieldValidation, setFieldValidation] = useState<BOQWizardFieldValidation>({});
-  const [isUploadingGeotech, setIsUploadingGeotech] = useState(false);
-  const [geotechDocument, setGeotechDocument] = useState<GeotechDocumentSummary | null>(null);
-  const [geotechNotice, setGeotechNotice] = useState<string | null>(null);
-
-  const clearValidationField = (field: keyof BOQWizardFieldValidation) => {
-    setFieldValidation((prev) => {
-      if (!prev[field]) return prev;
-      const next = { ...prev };
-      delete next[field];
-      return next;
+    group.push({
+      id: item.id,
+      materialId: item.material_id,
+      materialName: item.material_name,
+      quantity: item.quantity,
+      calculatedQuantity: item.quantity,
+      unit: item.unit,
+      averagePriceUsd: item.unit_price_usd,
+      averagePriceZwg: item.unit_price_zwg,
+      actualPriceUsd: item.unit_price_usd,
+      actualPriceZwg: item.unit_price_zwg,
+      description: item.notes || undefined,
+      category: milestoneId,
+      isOverridden: false,
+      isEnablementCost: Boolean(item.notes?.includes('[Enablement Cost]')),
     });
-    setValidationError(null);
-  };
 
-  useReveal({ deps: [currentStep, projectScope, showRoomPicker, isAuthenticated] });
-
-  const locationLabel = useMemo(
-    () => buildLocationLabel(projectDetails.locationType, projectDetails.locationCity, projectDetails.specificLocation),
-    [projectDetails.locationType, projectDetails.locationCity, projectDetails.specificLocation]
-  );
-
-  const projectDetailsForSave = useMemo(
-    () => {
-      const hasProTier = profile?.tier === 'pro' || profile?.tier === 'admin';
-      const geotechAnalysisMode: 'manual' | 'pro_available' | 'pro_applied' = geotechDocument?.id
-        ? (hasProTier ? 'pro_available' : 'manual')
-        : 'manual';
-
-      return {
-        name: projectDetails.name,
-        location: locationLabel,
-        soilType: projectDetails.soilType,
-        siteSlope: projectDetails.siteSlope,
-        geotechReportUploaded: Boolean(geotechDocument?.id),
-        geotechReportUploadedAt: geotechDocument?.createdAt || null,
-        geotechReportDocumentId: geotechDocument?.id || null,
-        geotechAnalysisMode,
-      };
-    },
-    [projectDetails.name, locationLabel, projectDetails.soilType, projectDetails.siteSlope, geotechDocument?.id, geotechDocument?.createdAt, profile?.tier]
-  );
-
-  // Labor Preference
-  const [laborType, setLaborType] = useState<'materials_only' | 'materials_labor' | null>(null);
-
-  // Plan Sketch State
-  const [planSketchEnabled, setPlanSketchEnabled] = useState(false);
-  const [planSketchMode, setPlanSketchMode] = useState<PlanSketchMode>('simplified');
-  const [totalWindows, setTotalWindows] = useState(8);
-  const [totalDoors, setTotalDoors] = useState(5);
-  const [detailedRooms, setDetailedRooms] = useState<RoomInstance[]>([]);
-  const [soilAdjustmentApplied, setSoilAdjustmentApplied] = useState(false);
-  const [preConstructionChecks, setPreConstructionChecks] = useState<Record<string, boolean>>({});
-  const [certificateTracker, setCertificateTracker] = useState<Record<string, CertificateStatus>>(
-    () =>
-      CERTIFICATE_TRACKER_ITEMS.reduce<Record<string, CertificateStatus>>(
-        (acc, cert) => {
-          acc[cert.id] = 'pending';
-          return acc;
-        },
-        {}
-      )
-  );
-  const [adminStageId, setAdminStageId] = useState<string | null>(null);
-  const [checklistTaskIdByRule, setChecklistTaskIdByRule] = useState<Record<string, string>>({});
-  const [certificateTaskIdById, setCertificateTaskIdById] = useState<Record<string, string>>({});
-  const [temporaryWorksSelections, setTemporaryWorksSelections] = useState<TemporaryWorkSelection[]>(
-    () => buildTemporaryWorksDefaults()
-  );
-  const [includeSepticTank, setIncludeSepticTank] = useState(false);
-  const [septicDimensions, setSepticDimensions] = useState({
-    length: '3',
-    width: '2',
-    height: '2',
-    unitPriceUsd: String(SEPTIC_TANK_DEFAULT_RATE_USD),
+    byMilestone.set(milestoneId, group);
   });
 
-  const selectedSoilProfile = useMemo(
-    () => (projectDetails.soilType ? SOIL_RISK_PROFILES[projectDetails.soilType] : null),
-    [projectDetails.soilType]
-  );
+  return previous.map((milestone) => ({
+    ...milestone,
+    items: byMilestone.get(milestone.id) || [],
+  }));
+}
 
-  const locationProcedureChecklist = useMemo<ProcedureChecklistItem[]>(() => {
-    const locationType = projectDetails.locationType;
-    if (!isLocationTypeRule(locationType)) return [];
-    return LOCATION_PROCEDURE_RULES.map((rule) => ({
-      ...rule,
-      status: rule.statusByLocation[locationType],
-    }));
-  }, [projectDetails.locationType]);
-
-  const hasProGeotechAnalysis = profile?.tier === 'pro' || profile?.tier === 'admin';
-  const isTemporaryToiletEnabled = useMemo(
-    () => temporaryWorksSelections.some((option) => option.id === 'temp-toilet' && option.enabled),
-    [temporaryWorksSelections]
-  );
-  const septicVolumeM3 = useMemo(() => {
-    if (!includeSepticTank || !isTemporaryToiletEnabled) return 0;
-    const length = Number(septicDimensions.length);
-    const width = Number(septicDimensions.width);
-    const height = Number(septicDimensions.height);
-    if (!Number.isFinite(length) || !Number.isFinite(width) || !Number.isFinite(height)) return 0;
-    if (length <= 0 || width <= 0 || height <= 0) return 0;
-    return Number((length * width * height).toFixed(2));
-  }, [includeSepticTank, isTemporaryToiletEnabled, septicDimensions.height, septicDimensions.length, septicDimensions.width]);
-  const selectedTemporaryWorks = useMemo(
-    () => temporaryWorksSelections.filter((option) => option.enabled),
-    [temporaryWorksSelections]
-  );
-  const temporaryWorksSubtotalUsd = useMemo(
-    () =>
-      selectedTemporaryWorks.reduce((sum, option) => {
-        const quantity = Number(option.quantity);
-        const unitPriceUsd = Number(option.unitPriceUsd);
-        if (!Number.isFinite(quantity) || !Number.isFinite(unitPriceUsd)) return sum;
-        return sum + quantity * unitPriceUsd;
-      }, 0),
-    [selectedTemporaryWorks]
-  );
-  const septicSubtotalUsd = useMemo(() => {
-    if (!includeSepticTank || !isTemporaryToiletEnabled) return 0;
-    const unitPriceUsd = Number(septicDimensions.unitPriceUsd);
-    if (!Number.isFinite(unitPriceUsd) || unitPriceUsd < 0) return 0;
-    return septicVolumeM3 * unitPriceUsd;
-  }, [includeSepticTank, isTemporaryToiletEnabled, septicDimensions.unitPriceUsd, septicVolumeM3]);
-
-  const handleDetailedContinue = (rooms: RoomInstance[], totals: { area: number, walls: number, bricks: number }) => {
-    setDetailedRooms(rooms);
-    setProjectDetails(prev => ({
-      ...prev,
-      floorPlanSize: totals.area.toFixed(1)
-    }));
-    const totalW = rooms.reduce((acc, r) => acc + r.windows, 0);
-    const totalD = rooms.reduce((acc, r) => acc + r.doors, 0);
-    setTotalWindows(totalW);
-    setTotalDoors(totalD);
-    goToNextStep();
-  };
-
-  // Milestones State (The actual BOQ data)
-  const [milestonesState, setMilestonesState] = useState<MilestoneData[]>(() =>
-    milestones.map(m => ({
-      id: m.id,
-      items: [],
-      expanded: true
+function serializeForDiff(milestones: MilestoneData[]): string {
+  return JSON.stringify(
+    milestones.map((milestone) => ({
+      id: milestone.id,
+      items: milestone.items.map((item) => ({
+        materialId: item.materialId,
+        materialName: item.materialName,
+        qty: item.quantity,
+        calculatedQty: item.calculatedQuantity,
+        price: item.actualPriceUsd,
+        unit: item.unit,
+        category: item.category,
+        description: item.description,
+        isOverridden: item.isOverridden,
+      })),
     }))
   );
+}
 
-  // Modal State for adding items
-  const [showAddMaterial, setShowAddMaterial] = useState<string | null>(null);
-  const [newItem, setNewItem] = useState<{ materialId: string; quantity: string }>({ materialId: '', quantity: '' });
-  const [isGenerating, setIsGenerating] = useState(false);
+const getStepIllustration = (step: number) => {
+  const illustrations = [
+    { src: '/placeholder-blueprint.webp', title: 'Step 1: Project Type', desc: 'Choose the kind of BOQ you are building.' },
+    { src: '/placeholder-substructure.webp', title: 'Step 2: Project Details', desc: 'Name and location set the pricing context.' },
+    { src: '/placeholder-blueprint.webp', title: 'Step 3: Building Design', desc: 'Define floor area and structure details.' },
+    { src: '/placeholder-superstructure.webp', title: 'Step 4: Materials & Scope', desc: 'Confirm scope and materials coverage.' },
+    { src: '/placeholder-roofing.webp', title: 'Step 5: Site Setup & Labor', desc: 'Add labor and optional site setup items.' },
+    { src: '/placeholder-blueprint.webp', title: 'Step 6: Review Estimate', desc: 'Adjust quantities before saving.' },
+  ];
 
-  // Currency context - must be called at top level (not inside conditionals)
-  const { currency, setCurrency, exchangeRate, formatPrice } = useCurrency();
+  const current = illustrations[step];
+  if (!current) return null;
 
-  // Helper for currency formatting
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency === 'USD' ? 'USD' : 'ZWG', // Assuming ZWG is the other currency code or use symbol logic
-    }).format(amount);
-  };
+  return (
+    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-slate-900 group shadow-lg">
+      <img src={current.src} alt={current.title} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700 ease-out" />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 p-8 z-10">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-4 text-[10px] font-bold tracking-widest text-white uppercase">
+          [Nano Banana Gen Asset]
+        </div>
+        <h3 className="text-2xl font-bold text-white mb-2">{current.title}</h3>
+        <p className="text-slate-300 text-sm">{current.desc}</p>
+      </div>
+    </div>
+  );
+};
 
-  // Calculate totals for sidebar
-  const { totalUSD, totalZWG } = useMemo(() => {
-    let usd = 0;
-    let zwg = 0;
-    milestonesState.forEach(m => {
-      m.items.forEach(item => {
-        const qty = item.quantity || 0;
-        usd += item.averagePriceUsd * qty;
-        zwg += item.averagePriceZwg * qty;
-      });
-    });
-    return { totalUSD: usd, totalZWG: zwg };
-  }, [milestonesState]);
+const WIZARD_STEPS = [
+  { id: 'project-type', label: 'Project Type' },
+  { id: 'project-details', label: 'Project Details' },
+  { id: 'building-design', label: 'Building Design' },
+  { id: 'materials-scope', label: 'Materials & Scope' },
+  { id: 'site-labor', label: 'Setup & Labor' },
+  { id: 'review-estimate', label: 'Review Estimate' },
+];
 
-  // Build wizard steps for sidebar
-  const wizardSteps: WizardStep[] = useMemo(() => {
-    const getStepStatus = (stepNum: number): StepStatus => {
-      if (currentStep > stepNum) return 'completed';
-      if (currentStep === stepNum) return 'current';
-      if (stepNum === currentStep + 1) return 'available';
-      return 'locked';
-    };
+export default function BoqNewPage() {
+  const searchParams = useSearchParams();
+  const { isAuthenticated, profile } = useAuth();
+  const projectIdFromUrl = searchParams.get('id');
 
-    const baseSteps: WizardStep[] = [
-      {
-        id: 'project-details',
-        label: 'Project Details',
-        shortLabel: 'Details',
-        description: 'Name and location',
-        icon: HouseSimple,
-        status: getStepStatus(1),
-      },
-      {
-        id: 'floor-plan',
-        label: 'Floor Plan',
-        shortLabel: 'Floor Plan',
-        description: 'Size and room mix',
-        icon: Layout,
-        status: getStepStatus(2),
-      },
-      {
-        id: 'scope',
-        label: 'Scope of Work',
-        shortLabel: 'Scope',
-        description: 'What to include',
-        icon: ListDashes,
-        status: getStepStatus(3),
-      },
-      {
-        id: 'labor',
-        label: 'Labor Options',
-        shortLabel: 'Labor',
-        description: 'Materials only or with labor',
-        icon: UserCircle,
-        status: getStepStatus(4),
-      },
-      {
-        id: 'temporary-works',
-        label: 'Temporary Works',
-        shortLabel: 'Site Setup',
-        description: 'Enablement costs',
-        icon: HardHat,
-        status: getStepStatus(5),
-      },
-      {
-        id: 'boq-estimate',
-        label: 'BOQ Estimate',
-        shortLabel: 'Estimate',
-        description: 'Review and finalize',
-        icon: Sparkle,
-        status: getStepStatus(6),
-      },
-    ];
+  const [showInteractiveBuilder, setShowInteractiveBuilder] = useState(false);
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [shakeError, setShakeError] = useState(false);
+  const { error: showError } = useToast();
 
-    return baseSteps;
-  }, [currentStep]);
+  const {
+    projectDetails,
+    updateProjectDetails,
+    geometryMode,
+    setGeometryMode,
+    detailedRooms,
+    setDetailedRooms,
+    totalWindows,
+    setTotalWindows,
+    totalDoors,
+    setTotalDoors,
+    projectScope,
+    setProjectScope,
+    selectedStages,
+    setSelectedStages,
+    laborType,
+    setLaborType,
+    milestonesState,
+    setMilestonesState,
+    temporaryWorksSelections,
+    includeSepticTank,
+    septicDimensions,
+    geotechDocument,
+    setGeotechDocument,
+  } = useBoqWizardStore();
 
-  const handleSidebarStepClick = (stepId: string) => {
-    const stepIndex = ['project-details', 'floor-plan', 'scope', 'labor', 'temporary-works'].indexOf(stepId);
-    if (stepIndex >= 0) {
-      setCurrentStep(stepIndex + 1);
-      return;
-    }
-
-    if (stepId === 'boq-estimate') {
-      setCurrentStep(6);
-      return;
-    }
-
-    if (currentStep === 6) {
-      // Scroll to milestone section
-      const element = document.getElementById(`milestone-${stepId}`);
-      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
-  const handleToggleMilestone = (milestoneId: string, included: boolean) => {
-    if (included) {
-      setSelectedStages(prev => [...prev, milestoneId]);
-    } else {
-      setSelectedStages(prev => prev.filter(s => s !== milestoneId));
-    }
-  };
-
-  // Project summary data for sidebar
-  const projectSummary: ProjectSummaryData = useMemo(() => {
-    const buildingTypeLabel = BUILDING_TYPES.find(t => t.value === projectDetails.buildingType)?.label || '';
-    const scopeLabel = projectScope === 'stage'
-      ? (selectedStages.length > 0 ? `${selectedStages.length} stages` : 'Specific Stages')
-      : projectScope === 'full'
-        ? 'Entire House'
-        : '';
-    const laborLabel = laborType === 'materials_only'
-      ? 'Materials Only'
-      : laborType === 'materials_labor'
-        ? 'Materials + Labor'
-        : '';
-
-    const roomSummary = Object.entries(projectDetails.roomInputs)
-      .filter(([, count]) => count && parseInt(count) > 0)
-      .map(([key, count]) => ({
-        label: ROOM_INPUTS.find(r => r.key === key)?.label || key,
-        count: parseInt(count)
-      }));
+  const projectDetailsForSave = useMemo(() => {
+    const hasProTier = profile?.tier === 'pro' || profile?.tier === 'admin';
+    const geotechAnalysisMode: 'manual' | 'pro_available' | 'pro_applied' = geotechDocument?.id
+      ? (hasProTier ? 'pro_available' : 'manual')
+      : 'manual';
 
     return {
       name: projectDetails.name,
-      location: buildLocationLabel(projectDetails.locationType, projectDetails.locationCity, projectDetails.specificLocation),
-      floorArea: projectDetails.floorPlanSize,
-      buildingType: buildingTypeLabel,
-      scope: scopeLabel,
-      labor: laborLabel,
-      rooms: roomSummary,
-      nextHint: STEP_HINTS[Math.min(currentStep, 5)]
+      location: getLocationLabel(projectDetails.locationType, projectDetails.locationCity, projectDetails.specificLocation),
+      soilType: projectDetails.soilType,
+      siteSlope: projectDetails.siteSlope,
+      geotechReportUploaded: Boolean(geotechDocument?.id),
+      geotechReportUploadedAt: geotechDocument?.createdAt || null,
+      geotechReportDocumentId: geotechDocument?.id || null,
+      geotechAnalysisMode,
     };
-  }, [projectDetails, projectScope, selectedStages, laborType, currentStep]);
+  }, [projectDetails, geotechDocument, profile]);
 
-  // Auto-save hook for database persistence
   const {
     project,
     isSaving,
+    isAutoSaving,
+    isLoading,
     lastSaved,
     hasUnsavedChanges,
-    error: saveError,
     saveNow,
     createNewProject,
     markChanged,
   } = useProjectAutoSave(
     projectDetailsForSave,
-    projectScope === 'stage' ? 'stage' : 'entire',
+    projectScope,
     selectedStages,
     laborType,
     milestonesState,
     {
       projectId: projectIdFromUrl,
-      autoSaveInterval: 5000, // 5 seconds for faster cross-screen availability
-      onLoadComplete: (loadedProject, items) => {
-        // Restore project details
-        const parsedLocation = parseLocation(loadedProject.location);
-        setProjectDetails({
+      autoSaveInterval: 5000,
+      onLoadComplete: (loadedProject: Project, items: DbBOQItem[]) => {
+        const locationParts = (loadedProject.location || '').split(' - ');
+        const locationType = normalizeLocationType(locationParts[0] || '');
+        const locationCity = locationParts[1] || '';
+        const specificLocation = locationParts[2] || '';
+        const inferredType = inferProjectType(loadedProject.scope, loadedProject.selected_stages);
+
+        updateProjectDetails({
+          projectType: inferredType,
           name: loadedProject.name,
-          locationType: parsedLocation.locationType,
-          locationCity: parsedLocation.locationCity,
-          specificLocation: parsedLocation.specificLocation,
-          soilType: (loadedProject.soil_type as SoilType | null) || '',
+          locationType,
+          locationCity,
+          specificLocation,
+          soilType: loadedProject.soil_type || '',
           siteSlope: loadedProject.site_slope || '',
-          floorPlanSize: '',
-          buildingType: '',
-          wallHeight: '2.7',
-          brickType: 'common',
-          cementType: 'cement_325',
-          roomInputs: { ...DEFAULT_ROOM_INPUTS },
         });
-        const geotechDocumentId = loadedProject.geotech_report_document_id;
-        if (loadedProject.geotech_report_uploaded && geotechDocumentId) {
-          setGeotechDocument((prev) => prev || {
-            id: geotechDocumentId,
-            fileName: 'Geotech Report',
-            createdAt: loadedProject.geotech_report_uploaded_at || new Date().toISOString(),
-          });
-        }
 
-
-        // Restore scope and labor preference
-        const savedStages = loadedProject.selected_stages && loadedProject.selected_stages.length > 0
-          ? loadedProject.selected_stages
-          : (loadedProject.scope !== 'entire_house' ? [loadedProject.scope] : []);
-        if (savedStages.length > 0) {
+        const scopeRaw = loadedProject.scope;
+        if (scopeRaw && scopeRaw !== 'entire_house') {
           setProjectScope('stage');
-          setSelectedStages(savedStages);
+          const nextStages = loadedProject.selected_stages && loadedProject.selected_stages.length > 0
+            ? loadedProject.selected_stages
+            : [scopeRaw];
+          setSelectedStages(nextStages);
         } else {
           setProjectScope('entire');
+          setSelectedStages(loadedProject.selected_stages || []);
         }
+
         setLaborType(loadedProject.labor_preference === 'with_labor' ? 'materials_labor' : 'materials_only');
 
-        const substructureItems = items.filter((item) => item.category === 'substructure');
-        setTemporaryWorksSelections((prev) =>
-          prev.map((option) => {
-            const matchingItem = substructureItems.find((item) => item.material_id === option.id);
-            if (!matchingItem) {
-              return { ...option, enabled: false };
-            }
-
-            return {
-              ...option,
-              enabled: Number(matchingItem.quantity) > 0,
-              quantity: String(matchingItem.quantity ?? option.quantity),
-              unitPriceUsd: String(matchingItem.unit_price_usd ?? option.unitPriceUsd),
-            };
-          })
-        );
-
-        const septicItem = substructureItems.find((item) => item.material_id === SEPTIC_TANK_ITEM_ID);
-        if (septicItem) {
-          setIncludeSepticTank(true);
-          const septicNote = septicItem.notes || '';
-          const length = septicNote.match(/L:(\d+(?:\.\d+)?)m/i)?.[1];
-          const width = septicNote.match(/W:(\d+(?:\.\d+)?)m/i)?.[1];
-          const height = septicNote.match(/H:(\d+(?:\.\d+)?)m/i)?.[1];
-          setSepticDimensions((prev) => ({
-            length: length || prev.length,
-            width: width || prev.width,
-            height: height || prev.height,
-            unitPriceUsd: String(septicItem.unit_price_usd ?? prev.unitPriceUsd),
-          }));
-        } else {
-          setIncludeSepticTank(false);
-        }
-
-        // Restore BOQ items grouped by category/milestone
-        if (items.length > 0) {
-          setMilestonesState(prev => {
-            const newState = [...prev];
-            items.forEach(item => {
-              const milestoneIndex = newState.findIndex(m => m.id === item.category);
-              if (milestoneIndex !== -1) {
-                const material = materialCatalog.find(m => m.id === item.material_id);
-                const averagePriceUsd = material?.priceUsd ?? item.unit_price_usd;
-                const averagePriceZwg = material?.priceZwg ?? item.unit_price_zwg;
-                const actualPriceUsd = item.unit_price_usd;
-                const actualPriceZwg = item.unit_price_zwg ??
-                  getScaledPriceZwg(actualPriceUsd, averagePriceUsd, averagePriceZwg, exchangeRate);
-
-                newState[milestoneIndex].items.push({
-                  id: item.id,
-                  materialId: item.material_id,
-                  materialName: item.material_name,
-                  quantity: item.quantity,
-                  unit: item.unit,
-                  averagePriceUsd,
-                  averagePriceZwg,
-                  actualPriceUsd,
-                  actualPriceZwg,
-                  description: item.notes ? stripEnablementTag(item.notes) : undefined,
-                  isEnablementCost: Boolean(item.notes?.startsWith(ENABLEMENT_ITEM_TAG)),
-                  category: item.category,
-                });
-              }
-            });
-            return newState;
+        if (loadedProject.geotech_report_document_id) {
+          setGeotechDocument({
+            id: loadedProject.geotech_report_document_id,
+            fileName: 'Geotech Report',
+            createdAt: loadedProject.geotech_report_uploaded_at || loadedProject.updated_at,
           });
-
-          // Jump to final BOQ step if saved items already exist
-          setCurrentStep(6);
         }
+
+        const hydratedMilestones = mapLoadedItemsToMilestones(items, useBoqWizardStore.getState().milestonesState);
+        setMilestonesState(hydratedMilestones);
       },
     }
   );
 
-  const projectPriceKey = useMemo(
-    () => `boq_price_version_${project?.id ?? projectIdFromUrl ?? 'draft'}`,
-    [project?.id, projectIdFromUrl]
-  );
-
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    setPriceVersionReady(false);
-    const storedVersion = localStorage.getItem(projectPriceKey);
-    const nextVersion = storedVersion || SYSTEM_PRICE_VERSION;
-    localStorage.setItem(projectPriceKey, nextVersion);
-    setProjectPriceVersion(nextVersion);
-    setPriceVersionReady(true);
-  }, [projectPriceKey]);
+    const currentMilestones = useBoqWizardStore.getState().milestonesState;
 
-  useEffect(() => {
-    if (!priceVersionReady || typeof window === 'undefined') return;
-    localStorage.setItem(projectPriceKey, projectPriceVersion);
-  }, [projectPriceKey, projectPriceVersion, priceVersionReady]);
+    const nextMilestones = buildLiveMilestones({
+      projectDetails,
+      geometryMode,
+      detailedRooms,
+      totalWindows,
+      totalDoors,
+      projectScope,
+      selectedStages,
+      laborType,
+      temporaryWorksSelections,
+      includeSepticTank,
+      septicDimensions,
+      previousMilestones: currentMilestones,
+    });
 
-  useEffect(() => {
-    setSoilAdjustmentApplied(false);
-  }, [projectDetails.soilType]);
+    const currentSignature = serializeForDiff(currentMilestones);
+    const nextSignature = serializeForDiff(nextMilestones);
+
+    if (currentSignature !== nextSignature) {
+      setMilestonesState(nextMilestones);
+    }
+  }, [
+    projectDetails,
+    geometryMode,
+    detailedRooms,
+    totalWindows,
+    totalDoors,
+    projectScope,
+    selectedStages,
+    laborType,
+    temporaryWorksSelections,
+    includeSepticTank,
+    septicDimensions,
+    setMilestonesState,
+  ]);
+
+  const changeSignature = useMemo(() => {
+    return JSON.stringify({
+      projectDetails,
+      geometryMode,
+      detailedRooms,
+      totalWindows,
+      totalDoors,
+      projectScope,
+      selectedStages,
+      laborType,
+      temporaryWorksSelections,
+      includeSepticTank,
+      septicDimensions,
+      geotechDocument,
+      milestonesState,
+    });
+  }, [
+    projectDetails,
+    geometryMode,
+    detailedRooms,
+    totalWindows,
+    totalDoors,
+    projectScope,
+    selectedStages,
+    laborType,
+    temporaryWorksSelections,
+    includeSepticTank,
+    septicDimensions,
+    geotechDocument,
+    milestonesState,
+  ]);
+
+  const baselineRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!project?.id) {
-      setAdminStageId(null);
-      setChecklistTaskIdByRule({});
-      setCertificateTaskIdById({});
-      setGeotechDocument(null);
+      baselineRef.current = null;
       return;
     }
 
-    let isCancelled = false;
-
-    const hydrateAdminState = async () => {
-      setIsHydratingAdminState(true);
-      try {
-        const [stageResult, docsResult] = await Promise.all([
-          getStageByCategory(project.id, 'substructure'),
-          getProjectDocuments(project.id, 'permit'),
-        ]);
-
-        if (isCancelled) return;
-
-        if (stageResult.stage) {
-          setAdminStageId(stageResult.stage.id);
-
-          const nextChecklistState: Record<string, boolean> = {};
-          const nextChecklistTaskIds: Record<string, string> = {};
-          const nextCertificateTaskIds: Record<string, string> = {};
-          const nextCertificateState = CERTIFICATE_TRACKER_ITEMS.reduce<Record<string, CertificateStatus>>(
-            (acc, cert) => {
-              acc[cert.id] = 'pending';
-              return acc;
-            },
-            {}
-          );
-
-          stageResult.stage.tasks.forEach((task) => {
-            const marker = task.verification_note || '';
-            if (marker.startsWith(CHECKLIST_TASK_PREFIX)) {
-              const ruleId = marker.replace(CHECKLIST_TASK_PREFIX, '').split('|')[0];
-              nextChecklistState[ruleId] = Boolean(task.is_completed);
-              nextChecklistTaskIds[ruleId] = task.id;
-              return;
-            }
-
-            if (marker.startsWith(CERTIFICATE_TASK_PREFIX)) {
-              const certificateId = marker.replace(CERTIFICATE_TASK_PREFIX, '').split('|')[0];
-              if (certificateId in nextCertificateState) {
-                nextCertificateState[certificateId] = task.is_completed
-                  ? 'done'
-                  : parseCertificateStatusFromMarker(marker);
-                nextCertificateTaskIds[certificateId] = task.id;
-              }
-              return;
-            }
-
-            if (marker.startsWith(LEGACY_CERTIFICATE_TASK_PREFIX)) {
-              const certificateId = marker.replace(LEGACY_CERTIFICATE_TASK_PREFIX, '').split('|')[0];
-              if (certificateId in nextCertificateState) {
-                nextCertificateState[certificateId] = task.is_completed
-                  ? 'done'
-                  : parseCertificateStatusFromMarker(marker);
-                nextCertificateTaskIds[certificateId] = task.id;
-              }
-            }
-          });
-
-          setChecklistTaskIdByRule(nextChecklistTaskIds);
-          setCertificateTaskIdById(nextCertificateTaskIds);
-          setPreConstructionChecks((prev) => ({ ...prev, ...nextChecklistState }));
-          setCertificateTracker(nextCertificateState);
-        }
-
-        if (!docsResult.error) {
-          const geotechDoc = docsResult.documents.find((doc) =>
-            (doc.description || '').includes(GEOTECH_DOC_TAG)
-          );
-
-          if (geotechDoc) {
-            setGeotechDocument({
-              id: geotechDoc.id,
-              fileName: geotechDoc.file_name,
-              createdAt: geotechDoc.created_at,
-            });
-          }
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsHydratingAdminState(false);
-        }
-      }
-    };
-
-    void hydrateAdminState();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [project?.id]);
-
-  // Mark changes when milestone data changes (after initial load)
-  useEffect(() => {
-    if (project && currentStep === 6) {
-      markChanged();
-    }
-  }, [milestonesState, project, currentStep, markChanged]);
-
-  useEffect(() => {
-    if (project && currentStep >= 2) {
-      markChanged();
-    }
-  }, [projectScope, selectedStages, laborType, project, currentStep, markChanged]);
-
-  useEffect(() => {
-    if (project) {
-      markChanged();
-    }
-  }, [projectDetails.soilType, projectDetails.siteSlope, geotechDocument?.id, geotechDocument?.createdAt, project, markChanged]);
-
-  useEffect(() => {
-    if (currentStep !== 5) return;
-
-    const substructureMilestone = milestonesState.find((milestone) => milestone.id === 'substructure');
-    if (!substructureMilestone) return;
-
-    setTemporaryWorksSelections((prev) =>
-      prev.map((option) => {
-        const matchingItem = substructureMilestone.items.find((item) => item.materialId === option.id);
-        if (!matchingItem) {
-          return { ...option, enabled: false };
-        }
-        return {
-          ...option,
-          enabled: Number(matchingItem.quantity) > 0,
-          quantity: String(matchingItem.quantity ?? option.quantity),
-          unitPriceUsd: String(matchingItem.averagePriceUsd ?? option.unitPriceUsd),
-        };
-      })
-    );
-
-    const septicItem = substructureMilestone.items.find((item) => item.materialId === SEPTIC_TANK_ITEM_ID);
-    if (!septicItem) {
-      setIncludeSepticTank(false);
+    if (baselineRef.current === null) {
+      baselineRef.current = changeSignature;
       return;
     }
 
-    setIncludeSepticTank(true);
-    const septicNote = septicItem.description || '';
-    const length = septicNote.match(/L:(\d+(?:\.\d+)?)m/i)?.[1];
-    const width = septicNote.match(/W:(\d+(?:\.\d+)?)m/i)?.[1];
-    const height = septicNote.match(/H:(\d+(?:\.\d+)?)m/i)?.[1];
-    setSepticDimensions((prev) => ({
-      length: length || prev.length,
-      width: width || prev.width,
-      height: height || prev.height,
-      unitPriceUsd: String(septicItem.averagePriceUsd ?? prev.unitPriceUsd),
-    }));
-  }, [currentStep, milestonesState]);
-
-  // Close dropdown menus when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown-container')) {
-        setShowShareMenu(false);
-        setShowExportMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Pre-fill project details from sessionStorage (coming from /projects/new manual builder)
-  // OR restore full BOQ session (coming back after auth from save prompt)
-  useEffect(() => {
-    try {
-      // Check for full BOQ session first (returning after auth)
-      const boqSession = sessionStorage.getItem('zimestimate_boq_session');
-      if (boqSession) {
-        const data = JSON.parse(boqSession);
-        sessionStorage.removeItem('zimestimate_boq_session');
-        if (data.currentStep) setCurrentStep(data.currentStep);
-        if (data.projectDetails) {
-          setProjectDetails((prev) => ({
-            ...prev,
-            ...data.projectDetails,
-            siteSlope: data.projectDetails.siteSlope || '',
-          }));
-        }
-        if (data.projectScope) setProjectScope(data.projectScope);
-        if (data.selectedStages) setSelectedStages(data.selectedStages);
-        if (data.laborType) setLaborType(data.laborType);
-        if (data.milestonesState) setMilestonesState(data.milestonesState);
-        if (data.planSketchEnabled !== undefined) setPlanSketchEnabled(data.planSketchEnabled);
-        if (data.planSketchMode) setPlanSketchMode(data.planSketchMode);
-        if (data.totalWindows !== undefined) setTotalWindows(data.totalWindows);
-        if (data.totalDoors !== undefined) setTotalDoors(data.totalDoors);
-        if (data.temporaryWorksSelections) setTemporaryWorksSelections(data.temporaryWorksSelections);
-        if (data.includeSepticTank !== undefined) setIncludeSepticTank(data.includeSepticTank);
-        if (data.septicDimensions) setSepticDimensions(data.septicDimensions);
-        if (data.pendingSave) setPendingAutoSave(true);
-        return;
-      }
-
-      // Check for basic project details (coming from /projects/new manual builder)
-      const stored = sessionStorage.getItem('zimestimate_new_project');
-      if (stored) {
-        const data = JSON.parse(stored) as { name: string; location: string; type: string };
-        sessionStorage.removeItem('zimestimate_new_project');
-        setProjectDetails(prev => ({
-          ...prev,
-          name: data.name || prev.name,
-          locationCity: data.location || prev.locationCity,
-          buildingType: data.type || prev.buildingType,
-        }));
-      }
-    } catch { }
-  }, []);
-
-  // Auto-save after returning from auth (pendingAutoSave was set from restored session)
-  useEffect(() => {
-    if (pendingAutoSave && isAuthenticated) {
-      setPendingAutoSave(false);
-      handleSaveProject();
+    if (baselineRef.current !== changeSignature) {
+      markChanged();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingAutoSave, isAuthenticated]);
+  }, [project?.id, changeSignature, markChanged]);
 
-  // Persist full BOQ state to sessionStorage before redirecting to auth
-  const persistBOQSession = () => {
-    try {
-      sessionStorage.setItem('zimestimate_boq_session', JSON.stringify({
-        currentStep,
-        projectDetails,
-        projectScope,
-        selectedStages,
-        laborType,
-        milestonesState,
-        planSketchEnabled,
-        planSketchMode,
-        totalWindows,
-        totalDoors,
-        temporaryWorksSelections,
-        includeSepticTank,
-        septicDimensions,
-        pendingSave: true,
-      }));
-    } catch { }
-  };
-
-  // Derived state
-  const calculateMilestoneTotal = (items: BOQItem[]) => {
-    return items.reduce((acc, item) => {
-      return acc + (item.quantity || 0) * item.averagePriceUsd;
-    }, 0);
-  };
-
-  // Helper to get next available ID
-  const getNextId = () => Math.random().toString(36).substr(2, 9);
-
-  // Sorting helper for Critical Materials (Bricks > Cement > Sand > Others)
-  const sortMaterials = (items: BOQItem[]) => {
-    const priorityOrder = ['bricks', 'cement', 'sand', 'aggregates', 'steel'];
-    return [...items].sort((a, b) => {
-      // Find category from catalog since it might not be on item directly if old data
-      const catA = materialCatalog.find(m => m.id === a.materialId)?.category || '';
-      const catB = materialCatalog.find(m => m.id === b.materialId)?.category || '';
-
-      const idxA = priorityOrder.indexOf(catA);
-      const idxB = priorityOrder.indexOf(catB);
-
-      // If both are priority, lower index comes first
-      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-      // If only A is priority, A comes first
-      if (idxA !== -1) return -1;
-      // If only B is priority, B comes first
-      if (idxB !== -1) return 1;
-
-      // Otherwise sort alphabetically
-      return a.materialName.localeCompare(b.materialName);
-    });
-  };
-
-  const toggleMilestone = (id: string) => {
-    setMilestonesState(prev => prev.map(m =>
-      m.id === id ? { ...m, expanded: !m.expanded } : m
-    ));
-  };
-
-  const visibleMilestones = milestones.filter(m => {
-    // If specific stages selected (Scope Selection step)
-    if (projectScope === 'stage' && m.id !== 'labor') {
-      return selectedStages.includes(m.id);
+  useEffect(() => {
+    if (project?.id && lastSaved) {
+      baselineRef.current = changeSignature;
     }
-    // Labor is handled separately by labor selection
-    if (m.id === 'labor' && laborType !== 'materials_labor') return false;
+  }, [project?.id, lastSaved, changeSignature]);
 
-    return true;
-  });
+  const handleInteractiveBuilderContinue = (
+    rooms: RoomInstance[],
+    totals: { area: number; walls: number; bricks: number }
+  ) => {
+    setDetailedRooms(rooms);
+    setGeometryMode('detailed');
 
-  const boqHealth = useMemo(() => {
-    const healthCategories = new Set<BoqHealthCategory>([
-      'substructure',
-      'superstructure',
-      'roofing',
-      'finishing',
-      'exterior',
-    ]);
+    const windowCount = rooms.reduce((sum, room) => sum + room.windows, 0);
+    const doorCount = rooms.reduce((sum, room) => sum + room.doors, 0);
 
-    const inputs = visibleMilestones
-      .filter((milestone): milestone is typeof milestone & { id: BoqHealthCategory } =>
-        healthCategories.has(milestone.id as BoqHealthCategory)
-      )
-      .map((milestone) => {
-        const stage = milestonesState.find((m) => m.id === milestone.id);
-        const itemIdsWithQty = (stage?.items || [])
-          .filter((item) => Number(item.quantity) > 0)
-          .map((item) => item.materialId);
+    setTotalWindows(windowCount);
+    setTotalDoors(doorCount);
+    updateProjectDetails({ floorPlanSize: String(totals.area.toFixed(1)) });
+    setShowInteractiveBuilder(false);
+  };
 
-        return {
-          category: milestone.id,
-          itemIdsWithQty,
-        };
-      });
+  const persistInSessionAndRedirect = (url: string) => {
+    sessionStorage.setItem('zimestimate_boq_pending_save', 'true');
+    window.location.href = url;
+  };
 
-    return calculateBoqHealth(inputs);
-  }, [milestonesState, visibleMilestones]);
+  const handleSave = async () => {
+    if (!isAuthenticated) {
+      setShowSavePrompt(true);
+      return;
+    }
 
-  const validateCurrentStep = () => {
-    const { errors, message } = validateBOQWizardStep({
-      currentStep,
+    if (!project?.id) {
+      const created = await createNewProject(projectDetailsForSave);
+      if (created) {
+        await saveNow();
+      }
+      return;
+    }
+
+    await saveNow();
+  };
+
+  const handleNextStep = () => {
+    const currentState: BOQWizardValidationState = {
+      currentSection: currentStep === 0
+        ? 'project_type'
+        : currentStep === 1
+          ? 'project'
+          : currentStep === 2
+            ? 'geometry'
+            : currentStep === 3
+              ? 'scope'
+              : currentStep === 4
+                ? 'labor'
+                : 'finished',
+      geometryMode,
       projectDetails,
       projectScope,
       selectedStages,
       laborType,
-    });
-    setFieldValidation(errors);
-    setValidationError(message);
-    return Object.keys(errors).length === 0;
-  };
-
-  const goToNextStep = async () => {
-    if (!validateCurrentStep()) {
-      return;
-    }
-
-    // Create project in database when moving from step 1 (if authenticated and no project yet)
-    if (currentStep === 1 && isAuthenticated && !project) {
-      const projectId = await createNewProject(projectDetailsForSave);
-      if (!projectId) {
-        // Project creation failed, but allow continuing in offline mode
-        console.warn('Failed to create project in database, continuing locally');
-      }
-    }
-
-    // Handle conditional Step 2B for detailed mode
-    if (currentStep === 2 && planSketchEnabled && planSketchMode === 'detailed') {
-      setCurrentStep(2.5); // Step 2B: Room Details
-      return;
-    }
-
-    // Skip 2.5 and go to 3 when coming from normal flow
-    if (currentStep === 2.5) {
-      setCurrentStep(3);
-      return;
-    }
-
-    if (currentStep === 5) {
-      if (includeSepticTank && isTemporaryToiletEnabled && septicVolumeM3 <= 0) {
-        setValidationError('Enter valid septic tank dimensions (L, W, H) before continuing.');
-        return;
-      }
-      applyTemporaryWorksToBoq();
-    }
-
-    setCurrentStep(prev => prev + 1);
-  };
-
-  const goToPrevStep = () => {
-    setValidationError(null);
-    setFieldValidation({});
-
-    // Handle back from Step 2B
-    if (currentStep === 2.5) {
-      setCurrentStep(2);
-      return;
-    }
-    // Handle back to Step 2B if we're at step 3 and came from detailed mode
-    // (We just go back to 2 normally for simplicity)
-    setCurrentStep(prev => prev - 1);
-  };
-
-
-  const handleUpdateQuantity = (milestoneId: string, itemId: string, qty: number) => {
-    setMilestonesState(prev => prev.map(m => {
-      if (m.id !== milestoneId) return m;
-      return {
-        ...m,
-        items: m.items.map(item => item.id === itemId ? { ...item, quantity: qty } : item)
-      };
-    }));
-  };
-
-  const handleUpdateAveragePrices = () => {
-    setMilestonesState(prev => prev.map(m => ({
-      ...m,
-      items: m.items.map(item => {
-        const material = materialCatalog.find(mat => mat.id === item.materialId);
-        if (!material) return item;
-        const nextAverageUsd = material.priceUsd;
-        const nextAverageZwg = material.priceZwg;
-        const updatedPricing = applyAveragePriceUpdate(
-          {
-            averagePriceUsd: item.averagePriceUsd,
-            averagePriceZwg: item.averagePriceZwg,
-            actualPriceUsd: item.actualPriceUsd,
-          },
-          nextAverageUsd,
-          nextAverageZwg,
-          exchangeRate
-        );
-
-        return { ...item, ...updatedPricing };
-      })
-    })));
-
-    setProjectPriceVersion(SYSTEM_PRICE_VERSION);
-  };
-
-  const handleKeepCurrentPrices = () => {
-    setProjectPriceVersion(SYSTEM_PRICE_VERSION);
-  };
-
-  const handleApplySoilAdjustment = () => {
-    if (!selectedSoilProfile || selectedSoilProfile.adjustmentPct <= 0 || soilAdjustmentApplied) {
-      return;
-    }
-
-    const factor = 1 + (selectedSoilProfile.adjustmentPct / 100);
-    setMilestonesState((prev) => prev.map((milestone) => {
-      if (milestone.id !== 'substructure') return milestone;
-      return {
-        ...milestone,
-        items: milestone.items.map((item) => {
-          if (!item.quantity || item.quantity <= 0) return item;
-          return {
-            ...item,
-            quantity: Number((item.quantity * factor).toFixed(2)),
-            isOverridden: true,
-          };
-        }),
-      };
-    }));
-
-    setSoilAdjustmentApplied(true);
-  };
-
-  const addOrIncrementMilestoneMaterial = (
-    milestoneId: string,
-    materialId: string,
-    qty: number,
-    options?: { isEnablementCost?: boolean; description?: string }
-  ) => {
-    const material = materialCatalog.find((m) => m.id === materialId);
-    if (!material) return false;
-
-    const safeQty = Number.isFinite(qty) && qty > 0 ? qty : 1;
-    setMilestonesState((prev) =>
-      prev.map((milestone) => {
-        if (milestone.id !== milestoneId) return milestone;
-
-        const existingItem = milestone.items.find((item) => item.materialId === materialId);
-        if (existingItem) {
-          return {
-            ...milestone,
-            items: milestone.items.map((item) =>
-              item.materialId === materialId
-                ? {
-                    ...item,
-                    quantity: Number(((item.quantity || 0) + safeQty).toFixed(2)),
-                    isEnablementCost: options?.isEnablementCost ? true : item.isEnablementCost,
-                  }
-                : item
-            ),
-          };
-        }
-
-        const newItemObj: BOQItem = {
-          id: getNextId(),
-          materialId: material.id,
-          materialName: material.name,
-          quantity: safeQty,
-          unit: material.unit,
-          averagePriceUsd: material.priceUsd,
-          averagePriceZwg: material.priceZwg,
-          actualPriceUsd: material.priceUsd,
-          actualPriceZwg: material.priceZwg,
-          description: options?.description || material.description,
-          isEnablementCost: options?.isEnablementCost || false,
-        };
-
-        return { ...milestone, items: [newItemObj, ...milestone.items] };
-      })
-    );
-
-    return true;
-  };
-
-  const handleTemporaryWorkChange = (
-    optionId: string,
-    updates: Partial<Pick<TemporaryWorkSelection, 'enabled' | 'quantity' | 'unitPriceUsd'>>
-  ) => {
-    setTemporaryWorksSelections((prev) =>
-      prev.map((option) => (option.id === optionId ? { ...option, ...updates } : option))
-    );
-  };
-
-  const applyTemporaryWorksToBoq = () => {
-    const managedIds = new Set([...temporaryWorksSelections.map((option) => option.id), SEPTIC_TANK_ITEM_ID]);
-    const septicUnitPriceUsd = Number(septicDimensions.unitPriceUsd);
-    const septicTotalUsd = septicVolumeM3 * (Number.isFinite(septicUnitPriceUsd) ? septicUnitPriceUsd : 0);
-
-    setMilestonesState((prev) =>
-      prev.map((milestone) => {
-        if (milestone.id !== 'substructure') return milestone;
-
-        const preservedItems = milestone.items.filter((item) => !managedIds.has(item.materialId));
-        const temporaryItems: BOQItem[] = [];
-
-        temporaryWorksSelections.forEach((option) => {
-          if (!option.enabled) return;
-          const catalogItem = materialCatalog.find((material) => material.id === option.id);
-          const quantity = Number(option.quantity);
-          const unitPriceUsd = Number(option.unitPriceUsd);
-          if (!Number.isFinite(quantity) || quantity <= 0) return;
-          if (!Number.isFinite(unitPriceUsd) || unitPriceUsd < 0) return;
-
-          temporaryItems.push({
-            id: getNextId(),
-            materialId: option.id,
-            materialName: catalogItem?.name || option.label,
-            quantity,
-            unit: catalogItem?.unit || option.unit,
-            averagePriceUsd: unitPriceUsd,
-            averagePriceZwg: unitPriceUsd * exchangeRate,
-            actualPriceUsd: unitPriceUsd,
-            actualPriceZwg: unitPriceUsd * exchangeRate,
-            description: option.description,
-            isEnablementCost: true,
-            category: 'substructure',
-          });
-        });
-
-        if (includeSepticTank && isTemporaryToiletEnabled && septicVolumeM3 > 0 && septicTotalUsd >= 0) {
-          temporaryItems.push({
-            id: getNextId(),
-            materialId: SEPTIC_TANK_ITEM_ID,
-            materialName: 'Septic Tank Construction',
-            quantity: septicVolumeM3,
-            unit: 'm3',
-            averagePriceUsd: septicUnitPriceUsd,
-            averagePriceZwg: septicUnitPriceUsd * exchangeRate,
-            actualPriceUsd: septicUnitPriceUsd,
-            actualPriceZwg: septicUnitPriceUsd * exchangeRate,
-            description: `L:${septicDimensions.length}m W:${septicDimensions.width}m H:${septicDimensions.height}m`,
-            isEnablementCost: true,
-            category: 'substructure',
-          });
-        }
-
-        return {
-          ...milestone,
-          items: [...temporaryItems, ...preservedItems],
-        };
-      })
-    );
-  };
-
-  const ensureChecklistTask = async (ruleId: string, label: string): Promise<string | null> => {
-    if (!adminStageId) return null;
-
-    const existingTaskId = checklistTaskIdByRule[ruleId];
-    if (existingTaskId) return existingTaskId;
-
-    const { task, error } = await createStageTask(adminStageId, {
-      title: `Checklist: ${label}`,
-      description: 'Pre-construction advisory item from manual builder.',
-    });
-
-    if (error || !task) return null;
-
-    const marker = buildChecklistMarker(ruleId);
-    const { task: updatedTask } = await updateStageTask(task.id, {
-      verification_note: marker,
-    });
-    const persistedTaskId = updatedTask?.id || task.id;
-
-    setChecklistTaskIdByRule((prev) => ({
-      ...prev,
-      [ruleId]: persistedTaskId,
-    }));
-
-    return persistedTaskId;
-  };
-
-  const persistChecklistItem = async (ruleId: string, completed: boolean) => {
-    if (!project?.id || !adminStageId || isHydratingAdminState) return;
-
-    const rule = LOCATION_PROCEDURE_RULES.find((candidate) => candidate.id === ruleId);
-    const taskId = await ensureChecklistTask(ruleId, rule?.label || ruleId);
-    if (!taskId) return;
-    await toggleStageTask(taskId, completed);
-  };
-
-  const handleToggleChecklistItem = (ruleId: string) => {
-    const nextCompleted = !preConstructionChecks[ruleId];
-    setPreConstructionChecks((prev) => ({
-      ...prev,
-      [ruleId]: nextCompleted,
-    }));
-    void persistChecklistItem(ruleId, nextCompleted);
-  };
-
-  const ensureCertificateTask = async (certificateId: string, label: string, status: CertificateStatus): Promise<string | null> => {
-    if (!adminStageId) return null;
-
-    const existingTaskId = certificateTaskIdById[certificateId];
-    if (existingTaskId) return existingTaskId;
-
-    const { task, error } = await createStageTask(adminStageId, {
-      title: `Certificate: ${label}`,
-      description: 'Critical certificate tracker from manual builder.',
-    });
-
-    if (error || !task) return null;
-
-    const marker = buildCertificateMarker(certificateId, status);
-    const { task: updatedTask } = await updateStageTask(task.id, {
-      verification_note: marker,
-      is_completed: status === 'done',
-      completed_at: status === 'done' ? new Date().toISOString() : null,
-    });
-    const persistedTaskId = updatedTask?.id || task.id;
-
-    setCertificateTaskIdById((prev) => ({
-      ...prev,
-      [certificateId]: persistedTaskId,
-    }));
-
-    return persistedTaskId;
-  };
-
-  const persistCertificateStatus = async (certificateId: string, status: CertificateStatus) => {
-    if (!project?.id || !adminStageId || isHydratingAdminState) return;
-
-    const certificate = CERTIFICATE_TRACKER_ITEMS.find((item) => item.id === certificateId);
-    const taskId = await ensureCertificateTask(certificateId, certificate?.label || certificateId, status);
-    if (!taskId) return;
-
-    await updateStageTask(taskId, {
-      verification_note: buildCertificateMarker(certificateId, status),
-      is_completed: status === 'done',
-      completed_at: status === 'done' ? new Date().toISOString() : null,
-    });
-  };
-
-  const handleCertificateStatusChange = (certificateId: string, status: CertificateStatus) => {
-    setCertificateTracker((prev) => ({
-      ...prev,
-      [certificateId]: status,
-    }));
-    void persistCertificateStatus(certificateId, status);
-  };
-
-  const handleGeotechUpload = async (file: File) => {
-    if (!project?.id) {
-      return;
-    }
-
-    setIsUploadingGeotech(true);
-    setGeotechNotice(null);
-
-    const category: DocumentCategory = 'permit';
-    const descriptor = `${GEOTECH_DOC_TAG}|soil:${projectDetails.soilType || 'unspecified'}|source:manual_builder`;
-    const { document, error: uploadError } = await uploadDocument(project.id, file, category, descriptor);
-
-    if (uploadError) {
-      setGeotechNotice(`Upload failed: ${uploadError.message}`);
-      setIsUploadingGeotech(false);
-      return;
-    }
-
-    if (document) {
-      setGeotechDocument({
-        id: document.id,
-        fileName: document.file_name,
-        createdAt: document.created_at,
-      });
-      const analysisMode = hasProGeotechAnalysis ? 'pro_available' : 'manual';
-      const { error: projectUpdateError } = await updateProjectRecord(project.id, {
-        geotech_report_uploaded: true,
-        geotech_report_uploaded_at: document.created_at,
-        geotech_report_document_id: document.id,
-        geotech_analysis_mode: analysisMode,
-      });
-
-      if (projectUpdateError) {
-        setGeotechNotice(`Geotech uploaded, but metadata update failed: ${projectUpdateError.message}`);
-      } else {
-        setGeotechNotice('Geotech report uploaded.');
-      }
-    }
-
-    setIsUploadingGeotech(false);
-  };
-
-
-  const handleAdjustRoom = (key: RoomInputKey, delta: number) => {
-    setProjectDetails((prev) => {
-      const current = Number(prev.roomInputs[key]) || 0;
-      const next = Math.max(0, current + delta);
-      return {
-        ...prev,
-        roomInputs: {
-          ...prev.roomInputs,
-          [key]: next === 0 ? '' : String(next),
-        },
-      };
-    });
-  };
-
-  const handleAddMaterial = (milestoneId: string) => {
-    if (!newItem.materialId) return;
-    const addedQty = parseFloat(newItem.quantity) || 1;
-    const didAdd = addOrIncrementMilestoneMaterial(milestoneId, newItem.materialId, addedQty);
-    if (!didAdd) return;
-
-    setNewItem({ materialId: '', quantity: '' });
-    setShowAddMaterial(null);
-  };
-
-  const handleRemoveItem = (milestoneId: string, itemId: string) => {
-    setMilestonesState(prev => prev.map(m => {
-      if (m.id !== milestoneId) return m;
-      return {
-        ...m,
-        items: m.items.filter(i => i.id !== itemId)
-      };
-    }));
-  };
-
-  const handleAiGenerate = async (milestoneId: string) => {
-    setIsGenerating(true);
-    await new Promise(resolve => setTimeout(resolve, 800)); // Brief loading state
-
-    // Calculate total room count from roomInputs
-    const totalRoomCount = Object.values(projectDetails.roomInputs)
-      .reduce((sum, val) => sum + (Number(val) || 0), 0);
-
-    // Map milestone to scope
-    const milestoneToScope: Record<string, ProjectScope> = {
-      'substructure': 'substructure',
-      'superstructure': 'superstructure',
-      'roofing': 'roofing',
-      'finishing': 'finishing',
-      'exterior': 'exterior',
     };
 
-    const scope = milestoneToScope[milestoneId] || 'full_house';
+    const validation = validateBOQWizardStep(currentState);
 
-    // Build config for calculation
-    const config: ManualBuilderConfig = {
-      floorArea: Number(projectDetails.floorPlanSize) || 100,
-      roomCount: totalRoomCount || 4,
-      wallHeight: Number(projectDetails.wallHeight) || 2.7,
-      brickType: projectDetails.brickType,
-      cementType: projectDetails.cementType,
-      scope: scope,
-      includeLabor: laborType === 'materials_labor',
-      locationType: projectDetails.locationType === 'urban' || projectDetails.locationType === 'peri-urban' || projectDetails.locationType === 'rural'
-        ? projectDetails.locationType
-        : undefined,
-      rooms: detailedRooms,
-    };
-
-    // Generate BOQ items using the calculation engine
-    const generatedItems = generateBOQFromBasics(config);
-
-    // Filter items for this specific milestone/category and exclude zero quantities
-    const filteredItems = generatedItems.filter(item =>
-      item.category === milestoneId && item.quantity > 0
-    );
-
-
-    // Convert GeneratedBOQItem to BOQItem format
-    const newItems: BOQItem[] = filteredItems.map(item => ({
-      id: getNextId(),
-      materialId: item.materialId,
-      materialName: item.materialName,
-      quantity: item.quantity,
-      unit: item.unit,
-      averagePriceUsd: item.unitPriceUsd,
-      averagePriceZwg: item.unitPriceZwg,
-      actualPriceUsd: item.unitPriceUsd,
-      actualPriceZwg: item.unitPriceZwg,
-      description: item.calculationNote, // Show calculation basis
-      calculatedQuantity: item.quantity, // Store original for override tracking
-      isOverridden: false,
-    }));
-
-    const enablementItems: BOQItem[] = milestoneId === 'substructure'
-      ? TEMPORARY_WORKS_SUGGESTIONS.reduce<BOQItem[]>((acc, suggestion) => {
-          const material = materialCatalog.find((entry) => entry.id === suggestion.id);
-          if (!material) return acc;
-          acc.push({
-            id: getNextId(),
-            materialId: material.id,
-            materialName: material.name,
-            quantity: suggestion.defaultQty,
-            unit: material.unit,
-            averagePriceUsd: material.priceUsd,
-            averagePriceZwg: material.priceZwg,
-            actualPriceUsd: material.priceUsd,
-            actualPriceZwg: material.priceZwg,
-            description: suggestion.description || material.description,
-            isEnablementCost: true,
-            isOverridden: false,
-          });
-          return acc;
-        }, [])
-      : [];
-
-    const generatedWithEnablement = [...newItems];
-    enablementItems.forEach((enablementItem) => {
-      if (!generatedWithEnablement.some((item) => item.materialId === enablementItem.materialId)) {
-        generatedWithEnablement.push(enablementItem);
-      }
-    });
-
-    setMilestonesState(prev => prev.map(m => {
-      if (m.id !== milestoneId) return m;
-      // Merge with existing items or replace if empty
-      const existingIds = m.items.map(i => i.materialId);
-      const itemsToAdd = generatedWithEnablement.filter(ni => !existingIds.includes(ni.materialId));
-      return {
-        ...m,
-        items: m.items.length > 0 ? [...m.items, ...itemsToAdd] : generatedWithEnablement,
-        expanded: true
-      };
-    }));
-
-    setIsGenerating(false);
-  };
-
-
-  const handleSaveProject = async () => {
-    // Check if user is authenticated
-    if (isAuthenticated) {
-      setShowSaveOverlay(true);
-      setSaveOverlayMessage('Creating your project...');
-      setSaveOverlaySuccess(false);
-      setSaveOverlaySteps([
-        { label: 'Creating project', status: 'active' },
-        { label: 'Setting timelines', status: 'pending' },
-        { label: 'Creating substages', status: 'pending' },
-        { label: 'Saving BOQ items', status: 'pending' },
-      ]);
-
-      try {
-        let savedProjectId = project?.id ?? null;
-        const setStepState = (activeIndex: number, message: string) => {
-          setSaveOverlayMessage(message);
-          setSaveOverlaySteps(prev => prev.map((step, index) => {
-            if (index < activeIndex) return { ...step, status: 'done' };
-            if (index === activeIndex) return { ...step, status: 'active' };
-            return { ...step, status: 'pending' };
-          }));
-        };
-
-        // Step 1: Create project (if needed)
-        if (!project) {
-          setStepState(0, 'Creating your project...');
-          const newProjectId = await createNewProject(projectDetailsForSave);
-          if (!newProjectId) {
-            throw new Error('Failed to create project');
-          }
-          savedProjectId = newProjectId;
-        }
-
-        // Step 2: Timelines
-        setStepState(1, 'Setting timelines...');
-        await new Promise(resolve => setTimeout(resolve, 400));
-
-        // Step 3: Stages
-        setStepState(2, 'Creating substages...');
-        await new Promise(resolve => setTimeout(resolve, 400));
-
-        // Step 4: Save BOQ
-        setStepState(3, 'Saving BOQ items...');
-        await saveNow();
-
-        // Show success state briefly
-        setSaveOverlaySteps(prev => prev.map(step => ({ ...step, status: 'done' })));
-        setSaveOverlaySuccess(true);
-        setSaveOverlayMessage('Project saved!');
-
-        // Wait a moment to show success, then redirect
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Redirect to projects page after save
-        if (savedProjectId) {
-          setOptimisticProjectCard({
-            id: savedProjectId,
-            name: projectDetailsForSave.name,
-            location: projectDetailsForSave.location,
-            type: 'manual',
-          });
-
-          // Prime detail views with a warm project snapshot while navigation happens.
-          void (async () => {
-            const { project: snapshotProject, items: snapshotItems } = await getProjectWithItems(savedProjectId);
-            if (snapshotProject) {
-              setCreatedProjectSnapshot({
-                project: snapshotProject,
-                items: snapshotItems,
-              });
-            }
-          })();
-        }
-        router.push('/projects?created=1&refresh=1');
-      } catch {
-        setShowSaveOverlay(false);
-        // Error handling is done by the hook
-      }
-    } else {
-      setShowSavePrompt(true);
+    if (Object.keys(validation.errors).length > 0) {
+      setShakeError(true);
+      if (validation.message) showError(validation.message);
+      setTimeout(() => setShakeError(false), 500);
+      return;
     }
+
+    setCurrentStep(Math.min(WIZARD_STEPS.length - 1, currentStep + 1));
   };
 
-  const showPriceUpdateBanner = priceVersionReady && projectPriceVersion !== SYSTEM_PRICE_VERSION;
-
-  if (currentStep === 6) {
-    // Format currency based on current mode (currency, setCurrency, exchangeRate are from top-level hook)
-    const formatCurrency = (valueUsd: number, showZig: boolean = false): string => {
-      const useZig = showZig || currency === 'ZWG';
-      if (useZig) {
-        return `ZiG ${(valueUsd * exchangeRate).toFixed(2)}`;
-      }
-      return `$${valueUsd.toFixed(2)}`;
-    };
-
-    // Calculate totals
-    const totalMaterials = milestonesState.reduce((total, ms) => {
-      return total + ms.items.reduce((t, item) => t + ((item.quantity || 0) * item.averagePriceUsd), 0);
-    }, 0);
-    const totalItems = milestonesState.reduce((acc, m) => acc + m.items.length, 0);
-    const itemsWithQty = milestonesState.reduce((acc, m) =>
-      acc + m.items.filter(i => i.quantity && i.quantity > 0).length, 0);
-    const hasSubstructureItems = milestonesState.some(
-      (milestone) => milestone.id === 'substructure' && milestone.items.some((item) => Number(item.quantity) > 0)
-    );
-    const healthTone = boqHealth.status === 'high_risk'
-      ? { badge: 'bg-red-100 text-red-700', progress: 'bg-red-500', panel: 'border-red-200 bg-red-50/60' }
-      : boqHealth.status === 'work_in_progress'
-        ? { badge: 'bg-amber-100 text-amber-700', progress: 'bg-amber-500', panel: 'border-amber-200 bg-amber-50/60' }
-        : { badge: 'bg-emerald-100 text-emerald-700', progress: 'bg-emerald-500', panel: 'border-emerald-200 bg-emerald-50/60' };
-    const actionableLocationProcedures = locationProcedureChecklist.filter(
-      (rule) => rule.status !== 'not_applicable'
-    );
-    const completedLocationProcedures = actionableLocationProcedures.filter(
-      (rule) => preConstructionChecks[rule.id]
-    ).length;
-    const substructureMilestone = milestonesState.find((milestone) => milestone.id === 'substructure');
-    const temporaryWorksRows = TEMPORARY_WORKS_SUGGESTIONS.map((suggestion) => {
-      const material = materialCatalog.find((m) => m.id === suggestion.id);
-      const boqItem = substructureMilestone?.items.find((item) => item.materialId === suggestion.id);
-      const currentQty = boqItem?.quantity || 0;
-      return {
-        ...suggestion,
-        material,
-        boqItem,
-        currentQty,
-      };
-    });
-    const temporarySepticItem = substructureMilestone?.items.find(
-      (item) => item.materialId === SEPTIC_TANK_ITEM_ID
-    );
-    const availableTemporaryWorks = temporaryWorksRows.filter((row) => row.material);
-    const temporaryWorksAddedCount = availableTemporaryWorks.filter((row) => Number(row.currentQty) > 0).length;
-    const temporaryWorksEstimatedUsd =
-      temporaryWorksRows.reduce((sum, row) => {
-        if (!row.boqItem) return sum;
-        return sum + (Number(row.boqItem.quantity) || 0) * (Number(row.boqItem.averagePriceUsd) || 0);
-      }, 0) +
-      ((Number(temporarySepticItem?.quantity) || 0) * (Number(temporarySepticItem?.averagePriceUsd) || 0));
-    const completedCertificates = CERTIFICATE_TRACKER_ITEMS.filter(
-      (certificate) => certificateTracker[certificate.id] === 'done'
-    ).length;
-
-    return (
-      <MainLayout title="Build BOQ">
-        <WizardStyles />
-        <div className="boq-builder">
-
-          {showPriceUpdateBanner && (
-            <div className="price-update-banner">
-              <div className="price-update-content">
-                <div className="price-update-text">
-                  <h4>Average prices have been updated this week.</h4>
-                  <p>Would you like to update your project costing?</p>
-                </div>
-              </div>
-              <div className="price-update-actions">
-                <Button variant="primary" onClick={handleUpdateAveragePrices}>
-                  Update Prices
-                </Button>
-                <Button variant="secondary" onClick={handleKeepCurrentPrices}>
-                  Keep Current Prices
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Header */}
-          <div className="builder-header">
-            <div>
-              <h1>{projectDetails.name || 'New Project'}</h1>
-              <div className="builder-meta">
-                <span>{locationLabel || 'Location not set'}</span>
-                <span className="meta-dot">•</span>
-                <span>{selectedStages.length > 0 ? `${selectedStages.length} Stages` : 'Entire House'}</span>
-                {/* Save Status Indicator */}
-                {isAuthenticated && (
-                  <>
-                    <span className="meta-dot">•</span>
-                    <span className={`save-status ${isSaving ? 'saving' : hasUnsavedChanges ? 'unsaved' : 'saved'}`}>
-                      {isSaving ? (
-                        <><CloudArrowUp size={14} className="animate-pulse" /> Saving...</>
-                      ) : hasUnsavedChanges ? (
-                        <><Warning size={14} /> Unsaved changes</>
-                      ) : lastSaved ? (
-                        <><CloudCheck size={14} /> Saved</>
-                      ) : null}
-                    </span>
-                  </>
-                )}
-              </div>
-              {saveError && (
-                <div className="builder-error">{saveError}</div>
-              )}
-            </div>
-            <div className="header-actions">
-              <Button variant="secondary" onClick={goToPrevStep}>Edit Details</Button>
-              <Button
-                variant="primary"
-                onClick={handleSaveProject}
-                loading={isSaving}
-                icon={<FloppyDisk size={18} />}
-              >
-                {isAuthenticated ? 'Save & View Projects' : 'Save Project'}
-              </Button>
-              {/* Share Dropdown */}
-              <div className="dropdown-container" style={{ position: 'relative' }}>
-                <Button
-                  variant="ghost"
-                  icon={<ShareNetwork size={18} />}
-                  onClick={() => {
-                    if (!isAuthenticated) {
-                      setShowSavePrompt(true);
-                      return;
-                    }
-                    setShowShareMenu(!showShareMenu);
-                    setShowExportMenu(false);
-                  }}
-                >
-                  Share
-                </Button>
-                {showShareMenu && (
-                  <div className="dropdown-menu" style={{
-                    position: 'absolute',
-                    top: '100%',
-                    right: 0,
-                    marginTop: '4px',
-                    minWidth: '180px',
-                    background: 'white',
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-                    border: '1px solid #e2e8f0',
-                    zIndex: 1000,
-                    overflow: 'hidden',
-                  }}>
-                    <button
-                      className="dropdown-item"
-                      onClick={() => {
-                        const summary = `*${projectDetails.name || 'BOQ Estimate'}*\n` +
-                          `Location: ${locationLabel || 'Not specified'}\n\n` +
-                          `*Total Estimate:*\n` +
-                          `USD: $${totalMaterials.toLocaleString()}\n` +
-                          `ZWG: ZiG ${(totalMaterials * exchangeRate).toLocaleString()}\n\n` +
-                          `Materials: ${totalItems} items\n\n` +
-                          `Generated with ZimEstimate`;
-                        window.open(`https://wa.me/?text=${encodeURIComponent(summary)}`, '_blank');
-                        setShowShareMenu(false);
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: 'none',
-                        background: 'transparent',
-                        cursor: 'pointer',
-                        fontSize: '0.875rem',
-                        color: '#334155',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <WhatsappLogo size={18} weight="fill" style={{ color: '#25D366' }} />
-                      WhatsApp
-                    </button>
-                    <button
-                      className="dropdown-item"
-                      onClick={() => {
-                        const subject = encodeURIComponent(`BOQ Estimate: ${projectDetails.name || 'Project'}`);
-                        const body = encodeURIComponent(
-                          `${projectDetails.name || 'BOQ Estimate'}\n` +
-                          `Location: ${locationLabel || 'Not specified'}\n\n` +
-                          `Total Estimate:\n` +
-                          `USD: $${totalMaterials.toLocaleString()}\n` +
-                          `ZWG: ZiG ${(totalMaterials * exchangeRate).toLocaleString()}\n\n` +
-                          `Materials: ${totalItems} items\n\n` +
-                          `Generated with ZimEstimate`
-                        );
-                        window.location.href = `mailto:?subject=${subject}&body=${body}`;
-                        setShowShareMenu(false);
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: 'none',
-                        background: 'transparent',
-                        cursor: 'pointer',
-                        fontSize: '0.875rem',
-                        color: '#334155',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <EnvelopeSimple size={18} weight="fill" style={{ color: '#4E9AF7' }} />
-                      Email
-                    </button>
-                    <button
-                      className="dropdown-item"
-                      onClick={() => {
-                        const message = encodeURIComponent(
-                          `${projectDetails.name || 'BOQ Estimate'}\n` +
-                          `Total: $${totalMaterials.toLocaleString()} / ZiG ${(totalMaterials * exchangeRate).toLocaleString()}\n` +
-                          `${totalItems} materials - ZimEstimate`
-                        );
-                        window.location.href = `sms:?body=${message}`;
-                        setShowShareMenu(false);
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: 'none',
-                        background: 'transparent',
-                        cursor: 'pointer',
-                        fontSize: '0.875rem',
-                        color: '#334155',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <ChatText size={18} weight="fill" style={{ color: '#8B5CF6' }} />
-                      SMS
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Export Dropdown */}
-              <div className="dropdown-container" style={{ position: 'relative' }}>
-                <Button
-                  variant="primary"
-                  icon={<DownloadSimple size={18} />}
-                  onClick={() => {
-                    if (!isAuthenticated) {
-                      setShowSavePrompt(true);
-                      return;
-                    }
-                    setShowExportMenu(!showExportMenu);
-                    setShowShareMenu(false);
-                  }}
-                >
-                  Export
-                </Button>
-                {showExportMenu && (
-                  <div className="dropdown-menu" style={{
-                    position: 'absolute',
-                    top: '100%',
-                    right: 0,
-                    marginTop: '4px',
-                    minWidth: '180px',
-                    background: 'white',
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-                    border: '1px solid #e2e8f0',
-                    zIndex: 1000,
-                    overflow: 'hidden',
-                  }}>
-                    <button
-                      className="dropdown-item"
-                      onClick={() => {
-                        const allItems = milestonesState.flatMap(ms =>
-                          ms.items.map(item => ({
-                            material_name: item.materialName,
-                            category: ms.id,
-                            quantity: item.quantity || 0,
-                            unit: item.unit,
-                            unit_price_usd: item.averagePriceUsd,
-                            unit_price_zwg: item.averagePriceZwg,
-                          }))
-                        );
-                        const boqData = {
-                          projectName: projectDetails.name || 'Manual BOQ Project',
-                          location: locationLabel,
-                          totalArea: Number(projectDetails.floorPlanSize) || 0,
-                          items: allItems,
-                          totals: {
-                            usd: totalMaterials,
-                            zwg: totalMaterials * exchangeRate,
-                          },
-                          config: {
-                            scope: projectScope === 'stage' ? selectedStages.join(', ') : 'Entire House',
-                            brickType: 'Standard',
-                            cementType: 'OPC',
-                            includeLabor: laborType === 'materials_labor',
-                          },
-                        };
-                        exportBOQToPDF(boqData, currency);
-                        setShowExportMenu(false);
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: 'none',
-                        background: 'transparent',
-                        cursor: 'pointer',
-                        fontSize: '0.875rem',
-                        color: '#334155',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <FilePdf size={18} weight="fill" style={{ color: '#EF4444' }} />
-                      PDF Document
-                    </button>
-                    <button
-                      className="dropdown-item"
-                      onClick={() => {
-                        // Export as CSV for Excel
-                        const headers = ['Material', 'Category', 'Quantity', 'Unit', 'Average Price (USD)', 'Average Price (ZWG)', 'Total (USD)', 'Total (ZWG)'];
-                        const rows = milestonesState.flatMap(ms =>
-                          ms.items.map(item => [
-                            item.materialName,
-                            ms.id,
-                            item.quantity || 0,
-                            item.unit,
-                            item.averagePriceUsd.toFixed(2),
-                            item.averagePriceZwg.toFixed(2),
-                            ((item.quantity || 0) * item.averagePriceUsd).toFixed(2),
-                            ((item.quantity || 0) * item.averagePriceZwg).toFixed(2),
-                          ])
-                        );
-                        const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
-                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
-                        link.download = `${projectDetails.name || 'BOQ'}_export.csv`;
-                        link.click();
-                        setShowExportMenu(false);
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: 'none',
-                        background: 'transparent',
-                        cursor: 'pointer',
-                        fontSize: '0.875rem',
-                        color: '#334155',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <FileXls size={18} weight="fill" style={{ color: '#22C55E' }} />
-                      Excel (CSV)
-                    </button>
-                    <button
-                      className="dropdown-item"
-                      onClick={() => {
-                        // Export as TXT for Word
-                        let content = `${projectDetails.name || 'BOQ Estimate'}\n`;
-                        content += `${'='.repeat(50)}\n\n`;
-                        content += `Location: ${locationLabel || 'Not specified'}\n`;
-                        content += `Date: ${new Date().toLocaleDateString()}\n\n`;
-                        content += `MATERIALS LIST\n`;
-                        content += `${'-'.repeat(50)}\n\n`;
-
-                        milestonesState.forEach(ms => {
-                          if (ms.items.length > 0) {
-                            content += `\n${ms.id.toUpperCase()}\n`;
-                            content += `${'-'.repeat(30)}\n`;
-                            ms.items.forEach(item => {
-                              const total = (item.quantity || 0) * item.averagePriceUsd;
-                              content += `${item.materialName}\n`;
-                              content += `  Qty: ${item.quantity || 0} ${item.unit} @ $${item.averagePriceUsd.toFixed(2)} = $${total.toFixed(2)}\n`;
-                            });
-                          }
-                        });
-
-                        content += `\n${'='.repeat(50)}\n`;
-                        content += `TOTAL: $${totalMaterials.toLocaleString()} USD\n`;
-                        content += `       ZiG ${(totalMaterials * exchangeRate).toLocaleString()}\n`;
-                        content += `\nGenerated with ZimEstimate\n`;
-
-                        const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
-                        link.download = `${projectDetails.name || 'BOQ'}_export.txt`;
-                        link.click();
-                        setShowExportMenu(false);
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: 'none',
-                        background: 'transparent',
-                        cursor: 'pointer',
-                        fontSize: '0.875rem',
-                        color: '#334155',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <FileDoc size={18} weight="fill" style={{ color: '#3B82F6' }} />
-                      Word (TXT)
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Currency Toggle - Prominent */}
-          <div className="currency-toggle-bar">
-            <span className="currency-label">Display prices in:</span>
-            <div className="currency-toggle-group">
-              <button
-                className={`currency-btn ${currency === 'USD' ? 'active' : ''}`}
-                onClick={() => setCurrency('USD')}
-              >
-                <span className="currency-symbol">$</span> USD
-              </button>
-              <button
-                className={`currency-btn ${currency === 'ZWG' ? 'active' : ''}`}
-                onClick={() => setCurrency('ZWG')}
-              >
-                <span className="currency-symbol">Z$</span> ZiG
-              </button>
-            </div>
-          </div>
-
-          {/* Stage Materials Cards FIRST (as per requirement) */}
-          <div className="milestones-section">
-            {visibleMilestones.map((milestone) => {
-              const mData = milestonesState.find(m => m.id === milestone.id) || { items: [], expanded: true };
-              const mTotal = calculateMilestoneTotal(mData.items);
-
-              return (
-                <div
-                  key={milestone.id}
-                  className={`milestone-card bg-white border border-slate-200 rounded-xl overflow-visible mb-6 relative ${
-                    showAddMaterial === milestone.id ? 'z-[2500]' : ''
-                  }`}
-                >
-                  <div
-                    className="milestone-header flex items-center p-4 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors"
-                    onClick={() => toggleMilestone(milestone.id)}
-                  >
-                    <div className="flex items-center justify-center w-10 h-10 bg-white rounded-lg shadow-sm mr-4 text-blue-500">
-                      <milestone.icon size={20} weight="duotone" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-slate-900">{milestone.label}</h3>
-                      <p className="text-xs text-slate-500">{milestone.description}</p>
-                    </div>
-                    <div className="text-right mr-4">
-                      <span className="text-xs text-slate-500 block">{mData.items.length} items</span>
-                      <span className="font-bold text-slate-700">${mTotal.toFixed(2)}</span>
-                    </div>
-                    <div className={`transform transition-transform text-slate-400 ${mData.expanded ? 'rotate-180' : ''}`}>
-                      <CaretDown size={20} />
-                    </div>
-                  </div>
-
-                  {mData.expanded && (
-                    <div className="p-4">
-                      {mData.items.length > 0 ? (
-                        <div className="materials-list space-y-3">
-                          {/* Table Header - Hidden on mobile */}
-                          <div className="hidden md:grid grid-cols-[1fr_140px_110px_90px_120px_40px] gap-3 px-4 py-3 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest rounded-xl border border-slate-100">
-                            <div>Material Description</div>
-                            <div className="text-right">Average Price</div>
-                            <div className="text-center">Quantity</div>
-                            <div className="text-center">Unit</div>
-                            <div className="text-right">Line Total</div>
-                            <div></div>
-                          </div>
-
-                          {sortMaterials(mData.items).map((item) => (
-                            <div
-                              key={item.id}
-                              data-testid="boq-row"
-                              className={`material-row-modern group grid grid-cols-1 md:grid-cols-[1fr_140px_110px_90px_120px_40px] gap-3 md:gap-3 items-start md:items-center p-4 border rounded-xl transition-all duration-300 ${
-                                item.isEnablementCost
-                                  ? 'bg-blue-50/70 border-blue-200 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-500/10'
-                                  : 'bg-white border-slate-100 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5'
-                              }`}
-                            >
-                              {/* Name & Desc */}
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div className="flex flex-col min-w-0 flex-1">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <span className="font-medium text-slate-800 truncate leading-tight">{item.materialName}</span>
-                                    {item.isEnablementCost && (
-                                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-blue-100 text-blue-700 flex-shrink-0">
-                                        Enablement
-                                      </span>
-                                    )}
-                                  </div>
-                                  <span className="text-xs text-slate-500 truncate mt-0.5">{item.description}</span>
-                                </div>
-                                {/* Mobile delete button */}
-                                <button
-                                  onClick={() => handleRemoveItem(milestone.id, item.id)}
-                                  className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0"
-                                  title="Remove item"
-                                >
-                                  <Trash size={18} weight="bold" />
-                                </button>
-                              </div>
-
-                              {/* Mobile: Pricing + Qty */}
-                              <div className="md:hidden mt-3 pt-3 border-t border-slate-100 space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] text-slate-400 uppercase">Average Price</span>
-                                  <span className="text-sm font-semibold text-slate-700">${item.averagePriceUsd.toFixed(2)}</span>
-                                </div>
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[10px] text-slate-400 uppercase">Qty</span>
-                                    <input
-                                      className="w-16 p-1.5 text-center text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-400 outline-none"
-                                      type="number"
-                                      value={item.quantity || ''}
-                                      onChange={(e) => handleUpdateQuantity(milestone.id, item.id, parseFloat(e.target.value))}
-                                      placeholder="0"
-                                    />
-                                    <span className="text-[10px] text-slate-400">{item.unit}</span>
-                                  </div>
-                                  <div className="text-right">
-                                    <span className="font-semibold text-slate-900">${((item.quantity || 0) * item.averagePriceUsd).toFixed(2)}</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Desktop: Average Price */}
-                              <div className="hidden md:flex items-center justify-end">
-                                <span data-testid="boq-average-price" className="text-sm font-semibold text-slate-700">
-                                  ${item.averagePriceUsd.toFixed(2)}
-                                </span>
-                              </div>
-
-                              {/* Desktop: Quantity Edit */}
-                              <div className="hidden md:flex justify-center">
-                                <div className="flex items-center bg-slate-50 border border-transparent rounded-lg focus-within:bg-white focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100 transition-all w-28 overflow-hidden">
-                                  <input
-                                    data-testid="boq-qty-input"
-                                    className="w-full p-2 text-center text-sm font-medium text-slate-700 outline-none bg-transparent"
-                                    type="number"
-                                    value={item.quantity || ''}
-                                    onChange={(e) => handleUpdateQuantity(milestone.id, item.id, parseFloat(e.target.value))}
-                                    placeholder="0"
-                                  />
-                                  <span className="text-[10px] font-bold text-slate-400 uppercase pr-2 pl-1">
-                                    {item.unit}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Desktop: Unit */}
-                              <div className="hidden md:flex items-center justify-center">
-                                <span className="text-[11px] font-bold text-slate-400 uppercase">{item.unit}</span>
-                              </div>
-
-                              {/* Desktop: Total */}
-                              <div className="hidden md:block text-right">
-                                <div className="text-xs font-bold text-slate-400 mb-0.5 uppercase tracking-tighter">Total</div>
-                                <div className="font-semibold text-slate-900">
-                                  <span data-testid="boq-line-total">
-                                    ${((item.quantity || 0) * item.averagePriceUsd).toFixed(2)}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Desktop: Remove */}
-                              <div className="hidden md:flex justify-end">
-                                <button
-                                  onClick={() => handleRemoveItem(milestone.id, item.id)}
-                                  className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
-                                  title="Remove item"
-                                >
-                                  <Trash size={18} weight="bold" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200 mb-4">
-                          <p>No materials added yet.</p>
-                        </div>
-                      )}
-
-                      {/* Add Item Form */}
-                      {showAddMaterial === milestone.id ? (
-                        <div className="mt-4 p-6 bg-white border-2 border-blue-100 rounded-2xl shadow-xl shadow-blue-500/5 animate-fadeIn relative z-[3000]">
-                          <div className="flex items-center gap-2 mb-4">
-                            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                              <Plus size={18} weight="bold" />
-                            </div>
-                            <h4 className="font-bold text-slate-800">Add New Material</h4>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
-                            <div className="md:col-span-7">
-                              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Select Material from Catalog</label>
-                              <MaterialDropdown
-                                value={newItem.materialId}
-                                onChange={(id) => setNewItem({ ...newItem, materialId: id })}
-                              />
-                            </div>
-                            <div className="md:col-span-3">
-                              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Quantity</label>
-                              <div className="relative group/qty">
-                                <input
-                                  type="number"
-                                  className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-50 outline-none transition-all font-bold text-slate-700"
-                                  placeholder="0.00"
-                                  value={newItem.quantity}
-                                  onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
-                                />
-                              </div>
-                            </div>
-                            <div className="md:col-span-2 flex gap-2">
-                              <Button
-                                variant="primary"
-                                fullWidth
-                                onClick={() => handleAddMaterial(milestone.id)}
-                                disabled={!newItem.materialId || !newItem.quantity}
-                                icon={<Check size={18} weight="bold" />}
-                              >
-                                Add
-                              </Button>
-                              <button
-                                onClick={() => setShowAddMaterial(null)}
-                                className="p-3 bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded-xl transition-colors"
-                              >
-                                <X size={18} weight="bold" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex gap-3 mt-4">
-                          <Button
-                            variant="secondary"
-                            icon={<Plus size={16} />}
-                            size="sm"
-                            onClick={() => setShowAddMaterial(milestone.id)}
-                          >
-                            Add Material
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            icon={isGenerating ? <div className="animate-spin"><div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full"></div></div> : <Sparkle size={16} />}
-                            size="sm"
-                            onClick={() => handleAiGenerate(milestone.id)}
-                            disabled={isGenerating}
-                            className="ai-suggest-btn"
-                          >
-                            {mData.items.length === 0 ? "Auto-Suggest Materials" : "Suggest More"}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className={`rounded-xl border p-5 mb-6 ${healthTone.panel}`}>
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">BOQ Health Score</div>
-                <div className="mt-1 flex items-center gap-3">
-                  <span className="text-2xl font-bold text-slate-900">{boqHealth.weightedScorePct.toFixed(1)}%</span>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${healthTone.badge}`}>
-                    {boqHealth.statusLabel}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-slate-600">{boqHealth.statusMessage}</p>
-              </div>
-              <div className="w-full md:w-[360px]">
-                <div className="h-2.5 w-full rounded-full bg-slate-200 overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-500 ${healthTone.progress}`}
-                    style={{ width: `${Math.max(0, Math.min(100, boqHealth.weightedScorePct))}%` }}
-                  />
-                </div>
-                <div className="mt-2 text-xs text-slate-500">
-                  Weighted by category criticality: Substructure 35, Superstructure 25, Roofing 15, Finishing 15, Exterior 10.
-                </div>
-              </div>
+  return (
+    <MainLayout fullWidth hideBottomNav>
+      <div className="min-h-[calc(100vh-80px)] bg-slate-50">
+        <div className="sticky top-0 z-40 border-b border-slate-200 bg-white">
+          <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-4 lg:px-8">
+            <div className="flex items-center gap-3">
+              <span className="font-semibold text-slate-800">{projectDetails.name || 'Untitled Estimate'}</span>
+              {isAutoSaving ? (
+                <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                  <CircleNotch weight="bold" className="animate-spin" /> Saving
+                </span>
+              ) : hasUnsavedChanges ? (
+                <span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                  Unsaved
+                </span>
+              ) : project?.id ? (
+                <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                  <FloppyDisk weight="fill" /> Saved
+                </span>
+              ) : null}
             </div>
 
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-              {boqHealth.categories.map((category) => {
-                const stageLabel = milestones.find((m) => m.id === category.category)?.label || category.category;
-                return (
-                  <div key={category.category} className="rounded-lg border border-slate-200 bg-white p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-slate-800">{stageLabel}</span>
-                      <span className="text-xs font-semibold text-slate-500">
-                        {category.matchedCritical}/{category.totalCritical} critical items
-                      </span>
-                    </div>
-                    <div className="mt-2 h-2 rounded-full bg-slate-100 overflow-hidden">
-                      <div
-                        className="h-full bg-blue-500 transition-all duration-300"
-                        style={{ width: `${category.completionPct}%` }}
-                      />
-                    </div>
-                    <div className="mt-1 text-xs text-slate-600">{category.completionPct.toFixed(1)}% complete</div>
-                    {category.missingCriticalGroups.length > 0 && (
-                      <div className="mt-2 text-xs text-slate-500">
-                        Missing: {category.missingCriticalGroups
-                          .slice(0, 2)
-                          .map((group) => group.map((id) => MATERIAL_NAME_BY_ID[id] || id).join(' or '))
-                          .join(' | ')}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-5 mb-6">
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pre-Construction Checklist</div>
-                <h4 className="text-base font-semibold text-slate-900 mt-1">Location-Aware Advisory Tasks</h4>
-                <p className="text-sm text-slate-600 mt-2">
-                  Highlighted for planning only. These tasks do not block your BOQ or totals.
-                </p>
-              </div>
-              {isLocationTypeRule(projectDetails.locationType) ? (
-                <div className="text-sm font-medium text-slate-700">
-                  {completedLocationProcedures}/{actionableLocationProcedures.length} marked complete
-                </div>
-              ) : (
-                <div className="text-sm text-slate-500">Select a location type in Step 1 to personalize this checklist.</div>
-              )}
-            </div>
-
-            {isLocationTypeRule(projectDetails.locationType) && (
-              <div className="mt-4 grid grid-cols-1 gap-3">
-                {locationProcedureChecklist.map((rule) => {
-                  const statusMeta = PROCEDURE_STATUS_META[rule.status];
-                  const isApplicable = rule.status !== 'not_applicable';
-                  const isChecked = Boolean(preConstructionChecks[rule.id]);
-
-                  return (
-                    <div key={rule.id} className="rounded-lg border border-slate-200 p-3 bg-slate-50/40">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                        <div className="flex items-start gap-3">
-                          <button
-                            type="button"
-                            onClick={() => isApplicable && handleToggleChecklistItem(rule.id)}
-                            disabled={!isApplicable}
-                            className={`mt-0.5 h-5 w-5 rounded border flex items-center justify-center transition-colors ${
-                              isApplicable
-                                ? isChecked
-                                  ? 'bg-blue-600 border-blue-600 text-white'
-                                  : 'border-slate-300 bg-white text-transparent'
-                                : 'border-slate-200 bg-slate-100 text-transparent'
-                            }`}
-                            aria-label={`Mark ${rule.label} as complete`}
-                          >
-                            <Check size={12} weight="bold" />
-                          </button>
-                          <div>
-                            <div className="text-sm font-semibold text-slate-800">{rule.label}</div>
-                            <p className="text-xs text-slate-600 mt-1">{rule.description}</p>
-                          </div>
-                        </div>
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusMeta.badge}`}>
-                          {statusMeta.label}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-5 mb-6">
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Temporary Works</div>
-                <h4 className="text-base font-semibold text-slate-900 mt-1">Configured in Step 5</h4>
-                <p className="text-sm text-slate-600 mt-2">
-                  These enablement costs are included in Substructure and can be edited here.
-                </p>
-              </div>
-              <div className="text-sm text-slate-700">
-                {temporaryWorksAddedCount}/{availableTemporaryWorks.length} added
-                <div className="text-xs text-slate-500 mt-1">Current total: {formatCurrency(temporaryWorksEstimatedUsd)}</div>
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-              {temporaryWorksRows.map((row) => {
-                const meta = TEMPORARY_WORK_OPTION_META[row.id] || {
-                  icon: Package,
-                  iconClass: 'bg-slate-100 text-slate-700 border-slate-200',
-                };
-                const Icon = meta.icon;
-                return (
-                <div key={row.id} className="rounded-lg border border-slate-200 p-3 bg-slate-50/40">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <span className={`inline-flex h-9 w-9 rounded-lg border items-center justify-center ${meta.iconClass}`}>
-                        <Icon size={18} weight="duotone" />
-                      </span>
-                      <div>
-                        <div className="text-sm font-semibold text-slate-800">{row.label}</div>
-                        <div className="text-xs text-slate-600 mt-1">{row.description}</div>
-                      </div>
-                    </div>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        row.currentQty > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      {row.currentQty > 0 ? 'Added' : 'Not Added'}
-                    </span>
-                  </div>
-                  <div className="mt-2 text-xs text-slate-500">
-                    {row.currentQty > 0
-                      ? `${row.currentQty} ${row.unit}`
-                      : `Default: ${row.defaultQty} ${row.unit}`}
-                    {row.material ? ` • Unit: ${formatCurrency(row.material.priceUsd)}` : ''}
-                  </div>
-                </div>
-              )})}
-              {temporarySepticItem && (
-                <div className="rounded-lg border border-slate-200 p-3 bg-slate-50/40">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-slate-800">Septic Tank Construction</div>
-                      <div className="text-xs text-slate-600 mt-1">{temporarySepticItem.description || 'Dimension-based septic tank BOQ item.'}</div>
-                    </div>
-                    <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700">
-                      Added
-                    </span>
-                  </div>
-                  <div className="mt-2 text-xs text-slate-500">
-                    {temporarySepticItem.quantity || 0} {temporarySepticItem.unit} • Unit: {formatCurrency(temporarySepticItem.averagePriceUsd)}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-4">
-              <Button
-                variant="secondary"
-                onClick={() => setCurrentStep(5)}
-              >
-                Edit Temporary Works
-              </Button>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-5 mb-6">
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Certificate Tracker</div>
-                <h4 className="text-base font-semibold text-slate-900 mt-1">Trust & Compliance Milestones</h4>
-                <p className="text-sm text-slate-600 mt-2">
-                  Track the top 3 certificates that matter most for structural confidence and legal completion.
-                </p>
-              </div>
-              <div className="text-sm font-medium text-slate-700">
-                {completedCertificates}/{CERTIFICATE_TRACKER_ITEMS.length} received
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-1 gap-3">
-              {CERTIFICATE_TRACKER_ITEMS.map((certificate) => {
-                const status = certificateTracker[certificate.id];
-                const statusMeta = CERTIFICATE_STATUS_META[status];
-                return (
-                  <div key={certificate.id} className="rounded-lg border border-slate-200 p-3 bg-slate-50/40">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                      <div>
-                        <div className="text-sm font-semibold text-slate-800">{certificate.label}</div>
-                        <p className="text-xs text-slate-600 mt-1">{certificate.description}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusMeta.badge}`}>
-                          {statusMeta.label}
-                        </span>
-                        <select
-                          className="wizard-select"
-                          value={status}
-                          onChange={(e) => handleCertificateStatusChange(certificate.id, e.target.value as 'pending' | 'in_progress' | 'done')}
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="in_progress">In Progress</option>
-                          <option value="done">Received</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-5 mb-6">
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Geotech Report</div>
-                <h4 className="text-base font-semibold text-slate-900 mt-1">Upload and Store Site Soil Report</h4>
-                <p className="text-sm text-slate-600 mt-2">
-                  Upload is available to all users. Advanced BOQ analysis from geotech findings is available on Pro.
-                </p>
-              </div>
-              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
-                hasProGeotechAnalysis ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-              }`}>
-                {hasProGeotechAnalysis ? 'Advanced Analysis Enabled' : 'Advanced Analysis: Pro'}
-              </span>
-            </div>
-
-            <div className="mt-4 flex flex-col gap-3">
-              <div className="flex flex-col md:flex-row md:items-center gap-3">
-                <label className="inline-flex">
-                  <input
-                    type="file"
-                    accept=".pdf,image/png,image/jpeg"
-                    className="hidden"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) {
-                        void handleGeotechUpload(file);
-                      }
-                      event.currentTarget.value = '';
-                    }}
-                    disabled={!isAuthenticated || !project?.id || isUploadingGeotech}
-                  />
-                  <span className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium cursor-pointer transition-colors ${
-                    !isAuthenticated || !project?.id || isUploadingGeotech
-                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}>
-                    {isUploadingGeotech ? 'Uploading...' : 'Upload Geotech Report'}
-                  </span>
-                </label>
-                {!isAuthenticated && (
-                  <span className="text-xs text-slate-500">Sign in to persist uploads per project.</span>
-                )}
-                {isAuthenticated && !project?.id && (
-                  <span className="text-xs text-slate-500">Save project first to attach documents.</span>
-                )}
-              </div>
-
-              {geotechDocument ? (
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                  Uploaded: <span className="font-semibold">{geotechDocument.fileName}</span>
-                  <span className="text-xs text-emerald-700 ml-2">
-                    ({new Date(geotechDocument.createdAt).toLocaleDateString()})
-                  </span>
-                  {!hasProGeotechAnalysis && (
-                    <p className="text-xs mt-2 text-amber-700">
-                      Report uploaded. Upgrade to Pro to automatically adjust foundation BOQ using report density and drainage findings.
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                  No geotech report uploaded yet.
-                </div>
-              )}
-
-              {geotechNotice && (
-                <div className={`text-xs font-medium ${geotechNotice.toLowerCase().includes('failed') ? 'text-red-600' : 'text-emerald-700'}`}>
-                  {geotechNotice}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {selectedSoilProfile && (
-            <div className={`rounded-xl border p-5 mb-6 ${
-              selectedSoilProfile.severity === 'high'
-                ? 'border-red-200 bg-red-50'
-                : selectedSoilProfile.severity === 'medium'
-                  ? 'border-amber-200 bg-amber-50'
-                  : 'border-emerald-200 bg-emerald-50'
-            }`}>
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Soil Risk Advisory</div>
-                  <h4 className="text-base font-semibold text-slate-900 mt-1">{selectedSoilProfile.label}</h4>
-                  <p className="text-sm text-slate-700 mt-2">{selectedSoilProfile.warning}</p>
-                  <p className="text-sm text-slate-600 mt-1">{selectedSoilProfile.recommendation}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {selectedSoilProfile.adjustmentPct > 0 ? (
-                    <Button
-                      variant="secondary"
-                      onClick={handleApplySoilAdjustment}
-                      disabled={soilAdjustmentApplied || !hasSubstructureItems}
-                    >
-                      {soilAdjustmentApplied
-                        ? 'Adjustment Applied'
-                        : `Apply ${selectedSoilProfile.adjustmentPct}% to Substructure`}
-                    </Button>
-                  ) : (
-                    <span className="text-sm font-medium text-emerald-700">No adjustment required</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Grand Total Summary Card - Placed BELOW stage cards as per requirement */}
-          <div className="grand-total-section">
-            <div className="total-card p-6 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm uppercase font-semibold text-blue-600 mb-1">Grand Total Estimate</h3>
-                <p className="text-slate-500 text-sm">
-                  {totalItems} materials • {itemsWithQty} with quantities
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-slate-900">{formatCurrency(totalMaterials)}</div>
-                <div className="text-sm text-slate-500">{formatCurrency(totalMaterials, true)}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Floating Summary Bar */}
-          <div className="floating-summary-bar">
-            <div className="floating-summary-content">
-              <div className="floating-summary-info">
-                <Stack size={20} className="text-blue-500" />
-                <span className="floating-total">{formatCurrency(totalMaterials)}</span>
-                <span className="floating-items">{totalItems} items</span>
-              </div>
-              <Button
-                variant="primary"
-                icon={<DownloadSimple size={16} />}
-                size="sm"
-                onClick={() => alert('Download feature coming soon!')}
-              >
-                Export
-              </Button>
-            </div>
+            <button
+              type="button"
+              className="hidden lg:block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+              onClick={handleSave}
+            >
+              {isSaving ? 'Saving...' : 'Save Estimate'}
+            </button>
           </div>
         </div>
 
-        {/* Saving Overlay */}
-        <SavingOverlay
-          isVisible={showSaveOverlay}
-          message={saveOverlayMessage}
-          success={saveOverlaySuccess}
-          steps={saveOverlaySteps}
+        <LiveEstimatorLayout
+          leftControls={(
+            <div className="flex flex-col h-full min-h-[600px]">
+              {/* Stepper Header */}
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-bold text-slate-900">{WIZARD_STEPS[currentStep].label}</h1>
+                  <p className="mt-1 text-sm text-slate-500">Step {currentStep + 1} of {WIZARD_STEPS.length}</p>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  {WIZARD_STEPS.map((step, index) => (
+                    <motion.div
+                      key={step.id}
+                      animate={{
+                        width: index === currentStep ? 32 : 16,
+                        backgroundColor: index === currentStep ? '#2563EB' : index < currentStep ? '#10B981' : '#E2E8F0',
+                      }}
+                      className="h-2 rounded-full cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => {
+                        if (index < currentStep) setCurrentStep(index);
+                      }}
+                      title={step.label}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Step Content */}
+              <div className="flex-1 space-y-5 relative">
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <motion.div
+                    key={currentStep}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                    className="space-y-5"
+                  >
+                    {currentStep === 0 && (
+                      <ProjectTypeSection isCollapsed={false} onToggle={() => { }} />
+                    )}
+
+                    {currentStep === 1 && (
+                      <>
+                        <ProjectLocationSection isCollapsed={false} onToggle={() => { }} />
+                        <SiteConditionsSection isCollapsed={false} onToggle={() => { }} />
+                      </>
+                    )}
+
+                    {currentStep === 2 && (
+                      <BuildingDesignSection onLaunchRoomBuilder={() => setShowInteractiveBuilder(true)} isCollapsed={false} onToggle={() => { }} />
+                    )}
+
+                    {currentStep === 3 && (
+                      <>
+                        <ScopeSection isCollapsed={false} onToggle={() => { }} />
+                        <MaterialsSection isCollapsed={false} onToggle={() => { }} />
+                      </>
+                    )}
+
+                    {currentStep === 4 && (
+                      <>
+                        <LaborSection isCollapsed={false} onToggle={() => { }} />
+                        <SiteSetupSection isCollapsed={false} onToggle={() => { }} />
+                      </>
+                    )}
+
+                    {currentStep === 5 && (
+                      <ReviewTabs />
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              {/* Navigation Footer */}
+              <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between border-t border-slate-200 bg-white/95 p-4 shadow-[0_-8px_16px_rgba(0,0,0,0.05)] backdrop-blur-md lg:static lg:mt-8 lg:bg-transparent lg:p-0 lg:pt-6 lg:shadow-none lg:backdrop-blur-none">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                  className={`inline-flex items-center gap-2 rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 ${currentStep === 0 ? 'invisible' : 'visible'
+                    }`}
+                >
+                  <CaretLeft size={16} /> Back
+                </button>
+
+                {currentStep < WIZARD_STEPS.length - 1 ? (
+                  <motion.button
+                    type="button"
+                    onClick={handleNextStep}
+                    animate={{ x: shakeError ? [-5, 5, -5, 5, 0] : 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+                  >
+                    Next Step <CaretRight size={16} />
+                  </motion.button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-8 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                  >
+                    {isSaving ? <><CircleNotch weight="bold" className="animate-spin" /> Saving</> : <><Check weight="bold" size={16} /> Save Estimate</>}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          rightEstimate={currentStep === 5 ? <LiveEstimatePanel /> : null}
+          heroIllustration={getStepIllustration(currentStep)}
         />
 
-        {/* Save Prompt Modal */}
-        {showSavePrompt && (
-          <div className="modal-overlay" onClick={() => setShowSavePrompt(false)}>
-            <div className="save-modal" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-              <div className="modal-icon">
-                <FloppyDisk size={32} weight="light" />
+        {showInteractiveBuilder && (
+          <div data-testid="room-builder-modal" className="fixed inset-0 z-[200] flex flex-col bg-slate-900/50 backdrop-blur-sm">
+            <div className="relative z-[210] flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
+              <div>
+                <h2 className="font-semibold text-slate-900">Interactive Floor Plan</h2>
+                <p className="text-xs text-slate-500">Draw rooms to calculate derived area and openings.</p>
               </div>
-              <h3>Save to Your Projects</h3>
-              <p>Sign in or create an account to save this BOQ and access it anytime from your dashboard.</p>
-              <div className="modal-actions">
-                <button className="btn btn-secondary" onClick={() => setShowSavePrompt(false)} style={{
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  border: '1px solid var(--color-border)',
-                  background: 'var(--color-surface)',
-                  color: 'var(--color-text-secondary)'
-                }}>
-                  Cancel
-                </button>
+              <button
+                type="button"
+                aria-label="Close floor plan"
+                onClick={() => setShowInteractiveBuilder(false)}
+                className="rounded-lg bg-slate-100 p-2 text-slate-600 hover:bg-red-50 hover:text-red-500"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="relative z-[205] flex-1 overflow-hidden bg-slate-100">
+              <InteractiveRoomBuilder
+                roomCounts={{}}
+                targetFloorArea={Number(projectDetails.floorPlanSize) || 0}
+                onContinue={handleInteractiveBuilderContinue}
+                onBack={() => setShowInteractiveBuilder(false)}
+              />
+            </div>
+          </div>
+        )}
+
+        {showSavePrompt && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-sm rounded-2xl bg-white p-7 text-center shadow-2xl">
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                <FloppyDisk size={28} weight="duotone" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900">Save to Dashboard</h3>
+              <p className="mt-2 text-sm text-slate-500">Sign in or create an account to save and continue this estimate later.</p>
+
+              <div className="mt-6 space-y-2">
                 <button
-                  className="btn btn-primary"
-                  onClick={() => { persistBOQSession(); window.location.href = '/auth/login?redirect=/boq/new'; }}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    border: 'none',
-                    background: 'var(--color-primary)',
-                    color: 'var(--color-text-inverse)'
-                  }}
+                  type="button"
+                  className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
+                  onClick={() => persistInSessionAndRedirect('/auth/login?redirect=/boq/new')}
                 >
                   Sign In
                 </button>
                 <button
-                  className="btn btn-accent"
-                  onClick={() => { persistBOQSession(); window.location.href = '/auth/signup?redirect=/boq/new'; }}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    border: 'none',
-                    background: 'var(--color-accent)',
-                    color: 'white'
-                  }}
+                  type="button"
+                  className="w-full rounded-xl bg-blue-50 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                  onClick={() => persistInSessionAndRedirect('/auth/signup?redirect=/boq/new')}
                 >
                   Create Account
+                </button>
+                <button
+                  type="button"
+                  className="w-full rounded-xl py-2.5 text-sm font-medium text-slate-500 hover:text-slate-700"
+                  onClick={() => setShowSavePrompt(false)}
+                >
+                  Cancel
                 </button>
               </div>
             </div>
           </div>
         )}
-      </MainLayout>
-    );
-  }
 
-  return (
-    <MainLayout fullWidth>
-      <WizardStyles />
-
-      <div className={`wizard-shell ${currentStep >= 1 ? 'has-sidebar' : ''}`}>
-        {/* TurboTax-style Sidebar */}
-        <div className="wizard-sidebar-wrapper">
-          <WizardSidebar
-            steps={wizardSteps}
-            currentStepId={
-              currentStep === 1 ? 'project-details' :
-                currentStep === 2 ? 'floor-plan' :
-                  currentStep === 3 ? 'scope' :
-                    currentStep === 4 ? 'labor' :
-                      currentStep === 5 ? 'temporary-works' : 'boq-estimate'
-            }
-            currentStepNumber={Math.min(currentStep, 6)}
-            totalSetupSteps={6}
-            onStepClick={handleSidebarStepClick}
-            onToggleStep={currentStep >= 6 ? handleToggleMilestone : undefined}
-            totalUSD={totalUSD}
-            totalZWG={totalZWG}
-            projectSummary={projectSummary}
-            completionPercentage={((currentStep - 1) / 6) * 100}
-            formatPrice={formatPrice}
-          />
-        </div>
-
-        <div className="boq-wizard-container">
-
-          {/* Main Content Area */}
-          <div className="wizard-main-content">
-
-            {/* Step 1: Project Details */}
-            {currentStep === 1 && (
-              <div className="wizard-step reveal">
-                <div className="wizard-content-split">
-                  <div className="wizard-form-area">
-                    <div className="step-header">
-                      <span className="step-kicker">Step 1 of 5</span>
-                      <h2 className="step-title">Project Details</h2>
-                      <p className="step-subtitle">Give your project a name and choose the location type.</p>
-                    </div>
-
-                    <div className="wizard-card wizard-card--stack">
-                      <div className="wizard-section">
-                        <div className="wizard-section-header">
-                          <div>
-                            <span className="section-kicker">Basics</span>
-                            <h3>Project Name</h3>
-                            <p>This keeps your estimates organized.</p>
-                          </div>
-                        </div>
-                        <Input
-                          label="Project Name"
-                          placeholder="e.g. Borrowdale 4-Bedroom House"
-                          value={projectDetails.name}
-                          onChange={(e) => {
-                            clearValidationField('projectName');
-                            setProjectDetails({ ...projectDetails, name: e.target.value });
-                          }}
-                          error={fieldValidation.projectName}
-                          required
-                        />
-                      </div>
-
-                      <div className="wizard-divider" />
-
-                      <div className="wizard-section">
-                        <div className="wizard-section-header">
-                          <div>
-                            <span className="section-kicker">Location</span>
-                            <h3>Where is the project?</h3>
-                            <p>Location type affects transport and labor pricing.</p>
-                          </div>
-                        </div>
-
-                        <div className={`form-group ${fieldValidation.locationType ? 'has-error' : ''}`}>
-                          <label className="wizard-label">
-                            Location Type <span className="required">*</span>
-                          </label>
-                          <div className={`pill-grid ${fieldValidation.locationType ? 'has-error' : ''}`} role="radiogroup" aria-label="Location Type">
-                            {LOCATION_TYPES.map((type) => {
-                              const Icon = type.icon;
-                              const isSelected = projectDetails.locationType === type.value;
-                              return (
-                                <button
-                                  key={type.value}
-                                  type="button"
-                                  className={`pill-option ${isSelected ? 'selected' : ''}`}
-                                  data-testid={`location-type-${type.value}`}
-                                  onClick={() => {
-                                    clearValidationField('locationType');
-                                    setProjectDetails({ ...projectDetails, locationType: type.value });
-                                  }}
-                                  aria-pressed={isSelected}
-                                >
-                                  <span className="pill-icon">
-                                    <Icon size={18} weight={isSelected ? 'fill' : 'light'} />
-                                  </span>
-                                  <span className="pill-content">
-                                    <span className="pill-title">{type.label}</span>
-                                    <span className="pill-subtitle">{type.description}</span>
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                          {fieldValidation.locationType && <p className="field-error">{fieldValidation.locationType}</p>}
-                        </div>
-
-                        <div className="wizard-grid">
-                          <div className="form-group">
-                            <label className="wizard-label">
-                              City / Town <span className="optional">(Optional)</span>
-                            </label>
-                            <LocationSelect
-                              value={projectDetails.locationCity}
-                              onChange={(val) => setProjectDetails({ ...projectDetails, locationCity: val })}
-                              options={LOCATION_OPTIONS}
-                              placeholder="Select City"
-                            />
-                          </div>
-                          <Input
-                            label="Specific Location (Optional)"
-                            placeholder="e.g. Borrowdale"
-                            value={projectDetails.specificLocation}
-                            onChange={(e) => setProjectDetails({ ...projectDetails, specificLocation: e.target.value })}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="wizard-actions wizard-actions--right flex-col items-end gap-2">
-                      {validationError && (
-                        <p className="wizard-validation-banner">{validationError}</p>
-                      )}
-                      <Button
-                        variant="primary"
-                        onClick={goToNextStep}
-                        icon={<ArrowRight size={18} />}
-                      >
-                        Continue
-                      </Button>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Floor Plan */}
-            {currentStep === 2 && (
-              <div className="wizard-step reveal">
-                <div className="wizard-content-split">
-                  <div className="wizard-form-area">
-                    <div className="step-header">
-                      <span className="step-kicker">Step 2 of 5</span>
-                      <h2 className="step-title">Floor Plan Details</h2>
-                      <p className="step-subtitle">Capture the total floor area, building type, and room mix.</p>
-                    </div>
-
-                    <div className="wizard-card wizard-card--stack">
-                      {validationError && <p className="wizard-validation-banner">{validationError}</p>}
-                      <div className="wizard-grid">
-                        <div className={`form-group ${fieldValidation.floorPlanSize ? 'has-error' : ''}`}>
-                          <label className="wizard-label">
-                            Floor Plan Size <span className="required">*</span>
-                          </label>
-                          <div className="input-with-suffix">
-                            <input
-                              type="number"
-                              min="1"
-                              step="0.1"
-                              className={`wizard-select ${fieldValidation.floorPlanSize ? 'wizard-input-error' : ''}`}
-                              placeholder="e.g. 240"
-                              value={projectDetails.floorPlanSize}
-                              onChange={(e) => {
-                                clearValidationField('floorPlanSize');
-                                setProjectDetails({ ...projectDetails, floorPlanSize: e.target.value });
-                              }}
-                              required
-                            />
-                            <span className="input-suffix">m²</span>
-                          </div>
-                          <span className="wizard-hint">Total floor area of the plan.</span>
-                          {fieldValidation.floorPlanSize && <p className="field-error">{fieldValidation.floorPlanSize}</p>}
-                        </div>
-                        <div className={`form-group ${fieldValidation.buildingType ? 'has-error' : ''}`}>
-                          <label className="wizard-label">
-                            Building Type <span className="required">*</span>
-                          </label>
-                          <div className={`pill-grid pill-grid--two ${fieldValidation.buildingType ? 'has-error' : ''}`} role="radiogroup" aria-label="Building Type">
-                            {BUILDING_TYPES.map((option) => {
-                              const Icon = option.icon;
-                              const isSelected = projectDetails.buildingType === option.value;
-                              return (
-                                <button
-                                  key={option.value}
-                                  type="button"
-                                  className={`pill-option ${isSelected ? 'selected' : ''}`}
-                                  data-testid={`building-type-${option.value}`}
-                                  onClick={() => {
-                                    clearValidationField('buildingType');
-                                    setProjectDetails({ ...projectDetails, buildingType: option.value });
-                                  }}
-                                  aria-pressed={isSelected}
-                                >
-                                  <span className="pill-icon">
-                                    <Icon size={18} weight={isSelected ? 'fill' : 'light'} />
-                                  </span>
-                                  <span className="pill-content">
-                                    <span className="pill-title">{option.label}</span>
-                                    <span className="pill-subtitle">{option.description}</span>
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                          {fieldValidation.buildingType && <p className="field-error">{fieldValidation.buildingType}</p>}
-                        </div>
-                      </div>
-
-                      {/* Building Configuration Section */}
-                      <div className="wizard-grid" style={{ marginTop: '1.5rem' }}>
-                        <div className="form-group">
-                          <label className="wizard-label">
-                            Wall Height
-                          </label>
-                          <div className="input-with-suffix">
-                            <input
-                              type="number"
-                              min="2.0"
-                              max="4.0"
-                              step="0.1"
-                              className="wizard-select"
-                              placeholder="2.7"
-                              value={projectDetails.wallHeight}
-                              onChange={(e) => setProjectDetails({ ...projectDetails, wallHeight: e.target.value })}
-                            />
-                            <span className="input-suffix">m</span>
-                          </div>
-                          <span className="wizard-hint">Standard is 2.7m. Adjust if you know your wall plate height.</span>
-                        </div>
-
-                        <div className={`form-group ${fieldValidation.brickType ? 'has-error' : ''}`}>
-                          <label className="wizard-label">
-                            Brick / Block Type <span className="required">*</span>
-                          </label>
-                          <div className={`brick-strip ${fieldValidation.brickType ? 'has-error' : ''}`} role="radiogroup" aria-label="Brick Type">
-                            {[
-                              { value: 'common', label: 'Red Common', desc: '50/m²', img: '/images/materials/red-common-brick.png' },
-                              { value: 'farm', label: 'Farm Brick', desc: '48/m²', img: '/images/materials/farm-brick.png' },
-                              { value: 'blocks_6inch', label: '6" Block', desc: '12/m²', img: '/images/materials/cement-block-6inch.png' },
-                              { value: 'blocks_8inch', label: '8" Block', desc: '10/m²', img: '/images/materials/cement-block-8inch.png' },
-                            ].map((option) => {
-                              const isSelected = projectDetails.brickType === option.value;
-                              return (
-                                <button
-                                  key={option.value}
-                                  type="button"
-                                  className={`brick-chip ${isSelected ? 'selected' : ''}`}
-                                  onClick={() => {
-                                    clearValidationField('brickType');
-                                    setProjectDetails({ ...projectDetails, brickType: option.value as BrickType });
-                                  }}
-                                  aria-pressed={isSelected}
-                                >
-                                  <div className="brick-chip-thumb">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={option.img} alt={option.label} />
-                                    {isSelected && <Check size={12} weight="bold" className="brick-chip-check" />}
-                                  </div>
-                                  <span className="brick-chip-label">{option.label}</span>
-                                  <span className="brick-chip-rate">{option.desc}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                          {fieldValidation.brickType && <p className="field-error">{fieldValidation.brickType}</p>}
-                        </div>
-
-
-
-                        <div className="form-group">
-                          <label className="wizard-label">
-                            Cement Type
-                          </label>
-                          <div className="pill-grid pill-grid--two" role="radiogroup" aria-label="Cement Type">
-                            {[
-                              { value: 'cement_325', label: '32.5N Standard', desc: 'General building • 6.5 bags/m³ concrete' },
-                              { value: 'cement_425', label: '42.5R Rapid', desc: 'Foundation/ringbeam • 7 bags/m³ concrete' },
-                            ].map((option) => {
-                              const isSelected = projectDetails.cementType === option.value;
-                              return (
-                                <button
-                                  key={option.value}
-                                  type="button"
-                                  className={`pill-option ${isSelected ? 'selected' : ''}`}
-                                  onClick={() => setProjectDetails({ ...projectDetails, cementType: option.value as CementType })}
-                                  aria-pressed={isSelected}
-                                >
-                                  <span className="pill-content">
-                                    <span className="pill-title">{option.label}</span>
-                                    <span className="pill-subtitle">{option.desc}</span>
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        <div className="form-group">
-                          <label className="wizard-label">
-                            Soil Type <span className="optional">(Recommended)</span>
-                          </label>
-                          <select
-                            className="wizard-select"
-                            value={projectDetails.soilType}
-                            onChange={(e) => setProjectDetails({ ...projectDetails, soilType: e.target.value as SoilType })}
-                          >
-                            <option value="">Select soil type</option>
-                            {SOIL_TYPES.map((soil) => (
-                              <option key={soil.value} value={soil.value}>
-                                {soil.label}
-                              </option>
-                            ))}
-                          </select>
-                          <span className="wizard-hint">Used for advisory risk warnings and optional quantity adjustments.</span>
-                        </div>
-
-                        <div className="form-group">
-                          <label className="wizard-label">
-                            Site Slope <span className="optional">(Recommended)</span>
-                          </label>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {SITE_SLOPE_OPTIONS.map((option) => {
-                              const Icon = option.icon;
-                              const isSelected = projectDetails.siteSlope === option.value;
-                              return (
-                                <button
-                                  key={option.value}
-                                  type="button"
-                                  className={`w-full text-left rounded-xl border px-3 py-3 transition-all ${
-                                    isSelected
-                                      ? 'border-blue-500 bg-blue-50/70 shadow-sm'
-                                      : 'border-slate-200 bg-white hover:border-slate-300'
-                                  }`}
-                                  onClick={() =>
-                                    setProjectDetails({
-                                      ...projectDetails,
-                                      siteSlope: isSelected ? '' : (option.value as SiteSlopeType),
-                                    })
-                                  }
-                                  aria-pressed={isSelected}
-                                >
-                                  <div className="flex items-start gap-3">
-                                    <span className={`inline-flex h-9 w-9 rounded-lg border items-center justify-center ${option.iconClass}`}>
-                                      <Icon size={18} weight={isSelected ? 'fill' : 'duotone'} />
-                                    </span>
-                                    <span>
-                                      <span className="block text-sm font-semibold text-slate-800">{option.label}</span>
-                                      <span className="block text-xs text-slate-600 mt-0.5">{option.description}</span>
-                                    </span>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                          <span className="wizard-hint">Used for excavation and retaining risk guidance in future releases.</span>
-                        </div>
-                      </div>
-
-                      <div className="plan-preview" style={{
-                        padding: 0,
-                        overflow: 'hidden',
-                        background: '#fff',
-                        borderRadius: '16px',
-                        border: '1px solid #e2e8f0',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
-                      }}>
-                        {/* Header with Switch */}
-                        <div style={{
-                          padding: '24px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          borderBottom: planSketchEnabled ? '1px solid #f1f5f9' : 'none',
-                          background: '#fff'
-                        }}>
-                          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                            <div style={{
-                              width: '48px', height: '48px',
-                              borderRadius: '12px',
-                              background: '#eff6ff',
-                              color: '#3b82f6',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              border: '1px solid #dbeafe'
-                            }}>
-                              <PencilSimple size={24} weight="duotone" />
-                            </div>
-                            <div>
-                              <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Interactive Floor Plan</h4>
-                              <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
-                                {planSketchEnabled ? 'Customize layout & openings (Optional)' : 'Enable to refine material estimates'}
-                              </p>
-                            </div>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => setPlanSketchEnabled(!planSketchEnabled)}
-                            style={{
-                              width: '52px',
-                              height: '28px',
-                              borderRadius: '14px',
-                              border: 'none',
-                              cursor: 'pointer',
-                              position: 'relative',
-                              padding: 0,
-                              background: planSketchEnabled ? '#3b82f6' : '#cbd5e1',
-                              transition: 'background 0.2s',
-                            }}
-                            aria-label="Toggle Floor Plan"
-                          >
-                            <span
-                              style={{
-                                position: 'absolute',
-                                top: '2px',
-                                left: planSketchEnabled ? '26px' : '2px',
-                                width: '24px',
-                                height: '24px',
-                                borderRadius: '12px',
-                                background: '#fff',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                                transition: 'left 0.2s',
-                              }}
-                            />
-                          </button>
-                        </div>
-
-                        {/* Content Area */}
-                        {planSketchEnabled && (
-                          <div style={{ padding: '24px', background: '#fff' }}>
-                            {/* Mode Selector Tabs */}
-                            <div style={{
-                              display: 'grid',
-                              gridTemplateColumns: '1fr 1fr',
-                              gap: '4px',
-                              background: '#f1f5f9',
-                              padding: '4px',
-                              borderRadius: '12px',
-                              marginBottom: '24px'
-                            }}>
-                              <button
-                                type="button"
-                                onClick={() => setPlanSketchMode('simplified')}
-                                style={{
-                                  padding: '10px',
-                                  borderRadius: '10px',
-                                  border: 'none',
-                                  background: planSketchMode === 'simplified' ? '#fff' : 'transparent',
-                                  boxShadow: planSketchMode === 'simplified' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                                  color: planSketchMode === 'simplified' ? '#0f172a' : '#64748b',
-                                  fontWeight: 600,
-                                  fontSize: '14px',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                  transition: 'all 0.2s',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                <ListDashes size={18} weight={planSketchMode === 'simplified' ? 'bold' : 'regular'} />
-                                Quick Estimate
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setPlanSketchMode('detailed')}
-                                style={{
-                                  padding: '10px',
-                                  borderRadius: '10px',
-                                  border: 'none',
-                                  background: planSketchMode === 'detailed' ? '#fff' : 'transparent',
-                                  boxShadow: planSketchMode === 'detailed' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                                  color: planSketchMode === 'detailed' ? '#0f172a' : '#64748b',
-                                  fontWeight: 600,
-                                  fontSize: '14px',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                  transition: 'all 0.2s',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                <Layout size={18} weight={planSketchMode === 'detailed' ? 'bold' : 'regular'} />
-                                Detailed Editor
-                              </button>
-                            </div>
-
-                            {/* Quick Estimate Inputs */}
-                            {planSketchMode === 'simplified' && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-
-                                {/* Windows & Doors Row */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                                  {/* Windows Input */}
-                                  <div>
-                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Windows</label>
-                                    <div style={{ position: 'relative' }}>
-                                      <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}>
-                                        <FrameCorners size={20} />
-                                      </div>
-                                      <select
-                                        value={totalWindows}
-                                        onChange={(e) => setTotalWindows(Number(e.target.value))}
-                                        style={{
-                                          width: '100%',
-                                          padding: '12px 12px 12px 42px',
-                                          borderRadius: '8px',
-                                          border: '1px solid #e2e8f0',
-                                          fontSize: '15px',
-                                          color: '#0f172a',
-                                          background: '#fff',
-                                          appearance: 'none',
-                                          cursor: 'pointer'
-                                        }}
-                                      >
-                                        {Array.from({ length: 21 }, (_, i) => (
-                                          <option key={i} value={i}>{i} Windows</option>
-                                        ))}
-                                      </select>
-                                      <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#cbd5e1', pointerEvents: 'none' }}>
-                                        <CaretDown size={14} weight="bold" />
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Doors Input */}
-                                  <div>
-                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Doors</label>
-                                    <div style={{ position: 'relative' }}>
-                                      <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}>
-                                        <Door size={20} />
-                                      </div>
-                                      <select
-                                        value={totalDoors}
-                                        onChange={(e) => setTotalDoors(Number(e.target.value))}
-                                        style={{
-                                          width: '100%',
-                                          padding: '12px 12px 12px 42px',
-                                          borderRadius: '8px',
-                                          border: '1px solid #e2e8f0',
-                                          fontSize: '15px',
-                                          color: '#0f172a',
-                                          background: '#fff',
-                                          appearance: 'none',
-                                          cursor: 'pointer'
-                                        }}
-                                      >
-                                        {Array.from({ length: 16 }, (_, i) => (
-                                          <option key={i} value={i}>{i} Doors</option>
-                                        ))}
-                                      </select>
-                                      <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#cbd5e1', pointerEvents: 'none' }}>
-                                        <CaretDown size={14} weight="bold" />
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div style={{ height: '1px', background: '#f1f5f9', width: '100%' }} />
-
-                                {/* Room Picker */}
-                                <div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                    <div>
-                                      <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#0f172a' }}>Added Rooms</label>
-                                      <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>Select rooms to include in the estimate</p>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => setShowRoomPicker((prev) => !prev)}
-                                      style={{
-                                        padding: '8px 16px',
-                                        borderRadius: '8px',
-                                        background: showRoomPicker ? '#f1f5f9' : '#eff6ff',
-                                        color: showRoomPicker ? '#64748b' : '#3b82f6',
-                                        border: 'none',
-                                        fontSize: '13px',
-                                        fontWeight: 600,
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s',
-                                        display: 'flex', alignItems: 'center', gap: '6px'
-                                      }}
-                                    >
-                                      {showRoomPicker ? 'Done Editing' : (
-                                        <>
-                                          <Plus size={14} weight="bold" /> Add Room
-                                        </>
-                                      )}
-                                    </button>
-                                  </div>
-
-                                  {showRoomPicker ? (
-                                    <div className="plan-add-room-menu" style={{
-                                      position: 'relative',
-                                      top: 0,
-                                      border: '1px solid #e2e8f0',
-                                      boxShadow: 'none',
-                                      background: '#f8fafc',
-                                      marginTop: 0,
-                                      display: 'grid',
-                                      gridTemplateColumns: '1fr 1fr',
-                                      gap: '8px'
-                                    }}>
-                                      {ROOM_INPUTS.map((room) => (
-                                        <div key={room.key} className="plan-add-room-row" style={{ background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                          <span style={{ fontSize: '13px', fontWeight: 500 }}>{room.label}</span>
-                                          <div className="plan-add-room-controls">
-                                            <button
-                                              type="button"
-                                              className="plan-room-adjust"
-                                              onClick={() => handleAdjustRoom(room.key, -1)}
-                                              disabled={(Number(projectDetails.roomInputs[room.key]) || 0) === 0}
-                                              style={{ width: '24px', height: '24px', fontSize: '14px' }}
-                                            >
-                                              −
-                                            </button>
-                                            <span className="plan-room-count" style={{ fontSize: '13px', minWidth: '16px' }}>{Number(projectDetails.roomInputs[room.key]) || 0}</span>
-                                            <button
-                                              type="button"
-                                              className="plan-room-adjust"
-                                              onClick={() => handleAdjustRoom(room.key, 1)}
-                                              style={{ width: '24px', height: '24px', fontSize: '14px' }}
-                                            >
-                                              +
-                                            </button>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                      {Object.entries(projectDetails.roomInputs).some(([, count]) => (Number(count) || 0) > 0) ? (
-                                        Object.entries(projectDetails.roomInputs).map(([key, count]) => {
-                                          const num = Number(count) || 0;
-                                          if (num === 0) return null;
-                                          const label = ROOM_INPUTS.find(r => r.key === key)?.label || key;
-                                          return (
-                                            <div key={key} style={{
-                                              display: 'flex', alignItems: 'center', gap: '6px',
-                                              padding: '6px 12px', background: '#f1f5f9', borderRadius: '20px',
-                                              fontSize: '13px', color: '#475569', border: '1px solid #e2e8f0'
-                                            }}>
-                                              <span style={{ fontWeight: 600, color: '#0f172a' }}>{num}</span>
-                                              <span>{label}</span>
-                                            </div>
-                                          );
-                                        })
-                                      ) : (
-                                        <div style={{ width: '100%', padding: '20px', textAlign: 'center', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #e2e8f0', color: '#94a3b8', fontSize: '13px' }}>
-                                          No rooms added yet. Click &quot;Add Room&quot; to start.
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Detailed Editor Hero */}
-                            {planSketchMode === 'detailed' && (
-                              <div style={{
-                                background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-                                borderRadius: '16px',
-                                padding: '40px 32px',
-                                textAlign: 'center',
-                                border: '1px solid #bfdbfe'
-                              }}>
-                                <div style={{
-                                  width: '72px', height: '72px',
-                                  background: '#fff',
-                                  borderRadius: '20px',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  margin: '0 auto 20px',
-                                  boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.1), 0 4px 6px -2px rgba(59, 130, 246, 0.05)'
-                                }}>
-                                  <Layout size={36} color="#3b82f6" weight="duotone" />
-                                </div>
-                                <h3 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 700, color: '#1e3a8a' }}>
-                                  Room Builder
-                                </h3>
-                                <p style={{ margin: '0', fontSize: '15px', color: '#1e40af', lineHeight: '1.6', maxWidth: '320px', marginLeft: 'auto', marginRight: 'auto' }}>
-                                  Launch the interactive editor to draw your floor plan with precise room dimensions.
-                                </p>
-                                <div style={{
-                                  marginTop: '24px',
-                                  display: 'inline-flex', alignItems: 'center', gap: '6px',
-                                  fontSize: '13px', fontWeight: 600, color: '#2563eb',
-                                  background: 'rgba(255,255,255,0.6)',
-                                  padding: '8px 16px', borderRadius: '20px',
-                                  backdropFilter: 'blur(4px)'
-                                }}>
-                                  <Sparkle size={14} weight="fill" />
-                                  Click &quot;Continue&quot; to start editing
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                    </div>
-
-                    <div className="wizard-actions">
-                      <Button variant="secondary" onClick={goToPrevStep}>Back</Button>
-                      <Button
-                        variant="primary"
-                        onClick={goToNextStep}
-                        icon={<ArrowRight size={18} />}
-                      >
-                        Continue
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Summary moved to sidebar */}
-                </div>
-              </div>
-            )}
-
-            {/* Step 2B: Room Details (Detailed Mode Only) */}
-            {currentStep === 2.5 && (
-              <InteractiveRoomBuilder
-                roomCounts={Object.fromEntries(
-                  Object.entries(projectDetails.roomInputs).map(([k, v]) => [k, Number(v) || 0])
-                )}
-                targetFloorArea={parseFloat(projectDetails.floorPlanSize) || 0}
-                onContinue={handleDetailedContinue}
-                onBack={goToPrevStep}
-              />
-            )}
-
-            {/* Step 3: Scope */}
-            {currentStep === 3 && (
-              <div className="wizard-step reveal">
-                <div className="wizard-content-split">
-                  <div className="wizard-form-area">
-                    <div className="step-header">
-                      <span className="step-kicker">Step 3 of 5</span>
-                      <h2 className="step-title">Scope of Work</h2>
-                      <p className="step-subtitle">Choose what to include in this estimate.</p>
-                    </div>
-
-                    <div className="wizard-card wizard-card--stack">
-                      {validationError && <p className="wizard-validation-banner">{validationError}</p>}
-                      <div className="wizard-section">
-                        <div className="wizard-section-header">
-                          <div>
-                            <span className="section-kicker">Scope</span>
-                            <h3>Project Scope</h3>
-                            <p>Select the level of detail you need right now.</p>
-                          </div>
-                        </div>
-
-                        <p className="wizard-hint" style={{ margin: 0 }}>
-                          Specific stages produce more accurate estimates. We recommend them whenever you only need a
-                          portion of the project.
-                        </p>
-
-                        <div className={`scope-selection ${fieldValidation.projectScope ? 'has-error' : ''}`}>
-                          <button
-                            type="button"
-                            className={`scope-card ${projectScope === 'stage' ? 'selected' : ''}`}
-                            onClick={() => {
-                              clearValidationField('projectScope');
-                              setProjectScope('stage');
-                            }}
-                          >
-                            <Stack size={28} weight={projectScope === 'stage' ? 'fill' : 'light'} className="scope-icon" />
-                            <div className="scope-content">
-                              <h3>Specific Stages</h3>
-                              <p>Choose only the phases you want to estimate now.</p>
-                            </div>
-                            {projectScope === 'stage' && <CheckCircle className="check-icon" size={24} weight="fill" />}
-                          </button>
-
-                          <button
-                            type="button"
-                            className={`scope-card ${projectScope === 'full' ? 'selected' : ''}`}
-                            onClick={() => {
-                              clearValidationField('projectScope');
-                              clearValidationField('selectedStages');
-                              setProjectScope('full');
-                            }}
-                          >
-                            <HouseSimple size={28} weight={projectScope === 'full' ? 'fill' : 'light'} className="scope-icon" />
-                            <div className="scope-content">
-                              <h3>Entire House</h3>
-                              <p>Complete BOQ from foundation to finishings.</p>
-                            </div>
-                            {projectScope === 'full' && <CheckCircle className="check-icon" size={24} weight="fill" />}
-                          </button>
-                        </div>
-                        {fieldValidation.projectScope && <p className="field-error">{fieldValidation.projectScope}</p>}
-                      </div>
-
-                      {projectScope === 'stage' && (
-                        <div className="wizard-section">
-                          <div className="wizard-section-header">
-                            <div>
-                              <span className="section-kicker">Stages</span>
-                              <h3>Select Stages</h3>
-                              <p>Pick the construction phases you want to estimate now.</p>
-                            </div>
-                          </div>
-
-                          <div className={`stage-selector-container ${fieldValidation.selectedStages ? 'has-error' : ''}`}>
-                            <div className="stage-grid">
-                              {milestones.filter(m => m.id !== 'labor').map((stage) => {
-                                const isChecked = selectedStages.includes(stage.id);
-                                const Icon = stage.icon;
-                                return (
-                                  <button
-                                    key={stage.id}
-                                    type="button"
-                                    className={`stage-card ${isChecked ? 'selected' : ''}`}
-                                    onClick={() => {
-                                      clearValidationField('selectedStages');
-                                      if (isChecked) {
-                                        setSelectedStages(selectedStages.filter(id => id !== stage.id));
-                                      } else {
-                                        setSelectedStages([...selectedStages, stage.id]);
-                                      }
-                                    }}
-                                  >
-                                    <Icon size={22} weight={isChecked ? 'fill' : 'duotone'} className="stage-icon" />
-                                    <span>{stage.label}</span>
-                                    {isChecked && <Check size={14} weight="bold" className="stage-check" />}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            {fieldValidation.selectedStages && <p className="field-error">{fieldValidation.selectedStages}</p>}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="wizard-actions flex-col items-end gap-2">
-                      <div className="flex gap-3 w-full justify-end">
-                        <Button variant="secondary" onClick={goToPrevStep}>Back</Button>
-                        <Button
-                          variant="primary"
-                          onClick={goToNextStep}
-                          icon={<ArrowRight size={18} />}
-                        >
-                          Continue
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Summary moved to sidebar */}
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Builder Settings */}
-            {currentStep === 4 && (
-              <div className="wizard-step reveal">
-                <div className="wizard-content-split">
-                  <div className="wizard-form-area">
-                    <div className="step-header">
-                      <span className="step-kicker">Step 4 of 5</span>
-                      <h2 className="step-title">Labor Options</h2>
-                      <p className="step-subtitle">Choose how you want labor handled in the estimate.</p>
-                    </div>
-
-                    <div className="wizard-card wizard-card--stack">
-                      {validationError && <p className="wizard-validation-banner">{validationError}</p>}
-                      <div className="wizard-section">
-                        <div className="wizard-section-header">
-                          <div>
-                            <span className="section-kicker">Estimate Type</span>
-                            <h3>Materials or Materials + Labor?</h3>
-                            <p>Pick the estimate style that fits your project.</p>
-                          </div>
-                        </div>
-
-                        <div className={`choice-grid ${fieldValidation.laborType ? 'has-error' : ''}`} role="radiogroup" aria-label="Labor Options">
-                          <button
-                            type="button"
-                            className={`choice-card ${laborType === 'materials_only' ? 'selected' : ''}`}
-                            onClick={() => {
-                              clearValidationField('laborType');
-                              setLaborType('materials_only');
-                            }}
-                            aria-pressed={laborType === 'materials_only'}
-                          >
-                            <div className="choice-icon">
-                              <Package size={20} />
-                            </div>
-                            <div>
-                              <div className="choice-title">Materials Only</div>
-                              <p className="choice-description">
-                                Generate a materials list. Best if you already have a builder.
-                              </p>
-                            </div>
-                          </button>
-
-                          <button
-                            type="button"
-                            className={`choice-card ${laborType === 'materials_labor' ? 'selected' : ''}`}
-                            onClick={() => {
-                              clearValidationField('laborType');
-                              setLaborType('materials_labor');
-                            }}
-                            aria-pressed={laborType === 'materials_labor'}
-                          >
-                            <div className="choice-icon">
-                              <UserCircle size={20} />
-                            </div>
-                            <div>
-                              <div className="choice-title">Materials + Labor</div>
-                              <p className="choice-description">
-                                Include estimated labor costs for a full project view.
-                              </p>
-                            </div>
-                          </button>
-                        </div>
-                        {fieldValidation.laborType && <p className="field-error">{fieldValidation.laborType}</p>}
-                      </div>
-
-                      <div className="tips-section">
-                        <h3>Pro Tip</h3>
-                        <ul>
-                          <li>Labor rates are estimates based on Harare averages.</li>
-                          <li>You can adjust line items manually after generation.</li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    <div className="wizard-actions flex-col items-end gap-2">
-                      <div className="flex gap-3 w-full justify-end">
-                        <Button variant="secondary" onClick={goToPrevStep}>Back</Button>
-                        <Button
-                          variant="primary"
-                          onClick={goToNextStep}
-                          icon={<ArrowRight size={18} />}
-                        >
-                          Continue to Temporary Works
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Summary moved to sidebar */}
-                </div>
-              </div>
-            )}
-
-            {/* Step 5: Temporary Works */}
-            {currentStep === 5 && (
-              <div className="wizard-step reveal">
-                <div className="wizard-content-split">
-                  <div className="wizard-form-area">
-                    <div className="step-header">
-                      <span className="step-kicker">Step 5 of 5</span>
-                      <h2 className="step-title">Temporary Works & Site Setup</h2>
-                      <p className="step-subtitle">
-                        Add enablement costs before final BOQ review. These items remain editable in the BOQ.
-                      </p>
-                    </div>
-
-                    <div className="wizard-card wizard-card--stack">
-                      {validationError && <p className="wizard-validation-banner">{validationError}</p>}
-                      <div className="wizard-section">
-                        <div className="wizard-section-header">
-                          <div>
-                            <span className="section-kicker">Temporary Works</span>
-                            <h3>Choose Site Enablement Items</h3>
-                            <p>Select what applies and edit quantity and unit rates.</p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          {temporaryWorksSelections.map((option) => {
-                            const quantity = Number(option.quantity);
-                            const unitPriceUsd = Number(option.unitPriceUsd);
-                            const lineTotalUsd =
-                              Number.isFinite(quantity) && Number.isFinite(unitPriceUsd) ? quantity * unitPriceUsd : 0;
-                            const meta = TEMPORARY_WORK_OPTION_META[option.id] || {
-                              icon: Package,
-                              iconClass: 'bg-slate-100 text-slate-700 border-slate-200',
-                            };
-                            const Icon = meta.icon;
-
-                            return (
-                              <div
-                                key={option.id}
-                                className={`rounded-xl border p-4 transition-all ${
-                                  option.enabled
-                                    ? 'border-blue-200 bg-blue-50/40 shadow-sm'
-                                    : 'border-slate-200 bg-slate-50/60'
-                                }`}
-                              >
-                                <button
-                                  type="button"
-                                  className="w-full text-left"
-                                  onClick={() => {
-                                    setValidationError(null);
-                                    const nextEnabled = !option.enabled;
-                                    handleTemporaryWorkChange(option.id, { enabled: nextEnabled });
-                                    if (option.id === 'temp-toilet' && !nextEnabled) {
-                                      setIncludeSepticTank(false);
-                                    }
-                                  }}
-                                  aria-pressed={option.enabled}
-                                >
-                                  <div className="flex items-start gap-3">
-                                    <span className={`inline-flex h-10 w-10 rounded-lg border items-center justify-center ${meta.iconClass}`}>
-                                      <Icon size={20} weight={option.enabled ? 'fill' : 'duotone'} />
-                                    </span>
-                                    <div className="flex-1">
-                                      <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <span className="text-sm font-semibold text-slate-800">{option.label}</span>
-                                        <span
-                                          className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                                            option.enabled
-                                              ? 'bg-blue-100 text-blue-700'
-                                              : 'bg-slate-100 text-slate-600'
-                                          }`}
-                                        >
-                                          {option.enabled ? 'Selected' : 'Tap to add'}
-                                        </span>
-                                      </div>
-                                      <p className="text-xs text-slate-600 mt-1">{option.description}</p>
-                                    </div>
-                                  </div>
-                                </button>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3">
-                                  <div>
-                                    <label className="block text-xs text-slate-500 mb-1">Quantity</label>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      className="wizard-select"
-                                      value={option.quantity}
-                                      disabled={!option.enabled}
-                                      onChange={(event) =>
-                                        handleTemporaryWorkChange(option.id, { quantity: event.target.value })
-                                      }
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs text-slate-500 mb-1">Unit Rate (USD)</label>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      className="wizard-select"
-                                      value={option.unitPriceUsd}
-                                      disabled={!option.enabled}
-                                      onChange={(event) =>
-                                        handleTemporaryWorkChange(option.id, { unitPriceUsd: event.target.value })
-                                      }
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs text-slate-500 mb-1">Line Total</label>
-                                    <div className="wizard-select bg-slate-100 text-slate-700">
-                                      {formatCurrency(lineTotalUsd)}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <div className="wizard-divider" />
-
-                      <div className="wizard-section">
-                        <div className="wizard-section-header">
-                          <div>
-                            <span className="section-kicker">Sanitation</span>
-                            <h3>Optional Septic Tank Project</h3>
-                            <p>Enable this if your temporary toilet setup needs septic works included in BOQ.</p>
-                          </div>
-                        </div>
-
-                        <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                          <input
-                            type="checkbox"
-                            checked={includeSepticTank}
-                            disabled={!isTemporaryToiletEnabled}
-                            onChange={(event) => {
-                              setValidationError(null);
-                              setIncludeSepticTank(event.target.checked);
-                            }}
-                          />
-                          Include septic tank project
-                        </label>
-                        {!isTemporaryToiletEnabled && (
-                          <p className="text-xs text-slate-500 mt-2">
-                            Enable Temporary Toilet Setup first to add septic tank works.
-                          </p>
-                        )}
-
-                        {includeSepticTank && isTemporaryToiletEnabled && (
-                          <div className="mt-3 grid grid-cols-1 md:grid-cols-5 gap-2">
-                            <div>
-                              <label className="block text-xs text-slate-500 mb-1">Length (m)</label>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                className="wizard-select"
-                                value={septicDimensions.length}
-                                onChange={(event) =>
-                                  setSepticDimensions((prev) => ({ ...prev, length: event.target.value }))
-                                }
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-slate-500 mb-1">Width (m)</label>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                className="wizard-select"
-                                value={septicDimensions.width}
-                                onChange={(event) =>
-                                  setSepticDimensions((prev) => ({ ...prev, width: event.target.value }))
-                                }
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-slate-500 mb-1">Height (m)</label>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                className="wizard-select"
-                                value={septicDimensions.height}
-                                onChange={(event) =>
-                                  setSepticDimensions((prev) => ({ ...prev, height: event.target.value }))
-                                }
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-slate-500 mb-1">Rate (USD/m3)</label>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                className="wizard-select"
-                                value={septicDimensions.unitPriceUsd}
-                                onChange={(event) =>
-                                  setSepticDimensions((prev) => ({ ...prev, unitPriceUsd: event.target.value }))
-                                }
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-slate-500 mb-1">Projected Total</label>
-                              <div className="wizard-select bg-slate-100 text-slate-700">
-                                {formatCurrency(septicSubtotalUsd)}
-                              </div>
-                            </div>
-                            <div className="md:col-span-5 text-xs text-slate-600">
-                              Calculated volume: {septicVolumeM3.toFixed(2)} m3
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-600">
-                            {selectedTemporaryWorks.length} temporary work items selected
-                          </span>
-                          <span className="font-semibold text-slate-900">
-                            {formatCurrency(temporaryWorksSubtotalUsd + septicSubtotalUsd)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="wizard-actions flex-col items-end gap-2">
-                      <div className="flex gap-3 w-full justify-end">
-                        <Button variant="secondary" onClick={goToPrevStep}>Back</Button>
-                        <Button
-                          variant="primary"
-                          onClick={goToNextStep}
-                          icon={<Sparkle size={18} />}
-                        >
-                          Continue to Final BOQ
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-          </div>
-        </div>
+        <SavingOverlay
+          isVisible={isSaving || isLoading}
+          message={isSaving ? 'Saving estimate...' : 'Loading project...'}
+        />
       </div>
-
-      {/* Saving Overlay */}
-      <SavingOverlay
-        isVisible={showSaveOverlay}
-        message={saveOverlayMessage}
-        success={saveOverlaySuccess}
-        steps={saveOverlaySteps}
-      />
-
-      {/* Save Prompt Modal */}
-      {showSavePrompt && (
-        <div className="modal-overlay" onClick={() => setShowSavePrompt(false)}>
-          <div className="save-modal" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-            <div className="modal-icon">
-              <FloppyDisk size={32} weight="light" />
-            </div>
-            <h3>Save to Your Projects</h3>
-            <p>Sign in or create an account to save this BOQ and access it anytime from your dashboard.</p>
-            <div className="modal-actions">
-              <Button variant="secondary" onClick={() => setShowSavePrompt(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => { persistBOQSession(); window.location.href = '/auth/login?redirect=/boq/new'; }}
-              >
-                Sign In
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => { persistBOQSession(); window.location.href = '/auth/signup?redirect=/boq/new'; }}
-                className="bg-slate-900 text-white hover:bg-slate-800"
-              >
-                Create Account
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </MainLayout>
-  );
-}
-export default function BOQBuilderPage() {
-  return (
-    <Suspense fallback={<MainLayout><div>Loading...</div></MainLayout>}>
-      <BOQBuilderContent />
-    </Suspense>
   );
 }

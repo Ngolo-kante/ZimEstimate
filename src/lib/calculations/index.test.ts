@@ -13,8 +13,8 @@ describe('generateBOQFromBasics assumptions', () => {
       floorArea: 120,
       roomCount: 6,
       wallHeight: 2.7,
-      brickType: 'common',
-      cementType: 'cement_425',
+      brickTypes: ['common'],
+      cementTypes: ['cement_425'],
       scope: ['substructure', 'roofing'],
       includeLabor: false,
     };
@@ -36,15 +36,15 @@ describe('generateBOQFromBasics assumptions', () => {
       floorArea: 120,
       roomCount: 6,
       wallHeight: 2.7,
-      brickType: 'common',
-      cementType: 'cement_325',
+      brickTypes: ['common'],
+      cementTypes: ['cement_325'],
       scope: 'superstructure',
       includeLabor: false,
       locationType: 'urban',
     };
 
-    const economy = generateBOQFromBasics({ ...base, cementType: 'cement_325' });
-    const standard = generateBOQFromBasics({ ...base, cementType: 'cement_425' });
+    const economy = generateBOQFromBasics({ ...base, cementTypes: ['cement_325'] });
+    const standard = generateBOQFromBasics({ ...base, cementTypes: ['cement_425'] });
 
     const economyMortarCement = getItemQuantity(economy, 'Superstructure mortar');
     const standardMortarCement = getItemQuantity(standard, 'Superstructure mortar');
@@ -56,8 +56,8 @@ describe('generateBOQFromBasics assumptions', () => {
       floorArea: 120,
       roomCount: 6,
       wallHeight: 2.7,
-      brickType: 'common',
-      cementType: 'cement_325',
+      brickTypes: ['common'],
+      cementTypes: ['cement_325'],
       scope: ['substructure', 'superstructure', 'roofing'],
       includeLabor: false,
       locationType: 'urban',

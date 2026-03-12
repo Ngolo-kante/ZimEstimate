@@ -2,24 +2,40 @@ import { describe, expect, it } from 'vitest';
 import { validateBOQWizardStep, type BOQWizardValidationState } from './wizardValidation';
 
 const baseState: BOQWizardValidationState = {
-  currentStep: 1,
+  currentSection: 'project',
+  geometryMode: 'quick',
   projectDetails: {
+    projectType: 'full_house',
     name: 'Demo Project',
     locationType: 'urban',
     floorPlanSize: '120',
     buildingType: 'single_storey',
-    brickType: 'common',
+    brickTypes: ['common'],
   },
-  projectScope: 'full',
+  projectScope: 'entire',
   selectedStages: ['substructure'],
   laborType: 'materials_only',
 };
 
 describe('validateBOQWizardStep', () => {
+  it('requires project type on step 0', () => {
+    const result = validateBOQWizardStep({
+      ...baseState,
+      currentSection: 'project_type',
+      projectDetails: {
+        ...baseState.projectDetails,
+        projectType: '',
+      },
+    });
+
+    expect(result.errors.projectType).toBeDefined();
+    expect(result.message).toBe('Choose a project type to continue.');
+  });
+
   it('returns required errors for step 1', () => {
     const result = validateBOQWizardStep({
       ...baseState,
-      currentStep: 1,
+      currentSection: 'project',
       projectDetails: {
         ...baseState.projectDetails,
         name: '   ',
@@ -35,25 +51,25 @@ describe('validateBOQWizardStep', () => {
   it('returns required errors for step 2', () => {
     const result = validateBOQWizardStep({
       ...baseState,
-      currentStep: 2,
+      currentSection: 'geometry',
       projectDetails: {
         ...baseState.projectDetails,
         floorPlanSize: '0',
         buildingType: '',
-        brickType: '' as unknown as BOQWizardValidationState['projectDetails']['brickType'],
+        brickTypes: [],
       },
     });
 
     expect(result.errors.floorPlanSize).toBeDefined();
     expect(result.errors.buildingType).toBeDefined();
-    expect(result.errors.brickType).toBeDefined();
+    expect(result.errors.brickTypes).toBeDefined();
     expect(result.message).toBe('Complete required floor plan fields before continuing.');
   });
 
   it('requires at least one stage when scope is stage', () => {
     const result = validateBOQWizardStep({
       ...baseState,
-      currentStep: 3,
+      currentSection: 'scope',
       projectScope: 'stage',
       selectedStages: [],
     });
@@ -65,7 +81,7 @@ describe('validateBOQWizardStep', () => {
   it('requires labor option on step 4', () => {
     const result = validateBOQWizardStep({
       ...baseState,
-      currentStep: 4,
+      currentSection: 'labor',
       laborType: null,
     });
 
@@ -76,10 +92,42 @@ describe('validateBOQWizardStep', () => {
   it('returns no errors for a valid step', () => {
     const result = validateBOQWizardStep({
       ...baseState,
-      currentStep: 2,
+      currentSection: 'geometry',
     });
 
     expect(result.errors).toEqual({});
     expect(result.message).toBeNull();
+  });
+
+  it('does not require floor area when geometry mode is detailed', () => {
+    const result = validateBOQWizardStep({
+      ...baseState,
+      currentSection: 'geometry',
+      geometryMode: 'detailed',
+      projectDetails: {
+        ...baseState.projectDetails,
+        floorPlanSize: '',
+      },
+    });
+
+    expect(result.errors.floorPlanSize).toBeUndefined();
+  });
+
+  it('skips geometry validation for non-geometry project types', () => {
+    const result = validateBOQWizardStep({
+      ...baseState,
+      currentSection: 'geometry',
+      projectDetails: {
+        ...baseState.projectDetails,
+        projectType: 'solar',
+        floorPlanSize: '',
+        buildingType: '',
+        brickTypes: [],
+      },
+    });
+
+    expect(result.errors.floorPlanSize).toBeUndefined();
+    expect(result.errors.buildingType).toBeUndefined();
+    expect(result.errors.brickTypes).toBeUndefined();
   });
 });

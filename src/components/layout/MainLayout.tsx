@@ -18,6 +18,7 @@ interface MainLayoutProps {
   children: ReactNode;
   title?: string;
   fullWidth?: boolean;
+  hideBottomNav?: boolean;
 }
 
 function MobileBottomNav() {
@@ -125,7 +126,8 @@ function MobileBottomNav() {
 export default function MainLayout({
   children,
   title,
-  fullWidth = false
+  fullWidth = false,
+  hideBottomNav = false,
 }: MainLayoutProps) {
   return (
     <CurrencyProvider>
@@ -140,7 +142,7 @@ export default function MainLayout({
         </main>
 
         <InstallPromptBanner />
-        <MobileBottomNav />
+        {!hideBottomNav && <MobileBottomNav />}
 
         {/* Footer */}
         <footer className="app-footer">
@@ -235,11 +237,11 @@ export default function MainLayout({
 
         @media (max-width: 900px) {
           .page-content {
-            padding-bottom: 100px;
+            padding-bottom: ${hideBottomNav ? '24px' : '100px'};
           }
 
           .app-footer {
-            padding-bottom: 88px;
+            padding-bottom: ${hideBottomNav ? '20px' : '88px'};
           }
         }
 

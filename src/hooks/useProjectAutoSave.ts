@@ -57,6 +57,7 @@ interface UseProjectAutoSaveReturn {
     // State
     project: Project | null;
     isSaving: boolean;
+    isAutoSaving: boolean;
     isLoading: boolean;
     lastSaved: Date | null;
     hasUnsavedChanges: boolean;
@@ -88,6 +89,7 @@ export function useProjectAutoSave(
 
     const [project, setProject] = useState<Project | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [isAutoSaving, setIsAutoSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -137,11 +139,15 @@ export function useProjectAutoSave(
     }, []);
 
     // Save project to database
-    const saveProject = useCallback(async () => {
+    const saveProject = useCallback(async (isAutoSave: boolean = false) => {
         const currentProject = projectRef.current;
         if (!currentProject) return;
 
-        setIsSaving(true);
+        if (isAutoSave) {
+            setIsAutoSaving(true);
+        } else {
+            setIsSaving(true);
+        }
         setError(null);
         onSaveStart?.();
 
@@ -216,7 +222,11 @@ export function useProjectAutoSave(
             setError(error.message);
             onSaveError?.(error);
         } finally {
-            setIsSaving(false);
+            if (isAutoSave) {
+                setIsAutoSaving(false);
+            } else {
+                setIsSaving(false);
+            }
         }
     }, [
         projectDetails,
@@ -333,7 +343,7 @@ export function useProjectAutoSave(
 
         // Set new timeout for auto-save
         saveTimeoutRef.current = setTimeout(() => {
-            saveProject();
+            void saveProject(true);
         }, autoSaveInterval);
 
         return () => {
@@ -355,12 +365,13 @@ export function useProjectAutoSave(
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
         }
-        await saveProject();
+        await saveProject(false);
     }, [saveProject]);
 
     return {
         project,
         isSaving,
+        isAutoSaving,
         isLoading,
         lastSaved,
         hasUnsavedChanges,

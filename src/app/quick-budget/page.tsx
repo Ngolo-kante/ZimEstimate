@@ -103,8 +103,8 @@ export default function QuickBudgetPage() {
       floorArea: parsedArea,
       roomCount,
       wallHeight: selectedProfile.config.wallHeightM,
-      brickType: 'common',
-      cementType: selectedProfile.config.cementType,
+      brickTypes: ['common'],
+      cementTypes: [selectedProfile.config.cementType],
       scope: 'full_house',
       includeLabor: false,
       locationType,
@@ -141,7 +141,7 @@ export default function QuickBudgetPage() {
         floorAreaM2: parsedArea,
         locationType,
         wallHeightM: selectedProfile.config.wallHeightM,
-        cementType: selectedProfile.config.cementType,
+        cementTypes: [selectedProfile.config.cementType],
       });
       setStageEstimate(result);
       setIsCalculating(false);
@@ -168,6 +168,24 @@ export default function QuickBudgetPage() {
   }, [locationType]);
 
   const overallPercent = stageEstimate ? Math.round(stageEstimate.coveragePercent) : 0;
+  const affordableStageCount = stageEstimate?.rows.filter((stage) => stage.affordable).length ?? 0;
+
+  const coverageTone = useMemo(() => {
+    if (!stageEstimate) return 'idle';
+    if (overallPercent >= 90) return 'secure';
+    if (overallPercent >= 55) return 'balanced';
+    return 'fragile';
+  }, [overallPercent, stageEstimate]);
+
+  const coverageLabel = useMemo(() => {
+    if (!stageEstimate) return 'Waiting for inputs';
+    if (overallPercent >= 100) return 'Fully funded path';
+    if (overallPercent >= 70) return 'Strong partial coverage';
+    if (overallPercent >= 45) return 'Early-stage funding';
+    return 'Insufficient funding';
+  }, [overallPercent, stageEstimate]);
+
+  const formatUsd = (amount: number) => `$${Math.round(amount).toLocaleString()}`;
 
   const handleSaveProject = async () => {
     if (!manualBuilderConfig || !stageEstimate) {
@@ -328,66 +346,98 @@ export default function QuickBudgetPage() {
   };
 
   return (
-    <MainLayout fullWidth title="Quick Budget Checker">
-      <div className="quick-budget-page">
-        <header className="quick-budget-header">
-          <span className="kicker">QUICK ESTIMATOR</span>
-          <h1>Check what your budget can complete before starting BOQ.</h1>
+    <MainLayout fullWidth title="Budget Checker">
+      <div className="budget-checker-page">
+        <div className="ambient ambient-one" aria-hidden />
+        <div className="ambient ambient-two" aria-hidden />
+
+        <header className={`studio-hero tone-${coverageTone}`}>
+          <div className="hero-head">
+            <span className="eyebrow">Budget Feasibility Studio</span>
+            <span className="status-pill">{coverageLabel}</span>
+          </div>
+
+          <h1>Pressure-test your build budget before procurement starts.</h1>
           <p>
-            Use this screen for fast planning. Set your budget, floor size, and location context to see the likely
-            stage reach.
+            Set budget, floor size, and context to see how far your money can realistically carry the project before
+            BOQ execution.
           </p>
-          <div className="overall-band">
-            <div>
-              <span className="overall-label">Overall Coverage</span>
-              <strong className="overall-value">{overallPercent}%</strong>
+
+          <div className="hero-snapshot">
+            <div className="snapshot-card">
+              <span>Available Budget</span>
+              <strong>{estimatorErrors.budget ? '--' : formatUsd(parsedBudget)}</strong>
             </div>
-            <div className="overall-track">
-              <span style={{ width: `${Math.max(0, Math.min(100, overallPercent))}%` }} />
+            <div className="snapshot-card">
+              <span>Estimated Coverage</span>
+              <strong>{overallPercent}%</strong>
+            </div>
+            <div className="snapshot-card">
+              <span>Reachable Stage</span>
+              <strong>{stageEstimate?.reachableStageLabel ?? 'Awaiting calculation'}</strong>
+            </div>
+            <div className="snapshot-card">
+              <span>Floor Plan Size</span>
+              <strong>{estimatorErrors.area ? '--' : `${parsedArea} m2`}</strong>
             </div>
           </div>
         </header>
 
-        <section className="quick-budget-shell">
-          <div className="quick-budget-form">
-            <div className="field">
-              <label htmlFor="budget-input">Available Budget (USD)</label>
-              <Input
-                id="budget-input"
-                type="number"
-                min="1"
-                step="1"
-                value={budgetInput}
-                onChange={(event) => setBudgetInput(event.target.value)}
-                placeholder="e.g. 15000"
-                error={estimatorErrors.budget || undefined}
-              />
+        <section className="workspace-grid">
+          <div className="control-panel">
+            <div className="panel-card">
+              <div className="section-head">
+                <h2>Inputs</h2>
+                <span>Auto-updates</span>
+              </div>
+
+              <div className="field">
+                <label htmlFor="budget-input">Available Budget (USD)</label>
+                <Input
+                  id="budget-input"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={budgetInput}
+                  onChange={(event) => setBudgetInput(event.target.value)}
+                  placeholder="e.g. 15000"
+                  error={estimatorErrors.budget || undefined}
+                />
+              </div>
+
+              <div className="presets">
+                {['10000', '15000', '25000', '40000'].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`preset ${budgetInput === value ? 'active' : ''}`}
+                    onClick={() => setBudgetInput(value)}
+                  >
+                    {formatUsd(Number(value))}
+                  </button>
+                ))}
+              </div>
+
+              <div className="field">
+                <label htmlFor="area-input">Floor Plan Size (m2)</label>
+                <Input
+                  id="area-input"
+                  type="number"
+                  min="1"
+                  step="0.1"
+                  value={floorAreaInput}
+                  onChange={(event) => setFloorAreaInput(event.target.value)}
+                  placeholder="e.g. 120"
+                  error={estimatorErrors.area || undefined}
+                />
+              </div>
             </div>
 
-            <div className="field">
-              <label htmlFor="area-input">Floor Plan Size (m2)</label>
-              <Input
-                id="area-input"
-                type="number"
-                min="1"
-                step="0.1"
-                value={floorAreaInput}
-                onChange={(event) => setFloorAreaInput(event.target.value)}
-                placeholder="e.g. 120"
-                error={estimatorErrors.area || undefined}
-              />
-            </div>
-
-            <div className="presets">
-              {['10000', '15000', '25000', '40000'].map((value) => (
-                <button key={value} type="button" className="preset" onClick={() => setBudgetInput(value)}>
-                  ${Number(value).toLocaleString()}
-                </button>
-              ))}
-            </div>
-
-            <div className="field">
-              <label>Location Context</label>
+            <div className="panel-card">
+              <div className="section-head">
+                <h2>Location Context</h2>
+                <span>{locationLabel}</span>
+              </div>
               <div className="choice-grid">
                 {locationOptions.map((option) => {
                   const Icon = option.icon;
@@ -400,7 +450,7 @@ export default function QuickBudgetPage() {
                       onClick={() => setLocationType(option.id)}
                     >
                       <div className="choice-top">
-                        <Icon size={16} weight={selected ? 'fill' : 'duotone'} />
+                        <Icon size={17} weight={selected ? 'fill' : 'duotone'} />
                         <strong>{option.label}</strong>
                       </div>
                       <span>{option.hint}</span>
@@ -410,9 +460,12 @@ export default function QuickBudgetPage() {
               </div>
             </div>
 
-            <div className="field">
-              <label>Estimator Profile</label>
-              <div className="choice-grid choice-grid-two">
+            <div className="panel-card">
+              <div className="section-head">
+                <h2>Estimator Profile</h2>
+                <span>{selectedProfile.label}</span>
+              </div>
+              <div className="choice-grid profile-grid">
                 {profileOptions.map((option) => {
                   const selected = buildProfile === option.id;
                   return (
@@ -423,7 +476,7 @@ export default function QuickBudgetPage() {
                       onClick={() => setBuildProfile(option.id)}
                     >
                       <div className="choice-top">
-                        <CheckCircle size={16} weight={selected ? 'fill' : 'duotone'} />
+                        <CheckCircle size={17} weight={selected ? 'fill' : 'duotone'} />
                         <strong>{option.label}</strong>
                       </div>
                       <span>{option.hint}</span>
@@ -432,14 +485,13 @@ export default function QuickBudgetPage() {
                 })}
               </div>
             </div>
-
           </div>
 
-          <div className="quick-budget-results">
+          <div className="results-panel">
             {isCalculating ? (
               <div className="loading-card">
                 <div className="loader" />
-                <p>Pulling current stage amounts...</p>
+                <p>Recomputing stage reach...</p>
                 <div className="loading-lines">
                   <span />
                   <span />
@@ -448,43 +500,64 @@ export default function QuickBudgetPage() {
               </div>
             ) : stageEstimate ? (
               <>
-                <div className="summary">
-                  <div className="summary-item">
-                    <span>Estimated Full Build</span>
-                    <strong>${Math.round(stageEstimate.estimatedTotalUsd).toLocaleString()}</strong>
+                <div className="result-top">
+                  <div
+                    className="coverage-ring"
+                    style={{
+                      background: `conic-gradient(#2e6cf6 ${Math.max(0, Math.min(100, overallPercent))}%, rgba(203, 213, 225, 0.38) ${Math.max(0, Math.min(100, overallPercent))}% 100%)`,
+                    }}
+                  >
+                    <div>
+                      <span>Coverage</span>
+                      <strong>{overallPercent}%</strong>
+                    </div>
                   </div>
-                  <div className="summary-item">
-                    <span>Budget Coverage</span>
-                    <strong>{stageEstimate.coveragePercent.toFixed(0)}%</strong>
-                  </div>
-                  <div className="summary-item">
-                    <span>Likely Reach</span>
-                    <strong>{stageEstimate.reachableStageLabel}</strong>
+
+                  <div className="result-stats">
+                    <article>
+                      <span>Estimated Full Build</span>
+                      <strong>{formatUsd(stageEstimate.estimatedTotalUsd)}</strong>
+                    </article>
+                    <article>
+                      <span>Affordable Stages</span>
+                      <strong>{affordableStageCount} / {stageEstimate.rows.length}</strong>
+                    </article>
+                    <article>
+                      <span>Detailed BOQ Total</span>
+                      <strong>{formatUsd(totals.usd)}</strong>
+                    </article>
                   </div>
                 </div>
 
                 <div className="guidance">
                   {nextLockedStage
-                    ? `Next stage target: ${nextLockedStage.label} needs about $${Math.round(nextLockedStage.stageCostUsd).toLocaleString()}.`
-                    : 'Budget is sufficient for all major stages in this quick estimate.'}
+                    ? `Next stage gap: ${nextLockedStage.label} is estimated around ${formatUsd(nextLockedStage.stageCostUsd)}.`
+                    : 'Current budget can absorb all stage bands in this quick estimate.'}
                 </div>
 
                 <div className="stage-list">
                   {stageEstimate.rows.map((stage) => (
-                    <div key={stage.id} className={`stage ${stage.affordable ? 'done' : ''}`}>
+                    <article key={stage.id} className={`stage ${stage.affordable ? 'done' : ''}`}>
                       <div className="stage-head">
-                        <span>{stage.label}</span>
-                        <strong>${Math.round(stage.stageCostUsd).toLocaleString()}</strong>
+                        <div className="stage-copy">
+                          <span>{stage.label}</span>
+                          <p>{stageCategoryLabels[stage.id] ?? 'Construction stage checkpoint'}</p>
+                        </div>
+                        <div className="stage-metrics">
+                          <strong>{formatUsd(stage.stageCostUsd)}</strong>
+                          <small>{Math.round(stage.coveragePercent)}% covered</small>
+                        </div>
                       </div>
                       <div className="stage-track">
                         <span style={{ width: `${Math.min(100, stage.coveragePercent)}%` }} />
                       </div>
-                    </div>
+                    </article>
                   ))}
                 </div>
 
                 <p className="note">
-                  Indicative estimate only. Final totals vary by design complexity, finishes, and supplier rates.
+                  Indicative estimate only. Final totals vary based on design complexity, specification shifts, and
+                  supplier negotiations.
                 </p>
 
                 <div className="actions">
@@ -496,11 +569,7 @@ export default function QuickBudgetPage() {
                   >
                     Save Project
                   </Button>
-                  <Button
-                    variant="secondary"
-                    icon={<ShareNetwork size={16} />}
-                    onClick={handleShare}
-                  >
+                  <Button variant="secondary" icon={<ShareNetwork size={16} />} onClick={handleShare}>
                     Share
                   </Button>
                   <Button
@@ -514,118 +583,214 @@ export default function QuickBudgetPage() {
                 </div>
               </>
             ) : (
-              <div className="empty">Enter budget and floor size to preview stage completion.</div>
+              <div className="empty">
+                <h3>Start with budget + floor size</h3>
+                <p>
+                  Once valid values are entered, this panel will show stage-by-stage affordability and suggested next
+                  spending targets.
+                </p>
+              </div>
             )}
           </div>
         </section>
       </div>
 
       <style jsx>{`
-        .quick-budget-page {
-          max-width: 1180px;
+        .budget-checker-page {
+          position: relative;
+          max-width: 1260px;
           margin: 0 auto;
-          padding: 26px 20px 84px;
+          padding: 20px 20px 84px;
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 18px;
+          isolation: isolate;
         }
 
-        .quick-budget-header {
-          border-radius: 22px;
-          border: 1px solid rgba(148, 163, 184, 0.28);
-          background:
-            radial-gradient(circle at 95% -10%, rgba(78, 154, 247, 0.2), rgba(78, 154, 247, 0)),
-            linear-gradient(155deg, #ffffff, #f3f9ff);
-          padding: 24px;
-          box-shadow: 0 14px 24px rgba(15, 23, 42, 0.08);
-        }
-
-        .kicker {
-          font-size: 0.7rem;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: var(--color-accent-dark);
-          font-weight: 700;
-        }
-
-        .quick-budget-header h1 {
-          margin: 10px 0 8px;
-          color: var(--color-primary);
-          font-size: clamp(1.55rem, 3vw, 2.2rem);
-          line-height: 1.15;
-        }
-
-        .quick-budget-header p {
-          margin: 0;
-          color: var(--color-text-secondary);
-          line-height: 1.6;
-          max-width: 760px;
-        }
-
-        .overall-band {
-          margin-top: 16px;
-          padding: 12px;
-          border-radius: 14px;
-          border: 1px solid rgba(78, 154, 247, 0.26);
-          background: rgba(239, 246, 255, 0.85);
-          display: grid;
-          gap: 8px;
-        }
-
-        .overall-label {
-          display: block;
-          font-size: 0.7rem;
-          letter-spacing: 0.09em;
-          text-transform: uppercase;
-          color: #1e40af;
-          font-weight: 700;
-        }
-
-        .overall-value {
-          font-size: 1.35rem;
-          color: #1e3a8a;
-        }
-
-        .overall-track {
-          height: 10px;
+        .ambient {
+          position: absolute;
           border-radius: 999px;
-          background: rgba(148, 163, 184, 0.28);
+          filter: blur(18px);
+          opacity: 0.62;
+          pointer-events: none;
+          z-index: -1;
+          animation: drift 9s ease-in-out infinite alternate;
+        }
+
+        .ambient-one {
+          width: 280px;
+          height: 280px;
+          right: -30px;
+          top: -35px;
+          background: radial-gradient(circle, rgba(78, 154, 247, 0.38), rgba(78, 154, 247, 0));
+        }
+
+        .ambient-two {
+          width: 260px;
+          height: 260px;
+          left: -40px;
+          bottom: 12%;
+          background: radial-gradient(circle, rgba(6, 20, 47, 0.22), rgba(6, 20, 47, 0));
+          animation-delay: 0.9s;
+        }
+
+        .studio-hero {
+          border-radius: 26px;
+          border: 1px solid rgba(148, 163, 184, 0.34);
+          background:
+            linear-gradient(120deg, rgba(6, 20, 47, 0.98), rgba(16, 36, 78, 0.92)),
+            radial-gradient(circle at 100% 0%, rgba(78, 154, 247, 0.4), rgba(78, 154, 247, 0));
+          color: #f8fbff;
+          padding: 24px;
+          box-shadow: 0 22px 40px rgba(3, 10, 24, 0.27);
           overflow: hidden;
         }
 
-        .overall-track span {
-          display: block;
-          height: 100%;
+        .tone-secure {
+          box-shadow: 0 20px 44px rgba(11, 90, 44, 0.26);
+        }
+
+        .tone-balanced {
+          box-shadow: 0 20px 44px rgba(30, 64, 175, 0.24);
+        }
+
+        .tone-fragile {
+          box-shadow: 0 20px 44px rgba(153, 27, 27, 0.26);
+        }
+
+        .hero-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .eyebrow {
+          font-size: 0.71rem;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          font-weight: 700;
+          color: rgba(191, 219, 254, 0.95);
+        }
+
+        .status-pill {
+          border: 1px solid rgba(148, 163, 184, 0.45);
+          background: rgba(15, 23, 42, 0.44);
           border-radius: 999px;
-          background: linear-gradient(90deg, #4e9af7, #2e6cf6);
+          padding: 6px 12px;
+          font-size: 0.72rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          font-weight: 700;
         }
 
-        .quick-budget-shell {
+        .studio-hero h1 {
+          margin: 10px 0 8px;
+          font-size: clamp(1.64rem, 3vw, 2.36rem);
+          line-height: 1.12;
+          letter-spacing: -0.02em;
+          max-width: 760px;
+        }
+
+        .studio-hero p {
+          margin: 0;
+          color: rgba(226, 232, 240, 0.92);
+          line-height: 1.62;
+          max-width: 760px;
+        }
+
+        .hero-snapshot {
+          margin-top: 18px;
           display: grid;
-          grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-          gap: 16px;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 10px;
         }
 
-        .quick-budget-form,
-        .quick-budget-results {
-          border-radius: 16px;
-          padding: 16px;
-          border: 1px solid rgba(148, 163, 184, 0.26);
-          background: rgba(255, 255, 255, 0.96);
-          box-shadow: 0 10px 18px rgba(15, 23, 42, 0.05);
+        .snapshot-card {
+          border-radius: 14px;
+          border: 1px solid rgba(148, 163, 184, 0.22);
+          background: rgba(15, 23, 42, 0.36);
+          padding: 10px 12px;
         }
 
-        .quick-budget-form {
+        .snapshot-card span {
+          display: block;
+          font-size: 0.68rem;
+          letter-spacing: 0.09em;
+          text-transform: uppercase;
+          color: rgba(203, 213, 225, 0.94);
+          margin-bottom: 6px;
+          font-weight: 700;
+        }
+
+        .snapshot-card strong {
+          font-size: 0.96rem;
+          line-height: 1.28;
+        }
+
+        .workspace-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+          gap: 14px;
+          align-items: start;
+        }
+
+        .control-panel,
+        .results-panel {
+          border-radius: 18px;
+          border: 1px solid rgba(148, 163, 184, 0.25);
+          background: rgba(255, 255, 255, 0.93);
+          padding: 14px;
+          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.07);
+        }
+
+        .control-panel {
           display: flex;
           flex-direction: column;
           gap: 12px;
         }
 
+        .panel-card {
+          border-radius: 14px;
+          border: 1px solid rgba(148, 163, 184, 0.22);
+          background: rgba(248, 250, 252, 0.86);
+          padding: 12px;
+        }
+
+        .section-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 10px;
+        }
+
+        .section-head h2 {
+          margin: 0;
+          font-size: 0.88rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          font-weight: 800;
+          color: var(--color-primary);
+        }
+
+        .section-head span {
+          font-size: 0.7rem;
+          color: var(--color-text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.07em;
+          font-weight: 700;
+        }
+
+        .field + .field {
+          margin-top: 10px;
+        }
+
         .field label {
           display: block;
           margin-bottom: 6px;
-          font-size: 0.75rem;
-          letter-spacing: 0.08em;
+          font-size: 0.72rem;
+          letter-spacing: 0.09em;
           text-transform: uppercase;
           font-weight: 700;
           color: var(--color-text-muted);
@@ -635,6 +800,7 @@ export default function QuickBudgetPage() {
           display: flex;
           gap: 8px;
           flex-wrap: wrap;
+          margin: 10px 0 0;
         }
 
         .preset {
@@ -642,17 +808,22 @@ export default function QuickBudgetPage() {
           border-radius: 999px;
           background: white;
           padding: 6px 10px;
-          font-size: 0.74rem;
+          font-size: 0.72rem;
           font-weight: 700;
           color: var(--color-primary);
           cursor: pointer;
-          transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+          transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
         }
 
         .preset:hover {
           transform: translateY(-1px);
-          border-color: rgba(78, 154, 247, 0.6);
-          background: rgba(239, 246, 255, 0.95);
+          border-color: rgba(46, 108, 246, 0.56);
+          box-shadow: 0 6px 14px rgba(78, 154, 247, 0.2);
+        }
+
+        .preset.active {
+          border-color: rgba(46, 108, 246, 0.66);
+          background: rgba(219, 234, 254, 0.74);
         }
 
         .choice-grid {
@@ -661,33 +832,32 @@ export default function QuickBudgetPage() {
           gap: 8px;
         }
 
-        .choice-grid-two {
+        .profile-grid {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         .choice {
-          border: 1px solid rgba(148, 163, 184, 0.32);
+          border: 1px solid rgba(148, 163, 184, 0.34);
           border-radius: 12px;
-          background: rgba(255, 255, 255, 0.95);
+          background: rgba(255, 255, 255, 0.92);
           padding: 9px;
           text-align: left;
           display: flex;
           flex-direction: column;
           gap: 4px;
           cursor: pointer;
-          transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+          transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
         }
 
         .choice:hover {
-          border-color: rgba(78, 154, 247, 0.55);
-          background: rgba(239, 246, 255, 0.95);
+          border-color: rgba(46, 108, 246, 0.58);
           transform: translateY(-1px);
         }
 
         .choice.selected {
-          border-color: rgba(46, 108, 246, 0.64);
-          background: rgba(219, 234, 254, 0.78);
-          box-shadow: 0 8px 16px rgba(78, 154, 247, 0.18);
+          border-color: rgba(46, 108, 246, 0.74);
+          background: rgba(219, 234, 254, 0.75);
+          box-shadow: 0 8px 16px rgba(78, 154, 247, 0.2);
         }
 
         .choice-top {
@@ -698,63 +868,97 @@ export default function QuickBudgetPage() {
         }
 
         .choice-top strong {
-          font-size: 0.78rem;
+          font-size: 0.79rem;
         }
 
         .choice span {
           font-size: 0.72rem;
           color: var(--color-text-muted);
-          line-height: 1.35;
+          line-height: 1.4;
         }
 
-        .actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-          padding-top: 10px;
-          margin-top: 8px;
-          border-top: 1px solid rgba(148, 163, 184, 0.22);
-        }
-
-        .summary {
+        .result-top {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 8px;
+          grid-template-columns: auto minmax(0, 1fr);
+          gap: 14px;
+          align-items: center;
           margin-bottom: 12px;
         }
 
-        .summary-item {
-          border-radius: 12px;
-          border: 1px solid rgba(148, 163, 184, 0.26);
-          padding: 9px 10px;
-          background: rgba(246, 250, 255, 0.9);
+        .coverage-ring {
+          width: 130px;
+          height: 130px;
+          border-radius: 50%;
+          padding: 11px;
+          box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
+          animation: pulse 3.8s ease-in-out infinite;
         }
 
-        .summary-item span {
-          display: block;
+        .coverage-ring > div {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          background: #f8fafc;
+          border: 1px solid rgba(148, 163, 184, 0.22);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 2px;
+        }
+
+        .coverage-ring span {
           font-size: 0.67rem;
           letter-spacing: 0.09em;
           text-transform: uppercase;
-          font-weight: 700;
           color: var(--color-text-muted);
-          margin-bottom: 4px;
+          font-weight: 700;
         }
 
-        .summary-item strong {
-          font-size: 0.95rem;
+        .coverage-ring strong {
+          font-size: 1.28rem;
           color: var(--color-primary);
-          line-height: 1.25;
+        }
+
+        .result-stats {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .result-stats article {
+          border-radius: 12px;
+          border: 1px solid rgba(148, 163, 184, 0.24);
+          background: rgba(248, 250, 252, 0.94);
+          padding: 10px;
+        }
+
+        .result-stats span {
+          display: block;
+          font-size: 0.66rem;
+          letter-spacing: 0.09em;
+          text-transform: uppercase;
+          color: var(--color-text-muted);
+          font-weight: 700;
+          margin-bottom: 5px;
+        }
+
+        .result-stats strong {
+          font-size: 0.93rem;
+          color: var(--color-primary);
+          line-height: 1.3;
         }
 
         .guidance {
-          margin: 0 0 10px;
-          border: 1px solid rgba(59, 130, 246, 0.22);
+          border: 1px solid rgba(59, 130, 246, 0.28);
           background: rgba(239, 246, 255, 0.9);
           border-radius: 12px;
-          padding: 9px 10px;
-          font-size: 0.78rem;
+          padding: 10px 12px;
+          font-size: 0.8rem;
+          line-height: 1.45;
           color: #1e3a8a;
           font-weight: 600;
+          margin-bottom: 10px;
         }
 
         .stage-list {
@@ -765,41 +969,78 @@ export default function QuickBudgetPage() {
 
         .stage {
           border-radius: 12px;
-          border: 1px solid rgba(148, 163, 184, 0.22);
+          border: 1px solid rgba(148, 163, 184, 0.24);
+          background: rgba(255, 255, 255, 0.92);
           padding: 10px;
-          background: rgba(255, 255, 255, 0.9);
+          animation: stageEnter 420ms ease both;
+        }
+
+        .stage:nth-child(2) {
+          animation-delay: 60ms;
+        }
+
+        .stage:nth-child(3) {
+          animation-delay: 120ms;
+        }
+
+        .stage:nth-child(4) {
+          animation-delay: 180ms;
+        }
+
+        .stage:nth-child(5) {
+          animation-delay: 240ms;
         }
 
         .stage.done {
-          border-color: rgba(22, 163, 74, 0.35);
-          background: rgba(240, 253, 244, 0.9);
+          border-color: rgba(22, 163, 74, 0.38);
+          background: rgba(240, 253, 244, 0.92);
         }
 
         .stage-head {
           display: flex;
+          align-items: flex-start;
           justify-content: space-between;
-          align-items: center;
           gap: 10px;
           margin-bottom: 7px;
         }
 
-        .stage-head span {
+        .stage-copy span {
+          display: block;
           font-size: 0.85rem;
           font-weight: 700;
           color: var(--color-primary);
+          margin-bottom: 2px;
         }
 
-        .stage-head strong {
-          font-size: 0.8rem;
-          color: var(--color-text-secondary);
-          font-weight: 700;
+        .stage-copy p {
+          margin: 0;
+          font-size: 0.72rem;
+          color: var(--color-text-muted);
+          line-height: 1.35;
+        }
+
+        .stage-metrics {
+          text-align: right;
+        }
+
+        .stage-metrics strong {
+          display: block;
+          font-size: 0.81rem;
+          color: var(--color-primary);
+          line-height: 1.25;
+        }
+
+        .stage-metrics small {
+          font-size: 0.7rem;
+          color: var(--color-text-muted);
+          font-weight: 600;
         }
 
         .stage-track {
           width: 100%;
           height: 7px;
           border-radius: 999px;
-          background: rgba(148, 163, 184, 0.26);
+          background: rgba(148, 163, 184, 0.28);
           overflow: hidden;
         }
 
@@ -814,34 +1055,58 @@ export default function QuickBudgetPage() {
           margin: 10px 0 0;
           font-size: 0.74rem;
           color: var(--color-text-muted);
+          line-height: 1.5;
+        }
+
+        .actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 11px;
+          padding-top: 10px;
+          border-top: 1px solid rgba(148, 163, 184, 0.22);
         }
 
         .empty {
-          min-height: 180px;
+          min-height: 280px;
           border-radius: 14px;
-          border: 1px dashed rgba(148, 163, 184, 0.38);
-          background: rgba(248, 250, 252, 0.9);
+          border: 1px dashed rgba(148, 163, 184, 0.36);
+          background: linear-gradient(140deg, rgba(248, 250, 252, 0.93), rgba(239, 246, 255, 0.9));
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
           text-align: center;
+          gap: 8px;
+          padding: 24px;
+        }
+
+        .empty h3 {
+          margin: 0;
+          font-size: 1.06rem;
+          color: var(--color-primary);
+        }
+
+        .empty p {
+          margin: 0;
           font-size: 0.86rem;
+          line-height: 1.6;
           color: var(--color-text-secondary);
-          padding: 20px;
+          max-width: 430px;
         }
 
         .loading-card {
-          min-height: 260px;
+          min-height: 280px;
           border-radius: 14px;
           border: 1px solid rgba(148, 163, 184, 0.3);
-          background: rgba(248, 250, 252, 0.92);
+          background: rgba(248, 250, 252, 0.94);
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
           gap: 12px;
-          padding: 18px;
           text-align: center;
+          padding: 18px;
         }
 
         .loading-card p {
@@ -852,16 +1117,16 @@ export default function QuickBudgetPage() {
         }
 
         .loader {
-          width: 34px;
-          height: 34px;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
           border: 3px solid rgba(148, 163, 184, 0.34);
           border-top-color: #2e6cf6;
-          animation: spin 0.8s linear infinite;
+          animation: spin 0.82s linear infinite;
         }
 
         .loading-lines {
-          width: min(380px, 100%);
+          width: min(360px, 100%);
           display: grid;
           gap: 8px;
         }
@@ -890,38 +1155,94 @@ export default function QuickBudgetPage() {
           }
         }
 
-        @media (max-width: 1080px) {
-          .quick-budget-shell {
-            grid-template-columns: 1fr;
+        @keyframes pulse {
+          0% {
+            transform: scale(1);
           }
-
-          .choice-grid {
-            grid-template-columns: 1fr;
+          50% {
+            transform: scale(1.015);
           }
-
-          .choice-grid-two {
-            grid-template-columns: 1fr;
+          100% {
+            transform: scale(1);
           }
         }
 
-        @media (max-width: 860px) {
-          .summary {
+        @keyframes drift {
+          from {
+            transform: translate3d(0, 0, 0);
+          }
+          to {
+            transform: translate3d(8px, -8px, 0);
+          }
+        }
+
+        @keyframes stageEnter {
+          from {
+            opacity: 0;
+            transform: translateY(4px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @media (max-width: 1120px) {
+          .hero-snapshot {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .workspace-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .result-stats {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 840px) {
+          .choice-grid,
+          .profile-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .result-top {
+            grid-template-columns: 1fr;
+            justify-items: center;
+          }
+
+          .result-stats {
+            width: 100%;
             grid-template-columns: 1fr;
           }
         }
 
         @media (max-width: 640px) {
-          .quick-budget-page {
-            padding: 16px 12px 72px;
+          .budget-checker-page {
+            padding: 14px 12px 74px;
           }
 
-          .quick-budget-header {
-            padding: 16px;
+          .studio-hero {
+            padding: 18px;
           }
 
-          .quick-budget-form,
-          .quick-budget-results {
-            padding: 12px;
+          .hero-head {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .hero-snapshot {
+            grid-template-columns: 1fr;
+          }
+
+          .control-panel,
+          .results-panel {
+            padding: 11px;
+          }
+
+          .actions :global(.btn) {
+            width: 100%;
           }
         }
       `}</style>

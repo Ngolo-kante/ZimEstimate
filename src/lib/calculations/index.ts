@@ -54,8 +54,8 @@ export interface ManualBuilderConfig {
   floorArea: number;        // m²
   roomCount: number;        // total rooms for internal wall estimation
   wallHeight: number;       // meters (default 2.7)
-  brickType: BrickType;
-  cementType: CementType;
+  brickTypes: BrickType[];
+  cementTypes: CementType[];
   scope: ProjectScope | ProjectScope[];
   includeLabor: boolean;
   locationType?: LocationType;
@@ -91,7 +91,8 @@ function calculateSuperstructureFromRooms(
   locationType: LocationType
 ): GeneratedBOQItem[] {
   const items: GeneratedBOQItem[] = [];
-  const { rooms, wallHeight, cementType } = config;
+  const { rooms, wallHeight } = config;
+  const cementType = (config.cementTypes && config.cementTypes.length > 0) ? config.cementTypes[0] : 'cement_325';
   const masonryWasteMultiplier = getMasonryWasteMultiplier(locationType);
   const mortarCementBagsPerM3 = getMortarCementBagsPerM3(cementType);
 
@@ -167,7 +168,9 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   itemIdCounter = 0;
   const items: GeneratedBOQItem[] = [];
 
-  const { floorArea, roomCount, wallHeight, brickType, cementType, includeLabor, rooms } = config;
+  const { floorArea, roomCount, wallHeight, brickTypes, cementTypes, includeLabor, rooms } = config;
+  const brickType = (brickTypes && brickTypes.length > 0) ? brickTypes[0] : 'common';
+  const cementType = (cementTypes && cementTypes.length > 0) ? cementTypes[0] : 'cement_325';
   const { perimeter, internalWallLength } = estimateDimensions(floorArea, roomCount);
 
   // Normalize scope to array
