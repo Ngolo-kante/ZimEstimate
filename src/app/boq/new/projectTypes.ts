@@ -41,7 +41,7 @@ export const MANUAL_BUILDER_STAGES: {
     id: 'superstructure',
     label: 'Superstructure',
     description: 'Walls, columns, slabs & structural frame',
-    iconKey: 'buildings',
+    iconKey: 'columns',
   },
   {
     id: 'roofing',
@@ -60,12 +60,6 @@ export const MANUAL_BUILDER_STAGES: {
     label: 'External Works',
     description: 'Boundary wall, paving, gate & landscaping',
     iconKey: 'tree',
-  },
-  {
-    id: 'labor',
-    label: 'Labour',
-    description: 'Skilled & general labour across all trades',
-    iconKey: 'hammer',
   },
 ];
 

@@ -2,30 +2,42 @@
 
 import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Warning, CheckCircle, Question, Mountains, TrendUp, Info } from '@phosphor-icons/react';
+import { Warning, CheckCircle, Question, Mountains, TrendUp, ArrowRight, Info } from '@phosphor-icons/react';
 import { LOCATION_PROCEDURE_RULES, SOIL_RISK_PROFILES, type SoilType } from '@/lib/buildFlowRules';
 import { useBoqWizardStore, type SiteSlopeType } from '@/store/boqWizardStore';
 
-const SLOPE_OPTIONS: Array<{ value: SiteSlopeType; label: string; hint: string; img: string; emoji: string }> = [
-  { value: 'flat',     label: 'Flat',     hint: 'Minimal leveling',         img: '/topo-flat.webp',     emoji: '🟩' },
-  { value: 'gentle',   label: 'Gentle',   hint: 'Slight gradient',          img: '/topo-gentle.webp',   emoji: '📐' },
-  { value: 'moderate', label: 'Moderate', hint: 'Noticeable slope',         img: '/topo-moderate.webp', emoji: '⛰️' },
-  { value: 'steep',    label: 'Steep',    hint: 'Retaining walls required', img: '/topo-steep.webp',    emoji: '🏔️' },
+// ── Slope: icon-based (no photos) ─────────────────────────────────────────
+const SLOPE_OPTIONS: Array<{
+  value: SiteSlopeType;
+  label: string;
+  hint: string;
+  Icon: typeof ArrowRight;
+  rotate: string;
+}> = [
+  { value: 'flat',     label: 'Flat',     hint: 'Minimal leveling',         Icon: ArrowRight, rotate: 'rotate-0' },
+  { value: 'gentle',   label: 'Gentle',   hint: 'Slight gradient',          Icon: ArrowRight, rotate: '-rotate-6' },
+  { value: 'moderate', label: 'Moderate', hint: 'Noticeable slope',         Icon: ArrowRight, rotate: '-rotate-12' },
+  { value: 'steep',    label: 'Steep',    hint: 'Retaining walls likely',   Icon: ArrowRight, rotate: '-rotate-[30deg]' },
 ];
 
-const SOIL_OPTIONS: Array<{ value: SoilType | 'not_sure'; label: string; hint: string; risk: 'low' | 'medium' | 'high' | 'unknown' }> = [
-  { value: 'loam',              label: 'Loam / Standard',           hint: 'Good stable soil — most common',           risk: 'low' },
-  { value: 'sandy',             label: 'Sandy',                     hint: 'Low bearing capacity, high drainage',       risk: 'medium' },
-  { value: 'clay_black_mountain',label: 'Clay / Black Cotton',      hint: 'Expands with moisture, high crack risk',   risk: 'high' },
-  { value: 'rock',              label: 'Rock',                      hint: 'Hard excavation needed, but very stable',   risk: 'medium' },
-  { value: 'not_sure',          label: 'Not Sure',                  hint: 'We\'ll use safe conservative defaults',    risk: 'unknown' },
+const SOIL_OPTIONS: Array<{
+  value: SoilType | 'not_sure';
+  label: string;
+  hint: string;
+  risk: 'low' | 'medium' | 'high' | 'unknown';
+}> = [
+  { value: 'loam',               label: 'Loam / Standard',      hint: 'Stable, most common soil type',              risk: 'low' },
+  { value: 'sandy',              label: 'Sandy',                 hint: 'Low bearing capacity, high drainage',         risk: 'medium' },
+  { value: 'clay_black_mountain', label: 'Clay / Black Cotton', hint: 'Expands with moisture — crack risk',          risk: 'high' },
+  { value: 'rock',               label: 'Rock',                  hint: 'Hard excavation, but very stable',            risk: 'medium' },
+  { value: 'not_sure',           label: 'Not Sure',              hint: 'We\'ll use safe conservative defaults',       risk: 'unknown' },
 ];
 
-const RISK_COLORS = {
-  low:     { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Low risk' },
-  medium:  { bg: 'bg-amber-100',   text: 'text-amber-700',   label: 'Medium risk' },
-  high:    { bg: 'bg-red-100',     text: 'text-red-700',     label: 'High risk' },
-  unknown: { bg: 'bg-slate-100',   text: 'text-slate-600',   label: 'Default' },
+const RISK_BADGE: Record<string, { bg: string; text: string; label: string }> = {
+  low:     { bg: 'bg-slate-100',   text: 'text-slate-600', label: 'Low risk' },
+  medium:  { bg: 'bg-slate-100',   text: 'text-slate-600', label: 'Medium risk' },
+  high:    { bg: 'bg-amber-100',   text: 'text-amber-700', label: 'High risk' },
+  unknown: { bg: 'bg-slate-100',   text: 'text-slate-500', label: 'Default' },
 };
 
 export default function SiteConditionsSection() {
@@ -46,17 +58,17 @@ export default function SiteConditionsSection() {
   return (
     <div className="space-y-10">
 
-      {/* ── Hint callout ───────────────────────────────────────────────── */}
-      <div className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/60 p-4 text-sm text-blue-800">
-        <Info size={18} weight="fill" className="shrink-0 mt-0.5 text-blue-500" />
-        <p><strong>Not sure about these details?</strong> That's completely fine — select "Not Sure" or the nearest option. We'll use safe, conservative defaults to keep your estimate reliable.</p>
+      {/* Hint */}
+      <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+        <Info size={17} weight="fill" className="shrink-0 mt-0.5 text-slate-400" />
+        <p>Not sure about these details? Select the nearest option — we use conservative defaults to keep your estimate reliable.</p>
       </div>
 
-      {/* ── Site Slope ─────────────────────────────────────────────────── */}
+      {/* ── Slope ──────────────────────────────────────────────────────── */}
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-bold text-slate-900 mb-1">What's the slope of the site?</h3>
-          <p className="text-sm text-slate-500">Slope affects excavation, fill, and substructure complexity.</p>
+          <h3 className="text-lg font-bold text-slate-900 mb-1">What is the slope of the site?</h3>
+          <p className="text-sm text-slate-500">Slope affects earthworks, fill volumes, and substructure complexity.</p>
         </div>
 
         <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
@@ -66,82 +78,76 @@ export default function SiteConditionsSection() {
               <motion.button
                 key={opt.value}
                 type="button"
-                whileHover={{ scale: 1.02, y: -2 }}
+                whileHover={{ scale: 1.01, y: -1 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => updateProjectDetails({ siteSlope: opt.value })}
-                className={`group relative flex flex-col overflow-hidden rounded-2xl border transition-all duration-200 ${
+                className={`flex flex-col items-center gap-3 rounded-2xl border p-5 text-center transition-all duration-200 ${
                   isSelected
-                    ? 'border-blue-400 ring-2 ring-blue-400/20 shadow-md'
-                    : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-md'
+                    ? 'border-slate-900 bg-slate-900 text-white shadow-lg'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:shadow-sm'
                 }`}
               >
-                {/* Topo image */}
-                <div className="relative h-20 w-full overflow-hidden bg-slate-100">
-                  <img
-                    src={opt.img}
-                    alt={opt.label}
-                    className="h-full w-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                {/* Slope angle icon illustration */}
+                <div className={`relative flex h-10 w-10 items-center justify-center ${isSelected ? 'text-white' : 'text-slate-400'}`}>
+                  <opt.Icon
+                    size={28}
+                    weight="bold"
+                    className={`${opt.rotate} transition-transform`}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                  {isSelected && (
-                    <div className="absolute top-2 right-2">
-                      <CheckCircle weight="fill" size={18} className="text-white drop-shadow" />
-                    </div>
-                  )}
                 </div>
-                {/* Label */}
-                <div className={`px-3 py-3 text-left ${isSelected ? 'bg-blue-50' : 'bg-white'}`}>
-                  <div className={`text-sm font-semibold ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{opt.label}</div>
-                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-blue-600' : 'text-slate-500'}`}>{opt.hint}</div>
+                <div>
+                  <div className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-slate-800'}`}>{opt.label}</div>
+                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>{opt.hint}</div>
                 </div>
+                {isSelected && (
+                  <CheckCircle size={16} weight="fill" className="text-white opacity-80" />
+                )}
               </motion.button>
             );
           })}
         </div>
       </div>
 
-      {/* ── Soil Type ──────────────────────────────────────────────────── */}
+      {/* ── Soil ───────────────────────────────────────────────────────── */}
       <div className="space-y-4">
         <div>
           <h3 className="text-lg font-bold text-slate-900 mb-1">What type of soil is on site?</h3>
-          <p className="text-sm text-slate-500">Soil type affects foundation depth, reinforcement requirements, and excavation methods.</p>
+          <p className="text-sm text-slate-500">Soil type determines foundation depth, reinforcement, and excavation method.</p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {SOIL_OPTIONS.map((opt) => {
             const isSelected = projectDetails.soilType === opt.value || (!projectDetails.soilType && opt.value === 'not_sure');
-            const rc = RISK_COLORS[opt.risk];
+            const rb = RISK_BADGE[opt.risk];
             return (
               <motion.button
                 key={opt.value}
                 type="button"
-                whileHover={{ scale: 1.01, y: -2 }}
+                whileHover={{ scale: 1.01, y: -1 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => updateProjectDetails({ soilType: opt.value === 'not_sure' ? '' : opt.value })}
                 className={`group relative flex items-start gap-3 rounded-2xl border p-4 text-left transition-all duration-200 ${
                   isSelected
-                    ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-400/20'
-                    : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
+                    ? 'border-slate-900 bg-slate-900 text-white shadow-md'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
                 }`}
               >
-                {isSelected && (
-                  <CheckCircle weight="fill" size={16} className="absolute top-3 right-3 text-blue-500" />
-                )}
-                <div className={`mt-0.5 flex-shrink-0 flex h-8 w-8 items-center justify-center rounded-lg ${
-                  isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'
+                <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
+                  isSelected ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-400'
                 }`}>
-                  {opt.value === 'not_sure' ? <Question size={16} weight="bold" /> :
-                   opt.value === 'loam' ? <CheckCircle size={16} weight="bold" /> :
-                   opt.value === 'rock' ? <Mountains size={16} weight="bold" /> :
-                   opt.value === 'sandy' ? <TrendUp size={16} weight="bold" /> :
-                   <Warning size={16} weight="bold" />}
+                  {opt.value === 'not_sure'           ? <Question size={15} weight="bold" /> :
+                   opt.value === 'loam'               ? <CheckCircle size={15} weight="bold" /> :
+                   opt.value === 'rock'               ? <Mountains size={15} weight="bold" /> :
+                   opt.value === 'clay_black_mountain'? <Warning size={15} weight="bold" /> :
+                   <TrendUp size={15} weight="bold" />}
                 </div>
                 <div className="min-w-0">
-                  <div className={`text-sm font-semibold ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{opt.label}</div>
-                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-blue-600' : 'text-slate-500'}`}>{opt.hint}</div>
-                  <span className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${rc.bg} ${rc.text}`}>
-                    {rc.label}
+                  <div className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-slate-800'}`}>{opt.label}</div>
+                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>{opt.hint}</div>
+                  <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                    isSelected ? 'bg-white/20 text-white' : `${rb.bg} ${rb.text}`
+                  }`}>
+                    {rb.label}
                   </span>
                 </div>
               </motion.button>
@@ -149,7 +155,7 @@ export default function SiteConditionsSection() {
           })}
         </div>
 
-        {/* Reactive risk callout */}
+        {/* High-risk callout */}
         <AnimatePresence>
           {soilRisk && selectedSoil?.risk === 'high' && (
             <motion.div
@@ -158,16 +164,16 @@ export default function SiteConditionsSection() {
               exit={{ opacity: 0, y: 4 }}
               className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
             >
-              <Warning size={18} weight="fill" className="shrink-0 mt-0.5 text-amber-500" />
+              <Warning size={17} weight="fill" className="shrink-0 mt-0.5 text-amber-500" />
               <p>
-                <strong>High-risk soil detected.</strong> Clay / Black Cotton soil can expand and crack foundations. 
-                We recommend requesting a geotechnical report before pricing. Your estimate will include additional reinforcement allowances.
+                <strong>High-risk soil.</strong> Clay / Black Cotton soil expands and can crack foundations. 
+                We recommend a geotechnical report before committing to a budget. Your estimate will include additional reinforcement allowances.
               </p>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Procedure summary */}
+        {/* Regulatory notes */}
         {procedureNotes.length > 0 && (
           <div className="rounded-xl bg-slate-50 border border-slate-100 p-4">
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Regulatory notes for your location</p>
@@ -175,7 +181,7 @@ export default function SiteConditionsSection() {
               {procedureNotes.map((note) => (
                 <div key={note.id} className="flex items-center gap-2 text-xs text-slate-600">
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                    note.status === 'required' ? 'bg-red-400' : note.status === 'recommended' ? 'bg-amber-400' : 'bg-slate-300'
+                    note.status === 'required' ? 'bg-slate-600' : note.status === 'recommended' ? 'bg-slate-400' : 'bg-slate-300'
                   }`} />
                   <span>{note.label} — <em className="text-slate-500">{note.status}</em></span>
                 </div>

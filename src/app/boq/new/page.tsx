@@ -567,7 +567,7 @@ export default function BoqNewPage() {
                     )}
 
                     {currentStep === 2 && (
-                      <BuildingDesignSection onLaunchRoomBuilder={() => setShowInteractiveBuilder(true)} isCollapsed={false} onToggle={() => { }} />
+                      <BuildingDesignSection onLaunchRoomBuilder={() => setShowInteractiveBuilder(true)} />
                     )}
 
                     {currentStep === 3 && (
