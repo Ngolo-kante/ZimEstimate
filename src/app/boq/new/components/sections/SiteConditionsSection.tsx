@@ -59,9 +59,9 @@ export default function SiteConditionsSection() {
     <div className="space-y-10">
 
       {/* Hint */}
-      <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-        <Info size={17} weight="fill" className="shrink-0 mt-0.5 text-slate-400" />
-        <p>Not sure about these details? Select the nearest option — we use conservative defaults to keep your estimate reliable.</p>
+      <div className="flex items-start gap-2.5 rounded-xl border border-indigo-100 bg-indigo-50 px-3.5 py-2.5">
+        <Info size={15} weight="fill" className="shrink-0 mt-0.5 text-indigo-500" />
+        <p className="text-xs text-indigo-700 leading-relaxed">Not sure about these details? Select the nearest option — we use conservative defaults to keep your estimate reliable.</p>
       </div>
 
       {/* ── Slope ──────────────────────────────────────────────────────── */}
@@ -83,8 +83,8 @@ export default function SiteConditionsSection() {
                 onClick={() => updateProjectDetails({ siteSlope: opt.value })}
                 className={`flex flex-col items-center gap-3 rounded-2xl border p-5 text-center transition-all duration-200 ${
                   isSelected
-                    ? 'border-slate-900 bg-slate-900 text-white shadow-lg'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                    ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-transparent text-white shadow-lg'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:shadow-sm'
                 }`}
               >
                 {/* Slope angle icon illustration */}
@@ -128,8 +128,8 @@ export default function SiteConditionsSection() {
                 onClick={() => updateProjectDetails({ soilType: opt.value === 'not_sure' ? '' : opt.value })}
                 className={`group relative flex items-start gap-3 rounded-2xl border p-4 text-left transition-all duration-200 ${
                   isSelected
-                    ? 'border-slate-900 bg-slate-900 text-white shadow-md'
-                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                    ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-transparent shadow-md'
+                    : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
                 }`}
               >
                 <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
@@ -175,15 +175,18 @@ export default function SiteConditionsSection() {
 
         {/* Regulatory notes */}
         {procedureNotes.length > 0 && (
-          <div className="rounded-xl bg-slate-50 border border-slate-100 p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Regulatory notes for your location</p>
+          <div className="rounded-xl bg-indigo-50 border border-indigo-100 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-3">Regulatory notes for your location</p>
             <div className="space-y-1.5">
               {procedureNotes.map((note) => (
                 <div key={note.id} className="flex items-center gap-2 text-xs text-slate-600">
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                    note.status === 'required' ? 'bg-slate-600' : note.status === 'recommended' ? 'bg-slate-400' : 'bg-slate-300'
+                    note.status === 'required' ? 'bg-indigo-600' : note.status === 'recommended' ? 'bg-indigo-400' : 'bg-indigo-200'
                   }`} />
-                  <span>{note.label} — <em className="text-slate-500">{note.status}</em></span>
+                  <span>{note.label} — <em className={`${
+                    note.status === 'required' ? 'text-indigo-700 font-semibold not-italic' :
+                    note.status === 'recommended' ? 'text-indigo-500' : 'text-slate-400'
+                  }`}>{note.status}</em></span>
                 </div>
               ))}
             </div>

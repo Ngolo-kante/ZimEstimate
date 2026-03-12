@@ -46,16 +46,16 @@ export default function LaborSection() {
               onClick={() => setLaborType(opt.id)}
               className={`group relative flex flex-col items-start gap-4 rounded-2xl border p-6 text-left transition-all duration-200 ${
                 isSelected
-                  ? 'border-slate-900 bg-slate-900 text-white shadow-lg'
-                  : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                  ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-transparent shadow-lg'
+                  : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
               }`}
             >
               {isSelected && (
-                <CheckCircle weight="fill" size={18} className="absolute top-4 right-4 text-white opacity-70" />
+                <CheckCircle weight="fill" size={18} className="absolute top-4 right-4 text-white opacity-80" />
               )}
 
               <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${
-                isSelected ? 'bg-white/15' : 'bg-slate-100 group-hover:bg-slate-200'
+                isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600'
               }`}>
                 <Icon size={22} weight="regular" className={isSelected ? 'text-white' : 'text-slate-500'} />
               </div>
@@ -80,9 +80,9 @@ export default function LaborSection() {
         })}
       </div>
 
-      <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-        <Info size={16} weight="fill" className="shrink-0 mt-0.5 text-slate-400" />
-        <p>
+      <div className="flex items-start gap-2.5 rounded-xl border border-indigo-100 bg-indigo-50 px-3.5 py-2.5">
+        <Info size={15} weight="fill" className="shrink-0 mt-0.5 text-indigo-500" />
+        <p className="text-xs text-indigo-700 leading-relaxed">
           You can generate a materials-only estimate first, then add labour separately when negotiating with contractors.
         </p>
       </div>

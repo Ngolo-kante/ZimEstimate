@@ -64,8 +64,8 @@ export default function MaterialsSection() {
                 onClick={() => toggleBrick(opt.value)}
                 className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-4 text-left transition-all duration-200 ${
                   isSelected
-                    ? 'border-slate-900 bg-slate-900 text-white shadow-md'
-                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                    ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-transparent shadow-md'
+                    : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
                 }`}
               >
                 {isSelected && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-white opacity-70" />}
@@ -82,10 +82,10 @@ export default function MaterialsSection() {
         </div>
 
         {activeBrick.length === 0 && (
-          <p className="text-xs text-slate-400 flex items-center gap-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-300" />
-            No brick type selected — we will default to Standard Commons.
-          </p>
+          <div className="flex items-start gap-2 rounded-xl border border-indigo-100 bg-indigo-50 px-3 py-2">
+            <span className="mt-0.5 inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-indigo-400" />
+            <p className="text-xs text-indigo-700">No brick type selected — we will default to Standard Commons.</p>
+          </div>
         )}
       </div>
 
@@ -110,8 +110,8 @@ export default function MaterialsSection() {
                 onClick={() => toggleCement(opt.value)}
                 className={`group relative flex items-start gap-4 rounded-2xl border p-5 text-left transition-all duration-200 ${
                   isSelected
-                    ? 'border-slate-900 bg-slate-900 text-white shadow-md'
-                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                    ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-transparent shadow-md'
+                    : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
                 }`}
               >
                 {isSelected && <CheckCircle weight="fill" size={16} className="absolute top-4 right-4 text-white opacity-70" />}
@@ -134,9 +134,9 @@ export default function MaterialsSection() {
           })}
         </div>
 
-        <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-          <Info size={16} weight="fill" className="shrink-0 mt-0.5 text-slate-400" />
-          <p>If you are unsure which cement grade to use, keep both selected — your estimator will use the most appropriate grade per structural element.</p>
+        <div className="flex items-start gap-2.5 rounded-xl border border-indigo-100 bg-indigo-50 px-3.5 py-2.5 text-sm">
+          <Info size={15} weight="fill" className="shrink-0 mt-0.5 text-indigo-500" />
+          <p className="text-xs text-indigo-700 leading-relaxed">If you are unsure which cement grade to use, keep both selected — your estimator will use the most appropriate grade per structural element.</p>
         </div>
       </div>
     </div>

@@ -73,12 +73,12 @@ export default function SiteSetupSection() {
               onClick={() => setWantsSiteSetup(key)}
               className={`flex items-start gap-4 rounded-2xl border p-5 text-left transition-all duration-200 ${
                 isSelected
-                  ? 'border-slate-900 bg-slate-900 text-white shadow-md'
-                  : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                  ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-transparent text-white shadow-md'
+                  : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
               }`}
             >
               <div className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${
-                isSelected ? 'bg-white/20' : 'bg-slate-100'
+                isSelected ? 'bg-white/20' : 'bg-slate-100 group-hover:bg-blue-50'
               }`}>
                 <Icon size={18} weight="regular" className={isSelected ? 'text-white' : 'text-slate-400'} />
               </div>
@@ -125,7 +125,9 @@ export default function SiteSetupSection() {
                     className="flex w-full items-start gap-3 p-4 text-left"
                   >
                     <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
-                      selection.enabled ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'
+                      selection.enabled
+                        ? 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white'
+                        : 'bg-slate-100 text-slate-400'
                     }`}>
                       {selection.enabled
                         ? <CheckCircle size={15} weight="bold" />
@@ -208,8 +210,8 @@ export default function SiteSetupSection() {
                 onClick={() => setIncludeSepticTank(!includeSepticTank)}
                 className="flex w-full items-center gap-3 p-5 text-left"
               >
-                <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${
-                  includeSepticTank ? 'bg-slate-900' : 'bg-slate-100'
+                <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl transition-colors ${
+                  includeSepticTank ? 'bg-gradient-to-br from-blue-600 to-indigo-700' : 'bg-slate-100'
                 }`}>
                   <CheckCircle size={18} weight="regular" className={includeSepticTank ? 'text-white' : 'text-slate-400'} />
                 </div>
