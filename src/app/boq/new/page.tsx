@@ -144,12 +144,42 @@ const getStepIllustration = (step: number) => {
 };
 
 const WIZARD_STEPS = [
-  { id: 'project-type', label: 'Project Type' },
-  { id: 'project-details', label: 'Project Details' },
-  { id: 'building-design', label: 'Building Design' },
-  { id: 'materials-scope', label: 'Materials & Scope' },
-  { id: 'site-labor', label: 'Setup & Labor' },
-  { id: 'review-estimate', label: 'Review Estimate' },
+  {
+    id: 'project-type',
+    label: 'Project Type',
+    title: 'What are we building?',
+    subtitle: 'Choose between a full house build or costing individual stages.',
+  },
+  {
+    id: 'project-details',
+    label: 'Project Details',
+    title: 'Project location & site',
+    subtitle: 'Name your project and tell us where it is — location affects material pricing.',
+  },
+  {
+    id: 'building-design',
+    label: 'Building Design',
+    title: 'Floor plan & building design',
+    subtitle: 'Enter your floor area and define the structure — or draw rooms interactively.',
+  },
+  {
+    id: 'materials-scope',
+    label: 'Materials & Scope',
+    title: 'Materials & scope confirmation',
+    subtitle: 'Review which materials and cost items are included in your estimate.',
+  },
+  {
+    id: 'site-labor',
+    label: 'Setup & Labor',
+    title: 'Site setup & labour costs',
+    subtitle: 'Add temporary works, site setup, and labour preferences.',
+  },
+  {
+    id: 'review-estimate',
+    label: 'Review Estimate',
+    title: 'Review your estimate',
+    subtitle: 'Check quantities and line items before saving.',
+  },
 ];
 
 export default function BoqNewPage() {
@@ -162,6 +192,9 @@ export default function BoqNewPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [shakeError, setShakeError] = useState(false);
   const { error: showError } = useToast();
+
+  const progressPct = Math.round((currentStep / WIZARD_STEPS.length) * 100);
+  const minsRemaining = Math.max(1, (WIZARD_STEPS.length - currentStep) * 2);
 
   const {
     projectDetails,
@@ -471,29 +504,44 @@ export default function BoqNewPage() {
         <LiveEstimatorLayout
           leftControls={(
             <div className="flex flex-col h-full min-h-[600px]">
-              {/* Stepper Header */}
-              <div className="mb-6 flex items-center justify-between">
-                <div>
-                  <h1 className="text-xl font-bold text-slate-900">{WIZARD_STEPS[currentStep].label}</h1>
-                  <p className="mt-1 text-sm text-slate-500">Step {currentStep + 1} of {WIZARD_STEPS.length}</p>
+              {/* ── Progress Bar (QP-style) ───────────────────────────────────── */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                  <span>Step {currentStep + 1} of {WIZARD_STEPS.length}</span>
+                  <span className="text-blue-600">{progressPct}%</span>
+                  <span className="text-slate-400">~{minsRemaining} min to complete</span>
                 </div>
-
-                <div className="flex items-center gap-1.5">
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full"
+                    style={{ width: `${progressPct}%` }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                  />
+                </div>
+                {/* Step dots (clickable back-navigation) */}
+                <div className="flex items-center gap-1 mt-3">
                   {WIZARD_STEPS.map((step, index) => (
-                    <motion.div
+                    <div
                       key={step.id}
-                      animate={{
-                        width: index === currentStep ? 32 : 16,
-                        backgroundColor: index === currentStep ? '#2563EB' : index < currentStep ? '#10B981' : '#E2E8F0',
-                      }}
-                      className="h-2 rounded-full cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={() => {
-                        if (index < currentStep) setCurrentStep(index);
-                      }}
+                      onClick={() => { if (index < currentStep) setCurrentStep(index); }}
                       title={step.label}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        index === currentStep
+                          ? 'bg-blue-500 w-8'
+                          : index < currentStep
+                          ? 'bg-emerald-400 w-4 cursor-pointer hover:opacity-80'
+                          : 'bg-slate-200 w-4'
+                      }`}
                     />
                   ))}
                 </div>
+              </div>
+
+              {/* ── Step Header ──────────────────────────────────────────────── */}
+              <div className="mb-8">
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-blue-500 mb-2 block">BOQ MANUAL BUILDER</span>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">{WIZARD_STEPS[currentStep].title}</h2>
+                <p className="text-slate-600 text-sm">{WIZARD_STEPS[currentStep].subtitle}</p>
               </div>
 
               {/* Step Content */}
@@ -508,7 +556,7 @@ export default function BoqNewPage() {
                     className="space-y-5"
                   >
                     {currentStep === 0 && (
-                      <ProjectTypeSection isCollapsed={false} onToggle={() => { }} />
+                      <ProjectTypeSection />
                     )}
 
                     {currentStep === 1 && (
@@ -543,13 +591,12 @@ export default function BoqNewPage() {
                 </AnimatePresence>
               </div>
 
-              {/* Navigation Footer */}
-              <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between border-t border-slate-200 bg-white/95 p-4 shadow-[0_-8px_16px_rgba(0,0,0,0.05)] backdrop-blur-md lg:static lg:mt-8 lg:bg-transparent lg:p-0 lg:pt-6 lg:shadow-none lg:backdrop-blur-none">
+              {/* ── Navigation Footer ────────────────────────────────────────── */}
+              <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between border-t border-slate-200 bg-white/95 px-6 py-4 shadow-[0_-8px_16px_rgba(0,0,0,0.05)] backdrop-blur-md lg:static lg:mt-10 lg:bg-transparent lg:p-0 lg:pt-6 lg:shadow-none lg:backdrop-blur-none">
                 <button
                   type="button"
                   onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-                  className={`inline-flex items-center gap-2 rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 ${currentStep === 0 ? 'invisible' : 'visible'
-                    }`}
+                  className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 shadow-sm ${currentStep === 0 ? 'invisible' : 'visible'}`}
                 >
                   <CaretLeft size={16} /> Back
                 </button>
@@ -560,15 +607,15 @@ export default function BoqNewPage() {
                     onClick={handleNextStep}
                     animate={{ x: shakeError ? [-5, 5, -5, 5, 0] : 0 }}
                     transition={{ duration: 0.4 }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-500/25 transition hover:bg-blue-700 hover:shadow-md"
                   >
-                    Next Step <CaretRight size={16} />
+                    Continue <CaretRight size={16} />
                   </motion.button>
                 ) : (
                   <button
                     type="button"
                     onClick={handleSave}
-                    className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-8 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-8 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-500/25 transition hover:bg-emerald-700 hover:shadow-md"
                   >
                     {isSaving ? <><CircleNotch weight="bold" className="animate-spin" /> Saving</> : <><Check weight="bold" size={16} /> Save Estimate</>}
                   </button>
