@@ -311,7 +311,7 @@ export default function BoqNewPage() {
 
     const nextMilestones = buildLiveMilestones({
       projectDetails,
-      geometryMode,
+      geometryMode: geometryMode ?? 'quick',
       detailedRooms,
       totalWindows,
       totalDoors,
@@ -452,7 +452,7 @@ export default function BoqNewPage() {
               : currentStep === 4
                 ? 'labor'
                 : 'finished',
-      geometryMode,
+      geometryMode: geometryMode ?? 'quick',
       projectDetails,
       projectScope,
       selectedStages,

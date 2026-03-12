@@ -103,8 +103,8 @@ interface BoqWizardState {
   updateProjectDetails: (updates: Partial<ProjectDetailsState>) => void;
 
   // Geometry mode
-  geometryMode: 'quick' | 'detailed' | 'upload';
-  setGeometryMode: (mode: 'quick' | 'detailed' | 'upload') => void;
+  geometryMode: 'quick' | 'detailed' | 'upload' | null;
+  setGeometryMode: (mode: 'quick' | 'detailed' | 'upload' | null) => void;
   detailedRooms: RoomInstance[];
   setDetailedRooms: (rooms: RoomInstance[]) => void;
   totalWindows: number;
@@ -242,7 +242,7 @@ function getInitialState(): Omit<BoqWizardState,
   | 'reset'> {
   return {
     projectDetails: { ...initialProjectDetails },
-    geometryMode: 'quick',
+    geometryMode: null,
     detailedRooms: [],
     totalWindows: 0,
     totalDoors: 0,

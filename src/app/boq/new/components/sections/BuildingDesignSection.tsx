@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   PencilRuler, Ruler, HouseLine, Buildings, FileArrowUp,
-  Plus, Minus, Trash, PlusCircle, CheckCircle, ArrowsOut, ListNumbers
+  Plus, Minus, Trash, PlusCircle, CheckCircle, ArrowsOut,
+  ListNumbers, Lightbulb, Info
 } from '@phosphor-icons/react';
 import { useBoqWizardStore, type RoomInputKey } from '@/store/boqWizardStore';
 
@@ -12,18 +13,30 @@ interface BuildingDesignSectionProps {
   onLaunchRoomBuilder: () => void;
 }
 
+// ── DATA ────────────────────────────────────────────────────────────────────
+
 const BUILDING_TYPES = [
   {
     value: 'single_storey',
     label: 'Single Storey',
     description: 'All rooms on one level — most common in Zimbabwe.',
     icon: HouseLine,
+    accent: 'from-blue-500 to-indigo-600',
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-blue-600',
+    ring: 'ring-blue-500',
+    selectedBg: 'bg-gradient-to-br from-blue-600 to-indigo-700',
   },
   {
     value: 'double_storey',
     label: 'Double Storey',
     description: 'Living areas on the ground floor, bedrooms above.',
     icon: Buildings,
+    accent: 'from-violet-500 to-purple-700',
+    iconBg: 'bg-violet-50',
+    iconColor: 'text-violet-600',
+    ring: 'ring-violet-500',
+    selectedBg: 'bg-gradient-to-br from-violet-600 to-purple-700',
   },
 ] as const;
 
@@ -33,19 +46,41 @@ const PLAN_MODES = [
     label: 'Quick Room Count',
     description: 'Enter room counts and total floor area. Fast and simple.',
     icon: ListNumbers,
+    accent: 'from-emerald-400 to-teal-600',
+    iconBg: 'bg-emerald-50',
+    iconColor: 'text-emerald-600',
+    ring: 'ring-emerald-500',
+    selectedBg: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+    tip: 'Best for early-stage estimates',
+    tipColor: 'text-emerald-700 bg-emerald-50 border-emerald-200',
   },
   {
     key: 'detailed' as const,
     label: 'Detailed Room Plan',
     description: 'Use the interactive room builder to sketch each space with dimensions.',
     icon: PencilRuler,
+    accent: 'from-orange-400 to-amber-600',
+    iconBg: 'bg-orange-50',
+    iconColor: 'text-orange-600',
+    ring: 'ring-orange-500',
+    selectedBg: 'bg-gradient-to-br from-orange-500 to-amber-600',
+    tip: 'Most accurate estimate',
+    tipColor: 'text-orange-700 bg-orange-50 border-orange-200',
   },
   {
     key: 'upload' as const,
     label: 'Upload Floor Plan',
     description: 'Upload your architectural drawings — we extract dimensions automatically.',
     icon: FileArrowUp,
+    accent: 'from-rose-400 to-pink-600',
+    iconBg: 'bg-rose-50',
+    iconColor: 'text-rose-600',
+    ring: 'ring-rose-500',
+    selectedBg: 'bg-gradient-to-br from-rose-500 to-pink-600',
     badge: 'Coming Soon',
+    badgeColor: 'text-rose-600 bg-rose-50 border-rose-200',
+    tip: null,
+    tipColor: '',
   },
 ] as const;
 
@@ -67,6 +102,8 @@ const QUICK_ROOMS: Array<{ key: RoomInputKey; label: string }> = [
   { key: 'garage2',          label: 'Garage (Double)' },
 ];
 
+// ── STEPPER ──────────────────────────────────────────────────────────────────
+
 const Stepper = ({
   label,
   value,
@@ -84,7 +121,7 @@ const Stepper = ({
         <button
           type="button"
           onClick={onRemove}
-          className="text-slate-200 hover:text-slate-500 transition-colors opacity-0 group-hover:opacity-100"
+          className="text-slate-200 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
           title={`Remove ${label}`}
         >
           <Trash size={15} weight="regular" />
@@ -111,6 +148,8 @@ const Stepper = ({
     </div>
   </div>
 );
+
+// ── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
 export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingDesignSectionProps) {
   const [isRoomMenuOpen, setIsRoomMenuOpen] = useState(false);
@@ -162,30 +201,38 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
               <motion.button
                 key={type.value}
                 type="button"
-                whileHover={{ scale: 1.01, y: -1 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.015, y: -2 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => updateProjectDetails({ buildingType: type.value })}
                 className={`group relative flex items-start gap-4 rounded-2xl border p-5 text-left transition-all duration-200 ${
                   isSelected
-                    ? 'border-slate-900 bg-slate-900 text-white shadow-md'
-                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                    ? `${type.selectedBg} border-transparent shadow-lg`
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
                 }`}
               >
                 {isSelected && (
-                  <CheckCircle weight="fill" size={17} className="absolute top-4 right-4 text-white opacity-70" />
+                  <CheckCircle weight="fill" size={18} className="absolute top-4 right-4 text-white opacity-80" />
                 )}
-                <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl ${
-                  isSelected ? 'bg-white/15' : 'bg-slate-100'
+                <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl transition-colors ${
+                  isSelected ? 'bg-white/20' : type.iconBg
                 }`}>
-                  <Icon size={22} weight="regular" className={isSelected ? 'text-white' : 'text-slate-500'} />
+                  <Icon size={22} weight="regular" className={isSelected ? 'text-white' : type.iconColor} />
                 </div>
                 <div>
                   <div className={`font-bold text-base ${isSelected ? 'text-white' : 'text-slate-800'}`}>{type.label}</div>
-                  <p className={`mt-1 text-xs ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>{type.description}</p>
+                  <p className={`mt-1 text-xs leading-relaxed ${isSelected ? 'text-white/75' : 'text-slate-500'}`}>{type.description}</p>
                 </div>
               </motion.button>
             );
           })}
+        </div>
+
+        {/* Storey info callout */}
+        <div className="flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50 px-3.5 py-2.5">
+          <Info size={15} weight="fill" className="mt-0.5 flex-shrink-0 text-blue-500" />
+          <p className="text-xs text-blue-700 leading-relaxed">
+            Double storey adds structural complexity — ring beams, upper floor slab, and staircase add approx. 25–35% to the superstructure cost.
+          </p>
         </div>
       </div>
 
@@ -205,21 +252,21 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
             value={projectDetails.floorPlanSize}
             onChange={(e) => updateProjectDetails({ floorPlanSize: e.target.value })}
             placeholder="e.g. 150"
-            className={`w-full rounded-2xl border py-4 pl-10 pr-12 text-base font-semibold text-slate-900 shadow-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-500/10 placeholder:font-normal placeholder:text-slate-400 ${
+            className={`w-full rounded-2xl border py-4 pl-10 pr-12 text-base font-semibold text-slate-900 shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-slate-400 ${
               showAreaWarning ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'
             }`}
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400">m²</span>
         </div>
         {showAreaWarning && (
-          <p className="text-xs font-medium text-amber-600 flex items-center gap-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
-            Floor area is required to generate an estimate.
-          </p>
+          <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 max-w-xs">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+            <p className="text-xs font-medium text-amber-700">Floor area is required to generate an estimate.</p>
+          </div>
         )}
 
-        {/* ── Wall height ── */}
-        <div className="pt-2">
+        {/* Wall height */}
+        <div className="pt-1">
           <label className="mb-2 block text-sm font-semibold text-slate-700">Wall height</label>
           <div className="relative max-w-xs">
             <ArrowsOut size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -228,10 +275,11 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
               value={projectDetails.wallHeight}
               onChange={(e) => updateProjectDetails({ wallHeight: e.target.value })}
               placeholder="2.7"
-              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm text-slate-900 shadow-sm outline-none transition focus:border-slate-400 placeholder:text-slate-400"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm text-slate-900 shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:text-slate-400"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">m</span>
           </div>
+          <p className="mt-1.5 text-xs text-slate-400">Standard Zimbabwean residential ceiling height is 2.7 m.</p>
         </div>
       </div>
 
@@ -252,36 +300,64 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
               <motion.button
                 key={mode.key}
                 type="button"
-                whileHover={{ scale: 1.01, y: -1 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.015, y: -2 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => setGeometryMode(mode.key)}
                 className={`relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-all duration-200 ${
                   isSelected
-                    ? 'border-slate-900 bg-slate-900 text-white shadow-md'
-                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                    ? `${mode.selectedBg} border-transparent shadow-lg`
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
                 }`}
               >
                 {isSelected && (
-                  <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-white opacity-70" />
+                  <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-white opacity-80" />
                 )}
-                {'badge' in mode && mode.badge && (
-                  <span className="absolute top-3 right-3 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                {'badge' in mode && mode.badge && !isSelected && (
+                  <span className={`absolute top-3 right-3 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest ${mode.badgeColor}`}>
                     {mode.badge}
                   </span>
                 )}
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                  isSelected ? 'bg-white/15' : 'bg-slate-100'
+                {'badge' in mode && mode.badge && isSelected && (
+                  <span className="absolute top-3 right-3 rounded-full border border-white/30 bg-white/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-white">
+                    {mode.badge}
+                  </span>
+                )}
+
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+                  isSelected ? 'bg-white/20' : mode.iconBg
                 }`}>
-                  <Icon size={20} weight="regular" className={isSelected ? 'text-white' : 'text-slate-500'} />
+                  <Icon size={20} weight="regular" className={isSelected ? 'text-white' : mode.iconColor} />
                 </div>
-                <div>
+                <div className="flex-1">
                   <div className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-slate-800'}`}>{mode.label}</div>
-                  <p className={`mt-1 text-xs leading-relaxed ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>{mode.description}</p>
+                  <p className={`mt-1 text-xs leading-relaxed ${isSelected ? 'text-white/75' : 'text-slate-500'}`}>{mode.description}</p>
                 </div>
+
+                {/* Tip badge at the bottom — shown when not selected */}
+                {'tip' in mode && mode.tip && !isSelected && (
+                  <div className={`flex items-center gap-1 self-start rounded-full border px-2 py-0.5 text-[10px] font-semibold ${mode.tipColor}`}>
+                    <Lightbulb size={10} weight="fill" />
+                    {mode.tip}
+                  </div>
+                )}
               </motion.button>
             );
           })}
         </div>
+
+        {/* Prompt when nothing yet selected */}
+        {geometryMode === null && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-start gap-2.5 rounded-xl border border-indigo-100 bg-indigo-50 px-3.5 py-2.5"
+          >
+            <Info size={15} weight="fill" className="mt-0.5 flex-shrink-0 text-indigo-500" />
+            <p className="text-xs text-indigo-700 leading-relaxed">
+              Select a method above to continue building your estimate.
+            </p>
+          </motion.div>
+        )}
       </div>
 
       {/* ── Quick mode content ────────────────────────────────────────── */}
@@ -352,6 +428,11 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
                   />
                 );
               })}
+              {activeRoomKeys.length === 0 && (
+                <div className="col-span-full rounded-xl border border-dashed border-slate-200 py-8 text-center text-sm text-slate-400">
+                  No rooms added yet — click &ldquo;Add room&rdquo; above.
+                </div>
+              )}
             </div>
 
             <div>
@@ -370,7 +451,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
-            className="rounded-2xl border border-slate-200 bg-white p-5"
+            className="rounded-2xl border border-orange-100 bg-orange-50/40 p-5"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -385,7 +466,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
                 type="button"
                 data-testid="launch-floor-plan-editor"
                 onClick={onLaunchRoomBuilder}
-                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                className="rounded-xl border border-orange-200 bg-white px-5 py-2.5 text-sm font-semibold text-orange-700 shadow-sm hover:bg-orange-50 hover:border-orange-300 transition-colors"
               >
                 Launch Floor Plan Editor
               </button>
@@ -404,10 +485,10 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
-            className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center"
+            className="rounded-2xl border border-dashed border-rose-200 bg-rose-50/40 p-10 text-center"
           >
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm mb-4">
-              <FileArrowUp size={26} weight="regular" className="text-slate-400" />
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-rose-100 bg-white shadow-sm mb-4">
+              <FileArrowUp size={26} weight="regular" className="text-rose-400" />
             </div>
             <h3 className="text-base font-bold text-slate-800 mb-1.5">Upload Floor Plan</h3>
             <p className="text-sm text-slate-500 mb-5 max-w-xs mx-auto leading-relaxed">
@@ -417,7 +498,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
               Select File
             </button>
             <div className="mt-5">
-              <span className="inline-block rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              <span className="inline-block rounded-full border border-rose-200 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-rose-400">
                 Coming Soon
               </span>
             </div>
