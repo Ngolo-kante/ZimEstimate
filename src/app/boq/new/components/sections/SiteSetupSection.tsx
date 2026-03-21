@@ -41,8 +41,8 @@ export default function SiteSetupSection() {
     <div className="space-y-8">
 
       <div>
-        <h3 className="text-lg font-bold text-slate-900 mb-1">Any site setup or temporary works?</h3>
-        <p className="text-sm text-slate-500">
+        <h3 className="text-lg font-bold wiz-text-primary mb-1">Any site setup or temporary works?</h3>
+        <p className="text-sm wiz-text-muted">
           Optional items like site toilets, fencing, and scaffolding. Skip if you only need a materials estimate.
         </p>
       </div>
@@ -73,18 +73,18 @@ export default function SiteSetupSection() {
               onClick={() => setWantsSiteSetup(key)}
               className={`flex items-start gap-4 rounded-2xl border p-5 text-left transition-all duration-200 ${
                 isSelected
-                  ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-transparent text-white shadow-md'
+                  ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                   : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
               }`}
             >
               <div className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${
-                isSelected ? 'bg-white/20' : 'bg-slate-100 group-hover:bg-blue-50'
+                isSelected ? 'bg-blue-100' : 'bg-slate-100 group-hover:bg-blue-50'
               }`}>
-                <Icon size={18} weight="regular" className={isSelected ? 'text-white' : 'text-slate-400'} />
+                <Icon size={18} weight="regular" className={isSelected ? 'text-blue-600' : 'text-slate-400'} />
               </div>
               <div>
-                <div className={`font-semibold text-sm ${isSelected ? 'text-white' : 'text-slate-800'}`}>{label}</div>
-                <div className={`mt-0.5 text-xs ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>{desc}</div>
+                <div className={`font-semibold text-sm ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{label}</div>
+                <div className={`mt-0.5 text-xs ${isSelected ? 'text-blue-700/80' : 'wiz-text-muted'}`}>{desc}</div>
               </div>
             </motion.button>
           );
@@ -116,7 +116,7 @@ export default function SiteSetupSection() {
                   key={selection.id}
                   layout
                   className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
-                    selection.enabled ? 'border-slate-300 bg-slate-50' : 'border-slate-200 bg-white'
+                    selection.enabled ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500' : 'border-slate-200 bg-white'
                   }`}
                 >
                   <button
@@ -126,7 +126,7 @@ export default function SiteSetupSection() {
                   >
                     <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
                       selection.enabled
-                        ? 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white'
+                        ? 'bg-blue-100 text-blue-600'
                         : 'bg-slate-100 text-slate-400'
                     }`}>
                       {selection.enabled
@@ -134,10 +134,10 @@ export default function SiteSetupSection() {
                         : <Circle size={15} weight="regular" />}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className={`text-sm font-semibold ${selection.enabled ? 'text-slate-900' : 'text-slate-600'}`}>
+                      <div className={`text-sm font-semibold ${selection.enabled ? 'text-blue-900' : 'text-slate-600'}`}>
                         {selection.label}
                       </div>
-                      <div className="mt-0.5 text-xs text-slate-500">{selection.description}</div>
+                      <div className={`mt-0.5 text-xs ${selection.enabled ? 'text-blue-700/80' : 'wiz-text-muted'}`}>{selection.description}</div>
                     </div>
                   </button>
 
@@ -152,7 +152,7 @@ export default function SiteSetupSection() {
                       >
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide wiz-text-muted">
                               Qty ({selection.unit})
                             </label>
                             <div className="flex items-center gap-1.5">
@@ -179,7 +179,7 @@ export default function SiteSetupSection() {
                             </div>
                           </div>
                           <div>
-                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide wiz-text-muted">
                               Unit Price (USD)
                             </label>
                             <input
@@ -202,7 +202,7 @@ export default function SiteSetupSection() {
             <motion.div
               layout
               className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
-                includeSepticTank ? 'border-slate-300 bg-slate-50' : 'border-slate-200 bg-white'
+                includeSepticTank ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500' : 'border-slate-200 bg-white'
               }`}
             >
               <button
@@ -211,18 +211,18 @@ export default function SiteSetupSection() {
                 className="flex w-full items-center gap-3 p-5 text-left"
               >
                 <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl transition-colors ${
-                  includeSepticTank ? 'bg-gradient-to-br from-blue-600 to-indigo-700' : 'bg-slate-100'
+                  includeSepticTank ? 'bg-blue-100' : 'bg-slate-100'
                 }`}>
-                  <CheckCircle size={18} weight="regular" className={includeSepticTank ? 'text-white' : 'text-slate-400'} />
+                  <CheckCircle size={18} weight="regular" className={includeSepticTank ? 'text-blue-600' : 'text-slate-400'} />
                 </div>
                 <div className="flex-1">
-                  <div className={`font-semibold text-sm ${includeSepticTank ? 'text-slate-900' : 'text-slate-700'}`}>
+                  <div className={`font-semibold text-sm ${includeSepticTank ? 'text-blue-900' : 'text-slate-700'}`}>
                     Include custom septic tank
                   </div>
-                  <div className="mt-0.5 text-xs text-slate-500">Add a custom-dimensioned septic system to your BOQ.</div>
+                  <div className={`mt-0.5 text-xs ${includeSepticTank ? 'text-blue-700/80' : 'wiz-text-muted'}`}>Add a custom-dimensioned septic system to your BOQ.</div>
                 </div>
                 {includeSepticTank
-                  ? <ToggleRight size={24} className="text-slate-900 flex-shrink-0" weight="fill" />
+                  ? <ToggleRight size={24} className="text-blue-500 flex-shrink-0" weight="fill" />
                   : <ToggleLeft size={24} className="text-slate-300 flex-shrink-0" weight="regular" />}
               </button>
 
@@ -235,7 +235,7 @@ export default function SiteSetupSection() {
                     transition={{ duration: 0.2 }}
                     className="border-t border-slate-200 px-5 pb-5 pt-4"
                   >
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Septic dimensions</p>
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wider wiz-text-muted">Septic dimensions</p>
                     <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
                       {(['length', 'width', 'height'] as const).map((dim) => (
                         <div key={dim}>

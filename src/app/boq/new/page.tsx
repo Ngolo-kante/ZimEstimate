@@ -26,6 +26,7 @@ import { validateBOQWizardStep, type BOQWizardValidationState } from './wizardVa
 import { inferProjectType } from './projectTypes';
 import { useToast } from '@/components/ui/Toast';
 import type { BOQItem as DbBOQItem, Project } from '@/lib/database.types';
+import './wizard-design.css';
 
 function getLocationLabel(type: string, city: string, specific: string) {
   const parts = [];
@@ -473,21 +474,21 @@ export default function BoqNewPage() {
 
   return (
     <MainLayout fullWidth hideBottomNav>
-      <div className="min-h-[calc(100vh-80px)] bg-slate-50">
-        <div className="sticky top-0 z-40 border-b border-slate-200 bg-white">
+      <div className="wiz-root min-h-[calc(100vh-80px)]">
+        <div className="wiz-topbar sticky top-0 z-40 border-b">
           <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-4 lg:px-8">
             <div className="flex items-center gap-3">
-              <span className="font-semibold text-slate-800">{projectDetails.name || 'Untitled Estimate'}</span>
+              <span className="font-semibold" style={{color:'var(--wiz-text-primary)'}}>{projectDetails.name || 'Untitled Estimate'}</span>
               {isAutoSaving ? (
-                <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                <span className="wiz-badge-saving inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
                   <CircleNotch weight="bold" className="animate-spin" /> Saving
                 </span>
               ) : hasUnsavedChanges ? (
-                <span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                <span className="wiz-badge-unsaved inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
                   Unsaved
                 </span>
               ) : project?.id ? (
-                <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                <span className="wiz-badge-saved inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
                   <FloppyDisk weight="fill" /> Saved
                 </span>
               ) : null}
@@ -495,9 +496,10 @@ export default function BoqNewPage() {
 
             <button
               type="button"
-              className="hidden lg:block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+              className="wiz-btn-save hidden lg:inline-flex"
               onClick={handleSave}
             >
+              <FloppyDisk size={15} weight="fill" />
               {isSaving ? 'Saving...' : 'Save Estimate'}
             </button>
           </div>
@@ -508,14 +510,14 @@ export default function BoqNewPage() {
             <div className="flex flex-col h-full min-h-[600px]">
               {/* ── Progress Bar (QP-style) ───────────────────────────────────── */}
               <div className="mb-8">
-                <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider mb-2" style={{color:'var(--wiz-text-faint)'}}>
                   <span>Step {currentStep + 1} of {WIZARD_STEPS.length}</span>
-                  <span className="text-blue-600">{progressPct}%</span>
-                  <span className="text-slate-400">~{minsRemaining} min to complete</span>
+                  <span style={{color:'var(--wiz-jade)'}}>{progressPct}%</span>
+                  <span>~{minsRemaining} min to complete</span>
                 </div>
-                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className="wiz-progress-bar-track w-full">
                   <motion.div
-                    className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full"
+                    className="wiz-progress-bar-fill"
                     style={{ width: `${progressPct}%` }}
                     transition={{ duration: 0.5, ease: 'easeOut' }}
                   />
@@ -527,12 +529,12 @@ export default function BoqNewPage() {
                       key={step.id}
                       onClick={() => { if (index < currentStep) setCurrentStep(index); }}
                       title={step.label}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                      className={`wiz-step-dot ${
                         index === currentStep
-                          ? 'bg-blue-500 w-8'
+                          ? 'wiz-step-dot--active'
                           : index < currentStep
-                          ? 'bg-emerald-400 w-4 cursor-pointer hover:opacity-80'
-                          : 'bg-slate-200 w-4'
+                          ? 'wiz-step-dot--complete'
+                          : 'wiz-step-dot--upcoming'
                       }`}
                     />
                   ))}
@@ -541,9 +543,9 @@ export default function BoqNewPage() {
 
               {/* ── Step Header ──────────────────────────────────────────────── */}
               <div className="mb-8">
-                <span className="text-xs font-bold uppercase tracking-[0.2em] text-blue-500 mb-2 block">BOQ MANUAL BUILDER</span>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">{WIZARD_STEPS[currentStep].title}</h2>
-                <p className="text-slate-600 text-sm">{WIZARD_STEPS[currentStep].subtitle}</p>
+                <span className="wiz-step-label mb-2 block">BOQ MANUAL BUILDER</span>
+                <h2 className="text-2xl font-bold mb-2" style={{color:'var(--wiz-text-primary)'}}>{WIZARD_STEPS[currentStep].title}</h2>
+                <p className="text-sm" style={{color:'var(--wiz-text-muted)'}}>{WIZARD_STEPS[currentStep].subtitle}</p>
               </div>
 
               {/* Step Content */}
@@ -598,7 +600,7 @@ export default function BoqNewPage() {
                 <button
                   type="button"
                   onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-                  className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 shadow-sm ${currentStep === 0 ? 'invisible' : 'visible'}`}
+                  className={`wiz-btn-secondary ${currentStep === 0 ? 'invisible' : 'visible'}`}
                 >
                   <CaretLeft size={16} /> Back
                 </button>
@@ -609,7 +611,7 @@ export default function BoqNewPage() {
                     onClick={handleNextStep}
                     animate={{ x: shakeError ? [-5, 5, -5, 5, 0] : 0 }}
                     transition={{ duration: 0.4 }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-500/25 transition hover:bg-blue-700 hover:shadow-md"
+                    className="wiz-btn-primary"
                   >
                     Continue <CaretRight size={16} />
                   </motion.button>
@@ -617,7 +619,7 @@ export default function BoqNewPage() {
                   <button
                     type="button"
                     onClick={handleSave}
-                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-8 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-500/25 transition hover:bg-emerald-700 hover:shadow-md"
+                    className="wiz-btn-primary"
                   >
                     {isSaving ? <><CircleNotch weight="bold" className="animate-spin" /> Saving</> : <><Check weight="bold" size={16} /> Save Estimate</>}
                   </button>

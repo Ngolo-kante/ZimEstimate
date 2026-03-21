@@ -46,8 +46,8 @@ export default function MaterialsSection() {
       {/* ── Brick / Block ────────────────────────────────────────────── */}
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-bold text-slate-900 mb-1">What brick or block type are you using?</h3>
-          <p className="text-sm text-slate-500">
+          <h3 className="text-lg font-bold wiz-text-primary mb-1">What brick or block type are you using?</h3>
+          <p className="text-sm wiz-text-muted">
             Select all types that will be used on this project. You can select multiple.
           </p>
         </div>
@@ -64,17 +64,17 @@ export default function MaterialsSection() {
                 onClick={() => toggleBrick(opt.value)}
                 className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-4 text-left transition-all duration-200 ${
                   isSelected
-                    ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-transparent shadow-md'
+                    ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                     : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
                 }`}
               >
-                {isSelected && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-white opacity-70" />}
-                <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${isSelected ? 'bg-white/15' : 'bg-slate-100'}`}>
-                  <Wall size={18} weight="regular" className={isSelected ? 'text-white' : 'text-slate-400'} />
+                {isSelected && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-blue-500" />}
+                <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${isSelected ? 'bg-blue-100' : 'bg-slate-100'}`}>
+                  <Wall size={18} weight="regular" className={isSelected ? 'text-blue-600' : 'text-slate-400'} />
                 </div>
                 <div>
-                  <div className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-slate-800'}`}>{opt.label}</div>
-                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-slate-300' : 'text-slate-500'} leading-relaxed`}>{opt.hint}</div>
+                  <div className={`text-sm font-semibold ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{opt.label}</div>
+                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-blue-700/80' : 'wiz-text-muted'} leading-relaxed`}>{opt.hint}</div>
                 </div>
               </motion.button>
             );
@@ -82,9 +82,9 @@ export default function MaterialsSection() {
         </div>
 
         {activeBrick.length === 0 && (
-          <div className="flex items-start gap-2 rounded-xl border border-indigo-100 bg-indigo-50 px-3 py-2">
-            <span className="mt-0.5 inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-indigo-400" />
-            <p className="text-xs text-indigo-700">No brick type selected — we will default to Standard Commons.</p>
+          <div className="wiz-alert wiz-alert--info">
+            <Info size={14} weight="fill" className="wiz-alert__icon" />
+            <p>No brick type selected — we will default to Standard Commons.</p>
           </div>
         )}
       </div>
@@ -92,8 +92,8 @@ export default function MaterialsSection() {
       {/* ── Cement Grade ─────────────────────────────────────────────── */}
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-bold text-slate-900 mb-1">Which cement grade are you specifying?</h3>
-          <p className="text-sm text-slate-500">
+          <h3 className="text-lg font-bold wiz-text-primary mb-1">Which cement grade are you specifying?</h3>
+          <p className="text-sm wiz-text-muted">
             Both grades are included by default. Deselect any that don't apply.
           </p>
         </div>
@@ -110,33 +110,33 @@ export default function MaterialsSection() {
                 onClick={() => toggleCement(opt.value)}
                 className={`group relative flex items-start gap-4 rounded-2xl border p-5 text-left transition-all duration-200 ${
                   isSelected
-                    ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-transparent shadow-md'
+                    ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                     : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
                 }`}
               >
-                {isSelected && <CheckCircle weight="fill" size={16} className="absolute top-4 right-4 text-white opacity-70" />}
+                {isSelected && <CheckCircle weight="fill" size={16} className="absolute top-4 right-4 text-blue-500" />}
                 <div className={`mt-1 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${
-                  isSelected ? 'bg-white/15' : 'bg-slate-100'
+                  isSelected ? 'bg-blue-100' : 'bg-slate-100'
                 }`}>
-                  <Wall size={20} weight="regular" className={isSelected ? 'text-white' : 'text-slate-400'} />
+                  <Wall size={20} weight="regular" className={isSelected ? 'text-blue-600' : 'text-slate-400'} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`font-semibold text-sm ${isSelected ? 'text-white' : 'text-slate-800'}`}>{opt.label}</span>
+                    <span className={`font-semibold text-sm ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{opt.label}</span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-                      isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                      isSelected ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 wiz-text-muted'
                     }`}>{opt.badge}</span>
                   </div>
-                  <p className={`mt-1 text-xs ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>{opt.hint}</p>
+                  <p className={`mt-1 text-xs ${isSelected ? 'text-blue-700/80' : 'wiz-text-muted'}`}>{opt.hint}</p>
                 </div>
               </motion.button>
             );
           })}
         </div>
 
-        <div className="flex items-start gap-2.5 rounded-xl border border-indigo-100 bg-indigo-50 px-3.5 py-2.5 text-sm">
-          <Info size={15} weight="fill" className="shrink-0 mt-0.5 text-indigo-500" />
-          <p className="text-xs text-indigo-700 leading-relaxed">If you are unsure which cement grade to use, keep both selected — your estimator will use the most appropriate grade per structural element.</p>
+        <div className="wiz-alert wiz-alert--info">
+          <Info size={14} weight="fill" className="wiz-alert__icon" />
+          <p>If you are unsure which cement grade to use, keep both selected — your estimator will use the most appropriate grade per structural element.</p>
         </div>
       </div>
     </div>

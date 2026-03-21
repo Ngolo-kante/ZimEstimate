@@ -105,11 +105,11 @@ export default function LiveEstimatePanel() {
   return (
     <aside className="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-100 px-5 py-5">
-        <p className="text-xs uppercase tracking-widest text-slate-500">Total Estimate</p>
-        <p data-testid="live-total" className="mt-1 text-3xl font-semibold text-slate-900">
+        <p className="text-xs uppercase tracking-widest wiz-text-muted">Total Estimate</p>
+        <p data-testid="live-total" className="mt-1 text-3xl font-semibold wiz-text-primary">
           {formatAmount(totalUsd, currency, exchangeRate)}
         </p>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs wiz-text-muted">
           {currency === 'USD'
             ? formatAmount(totalUsd, 'ZWG', exchangeRate)
             : formatAmount(totalUsd, 'USD', exchangeRate)}
@@ -119,14 +119,14 @@ export default function LiveEstimatePanel() {
           <button
             type="button"
             onClick={() => setCurrency('USD')}
-            className={`rounded px-3 py-1 text-xs font-medium ${currency === 'USD' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
+            className={`rounded px-3 py-1 text-xs font-medium ${currency === 'USD' ? 'bg-white wiz-text-primary shadow-sm' : 'text-slate-600'}`}
           >
             USD
           </button>
           <button
             type="button"
             onClick={() => setCurrency('ZWG')}
-            className={`rounded px-3 py-1 text-xs font-medium ${currency === 'ZWG' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
+            className={`rounded px-3 py-1 text-xs font-medium ${currency === 'ZWG' ? 'bg-white wiz-text-primary shadow-sm' : 'text-slate-600'}`}
           >
             ZWG
           </button>
@@ -137,17 +137,17 @@ export default function LiveEstimatePanel() {
         <div>
           <div className="mb-2 flex items-center justify-between text-sm">
             <span className="font-medium text-slate-700">Estimate Health</span>
-            <span data-testid="live-health" className="font-semibold text-slate-900">
+            <span data-testid="live-health" className="font-semibold wiz-text-primary">
               {health.weightedScorePct.toFixed(0)}%
             </span>
           </div>
           <div className="h-2 rounded-full bg-slate-200">
             <div
-              className="h-2 rounded-full bg-emerald-500"
-              style={{ width: `${Math.min(100, Math.max(0, health.weightedScorePct))}%` }}
+              className="h-2 rounded-full"
+              style={{ width: `${Math.min(100, Math.max(0, health.weightedScorePct))}%`, backgroundColor: 'var(--wiz-jade)' }}
             />
           </div>
-          <p className="mt-1 text-xs text-slate-500">{health.statusMessage}</p>
+          <p className="mt-1 text-xs wiz-text-muted">{health.statusMessage}</p>
         </div>
 
         <div>
@@ -164,7 +164,7 @@ export default function LiveEstimatePanel() {
                     <CaretDown className={`h-3 w-3 transition-transform ${row.expanded ? 'rotate-180' : ''}`} />
                     {row.label}
                   </span>
-                  <span className="text-sm font-semibold text-slate-900">{formatAmount(row.total, currency, exchangeRate)}</span>
+                  <span className="text-sm font-semibold wiz-text-primary">{formatAmount(row.total, currency, exchangeRate)}</span>
                 </button>
                 {row.expanded && (
                   <div className="space-y-1 border-t border-slate-200 px-3 py-2">
@@ -175,7 +175,7 @@ export default function LiveEstimatePanel() {
                       </div>
                     ))}
                     {row.items.length > 5 && (
-                      <p className="text-[11px] text-slate-500">+{row.items.length - 5} more items</p>
+                      <p className="text-[11px] wiz-text-muted">+{row.items.length - 5} more items</p>
                     )}
                   </div>
                 )}
@@ -185,13 +185,14 @@ export default function LiveEstimatePanel() {
         </div>
 
         {health.missingCriticalItemIds.length > 0 && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-            <p className="inline-flex items-center gap-1 text-sm font-medium text-amber-900">
-              <WarningCircle size={16} /> Missing Critical Items
-            </p>
-            <p className="mt-1 text-xs text-amber-800">
-              {health.missingCriticalItemIds.slice(0, 5).map(formatMissingItem).join(', ')}
-            </p>
+          <div className="wiz-alert wiz-alert--warn">
+            <WarningCircle size={16} className="wiz-alert__icon" />
+            <div>
+              <p className="font-bold">Missing Critical Items</p>
+              <p className="mt-0.5 opacity-90">
+                {health.missingCriticalItemIds.slice(0, 5).map(formatMissingItem).join(', ')}
+              </p>
+            </div>
           </div>
         )}
       </div>
@@ -200,7 +201,7 @@ export default function LiveEstimatePanel() {
         <button
           type="button"
           onClick={openReview}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+          className="wiz-btn-primary flex justify-center !text-sm !py-2.5"
         >
           View Full BOQ
         </button>

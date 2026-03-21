@@ -22,8 +22,8 @@ export default function ReviewTabs() {
   return (
     <section id="boq-review" className="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <header className="border-b border-slate-100 px-6 py-5">
-        <h2 className="text-lg font-semibold text-slate-900">Review & Finalize</h2>
-        <p className="mt-1 text-sm text-slate-500">Edit final quantities, track compliance, and attach supporting documents.</p>
+        <h2 className="text-lg font-bold" style={{ color: 'var(--wiz-text-primary)' }}>Review & Finalize</h2>
+        <p className="mt-1 text-sm" style={{ color: 'var(--wiz-text-muted)' }}>Edit final quantities, track compliance, and attach supporting documents.</p>
       </header>
 
       <div className="border-b border-slate-100 px-4 pt-3">
@@ -33,10 +33,10 @@ export default function ReviewTabs() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                 activeTab === tab.id
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  ? 'bg-slate-800 text-white shadow-md'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               {tab.label}

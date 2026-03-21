@@ -27,8 +27,8 @@ export default function LaborSection() {
   return (
     <div className="space-y-8">
       <div>
-        <h3 className="text-lg font-bold text-slate-900 mb-1">Should labour be included in your estimate?</h3>
-        <p className="text-sm text-slate-500">
+        <h3 className="text-lg font-bold wiz-text-primary mb-1">Should labour be included in your estimate?</h3>
+        <p className="text-sm wiz-text-muted">
           This controls whether skilled and unskilled labour allowances appear in your BOQ line items.
         </p>
       </div>
@@ -46,32 +46,32 @@ export default function LaborSection() {
               onClick={() => setLaborType(opt.id)}
               className={`group relative flex flex-col items-start gap-4 rounded-2xl border p-6 text-left transition-all duration-200 ${
                 isSelected
-                  ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-transparent shadow-lg'
+                  ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                   : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
               }`}
             >
               {isSelected && (
-                <CheckCircle weight="fill" size={18} className="absolute top-4 right-4 text-white opacity-80" />
+                <CheckCircle weight="fill" size={18} className="absolute top-4 right-4 text-blue-500" />
               )}
 
               <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${
-                isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600'
+                isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 wiz-text-muted group-hover:bg-blue-50 group-hover:text-blue-600'
               }`}>
-                <Icon size={22} weight="regular" className={isSelected ? 'text-white' : 'text-slate-500'} />
+                <Icon size={22} weight="regular" className={isSelected ? 'text-blue-600' : 'wiz-text-muted'} />
               </div>
 
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`font-bold text-base ${isSelected ? 'text-white' : 'text-slate-800'}`}>
+                  <span className={`font-bold text-base ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>
                     {opt.label}
                   </span>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                    isSelected ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 wiz-text-muted'
                   }`}>
                     {opt.tag}
                   </span>
                 </div>
-                <p className={`text-sm leading-relaxed ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
+                <p className={`text-sm leading-relaxed ${isSelected ? 'text-blue-700/80' : 'wiz-text-muted'}`}>
                   {opt.description}
                 </p>
               </div>
@@ -80,11 +80,9 @@ export default function LaborSection() {
         })}
       </div>
 
-      <div className="flex items-start gap-2.5 rounded-xl border border-indigo-100 bg-indigo-50 px-3.5 py-2.5">
-        <Info size={15} weight="fill" className="shrink-0 mt-0.5 text-indigo-500" />
-        <p className="text-xs text-indigo-700 leading-relaxed">
-          You can generate a materials-only estimate first, then add labour separately when negotiating with contractors.
-        </p>
+      <div className="wiz-alert wiz-alert--info">
+        <Info size={14} weight="fill" className="wiz-alert__icon" />
+        <p>You can generate a materials-only estimate first, then add labour separately when negotiating with contractors.</p>
       </div>
     </div>
   );

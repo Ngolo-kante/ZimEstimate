@@ -1,6 +1,6 @@
 'use client';
 
-import { Check } from '@phosphor-icons/react';
+import { Check, Info } from '@phosphor-icons/react';
 import { useBoqWizardStore } from '@/store/boqWizardStore';
 import { MANUAL_BUILDER_STAGES } from '@/app/boq/new/projectTypes';
 
@@ -19,8 +19,8 @@ export default function ScopeSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-bold text-slate-900 mb-1">Stages in your estimate</h3>
-        <p className="text-sm text-slate-500">
+        <h3 className="text-lg font-bold wiz-text-primary mb-1">Stages in your estimate</h3>
+        <p className="text-sm wiz-text-muted">
           These are the stages you selected in step 1. You can go back to change them anytime.
         </p>
       </div>
@@ -29,11 +29,11 @@ export default function ScopeSection() {
       <div className="flex items-center gap-3">
         <div className="h-2 flex-1 rounded-full bg-slate-100 overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full transition-all duration-500"
-            style={{ width: `${(selectedCount / totalStages) * 100}%` }}
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${(selectedCount / totalStages) * 100}%`, backgroundColor: 'var(--wiz-jade)' }}
           />
         </div>
-        <span className="text-xs font-bold text-slate-500 whitespace-nowrap">
+        <span className="text-xs font-bold wiz-text-muted whitespace-nowrap">
           {selectedCount} / {totalStages} stages
         </span>
       </div>
@@ -59,8 +59,9 @@ export default function ScopeSection() {
       </div>
 
       {selectedCount === 0 && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          ⚠️ No stages selected. Please go back to Step 1 and select at least one stage.
+        <div className="wiz-alert wiz-alert--warn">
+          <Info size={14} weight="fill" className="wiz-alert__icon" />
+          <p>No stages selected. Please go back to Step 1 and select at least one stage.</p>
         </div>
       )}
     </div>

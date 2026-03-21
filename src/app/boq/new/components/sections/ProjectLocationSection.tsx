@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { City, Tree, MapPinPlus, MapPin, CheckCircle } from '@phosphor-icons/react';
+import { City, Tree, MapPinPlus, MapPin, CheckCircle, Info } from '@phosphor-icons/react';
 import { useBoqWizardStore } from '@/store/boqWizardStore';
 
 const LOCATION_TYPES = [
@@ -51,8 +51,8 @@ export default function ProjectLocationSection() {
       {/* ── Project Name ───────────────────────────────────────────────── */}
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-bold text-slate-900 mb-1">What's this project called?</h3>
-          <p className="text-sm text-slate-500">Give it a memorable name so it's easy to find in your dashboard later.</p>
+          <h3 className="text-lg font-bold wiz-text-primary mb-1">What's this project called?</h3>
+          <p className="text-sm wiz-text-muted">Give it a memorable name so it's easy to find in your dashboard later.</p>
         </div>
         <div className="relative">
           <input
@@ -60,25 +60,25 @@ export default function ProjectLocationSection() {
             value={projectDetails.name}
             onChange={(e) => updateProjectDetails({ name: e.target.value })}
             placeholder="e.g. Borrowdale Family Home"
-            className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-medium text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+            className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-medium wiz-text-primary placeholder:text-slate-400 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
           />
           {projectDetails.name.trim() && (
             <CheckCircle weight="fill" size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500" />
           )}
         </div>
         {!projectDetails.name.trim() && (
-          <p className="text-xs text-amber-600 flex items-center gap-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
-            A project name makes it much easier to find this estimate later.
-          </p>
+          <div className="wiz-alert wiz-alert--warn max-w-sm">
+            <Info size={14} weight="fill" className="wiz-alert__icon" />
+            <p>A project name makes it much easier to find this estimate later.</p>
+          </div>
         )}
       </div>
 
       {/* ── City & Area ────────────────────────────────────────────────── */}
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-bold text-slate-900 mb-1">Where is the site?</h3>
-          <p className="text-sm text-slate-500">City and specific area help us apply the most accurate local pricing.</p>
+          <h3 className="text-lg font-bold wiz-text-primary mb-1">Where is the site?</h3>
+          <p className="text-sm wiz-text-muted">City and specific area help us apply the most accurate local pricing.</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="relative">
@@ -89,7 +89,7 @@ export default function ProjectLocationSection() {
               value={projectDetails.locationCity}
               onChange={(e) => updateProjectDetails({ locationCity: e.target.value })}
               placeholder="City / Town (e.g. Harare)"
-              className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-10 pr-5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-10 pr-5 text-sm wiz-text-primary placeholder:text-slate-400 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
             />
             <datalist id="zw-cities">
               {ZIMBABWE_CITIES.map((c) => <option key={c} value={c} />)}
@@ -101,7 +101,7 @@ export default function ProjectLocationSection() {
               value={projectDetails.specificLocation}
               onChange={(e) => updateProjectDetails({ specificLocation: e.target.value })}
               placeholder="Specific area (e.g. Borrowdale Brooke)"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm wiz-text-primary placeholder:text-slate-400 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
             />
           </div>
         </div>
@@ -110,8 +110,8 @@ export default function ProjectLocationSection() {
       {/* ── Location Type ──────────────────────────────────────────────── */}
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-bold text-slate-900 mb-1">What type of location is this?</h3>
-          <p className="text-sm text-slate-500">Location type directly affects how we price transportation and material supply.</p>
+          <h3 className="text-lg font-bold wiz-text-primary mb-1">What type of location is this?</h3>
+          <p className="text-sm wiz-text-muted">Location type directly affects how we price transportation and material supply.</p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
@@ -127,7 +127,7 @@ export default function ProjectLocationSection() {
                 onClick={() => updateProjectDetails({ locationType: type.value })}
                 className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-all duration-200 ${
                   isSelected
-                    ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-400/20 shadow-blue-50 shadow-md'
+                    ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                     : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-md'
                 }`}
               >
@@ -135,13 +135,13 @@ export default function ProjectLocationSection() {
                   <CheckCircle weight="fill" size={18} className="absolute top-4 right-4 text-blue-500" />
                 )}
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                  isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600'
+                  isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600'
                 }`}>
                   <Icon size={20} weight={isSelected ? 'fill' : 'regular'} />
                 </div>
                 <div>
                   <div className={`font-semibold text-sm ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{type.label}</div>
-                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-blue-600' : 'text-slate-500'}`}>{type.hint}</div>
+                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-blue-700/80' : 'wiz-text-muted'}`}>{type.hint}</div>
                 </div>
               </motion.button>
             );
@@ -152,9 +152,9 @@ export default function ProjectLocationSection() {
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`flex items-start gap-3 rounded-xl border p-4 text-sm bg-${ctx.color}-50/60 border-${ctx.color}-200 text-${ctx.color}-800`}
+            className={`wiz-alert ${ctx.color === 'amber' ? 'wiz-alert--warn' : 'wiz-alert--info'}`}
           >
-            <span className="mt-0.5 text-base">💡</span>
+            <Info size={16} weight="fill" className="wiz-alert__icon" />
             <p>{ctx.text}</p>
           </motion.div>
         )}

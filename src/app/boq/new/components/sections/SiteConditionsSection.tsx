@@ -37,7 +37,7 @@ const RISK_BADGE: Record<string, { bg: string; text: string; label: string }> = 
   low:     { bg: 'bg-slate-100',   text: 'text-slate-600', label: 'Low risk' },
   medium:  { bg: 'bg-slate-100',   text: 'text-slate-600', label: 'Medium risk' },
   high:    { bg: 'bg-amber-100',   text: 'text-amber-700', label: 'High risk' },
-  unknown: { bg: 'bg-slate-100',   text: 'text-slate-500', label: 'Default' },
+  unknown: { bg: 'bg-slate-100',   text: 'wiz-text-muted', label: 'Default' },
 };
 
 export default function SiteConditionsSection() {
@@ -59,16 +59,16 @@ export default function SiteConditionsSection() {
     <div className="space-y-10">
 
       {/* Hint */}
-      <div className="flex items-start gap-2.5 rounded-xl border border-indigo-100 bg-indigo-50 px-3.5 py-2.5">
-        <Info size={15} weight="fill" className="shrink-0 mt-0.5 text-indigo-500" />
-        <p className="text-xs text-indigo-700 leading-relaxed">Not sure about these details? Select the nearest option — we use conservative defaults to keep your estimate reliable.</p>
+      <div className="wiz-alert wiz-alert--info">
+        <Info size={15} weight="fill" className="wiz-alert__icon" />
+        <p>Not sure about these details? Select the nearest option — we use conservative defaults to keep your estimate reliable.</p>
       </div>
 
       {/* ── Slope ──────────────────────────────────────────────────────── */}
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-bold text-slate-900 mb-1">What is the slope of the site?</h3>
-          <p className="text-sm text-slate-500">Slope affects earthworks, fill volumes, and substructure complexity.</p>
+          <h3 className="text-lg font-bold wiz-text-primary mb-1">What is the slope of the site?</h3>
+          <p className="text-sm wiz-text-muted">Slope affects earthworks, fill volumes, and substructure complexity.</p>
         </div>
 
         <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
@@ -83,12 +83,12 @@ export default function SiteConditionsSection() {
                 onClick={() => updateProjectDetails({ siteSlope: opt.value })}
                 className={`flex flex-col items-center gap-3 rounded-2xl border p-5 text-center transition-all duration-200 ${
                   isSelected
-                    ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-transparent text-white shadow-lg'
+                    ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:shadow-sm'
                 }`}
               >
                 {/* Slope angle icon illustration */}
-                <div className={`relative flex h-10 w-10 items-center justify-center ${isSelected ? 'text-white' : 'text-slate-400'}`}>
+                <div className={`relative flex h-10 w-10 items-center justify-center ${isSelected ? 'text-blue-600' : 'text-slate-400'}`}>
                   <opt.Icon
                     size={28}
                     weight="bold"
@@ -96,11 +96,11 @@ export default function SiteConditionsSection() {
                   />
                 </div>
                 <div>
-                  <div className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-slate-800'}`}>{opt.label}</div>
-                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>{opt.hint}</div>
+                  <div className={`text-sm font-bold ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{opt.label}</div>
+                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-blue-700/80' : 'wiz-text-muted'}`}>{opt.hint}</div>
                 </div>
                 {isSelected && (
-                  <CheckCircle size={16} weight="fill" className="text-white opacity-80" />
+                  <CheckCircle size={16} weight="fill" className="text-blue-500" />
                 )}
               </motion.button>
             );
@@ -111,8 +111,8 @@ export default function SiteConditionsSection() {
       {/* ── Soil ───────────────────────────────────────────────────────── */}
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-bold text-slate-900 mb-1">What type of soil is on site?</h3>
-          <p className="text-sm text-slate-500">Soil type determines foundation depth, reinforcement, and excavation method.</p>
+          <h3 className="text-lg font-bold wiz-text-primary mb-1">What type of soil is on site?</h3>
+          <p className="text-sm wiz-text-muted">Soil type determines foundation depth, reinforcement, and excavation method.</p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -128,12 +128,12 @@ export default function SiteConditionsSection() {
                 onClick={() => updateProjectDetails({ soilType: opt.value === 'not_sure' ? '' : opt.value })}
                 className={`group relative flex items-start gap-3 rounded-2xl border p-4 text-left transition-all duration-200 ${
                   isSelected
-                    ? 'bg-gradient-to-br from-blue-600 to-indigo-700 border-transparent shadow-md'
+                    ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                     : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
                 }`}
               >
                 <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
-                  isSelected ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-400'
+                  isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'
                 }`}>
                   {opt.value === 'not_sure'           ? <Question size={15} weight="bold" /> :
                    opt.value === 'loam'               ? <CheckCircle size={15} weight="bold" /> :
@@ -142,10 +142,10 @@ export default function SiteConditionsSection() {
                    <TrendUp size={15} weight="bold" />}
                 </div>
                 <div className="min-w-0">
-                  <div className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-slate-800'}`}>{opt.label}</div>
-                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>{opt.hint}</div>
+                  <div className={`text-sm font-semibold ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{opt.label}</div>
+                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-blue-700/80' : 'wiz-text-muted'}`}>{opt.hint}</div>
                   <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-                    isSelected ? 'bg-white/20 text-white' : `${rb.bg} ${rb.text}`
+                    isSelected ? 'bg-blue-100 text-blue-700' : `${rb.bg} ${rb.text}`
                   }`}>
                     {rb.label}
                   </span>
@@ -175,20 +175,23 @@ export default function SiteConditionsSection() {
 
         {/* Regulatory notes */}
         {procedureNotes.length > 0 && (
-          <div className="rounded-xl bg-indigo-50 border border-indigo-100 p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-3">Regulatory notes for your location</p>
-            <div className="space-y-1.5">
-              {procedureNotes.map((note) => (
-                <div key={note.id} className="flex items-center gap-2 text-xs text-slate-600">
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                    note.status === 'required' ? 'bg-indigo-600' : note.status === 'recommended' ? 'bg-indigo-400' : 'bg-indigo-200'
-                  }`} />
-                  <span>{note.label} — <em className={`${
-                    note.status === 'required' ? 'text-indigo-700 font-semibold not-italic' :
-                    note.status === 'recommended' ? 'text-indigo-500' : 'text-slate-400'
-                  }`}>{note.status}</em></span>
-                </div>
-              ))}
+          <div className="wiz-alert wiz-alert--info">
+            <Info size={14} weight="fill" className="wiz-alert__icon" />
+            <div>
+              <p className="font-bold text-[11px] uppercase tracking-wider mb-2" style={{color:'var(--wiz-info-text)'}}>Regulatory notes for your location</p>
+              <div className="space-y-1.5">
+                {procedureNotes.map((note) => (
+                  <div key={note.id} className="flex items-center gap-2 text-xs">
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                      note.status === 'required' ? 'bg-sky-600' : note.status === 'recommended' ? 'bg-sky-400' : 'bg-sky-200'
+                    }`} />
+                    <span>{note.label} — <em className={`${
+                      note.status === 'required' ? 'font-semibold not-italic' :
+                      note.status === 'recommended' ? 'opacity-80' : 'opacity-50'
+                    }`}>{note.status}</em></span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
