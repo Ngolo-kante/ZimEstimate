@@ -10,7 +10,7 @@ import InstallPromptBanner from '../ui/InstallPromptBanner';
 import {
   House,
   Folders,
-  PlusCircle,
+  Lightning,
   Gear,
 } from '@phosphor-icons/react';
 
@@ -27,7 +27,7 @@ function MobileBottomNav() {
   const navItems = [
     { label: 'Home', href: '/home', icon: House },
     { label: 'Projects', href: '/projects/dashboard', icon: Folders },
-    { label: 'New', href: '/boq/new', icon: PlusCircle, isAction: true },
+    { label: 'Quick', href: '/quick-projects', icon: Lightning, isAction: true },
     { label: 'Settings', href: '/settings', icon: Gear },
   ];
 
@@ -154,9 +154,9 @@ export default function MainLayout({
               </div>
             </div>
             <div className="footer-right">
-              <a href="#">Market Reports</a>
-              <a href="#">Privacy Policy</a>
-              <a href="#">Contact Support</a>
+              <Link href="/market-insights">Market Reports</Link>
+              <Link href="/privacy">Privacy Policy</Link>
+              <a href="mailto:support@zimestimate.co.zw">Contact Support</a>
             </div>
           </div>
         </footer>

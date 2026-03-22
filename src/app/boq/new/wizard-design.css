@@ -19,10 +19,15 @@
   --wiz-jade:         #2D9D78;
   --wiz-jade-light:   #E3F5EE;
 
-  /* Wasabi — primary CTA button (#A8E6CF is the reference hex)   */
-  --wiz-wasabi:       #5BBD9B;   /* readable version of wasabi swatch */
-  --wiz-wasabi-dark:  #3A8F70;   /* hover state                    */
-  --wiz-wasabi-text:  #0D3D2A;   /* dark green text for light bg   */
+  /* Primary Blue — CTA buttons                                  */
+  --wiz-primary:      #3B82F6;   /* blue-500                       */
+  --wiz-primary-dark: #2563EB;   /* blue-600 — hover state         */
+  --wiz-primary-text: #FFFFFF;   /* white text on blue bg           */
+
+  /* Wasabi — kept for legacy / progress bar accent only          */
+  --wiz-wasabi:       #5BBD9B;
+  --wiz-wasabi-dark:  #3A8F70;
+  --wiz-wasabi-text:  #0D3D2A;
 
   /* Sky Blue — informational banners (calm, non-threatening)     */
   --wiz-info-bg:      #E0F2FE;   /* sky-100                        */
@@ -66,7 +71,7 @@
 .wiz-progress-bar-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--wiz-jade) 0%, var(--wiz-wasabi) 100%);
+  background: linear-gradient(90deg, var(--wiz-primary) 0%, #60A5FA 100%);
   transition: width 0.5s ease;
 }
 
@@ -75,8 +80,8 @@
   border-radius: 999px;
   transition: all 0.3s;
 }
-.wiz-step-dot--active    { background: var(--wiz-jade);       width: 32px; }
-.wiz-step-dot--complete  { background: var(--wiz-wasabi);     width: 16px; cursor: pointer; }
+.wiz-step-dot--active    { background: var(--wiz-primary);    width: 32px; }
+.wiz-step-dot--complete  { background: #93C5FD;               width: 16px; cursor: pointer; }
 .wiz-step-dot--upcoming  { background: #DDE1D8;               width: 16px; }
 
 /* ── CTA Buttons ───────────────────────────────────────────────────────────── */
@@ -88,16 +93,16 @@
   border-radius:   12px;
   font-size:       14px;
   font-weight:     700;
-  color:           var(--wiz-wasabi-text);
-  background:      var(--wiz-wasabi);
-  box-shadow:      0 2px 8px rgba(91,189,155,0.30);
+  color:           var(--wiz-primary-text);
+  background:      var(--wiz-primary);
+  box-shadow:      0 2px 8px rgba(59,130,246,0.30);
   transition:      background 0.15s, box-shadow 0.15s, transform 0.1s;
   border:          none;
   cursor:          pointer;
   letter-spacing:  0.01em;
 }
-.wiz-btn-primary:hover  { background: var(--wiz-wasabi-dark);  box-shadow: 0 4px 14px rgba(91,189,155,0.4); transform: translateY(-1px); }
-.wiz-btn-primary:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(91,189,155,0.2); }
+.wiz-btn-primary:hover  { background: var(--wiz-primary-dark);  box-shadow: 0 4px 14px rgba(59,130,246,0.4); transform: translateY(-1px); }
+.wiz-btn-primary:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(59,130,246,0.2); }
 
 .wiz-btn-secondary {
   display:         inline-flex;
@@ -123,13 +128,13 @@
   border-radius:   10px;
   font-size:       13px;
   font-weight:     600;
-  color:           var(--wiz-text-primary);
-  background:      var(--wiz-jade-light);
-  border:          1.5px solid rgba(45,157,120,0.25);
+  color:           var(--wiz-primary-dark);
+  background:      #EFF6FF;
+  border:          1.5px solid rgba(59,130,246,0.25);
   transition:      background 0.15s;
   cursor:          pointer;
 }
-.wiz-btn-save:hover { background: #CBF0E2; }
+.wiz-btn-save:hover { background: #DBEAFE; }
 
 /* ── Info / Warning / Success Alert Banners ────────────────────────────────── */
 .wiz-alert {
@@ -170,7 +175,7 @@
   font-weight:  700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color:        var(--wiz-jade);
+  color:        var(--wiz-text-muted);
 }
 
 /* ── Status badge (top bar) ────────────────────────────────────────────────── */

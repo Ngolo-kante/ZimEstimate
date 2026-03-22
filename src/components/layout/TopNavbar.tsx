@@ -27,6 +27,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Home', href: '/home' },
   { label: 'My Projects', href: '/projects/dashboard' },
+  { label: 'Quick Projects', href: '/quick-projects' },
   { label: 'Materials Insights', href: '/market-insights' },
   { label: 'Project Templates', href: '/templates' },
   { label: 'Scraper', href: '/scraper', adminOnly: true },
@@ -187,13 +188,7 @@ export default function TopNavbar() {
                       <div className="profile-info">
                         <span className="profile-name">{profile?.full_name || 'User'}</span>
                         <span className="profile-email">{user?.email}</span>
-                        {profile?.tier && (
-                          <span className={`profile-tier ${profile.tier}`}>
-                            {profile.tier === 'pro' && <Crown size={12} weight="fill" />}
-                            {profile.tier.charAt(0).toUpperCase() + profile.tier.slice(1)}
-                          </span>
-                        )}
-                      </div>
+                          </div>
                     </div>
                     <div className="menu-divider" />
                     <Link
@@ -205,17 +200,6 @@ export default function TopNavbar() {
                       <Gear size={18} weight="duotone" className="text-slate-400" />
                       Settings
                     </Link>
-                    {profile?.tier === 'free' && (
-                      <Link
-                        href="/upgrade"
-                        className="menu-item upgrade"
-                        onClick={() => setProfileMenuOpen(false)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#2563eb' }}
-                      >
-                        <Crown size={18} weight="fill" />
-                        Upgrade to Pro
-                      </Link>
-                    )}
                     <div className="menu-divider" />
                     <button className="menu-item logout" onClick={handleSignOut} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
                       <SignOut size={18} weight="duotone" />

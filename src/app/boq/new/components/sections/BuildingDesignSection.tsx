@@ -21,22 +21,16 @@ const BUILDING_TYPES = [
     label: 'Single Storey',
     description: 'All rooms on one level — most common in Zimbabwe.',
     icon: HouseLine,
-    accent: 'from-blue-500 to-indigo-600',
     iconBg: 'bg-blue-50',
     iconColor: 'text-blue-600',
-    ring: 'ring-blue-500',
-    selectedBg: 'bg-slate-800',
   },
   {
     value: 'double_storey',
     label: 'Double Storey',
     description: 'Living areas on the ground floor, bedrooms above.',
     icon: Buildings,
-    accent: 'from-violet-500 to-purple-700',
-    iconBg: 'bg-violet-50',
-    iconColor: 'text-violet-600',
-    ring: 'ring-violet-500',
-    selectedBg: 'bg-slate-800',
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-blue-600',
   },
 ] as const;
 
@@ -46,41 +40,36 @@ const PLAN_MODES = [
     label: 'Quick Room Count',
     description: 'Enter room counts and total floor area. Fast and simple.',
     icon: ListNumbers,
-    accent: 'from-emerald-400 to-teal-600',
-    iconBg: 'bg-emerald-50',
-    iconColor: 'text-emerald-600',
-    ring: 'ring-emerald-500',
-    selectedBg: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-blue-600',
     tip: 'Best for early-stage estimates',
-    tipColor: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+    tipColor: 'text-blue-700 bg-blue-50 border-blue-200',
+    badge: null as string | null,
+    badgeColor: '',
   },
   {
     key: 'detailed' as const,
     label: 'Detailed Room Plan',
     description: 'Use the interactive room builder to sketch each space with dimensions.',
     icon: PencilRuler,
-    accent: 'from-orange-400 to-amber-600',
-    iconBg: 'bg-orange-50',
-    iconColor: 'text-orange-600',
-    ring: 'ring-orange-500',
-    selectedBg: 'bg-gradient-to-br from-orange-500 to-amber-600',
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-blue-600',
     tip: 'Most accurate estimate',
-    tipColor: 'text-orange-700 bg-orange-50 border-orange-200',
+    tipColor: 'text-blue-700 bg-blue-50 border-blue-200',
+    badge: null as string | null,
+    badgeColor: '',
   },
   {
     key: 'upload' as const,
     label: 'Upload Floor Plan',
     description: 'Upload your architectural drawings — we extract dimensions automatically.',
     icon: FileArrowUp,
-    accent: 'from-rose-400 to-pink-600',
-    iconBg: 'bg-rose-50',
-    iconColor: 'text-rose-600',
-    ring: 'ring-rose-500',
-    selectedBg: 'bg-gradient-to-br from-rose-500 to-pink-600',
-    badge: 'Coming Soon',
-    badgeColor: 'text-rose-600 bg-rose-50 border-rose-200',
-    tip: null,
+    iconBg: 'bg-slate-50',
+    iconColor: 'text-slate-400',
+    tip: null as string | null,
     tipColor: '',
+    badge: 'Coming Soon' as string | null,
+    badgeColor: 'text-slate-500 bg-slate-100 border-slate-200',
   },
 ] as const;
 
@@ -121,10 +110,10 @@ const Stepper = ({
         <button
           type="button"
           onClick={onRemove}
-          className="text-slate-200 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+          className="text-slate-400 hover:text-red-500 transition-colors"
           title={`Remove ${label}`}
         >
-          <Trash size={15} weight="regular" />
+          <Trash size={15} weight="bold" />
         </button>
       )}
       <span className="text-sm font-medium text-slate-700">{label}</span>
@@ -219,21 +208,30 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
                   <Icon size={22} weight="regular" className={isSelected ? type.iconColor : type.iconColor} />
                 </div>
                 <div>
-                  <div className={`font-bold text-base ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{type.label}</div>
-                  <p className={`mt-1 text-xs leading-relaxed ${isSelected ? 'text-blue-700/80' : 'wiz-text-muted'}`}>{type.description}</p>
+                  <div className={`font-bold text-base ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>{type.label}</div>
+                  <p className={`mt-1 text-xs leading-relaxed ${isSelected ? 'text-slate-600' : 'wiz-text-muted'}`}>{type.description}</p>
                 </div>
               </motion.button>
             );
           })}
         </div>
 
-        {/* Storey info callout */}
-        <div className="wiz-alert wiz-alert--info">
-          <Info size={15} weight="fill" className="wiz-alert__icon" />
-          <p>
-            Double storey adds structural complexity — ring beams, upper floor slab, and staircase add approx. 25–35% to the superstructure cost.
-          </p>
-        </div>
+        {/* Storey info callout — only shown for double storey */}
+        <AnimatePresence>
+          {projectDetails.buildingType === 'double_storey' && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              className="wiz-alert wiz-alert--info"
+            >
+              <Info size={15} weight="fill" className="wiz-alert__icon" />
+              <p>
+                Double storey adds structural complexity — ring beams, upper floor slab, and staircase add approx. 25–35% to the superstructure cost.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ── 2. Floor area ────────────────────────────────────────────── */}
@@ -329,8 +327,8 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
                   <Icon size={20} weight="regular" className={isSelected ? mode.iconColor : mode.iconColor} />
                 </div>
                 <div className="flex-1">
-                  <div className={`text-sm font-bold ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{mode.label}</div>
-                  <p className={`mt-1 text-xs leading-relaxed ${isSelected ? 'text-blue-700/80' : 'wiz-text-muted'}`}>{mode.description}</p>
+                  <div className={`text-sm font-bold ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>{mode.label}</div>
+                  <p className={`mt-1 text-xs leading-relaxed ${isSelected ? 'text-slate-600' : 'wiz-text-muted'}`}>{mode.description}</p>
                 </div>
 
                 {/* Tip badge at the bottom — shown when not selected */}
@@ -448,7 +446,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
-            className="rounded-2xl border border-orange-100 bg-orange-50/40 p-5"
+            className="rounded-2xl border border-blue-100 bg-blue-50/40 p-5"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -463,7 +461,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
                 type="button"
                 data-testid="launch-floor-plan-editor"
                 onClick={onLaunchRoomBuilder}
-                className="rounded-xl border border-orange-200 bg-white px-5 py-2.5 text-sm font-semibold text-orange-700 shadow-sm hover:bg-orange-50 hover:border-orange-300 transition-colors"
+                className="rounded-xl border border-blue-200 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-50 hover:border-blue-300 transition-colors"
               >
                 Launch Floor Plan Editor
               </button>
@@ -482,10 +480,10 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
-            className="rounded-2xl border border-dashed border-rose-200 bg-rose-50/40 p-10 text-center"
+            className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/40 p-10 text-center"
           >
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-rose-100 bg-white shadow-sm mb-4">
-              <FileArrowUp size={26} weight="regular" className="text-rose-400" />
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-100 bg-white shadow-sm mb-4">
+              <FileArrowUp size={26} weight="regular" className="text-slate-400" />
             </div>
             <h3 className="text-base font-bold text-slate-800 mb-1.5">Upload Floor Plan</h3>
             <p className="text-sm wiz-text-muted mb-5 max-w-xs mx-auto leading-relaxed">
@@ -495,7 +493,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
               Select File
             </button>
             <div className="mt-5">
-              <span className="inline-block rounded-full border border-rose-200 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-rose-400">
+              <span className="inline-block rounded-full border border-slate-300 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                 Coming Soon
               </span>
             </div>

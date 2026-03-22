@@ -147,9 +147,9 @@ export interface ProjectUtilityConfig {
 // Tier limits configuration
 export const TIER_LIMITS = {
     free: {
-        maxProjects: 3,
-        aiFeatures: false,
-        advancedExport: false,
+        maxProjects: Infinity,
+        aiFeatures: true,
+        advancedExport: true,
     },
     pro: {
         maxProjects: Infinity,

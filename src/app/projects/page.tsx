@@ -36,10 +36,11 @@ import {
     TrendUp,
     ChartBar,
     Folders,
+    Lightning,
 } from '@phosphor-icons/react';
 
 // Sub-navigation for My Projects section
-function ProjectsSubNav({ active }: { active: 'dashboard' | 'all' }) {
+function ProjectsSubNav({ active }: { active: 'dashboard' | 'all' | 'quick' }) {
   return (
     <div className="projects-subnav">
       <nav className="subnav-tabs">
@@ -56,6 +57,13 @@ function ProjectsSubNav({ active }: { active: 'dashboard' | 'all' }) {
         >
           <Folders size={18} />
           All Projects
+        </Link>
+        <Link
+          href="/projects/quick"
+          className={`subnav-tab ${active === 'quick' ? 'active' : ''}`}
+        >
+          <Lightning size={18} />
+          Quick BOQs
         </Link>
       </nav>
 
@@ -810,21 +818,6 @@ function ProjectsContent() {
                     </div>
                 )}
 
-                {/* Upgrade Prompt for Free Users */}
-                {profile?.tier === 'free' && projects.length >= 3 && (
-                    <Card className="upgrade-prompt reveal">
-                        <div className="upgrade-content">
-                            <Crown size={32} weight="duotone" />
-                            <div>
-                                <h4>Need more projects?</h4>
-                                <p>Upgrade to Pro for unlimited projects and AI features</p>
-                            </div>
-                            <Link href="/upgrade">
-                                <Button>Upgrade to Pro</Button>
-                            </Link>
-                        </div>
-                    </Card>
-                )}
             </div>
 
             {/* Mobile Bottom Sheet Menu */}

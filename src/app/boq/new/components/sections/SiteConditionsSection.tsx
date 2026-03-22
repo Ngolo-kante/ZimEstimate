@@ -26,11 +26,11 @@ const SOIL_OPTIONS: Array<{
   hint: string;
   risk: 'low' | 'medium' | 'high' | 'unknown';
 }> = [
+  { value: 'not_sure',           label: 'Not Sure',              hint: 'We\'ll use safe conservative defaults',       risk: 'unknown' },
   { value: 'loam',               label: 'Loam / Standard',      hint: 'Stable, most common soil type',              risk: 'low' },
   { value: 'sandy',              label: 'Sandy',                 hint: 'Low bearing capacity, high drainage',         risk: 'medium' },
   { value: 'clay_black_mountain', label: 'Clay / Black Cotton', hint: 'Expands with moisture — crack risk',          risk: 'high' },
   { value: 'rock',               label: 'Rock',                  hint: 'Hard excavation, but very stable',            risk: 'medium' },
-  { value: 'not_sure',           label: 'Not Sure',              hint: 'We\'ll use safe conservative defaults',       risk: 'unknown' },
 ];
 
 const RISK_BADGE: Record<string, { bg: string; text: string; label: string }> = {
@@ -117,7 +117,7 @@ export default function SiteConditionsSection() {
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {SOIL_OPTIONS.map((opt) => {
-            const isSelected = projectDetails.soilType === opt.value || (!projectDetails.soilType && opt.value === 'not_sure');
+            const isSelected = projectDetails.soilType === opt.value;
             const rb = RISK_BADGE[opt.risk];
             return (
               <motion.button
@@ -125,7 +125,7 @@ export default function SiteConditionsSection() {
                 type="button"
                 whileHover={{ scale: 1.01, y: -1 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => updateProjectDetails({ soilType: opt.value === 'not_sure' ? '' : opt.value })}
+                onClick={() => updateProjectDetails({ soilType: opt.value as SoilType })}
                 className={`group relative flex items-start gap-3 rounded-2xl border p-4 text-left transition-all duration-200 ${
                   isSelected
                     ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'

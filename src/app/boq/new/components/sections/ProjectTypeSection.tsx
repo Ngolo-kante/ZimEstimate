@@ -53,8 +53,13 @@ export default function ProjectTypeSection() {
 
   const handleSelectType = (typeId: ProjectTypeId) => {
     updateProjectDetails({ projectType: typeId });
-    setProjectScope(typeId === 'full_house' ? 'entire' : 'stage');
-    setSelectedStages([...FULL_HOUSE_STAGES]);
+    if (typeId === 'full_house') {
+      setProjectScope('entire');
+      setSelectedStages([...FULL_HOUSE_STAGES]);
+    } else {
+      setProjectScope('stage');
+      setSelectedStages([]); // No preselection — user must choose
+    }
   };
 
   const handleToggleStage = (stageId: BoqMilestoneId) => {
@@ -106,10 +111,10 @@ export default function ProjectTypeSection() {
                 </div>
 
                 <div>
-                  <div className={`font-bold text-base mb-1 ${isSelected ? 'text-blue-900' : 'wiz-text-primary'}`}>
+                  <div className={`font-bold text-base mb-1 ${isSelected ? 'text-slate-900' : 'wiz-text-primary'}`}>
                     {type.label}
                   </div>
-                  <p className={`text-sm leading-relaxed ${isSelected ? 'text-blue-700/80' : 'wiz-text-muted'}`}>
+                  <p className={`text-sm leading-relaxed ${isSelected ? 'text-slate-600' : 'wiz-text-muted'}`}>
                     {type.description}
                   </p>
                 </div>
@@ -126,9 +131,26 @@ export default function ProjectTypeSection() {
         </div>
       </div>
 
-      {/* ── Stage Toggles ────────────────────────────────────────────────── */}
+      {/* Full House confirmation */}
       <AnimatePresence>
-        {hasType && (
+        {selectedType === 'full_house' && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+          >
+            <div className="wiz-alert wiz-alert--info">
+              <Info size={14} weight="fill" className="wiz-alert__icon" />
+              <p>All 5 building stages will be included: Substructure, Superstructure, Roofing, Internal Finishes, and External Works.</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Stage Toggles — only shown for "Building in Stages" ─────────── */}
+      <AnimatePresence>
+        {selectedType === 'building_in_stages' && (
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -167,10 +189,10 @@ export default function ProjectTypeSection() {
                       <StageIcon size={16} weight={isSelected ? 'fill' : 'regular'} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className={`text-sm font-semibold ${isSelected ? 'text-blue-900' : 'text-slate-700'}`}>
+                      <div className={`text-sm font-semibold ${isSelected ? 'text-slate-900' : 'text-slate-700'}`}>
                         {stage.label}
                       </div>
-                      <p className={`mt-0.5 text-xs leading-relaxed ${isSelected ? 'text-blue-700/80' : 'text-slate-400'}`}>
+                      <p className={`mt-0.5 text-xs leading-relaxed ${isSelected ? 'text-slate-600' : 'text-slate-400'}`}>
                         {stage.description}
                       </p>
                     </div>
@@ -182,10 +204,16 @@ export default function ProjectTypeSection() {
               })}
             </div>
 
-            {selectedType === 'building_in_stages' && (
+            {(selectedStages ?? []).length === 0 && (
+              <div className="mt-3 wiz-alert wiz-alert--warn">
+                <Info size={14} weight="fill" className="wiz-alert__icon" />
+                <p>Select at least one stage to continue.</p>
+              </div>
+            )}
+            {(selectedStages ?? []).length > 0 && (
               <div className="mt-3 wiz-alert wiz-alert--info">
                 <Info size={14} weight="fill" className="wiz-alert__icon" />
-                <p>Click any stage to deselect it. At least one stage must remain selected.</p>
+                <p>Click any stage to toggle it. At least one stage must remain selected.</p>
               </div>
             )}
           </motion.div>

@@ -30,6 +30,7 @@ import {
   ChartBar,
   HardHat,
   MapPin,
+  Lightning,
 } from '@phosphor-icons/react';
 
 const SOIL_LABELS: Record<string, string> = {
@@ -47,7 +48,7 @@ const SLOPE_LABELS: Record<string, string> = {
 };
 
 // Sub-navigation for My Projects section
-function ProjectsSubNav({ active }: { active: 'dashboard' | 'all' }) {
+function ProjectsSubNav({ active }: { active: 'dashboard' | 'all' | 'quick' }) {
   return (
     <div className="projects-subnav">
       <nav className="subnav-tabs">
@@ -64,6 +65,13 @@ function ProjectsSubNav({ active }: { active: 'dashboard' | 'all' }) {
         >
           <Folders size={18} />
           All Projects
+        </Link>
+        <Link
+          href="/projects/quick"
+          className={`subnav-tab ${active === 'quick' ? 'active' : ''}`}
+        >
+          <Lightning size={18} />
+          Quick BOQs
         </Link>
       </nav>
 

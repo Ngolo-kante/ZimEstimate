@@ -16,9 +16,7 @@ import ProjectTypeSection from './components/sections/ProjectTypeSection';
 import ProjectLocationSection from './components/sections/ProjectLocationSection';
 import BuildingDesignSection from './components/sections/BuildingDesignSection';
 import MaterialsSection from './components/sections/MaterialsSection';
-import ScopeSection from './components/sections/ScopeSection';
 import LaborSection from './components/sections/LaborSection';
-import SiteSetupSection from './components/sections/SiteSetupSection';
 import SiteConditionsSection from './components/sections/SiteConditionsSection';
 import { InteractiveRoomBuilder, type RoomInstance } from './components/InteractiveRoomBuilder';
 import { buildLiveMilestones } from './utils/liveEstimator';
@@ -165,15 +163,15 @@ const WIZARD_STEPS = [
   },
   {
     id: 'materials-scope',
-    label: 'Materials & Scope',
-    title: 'Materials & scope confirmation',
-    subtitle: 'Review which materials and cost items are included in your estimate.',
+    label: 'Materials',
+    title: 'Materials & transport',
+    subtitle: 'Choose your brick, cement, and transport preferences for an accurate estimate.',
   },
   {
-    id: 'site-labor',
-    label: 'Setup & Labor',
-    title: 'Site setup & labour costs',
-    subtitle: 'Add temporary works, site setup, and labour preferences.',
+    id: 'labor',
+    label: 'Labour',
+    title: 'Labour costs',
+    subtitle: 'Choose whether to include labour and how to calculate it.',
   },
   {
     id: 'review-estimate',
@@ -469,7 +467,12 @@ export default function BoqNewPage() {
       return;
     }
 
-    setCurrentStep(Math.min(WIZARD_STEPS.length - 1, currentStep + 1));
+    let nextStep = currentStep + 1;
+    // Skip Labour step (index 4) if user chose materials_only
+    if (nextStep === 4 && laborType !== 'materials_labor') {
+      nextStep = 5; // Jump to Review
+    }
+    setCurrentStep(Math.min(WIZARD_STEPS.length - 1, nextStep));
   };
 
   return (
@@ -512,7 +515,7 @@ export default function BoqNewPage() {
               <div className="mb-8">
                 <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider mb-2" style={{color:'var(--wiz-text-faint)'}}>
                   <span>Step {currentStep + 1} of {WIZARD_STEPS.length}</span>
-                  <span style={{color:'var(--wiz-jade)'}}>{progressPct}%</span>
+                  <span style={{color:'var(--wiz-primary)'}}>{progressPct}%</span>
                   <span>~{minsRemaining} min to complete</span>
                 </div>
                 <div className="wiz-progress-bar-track w-full">
@@ -575,17 +578,11 @@ export default function BoqNewPage() {
                     )}
 
                     {currentStep === 3 && (
-                      <>
-                        <ScopeSection />
-                        <MaterialsSection />
-                      </>
+                      <MaterialsSection />
                     )}
 
                     {currentStep === 4 && (
-                      <>
-                        <LaborSection />
-                        <SiteSetupSection />
-                      </>
+                      <LaborSection />
                     )}
 
                     {currentStep === 5 && (
@@ -599,7 +596,14 @@ export default function BoqNewPage() {
               <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between border-t border-slate-200 bg-white/95 px-6 py-4 shadow-[0_-8px_16px_rgba(0,0,0,0.05)] backdrop-blur-md lg:static lg:mt-10 lg:bg-transparent lg:p-0 lg:pt-6 lg:shadow-none lg:backdrop-blur-none">
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                  onClick={() => {
+                    let prevStep = currentStep - 1;
+                    // Skip Labour step (index 4) when going back if user chose materials_only
+                    if (prevStep === 4 && laborType !== 'materials_labor') {
+                      prevStep = 3;
+                    }
+                    setCurrentStep(Math.max(0, prevStep));
+                  }}
                   className={`wiz-btn-secondary ${currentStep === 0 ? 'invisible' : 'visible'}`}
                 >
                   <CaretLeft size={16} /> Back
@@ -628,7 +632,7 @@ export default function BoqNewPage() {
             </div>
           )}
           rightEstimate={currentStep === 5 ? <LiveEstimatePanel /> : null}
-          heroIllustration={getStepIllustration(currentStep)}
+          heroIllustration={null}
         />
 
         {showInteractiveBuilder && (

@@ -1,7 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
+import { listQuickBOQs } from '@/lib/services/quickBoq';
+import { useAuth } from '@/components/providers/AuthProvider';
 import {
   Lightning,
   Drop,
@@ -11,6 +14,7 @@ import {
   Path,
   ArrowRight,
   Timer,
+  FolderOpen,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 
@@ -91,6 +95,22 @@ const PROJECT_TYPES: Array<{
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function QuickProjectsPage() {
+  const { isAuthenticated } = useAuth();
+  const [savedCounts, setSavedCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    async function loadCounts() {
+      const { boqs } = await listQuickBOQs();
+      const counts: Record<string, number> = {};
+      for (const boq of boqs) {
+        counts[boq.projectType] = (counts[boq.projectType] || 0) + 1;
+      }
+      setSavedCounts(counts);
+    }
+    loadCounts();
+  }, [isAuthenticated]);
+
   return (
     <MainLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 animate-fade-in">
@@ -108,6 +128,7 @@ export default function QuickProjectsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {PROJECT_TYPES.map((pt, i) => {
             const Icon = pt.icon;
+            const count = savedCounts[pt.id] || 0;
             return (
               <Link
                 key={pt.id}
@@ -123,10 +144,18 @@ export default function QuickProjectsPage() {
                   <p className="text-sm text-slate-600 leading-relaxed mb-6">{pt.description}</p>
                 </div>
                 <div className="flex items-center justify-between pt-6 border-t border-slate-200/50">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/60 border border-slate-200/60 text-xs font-semibold text-slate-600 shadow-sm backdrop-blur-sm">
-                    <Timer size={14} className="text-slate-400" />
-                    ~{pt.minutes} min
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/60 border border-slate-200/60 text-xs font-semibold text-slate-600 shadow-sm backdrop-blur-sm">
+                      <Timer size={14} className="text-slate-400" />
+                      ~{pt.minutes} min
+                    </span>
+                    {count > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200/60 text-xs font-semibold text-blue-600">
+                        <FolderOpen size={12} />
+                        {count} saved
+                      </span>
+                    )}
+                  </div>
                   <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-400 shadow-sm border border-slate-200/60 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-colors">
                     <ArrowRight size={14} weight="bold" />
                   </div>
@@ -135,6 +164,20 @@ export default function QuickProjectsPage() {
             );
           })}
         </div>
+
+        {/* Saved estimates link */}
+        {Object.values(savedCounts).some((c) => c > 0) && (
+          <div className="mt-8 text-center">
+            <Link
+              href="/projects/quick"
+              className="inline-flex items-center gap-2 text-blue-600 font-medium hover:text-blue-700 transition-colors"
+            >
+              <FolderOpen size={18} />
+              View all saved estimates ({Object.values(savedCounts).reduce((a, b) => a + b, 0)})
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+        )}
 
         {/* Footer note */}
         <div className="mt-20 text-center flex flex-col items-center justify-center border-t border-slate-200 pt-12">
