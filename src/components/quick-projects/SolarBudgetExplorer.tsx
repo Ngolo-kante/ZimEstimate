@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type CSSProperties } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -10,7 +10,6 @@ import {
   SolarPanel,
   ShieldCheck,
   Truck,
-  Wrench,
   CaretDown,
   CaretUp,
   CheckCircle,
@@ -25,12 +24,6 @@ import {
   PANEL_BRANDS,
   SOLAR_PACKAGES,
   getRequiredZeraTier,
-  PANEL_LOSS_FACTOR,
-  INVERTER_OVERSIZE,
-  MOTOR_SURGE_FACTOR,
-  SIMULTANEOUS_FACTOR,
-  BATTERY_DOD_LIFEPO4,
-  BATTERY_NIGHT_LOAD_MAX,
   type InverterOption,
   type BatteryOption,
   type PanelOption,
@@ -59,10 +52,29 @@ interface BudgetAllocation {
   installation: { cost: number; pct: number };
 }
 
+type SolarBudgetBoqAnswers = Parameters<typeof solarSizingToBOQ>[1];
+
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-const INVERTER_SIZES = [3, 5, 8, 10, 12];
 const PROTECTION_FIXED = 35 + 28 + 45 + 55 + 45 + 25 + 25 + 22 + 18 + 35 + 120 + 8; // AVS+breaker+changeover+DB+earth+surgeDC+surgeAC+dcIso+acIso+combiner+mount+antitheft
+const numberInputStyle: CSSProperties = {
+  MozAppearance: 'textfield',
+};
+
+function buildBudgetAnswers(budget: number): SolarWizardOutput['answers'] {
+  return {
+    intent: 'budget',
+    backupHours: null,
+    location: '',
+    propertyType: null,
+    appliances: {},
+    simultaneousLoads: { kettleMicrowave: false, pumpWithHouse: false, geyserWithHouse: false },
+    roof: { type: null, shading: null, orientation: '', spaceM2: null },
+    existing: { hasExisting: false, inverterKva: null, batteryKwh: null, panelCount: null, issues: '' },
+    budgetUsd: budget,
+    quote: { totalUsd: null, inverterKva: null, batteryKwh: null, panelCount: null, panelWatt: null, notes: '' },
+  };
+}
 
 function bestInverterForBudget(budget: number, brand: InverterOption): { kva: number; price: number } {
   const sizes = Object.entries(brand.prices)
@@ -234,17 +246,8 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
       warnings: [] as string[],
     };
 
-    const augAnswers = {
-      intent: 'budget' as const,
-      backupHours: null,
-      location: '',
-      propertyType: null,
-      appliances: {},
-      simultaneousLoads: { kettleMicrowave: false, pumpWithHouse: false, geyserWithHouse: false },
-      roof: { type: null, shading: null, orientation: '', spaceM2: null },
-      existing: { hasExisting: false, inverterKva: null, batteryKwh: null, panelCount: null, issues: '' },
-      budgetUsd: budget,
-      quote: { totalUsd: null, inverterKva: null, batteryKwh: null, panelCount: null, panelWatt: null, notes: '' },
+    const augAnswers: SolarBudgetBoqAnswers = {
+      ...buildBudgetAnswers(budget),
       panel_brand: panelBrand,
       inverter_brand: inverterBrand,
       battery_brand: batteryBrand,
@@ -253,7 +256,7 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
       include_contingency: false,
     };
 
-    const items = solarSizingToBOQ(sizingResult, augAnswers as any);
+    const items = solarSizingToBOQ(sizingResult, augAnswers);
     setBoqItems(items);
   };
 
@@ -277,18 +280,7 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
             onSave
               ? (items) =>
                   onSave({
-                    answers: {
-                      intent: 'budget',
-                      backupHours: null,
-                      location: '',
-                      propertyType: null,
-                      appliances: {} as any,
-                      simultaneousLoads: { kettleMicrowave: false, pumpWithHouse: false, geyserWithHouse: false },
-                      roof: { type: null, shading: null, orientation: '', spaceM2: null },
-                      existing: { hasExisting: false, inverterKva: null, batteryKwh: null, panelCount: null, issues: '' },
-                      budgetUsd: budget,
-                      quote: { totalUsd: null, inverterKva: null, batteryKwh: null, panelCount: null, panelWatt: null, notes: '' },
-                    },
+                    answers: buildBudgetAnswers(budget),
                     result: null,
                     boqItems: items,
                   })
@@ -378,7 +370,7 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
             value={budget}
             onChange={(e) => setBudget(Math.max(500, Number(e.target.value) || 500))}
             className="flex-1 text-4xl font-extrabold text-slate-900 bg-transparent border-none outline-none focus:ring-0 appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            style={{ MozAppearance: 'textfield' } as any}
+            style={numberInputStyle}
           />
         </div>
 

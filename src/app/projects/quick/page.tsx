@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
@@ -121,11 +121,7 @@ function QuickBOQsContent() {
   const { success, error: showError } = useToast();
   const router = useRouter();
 
-  useEffect(() => {
-    loadBoqs();
-  }, []);
-
-  async function loadBoqs() {
+  const loadBoqs = useCallback(async () => {
     setLoading(true);
     const { boqs: data, error } = await listQuickBOQs();
     if (error) {
@@ -134,7 +130,13 @@ function QuickBOQsContent() {
       setBoqs(data);
     }
     setLoading(false);
-  }
+  }, [showError]);
+
+  useEffect(() => {
+    // Initial page load needs a one-time fetch for persisted quick BOQs.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadBoqs();
+  }, [loadBoqs]);
 
   async function handleDelete(id: string) {
     const { error } = await deleteQuickBOQ(id);

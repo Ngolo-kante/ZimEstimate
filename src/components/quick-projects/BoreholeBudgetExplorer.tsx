@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type CSSProperties } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -38,6 +38,10 @@ interface ComponentCard {
 type PumpType = 'solar' | 'hybrid' | 'electric' | 'hand';
 type CasingGrade = 'class_6' | 'class_9' | 'class_10';
 type TankSize = '2000' | '2500' | '5000' | '10000' | 'none';
+
+const numberInputStyle: CSSProperties = {
+  MozAppearance: 'textfield',
+};
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -326,7 +330,7 @@ export default function BoreholeBudgetExplorer({ onBack, isContractor = false, o
             value={budget}
             onChange={(e) => setBudget(Math.max(1000, Number(e.target.value) || 1000))}
             className="flex-1 text-4xl font-extrabold text-slate-900 bg-transparent border-none outline-none focus:ring-0 appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            style={{ MozAppearance: 'textfield' } as any}
+            style={numberInputStyle}
           />
         </div>
         <div className="flex flex-wrap gap-2 mt-4">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FloppyDisk, X, CircleNotch, CaretLeft, CaretRight, Check } from '@phosphor-icons/react';
@@ -181,7 +181,7 @@ const WIZARD_STEPS = [
   },
 ];
 
-export default function BoqNewPage() {
+function BoqNewPageContent() {
   const searchParams = useSearchParams();
   const { isAuthenticated, profile } = useAuth();
   const projectIdFromUrl = searchParams.get('id');
@@ -705,5 +705,13 @@ export default function BoqNewPage() {
         />
       </div>
     </MainLayout>
+  );
+}
+
+export default function BoqNewPage() {
+  return (
+    <Suspense fallback={<MainLayout title="New BOQ"><div className="p-8 text-center">Loading BOQ builder...</div></MainLayout>}>
+      <BoqNewPageContent />
+    </Suspense>
   );
 }

@@ -19,7 +19,14 @@ const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
 // CSRF token configuration
 const CSRF_TOKEN_EXPIRY_MS = 3600000; // 1 hour
-const CSRF_SECRET = process.env.CSRF_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-csrf-secret-change-in-production';
+
+function getCsrfSecret() {
+  const secret = process.env.CSRF_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    throw new Error('CSRF_SECRET must be configured for CSRF token operations.');
+  }
+  return secret;
+}
 
 const DEFAULT_ALLOWED_ORIGINS = [
   process.env.NEXT_PUBLIC_APP_URL,
@@ -152,10 +159,11 @@ export function sanitizeUrl(value: unknown): string | null {
  * Token format: timestamp.sessionId.hmacSignature
  */
 export function generateCsrfToken(sessionId: string): string {
+  const csrfSecret = getCsrfSecret();
   const timestamp = Date.now().toString();
   const payload = `${timestamp}.${sessionId}`;
   const signature = crypto
-    .createHmac('sha256', CSRF_SECRET)
+    .createHmac('sha256', csrfSecret)
     .update(payload)
     .digest('hex');
   return `${payload}.${signature}`;
@@ -167,6 +175,8 @@ export function generateCsrfToken(sessionId: string): string {
  */
 export function validateCsrfToken(token: string, sessionId: string): boolean {
   if (!token || typeof token !== 'string') return false;
+  const csrfSecret = process.env.CSRF_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!csrfSecret) return false;
 
   const parts = token.split('.');
   if (parts.length !== 3) return false;
@@ -185,7 +195,7 @@ export function validateCsrfToken(token: string, sessionId: string): boolean {
   // Verify HMAC signature
   const payload = `${timestamp}.${tokenSessionId}`;
   const expectedSignature = crypto
-    .createHmac('sha256', CSRF_SECRET)
+    .createHmac('sha256', csrfSecret)
     .update(payload)
     .digest('hex');
 

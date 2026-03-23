@@ -51,8 +51,8 @@ export default function ProjectLocationSection() {
       {/* ── Project Name ───────────────────────────────────────────────── */}
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-bold wiz-text-primary mb-1">What's this project called?</h3>
-          <p className="text-sm wiz-text-muted">Give it a memorable name so it's easy to find in your dashboard later.</p>
+          <h3 className="text-lg font-bold wiz-text-primary mb-1">What&apos;s this project called?</h3>
+          <p className="text-sm wiz-text-muted">Give it a memorable name so it&apos;s easy to find in your dashboard later.</p>
         </div>
         <div className="relative">
           <input

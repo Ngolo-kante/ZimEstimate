@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Suspense, useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
@@ -132,7 +132,9 @@ function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: numb
 export default function ProjectsPage() {
     return (
         <ProtectedRoute>
-            <ProjectsContent />
+            <Suspense fallback={<MainLayout title="Projects"><div className="p-8 text-center">Loading projects...</div></MainLayout>}>
+                <ProjectsContent />
+            </Suspense>
         </ProtectedRoute>
     );
 }

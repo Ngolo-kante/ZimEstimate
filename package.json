@@ -2,6 +2,9 @@
   "name": "zimestimate-app",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20 <21"
+  },
   "scripts": {
     "dev": "next dev",
     "server": "next dev",
@@ -9,9 +12,10 @@
     "start": "next start",
     "lint": "eslint",
     "scrape:prices": "node scripts/pricing/scrape.mjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test:unit": "VITE_CJS_IGNORE_WARNING=1 vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test tests/public-pages-smoke.spec.ts tests/project-creation-smoke.spec.ts",
     "test": "npm run test:unit && npm run test:e2e",
     "check:env": "node scripts/check-env.ts",
     "storybook": "storybook dev -p 6006",

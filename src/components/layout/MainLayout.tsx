@@ -156,7 +156,8 @@ export default function MainLayout({
             <div className="footer-right">
               <Link href="/market-insights">Market Reports</Link>
               <Link href="/privacy">Privacy Policy</Link>
-              <a href="mailto:support@zimestimate.co.zw">Contact Support</a>
+              <Link href="/terms">Terms</Link>
+              <Link href="/support">Support</Link>
             </div>
           </div>
         </footer>

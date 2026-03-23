@@ -31,6 +31,9 @@ import {
   getRequiredZeraTier,
 } from '@/lib/quick-projects/solar/catalog';
 import type {
+  PropertyType,
+  RoofShading,
+  RoofType,
   SolarIntent,
   SolarWizardAnswers,
   SolarWizardOutput,
@@ -41,6 +44,23 @@ import QuickBOQTable from './QuickBOQTable';
 import SolarBudgetExplorer from './SolarBudgetExplorer';
 
 const INTENTS: SolarIntent[] = ['backup', 'heavy_backup', 'off_grid', 'replace', 'budget', 'quote_check', 'maintenance'];
+const PROPERTY_OPTIONS: Array<{ id: PropertyType; label: string }> = [
+  { id: 'apartment', label: 'Apartment' },
+  { id: 'house', label: 'House' },
+  { id: 'farm', label: 'Farm / Plot' },
+  { id: 'business', label: 'Business' },
+];
+const ROOF_TYPE_OPTIONS: Array<{ id: RoofType; label: string }> = [
+  { id: 'tile', label: 'Tile' },
+  { id: 'ibr', label: 'IBR (corrugated)' },
+  { id: 'concrete', label: 'Concrete flat' },
+  { id: 'other', label: 'Other' },
+];
+const SHADING_OPTIONS: Array<{ id: RoofShading; label: string }> = [
+  { id: 'none', label: 'No shading' },
+  { id: 'partial', label: 'Partial shading' },
+  { id: 'heavy', label: 'Heavy shading' },
+];
 
 const INTENT_DESCRIPTIONS: Record<SolarIntent, string> = {
   backup: 'Keep lights, WiFi, and TV running during ZESA outages.',
@@ -433,17 +453,12 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
             onChange={(event) => updateAnswers({ location: event.target.value })}
           />
           <div className="flex flex-wrap gap-2">
-            {[
-              { id: 'apartment', label: 'Apartment' },
-              { id: 'house', label: 'House' },
-              { id: 'farm', label: 'Farm / Plot' },
-              { id: 'business', label: 'Business' },
-            ].map((item) => (
+            {PROPERTY_OPTIONS.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full border text-sm transition-colors ${answers.propertyType === item.id ? 'border-blue-600 bg-blue-50 text-blue-800 font-medium' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'}`}
-                onClick={() => updateAnswers({ propertyType: item.id as any })}
+                onClick={() => updateAnswers({ propertyType: item.id })}
               >
                 <HouseSimple size={16} />
                 {item.label}
@@ -595,17 +610,12 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">Roof type</label>
             <div className="flex flex-wrap gap-2">
-              {[
-                { id: 'tile', label: 'Tile' },
-                { id: 'ibr', label: 'IBR (corrugated)' },
-                { id: 'concrete', label: 'Concrete flat' },
-                { id: 'other', label: 'Other' },
-              ].map((item) => (
+              {ROOF_TYPE_OPTIONS.map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm transition-colors ${answers.roof.type === item.id ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'}`}
-                  onClick={() => updateAnswers({ roof: { ...answers.roof, type: item.id as any } })}
+                  onClick={() => updateAnswers({ roof: { ...answers.roof, type: item.id } })}
                 >
                   {item.label}
                 </button>
@@ -615,16 +625,12 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">Shading</label>
             <div className="flex flex-wrap gap-2">
-              {[
-                { id: 'none', label: 'No shading' },
-                { id: 'partial', label: 'Partial shading' },
-                { id: 'heavy', label: 'Heavy shading' },
-              ].map((item) => (
+              {SHADING_OPTIONS.map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm transition-colors ${answers.roof.shading === item.id ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'}`}
-                  onClick={() => updateAnswers({ roof: { ...answers.roof, shading: item.id as any } })}
+                  onClick={() => updateAnswers({ roof: { ...answers.roof, shading: item.id } })}
                 >
                   {item.label}
                 </button>

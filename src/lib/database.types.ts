@@ -27,6 +27,7 @@ export type MilestoneType =
 export type AccessLevel = 'view' | 'edit';
 
 export type Currency = 'USD' | 'ZWG';
+export type QuickProjectType = 'septic' | 'solar' | 'water' | 'borehole' | 'fencing' | 'paving';
 
 
 export type StageStatus = 'planning' | 'pending_approval' | 'in_progress' | 'on_hold' | 'completed';
@@ -321,6 +322,59 @@ export interface Database {
                     geotech_report_uploaded_at?: string | null;
                     geotech_report_document_id?: string | null;
                     geotech_analysis_mode?: 'manual' | 'pro_available' | 'pro_applied';
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            quick_boqs: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    project_id: string | null;
+                    project_type: QuickProjectType;
+                    answers: Json;
+                    boq_items: Json;
+                    labor_method: 'daily_rate' | 'percentage' | null;
+                    labor_value: number | null;
+                    labor_days: number | null;
+                    labor_workers: number | null;
+                    labor_enabled: boolean;
+                    markup_pct: number;
+                    currency: Currency;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    project_id?: string | null;
+                    project_type: QuickProjectType;
+                    answers?: Json;
+                    boq_items?: Json;
+                    labor_method?: 'daily_rate' | 'percentage' | null;
+                    labor_value?: number | null;
+                    labor_days?: number | null;
+                    labor_workers?: number | null;
+                    labor_enabled?: boolean;
+                    markup_pct?: number;
+                    currency?: Currency;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    project_id?: string | null;
+                    project_type?: QuickProjectType;
+                    answers?: Json;
+                    boq_items?: Json;
+                    labor_method?: 'daily_rate' | 'percentage' | null;
+                    labor_value?: number | null;
+                    labor_days?: number | null;
+                    labor_workers?: number | null;
+                    labor_enabled?: boolean;
+                    markup_pct?: number;
+                    currency?: Currency;
                     created_at?: string;
                     updated_at?: string;
                 };

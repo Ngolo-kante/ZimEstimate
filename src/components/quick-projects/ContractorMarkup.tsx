@@ -20,7 +20,7 @@ export default function ContractorMarkup({ markupPct, subtotalUsd, currency, zwg
         <span className="markup-section__badge">Contractor only</span>
       </div>
       <p className="markup-section__hint">
-        This markup is only visible to you. Use "Client view" to share the BOQ without markup details.
+        This markup is only visible to you. Use &quot;Client view&quot; to share the BOQ without markup details.
       </p>
       <div className="markup-row">
         <label>Markup percentage</label>

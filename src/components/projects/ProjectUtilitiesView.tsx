@@ -2,7 +2,14 @@
 
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { ProjectUtilityConfig } from '@/lib/database.types';
+import type {
+    GreywaterConfig,
+    ProjectUtilityConfig,
+    RainwaterConfig,
+    SolarConfig,
+    WastewaterConfig,
+    WaterConfig,
+} from '@/lib/database.types';
 import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { upsertProjectUtilityConfig } from '@/lib/services/projects';
@@ -28,6 +35,60 @@ interface ProjectUtilitiesViewProps {
 
 type UtilityTab = 'solar' | 'water' | 'wastewater' | 'rainwater' | 'greywater';
 
+type UtilityConfigByTab = {
+    solar: SolarConfig;
+    water: WaterConfig;
+    wastewater: WastewaterConfig;
+    rainwater: RainwaterConfig;
+    greywater: GreywaterConfig;
+};
+
+const utilityConfigUpdaters: {
+    [K in UtilityTab]: (
+        current: ProjectUtilityConfig,
+        next: UtilityConfigByTab[K]
+    ) => Partial<ProjectUtilityConfig>;
+} = {
+    solar: (_current, next) => ({
+        solar_enabled: next.enabled,
+        solar_system_type: next.systemType,
+        solar_appliances: next.appliances,
+        solar_daily_usage: next.dailyUsage,
+        solar_roof_type: next.roofType,
+    }),
+    water: (_current, next) => ({
+        water_enabled: next.enabled,
+        water_source: next.source,
+        borehole_exists: next.boreholeExists,
+        borehole_depth_m: next.boreholeDepthM,
+        pump_type: next.pumpType,
+        tank_count: next.tankCount,
+        tank_size_litres: next.tankSizeLitres,
+        tank_stand_required: next.tankStandRequired,
+    }),
+    wastewater: (_current, next) => ({
+        wastewater_enabled: next.enabled,
+        sanitation_type: next.sanitationType,
+        bathroom_count: next.bathroomCount,
+        occupant_count: next.occupantCount,
+        septic_tank_type: next.septicTankType,
+        soakaway_type: next.soakawayType,
+    }),
+    rainwater: (_current, next) => ({
+        rainwater_enabled: next.enabled,
+        roof_area_m2: next.roofAreaM2,
+        rainwater_gutter_type: next.gutterType,
+        rainwater_tank_size_litres: next.tankSizeLitres,
+        rainwater_first_flush: next.firstFlush,
+        rainwater_sand_filter: next.sandFilter,
+    }),
+    greywater: (_current, next) => ({
+        greywater_enabled: next.enabled,
+        greywater_sources: next.sources,
+        greywater_use: next.use,
+    }),
+};
+
 export default function ProjectUtilitiesView({ projectId, initialConfig }: ProjectUtilitiesViewProps) {
     const { success, error: showError } = useToast();
     const [config, setConfig] = useState<ProjectUtilityConfig>(initialConfig);
@@ -49,56 +110,9 @@ export default function ProjectUtilitiesView({ projectId, initialConfig }: Proje
         }
     };
 
-    const updateUtilityConfig = (section: UtilityTab, data: any) => {
+    const updateUtilityConfig = <T extends UtilityTab>(section: T, data: UtilityConfigByTab[T]) => {
         setConfig(prev => {
-            const updates: any = {};
-            // Map form data to flat config structure
-            if (section === 'solar') {
-                updates.solar_enabled = prev.solar_enabled; // Keep enabled state or allow toggle inside form?
-                // The forms handle config updates, but enabled state is usually passed in config
-                // Wait, in wizard, enabled state was managed in Selection step mainly.
-                // Here we want to configure details.
-                // The forms render based on 'config' prop.
-
-                updates.solar_system_type = data.systemType ?? prev.solar_system_type;
-                updates.solar_appliances = data.appliances ?? prev.solar_appliances;
-                updates.solar_daily_usage = data.dailyUsage ?? prev.solar_daily_usage;
-                updates.solar_roof_type = data.roofType ?? prev.solar_roof_type;
-                // If the form passes 'enabled', we should update it too.
-                if (data.enabled !== undefined) updates.solar_enabled = data.enabled;
-            }
-            else if (section === 'water') {
-                updates.water_source = data.source ?? prev.water_source;
-                updates.borehole_exists = data.boreholeExists ?? prev.borehole_exists;
-                updates.borehole_depth_m = data.boreholeDepthM ?? prev.borehole_depth_m;
-                updates.pump_type = data.pumpType ?? prev.pump_type;
-                updates.tank_count = data.tankCount ?? prev.tank_count;
-                updates.tank_size_litres = data.tankSizeLitres ?? prev.tank_size_litres;
-                updates.tank_stand_required = data.tankStandRequired ?? prev.tank_stand_required;
-                if (data.enabled !== undefined) updates.water_enabled = data.enabled;
-            }
-            else if (section === 'wastewater') {
-                updates.sanitation_type = data.sanitationType ?? prev.sanitation_type;
-                updates.bathroom_count = data.bathroomCount ?? prev.bathroom_count;
-                updates.occupant_count = data.occupantCount ?? prev.occupant_count;
-                updates.septic_tank_type = data.septicTankType ?? prev.septic_tank_type;
-                updates.soakaway_type = data.soakawayType ?? prev.soakaway_type;
-                if (data.enabled !== undefined) updates.wastewater_enabled = data.enabled;
-            }
-            else if (section === 'rainwater') {
-                updates.roof_area_m2 = data.roofAreaM2 ?? prev.roof_area_m2;
-                updates.rainwater_gutter_type = data.gutterType ?? prev.rainwater_gutter_type;
-                updates.rainwater_tank_size_litres = data.tankSizeLitres ?? prev.rainwater_tank_size_litres;
-                updates.rainwater_first_flush = data.firstFlush ?? prev.rainwater_first_flush;
-                updates.rainwater_sand_filter = data.sandFilter ?? prev.rainwater_sand_filter;
-                if (data.enabled !== undefined) updates.rainwater_enabled = data.enabled;
-            }
-            else if (section === 'greywater') {
-                updates.greywater_sources = data.sources ?? prev.greywater_sources;
-                updates.greywater_use = data.use ?? prev.greywater_use;
-                if (data.enabled !== undefined) updates.greywater_enabled = data.enabled;
-            }
-
+            const updates = utilityConfigUpdaters[section](prev, data);
             return { ...prev, ...updates };
         });
     };

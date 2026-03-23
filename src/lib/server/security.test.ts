@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   enforceRateLimit,
   generateCsrfToken,
@@ -9,6 +9,20 @@ import {
 } from './security';
 
 describe('security helpers', () => {
+  const originalCsrfSecret = process.env.CSRF_SECRET;
+
+  beforeEach(() => {
+    process.env.CSRF_SECRET = 'test-csrf-secret';
+  });
+
+  afterEach(() => {
+    if (originalCsrfSecret) {
+      process.env.CSRF_SECRET = originalCsrfSecret;
+    } else {
+      delete process.env.CSRF_SECRET;
+    }
+  });
+
   it('generates and validates session-bound CSRF tokens', () => {
     const token = generateCsrfToken('session-123');
     expect(validateCsrfToken(token, 'session-123')).toBe(true);

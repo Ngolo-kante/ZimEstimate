@@ -7,6 +7,8 @@ import { CurrencyProvider } from "@/components/ui/CurrencyToggle";
 import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://zimestimate.co.zw";
+
 const geistSans = localFont({
   variable: "--font-geist-sans",
   display: "swap",
@@ -42,6 +44,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "ZimEstimate - Construction Cost Estimation",
   description: "Build smarter estimates for your Zimbabwe construction projects with AI-powered tools, real-time pricing, and professional BOQ generation.",
   keywords: ["construction", "estimation", "BOQ", "Zimbabwe", "building costs", "materials"],
@@ -62,6 +65,20 @@ export const metadata: Metadata = {
     siteName: "ZimEstimate",
     title: "ZimEstimate - Construction Cost Estimation",
     description: "Build smarter estimates for your Zimbabwe construction projects",
+    images: [
+      {
+        url: "/screenshots/home.png",
+        width: 1280,
+        height: 720,
+        alt: "ZimEstimate home dashboard preview",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ZimEstimate - Construction Cost Estimation",
+    description: "Build smarter estimates for your Zimbabwe construction projects with real-time pricing and BOQ tools.",
+    images: ["/screenshots/home.png"],
   },
 };
 

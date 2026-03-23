@@ -2,6 +2,7 @@
 // CRUD for quick_boqs table. Follows the same pattern as projects.ts.
 
 import { supabase } from '@/lib/supabase';
+import type { Database, Json } from '@/lib/database.types';
 import type { BOQItem, LaborConfig, ProjectType, QuickBOQ } from '@/lib/quick-projects/engine/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -18,20 +19,28 @@ export interface QuickBOQInsert {
 
 interface DBQuickBOQ {
   id: string;
-  user_id: string;
+  user_id: string | null;
   project_id: string | null;
-  project_type: string;
-  answers: Record<string, unknown>;
-  boq_items: BOQItem[];
+  project_type: ProjectType;
+  answers: Json;
+  boq_items: Json;
   labor_method: string | null;
   labor_value: number | null;
   labor_days: number | null;
   labor_workers: number | null;
   labor_enabled: boolean;
   markup_pct: number;
-  currency: string;
+  currency: 'USD' | 'ZWG';
   created_at: string;
   updated_at: string;
+}
+
+type QuickBoqRow = Database['public']['Tables']['quick_boqs']['Row'];
+type QuickBoqInsert = Database['public']['Tables']['quick_boqs']['Insert'];
+type QuickBoqUpdate = Database['public']['Tables']['quick_boqs']['Update'];
+
+function toJson(value: Record<string, unknown> | BOQItem[]): Json {
+  return value as Json;
 }
 
 // ─── Mappers ──────────────────────────────────────────────────────────────────
@@ -47,14 +56,14 @@ function toQuickBOQ(row: DBQuickBOQ): QuickBOQ {
   };
   return {
     id: row.id,
-    userId: row.user_id,
+    userId: row.user_id ?? undefined,
     projectId: row.project_id ?? undefined,
-    projectType: row.project_type as ProjectType,
-    answers: row.answers,
-    boqItems: row.boq_items,
+    projectType: row.project_type,
+    answers: row.answers as Record<string, unknown>,
+    boqItems: row.boq_items as unknown as BOQItem[],
     labor,
     markupPct: row.markup_pct,
-    currency: row.currency as 'USD' | 'ZWG',
+    currency: row.currency,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -87,23 +96,25 @@ export async function createQuickBOQ(
     return { boq: null, error: new Error('Not authenticated') };
   }
 
-  const { data: row, error } = await (supabase as any)
+  const payload: QuickBoqInsert = {
+    user_id: user.id,
+    project_id: data.projectId ?? null,
+    project_type: data.projectType,
+    answers: toJson(data.answers),
+    boq_items: toJson(data.boqItems),
+    markup_pct: data.markupPct ?? 0,
+    currency: data.currency ?? 'USD',
+    ...laborToColumns(data.labor),
+  };
+
+  const { data: row, error } = await supabase
     .from('quick_boqs')
-    .insert({
-      user_id: user.id,
-      project_id: data.projectId ?? null,
-      project_type: data.projectType,
-      answers: data.answers,
-      boq_items: data.boqItems,
-      markup_pct: data.markupPct ?? 0,
-      currency: data.currency ?? 'USD',
-      ...laborToColumns(data.labor),
-    })
+    .insert(payload as never)
     .select()
     .single();
 
   if (error) return { boq: null, error: new Error(error.message) };
-  return { boq: toQuickBOQ(row as DBQuickBOQ), error: null };
+  return { boq: toQuickBOQ(row as QuickBoqRow), error: null };
 }
 
 // ─── Read ─────────────────────────────────────────────────────────────────────
@@ -112,24 +123,24 @@ export async function getQuickBOQ(
   id: string
 ): Promise<{ boq: QuickBOQ | null; error: Error | null }> {
   const { data: row, error } = await supabase
-    .from('quick_boqs' as any)
+    .from('quick_boqs')
     .select('*')
     .eq('id', id)
     .single();
 
   if (error) return { boq: null, error: new Error(error.message) };
-  return { boq: toQuickBOQ(row as DBQuickBOQ), error: null };
+  return { boq: toQuickBOQ(row as QuickBoqRow), error: null };
 }
 
 export async function listQuickBOQs(
   projectType?: ProjectType
 ): Promise<{ boqs: QuickBOQ[]; error: Error | null }> {
-  let query = supabase.from('quick_boqs' as any).select('*').order('created_at', { ascending: false });
+  let query = supabase.from('quick_boqs').select('*').order('created_at', { ascending: false });
   if (projectType) query = query.eq('project_type', projectType);
 
   const { data, error } = await query;
   if (error) return { boqs: [], error: new Error(error.message) };
-  return { boqs: (data as DBQuickBOQ[]).map(toQuickBOQ), error: null };
+  return { boqs: (data as QuickBoqRow[]).map(toQuickBOQ), error: null };
 }
 
 // ─── Update ───────────────────────────────────────────────────────────────────
@@ -144,22 +155,22 @@ export async function updateQuickBOQ(
     projectId?: string;
   }
 ): Promise<{ boq: QuickBOQ | null; error: Error | null }> {
-  const update: Record<string, unknown> = {};
-  if (patch.boqItems !== undefined) update.boq_items = patch.boqItems;
+  const update: QuickBoqUpdate = {};
+  if (patch.boqItems !== undefined) update.boq_items = toJson(patch.boqItems);
   if (patch.markupPct !== undefined) update.markup_pct = patch.markupPct;
   if (patch.currency !== undefined) update.currency = patch.currency;
-  if (patch.projectId !== undefined) update.project_id = patch.projectId;
+  if (patch.projectId !== undefined) update.project_id = patch.projectId ?? null;
   if (patch.labor !== undefined) Object.assign(update, laborToColumns(patch.labor));
 
-  const { data: row, error } = await (supabase as any)
+  const { data: row, error } = await supabase
     .from('quick_boqs')
-    .update(update)
+    .update(update as never)
     .eq('id', id)
     .select()
     .single();
 
   if (error) return { boq: null, error: new Error(error.message) };
-  return { boq: toQuickBOQ(row as DBQuickBOQ), error: null };
+  return { boq: toQuickBOQ(row as QuickBoqRow), error: null };
 }
 
 // ─── Delete ───────────────────────────────────────────────────────────────────
@@ -167,7 +178,7 @@ export async function updateQuickBOQ(
 export async function deleteQuickBOQ(
   id: string
 ): Promise<{ error: Error | null }> {
-  const { error } = await supabase.from('quick_boqs' as any).delete().eq('id', id);
+  const { error } = await supabase.from('quick_boqs').delete().eq('id', id);
   return { error: error ? new Error(error.message) : null };
 }
 

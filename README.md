@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ZimEstimate
 
-## Getting Started
+ZimEstimate is a Next.js + Supabase application for Zimbabwe construction estimating, procurement, supplier discovery, AI-assisted takeoff, and project tracking.
 
-First, run the development server:
+## Core Commands
+
+Use Node 20 for local development and CI. The repo includes `.nvmrc` and CI is pinned to Node 20.
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npm run typecheck
+npm run build
+npm run test:unit
+npm run test:e2e
+npm run test:e2e:smoke
+npm run check:env
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Release Gate
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Every release candidate must pass:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run check:env
+npm run lint
+npm run typecheck
+npm run build
+npm run test:unit
+```
 
-## Learn More
+For release branches or `main`, also run:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run test:e2e:smoke
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Launch Docs
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `docs/launch/README.md`
+- `docs/launch/ENV_CONTRACT.md`
+- `docs/launch/ROUTE_MATRIX.md`
+- `docs/launch/RELEASE_CHECKLIST.md`
+- `docs/launch/SECURITY_RUNBOOK.md`
+- `docs/launch/OPERATOR_RUNBOOK.md`
 
-## Deploy on Vercel
+## Deployment Notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Stack: Next.js App Router + Supabase
+- Hosting assumption: Vercel + Supabase
+- Public site URL should be set via `NEXT_PUBLIC_SITE_URL`
+- Run `npm run check:env` before any preview or production deployment
+- Liveness endpoint: `/api/health`
+- Readiness endpoint: `/api/ready`
