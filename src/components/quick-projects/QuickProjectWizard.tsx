@@ -6,6 +6,7 @@ import {
   ArrowRight,
   CheckCircle,
   Info,
+  WarningCircle,
 } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
@@ -13,6 +14,7 @@ import Button from '@/components/ui/Button';
 import { getActiveSteps, getVisibleQuestions, isStepComplete, updateAnswer } from '@/lib/quick-projects/engine/boqEngine';
 import type { Answers, BOQItem, LaborConfig, QuestionFlow, QuestionOption, WizardStep } from '@/lib/quick-projects/engine/types';
 import QuickBOQTable from './QuickBOQTable';
+import BoreholeBudgetExplorer from './BoreholeBudgetExplorer';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -29,11 +31,13 @@ function OptionGrid({
   value,
   multi,
   onChange,
+  hasError,
 }: {
   options: QuestionOption[];
   value: string | string[];
   multi: boolean;
   onChange: (v: string | string[]) => void;
+  hasError?: boolean;
 }) {
   const selected = Array.isArray(value) ? value : value ? [value] : [];
 
@@ -47,7 +51,7 @@ function OptionGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+    <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 ${hasError ? 'rounded-xl ring-2 ring-red-300 ring-offset-2' : ''}`}>
       {options.map((opt) => {
         const active = selected.includes(opt.value);
         return (
@@ -84,20 +88,27 @@ function QuestionField({
   notSureIds,
   onChange,
   onNotSure,
+  showValidation,
 }: {
   question: ReturnType<typeof getVisibleQuestions>[number];
   answers: Answers;
   notSureIds: Set<string>;
   onChange: (id: string, value: unknown) => void;
   onNotSure: (id: string, on: boolean) => void;
+  showValidation: boolean;
 }) {
   const val = answers[question.id];
   const isNS = notSureIds.has(question.id);
-
   const tip = question.recommendation?.(answers);
 
+  // Determine if this field has a validation error
+  const isEmpty =
+    val === undefined || val === null || val === '' ||
+    (Array.isArray(val) && val.length === 0);
+  const hasError = showValidation && question.required !== false && isEmpty;
+
   return (
-    <div className="mb-8 p-6 rounded-2xl bg-white border border-slate-200/60 shadow-sm">
+    <div className={`mb-8 p-6 rounded-2xl bg-white border shadow-sm transition-colors ${hasError ? 'border-red-300 bg-red-50/30' : 'border-slate-200/60'}`}>
       <label className="block text-base font-bold text-slate-900 mb-1">{question.title}</label>
       {question.description && <p className="text-sm text-slate-500 mb-4">{question.description}</p>}
 
@@ -117,13 +128,28 @@ function QuestionField({
         </label>
       )}
 
-      {/* Select */}
-      {question.type === 'select' && !isNS && (
+      {/* Select — Dropdown layout */}
+      {question.type === 'select' && question.layout === 'dropdown' && !isNS && (
+        <select
+          value={(val as string) ?? ''}
+          onChange={(e) => onChange(question.id, e.target.value)}
+          className={`w-full mt-4 rounded-xl border px-4 py-3 text-base outline-none transition bg-white appearance-none cursor-pointer focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${hasError ? 'border-red-400' : 'border-slate-300'}`}
+        >
+          <option value="" disabled>Select an option...</option>
+          {(question.options ?? []).map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      )}
+
+      {/* Select — Card layout (default) */}
+      {question.type === 'select' && question.layout !== 'dropdown' && !isNS && (
         <OptionGrid
           options={question.options ?? []}
           value={(val as string) ?? ''}
           multi={false}
           onChange={(v) => onChange(question.id, v)}
+          hasError={hasError}
         />
       )}
 
@@ -134,15 +160,42 @@ function QuestionField({
           value={(val as string[]) ?? []}
           multi={true}
           onChange={(v) => onChange(question.id, v)}
+          hasError={hasError}
         />
       )}
 
-      {/* Number */}
-      {question.type === 'number' && !isNS && (
+      {/* Number — Slider layout */}
+      {question.type === 'number' && question.layout === 'slider' && !isNS && (() => {
+        const sliderVal = (val as number) ?? (question.defaultValue as number) ?? question.min ?? 0;
+        return (
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-3xl font-bold text-slate-900">{sliderVal}</span>
+              <span className="text-sm font-medium text-slate-500">{question.unit}</span>
+            </div>
+            <input
+              type="range"
+              min={question.min ?? 0}
+              max={question.max ?? 100}
+              step={question.step ?? 1}
+              value={sliderVal}
+              onChange={(e) => onChange(question.id, parseFloat(e.target.value))}
+              className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:shadow-md"
+            />
+            <div className="flex justify-between text-xs text-slate-400">
+              <span>{question.min ?? 0} {question.unit}</span>
+              <span>{question.max ?? 100} {question.unit}</span>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Number — Standard input */}
+      {question.type === 'number' && question.layout !== 'slider' && !isNS && (
         <div className="flex items-center gap-3 mt-4">
           <input
             type="number"
-            className="w-full max-w-[200px] rounded-xl border border-slate-300 px-4 py-3 text-base outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            className={`w-full max-w-[200px] rounded-xl border px-4 py-3 text-base outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${hasError ? 'border-red-400' : 'border-slate-300'}`}
             value={(val as number) ?? (question.defaultValue as number) ?? ''}
             min={question.min}
             max={question.max}
@@ -157,7 +210,7 @@ function QuestionField({
       {question.type === 'text' && (
         <input
           type="text"
-          className="w-full mt-4 rounded-xl border border-slate-300 px-4 py-3 text-base outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          className={`w-full mt-4 rounded-xl border px-4 py-3 text-base outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${hasError ? 'border-red-400' : 'border-slate-300'}`}
           placeholder={question.placeholder ?? ''}
           value={(val as string) ?? ''}
           onChange={(e) => onChange(question.id, e.target.value)}
@@ -173,6 +226,14 @@ function QuestionField({
         >
           {isNS ? '← I know the specifics now, go back to options' : "I'm not sure, use safe estimates"}
         </button>
+      )}
+
+      {/* Validation error */}
+      {hasError && (
+        <div className="mt-3 flex items-center gap-2 text-sm text-red-600">
+          <WarningCircle size={16} weight="fill" />
+          <span>Please select an option to continue.</span>
+        </div>
       )}
 
       {/* Recommendation tip */}
@@ -194,12 +255,14 @@ function StepView({
   notSureIds,
   onChange,
   onNotSure,
+  showValidation,
 }: {
   step: WizardStep;
   answers: Answers;
   notSureIds: Set<string>;
   onChange: (id: string, value: unknown) => void;
   onNotSure: (id: string, on: boolean) => void;
+  showValidation: boolean;
 }) {
   const questions = getVisibleQuestions(step, answers, notSureIds);
   return (
@@ -224,6 +287,7 @@ function StepView({
             notSureIds={notSureIds}
             onChange={onChange}
             onNotSure={onNotSure}
+            showValidation={showValidation}
           />
         ))}
       </div>
@@ -238,6 +302,7 @@ export default function QuickProjectWizard({ flow, onSave, isContractor = false 
   const [notSureIds, setNotSureIds] = useState<Set<string>>(new Set());
   const [stepIndex, setStepIndex] = useState(0);
   const [boqItems, setBoqItems] = useState<BOQItem[] | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
   const [labor, setLabor] = useState<LaborConfig>({
     enabled: false,
     method: 'percentage',
@@ -255,6 +320,8 @@ export default function QuickProjectWizard({ flow, onSave, isContractor = false 
 
   const handleChange = useCallback((id: string, value: unknown) => {
     setAnswers((prev) => updateAnswer(prev, id, value));
+    // Clear validation errors as user interacts
+    setShowValidation(false);
   }, []);
 
   const handleNotSure = useCallback((id: string, on: boolean) => {
@@ -262,7 +329,6 @@ export default function QuickProjectWizard({ flow, onSave, isContractor = false 
       const next = new Set(prev);
       if (on) {
         next.add(id);
-        // Set the question value to 'not_sure' sentinel
         setAnswers((a) => updateAnswer(a, id, 'not_sure'));
       } else {
         next.delete(id);
@@ -270,9 +336,16 @@ export default function QuickProjectWizard({ flow, onSave, isContractor = false 
       }
       return next;
     });
+    setShowValidation(false);
   }, []);
 
   function handleNext() {
+    if (!canProceed) {
+      // Show validation errors instead of blocking the button
+      setShowValidation(true);
+      return;
+    }
+    setShowValidation(false);
     if (isLastStep) {
       const items = flow.calculateBOQ(answers);
       setBoqItems(items);
@@ -282,6 +355,7 @@ export default function QuickProjectWizard({ flow, onSave, isContractor = false 
   }
 
   function handleBack() {
+    setShowValidation(false);
     if (boqItems) {
       setBoqItems(null);
     } else {
@@ -290,6 +364,17 @@ export default function QuickProjectWizard({ flow, onSave, isContractor = false 
   }
 
   const progressPct = boqItems ? 100 : Math.round((stepIndex / totalSteps) * 100);
+
+  // ── Borehole Budget Explorer ────────────────────────────────────────────────
+  if (flow.projectType === 'borehole' && answers.estimate_mode === 'budget' && stepIndex > 0) {
+    return (
+      <BoreholeBudgetExplorer
+        onBack={() => { setStepIndex(0); setAnswers({}); }}
+        isContractor={isContractor}
+        onSave={onSave ? (items, ans, lab) => onSave(items, ans, lab) : undefined}
+      />
+    );
+  }
 
   // ── BOQ Results View ───────────────────────────────────────────────────────
   if (boqItems) {
@@ -333,6 +418,7 @@ export default function QuickProjectWizard({ flow, onSave, isContractor = false 
             notSureIds={notSureIds}
             onChange={handleChange}
             onNotSure={handleNotSure}
+            showValidation={showValidation}
           />
         )}
       </AnimatePresence>
@@ -356,7 +442,6 @@ export default function QuickProjectWizard({ flow, onSave, isContractor = false 
           variant="primary"
           icon={isLastStep ? <CheckCircle size={18} weight="bold" /> : <ArrowRight size={16} />}
           iconPosition="right"
-          disabled={!canProceed}
           onClick={handleNext}
           className={isLastStep ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "shadow-blue-500/25 shadow-lg"}
         >
