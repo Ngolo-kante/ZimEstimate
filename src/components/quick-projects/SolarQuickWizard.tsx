@@ -31,6 +31,7 @@ import { solarSizingToBOQ } from '@/lib/quick-projects/solar/boq';
 import type { BOQItem, LaborConfig } from '@/lib/quick-projects/engine/types';
 import QuickBOQTable from './QuickBOQTable';
 import LaborSection from './LaborSection';
+import SolarBudgetExplorer from './SolarBudgetExplorer';
 
 const INTENTS: SolarIntent[] = ['backup', 'heavy_backup', 'off_grid', 'replace', 'budget', 'quote_check'];
 
@@ -243,6 +244,17 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
     const prevStep = activeSteps[stepIndex - 1];
     if (prevStep) setCurrentStep(prevStep);
   };
+
+  // ── Budget Explorer view ─────────────────────────────────────────────────
+  if (answers.intent === 'budget' && currentStep !== 'intent') {
+    return (
+      <SolarBudgetExplorer
+        onBack={() => setCurrentStep('intent')}
+        isContractor={isContractor}
+        onSave={onSave ? (output) => onSave(output) : undefined}
+      />
+    );
+  }
 
   // ── BOQ results view ──────────────────────────────────────────────────────
   if (boqItems) {
