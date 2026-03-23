@@ -4,7 +4,8 @@ export type SolarIntent =
   | 'off_grid'
   | 'replace'
   | 'budget'
-  | 'quote_check';
+  | 'quote_check'
+  | 'maintenance';
 
 export type PropertyType = 'apartment' | 'house' | 'farm' | 'business';
 

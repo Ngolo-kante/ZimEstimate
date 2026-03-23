@@ -46,13 +46,16 @@ export const computeSolarSizing = (answers: SolarWizardAnswers): SolarSizingResu
     return sum + (watts * clampNumber(sel.qty, 0) * hours) / 1000;
   }, 0);
 
+  // Inverter: 1.25-1.3x safety margin on peak load (accounts for surge)
   const adjustedPeak = peakLoadWatts * 1.3;
   const inverterKva = roundToTier(adjustedPeak / 0.8 / 1000, INVERTER_TIERS);
 
+  // Battery: daily energy × 1.2 (for DoD headroom)
   const baseBattery = dailyEnergyKwh * 1.2;
   const batteryKwh = roundToTier(baseBattery, BATTERY_TIERS);
 
-  const solarArrayKw = Math.max(0.5, (dailyEnergyKwh / ZW_SUN_HOURS) * 1.2);
+  // Solar array: daily energy ÷ sun hours × 1.3 (system losses)
+  const solarArrayKw = Math.max(0.5, (dailyEnergyKwh / ZW_SUN_HOURS) * 1.3);
   const panelCount = Math.max(1, Math.ceil((solarArrayKw * 1000) / SOLAR_PANEL_WATT));
 
   const tier: SolarSizingResult['tier'] = inverterKva <= 3 ? 'small' : inverterKva <= 5 ? 'standard' : 'large';
@@ -69,6 +72,7 @@ export const computeSolarSizing = (answers: SolarWizardAnswers): SolarSizingResu
     high: benchmarkRange[1],
   };
 
+  // Warnings
   if (answers.simultaneousLoads.kettleMicrowave && inverterKva <= 3) {
     warnings.push('Kettle and microwave together may overload a 3kVA inverter.');
   }
@@ -78,7 +82,7 @@ export const computeSolarSizing = (answers: SolarWizardAnswers): SolarSizingResu
   }
 
   if (answers.simultaneousLoads.pumpWithHouse && inverterKva <= 5) {
-    warnings.push('Pumps have surge power; consider 8kVA if pumps run with household loads.');
+    warnings.push('Pumps have surge power (up to 3× running watts); consider 8kVA if pumps run with household loads.');
   }
 
   if (answers.roof.spaceM2 && panelCount * 2 > answers.roof.spaceM2) {
@@ -86,7 +90,16 @@ export const computeSolarSizing = (answers: SolarWizardAnswers): SolarSizingResu
   }
 
   if (answers.roof.shading === 'heavy') {
-    warnings.push('Heavy shading will reduce output; consider additional panels or trimming.');
+    warnings.push('Heavy shading will reduce output by up to 30%; consider additional panels or trimming trees.');
+  }
+
+  if (answers.roof.shading === 'partial') {
+    warnings.push('Partial shading can reduce output by 5-15%. Consider panel placement to minimize shadow impact.');
+  }
+
+  // ZESA integration warning
+  if (inverterKva >= 5) {
+    warnings.push('Important: Ensure your installer properly separates the solar neutral from the ZESA neutral to avoid prepaid meter "temper mode".');
   }
 
   return {
