@@ -5,7 +5,6 @@ import {
   Download,
   FloppyDisk,
   Lock,
-  Minus,
   Plus,
   ToggleLeft,
   ToggleRight,
@@ -29,87 +28,15 @@ interface QuickBOQTableProps {
   onSave?: (items: BOQItem[]) => void;
 }
 
-// ─── Row ──────────────────────────────────────────────────────────────────────
+// ─── Currency formatter ───────────────────────────────────────────────────────
 
-function BOQRow({
-  item,
-  currency,
-  zwgRate,
-  onToggle,
-  onQtyChange,
-  onPriceChange,
-}: {
-  item: BOQItem;
-  currency: 'USD' | 'ZWG';
-  zwgRate: number;
-  onToggle: (id: string) => void;
-  onQtyChange: (id: string, qty: number) => void;
-  onPriceChange: (id: string, price: number) => void;
-}) {
-  const displayQty = item.quantity;
-  const displayUnit = currency === 'ZWG' ? item.unitCostUsd * zwgRate : item.unitCostUsd;
-  const displayTotal = currency === 'ZWG' ? item.totalCostUsd * zwgRate : item.totalCostUsd;
-  const sym = currency === 'ZWG' ? 'ZWG' : '$';
-  const dimmed = item.owned || !item.included;
-
-  return (
-    <tr className={`boq-row ${dimmed ? 'boq-row--dimmed' : ''} ${item.owned ? 'boq-row--owned' : ''}`}>
-      <td className="boq-cell boq-cell--desc">
-        <div className="boq-desc">
-          {item.description}
-          {item.brand && <span className="boq-brand-tag">{item.brand}</span>}
-          {item.owned && <span className="boq-owned-tag">Owned</span>}
-          {item.optional && <span className="boq-optional-tag">Optional</span>}
-          {item.notes && <span className="boq-notes">{item.notes}</span>}
-        </div>
-      </td>
-      <td className="boq-cell boq-cell--qty">
-        <input
-          type="number"
-          className="boq-qty-input"
-          value={displayQty}
-          min={0}
-          step={0.01}
-          disabled={dimmed}
-          onChange={(e) => onQtyChange(item.id, parseFloat(e.target.value) || 0)}
-        />
-        <span className="boq-unit">{item.unit}</span>
-      </td>
-      <td className="boq-cell boq-cell--price">
-        <input
-          type="number"
-          className="boq-price-input"
-          value={parseFloat(displayUnit.toFixed(2))}
-          min={0}
-          step={0.01}
-          disabled={dimmed}
-          onChange={(e) => onPriceChange(item.id, parseFloat(e.target.value) || 0)}
-        />
-        <span className="boq-sym">{sym}</span>
-      </td>
-      <td className="boq-cell boq-cell--total">
-        {dimmed ? '—' : `${sym} ${displayTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-      </td>
-      <td className="boq-cell boq-cell--toggle">
-        {!item.owned && (
-          <button
-            type="button"
-            className="boq-toggle-btn"
-            title={item.included ? 'Remove from BOQ' : 'Add to BOQ'}
-            onClick={() => onToggle(item.id)}
-          >
-            {item.included
-              ? <ToggleRight size={22} weight="fill" className="text-green-500" />
-              : <ToggleLeft size={22} className="text-gray-400" />
-            }
-          </button>
-        )}
-      </td>
-    </tr>
-  );
+function fmt(amount: number, currency: 'USD' | 'ZWG', zwgRate: number): string {
+  const val = currency === 'ZWG' ? amount * zwgRate : amount;
+  const sym = currency === 'ZWG' ? 'ZiG' : '$';
+  return `${sym} ${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-// ─── Main Table ───────────────────────────────────────────────────────────────
+// ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function QuickBOQTable({
   projectType,
@@ -124,41 +51,67 @@ export default function QuickBOQTable({
   const [markupPct, setMarkupPct] = useState(0);
   const [currency, setCurrency] = useState<'USD' | 'ZWG'>('USD');
   const [clientView, setClientView] = useState(false);
-  const zwgRate = 27; // TODO: pull from Supabase settings
+  const zwgRate = 27;
 
   // ── Mutations ────────────────────────────────────────────────────────────
   const toggleItem = useCallback((id: string) => {
-    setItems((prev) => prev.map((i) => i.id === id ? { ...i, included: !i.included } : i));
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, included: !i.included } : i)));
   }, []);
 
   const updateQty = useCallback((id: string, qty: number) => {
-    setItems((prev) => prev.map((i) => i.id === id ? { ...i, quantity: qty, totalCostUsd: qty * i.unitCostUsd } : i));
+    setItems((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, quantity: qty, totalCostUsd: qty * i.unitCostUsd } : i)),
+    );
   }, []);
 
-  const updatePrice = useCallback((id: string, priceDisplay: number) => {
-    const priceUsd = currency === 'ZWG' ? priceDisplay / zwgRate : priceDisplay;
-    setItems((prev) => prev.map((i) => i.id === id ? { ...i, unitCostUsd: priceUsd, totalCostUsd: i.quantity * priceUsd } : i));
-  }, [currency, zwgRate]);
+  const updatePrice = useCallback(
+    (id: string, priceDisplay: number) => {
+      const priceUsd = currency === 'ZWG' ? priceDisplay / zwgRate : priceDisplay;
+      setItems((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, unitCostUsd: priceUsd, totalCostUsd: i.quantity * priceUsd } : i)),
+      );
+    },
+    [currency, zwgRate],
+  );
 
-  // ── Labor items ──────────────────────────────────────────────────────────
-  const materialsTotal = useMemo(() =>
-    items.filter((i) => i.included && !i.owned && !i.optional).reduce((s, i) => s + i.totalCostUsd, 0),
-    [items]
+  const addCustomItem = useCallback((category: string) => {
+    const id = `custom-${category}-${Date.now()}`;
+    setItems((prev) => [
+      ...prev,
+      {
+        id,
+        category,
+        description: 'Custom item',
+        quantity: 1,
+        unit: 'each',
+        unitCostUsd: 0,
+        totalCostUsd: 0,
+        included: true,
+        owned: false,
+        optional: true,
+      },
+    ]);
+  }, []);
+
+  // ── Labor items ────────────────────────────────────────────────────────
+  const materialsTotal = useMemo(
+    () =>
+      items
+        .filter((i) => i.included && !i.owned && !i.optional)
+        .reduce((s, i) => s + i.totalCostUsd, 0),
+    [items],
   );
   const laborItems = useMemo(() => calculateLaborItems(labor, materialsTotal), [labor, materialsTotal]);
-
   const allItems = useMemo(() => [...items, ...laborItems], [items, laborItems]);
 
-  // ── Totals ───────────────────────────────────────────────────────────────
+  // ── Totals ─────────────────────────────────────────────────────────────
   const totals = useMemo(
     () => calculateGrandTotal(allItems, markupPct, currency, zwgRate),
-    [allItems, markupPct, currency, zwgRate]
+    [allItems, markupPct, currency, zwgRate],
   );
-
   const grouped = useMemo(() => groupByCategory(allItems), [allItems]);
-  const sym = currency === 'ZWG' ? 'ZWG' : '$';
 
-  // ── Auth gate ────────────────────────────────────────────────────────────
+  // ── Auth gate ──────────────────────────────────────────────────────────
   function handleAuthGatedAction(action: 'save' | 'pdf') {
     if (!isAuthenticated) {
       persistQuickBOQSession({
@@ -173,152 +126,296 @@ export default function QuickBOQTable({
       return;
     }
     if (action === 'save' && onSave) onSave(items);
-    if (action === 'pdf') window.print(); // basic fallback
+    if (action === 'pdf') window.print();
   }
 
-  // ── Client view (contractor feature) ────────────────────────────────────
+  // ── Client view (contractor feature) ───────────────────────────────────
   if (isContractor && clientView) {
     return (
-      <div className="boq-client-view">
-        <div className="boq-client-view__header">
-          <h2>Project Cost Summary</h2>
-          <button className="boq-back-btn" onClick={() => setClientView(false)}>Back to full BOQ</button>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-slate-900">Project Cost Summary</h2>
+          <button
+            onClick={() => setClientView(false)}
+            className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            Back to full BOQ
+          </button>
         </div>
-        <table className="boq-client-table">
-          <tbody>
-            {Object.entries(grouped).map(([cat, catItems]) => {
-              const catTotal = catItems.filter((i) => i.included && !i.owned).reduce((s, i) => s + i.totalCostUsd, 0);
-              if (!catTotal) return null;
-              return (
-                <tr key={cat}>
-                  <td>{cat}</td>
-                  <td className="boq-cell--total">{sym} {(currency === 'ZWG' ? catTotal * zwgRate : catTotal).toLocaleString()}</td>
+        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+          <table className="min-w-full text-sm">
+            <tbody>
+              {Object.entries(grouped).map(([cat, catItems]) => {
+                const catTotal = catItems
+                  .filter((i) => i.included && !i.owned)
+                  .reduce((s, i) => s + i.totalCostUsd, 0);
+                if (!catTotal) return null;
+                return (
+                  <tr key={cat} className="border-t border-slate-100 first:border-t-0">
+                    <td className="px-4 py-3 font-medium text-slate-700">{cat}</td>
+                    <td className="px-4 py-3 text-right font-medium text-slate-900">
+                      {fmt(catTotal, currency, zwgRate)}
+                    </td>
+                  </tr>
+                );
+              })}
+              {markupPct > 0 && (
+                <tr className="border-t border-slate-200 bg-slate-50">
+                  <td className="px-4 py-3 text-slate-600">Contractor markup ({markupPct}%)</td>
+                  <td className="px-4 py-3 text-right font-medium text-slate-900">
+                    {fmt(totals.markupUsd, currency, zwgRate)}
+                  </td>
                 </tr>
-              );
-            })}
-            {markupPct > 0 && (
-              <tr className="boq-markup-row">
-                <td>Contractor markup ({markupPct}%)</td>
-                <td>{sym} {(currency === 'ZWG' ? totals.markupUsd * zwgRate : totals.markupUsd).toLocaleString()}</td>
-              </tr>
-            )}
-            <tr className="boq-grand-total-row">
-              <td><strong>Total</strong></td>
-              <td><strong>{sym} {totals.grandTotalDisplay.toLocaleString()}</strong></td>
-            </tr>
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-slate-900 px-5 py-4 text-white">
+          <p className="text-xs uppercase tracking-wider text-slate-400">Grand Total</p>
+          <p className="text-2xl font-bold">
+            {fmt(totals.grandTotalUsd, currency, zwgRate)}
+          </p>
+        </div>
       </div>
     );
   }
 
+  // ── Full BOQ view ──────────────────────────────────────────────────────
   return (
-    <div className="boq-table-wrapper">
-      {/* Header actions */}
-      <div className="boq-header">
-        <h2 className="boq-title">Bill of Quantities</h2>
-        <div className="boq-header__actions">
+    <div className="space-y-4">
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <h2 className="text-xl font-bold text-slate-900">Bill of Quantities</h2>
+        <div className="flex items-center gap-2">
           {/* Currency toggle */}
           <button
-            className={`currency-toggle-btn ${currency === 'ZWG' ? 'currency-toggle-btn--zwg' : ''}`}
-            onClick={() => setCurrency((c) => c === 'USD' ? 'ZWG' : 'USD')}
+            onClick={() => setCurrency((c) => (c === 'USD' ? 'ZWG' : 'USD'))}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors ${
+              currency === 'ZWG'
+                ? 'border-amber-300 bg-amber-50 text-amber-700'
+                : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+            }`}
           >
             {currency}
           </button>
 
           {isContractor && (
-            <button className="boq-action-btn" onClick={() => setClientView(true)}>
+            <button
+              onClick={() => setClientView(true)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            >
               Client view
             </button>
           )}
 
           <button
-            className="boq-action-btn boq-action-btn--secondary"
             onClick={() => handleAuthGatedAction('pdf')}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
           >
-            {!isAuthenticated && <Lock size={14} />}
+            {!isAuthenticated && <Lock size={12} />}
             <Download size={14} />
             PDF
           </button>
 
           <button
-            className="boq-action-btn boq-action-btn--primary"
             onClick={() => handleAuthGatedAction('save')}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-blue-600 bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors shadow-sm"
           >
-            {!isAuthenticated && <Lock size={14} />}
+            {!isAuthenticated && <Lock size={12} />}
             <FloppyDisk size={14} />
             Save BOQ
           </button>
         </div>
       </div>
 
-      {/* Warning: owned items excluded */}
+      {/* ── Owned items notice ──────────────────────────────────────────── */}
       {items.some((i) => i.owned) && (
-        <div className="boq-notice">
-          <Warning size={14} />
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+          <Warning size={16} className="flex-shrink-0" />
           Items you already own are shown but excluded from the total cost.
         </div>
       )}
 
-      {/* Table */}
-      <div className="boq-table-scroll">
-        <table className="boq-table">
-          <thead>
-            <tr>
-              <th className="boq-th boq-th--desc">Description</th>
-              <th className="boq-th boq-th--qty">Qty</th>
-              <th className="boq-th boq-th--price">Unit Cost ({sym})</th>
-              <th className="boq-th boq-th--total">Total ({sym})</th>
-              <th className="boq-th boq-th--toggle" />
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(grouped).map(([category, catItems]) => (
-              <>
-                <tr key={`cat-${category}`} className="boq-category-row">
-                  <td colSpan={5}>{category}</td>
-                </tr>
-                {catItems.map((item) => (
-                  <BOQRow
+      {/* ── Flat item list ──────────────────────────────────────────── */}
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-2.5 text-left">Description</th>
+                <th className="px-4 py-2.5 text-left w-24">Qty</th>
+                <th className="px-4 py-2.5 text-left">Unit</th>
+                <th className="px-4 py-2.5 text-left w-28">Unit Price</th>
+                <th className="px-4 py-2.5 text-left">Line Total</th>
+                <th className="px-4 py-2.5 text-center w-12" />
+              </tr>
+            </thead>
+            <tbody>
+              {allItems.map((item) => {
+                const dimmed = item.owned || !item.included;
+                const displayUnit =
+                  currency === 'ZWG' ? item.unitCostUsd * zwgRate : item.unitCostUsd;
+                const lineTotal = item.totalCostUsd;
+
+                return (
+                  <tr
                     key={item.id}
-                    item={item}
-                    currency={currency}
-                    zwgRate={zwgRate}
-                    onToggle={toggleItem}
-                    onQtyChange={updateQty}
-                    onPriceChange={updatePrice}
-                  />
-                ))}
-              </>
-            ))}
-          </tbody>
-        </table>
+                    className={`border-t border-slate-100 ${dimmed ? 'opacity-40' : ''}`}
+                  >
+                    {/* Description */}
+                    <td className="px-4 py-2.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-slate-800">{item.description}</span>
+                        {item.brand && (
+                          <span className="inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                            {item.brand}
+                          </span>
+                        )}
+                        {item.owned && (
+                          <span className="inline-block rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                            Owned
+                          </span>
+                        )}
+                        {item.optional && (
+                          <span className="inline-block rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-600">
+                            Optional
+                          </span>
+                        )}
+                      </div>
+                      {item.notes && (
+                        <p className="mt-0.5 text-[11px] text-slate-400">{item.notes}</p>
+                      )}
+                    </td>
+
+                    {/* Qty */}
+                    <td className="px-4 py-2.5">
+                      <input
+                        type="number"
+                        value={item.quantity}
+                        min={0}
+                        step={0.01}
+                        disabled={dimmed}
+                        onChange={(e) =>
+                          updateQty(item.id, parseFloat(e.target.value) || 0)
+                        }
+                        className="w-20 rounded border border-slate-300 px-2 py-1 text-sm disabled:opacity-50"
+                      />
+                    </td>
+
+                    {/* Unit */}
+                    <td className="px-4 py-2.5 text-slate-600">{item.unit}</td>
+
+                    {/* Unit price */}
+                    <td className="px-4 py-2.5">
+                      <input
+                        type="number"
+                        value={parseFloat(displayUnit.toFixed(2))}
+                        min={0}
+                        step={0.01}
+                        disabled={dimmed}
+                        onChange={(e) =>
+                          updatePrice(item.id, parseFloat(e.target.value) || 0)
+                        }
+                        className="w-24 rounded border border-slate-300 px-2 py-1 text-sm disabled:opacity-50"
+                      />
+                    </td>
+
+                    {/* Line total */}
+                    <td className="px-4 py-2.5 font-medium text-slate-800">
+                      {dimmed ? '\u2014' : fmt(lineTotal, currency, zwgRate)}
+                    </td>
+
+                    {/* Toggle */}
+                    <td className="px-4 py-2.5 text-center">
+                      {!item.owned && (
+                        <button
+                          type="button"
+                          title={item.included ? 'Remove from BOQ' : 'Add to BOQ'}
+                          onClick={() => toggleItem(item.id)}
+                          className="p-1 rounded hover:bg-slate-100 transition-colors"
+                        >
+                          {item.included ? (
+                            <ToggleRight
+                              size={22}
+                              weight="fill"
+                              className="text-green-500"
+                            />
+                          ) : (
+                            <ToggleLeft size={22} className="text-slate-400" />
+                          )}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {/* Add custom item */}
+          <div className="flex flex-wrap gap-2 border-t border-slate-100 p-3">
+            <button
+              type="button"
+              onClick={() => addCustomItem('Custom')}
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              <Plus size={12} /> Add Item
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Labor section */}
-      <LaborSection labor={labor} materialsTotal={materialsTotal} onChange={onLaborChange} currency={currency} zwgRate={zwgRate} />
+      {/* ── Labor section ──────────────────────────────────────────────── */}
+      <LaborSection
+        labor={labor}
+        materialsTotal={materialsTotal}
+        onChange={onLaborChange}
+        currency={currency}
+        zwgRate={zwgRate}
+      />
 
-      {/* Contractor markup */}
+      {/* ── Contractor markup ──────────────────────────────────────────── */}
       {isContractor && (
-        <ContractorMarkup markupPct={markupPct} subtotalUsd={totals.subtotalUsd} currency={currency} zwgRate={zwgRate} onChange={setMarkupPct} />
+        <ContractorMarkup
+          markupPct={markupPct}
+          subtotalUsd={totals.subtotalUsd}
+          currency={currency}
+          zwgRate={zwgRate}
+          onChange={setMarkupPct}
+        />
       )}
 
-      {/* Grand total */}
-      <div className="boq-totals">
-        <div className="boq-totals__row">
-          <span>Materials subtotal</span>
-          <span>{sym} {(currency === 'ZWG' ? totals.subtotalUsd * zwgRate : totals.subtotalUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-        </div>
-        {markupPct > 0 && (
-          <div className="boq-totals__row">
-            <span>Markup ({markupPct}%)</span>
-            <span>{sym} {(currency === 'ZWG' ? totals.markupUsd * zwgRate : totals.markupUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+      {/* ── Grand Total (dark box — matching manual builder) ──────────── */}
+      <div className="rounded-xl border border-slate-200 bg-slate-900 px-5 py-4 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-wider text-slate-400">Grand Total</p>
+            <p className="text-2xl font-bold mt-0.5">
+              {fmt(totals.grandTotalUsd, currency, zwgRate)}
+            </p>
           </div>
-        )}
-        <div className="boq-totals__row boq-totals__row--grand">
-          <span>Grand Total</span>
-          <strong>{sym} {totals.grandTotalDisplay.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>
+          {markupPct > 0 && (
+            <div className="text-right text-sm">
+              <p className="text-slate-400">
+                Materials: {fmt(totals.subtotalUsd - totals.markupUsd, currency, zwgRate)}
+              </p>
+              <p className="text-slate-400">
+                Markup ({markupPct}%): {fmt(totals.markupUsd, currency, zwgRate)}
+              </p>
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* ── Disclaimer ─────────────────────────────────────────────────── */}
+      <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500 leading-relaxed">
+        <p className="font-medium text-slate-600 mb-1">Disclaimer</p>
+        <p>
+          This estimate is based on typical Zimbabwe market rates and may vary based on
+          site-specific conditions, ground composition, and material availability. Final
+          costs are subject to a professional site assessment and hydrogeologist&apos;s
+          report. Prices are indicative as of Q1 2026 and subject to change.
+        </p>
       </div>
     </div>
   );

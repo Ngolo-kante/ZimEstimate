@@ -50,6 +50,7 @@ export interface Question {
   recommendation?: (answers: Answers) => string | null; // contextual tip
   defaultValue?: unknown;
   required?: boolean;
+  layout?: 'cards' | 'dropdown' | 'slider';  // select: cards/dropdown; number: slider
 }
 
 // ─── Step ─────────────────────────────────────────────────────────────────────

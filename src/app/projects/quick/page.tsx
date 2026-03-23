@@ -284,10 +284,10 @@ function QuickBOQsContent() {
                             </div>
                             <div>
                               <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a', margin: 0 }}>
-                                {config.label}
+                                {(boq.answers?.project_name as string) || config.label}
                               </h3>
                               <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                                {itemCount} items
+                                {config.label} &middot; {itemCount} items
                               </span>
                             </div>
                           </div>
