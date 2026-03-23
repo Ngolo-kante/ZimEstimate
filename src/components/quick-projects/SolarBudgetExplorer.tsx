@@ -25,6 +25,12 @@ import {
   PANEL_BRANDS,
   SOLAR_PACKAGES,
   getRequiredZeraTier,
+  PANEL_LOSS_FACTOR,
+  INVERTER_OVERSIZE,
+  MOTOR_SURGE_FACTOR,
+  SIMULTANEOUS_FACTOR,
+  BATTERY_DOD_LIFEPO4,
+  BATTERY_NIGHT_LOAD_MAX,
   type InverterOption,
   type BatteryOption,
   type PanelOption,
@@ -76,8 +82,23 @@ function allocateBudget(
   inverterBrand: InverterOption,
   batteryBrand: BatteryOption,
   enabledCards: Record<string, boolean>,
+  reinvestSavings: boolean
 ): BudgetAllocation {
-  let remaining = totalBudget;
+
+  let hardwarePool = 0;
+  
+  if (reinvestSavings) {
+     // Reinvesting means the full budget is actively divided among the *remaining* features.
+     hardwarePool = (totalBudget - (enabledCards.protection ? PROTECTION_FIXED : 0)) / (enabledCards.installation ? 1.20 : 1.0);
+  } else {
+     // Not reinvesting means we simulate the hardware pool as if we were still paying for installation.
+     // The installation portion is simply unspent, representing pure savings below the budget limit.
+     hardwarePool = (totalBudget - PROTECTION_FIXED) / 1.20; 
+  }
+  
+  if (hardwarePool < 0) hardwarePool = 0;
+
+  let remaining = hardwarePool;
 
   // 1. Inverter first (core component)
   const inv = bestInverterForBudget(
@@ -87,7 +108,7 @@ function allocateBudget(
   const inverterCost = enabledCards.inverter ? inv.price : 0;
   remaining -= inverterCost;
 
-  // 2. Battery — allocate ~35% of remaining
+  // 2. Battery — allocate ~45% of remaining hardware pool
   let batteryUnits = 0;
   let batteryCost = 0;
   if (enabledCards.battery && remaining > batteryBrand.unitPrice) {
@@ -106,12 +127,11 @@ function allocateBudget(
   }
 
   // 4. Protection (fixed cost)
-  const protectionCost = enabledCards.protection ? Math.min(PROTECTION_FIXED, remaining) : 0;
-  remaining -= protectionCost;
+  const protectionCost = enabledCards.protection ? Math.min(PROTECTION_FIXED, totalBudget) : 0;
 
   // 5. Installation (20% of hardware)
   const hardwareTotal = inverterCost + batteryCost + panelCost + protectionCost;
-  const installCost = enabledCards.installation ? Math.min(hardwareTotal * 0.20, remaining) : 0;
+  const installCost = enabledCards.installation ? Math.min(hardwareTotal * 0.20, totalBudget) : 0;
 
   return {
     panels: { count: panelCount, brand: panelBrand, cost: panelCost },
@@ -161,6 +181,9 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
   const [boqItems, setBoqItems] = useState<BOQItem[] | null>(null);
   const [labor, setLabor] = useState<LaborConfig>({ enabled: false, method: 'percentage', percentage: 25 });
 
+  // Reinvest behavior toggle
+  const [reinvestSavings, setReinvestSavings] = useState(true);
+
   // Resolve brand objects
   const pBrand = PANEL_BRANDS.find((b) => b.brand === panelBrand) ?? PANEL_BRANDS[1]; // JA Solar
   const iBrand = INVERTER_BRANDS.find((b) => b.brand === inverterBrand) ?? INVERTER_BRANDS[0]; // Must
@@ -168,8 +191,8 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
 
   // Compute allocation
   const allocation = useMemo(
-    () => allocateBudget(budget, pBrand, iBrand, bBrand, enabledCards),
-    [budget, pBrand, iBrand, bBrand, enabledCards],
+    () => allocateBudget(budget, pBrand, iBrand, bBrand, enabledCards, reinvestSavings),
+    [budget, pBrand, iBrand, bBrand, enabledCards, reinvestSavings],
   );
 
   const totalAllocated = allocation.panels.cost + allocation.inverter.cost + allocation.battery.cost + allocation.protection.cost + allocation.installation.cost;
@@ -401,6 +424,33 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
           <span>${budget.toLocaleString()}</span>
         </div>
       </div>
+
+      {/* ── Sizing Tips ────────────────────────────────────────────────────── */}
+      <details className="mb-6 rounded-xl border border-amber-200 bg-amber-50/50">
+        <summary className="flex items-center gap-2 p-3 cursor-pointer text-sm font-semibold text-amber-800 select-none">
+          <Info size={16} weight="duotone" className="text-amber-600" />
+          Zimbabwe Sizing Rules
+          <span className="text-xs font-normal text-amber-600 ml-auto">from your NotebookLM</span>
+        </summary>
+        <div className="px-4 pb-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-amber-900">
+          <div className="flex items-start gap-1.5">
+            <Lightning size={12} className="text-amber-600 mt-0.5 flex-shrink-0" />
+            <span>Inverter should be <strong>25-30%</strong> larger than your simultaneous load</span>
+          </div>
+          <div className="flex items-start gap-1.5">
+            <Warning size={12} className="text-amber-600 mt-0.5 flex-shrink-0" />
+            <span>Motors/compressors need <strong>3×</strong> inverter capacity for starting surge</span>
+          </div>
+          <div className="flex items-start gap-1.5">
+            <SolarPanel size={12} className="text-amber-600 mt-0.5 flex-shrink-0" />
+            <span>Panel Wh × <strong>1.3</strong> for system losses, ÷ <strong>3.1</strong> (Zim gen factor)</span>
+          </div>
+          <div className="flex items-start gap-1.5">
+            <BatteryCharging size={12} className="text-amber-600 mt-0.5 flex-shrink-0" />
+            <span>LiFePO4 DoD: <strong>80-95%</strong> • Nighttime load max: <strong>25%</strong> of capacity</span>
+          </div>
+        </div>
+      </details>
 
       {/* ── Component Cards ──────────────────────────────────────────────────── */}
       <div className="space-y-3 mb-8">
@@ -641,6 +691,44 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
             ))}
           </div>
         </div>
+      )}
+
+      {/* ── Reinvest Savings Callout ─────────────────────────────────────────── */}
+      {(!enabledCards.installation) && (
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="flex flex-col gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 mb-6 overflow-hidden"
+          >
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 text-emerald-600 bg-emerald-100 p-1.5 rounded-full flex-shrink-0">
+                <Lightning size={16} weight="bold" />
+              </div>
+              <div className="flex-1 text-sm text-emerald-800">
+                <strong>You&apos;ve unlocked extra budget!</strong> By toggling off installation, you&apos;ve saved roughly 20% of your total budget limit. 
+                <br/>Do you want to use these savings to upgrade your hardware (better brands, bigger battery), or keep it as unspent savings?
+              </div>
+            </div>
+            
+            <div className="flex bg-white rounded-lg border border-emerald-200 overflow-hidden divide-x divide-emerald-100 mt-2">
+              <button 
+                onClick={() => setReinvestSavings(true)}
+                className={`flex-1 flex flex-col items-center p-3 transition-colors ${reinvestSavings ? 'bg-emerald-600 text-white' : 'hover:bg-emerald-50 text-emerald-700'}`}
+              >
+                <span className="font-bold text-sm">Upgrade Hardware</span>
+                <span className={`text-[10px] ${reinvestSavings ? 'text-emerald-100' : 'text-emerald-500'}`}>Maximized specs</span>
+              </button>
+              <button 
+                onClick={() => setReinvestSavings(false)}
+                className={`flex-1 flex flex-col items-center p-3 transition-colors ${!reinvestSavings ? 'bg-blue-600 text-white' : 'hover:bg-blue-50 text-blue-700'}`}
+              >
+                <span className="font-bold text-sm">Keep The Savings</span>
+                <span className={`text-[10px] ${!reinvestSavings ? 'text-blue-100' : 'text-blue-500'}`}>Stay below budget</span>
+              </button>
+            </div>
+          </motion.div>
+        </AnimatePresence>
       )}
 
       {/* ── Warning if no protection ─────────────────────────────────────────── */}

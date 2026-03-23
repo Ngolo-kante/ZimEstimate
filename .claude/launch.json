@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "zimestimate",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["next", "dev", "-p", "3001"],
+      "port": 3001,
+      "autoPort": false,
+      "path": "/quick-projects/solar"
+    }
+  ]
+}

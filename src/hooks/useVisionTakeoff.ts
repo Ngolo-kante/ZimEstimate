@@ -14,16 +14,26 @@ import {
 import { generateBOQ } from '@/lib/calculations';
 import { materials, getBestPrice } from '@/lib/materials';
 import { TEMPORARY_WORKS_SUGGESTIONS } from '@/lib/buildFlowRules';
+import { supabase } from '@/lib/supabase';
 
 const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
 
 // API call to analyze floor plan
 async function analyzeFloorPlanAPI(file: File): Promise<VisionAnalysisResult> {
+  const { data } = await supabase.auth.getSession();
+  const accessToken = data.session?.access_token;
+  if (!accessToken) {
+    throw new Error('You need to be signed in to analyze a floor plan.');
+  }
+
   const formData = new FormData();
   formData.append('file', file);
 
   const response = await fetch('/api/vision/analyze', {
     method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
     body: formData,
   });
 

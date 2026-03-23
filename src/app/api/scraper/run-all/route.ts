@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/lib/database.types';
 import { enforceCsrf, enforceRateLimit, sanitizeText } from '@/lib/server/security';
 import { requireAdmin } from '@/lib/server/auth';
+import { runCategoryScrape, runSingleScrape } from '@/lib/server/scraperRunner';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -109,62 +110,39 @@ export async function POST(req: NextRequest): Promise<NextResponse<RunAllRespons
         let succeeded = 0;
         let failed = 0;
 
-        // Get the base URL for internal API calls
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-        const authHeader = req.headers.get('authorization') || '';
-
         for (const config of configs) {
             try {
-                const scrapeMode = config.scrape_mode || 'single';
-
-                let response: Response;
-
-                if (scrapeMode === 'category') {
-                    // Use category scraper
-                    response = await fetch(`${baseUrl}/api/scraper/category`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
-                        body: JSON.stringify({
-                            configId: config.id,
-                            url: config.base_url,
-                            containerSelector: config.container_selector,
-                            itemCardSelector: config.item_card_selector,
-                            nameSelector: config.item_name_selector,
-                            priceSelector: config.price_selector
-                        })
+                if ((config.scrape_mode || 'single') === 'category') {
+                    const result = await runCategoryScrape({
+                        configId: config.id,
+                        url: config.base_url,
+                        containerSelector: config.container_selector,
+                        itemCardSelector: config.item_card_selector || '',
+                        nameSelector: config.item_name_selector,
+                        priceSelector: config.price_selector,
                     });
-                } else {
-                    // Use single product scraper
-                    response = await fetch(`${baseUrl}/api/scraper/test`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
-                        body: JSON.stringify({
-                            configId: config.id,
-                            url: config.base_url,
-                            priceSelector: config.price_selector,
-                            nameSelector: config.item_name_selector
-                        })
-                    });
-                }
-
-                const result = await response.json();
-
-                if (result.success) {
                     succeeded++;
                     results.push({
                         configId: config.id,
                         siteName: config.site_name,
                         success: true,
-                        itemsFound: result.itemsFound || 1,
-                        itemsMatched: result.itemsMatched || (result.match?.materialCode ? 1 : 0)
+                        itemsFound: result.itemsFound,
+                        itemsMatched: result.itemsMatched,
                     });
                 } else {
-                    failed++;
+                    const result = await runSingleScrape({
+                        configId: config.id,
+                        url: config.base_url,
+                        priceSelector: config.price_selector,
+                        nameSelector: config.item_name_selector,
+                    });
+                    succeeded++;
                     results.push({
                         configId: config.id,
                         siteName: config.site_name,
-                        success: false,
-                        error: result.error || 'Unknown error'
+                        success: true,
+                        itemsFound: 1,
+                        itemsMatched: result.match.materialCode ? 1 : 0,
                     });
                 }
             } catch (err) {

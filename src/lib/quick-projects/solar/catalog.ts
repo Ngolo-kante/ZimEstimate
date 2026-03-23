@@ -8,6 +8,28 @@ import { SolarApplianceInput } from './types';
 export const SOLAR_PANEL_WATT = 550;
 export const ZW_SUN_HOURS = 5.5;
 
+// ─── Sizing Constants (NotebookLM Solar Rules) ────────────────────────────────
+// Source: NotebookLM "Solar Energy Zim" project memory
+
+/** Multiply daily Wh by this to account for system losses (cables, conversion, etc.) */
+export const PANEL_LOSS_FACTOR = 1.3;
+/** Zimbabwe panel generation factor — divide adjusted Wh by this to get Wp needed */
+export const ZW_PANEL_GEN_FACTOR = 3.1;
+/** Inverter should be 25-30% larger than simultaneous load */
+export const INVERTER_OVERSIZE = 1.25;
+/** Motors/compressors need 3x inverter capacity for starting surge */
+export const MOTOR_SURGE_FACTOR = 3;
+/** Simultaneous / diversity factor — not all appliances run at once (60-70%) */
+export const SIMULTANEOUS_FACTOR = 0.65;
+/** LiFePO4 Depth of Discharge — safe to discharge 80-95% */
+export const BATTERY_DOD_LIFEPO4 = 0.9;
+/** Lead-acid Depth of Discharge — limit to 50-60% */
+export const BATTERY_DOD_LEAD_ACID = 0.5;
+/** Continuous nighttime loads should not exceed 25% of total battery capacity */
+export const BATTERY_NIGHT_LOAD_MAX = 0.25;
+/** Charge controller safety factor — Isc × this */
+export const CHARGE_CONTROLLER_SAFETY = 1.3;
+
 // ─── Appliances ───────────────────────────────────────────────────────────────
 
 export const SOLAR_APPLIANCES: SolarApplianceInput[] = [
@@ -77,18 +99,32 @@ export interface InverterOption {
 
 export const INVERTER_BRANDS: InverterOption[] = [
   {
-    brand: 'must',
-    label: 'Must',
+    brand: 'sumry',
+    label: 'Sumry',
     tier: 'budget',
-    prices: { 3: 200, 5: 400, 8: 650, 10: 900, 12: 1100 },
-    description: 'Best value — reliable budget choice for homes.',
+    prices: { 1: 120 },
+    description: 'Ultra-budget 1kVA — cheapest entry into solar.',
   },
   {
     brand: 'codi',
     label: 'Codi',
     tier: 'budget',
-    prices: { 3: 180, 5: 380 },
+    prices: { 3: 160 },
     description: 'Ultra-budget — high PV input voltage (450VDC) for flexible arrays.',
+  },
+  {
+    brand: 'must',
+    label: 'Must',
+    tier: 'budget',
+    prices: { 3: 200, 5: 460, 8: 650, 10: 900, 12: 1100 },
+    description: 'Best value — reliable budget workhorse for homes.',
+  },
+  {
+    brand: 'rebel',
+    label: 'Rebel',
+    tier: 'budget',
+    prices: { 5: 750 },
+    description: 'Budget 5kVA option — solid performance at a low price.',
   },
   {
     brand: 'kodak',
@@ -110,6 +146,20 @@ export const INVERTER_BRANDS: InverterOption[] = [
     tier: 'mid',
     prices: { 5: 850, 8: 1200, 10: 1600, 12: 2000 },
     description: 'Scalable — silent operation, ideal for commercial use.',
+  },
+  {
+    brand: 'phocos',
+    label: 'Phocos',
+    tier: 'mid',
+    prices: { 5: 1050 },
+    description: 'German-engineered — built for harsh African environments.',
+  },
+  {
+    brand: 'primax',
+    label: 'Primax II',
+    tier: 'mid',
+    prices: { 8: 800, 10: 1000 },
+    description: 'Powerhouse Elite — exceptional value for large systems.',
   },
   {
     brand: 'deye',
@@ -168,10 +218,10 @@ export const BATTERY_BRANDS: BatteryOption[] = [
     brand: 'must',
     label: 'Must',
     tier: 'budget',
-    pricePerKwh: 120,
+    pricePerKwh: 117,
     unitKwh: 5.12,
     unitPrice: 600,
-    description: 'Budget — pairs well with Must inverters.',
+    description: 'Budget — pairs well with Must inverters. Also available: 51.2V 200Ah ($1,200).',
   },
   {
     brand: 'dyness',
@@ -190,6 +240,42 @@ export const BATTERY_BRANDS: BatteryOption[] = [
     unitKwh: 4.8,
     unitPrice: 1350,
     description: 'Industry standard — cross-inverter compatible, scalable across generations.',
+  },
+  {
+    brand: 'deye_batt',
+    label: 'Deye',
+    tier: 'mid',
+    pricePerKwh: 236,
+    unitKwh: 5.3,
+    unitPrice: 1250,
+    description: 'Pairs perfectly with Deye inverters — 104Ah/51.2V.',
+  },
+  {
+    brand: 'huawei',
+    label: 'Huawei',
+    tier: 'mid',
+    pricePerKwh: 281,
+    unitKwh: 4.8,
+    unitPrice: 1350,
+    description: 'Telecom-grade reliability — smart monitoring included.',
+  },
+  {
+    brand: 'narada',
+    label: 'Narada',
+    tier: 'mid',
+    pricePerKwh: 281,
+    unitKwh: 4.8,
+    unitPrice: 1350,
+    description: 'Industrial-grade — 6000+ cycles, excellent for off-grid.',
+  },
+  {
+    brand: 'leoch',
+    label: 'Leoch',
+    tier: 'mid',
+    pricePerKwh: 281,
+    unitKwh: 4.8,
+    unitPrice: 1350,
+    description: 'Proven reliability — used in telecom towers across Africa.',
   },
   {
     brand: 'byd',
