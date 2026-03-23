@@ -9,8 +9,10 @@ import {
   CheckCircle,
   Warning,
   HouseSimple,
-  MapPin,
   SunDim,
+  ShieldCheck,
+  Wrench,
+  Info,
 } from '@phosphor-icons/react';
 import {
   buildDefaultSelections,
@@ -21,18 +23,34 @@ import {
   SOLAR_APPLIANCES,
   SOLAR_INTENT_LABELS,
   SOLAR_PANEL_WATT,
+  SOLAR_PACKAGES,
+  INVERTER_BRANDS,
+  BATTERY_BRANDS,
+  PANEL_BRANDS,
+  MAINTENANCE_SERVICES,
+  getRequiredZeraTier,
 } from '@/lib/quick-projects/solar/catalog';
 import type {
   SolarIntent,
   SolarWizardAnswers,
   SolarWizardOutput,
 } from '@/lib/quick-projects/solar/types';
-import { solarSizingToBOQ } from '@/lib/quick-projects/solar/boq';
+import { solarSizingToBOQ, maintenanceToBOQ } from '@/lib/quick-projects/solar/boq';
 import type { BOQItem, LaborConfig } from '@/lib/quick-projects/engine/types';
 import QuickBOQTable from './QuickBOQTable';
-import LaborSection from './LaborSection';
+import SolarBudgetExplorer from './SolarBudgetExplorer';
 
-const INTENTS: SolarIntent[] = ['backup', 'heavy_backup', 'off_grid', 'replace', 'budget', 'quote_check'];
+const INTENTS: SolarIntent[] = ['backup', 'heavy_backup', 'off_grid', 'replace', 'budget', 'quote_check', 'maintenance'];
+
+const INTENT_DESCRIPTIONS: Record<SolarIntent, string> = {
+  backup: 'Keep lights, WiFi, and TV running during ZESA outages.',
+  heavy_backup: 'Run fridge, freezer, and heavy loads during 4-8 hour outages.',
+  off_grid: 'Full independence from ZESA — power everything 24/7.',
+  replace: 'Upgrade or replace existing panels, inverter, or batteries.',
+  budget: 'Tell us your budget and we\'ll find the best system that fits.',
+  quote_check: 'Got a quote? We\'ll verify it against Zimbabwe market prices.',
+  maintenance: 'Panel cleaning, diagnostics, battery replacement, or repairs.',
+};
 
 const defaultAnswers: SolarWizardAnswers = {
   intent: null,
@@ -71,6 +89,7 @@ const defaultAnswers: SolarWizardAnswers = {
 
 const stepOrder = [
   'intent',
+  'maintenance_select',
   'context',
   'backup',
   'appliances',
@@ -88,16 +107,20 @@ type StepId = typeof stepOrder[number];
 
 const stepTitles: Record<StepId, { title: string; subtitle: string }> = {
   intent: {
-    title: 'What do you want from solar?',
-    subtitle: 'This helps us tailor the system to your goals in Zimbabwe.',
+    title: 'What do you need?',
+    subtitle: 'Choose your goal — we\'ll tailor the experience to match.',
+  },
+  maintenance_select: {
+    title: 'What services do you need?',
+    subtitle: 'Select all maintenance and servicing tasks you need done.',
   },
   context: {
     title: 'Property context',
-    subtitle: 'Location and property type help us frame usage patterns.',
+    subtitle: 'Location and property type help us size your system correctly.',
   },
   backup: {
     title: 'Backup hours',
-    subtitle: 'Most households target 4–8 hours due to ZESA outages.',
+    subtitle: 'Most households target 4–8 hours due to ZESA load shedding.',
   },
   appliances: {
     title: 'Appliance audit',
@@ -105,31 +128,31 @@ const stepTitles: Record<StepId, { title: string; subtitle: string }> = {
   },
   simultaneous: {
     title: 'Simultaneous loads',
-    subtitle: 'These raise inverter size because motors have surge power.',
+    subtitle: 'These raise inverter size because motors have surge power (up to 3× running watts).',
   },
   roof: {
     title: 'Roof and installation',
     subtitle: `Each panel needs about 2 m². Panel wattage assumed at ${SOLAR_PANEL_WATT}W.`,
   },
   existing: {
-    title: 'Existing system (optional)',
+    title: 'Existing system',
     subtitle: 'Tell us what you already have so we can size upgrades properly.',
   },
   budget: {
     title: 'Budget fit',
-    subtitle: 'We will propose the best system within your budget.',
+    subtitle: 'Enter your budget and we\'ll find the best system from real Zimbabwe packages.',
   },
   quote: {
     title: 'Quote check',
-    subtitle: 'Let us sanity‑check a supplier quote against market tiers.',
+    subtitle: 'Enter the details from your supplier quote — we\'ll check it against market rates.',
   },
   results: {
-    title: 'Solar recommendation',
-    subtitle: 'Here is your sizing summary and cost estimate.',
+    title: 'Your Solar Recommendation',
+    subtitle: 'Here is your sizing summary, matching packages, and cost estimate.',
   },
   brands: {
-    title: 'Brand preferences',
-    subtitle: 'Select your preferred equipment brands or leave as "No preference".',
+    title: 'Equipment preferences',
+    subtitle: 'Choose your preferred brands or leave as default for the best value.',
   },
   optional_costs: {
     title: 'Optional costs',
@@ -148,14 +171,17 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
   const [currentStep, setCurrentStep] = useState<StepId>('intent');
 
   // Brand preferences
-  const [panelBrand, setPanelBrand] = useState('no_pref');
-  const [inverterBrand, setInverterBrand] = useState('no_pref');
-  const [batteryBrand, setBatteryBrand] = useState('no_pref');
+  const [panelBrand, setPanelBrand] = useState('ja_solar');
+  const [inverterBrand, setInverterBrand] = useState('must');
+  const [batteryBrand, setBatteryBrand] = useState('dyness');
 
   // Optional costs
-  const [includeTransport, setIncludeTransport] = useState(false);
+  const [includeTransport, setIncludeTransport] = useState(true);
   const [includeInstall, setIncludeInstall] = useState(true);
   const [includeContingency, setIncludeContingency] = useState(false);
+
+  // Maintenance selections
+  const [selectedMaintenance, setSelectedMaintenance] = useState<string[]>([]);
 
   // BOQ output
   const [boqItems, setBoqItems] = useState<BOQItem[] | null>(null);
@@ -163,24 +189,19 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
 
   const activeSteps = useMemo(() => {
     return stepOrder.filter((step) => {
+      if (step === 'maintenance_select') return answers.intent === 'maintenance';
       if (step === 'backup') {
         return ['backup', 'heavy_backup', 'off_grid', 'replace', 'budget'].includes(answers.intent || '');
       }
       if (step === 'appliances' || step === 'simultaneous' || step === 'roof') {
-        return answers.intent !== 'quote_check';
+        return answers.intent !== 'quote_check' && answers.intent !== 'maintenance';
       }
-      if (step === 'existing') {
-        return answers.intent === 'replace';
-      }
-      if (step === 'budget') {
-        return answers.intent === 'budget';
-      }
-      if (step === 'quote') {
-        return answers.intent === 'quote_check';
-      }
-      // brands and optional_costs only for non-quote-check
+      if (step === 'existing') return answers.intent === 'replace';
+      if (step === 'budget') return answers.intent === 'budget';
+      if (step === 'quote') return answers.intent === 'quote_check';
+      if (step === 'results') return answers.intent !== 'maintenance';
       if (step === 'brands' || step === 'optional_costs') {
-        return answers.intent !== 'quote_check';
+        return answers.intent !== 'quote_check' && answers.intent !== 'maintenance';
       }
       return true;
     });
@@ -191,14 +212,31 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
   const isLast = stepIndex === activeSteps.length - 1;
 
   const result = useMemo(() => {
-    if (!answers.intent || answers.intent === 'quote_check') return null;
+    if (!answers.intent || answers.intent === 'quote_check' || answers.intent === 'maintenance') return null;
     return computeSolarSizing(answers);
   }, [answers]);
 
   const costEstimate = result ? estimateHardwareCost(result) : null;
 
+  // Find matching packages for budget/results
+  const matchingPackages = useMemo(() => {
+    if (!result) return [];
+    return SOLAR_PACKAGES
+      .filter((pkg) => pkg.kva >= result.inverterKva - 2 && pkg.kva <= result.inverterKva + 3)
+      .sort((a, b) => a.price - b.price)
+      .slice(0, 3);
+  }, [result]);
+
+  const budgetPackages = useMemo(() => {
+    if (answers.intent !== 'budget' || !answers.budgetUsd) return [];
+    return SOLAR_PACKAGES
+      .filter((pkg) => pkg.price <= (answers.budgetUsd || 0))
+      .sort((a, b) => b.price - a.price) // best value first (most expensive within budget)
+      .slice(0, 4);
+  }, [answers.intent, answers.budgetUsd]);
+
   const emitChange = (nextAnswers: SolarWizardAnswers) => {
-    const nextResult = nextAnswers.intent && nextAnswers.intent !== 'quote_check'
+    const nextResult = nextAnswers.intent && nextAnswers.intent !== 'quote_check' && nextAnswers.intent !== 'maintenance'
       ? computeSolarSizing(nextAnswers)
       : null;
     onChange({ answers: nextAnswers, result: nextResult });
@@ -214,7 +252,13 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
 
   const goNext = () => {
     if (isLast) {
-      // Generate BOQ on last step
+      // Maintenance path → generate maintenance BOQ
+      if (answers.intent === 'maintenance') {
+        const items = maintenanceToBOQ(selectedMaintenance);
+        setBoqItems(items);
+        return;
+      }
+      // Normal path → generate sizing BOQ
       if (result) {
         const augAnswers = {
           ...answers,
@@ -243,6 +287,17 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
     const prevStep = activeSteps[stepIndex - 1];
     if (prevStep) setCurrentStep(prevStep);
   };
+
+  // ── Budget Explorer view ─────────────────────────────────────────────────
+  if (answers.intent === 'budget' && currentStep !== 'intent') {
+    return (
+      <SolarBudgetExplorer
+        onBack={() => setCurrentStep('intent')}
+        isContractor={isContractor}
+        onSave={onSave ? (output) => onSave(output) : undefined}
+      />
+    );
+  }
 
   // ── BOQ results view ──────────────────────────────────────────────────────
   if (boqItems) {
@@ -295,10 +350,12 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
           className="w-full"
         >
 
+      {/* ── Intent Selection ──────────────────────────────────────────────── */}
       {currentStep === 'intent' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
           {INTENTS.map((intent) => {
             const active = answers.intent === intent;
+            const isMaint = intent === 'maintenance';
             return (
               <button
                 key={intent}
@@ -308,7 +365,10 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
               >
                 <div className="flex w-full items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                     <Lightning size={20} className={active ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500 transition-colors'} />
+                     {isMaint
+                       ? <Wrench size={20} className={active ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500 transition-colors'} />
+                       : <Lightning size={20} className={active ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500 transition-colors'} />
+                     }
                      <span className={`text-sm font-semibold ${active ? 'text-blue-900' : 'text-slate-800'}`}>
                        {SOLAR_INTENT_LABELS[intent]}
                      </span>
@@ -319,12 +379,51 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
                     <div className="w-5 h-5 rounded-full border border-slate-300 flex-shrink-0 group-hover:border-blue-300 transition-colors" />
                   )}
                 </div>
+                <p className={`mt-2 text-xs leading-relaxed ${active ? 'text-blue-700' : 'text-slate-500'}`}>
+                  {INTENT_DESCRIPTIONS[intent]}
+                </p>
               </button>
             );
           })}
         </div>
       )}
 
+      {/* ── Maintenance Selection ────────────────────────────────────────── */}
+      {currentStep === 'maintenance_select' && (
+        <div className="grid gap-3">
+          {MAINTENANCE_SERVICES.map((svc) => {
+            const selected = selectedMaintenance.includes(svc.id);
+            return (
+              <label
+                key={svc.id}
+                className={`flex items-start gap-3 p-4 rounded-xl border transition-colors cursor-pointer ${selected ? 'border-blue-500 bg-blue-50/20 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300'}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={selected}
+                  className="mt-0.5 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
+                  onChange={() => {
+                    setSelectedMaintenance((prev) =>
+                      prev.includes(svc.id)
+                        ? prev.filter((id) => id !== svc.id)
+                        : [...prev, svc.id]
+                    );
+                  }}
+                />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-900">{svc.label}</span>
+                    <span className="text-sm font-bold text-slate-600">${svc.price}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">{svc.description}</p>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Context ──────────────────────────────────────────────────────── */}
       {currentStep === 'context' && (
         <div className="grid gap-6">
           <Input
@@ -354,6 +453,7 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
         </div>
       )}
 
+      {/* ── Backup Hours ─────────────────────────────────────────────────── */}
       {currentStep === 'backup' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[2, 4, 6, 8, 12, 24].map((hours) => {
@@ -374,10 +474,12 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
         </div>
       )}
 
+      {/* ── Appliances ───────────────────────────────────────────────────── */}
       {currentStep === 'appliances' && (
         <div className="grid gap-3">
           {SOLAR_APPLIANCES.map((appliance) => {
             const selection = answers.appliances[appliance.id];
+            if (!selection) return null;
             return (
               <div key={appliance.id} className={`p-4 rounded-xl border transition-colors ${selection.include ? 'border-blue-500 bg-blue-50/20 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
                 <label className="flex items-center gap-3 cursor-pointer">
@@ -418,16 +520,7 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
                       onChange={(event) => {
                         const qty = Number(event.target.value);
                         setAnswers((prev) => {
-                          const next = {
-                            ...prev,
-                            appliances: {
-                              ...prev.appliances,
-                              [appliance.id]: {
-                                ...prev.appliances[appliance.id],
-                                qty,
-                              },
-                            },
-                          };
+                          const next = { ...prev, appliances: { ...prev.appliances, [appliance.id]: { ...prev.appliances[appliance.id], qty } } };
                           emitChange(next);
                           return next;
                         });
@@ -441,16 +534,7 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
                       onChange={(event) => {
                         const hours = Number(event.target.value);
                         setAnswers((prev) => {
-                          const next = {
-                            ...prev,
-                            appliances: {
-                              ...prev.appliances,
-                              [appliance.id]: {
-                                ...prev.appliances[appliance.id],
-                                hours,
-                              },
-                            },
-                          };
+                          const next = { ...prev, appliances: { ...prev.appliances, [appliance.id]: { ...prev.appliances[appliance.id], hours } } };
                           emitChange(next);
                           return next;
                         });
@@ -464,336 +548,252 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
         </div>
       )}
 
+      {/* ── Simultaneous Loads ────────────────────────────────────────────── */}
       {currentStep === 'simultaneous' && (
         <div className="grid gap-3 p-6 rounded-2xl bg-white border border-slate-200/60 shadow-sm">
-          <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-            <input
-              type="checkbox"
-              className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
-              checked={answers.simultaneousLoads.kettleMicrowave}
-              onChange={(event) => updateAnswers({
-                simultaneousLoads: {
-                  ...answers.simultaneousLoads,
-                  kettleMicrowave: event.target.checked,
-                },
-              })}
-            />
-            <span className="text-slate-700 font-medium">Kettle and microwave run together</span>
-          </label>
-          <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-            <input
-              type="checkbox"
-              className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
-              checked={answers.simultaneousLoads.pumpWithHouse}
-              onChange={(event) => updateAnswers({
-                simultaneousLoads: {
-                  ...answers.simultaneousLoads,
-                  pumpWithHouse: event.target.checked,
-                },
-              })}
-            />
-            <span className="text-slate-700 font-medium">Pump runs with household loads</span>
-          </label>
-          <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-            <input
-              type="checkbox"
-              className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
-              checked={answers.simultaneousLoads.geyserWithHouse}
-              onChange={(event) => updateAnswers({
-                simultaneousLoads: {
-                  ...answers.simultaneousLoads,
-                  geyserWithHouse: event.target.checked,
-                },
-              })}
-            />
-            <span className="text-slate-700 font-medium">Geyser runs with household loads</span>
-          </label>
+          {[
+            { key: 'kettleMicrowave' as const, label: 'Kettle and microwave run together', warn: 'This draws 3,500W+ — needs at least 5kVA inverter' },
+            { key: 'pumpWithHouse' as const, label: 'Pump runs with household loads', warn: 'Pump startup surge can be 3× running watts' },
+            { key: 'geyserWithHouse' as const, label: 'Geyser runs with household loads', warn: 'Geyser draws 3,000W — may need dedicated circuit or 8kVA+ inverter' },
+          ].map((item) => (
+            <label key={item.key} className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+              <input
+                type="checkbox"
+                className="mt-0.5 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
+                checked={answers.simultaneousLoads[item.key]}
+                onChange={(event) => updateAnswers({
+                  simultaneousLoads: { ...answers.simultaneousLoads, [item.key]: event.target.checked },
+                })}
+              />
+              <div>
+                <span className="text-slate-700 font-medium">{item.label}</span>
+                {answers.simultaneousLoads[item.key] && (
+                  <p className="text-xs text-amber-600 mt-1">⚡ {item.warn}</p>
+                )}
+              </div>
+            </label>
+          ))}
         </div>
       )}
 
+      {/* ── Roof ─────────────────────────────────────────────────────────── */}
       {currentStep === 'roof' && (
         <div className="grid gap-6">
           <Input
             label="Roof orientation"
             placeholder="e.g. North-facing"
             value={answers.roof.orientation}
-            onChange={(event) => updateAnswers({
-              roof: { ...answers.roof, orientation: event.target.value },
-            })}
+            onChange={(event) => updateAnswers({ roof: { ...answers.roof, orientation: event.target.value } })}
           />
           <Input
-            label="Roof space (m²)"
+            label="Available roof space (m²)"
             type="number"
             min={0}
             value={answers.roof.spaceM2 || ''}
-            onChange={(event) => updateAnswers({
-              roof: { ...answers.roof, spaceM2: Number(event.target.value) },
-            })}
+            onChange={(event) => updateAnswers({ roof: { ...answers.roof, spaceM2: Number(event.target.value) } })}
           />
-          <div className="pill-grid">
-            {[
-              { id: 'tile', label: 'Tile' },
-              { id: 'ibr', label: 'IBR' },
-              { id: 'concrete', label: 'Concrete' },
-              { id: 'other', label: 'Other' },
-            ].map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`pill ${answers.roof.type === item.id ? 'active' : ''}`}
-                onClick={() => updateAnswers({ roof: { ...answers.roof, type: item.id as any } })}
-              >
-                {item.label}
-              </button>
-            ))}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Roof type</label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: 'tile', label: 'Tile' },
+                { id: 'ibr', label: 'IBR (corrugated)' },
+                { id: 'concrete', label: 'Concrete flat' },
+                { id: 'other', label: 'Other' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm transition-colors ${answers.roof.type === item.id ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'}`}
+                  onClick={() => updateAnswers({ roof: { ...answers.roof, type: item.id as any } })}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="pill-grid">
-            {[
-              { id: 'none', label: 'No shading' },
-              { id: 'partial', label: 'Partial shading' },
-              { id: 'heavy', label: 'Heavy shading' },
-            ].map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`pill ${answers.roof.shading === item.id ? 'active' : ''}`}
-                onClick={() => updateAnswers({ roof: { ...answers.roof, shading: item.id as any } })}
-              >
-                {item.label}
-              </button>
-            ))}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Shading</label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: 'none', label: 'No shading' },
+                { id: 'partial', label: 'Partial shading' },
+                { id: 'heavy', label: 'Heavy shading' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm transition-colors ${answers.roof.shading === item.id ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'}`}
+                  onClick={() => updateAnswers({ roof: { ...answers.roof, shading: item.id as any } })}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
+      {/* ── Existing System ──────────────────────────────────────────────── */}
       {currentStep === 'existing' && (
-        <div className="form-grid">
-          <label className="checkline">
+        <div className="grid gap-4">
+          <label className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-white cursor-pointer hover:bg-slate-50 transition-colors">
             <input
               type="checkbox"
+              className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
               checked={answers.existing.hasExisting}
-              onChange={(event) => updateAnswers({
-                existing: { ...answers.existing, hasExisting: event.target.checked },
-              })}
+              onChange={(event) => updateAnswers({ existing: { ...answers.existing, hasExisting: event.target.checked } })}
             />
-            I already have a solar system
+            <span className="font-medium text-slate-800">I already have a solar system</span>
           </label>
           {answers.existing.hasExisting && (
-            <>
-              <Input
-                label="Current inverter (kVA)"
-                type="number"
-                min={0}
-                value={answers.existing.inverterKva || ''}
-                onChange={(event) => updateAnswers({
-                  existing: { ...answers.existing, inverterKva: Number(event.target.value) },
-                })}
-              />
-              <Input
-                label="Current battery (kWh)"
-                type="number"
-                min={0}
-                value={answers.existing.batteryKwh || ''}
-                onChange={(event) => updateAnswers({
-                  existing: { ...answers.existing, batteryKwh: Number(event.target.value) },
-                })}
-              />
-              <Input
-                label="Current panel count"
-                type="number"
-                min={0}
-                value={answers.existing.panelCount || ''}
-                onChange={(event) => updateAnswers({
-                  existing: { ...answers.existing, panelCount: Number(event.target.value) },
-                })}
-              />
-              <Input
-                label="Main issues (optional)"
-                placeholder="e.g. Battery not lasting, inverter trips"
-                value={answers.existing.issues}
-                onChange={(event) => updateAnswers({
-                  existing: { ...answers.existing, issues: event.target.value },
-                })}
-              />
-            </>
+            <div className="grid gap-4 p-4 rounded-xl border border-slate-200 bg-white">
+              <Input label="Current inverter (kVA)" type="number" min={0} value={answers.existing.inverterKva || ''} onChange={(e) => updateAnswers({ existing: { ...answers.existing, inverterKva: Number(e.target.value) } })} />
+              <Input label="Current battery (kWh)" type="number" min={0} value={answers.existing.batteryKwh || ''} onChange={(e) => updateAnswers({ existing: { ...answers.existing, batteryKwh: Number(e.target.value) } })} />
+              <Input label="Current panel count" type="number" min={0} value={answers.existing.panelCount || ''} onChange={(e) => updateAnswers({ existing: { ...answers.existing, panelCount: Number(e.target.value) } })} />
+              <Input label="Main issues (optional)" placeholder="e.g. Battery not lasting, inverter trips, ZESA temper mode" value={answers.existing.issues} onChange={(e) => updateAnswers({ existing: { ...answers.existing, issues: e.target.value } })} />
+            </div>
           )}
         </div>
       )}
 
+      {/* ── Budget ───────────────────────────────────────────────────────── */}
       {currentStep === 'budget' && (
-        <div className="form-grid">
+        <div className="grid gap-6">
           <Input
             label="Target budget (USD)"
             type="number"
-            min={0}
+            min={500}
+            step={100}
             value={answers.budgetUsd || ''}
             onChange={(event) => updateAnswers({ budgetUsd: Number(event.target.value) })}
           />
-          <div className="info-card">
-            <MapPin size={18} />
-            <p>
-              We will size the system to fit your budget and show trade‑offs (backup hours or heavy loads).
-            </p>
-          </div>
+          {budgetPackages.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-bold text-slate-700">Packages within your budget:</h4>
+              {budgetPackages.map((pkg) => (
+                <div key={pkg.id} className="p-4 rounded-xl border border-slate-200 bg-white">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-slate-900">{pkg.name}</span>
+                    <span className="text-lg font-bold text-emerald-600">${pkg.price.toLocaleString()}</span>
+                  </div>
+                  <p className="text-xs text-slate-500">{pkg.provider} · {pkg.kva}kVA · {pkg.batteryKwh}kWh · {pkg.panelCount}× {pkg.panelWatt}W panels</p>
+                  <p className="text-xs text-slate-400 mt-1">Runs: {pkg.appliances}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {answers.budgetUsd && budgetPackages.length === 0 && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 text-amber-800 border border-amber-100">
+              <Warning size={18} className="flex-shrink-0 mt-0.5" />
+              <span className="text-sm">No standard packages found within ${answers.budgetUsd}. The minimum entry-level system starts around $900. We&apos;ll still size a custom system for your budget.</span>
+            </div>
+          )}
         </div>
       )}
 
+      {/* ── Quote Check ──────────────────────────────────────────────────── */}
       {currentStep === 'quote' && (
-        <div className="form-grid">
-          <Input
-            label="Quoted total price (USD)"
-            type="number"
-            min={0}
-            value={answers.quote.totalUsd || ''}
-            onChange={(event) => updateAnswers({
-              quote: { ...answers.quote, totalUsd: Number(event.target.value) },
-            })}
-          />
-          <Input
-            label="Inverter size (kVA)"
-            type="number"
-            min={0}
-            value={answers.quote.inverterKva || ''}
-            onChange={(event) => updateAnswers({
-              quote: { ...answers.quote, inverterKva: Number(event.target.value) },
-            })}
-          />
-          <Input
-            label="Battery size (kWh)"
-            type="number"
-            min={0}
-            value={answers.quote.batteryKwh || ''}
-            onChange={(event) => updateAnswers({
-              quote: { ...answers.quote, batteryKwh: Number(event.target.value) },
-            })}
-          />
-          <Input
-            label="Panel count"
-            type="number"
-            min={0}
-            value={answers.quote.panelCount || ''}
-            onChange={(event) => updateAnswers({
-              quote: { ...answers.quote, panelCount: Number(event.target.value) },
-            })}
-          />
-          <Input
-            label="Panel wattage"
-            type="number"
-            min={0}
-            value={answers.quote.panelWatt || ''}
-            onChange={(event) => updateAnswers({
-              quote: { ...answers.quote, panelWatt: Number(event.target.value) },
-            })}
-          />
-          <Input
-            label="Notes about the quote"
-            placeholder="e.g. Deye inverter, Dyness battery, 2 year warranty"
-            value={answers.quote.notes}
-            onChange={(event) => updateAnswers({
-              quote: { ...answers.quote, notes: event.target.value },
-            })}
-          />
+        <div className="grid gap-4">
+          <Input label="Quoted total price (USD)" type="number" min={0} value={answers.quote.totalUsd || ''} onChange={(e) => updateAnswers({ quote: { ...answers.quote, totalUsd: Number(e.target.value) } })} />
+          <Input label="Inverter size (kVA)" type="number" min={0} value={answers.quote.inverterKva || ''} onChange={(e) => updateAnswers({ quote: { ...answers.quote, inverterKva: Number(e.target.value) } })} />
+          <Input label="Battery size (kWh)" type="number" min={0} value={answers.quote.batteryKwh || ''} onChange={(e) => updateAnswers({ quote: { ...answers.quote, batteryKwh: Number(e.target.value) } })} />
+          <Input label="Panel count" type="number" min={0} value={answers.quote.panelCount || ''} onChange={(e) => updateAnswers({ quote: { ...answers.quote, panelCount: Number(e.target.value) } })} />
+          <Input label="Panel wattage" type="number" min={0} value={answers.quote.panelWatt || ''} onChange={(e) => updateAnswers({ quote: { ...answers.quote, panelWatt: Number(e.target.value) } })} />
+          <Input label="Notes about the quote" placeholder="e.g. Deye inverter, Dyness battery, 2 year warranty" value={answers.quote.notes} onChange={(e) => updateAnswers({ quote: { ...answers.quote, notes: e.target.value } })} />
         </div>
       )}
 
+      {/* ── Results (sizing) ─────────────────────────────────────────────── */}
       {currentStep === 'results' && result && (
-        <div className="results-grid">
-          <div className="results-card">
-            <h4>Recommended System</h4>
-            <div className="results-row">
-              <span>Inverter size</span>
-              <strong>{result.inverterKva} kVA</strong>
+        <div className="space-y-4">
+          {/* System sizing card */}
+          <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2"><ShieldCheck size={20} className="text-blue-600" /> Recommended System</h4>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {[
+                { label: 'Inverter', value: `${result.inverterKva} kVA` },
+                { label: 'Battery storage', value: `${result.batteryKwh} kWh` },
+                { label: 'Solar array', value: `${result.solarArrayKw} kW` },
+                { label: 'Panels needed', value: `${result.panelCount} panels` },
+                { label: 'Daily energy', value: `${result.dailyEnergyKwh} kWh` },
+                { label: 'ZERA tier required', value: getRequiredZeraTier(result.solarArrayKw * 1000) },
+              ].map((row) => (
+                <div key={row.label} className="flex justify-between p-2 rounded-lg bg-slate-50">
+                  <span className="text-slate-500">{row.label}</span>
+                  <strong className="text-slate-900">{row.value}</strong>
+                </div>
+              ))}
             </div>
-            <div className="results-row">
-              <span>Battery storage</span>
-              <strong>{result.batteryKwh} kWh</strong>
-            </div>
-            <div className="results-row">
-              <span>Solar array</span>
-              <strong>{result.solarArrayKw} kW</strong>
-            </div>
-            <div className="results-row">
-              <span>Panels needed</span>
-              <strong>{result.panelCount} panels</strong>
-            </div>
-            <div className="results-row">
-              <span>Daily energy</span>
-              <strong>{result.dailyEnergyKwh} kWh</strong>
-            </div>
-            <div className="tier-pill">Tier: {result.tier}</div>
           </div>
 
-          <div className="results-card">
-            <h4>Estimated Cost (USD)</h4>
-            {costEstimate && (
-              <>
-                <div className="results-row">
-                  <span>Hardware</span>
-                  <strong>${costEstimate.hardware}</strong>
-                </div>
-                <div className="results-row">
-                  <span>Installation</span>
-                  <strong>${costEstimate.install}</strong>
-                </div>
-                <div className="results-row">
-                  <span>Total</span>
-                  <strong>${costEstimate.total}</strong>
-                </div>
-              </>
-            )}
-            <div className="hint">Typical range: ${result.estimatedCostUsd.low}–${result.estimatedCostUsd.high}</div>
-          </div>
+          {/* Cost estimate card */}
+          {costEstimate && (
+            <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <h4 className="font-bold text-slate-900 mb-4">Estimated Cost (USD)</h4>
+              <div className="grid gap-2 text-sm">
+                <div className="flex justify-between"><span className="text-slate-500">Hardware</span><strong>${costEstimate.hardware.toLocaleString()}</strong></div>
+                <div className="flex justify-between"><span className="text-slate-500">Installation (20%)</span><strong>${costEstimate.install.toLocaleString()}</strong></div>
+                <div className="flex justify-between border-t border-slate-100 pt-2"><span className="font-semibold text-slate-700">Total</span><strong className="text-lg text-emerald-600">${costEstimate.total.toLocaleString()}</strong></div>
+              </div>
+              <p className="text-xs text-slate-400 mt-3">Typical range: ${result.estimatedCostUsd.low.toLocaleString()}–${result.estimatedCostUsd.high.toLocaleString()}</p>
+            </div>
+          )}
 
+          {/* Matching packages */}
+          {matchingPackages.length > 0 && (
+            <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <h4 className="font-bold text-slate-900 mb-3">Matching Pre-Built Packages</h4>
+              <p className="text-xs text-slate-500 mb-3">Real packages from Zimbabwe suppliers that match your sizing:</p>
+              {matchingPackages.map((pkg) => (
+                <div key={pkg.id} className="p-3 rounded-xl border border-slate-100 bg-slate-50 mb-2 last:mb-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sm text-slate-800">{pkg.name}</span>
+                    <span className="font-bold text-emerald-600">${pkg.price.toLocaleString()}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">{pkg.provider} · {pkg.kva}kVA · {pkg.batteryKwh}kWh · {pkg.panelCount}× {pkg.panelWatt}W</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Warnings */}
           {result.warnings.length > 0 && (
-            <div className="results-card warning">
-              <h4>
-                <Warning size={18} /> Notes
-              </h4>
-              <ul>
+            <div className="p-5 rounded-2xl border border-amber-200 bg-amber-50/50">
+              <h4 className="font-bold text-amber-900 mb-3 flex items-center gap-2"><Warning size={18} /> Important Notes</h4>
+              <ul className="space-y-2">
                 {result.warnings.map((note) => (
-                  <li key={note}>{note}</li>
+                  <li key={note} className="text-sm text-amber-800 flex items-start gap-2">
+                    <span className="mt-1 block w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+                    {note}
+                  </li>
                 ))}
               </ul>
             </div>
           )}
 
-          <div className="results-card summary">
-            <h4>Summary</h4>
-            <p>
-              This sizing is tailored for Zimbabwe load‑shedding and assumes hybrid backup usage.
-            </p>
-            <div className="summary-pill">
-              <CheckCircle size={16} /> Ready to save this quick project
+          {/* ZESA integration tip */}
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 border border-blue-100/50">
+            <Info size={18} className="flex-shrink-0 mt-0.5 text-blue-600" />
+            <div className="text-sm text-blue-800">
+              <strong>ZESA Integration:</strong> Your installer must separate the solar neutral from the ZESA neutral wire during installation. Incorrect wiring causes prepaid meters to enter &quot;temper mode&quot; and refuse to load tokens.
             </div>
           </div>
         </div>
       )}
 
+      {/* ── Results (quote check) ────────────────────────────────────────── */}
       {currentStep === 'results' && answers.intent === 'quote_check' && (
-        <div className="results-grid">
-          <div className="results-card warning">
-            <h4>
-              <Warning size={18} /> Quote check summary
-            </h4>
-            <p>
-              We will compare your quote against Zimbabwe system tiers once you save this quick project.
-            </p>
-            <div className="results-row">
-              <span>Quoted total</span>
-              <strong>{answers.quote.totalUsd ? `$${answers.quote.totalUsd}` : 'Not provided'}</strong>
+        <div className="space-y-4">
+          <div className="p-5 rounded-2xl border border-amber-200 bg-amber-50/50">
+            <h4 className="font-bold text-amber-900 mb-3 flex items-center gap-2"><Warning size={18} /> Quote Check Summary</h4>
+            <div className="grid gap-2 text-sm">
+              <div className="flex justify-between"><span className="text-slate-600">Quoted total</span><strong>{answers.quote.totalUsd ? `$${answers.quote.totalUsd.toLocaleString()}` : 'Not provided'}</strong></div>
+              <div className="flex justify-between"><span className="text-slate-600">Inverter</span><strong>{answers.quote.inverterKva ? `${answers.quote.inverterKva} kVA` : 'Not provided'}</strong></div>
+              <div className="flex justify-between"><span className="text-slate-600">Battery</span><strong>{answers.quote.batteryKwh ? `${answers.quote.batteryKwh} kWh` : 'Not provided'}</strong></div>
+              <div className="flex justify-between"><span className="text-slate-600">Panels</span><strong>{answers.quote.panelCount ? `${answers.quote.panelCount} panels` : 'Not provided'}</strong></div>
             </div>
-            <div className="results-row">
-              <span>Inverter</span>
-              <strong>{answers.quote.inverterKva ? `${answers.quote.inverterKva} kVA` : 'Not provided'}</strong>
-            </div>
-            <div className="results-row">
-              <span>Battery</span>
-              <strong>{answers.quote.batteryKwh ? `${answers.quote.batteryKwh} kWh` : 'Not provided'}</strong>
-            </div>
-            <div className="results-row">
-              <span>Panels</span>
-              <strong>{answers.quote.panelCount ? `${answers.quote.panelCount} panels` : 'Not provided'}</strong>
-            </div>
+            <p className="text-xs text-amber-700 mt-3">We&apos;ll compare your quote against Zimbabwe market tiers once you generate the BOQ.</p>
           </div>
         </div>
       )}
@@ -810,53 +810,68 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="form-grid"
+            className="space-y-6"
           >
+            {/* Panel brands */}
             <div>
-              <label className="field-label">Solar Panel Brand</label>
-              <div className="pill-grid">
-                {[
-                  { id: 'ja_solar', label: 'JA Solar' },
-                  { id: 'canadian_solar', label: 'Canadian Solar' },
-                  { id: 'no_pref', label: 'No preference' },
-                  { id: 'cheapest', label: 'Cheapest available' },
-                ].map((b) => (
-                  <button key={b.id} type="button" className={`pill ${panelBrand === b.id ? 'pill--active' : ''}`} onClick={() => setPanelBrand(b.id)}>
-                    {b.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="field-label">Inverter Brand</label>
-              <div className="pill-grid">
-                {[
-                  { id: 'deye',    label: 'Deye' },
-                  { id: 'victron', label: 'Victron' },
-                  { id: 'solarmd', label: 'SolarMD' },
-                  { id: 'no_pref', label: 'No preference' },
-                ].map((b) => (
-                  <button key={b.id} type="button" className={`pill ${inverterBrand === b.id ? 'pill--active' : ''}`} onClick={() => setInverterBrand(b.id)}>
-                    {b.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="field-label">Battery Brand</label>
-              <div className="pill-grid">
-                {[
-                  { id: 'pylontech',   label: 'Pylontech' },
-                  { id: 'freedom_won', label: 'Freedom Won' },
-                  { id: 'no_pref',     label: 'No preference' },
-                ].map((b) => (
+              <label className="block text-sm font-bold text-slate-700 mb-2">Solar Panel Brand</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {PANEL_BRANDS.map((b) => (
                   <button
-                    key={b.id}
+                    key={b.brand}
                     type="button"
-                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm ${batteryBrand === b.id ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
-                    onClick={() => setBatteryBrand(b.id)}
+                    className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${panelBrand === b.brand ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500/20' : 'border-slate-200 bg-white hover:border-blue-300'}`}
+                    onClick={() => setPanelBrand(b.brand)}
                   >
-                    {b.label}
+                    <span className="font-semibold text-slate-800">{b.label}</span>
+                    <span className="text-xs text-slate-500">{b.watt}W · ${b.pricePerPanel}/panel</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Inverter brands */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Inverter Brand</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {INVERTER_BRANDS.map((b) => {
+                  const price5kva = b.prices[5] ?? Object.values(b.prices)[0];
+                  return (
+                    <button
+                      key={b.brand}
+                      type="button"
+                      className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${inverterBrand === b.brand ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500/20' : 'border-slate-200 bg-white hover:border-blue-300'}`}
+                      onClick={() => setInverterBrand(b.brand)}
+                    >
+                      <div className="flex w-full items-center justify-between">
+                        <span className="font-semibold text-slate-800">{b.label}</span>
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${b.tier === 'budget' ? 'bg-green-100 text-green-700' : b.tier === 'premium' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>{b.tier}</span>
+                      </div>
+                      <span className="text-xs text-slate-500 mt-1">{b.description}</span>
+                      <span className="text-xs font-medium text-slate-600 mt-1">~${price5kva} for 5kVA</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Battery brands */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Battery Brand</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {BATTERY_BRANDS.map((b) => (
+                  <button
+                    key={b.brand}
+                    type="button"
+                    className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${batteryBrand === b.brand ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500/20' : 'border-slate-200 bg-white hover:border-blue-300'}`}
+                    onClick={() => setBatteryBrand(b.brand)}
+                  >
+                    <div className="flex w-full items-center justify-between">
+                      <span className="font-semibold text-slate-800">{b.label}</span>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${b.tier === 'budget' ? 'bg-green-100 text-green-700' : b.tier === 'premium' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>{b.tier}</span>
+                    </div>
+                    <span className="text-xs text-slate-500 mt-1">{b.description}</span>
+                    <span className="text-xs font-medium text-slate-600 mt-1">${b.unitPrice} per {b.unitKwh}kWh unit · ${b.pricePerKwh}/kWh</span>
                   </button>
                 ))}
               </div>
@@ -875,11 +890,11 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
             className="grid gap-2"
           >
             {[
-              { id: 'transport',   label: 'Equipment delivery / transport', val: includeTransport, set: setIncludeTransport },
-              { id: 'install',     label: 'Installation labor (25% of hardware)', val: includeInstall, set: setIncludeInstall },
+              { id: 'transport',   label: 'Equipment delivery / transport ($80)', val: includeTransport, set: setIncludeTransport },
+              { id: 'install',     label: 'Installation labor (20% of hardware)', val: includeInstall, set: setIncludeInstall },
               { id: 'contingency', label: 'Contingency (5%)', val: includeContingency, set: setIncludeContingency },
             ].map((opt) => (
-              <label key={opt.id} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50">
+              <label key={opt.id} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50 cursor-pointer">
                 <input type="checkbox" checked={opt.val} onChange={(e) => opt.set(e.target.checked)} className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0" />
                 <span className="font-medium text-slate-800">{opt.label}</span>
               </label>
