@@ -34,70 +34,77 @@ ALTER TABLE supplier_documents
 
 ALTER TABLE supplier_documents ENABLE ROW LEVEL SECURITY;
 
--- Users can view their own documents (by application or supplier profile)
-CREATE POLICY "Users can view own supplier documents"
-  ON supplier_documents FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM supplier_applications
-      WHERE supplier_applications.id = supplier_documents.application_id
-        AND supplier_applications.user_id = auth.uid()
-    )
-    OR EXISTS (
-      SELECT 1 FROM suppliers
-      WHERE suppliers.id = supplier_documents.supplier_id
-        AND suppliers.user_id = auth.uid()
-        AND suppliers.deleted_at IS NULL
-    )
-  );
+DO $$ BEGIN
+  CREATE POLICY "Users can view own supplier documents"
+    ON supplier_documents FOR SELECT
+    USING (
+      EXISTS (
+        SELECT 1 FROM supplier_applications
+        WHERE supplier_applications.id = supplier_documents.application_id
+          AND supplier_applications.user_id = auth.uid()
+      )
+      OR EXISTS (
+        SELECT 1 FROM suppliers
+        WHERE suppliers.id = supplier_documents.supplier_id
+          AND suppliers.user_id = auth.uid()
+          AND suppliers.deleted_at IS NULL
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- Users can upload documents for their own applications or supplier profile
-CREATE POLICY "Users can upload supplier documents"
-  ON supplier_documents FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM supplier_applications
-      WHERE supplier_applications.id = supplier_documents.application_id
-        AND supplier_applications.user_id = auth.uid()
-    )
-    OR EXISTS (
-      SELECT 1 FROM suppliers
-      WHERE suppliers.id = supplier_documents.supplier_id
-        AND suppliers.user_id = auth.uid()
-        AND suppliers.deleted_at IS NULL
-    )
-  );
+DO $$ BEGIN
+  CREATE POLICY "Users can upload supplier documents"
+    ON supplier_documents FOR INSERT
+    WITH CHECK (
+      EXISTS (
+        SELECT 1 FROM supplier_applications
+        WHERE supplier_applications.id = supplier_documents.application_id
+          AND supplier_applications.user_id = auth.uid()
+      )
+      OR EXISTS (
+        SELECT 1 FROM suppliers
+        WHERE suppliers.id = supplier_documents.supplier_id
+          AND suppliers.user_id = auth.uid()
+          AND suppliers.deleted_at IS NULL
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- Admins can view and manage documents
-CREATE POLICY "Admins can view supplier documents"
-  ON supplier_documents FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-        AND profiles.tier = 'admin'
-    )
-  );
+DO $$ BEGIN
+  CREATE POLICY "Admins can view supplier documents"
+    ON supplier_documents FOR SELECT
+    USING (
+      EXISTS (
+        SELECT 1 FROM profiles
+        WHERE profiles.id = auth.uid()
+          AND profiles.tier = 'admin'
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "Admins can update supplier documents"
-  ON supplier_documents FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-        AND profiles.tier = 'admin'
-    )
-  );
+DO $$ BEGIN
+  CREATE POLICY "Admins can update supplier documents"
+    ON supplier_documents FOR UPDATE
+    USING (
+      EXISTS (
+        SELECT 1 FROM profiles
+        WHERE profiles.id = auth.uid()
+          AND profiles.tier = 'admin'
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "Admins can delete supplier documents"
-  ON supplier_documents FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-        AND profiles.tier = 'admin'
-    )
-  );
+DO $$ BEGIN
+  CREATE POLICY "Admins can delete supplier documents"
+    ON supplier_documents FOR DELETE
+    USING (
+      EXISTS (
+        SELECT 1 FROM profiles
+        WHERE profiles.id = auth.uid()
+          AND profiles.tier = 'admin'
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ============================================
 -- Update approval function with verification expiry

@@ -51,49 +51,59 @@ CREATE TABLE IF NOT EXISTS project_utility_configs (
 
 ALTER TABLE project_utility_configs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view own project utility configs"
-    ON project_utility_configs FOR SELECT
-    USING (
-        EXISTS (
-            SELECT 1 FROM projects
-            WHERE projects.id = project_utility_configs.project_id
-            AND projects.owner_id = auth.uid()
-        )
-    );
+DO $$ BEGIN
+  CREATE POLICY "Users can view own project utility configs"
+      ON project_utility_configs FOR SELECT
+      USING (
+          EXISTS (
+              SELECT 1 FROM projects
+              WHERE projects.id = project_utility_configs.project_id
+              AND projects.owner_id = auth.uid()
+          )
+      );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "Users can create utility configs for own projects"
-    ON project_utility_configs FOR INSERT
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM projects
-            WHERE projects.id = project_utility_configs.project_id
-            AND projects.owner_id = auth.uid()
-        )
-    );
+DO $$ BEGIN
+  CREATE POLICY "Users can create utility configs for own projects"
+      ON project_utility_configs FOR INSERT
+      WITH CHECK (
+          EXISTS (
+              SELECT 1 FROM projects
+              WHERE projects.id = project_utility_configs.project_id
+              AND projects.owner_id = auth.uid()
+          )
+      );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "Users can update utility configs for own projects"
-    ON project_utility_configs FOR UPDATE
-    USING (
-        EXISTS (
-            SELECT 1 FROM projects
-            WHERE projects.id = project_utility_configs.project_id
-            AND projects.owner_id = auth.uid()
-        )
-    );
+DO $$ BEGIN
+  CREATE POLICY "Users can update utility configs for own projects"
+      ON project_utility_configs FOR UPDATE
+      USING (
+          EXISTS (
+              SELECT 1 FROM projects
+              WHERE projects.id = project_utility_configs.project_id
+              AND projects.owner_id = auth.uid()
+          )
+      );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "Users can delete utility configs for own projects"
-    ON project_utility_configs FOR DELETE
-    USING (
-        EXISTS (
-            SELECT 1 FROM projects
-            WHERE projects.id = project_utility_configs.project_id
-            AND projects.owner_id = auth.uid()
-        )
-    );
+DO $$ BEGIN
+  CREATE POLICY "Users can delete utility configs for own projects"
+      ON project_utility_configs FOR DELETE
+      USING (
+          EXISTS (
+              SELECT 1 FROM projects
+              WHERE projects.id = project_utility_configs.project_id
+              AND projects.owner_id = auth.uid()
+          )
+      );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 CREATE INDEX IF NOT EXISTS idx_project_utility_configs_project_id
     ON project_utility_configs(project_id);
 
-CREATE TRIGGER update_project_utility_configs_updated_at
-    BEFORE UPDATE ON project_utility_configs
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DO $$ BEGIN
+  CREATE TRIGGER update_project_utility_configs_updated_at
+      BEFORE UPDATE ON project_utility_configs
+      FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
