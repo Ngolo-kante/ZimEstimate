@@ -28,9 +28,11 @@ CREATE TABLE IF NOT EXISTS supplier_documents (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-ALTER TABLE supplier_documents
-  ADD CONSTRAINT supplier_documents_owner_check
-  CHECK ((application_id IS NOT NULL) OR (supplier_id IS NOT NULL));
+DO $$ BEGIN
+  ALTER TABLE supplier_documents
+    ADD CONSTRAINT supplier_documents_owner_check
+    CHECK ((application_id IS NOT NULL) OR (supplier_id IS NOT NULL));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 ALTER TABLE supplier_documents ENABLE ROW LEVEL SECURITY;
 
