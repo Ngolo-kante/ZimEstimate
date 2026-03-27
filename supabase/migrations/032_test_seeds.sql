@@ -10,6 +10,9 @@
 -- Run ONLY in development / staging — never in production.
 -- ============================================
 
+-- Enable pgcrypto for gen_salt / crypt
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 DO $$
 DECLARE
   v_admin_id        UUID := '00000000-0000-0000-0000-000000000001';
