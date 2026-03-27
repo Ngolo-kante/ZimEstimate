@@ -20,7 +20,12 @@ export type NotificationTemplateKey =
   | 'supplier_application_under_review'
   | 'supplier_application_approved'
   | 'supplier_application_rejected'
-  | 'supplier_reverification_due';
+  | 'supplier_reverification_due'
+  | 'subscription_upgraded'
+  | 'subscription_renewed'
+  | 'subscription_cancelled'
+  | 'subscription_payment_failed'
+  | 'subscription_expiring_soon';
 
 type TemplateVariant = {
   title: string;
@@ -183,6 +188,81 @@ const templates: Record<NotificationTemplateKey, NotificationTemplate> = {
     push: {
       title: 'Re-verification due',
       body: '{{businessName}} verification due by {{dueDate}}.',
+    },
+  },
+  subscription_upgraded: {
+    description: 'Supplier upgrades their subscription plan',
+    email: {
+      title: 'Welcome to {{planName}}!',
+      body: 'Your ZimEstimate subscription has been upgraded to {{planName}}. Your new features are now active.',
+    },
+    whatsapp: {
+      title: 'Plan upgraded',
+      body: 'Your ZimEstimate plan has been upgraded to {{planName}}. New features are now active.',
+    },
+    push: {
+      title: 'Plan upgraded to {{planName}}',
+      body: 'Your new features are now active.',
+    },
+  },
+  subscription_renewed: {
+    description: 'Supplier subscription successfully renewed',
+    email: {
+      title: 'Subscription renewed — {{planName}}',
+      body: 'Your {{planName}} subscription has been renewed. Next billing date: {{nextBillingDate}}.',
+    },
+    whatsapp: {
+      title: 'Subscription renewed',
+      body: '{{planName}} subscription renewed. Next billing: {{nextBillingDate}}.',
+    },
+    push: {
+      title: 'Subscription renewed',
+      body: '{{planName}} renewed. Next billing: {{nextBillingDate}}.',
+    },
+  },
+  subscription_cancelled: {
+    description: 'Supplier cancels their subscription',
+    email: {
+      title: 'Subscription cancelled',
+      body: 'Your {{planName}} subscription has been cancelled. Access continues until {{expiryDate}}.',
+    },
+    whatsapp: {
+      title: 'Subscription cancelled',
+      body: '{{planName}} cancelled. Access until {{expiryDate}}.',
+    },
+    push: {
+      title: 'Subscription cancelled',
+      body: 'Access continues until {{expiryDate}}.',
+    },
+  },
+  subscription_payment_failed: {
+    description: 'Supplier payment attempt failed',
+    email: {
+      title: 'Payment failed — action required',
+      body: 'Your payment for {{planName}} failed. Please update your payment method to keep your subscription active.',
+    },
+    whatsapp: {
+      title: 'Payment failed',
+      body: '{{planName}} payment failed. Update your payment method to avoid losing access.',
+    },
+    push: {
+      title: 'Payment failed',
+      body: 'Update your payment method to keep {{planName}} access.',
+    },
+  },
+  subscription_expiring_soon: {
+    description: 'Supplier subscription expires in 3 days',
+    email: {
+      title: 'Your subscription expires soon',
+      body: 'Your {{planName}} subscription expires on {{expiryDate}}. Renew now to keep your features.',
+    },
+    whatsapp: {
+      title: 'Subscription expiring soon',
+      body: '{{planName}} expires on {{expiryDate}}. Renew to keep your features.',
+    },
+    push: {
+      title: 'Subscription expiring soon',
+      body: '{{planName}} expires {{expiryDate}}.',
     },
   },
 };

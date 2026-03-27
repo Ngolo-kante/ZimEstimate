@@ -14,3 +14,14 @@ export const createServerClient = (accessToken?: string) => {
     },
   });
 };
+
+// Service role client — bypasses RLS. Server-side only (never expose to client).
+export const createServiceRoleClient = () => {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set');
+  }
+  return createClient<Database>(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false },
+  });
+};

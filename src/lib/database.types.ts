@@ -1689,6 +1689,279 @@ export interface Database {
                     updated_at?: string;
                 };
             };
+            subscription_plans: {
+                Row: {
+                    id: string;
+                    name: string;
+                    price_usd: number;
+                    price_zwg: number;
+                    features: Json;
+                    max_products: number | null;
+                    is_active: boolean;
+                    created_at: string;
+                };
+                Insert: {
+                    id: string;
+                    name: string;
+                    price_usd?: number;
+                    price_zwg?: number;
+                    features?: Json;
+                    max_products?: number | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                };
+                Update: {
+                    name?: string;
+                    price_usd?: number;
+                    price_zwg?: number;
+                    features?: Json;
+                    max_products?: number | null;
+                    is_active?: boolean;
+                };
+            };
+            supplier_subscriptions: {
+                Row: {
+                    id: string;
+                    supplier_id: string;
+                    plan_id: string;
+                    status: string;
+                    payment_provider: string | null;
+                    provider_subscription_id: string | null;
+                    current_period_start: string;
+                    current_period_end: string;
+                    cancel_at_period_end: boolean;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    supplier_id: string;
+                    plan_id: string;
+                    status?: string;
+                    payment_provider?: string | null;
+                    provider_subscription_id?: string | null;
+                    current_period_start?: string;
+                    current_period_end?: string;
+                    cancel_at_period_end?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    plan_id?: string;
+                    status?: string;
+                    payment_provider?: string | null;
+                    provider_subscription_id?: string | null;
+                    current_period_start?: string;
+                    current_period_end?: string;
+                    cancel_at_period_end?: boolean;
+                    updated_at?: string;
+                };
+            };
+            subscription_payments: {
+                Row: {
+                    id: string;
+                    subscription_id: string;
+                    supplier_id: string;
+                    amount: number;
+                    currency: string;
+                    payment_provider: string;
+                    provider_payment_id: string | null;
+                    status: string;
+                    billing_period_start: string | null;
+                    billing_period_end: string | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    subscription_id: string;
+                    supplier_id: string;
+                    amount: number;
+                    currency: string;
+                    payment_provider: string;
+                    provider_payment_id?: string | null;
+                    status?: string;
+                    billing_period_start?: string | null;
+                    billing_period_end?: string | null;
+                    created_at?: string;
+                };
+                Update: {
+                    status?: string;
+                    provider_payment_id?: string | null;
+                };
+            };
+            contact_requests: {
+                Row: {
+                    id: string;
+                    builder_id: string;
+                    supplier_id: string;
+                    project_id: string | null;
+                    message: string;
+                    status: string;
+                    builder_name: string | null;
+                    builder_phone: string | null;
+                    builder_email: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    builder_id: string;
+                    supplier_id: string;
+                    project_id?: string | null;
+                    message: string;
+                    status?: string;
+                    builder_name?: string | null;
+                    builder_phone?: string | null;
+                    builder_email?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    status?: string;
+                    updated_at?: string;
+                };
+            };
+            support_tickets: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    subject: string;
+                    description: string;
+                    status: string;
+                    priority: string;
+                    category: string | null;
+                    assigned_to: string | null;
+                    resolved_at: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    subject: string;
+                    description: string;
+                    status?: string;
+                    priority?: string;
+                    category?: string | null;
+                    assigned_to?: string | null;
+                    resolved_at?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    status?: string;
+                    priority?: string;
+                    assigned_to?: string | null;
+                    resolved_at?: string | null;
+                    updated_at?: string;
+                };
+            };
+            ticket_replies: {
+                Row: {
+                    id: string;
+                    ticket_id: string;
+                    author_id: string;
+                    body: string;
+                    is_internal: boolean;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    ticket_id: string;
+                    author_id: string;
+                    body: string;
+                    is_internal?: boolean;
+                    created_at?: string;
+                };
+                Update: {
+                    body?: string;
+                };
+            };
+            system_audit_logs: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    action: string;
+                    resource_type: string;
+                    resource_id: string | null;
+                    metadata: Json;
+                    ip_address: string | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    action: string;
+                    resource_type: string;
+                    resource_id?: string | null;
+                    metadata?: Json;
+                    ip_address?: string | null;
+                    created_at?: string;
+                };
+                Update: {
+                    [_ in never]: never;
+                };
+            };
+            supplier_agreements: {
+                Row: {
+                    id: string;
+                    supplier_id: string;
+                    agreement_type: string;
+                    version: string;
+                    accepted_at: string;
+                    ip_address: string | null;
+                    user_agent: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    supplier_id: string;
+                    agreement_type?: string;
+                    version?: string;
+                    accepted_at?: string;
+                    ip_address?: string | null;
+                    user_agent?: string | null;
+                };
+                Update: {
+                    [_ in never]: never;
+                };
+            };
+            product_packages: {
+                Row: {
+                    id: string;
+                    supplier_id: string | null;
+                    name: string;
+                    description: string | null;
+                    items: Json;
+                    discount_pct: number;
+                    total_usd: number | null;
+                    is_active: boolean;
+                    created_by: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    supplier_id?: string | null;
+                    name: string;
+                    description?: string | null;
+                    items?: Json;
+                    discount_pct?: number;
+                    total_usd?: number | null;
+                    is_active?: boolean;
+                    created_by?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    name?: string;
+                    description?: string | null;
+                    items?: Json;
+                    discount_pct?: number;
+                    total_usd?: number | null;
+                    is_active?: boolean;
+                    updated_at?: string;
+                };
+            };
         };
         Views: {
             [_ in never]: never;
@@ -1827,3 +2100,184 @@ export type SupplierDocumentInsert = Omit<SupplierDocument, 'id' | 'reviewed_by'
 };
 
 export type SupplierDocumentUpdate = Partial<SupplierDocument>;
+
+// ── Subscription / Monetization types ──
+
+export type SubscriptionPlanId = 'basic' | 'pro' | 'premium';
+export type SubscriptionStatus = 'active' | 'past_due' | 'cancelled' | 'trialing';
+export type PaymentProvider = 'stripe' | 'paynow' | 'manual';
+export type PaymentStatus = 'pending' | 'succeeded' | 'failed' | 'refunded';
+export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type ContactRequestStatus = 'new' | 'read' | 'replied' | 'archived';
+
+export interface SubscriptionPlanFeatures {
+    priority_search: boolean;
+    advanced_analytics: boolean;
+    contact_requests: boolean;
+    verified_badge: boolean;
+    featured_listing: boolean;
+    api_access: boolean;
+    product_packages: boolean;
+}
+
+export interface SubscriptionPlan {
+    id: SubscriptionPlanId;
+    name: string;
+    price_usd: number;
+    price_zwg: number;
+    features: SubscriptionPlanFeatures;
+    max_products: number | null;
+    is_active: boolean;
+    created_at: string;
+}
+
+export interface SupplierSubscription {
+    id: string;
+    supplier_id: string;
+    plan_id: SubscriptionPlanId;
+    status: SubscriptionStatus;
+    payment_provider: PaymentProvider | null;
+    provider_subscription_id: string | null;
+    current_period_start: string;
+    current_period_end: string;
+    cancel_at_period_end: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface SupplierSubscriptionInsert {
+    supplier_id: string;
+    plan_id: SubscriptionPlanId;
+    status?: SubscriptionStatus;
+    payment_provider?: PaymentProvider | null;
+    provider_subscription_id?: string | null;
+    current_period_start?: string;
+    current_period_end?: string;
+    cancel_at_period_end?: boolean;
+}
+
+export interface SubscriptionPayment {
+    id: string;
+    subscription_id: string;
+    supplier_id: string;
+    amount: number;
+    currency: Currency;
+    payment_provider: PaymentProvider;
+    provider_payment_id: string | null;
+    status: PaymentStatus;
+    billing_period_start: string | null;
+    billing_period_end: string | null;
+    created_at: string;
+}
+
+export interface ContactRequest {
+    id: string;
+    builder_id: string;
+    supplier_id: string;
+    project_id: string | null;
+    message: string;
+    status: ContactRequestStatus;
+    builder_name: string | null;
+    builder_phone: string | null;
+    builder_email: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ContactRequestInsert {
+    builder_id: string;
+    supplier_id: string;
+    project_id?: string | null;
+    message: string;
+    status?: ContactRequestStatus;
+    builder_name?: string | null;
+    builder_phone?: string | null;
+    builder_email?: string | null;
+}
+
+export interface SupportTicket {
+    id: string;
+    user_id: string;
+    subject: string;
+    description: string;
+    status: TicketStatus;
+    priority: TicketPriority;
+    category: string | null;
+    assigned_to: string | null;
+    resolved_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface SupportTicketInsert {
+    user_id: string;
+    subject: string;
+    description: string;
+    status?: TicketStatus;
+    priority?: TicketPriority;
+    category?: string | null;
+}
+
+export interface TicketReply {
+    id: string;
+    ticket_id: string;
+    author_id: string;
+    body: string;
+    is_internal: boolean;
+    created_at: string;
+}
+
+export interface SystemAuditLog {
+    id: string;
+    user_id: string | null;
+    action: string;
+    resource_type: string;
+    resource_id: string | null;
+    metadata: Record<string, unknown>;
+    ip_address: string | null;
+    created_at: string;
+}
+
+export interface ProductPackageItem {
+    material_key: string;
+    material_name: string;
+    quantity: number;
+    unit: string;
+    unit_price_usd: number;
+}
+
+export interface ProductPackage {
+    id: string;
+    supplier_id: string | null;
+    name: string;
+    description: string | null;
+    items: ProductPackageItem[];
+    discount_pct: number;
+    total_usd: number | null;
+    is_active: boolean;
+    created_by: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ProductPackageInsert {
+    supplier_id?: string | null;
+    name: string;
+    description?: string | null;
+    items: ProductPackageItem[];
+    discount_pct?: number;
+    total_usd?: number | null;
+    is_active?: boolean;
+    created_by?: string | null;
+}
+
+export interface SupplierAgreement {
+    id: string;
+    supplier_id: string;
+    agreement_type: string;
+    version: string;
+    accepted_at: string;
+    ip_address: string | null;
+    user_agent: string | null;
+}

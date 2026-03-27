@@ -22,6 +22,7 @@ import type {
   SupplierDocumentInsert,
   SupplierDocumentUpdate,
 } from '@/lib/database.types';
+import { checkProductLimit, requirePlanFeature } from '@/lib/services/subscriptions';
 import type { NotificationChannel, NotificationTemplateKey } from '@/lib/services/notifications';
 
 export interface SupplierRegistrationData {
@@ -276,6 +277,18 @@ export async function upsertSupplierProduct(
   supplierId: string,
   product: Omit<SupplierProductInsert, 'supplier_id'>
 ): Promise<{ success: boolean; productId?: string; error?: string }> {
+  // Plan gate: check product limit for new products (no id = new product)
+  if (!product.id) {
+    const existing = await getSupplierProducts(supplierId);
+    const { allowed, limit } = await checkProductLimit(supplierId, existing.length);
+    if (!allowed) {
+      return {
+        success: false,
+        error: `Product limit reached (${limit} products on Basic plan). Upgrade to Pro for unlimited products.`,
+      };
+    }
+  }
+
   const productData: SupplierProductInsert = {
     ...product,
     supplier_id: supplierId,
@@ -359,6 +372,15 @@ export async function createSupplierApiKey(options: {
   supplierId: string;
   label?: string;
 }): Promise<{ success: boolean; apiKey?: string; key?: SupplierApiKey; error?: string }> {
+  // Plan gate: API access is Premium only
+  const { allowed } = await requirePlanFeature(options.supplierId, 'api_access');
+  if (!allowed) {
+    return {
+      success: false,
+      error: 'API access requires a Premium subscription. Upgrade to unlock this feature.',
+    };
+  }
+
   const apiKey = `zm_live_${randomToken(24)}`;
   const keyHash = await hashKey(apiKey);
   const keyPrefix = apiKey.slice(0, 12);

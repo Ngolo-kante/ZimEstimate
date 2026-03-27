@@ -143,7 +143,7 @@ export function CardBadge({
   variant = 'default'
 }: {
   children: React.ReactNode;
-  variant?: 'default' | 'success' | 'warning' | 'accent';
+  variant?: 'default' | 'success' | 'warning' | 'accent' | 'error' | 'info';
 }) {
   return (
     <>
@@ -176,6 +176,16 @@ export function CardBadge({
         .badge-accent {
           background: rgba(78, 154, 247, 0.15);
           color: var(--color-accent-dark);
+        }
+
+        .badge-error {
+          background: rgba(239, 68, 68, 0.1);
+          color: #dc2626;
+        }
+
+        .badge-info {
+          background: rgba(59, 130, 246, 0.1);
+          color: #1d4ed8;
         }
       `}</style>
     </>

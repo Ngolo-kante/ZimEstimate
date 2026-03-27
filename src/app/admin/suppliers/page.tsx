@@ -300,6 +300,37 @@ export default function AdminSuppliersPage() {
               Admin Panel
             </div>
           </div>
+          {/* Admin Hub Navigation */}
+          <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
+            {[
+              { href: '/admin/revenue', label: 'Revenue' },
+              { href: '/admin/users', label: 'Users' },
+              { href: '/admin/performance', label: 'Performance' },
+              { href: '/admin/content', label: 'Content' },
+              { href: '/admin/scraper-review', label: 'Scraper' },
+              { href: '/admin/logs', label: 'Logs' },
+              { href: '/admin/tickets', label: 'Tickets' },
+              { href: '/admin/agreements', label: 'Agreements' },
+              { href: '/admin/packages', label: 'Packages' },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                style={{
+                  padding: '5px 14px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: '#475569',
+                  textDecoration: 'none',
+                  backgroundColor: '#f8fafc',
+                }}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
 

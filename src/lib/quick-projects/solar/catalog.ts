@@ -8,28 +8,6 @@ import { SolarApplianceInput } from './types';
 export const SOLAR_PANEL_WATT = 550;
 export const ZW_SUN_HOURS = 5.5;
 
-// ─── Sizing Constants (NotebookLM Solar Rules) ────────────────────────────────
-// Source: NotebookLM "Solar Energy Zim" project memory
-
-/** Multiply daily Wh by this to account for system losses (cables, conversion, etc.) */
-export const PANEL_LOSS_FACTOR = 1.3;
-/** Zimbabwe panel generation factor — divide adjusted Wh by this to get Wp needed */
-export const ZW_PANEL_GEN_FACTOR = 3.1;
-/** Inverter should be 25-30% larger than simultaneous load */
-export const INVERTER_OVERSIZE = 1.25;
-/** Motors/compressors need 3x inverter capacity for starting surge */
-export const MOTOR_SURGE_FACTOR = 3;
-/** Simultaneous / diversity factor — not all appliances run at once (60-70%) */
-export const SIMULTANEOUS_FACTOR = 0.65;
-/** LiFePO4 Depth of Discharge — safe to discharge 80-95% */
-export const BATTERY_DOD_LIFEPO4 = 0.9;
-/** Lead-acid Depth of Discharge — limit to 50-60% */
-export const BATTERY_DOD_LEAD_ACID = 0.5;
-/** Continuous nighttime loads should not exceed 25% of total battery capacity */
-export const BATTERY_NIGHT_LOAD_MAX = 0.25;
-/** Charge controller safety factor — Isc × this */
-export const CHARGE_CONTROLLER_SAFETY = 1.3;
-
 // ─── Appliances ───────────────────────────────────────────────────────────────
 
 export const SOLAR_APPLIANCES: SolarApplianceInput[] = [
@@ -99,32 +77,18 @@ export interface InverterOption {
 
 export const INVERTER_BRANDS: InverterOption[] = [
   {
-    brand: 'sumry',
-    label: 'Sumry',
+    brand: 'must',
+    label: 'Must',
     tier: 'budget',
-    prices: { 1: 120 },
-    description: 'Ultra-budget 1kVA — cheapest entry into solar.',
+    prices: { 3: 200, 5: 400, 8: 650, 10: 900, 12: 1100 },
+    description: 'Best value — reliable budget choice for homes.',
   },
   {
     brand: 'codi',
     label: 'Codi',
     tier: 'budget',
-    prices: { 3: 160 },
+    prices: { 3: 180, 5: 380 },
     description: 'Ultra-budget — high PV input voltage (450VDC) for flexible arrays.',
-  },
-  {
-    brand: 'must',
-    label: 'Must',
-    tier: 'budget',
-    prices: { 3: 200, 5: 460, 8: 650, 10: 900, 12: 1100 },
-    description: 'Best value — reliable budget workhorse for homes.',
-  },
-  {
-    brand: 'rebel',
-    label: 'Rebel',
-    tier: 'budget',
-    prices: { 5: 750 },
-    description: 'Budget 5kVA option — solid performance at a low price.',
   },
   {
     brand: 'kodak',
@@ -146,20 +110,6 @@ export const INVERTER_BRANDS: InverterOption[] = [
     tier: 'mid',
     prices: { 5: 850, 8: 1200, 10: 1600, 12: 2000 },
     description: 'Scalable — silent operation, ideal for commercial use.',
-  },
-  {
-    brand: 'phocos',
-    label: 'Phocos',
-    tier: 'mid',
-    prices: { 5: 1050 },
-    description: 'German-engineered — built for harsh African environments.',
-  },
-  {
-    brand: 'primax',
-    label: 'Primax II',
-    tier: 'mid',
-    prices: { 8: 800, 10: 1000 },
-    description: 'Powerhouse Elite — exceptional value for large systems.',
   },
   {
     brand: 'deye',
@@ -218,10 +168,10 @@ export const BATTERY_BRANDS: BatteryOption[] = [
     brand: 'must',
     label: 'Must',
     tier: 'budget',
-    pricePerKwh: 117,
+    pricePerKwh: 120,
     unitKwh: 5.12,
     unitPrice: 600,
-    description: 'Budget — pairs well with Must inverters. Also available: 51.2V 200Ah ($1,200).',
+    description: 'Budget — pairs well with Must inverters.',
   },
   {
     brand: 'dyness',
@@ -240,42 +190,6 @@ export const BATTERY_BRANDS: BatteryOption[] = [
     unitKwh: 4.8,
     unitPrice: 1350,
     description: 'Industry standard — cross-inverter compatible, scalable across generations.',
-  },
-  {
-    brand: 'deye_batt',
-    label: 'Deye',
-    tier: 'mid',
-    pricePerKwh: 236,
-    unitKwh: 5.3,
-    unitPrice: 1250,
-    description: 'Pairs perfectly with Deye inverters — 104Ah/51.2V.',
-  },
-  {
-    brand: 'huawei',
-    label: 'Huawei',
-    tier: 'mid',
-    pricePerKwh: 281,
-    unitKwh: 4.8,
-    unitPrice: 1350,
-    description: 'Telecom-grade reliability — smart monitoring included.',
-  },
-  {
-    brand: 'narada',
-    label: 'Narada',
-    tier: 'mid',
-    pricePerKwh: 281,
-    unitKwh: 4.8,
-    unitPrice: 1350,
-    description: 'Industrial-grade — 6000+ cycles, excellent for off-grid.',
-  },
-  {
-    brand: 'leoch',
-    label: 'Leoch',
-    tier: 'mid',
-    pricePerKwh: 281,
-    unitKwh: 4.8,
-    unitPrice: 1350,
-    description: 'Proven reliability — used in telecom towers across Africa.',
   },
   {
     brand: 'byd',
@@ -335,7 +249,7 @@ export const PANEL_BRANDS: PanelOption[] = [
 ];
 
 // ─── Pre-Built Packages ───────────────────────────────────────────────────────
-// Sourced from Solarpro, Sona Solar. These are real market packages.
+// Market-verified Zimbabwe packages — Q1 2026 pricing.
 
 export interface SolarPackage {
   id: string;
@@ -347,101 +261,450 @@ export interface SolarPackage {
   panelWatt: number;
   price: number;
   description: string;
-  appliances: string;        // what it can run
+  appliances: string;
+  inverterBrandKey?: string;
+  panelBrandKey?: string;
+  batteryBrandKey?: string;
+  includesInstall?: boolean;
 }
 
 export const SOLAR_PACKAGES: SolarPackage[] = [
+  // ── Base packages ──────────────────────────────────────────────────────────
   {
     id: 'pkg_1kva_economy',
-    name: '1kVA Economy Lite',
-    provider: 'Sona Solar',
+    name: '1kVA Economy',
+    provider: '',
     kva: 1, batteryKwh: 2.56, panelCount: 2, panelWatt: 440,
     price: 900,
     description: 'Basic backup for essential devices.',
-    appliances: 'Lights, WiFi, TV, phone charging',
+    appliances: 'Lights, WiFi, TV, Phone charging',
+    inverterBrandKey: 'must', panelBrandKey: 'ja_solar', batteryBrandKey: 'svolt',
   },
   {
     id: 'pkg_3kva_basic',
     name: '3kVA Basic',
-    provider: 'Solarpro',
+    provider: '',
     kva: 3, batteryKwh: 2.56, panelCount: 2, panelWatt: 440,
     price: 1850,
     description: 'Entry-level with solar charging.',
-    appliances: 'Lights, TV, fridge, laptop',
+    appliances: 'Lights, TV, Fridge, Laptop',
+    inverterBrandKey: 'must', panelBrandKey: 'ja_solar', batteryBrandKey: 'dyness',
   },
   {
     id: 'pkg_3kva_eco',
-    name: '3.2kVA Eco Luxury',
-    provider: 'Sona Solar',
+    name: '3.2kVA Eco',
+    provider: '',
     kva: 3, batteryKwh: 5.12, panelCount: 4, panelWatt: 440,
     price: 1500,
     description: 'Good backup for a small household.',
-    appliances: 'Lights, TV, fridge, laptop',
+    appliances: 'Lights, TV, Fridge, Laptop',
+    inverterBrandKey: 'must', panelBrandKey: 'ja_solar', batteryBrandKey: 'dyness',
   },
   {
     id: 'pkg_3kva_premium',
     name: '3kVA Premium',
-    provider: 'Solarpro',
+    provider: '',
     kva: 3, batteryKwh: 5.12, panelCount: 4, panelWatt: 440,
     price: 2850,
     description: 'Extended backup with double battery storage.',
-    appliances: 'Lights, TVs, fridge, freezer, 0.5HP pump',
+    appliances: 'Lights, TVs, Fridge, Freezer, 0.5HP pump',
+    inverterBrandKey: 'must', panelBrandKey: 'ja_solar', batteryBrandKey: 'dyness',
   },
   {
     id: 'pkg_5kva_standard',
     name: '5kVA Standard',
-    provider: 'Solarpro',
+    provider: '',
     kva: 5, batteryKwh: 10.24, panelCount: 8, panelWatt: 440,
     price: 3360,
     description: 'Most popular — covers a medium home with pump.',
-    appliances: 'Lights, TV, fridge, booster/borehole pump',
+    appliances: 'Lights, TV, Fridge, Booster pump, Borehole pump',
+    inverterBrandKey: 'must', panelBrandKey: 'ja_solar', batteryBrandKey: 'dyness',
   },
   {
     id: 'pkg_5kva_luxury',
-    name: '5kVA Luxury Beta',
-    provider: 'Sona Solar',
+    name: '5kVA Luxury',
+    provider: '',
     kva: 5, batteryKwh: 9.6, panelCount: 8, panelWatt: 550,
     price: 2500,
     description: 'Full household power with lithium batteries.',
-    appliances: 'Lights, TV, fridge, borehole pump, entertainment',
+    appliances: 'Lights, TV, Fridge, Borehole pump, Entertainment',
+    inverterBrandKey: 'deye', panelBrandKey: 'canadian', batteryBrandKey: 'dyness',
   },
   {
     id: 'pkg_6kva_offgrid',
-    name: '6kVA Off-Grid Home',
-    provider: 'Solarpro',
+    name: '6kVA Off-Grid',
+    provider: '',
     kva: 6, batteryKwh: 10.24, panelCount: 10, panelWatt: 440,
     price: 4180,
     description: 'Full off-grid for a large household.',
-    appliances: '2 TVs, 2 fridges, microwave, lights',
+    appliances: '2 TVs, 2 Fridges, Microwave, Lights',
+    inverterBrandKey: 'deye', panelBrandKey: 'ja_solar', batteryBrandKey: 'dyness',
   },
   {
     id: 'pkg_8kva_ultra',
-    name: '8kVA Ultra Power',
-    provider: 'Solarpro',
+    name: '8kVA Ultra',
+    provider: '',
     kva: 8, batteryKwh: 20.48, panelCount: 16, panelWatt: 420,
     price: 6000,
     description: 'Heavy-duty — powers everything including heavy loads.',
-    appliances: 'Full household + heavy appliances',
+    appliances: 'Full household, Heavy appliances, Multiple pumps',
+    inverterBrandKey: 'deye', panelBrandKey: 'ja_solar', batteryBrandKey: 'dyness',
   },
   {
     id: 'pkg_10kva_pro',
-    name: '10kVA Pro Power',
-    provider: 'Solarpro',
+    name: '10kVA Pro',
+    provider: '',
     kva: 10, batteryKwh: 20.48, panelCount: 22, panelWatt: 420,
     price: 7700,
     description: 'Commercial-grade for large properties.',
-    appliances: 'Full household + multiple heavy loads',
+    appliances: 'Full household, Multiple heavy loads, Air conditioner',
+    inverterBrandKey: 'deye', panelBrandKey: 'ja_solar', batteryBrandKey: 'dyness',
   },
   {
     id: 'pkg_12kva_commercial',
     name: '12kVA Commercial',
-    provider: 'Solarpro',
+    provider: '',
     kva: 12, batteryKwh: 20.48, panelCount: 22, panelWatt: 420,
     price: 6070,
     description: 'Entry-level commercial system.',
-    appliances: 'Small business, lodge, school',
+    appliances: 'Small business, Lodge, School, Office',
+    inverterBrandKey: 'deye', panelBrandKey: 'ja_solar', batteryBrandKey: 'dyness',
+  },
+
+  // ── 1–1.5 kVA ─────────────────────────────────────────────────────────────
+  {
+    id: 'pkg_1kva_starter',
+    name: '1kVA Starter',
+    provider: '',
+    kva: 1, batteryKwh: 1.2, panelCount: 1, panelWatt: 440,
+    price: 749,
+    description: 'Entry-level backup for small spaces.',
+    appliances: 'Lights, TV, WiFi, Phone charging, Laptop',
+    inverterBrandKey: 'must', panelBrandKey: 'ja_solar', batteryBrandKey: 'svolt',
+  },
+  {
+    id: 'pkg_12kva_basic',
+    name: '1.2kVA Basic',
+    provider: '',
+    kva: 1.2, batteryKwh: 1.2, panelCount: 2, panelWatt: 410,
+    price: 870,
+    description: 'Two panels for daytime charging of essentials.',
+    appliances: 'Lights, TV, Fan, Laptop, Phone charging, Entertainment',
+    inverterBrandKey: 'must', panelBrandKey: 'longi', batteryBrandKey: 'svolt',
+  },
+  {
+    id: 'pkg_15kva_light',
+    name: '1.5kVA Light',
+    provider: '',
+    kva: 1.5, batteryKwh: 1.2, panelCount: 1, panelWatt: 440,
+    price: 849,
+    description: 'Slightly larger backup with extra headroom.',
+    appliances: 'Lights, TV, WiFi, Laptop, Phone charging, Entertainment',
+    inverterBrandKey: 'must', panelBrandKey: 'ja_solar', batteryBrandKey: 'svolt',
+  },
+
+  // ── 3–3.6 kVA ─────────────────────────────────────────────────────────────
+  {
+    id: 'pkg_32kva_entry',
+    name: '3.2kVA Entry',
+    provider: '',
+    kva: 3.2, batteryKwh: 2.56, panelCount: 2, panelWatt: 550,
+    price: 950,
+    description: 'Entry-level 3kVA with installation included.',
+    appliances: 'Lights, TV, Fridge, WiFi, Phone charging',
+    inverterBrandKey: 'must', panelBrandKey: 'canadian', batteryBrandKey: 'dyness',
+    includesInstall: true,
+  },
+  {
+    id: 'pkg_35kva_mid',
+    name: '3.5kVA Mid',
+    provider: '',
+    kva: 3.5, batteryKwh: 2.56, panelCount: 4, panelWatt: 550,
+    price: 1050,
+    description: '4-panel system with installation included.',
+    appliances: 'Lights, TV, Fridge, Laptop, WiFi',
+    inverterBrandKey: 'must', panelBrandKey: 'canadian', batteryBrandKey: 'dyness',
+    includesInstall: true,
+  },
+  {
+    id: 'pkg_32kva_power',
+    name: '3.2kVA Power',
+    provider: '',
+    kva: 3.2, batteryKwh: 5.12, panelCount: 6, panelWatt: 560,
+    price: 1100,
+    description: 'Higher panel count for maximum solar generation.',
+    appliances: 'Lights, TV, Fridge, WiFi, Fan, Laptop',
+    inverterBrandKey: 'must', panelBrandKey: 'jinko', batteryBrandKey: 'dyness',
+    includesInstall: true,
+  },
+  {
+    id: 'pkg_32kva_solar',
+    name: '3.2kVA Solar',
+    provider: '',
+    kva: 3.2, batteryKwh: 2.56, panelCount: 2, panelWatt: 440,
+    price: 1149,
+    description: 'Well-rounded 3kVA for a small household.',
+    appliances: 'Lights, TV, WiFi, Laptop, Fridge, Borehole pump',
+    inverterBrandKey: 'must', panelBrandKey: 'ja_solar', batteryBrandKey: 'dyness',
+  },
+  {
+    id: 'pkg_35kva_plus',
+    name: '3.5kVA Plus',
+    provider: '',
+    kva: 3.5, batteryKwh: 5.12, panelCount: 6, panelWatt: 560,
+    price: 1200,
+    description: 'More panels and bigger battery for extended backup.',
+    appliances: 'Lights, TV, Fridge, WiFi, Laptop, Fan',
+    inverterBrandKey: 'must', panelBrandKey: 'jinko', batteryBrandKey: 'dyness',
+    includesInstall: true,
+  },
+  {
+    id: 'pkg_36kva_home',
+    name: '3.6kVA Home',
+    provider: '',
+    kva: 3.6, batteryKwh: 2.56, panelCount: 4, panelWatt: 435,
+    price: 1250,
+    description: 'Handles upright fridge and light pump loads.',
+    appliances: 'Lights, TV, WiFi, Fridge, Freezer, Booster pump',
+    inverterBrandKey: 'must', panelBrandKey: 'ja_solar', batteryBrandKey: 'dyness',
+  },
+  {
+    id: 'pkg_36kva_linked',
+    name: '3.6kVA Connected',
+    provider: '',
+    kva: 3.6, batteryKwh: 2.56, panelCount: 3, panelWatt: 440,
+    price: 1299,
+    description: 'Balanced system for home and small business needs.',
+    appliances: 'Lights, TV, WiFi, Laptop, Fridge, Business pump',
+    inverterBrandKey: 'must', panelBrandKey: 'ja_solar', batteryBrandKey: 'dyness',
+  },
+  {
+    id: 'pkg_3kva_household',
+    name: '3kVA Household',
+    provider: '',
+    kva: 3, batteryKwh: 2.56, panelCount: 4, panelWatt: 410,
+    price: 1400,
+    description: 'Four-panel system with accessories included.',
+    appliances: 'Lights, TV, Fan, Laptop, Fridge, Entertainment, 0.5HP pump',
+    inverterBrandKey: 'must', panelBrandKey: 'longi', batteryBrandKey: 'dyness',
+  },
+
+  // ── 4–5.5 kVA ─────────────────────────────────────────────────────────────
+  {
+    id: 'pkg_4kva_power',
+    name: '4kVA Power',
+    provider: '',
+    kva: 4, batteryKwh: 5.12, panelCount: 8, panelWatt: 560,
+    price: 1280,
+    description: 'Eight panels for great daytime generation.',
+    appliances: 'Lights, TV, Fridge, Freezer, WiFi, Booster pump',
+    inverterBrandKey: 'must', panelBrandKey: 'jinko', batteryBrandKey: 'dyness',
+    includesInstall: true,
+  },
+  {
+    id: 'pkg_42kva_smart',
+    name: '4.2kVA Smart',
+    provider: '',
+    kva: 4.2, batteryKwh: 2.56, panelCount: 4, panelWatt: 750,
+    price: 1250,
+    description: 'High-watt panels with mid-range inverter.',
+    appliances: 'Lights, TV, Fridge, WiFi, Laptop, Fan',
+    inverterBrandKey: 'deye', panelBrandKey: 'jinko', batteryBrandKey: 'dyness',
+  },
+  {
+    id: 'pkg_42kva_family',
+    name: '4.2kVA Family',
+    provider: '',
+    kva: 4.2, batteryKwh: 2.56, panelCount: 4, panelWatt: 450,
+    price: 1290,
+    description: 'Handles freezer, fridge and borehole together.',
+    appliances: 'Lights, TV, WiFi, Fridge, Freezer, Borehole pump, Booster pump',
+    inverterBrandKey: 'must', panelBrandKey: 'ja_solar', batteryBrandKey: 'dyness',
+  },
+  {
+    id: 'pkg_45kva_standard',
+    name: '4.5kVA Standard',
+    provider: '',
+    kva: 4.5, batteryKwh: 5.12, panelCount: 4, panelWatt: 550,
+    price: 1200,
+    description: 'Solid mid-range system with installation included.',
+    appliances: 'Lights, TV, Laptop, WiFi, Fridge, 0.5HP pump',
+    inverterBrandKey: 'must', panelBrandKey: 'canadian', batteryBrandKey: 'dyness',
+    includesInstall: true,
+  },
+  {
+    id: 'pkg_55kva_mid',
+    name: '5.5kVA Mid',
+    provider: '',
+    kva: 5.5, batteryKwh: 5.12, panelCount: 4, panelWatt: 750,
+    price: 1500,
+    description: 'Reliable mid-range with high-watt panels.',
+    appliances: 'Lights, TVs, WiFi, Fridge, Freezer, 0.5HP pump, Laptop',
+    inverterBrandKey: 'deye', panelBrandKey: 'jinko', batteryBrandKey: 'dyness',
+  },
+  {
+    id: 'pkg_52kva_pro',
+    name: '5.2kVA Pro',
+    provider: '',
+    kva: 5.2, batteryKwh: 5.12, panelCount: 4, panelWatt: 880,
+    price: 1999,
+    description: 'High-efficiency panels with premium hybrid inverter.',
+    appliances: 'Lights, TV, WiFi, Fridge, Computers, Borehole pump, Booster pump, Printer',
+    inverterBrandKey: 'deye', panelBrandKey: 'aiko', batteryBrandKey: 'dyness',
+  },
+
+  // ── 6–6.5 kVA ─────────────────────────────────────────────────────────────
+  {
+    id: 'pkg_62kva_entry',
+    name: '6.2kVA Entry',
+    provider: '',
+    kva: 6.2, batteryKwh: 5.12, panelCount: 4, panelWatt: 550,
+    price: 1650,
+    description: 'Full household system with installation included.',
+    appliances: 'Lights, TVs, WiFi, 2 Fridges, Borehole pump',
+    inverterBrandKey: 'must', panelBrandKey: 'canadian', batteryBrandKey: 'dyness',
+    includesInstall: true,
+  },
+  {
+    id: 'pkg_62kva_power',
+    name: '6.2kVA Power',
+    provider: '',
+    kva: 6.2, batteryKwh: 10.24, panelCount: 6, panelWatt: 560,
+    price: 1700,
+    description: 'Double battery for extended overnight backup.',
+    appliances: 'Lights, TVs, WiFi, 2 Fridges, Borehole pump, Booster pump',
+    inverterBrandKey: 'deye', panelBrandKey: 'jinko', batteryBrandKey: 'dyness',
+  },
+  {
+    id: 'pkg_65kva_extended',
+    name: '6.5kVA Extended',
+    provider: '',
+    kva: 6.5, batteryKwh: 3.84, panelCount: 6, panelWatt: 550,
+    price: 1750,
+    description: 'Six panels for excellent solar charging capacity.',
+    appliances: 'Lights, TVs, WiFi, 2 Fridges, Washing machine, Borehole pump',
+    inverterBrandKey: 'must', panelBrandKey: 'canadian', batteryBrandKey: 'dyness',
+    includesInstall: true,
+  },
+  {
+    id: 'pkg_62kva_premium',
+    name: '6.2kVA Premium',
+    provider: '',
+    kva: 6.2, batteryKwh: 10.24, panelCount: 5, panelWatt: 880,
+    price: 2099,
+    description: 'Premium high-efficiency panels and 10kWh battery.',
+    appliances: 'Lights, TVs, WiFi, 2 Fridges, Washing machine, Borehole pump, Booster pump',
+    inverterBrandKey: 'deye', panelBrandKey: 'aiko', batteryBrandKey: 'dyness',
+  },
+  {
+    id: 'pkg_62kva_full',
+    name: '6kVA Full Home',
+    provider: '',
+    kva: 6, batteryKwh: 5.12, panelCount: 6, panelWatt: 410,
+    price: 2400,
+    description: 'Complete home system with accessories.',
+    appliances: 'Lights, TV, Fan, Laptops, Fridge, Entertainment, 0.5HP pump, Booster pump',
+    inverterBrandKey: 'must', panelBrandKey: 'longi', batteryBrandKey: 'dyness',
+  },
+
+  // ── 8–12 kVA ──────────────────────────────────────────────────────────────
+  {
+    id: 'pkg_82kva_standard',
+    name: '8.2kVA Standard',
+    provider: '',
+    kva: 8.2, batteryKwh: 10.24, panelCount: 8, panelWatt: 550,
+    price: 1950,
+    description: 'Eight-panel system with installation included.',
+    appliances: 'Full household, Washing machine, 1HP borehole pump',
+    inverterBrandKey: 'must', panelBrandKey: 'canadian', batteryBrandKey: 'dyness',
+    includesInstall: true,
+  },
+  {
+    id: 'pkg_82kva_elite',
+    name: '8.2kVA Elite',
+    provider: '',
+    kva: 8.2, batteryKwh: 10.24, panelCount: 10, panelWatt: 750,
+    price: 2200,
+    description: 'Heavy-duty with high-watt panels.',
+    appliances: 'Lights, TVs, WiFi, 2 Fridges, Washing machine, Borehole pump, Air conditioner',
+    inverterBrandKey: 'deye', panelBrandKey: 'jinko', batteryBrandKey: 'dyness',
+  },
+  {
+    id: 'pkg_10kva_heavy',
+    name: '10kVA Heavy',
+    provider: '',
+    kva: 10, batteryKwh: 10.24, panelCount: 12, panelWatt: 450,
+    price: 3299,
+    description: 'High-capacity system for large homes and boreholes.',
+    appliances: 'Full household, 2 Boreholes, 2 Fridges, LED TVs, Air conditioner, Drill',
+    inverterBrandKey: 'codi', panelBrandKey: 'ja_solar', batteryBrandKey: 'dyness',
+  },
+  {
+    id: 'pkg_10kva_ultimate',
+    name: '10.2kVA Ultimate',
+    provider: '',
+    kva: 10.2, batteryKwh: 10.24, panelCount: 8, panelWatt: 410,
+    price: 4500,
+    description: 'Complete system with premium inverter and accessories.',
+    appliances: 'Full household, 1-2HP borehole, Washing machine, Air conditioner',
+    inverterBrandKey: 'deye', panelBrandKey: 'longi', batteryBrandKey: 'dyness',
+  },
+  {
+    id: 'pkg_8kw_premium',
+    name: '8kW Premium',
+    provider: '',
+    kva: 8, batteryKwh: 13.24, panelCount: 11, panelWatt: 550,
+    price: 5400,
+    description: 'Top-tier premium hybrid with large lithium bank.',
+    appliances: 'Full household, Multiple heavy loads, Air conditioner, Office equipment',
+    inverterBrandKey: 'sunsynk', panelBrandKey: 'canadian', batteryBrandKey: 'pylontech',
   },
 ];
+
+// ─── kVA Power Guide ──────────────────────────────────────────────────────────
+
+export const KVA_POWER_GUIDE = [
+  {
+    kva: 1,
+    label: '1–1.5 kVA',
+    typicalUse: 'Small backup — lights and essentials',
+    canPower: ['Lights', 'TV', 'WiFi', 'Phone charging', 'Laptop'],
+    cannotPower: ['Fridge', 'Pumps', 'Washing machine'],
+    priceRange: '$750–$900',
+  },
+  {
+    kva: 3,
+    label: '3–3.6 kVA',
+    typicalUse: 'Small household with fridge',
+    canPower: ['Lights', 'TV', 'WiFi', 'Laptop', 'Fridge', 'Fan'],
+    cannotPower: ['Borehole pump', 'Washing machine', 'Geyser'],
+    priceRange: '$950–$1,400',
+  },
+  {
+    kva: 5,
+    label: '4.5–5.5 kVA',
+    typicalUse: 'Medium household with pump',
+    canPower: ['Lights', 'TVs', 'WiFi', 'Fridge', 'Freezer', '0.5HP pump', 'Laptop'],
+    cannotPower: ['Geyser', 'Electric stove', 'Kettle'],
+    priceRange: '$1,200–$2,000',
+  },
+  {
+    kva: 6,
+    label: '6–6.5 kVA',
+    typicalUse: 'Full household with borehole',
+    canPower: ['Lights', 'Multiple TVs', 'WiFi', '2 Fridges', 'Washing machine', 'Borehole pump', 'Booster pump'],
+    cannotPower: ['Geyser', 'Electric stove'],
+    priceRange: '$1,650–$2,400',
+  },
+  {
+    kva: 8,
+    label: '8–12 kVA',
+    typicalUse: 'Large household or small business',
+    canPower: ['All above', 'Air conditioner (small)', 'Multiple pumps', 'Office equipment'],
+    cannotPower: ['Multiple air cons', 'Industrial machinery'],
+    priceRange: '$2,200–$5,400',
+  },
+] as const;
 
 // ─── Maintenance Services ─────────────────────────────────────────────────────
 

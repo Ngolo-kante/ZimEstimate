@@ -647,6 +647,18 @@ export default function SupplierDashboardPage() {
                   <ChartLine size={18} weight="bold" />
                   View Analytics
                 </Link>
+                <Link
+                  href="/supplier/leads"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-mist text-text border border-border-light rounded-md font-semibold hover:bg-white hover:border-accent hover:text-accent transition-colors"
+                >
+                  Customer Leads
+                </Link>
+                <Link
+                  href="/supplier/billing"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-surface text-secondary border border-border-light rounded-md font-semibold hover:border-accent hover:text-accent transition-colors"
+                >
+                  Billing &amp; Plan
+                </Link>
                 <button
                   onClick={() => setActiveTab('settings')}
                   className="inline-flex items-center gap-2 px-5 py-3 bg-surface text-secondary border border-border-light rounded-md font-semibold hover:border-accent hover:text-accent transition-colors"
