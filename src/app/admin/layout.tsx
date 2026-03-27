@@ -161,12 +161,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           text-decoration: none;
           font-size: 0.8125rem;
           font-weight: 500;
-          color: rgba(255, 255, 255, 0.55);
+          color: rgba(255, 255, 255, 0.82);
           transition: all 0.15s ease;
         }
 
         .nav-item:hover {
-          color: rgba(255, 255, 255, 0.9);
+          color: #ffffff;
           background: rgba(255, 255, 255, 0.06);
         }
 
