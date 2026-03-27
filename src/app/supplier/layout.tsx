@@ -14,15 +14,25 @@ import {
   UserCircle,
   SignOut,
   Buildings,
+  Package,
+  ShoppingCart,
+  ChatCircle,
+  FileText,
+  Bell,
 } from '@phosphor-icons/react';
 
 const navItems = [
   { label: 'Dashboard', href: '/supplier/dashboard', icon: House },
+  { label: 'Products', href: '/supplier/products', icon: Package },
+  { label: 'Orders', href: '/supplier/orders', icon: ShoppingCart },
   { label: 'Leads', href: '/supplier/leads', icon: Funnel },
+  { label: 'Messages', href: '/supplier/messages', icon: ChatCircle },
+  { label: 'Reviews', href: '/supplier/reviews', icon: Star },
   { label: 'Analytics', href: '/supplier/analytics', icon: ChartLine },
-  { label: 'Add Product', href: '/supplier/products/add', icon: Plus },
+  { label: 'Documents', href: '/supplier/documents', icon: FileText },
+  { label: 'Notifications', href: '/supplier/notifications', icon: Bell },
   { label: 'Billing', href: '/supplier/billing', icon: CreditCard },
-  { label: 'Upgrade', href: '/supplier/upgrade', icon: Star },
+  { label: 'Upgrade', href: '/supplier/upgrade', icon: UserCircle },
   { label: 'Profile', href: '/supplier/profile/edit', icon: UserCircle },
 ];
 

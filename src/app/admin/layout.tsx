@@ -18,6 +18,11 @@ import {
   MagnifyingGlass,
   SignOut,
   House,
+  Tag,
+  Wallet,
+  Star,
+  Gear,
+  Export,
 } from '@phosphor-icons/react';
 
 const navItems = [
@@ -25,6 +30,10 @@ const navItems = [
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Suppliers', href: '/admin/suppliers', icon: Storefront },
   { label: 'Performance', href: '/admin/performance', icon: TrendUp },
+  { label: 'Material Prices', href: '/admin/prices', icon: Tag },
+  { label: 'Payouts', href: '/admin/payouts', icon: Wallet },
+  { label: 'Featured', href: '/admin/featured', icon: Star },
+  { label: 'Reports', href: '/admin/reports', icon: Export },
   { label: 'Content', href: '/admin/content', icon: Package },
   { label: 'Tickets', href: '/admin/tickets', icon: ChatCircle },
   { label: 'Agreements', href: '/admin/agreements', icon: FileText },
@@ -32,6 +41,7 @@ const navItems = [
   { label: 'Audit Logs', href: '/admin/logs', icon: ClipboardText },
   { label: 'Scraper', href: '/admin/scraper', icon: Robot },
   { label: 'Review Queue', href: '/admin/scraper-review', icon: MagnifyingGlass },
+  { label: 'Settings', href: '/admin/settings', icon: Gear },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
