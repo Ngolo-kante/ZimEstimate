@@ -8,6 +8,7 @@ import {
     CurrencyCircleDollar,
     ListChecks,
     Clipboard,
+    ShieldCheck,
     Truck,
     Files,
     Gear,
@@ -17,7 +18,15 @@ import {
 import { Project } from '@/lib/database.types';
 import { getProjects } from '@/lib/services/projects';
 
-export type ProjectView = 'overview' | 'budget' | 'boq' | 'procurement' | 'usage' | 'documents' | 'settings';
+export type ProjectView =
+    | 'overview'
+    | 'budget'
+    | 'boq'
+    | 'compliance'
+    | 'procurement'
+    | 'usage'
+    | 'documents'
+    | 'settings';
 
 interface SidebarSpineProps {
     project: Project;
@@ -32,6 +41,7 @@ const navItems: { id: ProjectView; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Overview', icon: <House size={20} /> },
     { id: 'budget', label: 'Budget Planner', icon: <CurrencyCircleDollar size={20} /> },
     { id: 'boq', label: 'Bill of Quantities', icon: <ListChecks size={20} /> },
+    { id: 'compliance', label: 'Compliance Tracker', icon: <ShieldCheck size={20} /> },
     { id: 'procurement', label: 'Procurement Hub', icon: <Truck size={20} /> },
     { id: 'usage', label: 'Usage Tracking', icon: <Clipboard size={20} /> },
     { id: 'documents', label: 'Documents', icon: <Files size={20} /> },

@@ -1,25 +1,37 @@
 import type { BrickType } from '@/lib/vision/types';
+import { getProjectTypeConfig } from '@/app/boq/new/projectTypes';
 
 export type BOQWizardFieldValidation = Partial<Record<
+  'projectType' |
   'projectName' |
   'locationType' |
   'floorPlanSize' |
   'buildingType' |
-  'brickType' |
+  'brickTypes' |
   'projectScope' |
   'selectedStages' |
   'laborType',
   string
 >>;
 
+export type BOQWizardSectionId =
+  | 'project_type'
+  | 'project'
+  | 'geometry'
+  | 'scope'
+  | 'labor'
+  | 'finished';
+
 export type BOQWizardValidationState = {
-  currentStep: number;
+  currentSection: BOQWizardSectionId;
+  geometryMode: 'quick' | 'detailed' | 'upload';
   projectDetails: {
+    projectType: string;
     name: string;
     locationType: string;
     floorPlanSize: string;
     buildingType: string;
-    brickType: BrickType;
+    brickTypes: BrickType[];
   };
   projectScope: string;
   selectedStages: string[];
@@ -33,7 +45,8 @@ export type BOQWizardValidationResult = {
 
 export function validateBOQWizardStep(state: BOQWizardValidationState): BOQWizardValidationResult {
   const {
-    currentStep,
+    currentSection,
+    geometryMode,
     projectDetails,
     projectScope,
     selectedStages,
@@ -43,7 +56,14 @@ export function validateBOQWizardStep(state: BOQWizardValidationState): BOQWizar
   const errors: BOQWizardFieldValidation = {};
   let message: string | null = null;
 
-  if (currentStep === 1) {
+  if (currentSection === 'project_type') {
+    if (!projectDetails.projectType) {
+      errors.projectType = 'Please select a project type.';
+      message = 'Choose a project type to continue.';
+    }
+  }
+
+  if (currentSection === 'project') {
     if (!projectDetails.name.trim()) {
       errors.projectName = 'Please enter a project name.';
     }
@@ -55,23 +75,34 @@ export function validateBOQWizardStep(state: BOQWizardValidationState): BOQWizar
     }
   }
 
-  if (currentStep === 2) {
-    const floorPlanValue = Number(projectDetails.floorPlanSize);
-    if (!projectDetails.floorPlanSize || !Number.isFinite(floorPlanValue) || floorPlanValue <= 0) {
-      errors.floorPlanSize = 'Please enter a valid floor plan size.';
-    }
-    if (!projectDetails.buildingType) {
-      errors.buildingType = 'Please select a building type.';
-    }
-    if (!projectDetails.brickType) {
-      errors.brickType = 'Please select a brick or block type.';
-    }
-    if (errors.floorPlanSize || errors.buildingType || errors.brickType) {
-      message = 'Complete required floor plan fields before continuing.';
+  if (currentSection === 'geometry') {
+    const projectTypeConfig = getProjectTypeConfig(projectDetails.projectType);
+    const requiresGeometry = projectTypeConfig?.requiresGeometry ?? true;
+
+    if (requiresGeometry) {
+      if (geometryMode === 'quick') {
+        const floorPlanValue = Number(projectDetails.floorPlanSize);
+        if (!projectDetails.floorPlanSize || !Number.isFinite(floorPlanValue) || floorPlanValue <= 0) {
+          errors.floorPlanSize = 'Please enter a valid floor plan size.';
+        }
+      }
+      if (!projectDetails.buildingType) {
+        errors.buildingType = 'Please select a building type.';
+      }
+      if (!projectDetails.brickTypes || projectDetails.brickTypes.length === 0) {
+        errors.brickTypes = 'Please select a brick or block type.';
+      }
+      if (geometryMode === 'upload') {
+        // Stub validation for upload mode (pass through for now)
+      }
+
+      if (errors.floorPlanSize || errors.buildingType || errors.brickTypes) {
+        message = 'Complete required floor plan fields before continuing.';
+      }
     }
   }
 
-  if (currentStep === 3) {
+  if (currentSection === 'scope') {
     if (!projectScope) {
       errors.projectScope = 'Please select a project scope.';
     }
@@ -83,7 +114,7 @@ export function validateBOQWizardStep(state: BOQWizardValidationState): BOQWizar
     }
   }
 
-  if (currentStep === 4) {
+  if (currentSection === 'labor') {
     if (!laborType) {
       errors.laborType = 'Please select a labor option.';
       message = 'Choose a labor option to continue.';

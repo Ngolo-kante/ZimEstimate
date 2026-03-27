@@ -43,14 +43,113 @@ export type VerificationStatus = 'unverified' | 'pending' | 'verified' | 'truste
 
 export type SupplierApplicationStatus = 'pending' | 'under_review' | 'approved' | 'rejected';
 
+export type ProjectSoilType = 'loam' | 'sandy' | 'clay_black_mountain' | 'rock' | 'not_sure';
+export type SiteSlopeType = 'flat' | 'gentle' | 'moderate' | 'steep';
+
 export type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock' | 'discontinued';
+
+export type SolarSystemType = 'off-grid' | 'hybrid';
+export type SolarDailyUsage = 'essential' | 'moderate' | 'full';
+export type SolarAppliance = 'fridge' | 'tv' | 'lights' | 'borehole_pump' | 'geyser' | 'stove';
+export type SolarRoofType = 'tile' | 'ibr' | 'concrete';
+
+export type WaterSource = 'municipal' | 'borehole' | 'borehole_tanks';
+export type PumpType = 'submersible' | 'surface';
+export type TankSizeLitres = 2500 | 5000 | 10000;
+
+export type SanitationType = 'municipal' | 'septic' | 'eco_composting';
+export type SepticTankType = 'brick' | 'precast';
+export type SoakawayType = 'stone_pit' | 'french_drain';
+
+export type RainwaterGutterType = 'pvc' | 'galvanised';
+
+export type GreywaterSource = 'shower' | 'sink' | 'laundry';
+export type GreywaterUse = 'garden' | 'toilet_flushing';
+
+export type SolarConfig = {
+    enabled: boolean;
+    systemType: SolarSystemType | null;
+    dailyUsage: SolarDailyUsage | null;
+    appliances: SolarAppliance[];
+    roofType: SolarRoofType | null;
+};
+
+export type WaterConfig = {
+    enabled: boolean;
+    source: WaterSource | null;
+    boreholeExists: boolean | null;
+    boreholeDepthM: number | null;
+    pumpType: PumpType | null;
+    tankCount: number | null;
+    tankSizeLitres: TankSizeLitres | null;
+    tankStandRequired: boolean | null;
+};
+
+export type WastewaterConfig = {
+    enabled: boolean;
+    sanitationType: SanitationType | null;
+    bathroomCount: number | null;
+    occupantCount: number | null;
+    septicTankType: SepticTankType | null;
+    soakawayType: SoakawayType | null;
+};
+
+export type RainwaterConfig = {
+    enabled: boolean;
+    roofAreaM2: number | null;
+    gutterType: RainwaterGutterType | null;
+    tankSizeLitres: number | null;
+    firstFlush: boolean | null;
+    sandFilter: boolean | null;
+};
+
+export type GreywaterConfig = {
+    enabled: boolean;
+    sources: GreywaterSource[];
+    use: GreywaterUse | null;
+};
+
+export interface ProjectUtilityConfig {
+    id: string;
+    project_id: string;
+    solar_enabled: SolarConfig['enabled'];
+    solar_system_type: SolarConfig['systemType'];
+    solar_daily_usage: SolarConfig['dailyUsage'];
+    solar_appliances: SolarConfig['appliances'] | null;
+    solar_roof_type: SolarConfig['roofType'];
+    water_enabled: WaterConfig['enabled'];
+    water_source: WaterConfig['source'];
+    borehole_exists: WaterConfig['boreholeExists'];
+    borehole_depth_m: WaterConfig['boreholeDepthM'];
+    pump_type: WaterConfig['pumpType'];
+    tank_count: WaterConfig['tankCount'];
+    tank_size_litres: WaterConfig['tankSizeLitres'];
+    tank_stand_required: WaterConfig['tankStandRequired'];
+    wastewater_enabled: WastewaterConfig['enabled'];
+    sanitation_type: WastewaterConfig['sanitationType'];
+    bathroom_count: WastewaterConfig['bathroomCount'];
+    occupant_count: WastewaterConfig['occupantCount'];
+    septic_tank_type: WastewaterConfig['septicTankType'];
+    soakaway_type: WastewaterConfig['soakawayType'];
+    rainwater_enabled: RainwaterConfig['enabled'];
+    roof_area_m2: RainwaterConfig['roofAreaM2'];
+    rainwater_gutter_type: RainwaterConfig['gutterType'];
+    rainwater_tank_size_litres: RainwaterConfig['tankSizeLitres'];
+    rainwater_first_flush: RainwaterConfig['firstFlush'];
+    rainwater_sand_filter: RainwaterConfig['sandFilter'];
+    greywater_enabled: GreywaterConfig['enabled'];
+    greywater_sources: GreywaterConfig['sources'] | null;
+    greywater_use: GreywaterConfig['use'];
+    created_at: string;
+    updated_at: string;
+}
 
 // Tier limits configuration
 export const TIER_LIMITS = {
     free: {
-        maxProjects: 3,
-        aiFeatures: false,
-        advancedExport: false,
+        maxProjects: Infinity,
+        aiFeatures: true,
+        advancedExport: true,
     },
     pro: {
         maxProjects: Infinity,
@@ -87,6 +186,7 @@ export interface Database {
                     notify_price_alerts: boolean;
                     notify_project_reminders: boolean;
                     user_type: UserType;
+                    telegram_chat_id: string | null;
                     created_at: string;
                     updated_at: string;
                 };
@@ -107,6 +207,7 @@ export interface Database {
                     notify_price_alerts?: boolean;
                     notify_project_reminders?: boolean;
                     user_type?: UserType;
+                    telegram_chat_id?: string | null;
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -127,6 +228,7 @@ export interface Database {
                     notify_price_alerts?: boolean;
                     notify_project_reminders?: boolean;
                     user_type?: UserType;
+                    telegram_chat_id?: string | null;
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -153,6 +255,12 @@ export interface Database {
                     target_completion_date: string | null;
                     target_purchase_date: string | null;
                     savings_frequency: SavingsFrequency;
+                    soil_type: ProjectSoilType | null;
+                    site_slope: SiteSlopeType | null;
+                    geotech_report_uploaded: boolean;
+                    geotech_report_uploaded_at: string | null;
+                    geotech_report_document_id: string | null;
+                    geotech_analysis_mode: 'manual' | 'pro_available' | 'pro_applied';
                     created_at: string;
                     updated_at: string;
                 };
@@ -177,6 +285,12 @@ export interface Database {
                     target_completion_date?: string | null;
                     target_purchase_date?: string | null;
                     savings_frequency?: SavingsFrequency;
+                    soil_type?: ProjectSoilType | null;
+                    site_slope?: SiteSlopeType | null;
+                    geotech_report_uploaded?: boolean;
+                    geotech_report_uploaded_at?: string | null;
+                    geotech_report_document_id?: string | null;
+                    geotech_analysis_mode?: 'manual' | 'pro_available' | 'pro_applied';
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -201,6 +315,12 @@ export interface Database {
                     target_completion_date?: string | null;
                     target_purchase_date?: string | null;
                     savings_frequency?: SavingsFrequency;
+                    soil_type?: ProjectSoilType | null;
+                    site_slope?: SiteSlopeType | null;
+                    geotech_report_uploaded?: boolean;
+                    geotech_report_uploaded_at?: string | null;
+                    geotech_report_document_id?: string | null;
+                    geotech_analysis_mode?: 'manual' | 'pro_available' | 'pro_applied';
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -808,7 +928,6 @@ export interface Database {
                     supplier_email: string | null;
                     supplier_phone: string | null;
                     status: string;
-                    workflow_state: string | null;
                     notes: string | null;
                     items: Json;
                     created_at: string;
@@ -823,7 +942,6 @@ export interface Database {
                     supplier_email?: string | null;
                     supplier_phone?: string | null;
                     status?: string;
-                    workflow_state?: string | null;
                     notes?: string | null;
                     items: Json;
                     created_at?: string;
@@ -838,7 +956,6 @@ export interface Database {
                     supplier_email?: string | null;
                     supplier_phone?: string | null;
                     status?: string;
-                    workflow_state?: string | null;
                     notes?: string | null;
                     items?: Json;
                     created_at?: string;
@@ -1065,9 +1182,8 @@ export interface Database {
                     quantity: number;
                     unit_price_usd: number;
                     purchased_at: string;
-                    receipt_document_id: string | null;
-                    rfq_quote_id: string | null;
                     notes: string | null;
+                    receipt_document_id: string | null;
                     created_by: string;
                     created_at: string;
                     updated_at: string;
@@ -1081,9 +1197,8 @@ export interface Database {
                     quantity: number;
                     unit_price_usd: number;
                     purchased_at?: string;
-                    receipt_document_id?: string | null;
-                    rfq_quote_id?: string | null;
                     notes?: string | null;
+                    receipt_document_id?: string | null;
                     created_by: string;
                     created_at?: string;
                     updated_at?: string;
@@ -1097,9 +1212,8 @@ export interface Database {
                     quantity?: number;
                     unit_price_usd?: number;
                     purchased_at?: string;
-                    receipt_document_id?: string | null;
-                    rfq_quote_id?: string | null;
                     notes?: string | null;
+                    receipt_document_id?: string | null;
                     created_by?: string;
                     created_at?: string;
                     updated_at?: string;
@@ -1468,53 +1582,6 @@ export interface Database {
                     updated_at?: string;
                 };
             };
-            supplier_documents: {
-                Row: {
-                    id: string;
-                    application_id: string | null;
-                    supplier_id: string | null;
-                    document_type: string;
-                    file_name: string | null;
-                    file_path: string;
-                    file_url: string | null;
-                    status: string;
-                    notes: string | null;
-                    uploaded_by: string | null;
-                    reviewed_by: string | null;
-                    reviewed_at: string | null;
-                    created_at: string;
-                };
-                Insert: {
-                    id?: string;
-                    application_id?: string | null;
-                    supplier_id?: string | null;
-                    document_type: string;
-                    file_name?: string | null;
-                    file_path: string;
-                    file_url?: string | null;
-                    status?: string;
-                    notes?: string | null;
-                    uploaded_by?: string | null;
-                    reviewed_by?: string | null;
-                    reviewed_at?: string | null;
-                    created_at?: string;
-                };
-                Update: {
-                    id?: string;
-                    application_id?: string | null;
-                    supplier_id?: string | null;
-                    document_type?: string;
-                    file_name?: string | null;
-                    file_path?: string;
-                    file_url?: string | null;
-                    status?: string;
-                    notes?: string | null;
-                    uploaded_by?: string | null;
-                    reviewed_by?: string | null;
-                    reviewed_at?: string | null;
-                    created_at?: string;
-                };
-            };
             supplier_products: {
                 Row: {
                     id: string;
@@ -1619,7 +1686,6 @@ export type ScraperLog = Database['public']['Tables']['scraper_logs']['Row'];
 export type ProjectStage = Database['public']['Tables']['project_stages']['Row'];
 export type StageTask = Database['public']['Tables']['stage_tasks']['Row'];
 export type SupplierApplication = Database['public']['Tables']['supplier_applications']['Row'];
-export type SupplierDocument = Database['public']['Tables']['supplier_documents']['Row'];
 export type SupplierProduct = Database['public']['Tables']['supplier_products']['Row'];
 
 // Insert types
@@ -1646,7 +1712,6 @@ export type StageTaskInsert = Database['public']['Tables']['stage_tasks']['Inser
 export type SupplierInsert = Database['public']['Tables']['suppliers']['Insert'];
 export type SupplierApiKeyInsert = Database['public']['Tables']['supplier_api_keys']['Insert'];
 export type SupplierApplicationInsert = Database['public']['Tables']['supplier_applications']['Insert'];
-export type SupplierDocumentInsert = Database['public']['Tables']['supplier_documents']['Insert'];
 export type SupplierProductInsert = Database['public']['Tables']['supplier_products']['Insert'];
 
 // Update types
@@ -1672,7 +1737,6 @@ export type StageTaskUpdate = Database['public']['Tables']['stage_tasks']['Updat
 export type SupplierUpdate = Database['public']['Tables']['suppliers']['Update'];
 export type SupplierApiKeyUpdate = Database['public']['Tables']['supplier_api_keys']['Update'];
 export type SupplierApplicationUpdate = Database['public']['Tables']['supplier_applications']['Update'];
-export type SupplierDocumentUpdate = Database['public']['Tables']['supplier_documents']['Update'];
 export type SupplierProductUpdate = Database['public']['Tables']['supplier_products']['Update'];
 
 // Stage with tasks helper type
@@ -1680,3 +1744,32 @@ export type ProjectStageWithTasks = ProjectStage & { tasks: StageTask[] };
 
 // Alias for legacy/inconsistent usage
 export type RequestForQuotation = RfqRequest;
+
+// ── SupplierDocument (separate from DB schema — stored in supplier-documents storage) ──
+export interface SupplierDocument {
+    id: string;
+    application_id: string | null;
+    supplier_id: string | null;
+    document_type: string;
+    file_name: string;
+    file_path: string;
+    file_url: string;
+    status: 'pending' | 'verified' | 'rejected';
+    uploaded_by: string;
+    reviewed_by: string | null;
+    reviewed_at: string | null;
+    notes: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export type SupplierDocumentInsert = Omit<SupplierDocument, 'id' | 'reviewed_by' | 'reviewed_at' | 'notes' | 'created_at' | 'updated_at'> & {
+    id?: string;
+    reviewed_by?: string | null;
+    reviewed_at?: string | null;
+    notes?: string | null;
+    created_at?: string;
+    updated_at?: string;
+};
+
+export type SupplierDocumentUpdate = Partial<SupplierDocument>;

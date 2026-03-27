@@ -7,7 +7,9 @@ import {
     saveProjectWithItems,
 } from '@/lib/services/projects';
 import { createDefaultStages, setProjectStagesApplicability } from '@/lib/services/stages';
-import { Project, BOQItem, ProjectScope, LaborPreference } from '@/lib/database.types';
+import { Project, BOQItem, ProjectScope, LaborPreference, ProjectSoilType, SiteSlopeType } from '@/lib/database.types';
+
+const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
 
 interface BOQItemLocal {
     id: string;
@@ -21,6 +23,7 @@ interface BOQItemLocal {
     actualPriceZwg: number;
     description?: string;
     category?: string;
+    isEnablementCost?: boolean;
 }
 
 interface MilestoneData {
@@ -32,6 +35,12 @@ interface MilestoneData {
 interface ProjectDetails {
     name: string;
     location: string;
+    soilType?: ProjectSoilType | '';
+    siteSlope?: SiteSlopeType | '';
+    geotechReportUploaded?: boolean;
+    geotechReportUploadedAt?: string | null;
+    geotechReportDocumentId?: string | null;
+    geotechAnalysisMode?: 'manual' | 'pro_available' | 'pro_applied';
 }
 
 interface UseProjectAutoSaveOptions {
@@ -48,6 +57,7 @@ interface UseProjectAutoSaveReturn {
     // State
     project: Project | null;
     isSaving: boolean;
+    isAutoSaving: boolean;
     isLoading: boolean;
     lastSaved: Date | null;
     hasUnsavedChanges: boolean;
@@ -79,6 +89,7 @@ export function useProjectAutoSave(
 
     const [project, setProject] = useState<Project | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [isAutoSaving, setIsAutoSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -114,7 +125,11 @@ export function useProjectAutoSave(
                     unit: item.unit,
                     unit_price_usd: item.actualPriceUsd,
                     unit_price_zwg: item.actualPriceZwg,
-                    notes: item.description,
+                    notes: item.isEnablementCost
+                        ? item.description
+                            ? `${ENABLEMENT_ITEM_TAG} ${item.description}`
+                            : ENABLEMENT_ITEM_TAG
+                        : item.description,
                     sort_order: sortOrder++,
                 });
             });
@@ -124,11 +139,15 @@ export function useProjectAutoSave(
     }, []);
 
     // Save project to database
-    const saveProject = useCallback(async () => {
+    const saveProject = useCallback(async (isAutoSave: boolean = false) => {
         const currentProject = projectRef.current;
         if (!currentProject) return;
 
-        setIsSaving(true);
+        if (isAutoSave) {
+            setIsAutoSaving(true);
+        } else {
+            setIsSaving(true);
+        }
         setError(null);
         onSaveStart?.();
 
@@ -159,6 +178,12 @@ export function useProjectAutoSave(
                     status: 'draft',
                     total_usd: totalUsd,
                     total_zwg: totalZwg,
+                    soil_type: projectDetails.soilType || null,
+                    site_slope: projectDetails.siteSlope || null,
+                    geotech_report_uploaded: projectDetails.geotechReportUploaded ?? false,
+                    geotech_report_uploaded_at: projectDetails.geotechReportUploadedAt ?? null,
+                    geotech_report_document_id: projectDetails.geotechReportDocumentId ?? null,
+                    geotech_analysis_mode: projectDetails.geotechAnalysisMode ?? 'manual',
                 },
                 items
             );
@@ -197,7 +222,11 @@ export function useProjectAutoSave(
             setError(error.message);
             onSaveError?.(error);
         } finally {
-            setIsSaving(false);
+            if (isAutoSave) {
+                setIsAutoSaving(false);
+            } else {
+                setIsSaving(false);
+            }
         }
     }, [
         projectDetails,
@@ -229,6 +258,12 @@ export function useProjectAutoSave(
                 scope,
                 labor_preference: laborType === 'materials_labor' ? 'with_labor' : 'materials_only',
                 selected_stages: selectedStagesForSave.length > 0 ? selectedStagesForSave : null,
+                soil_type: details.soilType || null,
+                site_slope: details.siteSlope || null,
+                geotech_report_uploaded: details.geotechReportUploaded ?? false,
+                geotech_report_uploaded_at: details.geotechReportUploadedAt ?? null,
+                geotech_report_document_id: details.geotechReportDocumentId ?? null,
+                geotech_analysis_mode: details.geotechAnalysisMode ?? 'manual',
             });
 
             if (createError) {
@@ -308,7 +343,7 @@ export function useProjectAutoSave(
 
         // Set new timeout for auto-save
         saveTimeoutRef.current = setTimeout(() => {
-            saveProject();
+            void saveProject(true);
         }, autoSaveInterval);
 
         return () => {
@@ -330,12 +365,13 @@ export function useProjectAutoSave(
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
         }
-        await saveProject();
+        await saveProject(false);
     }, [saveProject]);
 
     return {
         project,
         isSaving,
+        isAutoSaving,
         isLoading,
         lastSaved,
         hasUnsavedChanges,

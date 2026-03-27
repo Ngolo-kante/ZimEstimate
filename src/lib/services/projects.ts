@@ -32,6 +32,8 @@ import {
     DocumentCategory,
     SavingsFrequency,
     AccessLevel,
+    ProjectSoilType,
+    SiteSlopeType,
 } from '@/lib/database.types';
 
 // Type-safe wrapper to bypass strict Supabase types until regenerated
@@ -51,6 +53,12 @@ export async function createProject(data: {
     labor_preference?: LaborPreference;
     selected_stages?: string[] | null;
     usage_tracking_enabled?: boolean;
+    soil_type?: ProjectSoilType | null;
+    site_slope?: SiteSlopeType | null;
+    geotech_report_uploaded?: boolean;
+    geotech_report_uploaded_at?: string | null;
+    geotech_report_document_id?: string | null;
+    geotech_analysis_mode?: 'manual' | 'pro_available' | 'pro_applied';
 }): Promise<{ project: Project | null; error: Error | null }> {
     const { data: { user } } = await db.auth.getUser();
 
@@ -70,6 +78,12 @@ export async function createProject(data: {
         usage_tracking_enabled: data.usage_tracking_enabled ?? false,
         total_usd: 0,
         total_zwg: 0,
+        soil_type: data.soil_type ?? null,
+        site_slope: data.site_slope ?? null,
+        geotech_report_uploaded: data.geotech_report_uploaded ?? false,
+        geotech_report_uploaded_at: data.geotech_report_uploaded_at ?? null,
+        geotech_report_document_id: data.geotech_report_document_id ?? null,
+        geotech_analysis_mode: data.geotech_analysis_mode ?? 'manual',
     };
 
     const { data: project, error } = await db
@@ -1611,4 +1625,27 @@ export async function calculateSavingsPlan(
         },
         error: null,
     };
+}
+
+// ============================================
+// PROJECT UTILITY CONFIG
+// ============================================
+
+import type { ProjectUtilityConfig } from '@/lib/database.types';
+
+/** Create or update the utility config for a project. */
+export async function upsertProjectUtilityConfig(
+    data: Partial<ProjectUtilityConfig> & { project_id: string }
+): Promise<{ config: ProjectUtilityConfig | null; error: Error | null }> {
+    const { data: config, error } = await db
+        .from('project_utility_configs')
+        .upsert(data, { onConflict: 'project_id' })
+        .select()
+        .single();
+
+    if (error) {
+        return { config: null, error: new Error(error.message) };
+    }
+
+    return { config, error: null };
 }

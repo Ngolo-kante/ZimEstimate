@@ -8,6 +8,22 @@ type RevealOptions = {
   deps?: ReadonlyArray<unknown>;
 };
 
+const serializeDep = (value: unknown): string => {
+  if (value === null) return 'null';
+  const type = typeof value;
+  if (type === 'object') {
+    try {
+      return `object:${JSON.stringify(value)}`;
+    } catch {
+      return `object:${Object.prototype.toString.call(value)}`;
+    }
+  }
+  if (type === 'function') {
+    return `function:${(value as { name?: string }).name || 'anonymous'}`;
+  }
+  return `${type}:${String(value)}`;
+};
+
 export function useReveal({
   selector = '.reveal',
   threshold = 0.1,
@@ -15,6 +31,8 @@ export function useReveal({
   once = false,
   deps = [],
 }: RevealOptions = {}) {
+  const depsSignature = deps.map(serializeDep).join('|');
+
   useEffect(() => {
     const elements = Array.from(document.querySelectorAll(selector));
     if (!elements.length) return;
@@ -36,5 +54,5 @@ export function useReveal({
     elements.forEach((el) => observer.observe(el));
 
     return () => observer.disconnect();
-  }, deps);
+  }, [selector, threshold, rootMargin, once, depsSignature]);
 }

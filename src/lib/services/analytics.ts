@@ -41,6 +41,9 @@ export interface ProjectComparisonRow {
   spendUsd: number;
   budgetUsd: number;
   completionPct: number;
+  soil_type?: Project['soil_type'];
+  site_slope?: Project['site_slope'];
+  geotech_report_uploaded?: Project['geotech_report_uploaded'];
 }
 
 export interface BuilderAnalyticsData {
@@ -248,6 +251,9 @@ export async function getBuilderAnalytics(
       spendUsd: comparisonSpend,
       budgetUsd: comparisonBudget,
       completionPct: comparisonCompletion,
+      soil_type: comparison.soil_type,
+      site_slope: comparison.site_slope,
+      geotech_report_uploaded: comparison.geotech_report_uploaded,
     };
   });
 
@@ -262,6 +268,144 @@ export async function getBuilderAnalytics(
       supplierSpend,
       priceTrends: priceTrends.filter(Boolean) as PriceTrendRow[],
       projectComparisons,
+    },
+    error: null,
+  };
+}
+
+export interface PortfolioAnalyticsData {
+  totalProjects: number;
+  activeProjects: number;
+  completedProjects: number;
+  totalBudgetUsd: number;
+  totalSpendUsd: number;
+  budgetVarianceUsd: number;
+  avgCompletionPct: number;
+  recentPurchases: Array<{
+    id: string;
+    projectName: string;
+    materialName: string;
+    supplierName: string;
+    totalUsd: number;
+    purchasedAt: string;
+  }>;
+  spendTimeline: SpendTimelinePoint[];
+  topSuppliers: SupplierSpendRow[];
+  projectSummaries: ProjectComparisonRow[];
+}
+
+/** Fetch portfolio-wide analytics for a builder. */
+export async function getPortfolioAnalytics(): Promise<{ data: PortfolioAnalyticsData | null; error: Error | null }> {
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData?.user) {
+    return { data: null, error: new Error('Not authenticated') };
+  }
+
+  // Fetch all user projects
+  const { data: projects, error: projectsError } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('owner_id', authData.user.id)
+    .order('updated_at', { ascending: false });
+
+  if (projectsError) {
+    return { data: null, error: new Error(projectsError.message) };
+  }
+
+  const projectRows = (projects || []) as Project[];
+  const projectIds = projectRows.map((p) => p.id);
+
+  // Fetch all purchases across projects
+  const { data: purchases } = projectIds.length
+    ? await supabase
+        .from('purchase_records')
+        .select('*, boq_items(material_name), projects(name)')
+        .in('project_id', projectIds)
+        .order('purchased_at', { ascending: false })
+        .limit(100)
+    : { data: [] };
+
+  // Fetch all stages
+  const { data: stages } = projectIds.length
+    ? await supabase
+        .from('project_stages')
+        .select('*')
+        .in('project_id', projectIds)
+    : { data: [] };
+
+  const records = (purchases || []) as Array<PurchaseRecord & { boq_items?: { material_name: string }; projects?: { name: string } }>;
+  const stageRows = (stages || []) as ProjectStage[];
+
+  // Calculate totals
+  const totalSpendUsd = computeSpend(records as PurchaseRecord[]);
+  const totalBudgetUsd = projectRows.reduce((sum, p) => sum + Number(p.budget_target_usd ?? p.total_usd ?? 0), 0);
+  const budgetVarianceUsd = totalBudgetUsd - totalSpendUsd;
+
+  // Group stages by project
+  const stagesByProject = new Map<string, ProjectStage[]>();
+  stageRows.forEach((stage) => {
+    const list = stagesByProject.get(stage.project_id) || [];
+    list.push(stage);
+    stagesByProject.set(stage.project_id, list);
+  });
+
+  // Calculate average completion
+  const completionPcts = projectRows.map((p) => computeCompletion(stagesByProject.get(p.id) || []));
+  const avgCompletionPct = completionPcts.length > 0
+    ? completionPcts.reduce((sum, pct) => sum + pct, 0) / completionPcts.length
+    : 0;
+
+  // Build spend timeline (last 6 months across all projects)
+  const spendTimeline = buildSpendTimeline(records as PurchaseRecord[], 6);
+
+  // Build supplier breakdown
+  const topSuppliers = buildSupplierSpend(records as PurchaseRecord[]).slice(0, 5);
+
+  // Recent purchases
+  const recentPurchases = records.slice(0, 8).map((record) => ({
+    id: record.id,
+    projectName: record.projects?.name || 'Unknown Project',
+    materialName: record.boq_items?.material_name || 'Unknown Material',
+    supplierName: record.supplier_name,
+    totalUsd: Number(record.quantity) * Number(record.unit_price_usd),
+    purchasedAt: record.purchased_at,
+  }));
+
+  // Spend by project for comparisons
+  const spendByProject = new Map<string, number>();
+  records.forEach((record) => {
+    spendByProject.set(
+      record.project_id,
+      (spendByProject.get(record.project_id) || 0) + Number(record.quantity) * Number(record.unit_price_usd)
+    );
+  });
+
+  // Project summaries
+  const projectSummaries: ProjectComparisonRow[] = projectRows.slice(0, 6).map((project) => ({
+    id: project.id,
+    name: project.name,
+    status: project.status,
+    spendUsd: spendByProject.get(project.id) || 0,
+    budgetUsd: Number(project.budget_target_usd ?? project.total_usd ?? 0),
+    completionPct: computeCompletion(stagesByProject.get(project.id) || []),
+    soil_type: project.soil_type,
+    site_slope: project.site_slope,
+    geotech_report_uploaded: project.geotech_report_uploaded,
+  }));
+
+  return {
+    data: {
+      totalProjects: projectRows.length,
+      activeProjects: projectRows.filter((p) => p.status === 'active').length,
+      completedProjects: projectRows.filter((p) => p.status === 'completed').length,
+      totalBudgetUsd,
+      totalSpendUsd,
+      budgetVarianceUsd,
+      avgCompletionPct,
+      recentPurchases,
+      spendTimeline,
+      topSuppliers,
+      projectSummaries,
     },
     error: null,
   };

@@ -5,13 +5,25 @@ import InlineEdit from '@/components/ui/InlineEdit';
 import Button from '@/components/ui/Button';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useToast } from '@/components/ui/Toast';
-import { BOQItem, BOQCategory } from '@/lib/database.types';
+import { BOQItem, BOQCategory, PurchaseRecord } from '@/lib/database.types';
 import { StageBudgetStats } from '@/lib/services/stages';
 import { addBOQItem } from '@/lib/services/projects';
 import { materials, getBestPrice } from '@/lib/materials';
-import { Package, CaretDown, CaretUp, Trash, ShoppingCart, Plus, TrendUp, TrendDown, Minus, MagnifyingGlass } from '@phosphor-icons/react';
+import { Package, CaretDown, CaretUp, Trash, ShoppingCart, Plus, TrendUp, TrendDown, Minus, MagnifyingGlass, ClipboardText, Check, Warning, Clock, Funnel } from '@phosphor-icons/react';
 
 type StageCategory = BOQCategory | 'labor';
+type ItemStatus = 'pending' | 'in_progress' | 'purchased' | 'over_purchased';
+const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
+
+const isEnablementItem = (notes?: string | null) =>
+    (notes || '').startsWith(ENABLEMENT_ITEM_TAG);
+
+const stripEnablementTag = (notes?: string | null) => {
+    if (!notes) return '';
+    return notes.startsWith(ENABLEMENT_ITEM_TAG)
+        ? notes.replace(ENABLEMENT_ITEM_TAG, '').trim()
+        : notes;
+};
 
 interface StageBOQSectionProps {
     projectId: string;
@@ -19,12 +31,43 @@ interface StageBOQSectionProps {
     categoryLabel: string;
     items: BOQItem[];
     stats: StageBudgetStats;
+    purchases?: PurchaseRecord[];
     onItemUpdate: (itemId: string, updates: Partial<BOQItem>) => Promise<void>;
     onItemDelete?: (itemId: string) => Promise<void>;
     onItemAdded?: (item: BOQItem) => void;
+    onLogPurchase?: (item: BOQItem) => void;
+    onRecordUsage?: (item: BOQItem) => void;
     stageScope?: BOQCategory;
     usageByItem?: Record<string, number>;
     usageTrackingEnabled?: boolean;
+}
+
+// Helper to compute item status based on purchase records
+function getItemStatus(item: BOQItem, purchases: PurchaseRecord[]): ItemStatus {
+    const itemPurchases = purchases.filter(p => p.boq_item_id === item.id);
+    const purchasedFromRecords = itemPurchases.reduce((sum, p) => sum + Number(p.quantity), 0);
+    const purchasedFromItem = Number(item.actual_quantity ?? 0);
+    const totalPurchased = Math.max(purchasedFromRecords, purchasedFromItem);
+    const estimatedQty = Number(item.quantity) || 0;
+    const epsilon = 0.01;
+
+    if (totalPurchased < epsilon) return 'pending';
+    if (totalPurchased >= estimatedQty - epsilon && totalPurchased <= estimatedQty + epsilon) return 'purchased';
+    if (totalPurchased > estimatedQty + epsilon) return 'over_purchased';
+    return 'in_progress';
+}
+
+function getStatusConfig(status: ItemStatus) {
+    switch (status) {
+        case 'pending':
+            return { label: 'Pending', className: 'pending', icon: Clock };
+        case 'in_progress':
+            return { label: 'In Progress', className: 'in-progress', icon: Package };
+        case 'purchased':
+            return { label: 'Purchased', className: 'purchased', icon: Check };
+        case 'over_purchased':
+            return { label: 'Over Purchased', className: 'over-purchased', icon: Warning };
+    }
 }
 
 function PriceDisplay({ priceUsd, priceZwg, bold = false }: { priceUsd: number; priceZwg: number; bold?: boolean }) {
@@ -85,9 +128,12 @@ export default function StageBOQSection({
     categoryLabel,
     items,
     stats,
+    purchases = [],
     onItemUpdate,
     onItemDelete,
     onItemAdded,
+    onLogPurchase,
+    onRecordUsage,
     stageScope,
     usageByItem,
     usageTrackingEnabled = false,
@@ -98,7 +144,7 @@ export default function StageBOQSection({
     const [newQuantity, setNewQuantity] = useState('1');
     const [isAdding, setIsAdding] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState<'all' | 'purchased' | 'pending'>('all');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'purchased' | 'over_purchased'>('all');
     const [viewPreset, setViewPreset] = useState<'simple' | 'detailed' | 'custom'>('simple');
     const [visibleColumns, setVisibleColumns] = useState<Record<ColumnKey, boolean>>({ ...SIMPLE_COLUMNS });
     const [isColumnsOpen, setIsColumnsOpen] = useState(false);
@@ -150,13 +196,16 @@ export default function StageBOQSection({
     const filteredItems = useMemo(() => {
         const term = searchTerm.trim().toLowerCase();
         return items.filter(item => {
-            if (statusFilter === 'purchased' && !item.is_purchased) return false;
-            if (statusFilter === 'pending' && item.is_purchased) return false;
+            // Filter by status using purchase-based calculation
+            if (statusFilter !== 'all') {
+                const itemStatus = getItemStatus(item, purchases);
+                if (itemStatus !== statusFilter) return false;
+            }
             if (!term) return true;
             const haystack = `${item.material_name} ${item.notes || ''}`.toLowerCase();
             return haystack.includes(term);
         });
-    }, [items, searchTerm, statusFilter]);
+    }, [items, searchTerm, statusFilter, purchases]);
 
     const isFiltered = searchTerm.trim().length > 0 || statusFilter !== 'all';
 
@@ -511,13 +560,16 @@ export default function StageBOQSection({
                                     />
                                 </div>
                                 <div className="select-wrapper filter-select">
+                                    <Funnel size={14} className="filter-icon" />
                                     <select
                                         value={statusFilter}
-                                        onChange={(e) => setStatusFilter(e.target.value as 'all' | 'purchased' | 'pending')}
+                                        onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'in_progress' | 'purchased' | 'over_purchased')}
                                     >
                                         <option value="all">All statuses</option>
-                                        <option value="purchased">Purchased</option>
                                         <option value="pending">Pending</option>
+                                        <option value="in_progress">In Progress</option>
+                                        <option value="purchased">Purchased</option>
+                                        <option value="over_purchased">Over Purchased</option>
                                     </select>
                                     <CaretDown size={14} className="select-arrow" />
                                 </div>
@@ -526,14 +578,14 @@ export default function StageBOQSection({
                                 <div className="view-toggle">
                                     <button
                                         type="button"
-                                        className={viewPreset === 'simple' ? 'active' : ''}
+                                        className={`simple-btn ${viewPreset === 'simple' ? 'active' : ''}`}
                                         onClick={() => applyPreset('simple')}
                                     >
                                         Simple
                                     </button>
                                     <button
                                         type="button"
-                                        className={viewPreset === 'detailed' ? 'active' : ''}
+                                        className={`detailed-btn ${viewPreset === 'detailed' ? 'active' : ''}`}
                                         onClick={() => applyPreset('detailed')}
                                     >
                                         Detailed
@@ -664,13 +716,18 @@ export default function StageBOQSection({
                                             return value > 0 ? 'positive' : 'negative';
                                         };
 
+                                        const rowStatus = getItemStatus(item, purchases);
+                                        const enablement = isEnablementItem(item.notes);
                                         return (
-                                            <tr key={item.id} className={`item-row ${item.is_purchased ? 'is-purchased' : ''}`}>
+                                            <tr key={item.id} className={`item-row status-${rowStatus}${enablement ? ' enablement' : ''}`}>
                                                 {visibleColumns.item && (
                                                     <td className="col-item">
                                                         <div className="item-info">
                                                             <span className="item-name">{item.material_name}</span>
-                                                            {item.notes && <span className="item-notes">{item.notes}</span>}
+                                                            {enablement && (
+                                                                <span className="enablement-pill">Enablement Cost</span>
+                                                            )}
+                                                            {item.notes && <span className="item-notes">{stripEnablementTag(item.notes)}</span>}
                                                         </div>
                                                     </td>
                                                 )}
@@ -773,25 +830,49 @@ export default function StageBOQSection({
                                                         )}
                                                     </td>
                                                 )}
-                                                {visibleColumns.status && (
-                                                    <td className="col-status">
-                                                        {item.is_purchased ? (
-                                                            <span className="status-pill purchased">Purchased</span>
-                                                        ) : (
-                                                            <span className="status-pill pending">Pending</span>
-                                                        )}
-                                                    </td>
-                                                )}
+                                                {visibleColumns.status && (() => {
+                                                    const itemStatus = getItemStatus(item, purchases);
+                                                    const statusConfig = getStatusConfig(itemStatus);
+                                                    const StatusIcon = statusConfig.icon;
+                                                    return (
+                                                        <td className="col-status">
+                                                            <span className={`status-pill ${statusConfig.className}`}>
+                                                                <StatusIcon size={12} weight="bold" />
+                                                                {statusConfig.label}
+                                                            </span>
+                                                        </td>
+                                                    );
+                                                })()}
                                                 <td className="col-actions">
-                                                    {onItemDelete && (
-                                                        <button
-                                                            className="action-btn delete"
-                                                            onClick={() => onItemDelete(item.id)}
-                                                            title="Delete item"
-                                                        >
-                                                            <Trash size={16} />
-                                                        </button>
-                                                    )}
+                                                    <div className="action-group">
+                                                        {onLogPurchase && getItemStatus(item, purchases) !== 'purchased' && (
+                                                            <button
+                                                                className="action-btn purchase"
+                                                                onClick={() => onLogPurchase(item)}
+                                                                title="Log purchase"
+                                                            >
+                                                                <ShoppingCart size={14} />
+                                                            </button>
+                                                        )}
+                                                        {onRecordUsage && usageTrackingEnabled && (
+                                                            <button
+                                                                className="action-btn usage"
+                                                                onClick={() => onRecordUsage(item)}
+                                                                title="Record usage"
+                                                            >
+                                                                <ClipboardText size={14} />
+                                                            </button>
+                                                        )}
+                                                        {onItemDelete && (
+                                                            <button
+                                                                className="action-btn delete"
+                                                                onClick={() => onItemDelete(item.id)}
+                                                                title="Delete item"
+                                                            >
+                                                                <Trash size={14} />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );
@@ -824,20 +905,24 @@ export default function StageBOQSection({
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding: 20px 24px;
+                    padding: 16px 20px;
                     background: #ffffff;
                     cursor: pointer;
                     user-select: none;
+                    gap: 16px;
                 }
 
                 .header-main {
                     flex: 1;
+                    min-width: 0;
+                    display: flex;
+                    align-items: center;
                 }
 
                 .header-title {
                     display: flex;
-                    flex-direction: column;
-                    gap: 6px;
+                    align-items: center;
+                    gap: 14px;
                 }
 
                 .title-row {
@@ -850,17 +935,18 @@ export default function StageBOQSection({
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    width: 36px;
-                    height: 36px;
+                    width: 40px;
+                    height: 40px;
                     background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-                    border-radius: 10px;
+                    border-radius: 12px;
                     color: #0284c7;
                     box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.1);
+                    flex-shrink: 0;
                 }
 
                 h4 {
                     margin: 0;
-                    font-size: 1.1rem;
+                    font-size: 1.05rem;
                     font-weight: 600;
                     color: #0f172a;
                     letter-spacing: -0.01em;
@@ -869,8 +955,8 @@ export default function StageBOQSection({
                 .meta-row {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
-                    padding-left: 48px;
+                    gap: 10px;
+                    margin-left: 8px;
                 }
 
                 .item-badge, .purchased-badge {
@@ -892,7 +978,8 @@ export default function StageBOQSection({
                 .header-actions {
                     display: flex;
                     align-items: center;
-                    gap: 16px;
+                    gap: 12px;
+                    flex-shrink: 0;
                 }
 
                 .stat-pill {
@@ -900,12 +987,10 @@ export default function StageBOQSection({
                     flex-direction: column;
                     align-items: flex-end;
                     justify-content: center;
-                    padding: 0 12px;
-                    border-right: 1px solid #e2e8f0;
-                }
-                
-                .stat-pill:last-of-type {
-                    border-right: none;
+                    padding: 8px 14px;
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
                 }
 
                 .stat-pill .label {
@@ -917,28 +1002,30 @@ export default function StageBOQSection({
                 }
 
                 .stat-pill .value {
-                    font-size: 0.95rem;
+                    font-size: 0.9rem;
                     font-weight: 600;
                     color: #0f172a;
                 }
 
                 .expand-trigger {
-                    width: 32px;
-                    height: 32px;
+                    width: 36px;
+                    height: 36px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    border-radius: 8px;
-                    background: transparent;
-                    border: none;
-                    color: #94a3b8;
+                    border-radius: 10px;
+                    background: #f1f5f9;
+                    border: 1px solid #e2e8f0;
+                    color: #64748b;
                     cursor: pointer;
                     transition: all 0.2s;
+                    flex-shrink: 0;
                 }
 
                 .expand-trigger:hover {
-                    background: #f1f5f9;
-                    color: #475569;
+                    background: #e2e8f0;
+                    border-color: #cbd5e1;
+                    color: #334155;
                 }
 
                 .card-content {
@@ -951,14 +1038,16 @@ export default function StageBOQSection({
                     justify-content: space-between;
                     align-items: center;
                     padding: 16px 24px;
-                    background: #ffffff;
+                    background: linear-gradient(180deg, #ffffff, #f8fbff);
                     gap: 16px;
+                    border-bottom: 1px solid #eef2f7;
                 }
 
                 .toolbar-left, .toolbar-right {
                     display: flex;
                     align-items: center;
                     gap: 12px;
+                    flex-wrap: wrap;
                 }
 
                 .search-input {
@@ -971,6 +1060,7 @@ export default function StageBOQSection({
                     border: 1px solid transparent;
                     transition: all 0.2s;
                     width: 240px;
+                    height: 40px;
                 }
                 
                 .search-input:focus-within {
@@ -988,7 +1078,8 @@ export default function StageBOQSection({
 
                 .search-input input {
                     width: 100%;
-                    padding: 10px 12px 10px 36px;
+                    height: 100%;
+                    padding: 0 12px 0 36px;
                     background: transparent;
                     border: none;
                     font-size: 0.875rem;
@@ -996,33 +1087,77 @@ export default function StageBOQSection({
                     outline: none;
                 }
 
+                .filter-select {
+                    min-width: 180px;
+                }
+
+                .filter-select .filter-icon {
+                    position: absolute;
+                    left: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    pointer-events: none;
+                    color: #64748b;
+                }
+
+                .filter-select select {
+                    height: 40px;
+                    padding: 0 34px 0 34px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    font-size: 0.85rem;
+                    font-weight: 500;
+                    color: #64748b;
+                    background: #fff;
+                    appearance: none;
+                }
+
+                .filter-select select:hover {
+                    background: #f8fafc;
+                    border-color: #cbd5e1;
+                    color: #475569;
+                }
+
+                .filter-select select:focus {
+                    border-color: #cbd5e1;
+                    box-shadow: 0 0 0 3px rgba(226, 232, 240, 0.35);
+                    color: #334155;
+                }
+
                 .view-toggle {
                     display: flex;
-                    background: #f1f5f9;
-                    padding: 3px;
+                    background: linear-gradient(180deg, #e2e8f0, #f1f5f9);
+                    border: 1px solid #d7dee9;
+                    padding: 4px;
                     border-radius: 10px;
                 }
 
                 .view-toggle button {
-                    padding: 6px 12px;
+                    padding: 6px 14px;
                     font-size: 0.8rem;
-                    font-weight: 500;
+                    font-weight: 600;
                     color: #64748b;
                     background: transparent;
                     border: none;
-                    border-radius: 7px;
+                    border-radius: 8px;
                     cursor: pointer;
-                    transition: all 0.2s;
+                    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
                 }
 
                 .view-toggle button:hover {
                     color: #1e293b;
                 }
 
-                .view-toggle button.active {
-                    background: #fff;
-                    color: #0f172a;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                .view-toggle .simple-btn.active {
+                    background: #dbeafe;
+                    color: #1d4ed8;
+                    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.22), 0 1px 2px rgba(15, 23, 42, 0.06);
+                }
+
+                .view-toggle .detailed-btn.active {
+                    background: #dcfce7;
+                    color: #166534;
+                    box-shadow: inset 0 0 0 1px rgba(22, 163, 74, 0.2), 0 1px 2px rgba(15, 23, 42, 0.06);
                 }
 
                 .columns-dropdown {
@@ -1119,7 +1254,7 @@ export default function StageBOQSection({
                     position: relative;
                 }
 
-                select, .form-group input {
+                .add-form select, .form-group input {
                     width: 100%;
                     padding: 12px;
                     border: 1px solid #cbd5e1;
@@ -1131,7 +1266,7 @@ export default function StageBOQSection({
                     appearance: none;
                 }
 
-                select:focus, .form-group input:focus {
+                .add-form select:focus, .form-group input:focus {
                     border-color: #0ea5e9;
                     box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
                 }
@@ -1221,6 +1356,7 @@ export default function StageBOQSection({
                 .status-pill {
                     display: inline-flex;
                     align-items: center;
+                    gap: 4px;
                     padding: 4px 10px;
                     border-radius: 99px;
                     font-size: 0.75rem;
@@ -1236,6 +1372,47 @@ export default function StageBOQSection({
                     background: #f1f5f9;
                     color: #475569;
                 }
+
+                .status-pill.in-progress {
+                    background: #dbeafe;
+                    color: #1e40af;
+                }
+
+                .status-pill.over-purchased {
+                    background: #fee2e2;
+                    color: #dc2626;
+                }
+
+                /* Row status highlights */
+                .item-row.status-purchased {
+                    background: linear-gradient(90deg, rgba(34, 197, 94, 0.04), transparent 50%);
+                }
+
+                .item-row.status-in_progress {
+                    background: linear-gradient(90deg, rgba(59, 130, 246, 0.04), transparent 50%);
+                }
+
+                .item-row.status-over_purchased {
+                    background: linear-gradient(90deg, rgba(239, 68, 68, 0.04), transparent 50%);
+                }
+
+                .item-row.enablement {
+                    background: linear-gradient(90deg, rgba(125, 211, 252, 0.2), transparent 60%);
+                }
+
+                .enablement-pill {
+                    display: inline-flex;
+                    width: fit-content;
+                    font-size: 0.62rem;
+                    font-weight: 600;
+                    letter-spacing: 0.04em;
+                    text-transform: uppercase;
+                    color: #0369a1;
+                    background: rgba(125, 211, 252, 0.35);
+                    border: 1px solid rgba(14, 116, 144, 0.22);
+                    border-radius: 999px;
+                    padding: 2px 6px;
+                }
                 
                 .variance-badge {
                     display: inline-flex;
@@ -1249,6 +1426,12 @@ export default function StageBOQSection({
                 .variance-badge.positive { color: #dc2626; } 
                 .variance-badge.negative { color: #16a34a; } 
 
+                .action-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+
                 .action-btn {
                     padding: 6px;
                     color: #94a3b8;
@@ -1257,13 +1440,34 @@ export default function StageBOQSection({
                     border-radius: 6px;
                     cursor: pointer;
                     transition: all 0.2s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                 }
 
-                .action-btn:hover {
+                .action-btn.purchase {
+                    color: #3b82f6;
+                }
+
+                .action-btn.purchase:hover {
+                    background: #dbeafe;
+                    color: #2563eb;
+                }
+
+                .action-btn.usage {
+                    color: #10b981;
+                }
+
+                .action-btn.usage:hover {
+                    background: #d1fae5;
+                    color: #059669;
+                }
+
+                .action-btn.delete:hover {
                     background: #fee2e2;
                     color: #ef4444;
                 }
-                
+
                 .select-arrow {
                     position: absolute;
                     right: 12px;
@@ -1273,16 +1477,63 @@ export default function StageBOQSection({
                     color: #94a3b8;
                 }
 
-                @media (max-width: 768px) {
-                    .header-actions {
+                @media (max-width: 1024px) {
+                    .stat-pill {
                         display: none;
                     }
+                }
+
+                @media (max-width: 768px) {
+                    .card-header {
+                        padding: 14px 16px;
+                    }
+
+                    .header-title {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 6px;
+                    }
+
+                    .meta-row {
+                        margin-left: 0;
+                    }
+
+                    .header-actions .add-btn-header {
+                        display: none;
+                    }
+
                     .table-toolbar {
                         flex-direction: column;
                         align-items: stretch;
+                        padding: 12px 16px;
+                        gap: 12px;
                     }
+
+                    .toolbar-left, .toolbar-right {
+                        width: 100%;
+                    }
+
+                    .search-input {
+                        width: 100%;
+                    }
+
+                    .filter-select {
+                        flex: 1;
+                        min-width: 0;
+                    }
+
+                    .filter-select select {
+                        width: 100%;
+                    }
+
                     .form-grid {
                         grid-template-columns: 1fr;
+                    }
+
+                    .boq-table th,
+                    .boq-table td {
+                        padding: 12px;
+                        font-size: 0.85rem;
                     }
                 }
             `}</style>

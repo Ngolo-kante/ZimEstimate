@@ -11,6 +11,17 @@ const requiredEnv = [
   'WHATSAPP_TOKEN',
   'NEXT_PUBLIC_VAPID_PUBLIC_KEY',
   'CSRF_SECRET',
+  'REMINDER_DISPATCH_SECRET',
+];
+
+const optionalReminderEnv = [
+  'RESEND_API_KEY',
+  'REMINDER_EMAIL_FROM',
+  'TWILIO_ACCOUNT_SID',
+  'TWILIO_AUTH_TOKEN',
+  'TWILIO_SMS_FROM',
+  'TWILIO_WHATSAPP_FROM',
+  'TELEGRAM_BOT_TOKEN',
 ];
 
 const missing = requiredEnv.filter((key) => !process.env[key]);
@@ -21,4 +32,10 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
+const missingOptional = optionalReminderEnv.filter((key) => !process.env[key]);
+
 console.log('All required environment variables are set.');
+if (missingOptional.length > 0) {
+  console.warn('Optional reminder provider variables not set (only needed for those channels):');
+  missingOptional.forEach((key) => console.warn(`- ${key}`));
+}

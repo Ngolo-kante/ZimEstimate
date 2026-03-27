@@ -7,6 +7,9 @@ import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { AnimatedHero } from '@/components/ui/AnimatedHero';
+import { BentoGrid, BentoGridItem } from '@/components/ui/BentoGrid';
+import { Timeline } from '@/components/ui/Timeline';
 import {
   Scan,
   Camera,
@@ -26,7 +29,7 @@ import {
   FileText,
 } from '@phosphor-icons/react';
 
-type IconType = ComponentType<{ size?: number; weight?: 'regular' | 'duotone' | 'fill' | 'light' | 'bold' | 'thin' }>;
+type IconType = ComponentType<any>;
 
 const workflows: Array<{
   id: string;
@@ -57,11 +60,11 @@ const workflows: Array<{
       href: '/boq/new?method=manual',
     },
     {
-      id: 'budget-checker',
-      icon: Calculator,
-      title: 'Budget Check',
-      label: 'FEASIBILITY',
-      href: '/quick-budget',
+      id: 'quick-projects',
+      icon: CheckCircle,
+      title: 'Quick Projects',
+      label: 'UTILITIES & ADD-ONS',
+      href: '/quick-projects',
     },
   ];
 
@@ -137,10 +140,10 @@ const offerings: Array<{
   ];
 
 const workflowLine = [
-  { step: '01', title: 'Estimate', desc: 'Generate BOQ quickly from drawings, scans, or manual input.' },
-  { step: '02', title: 'Price', desc: 'Pull current market pricing and compare budget scenarios.' },
-  { step: '03', title: 'Procure', desc: 'Run RFQ cycles and record purchases from selected suppliers.' },
-  { step: '04', title: 'Track', desc: 'Monitor usage, variance, and progress by construction stage.' },
+  { step: '01', title: 'Estimate', content: <p className="text-slate-600">Generate BOQ quickly from drawings, scans, or manual input.</p> },
+  { step: '02', title: 'Price', content: <p className="text-slate-600">Pull current market pricing and compare budget scenarios.</p> },
+  { step: '03', title: 'Procure', content: <p className="text-slate-600">Run RFQ cycles and record purchases from selected suppliers.</p> },
+  { step: '04', title: 'Track', content: <p className="text-slate-600">Monitor usage, variance, and progress by construction stage.</p> },
 ];
 
 export default function HomePage() {
@@ -153,70 +156,86 @@ export default function HomePage() {
 
   useReveal({ selector: '.reveal-item', threshold: 0.16, once: true });
 
+  const heroActions = (
+    <>
+      <Button
+        onClick={() => router.push('/boq/new?method=manual')}
+        icon={<ArrowRight size={18} />}
+        iconPosition="right"
+        size="lg"
+        className="hero-primary shadow-blue-500/25 shadow-lg"
+      >
+        Create Estimate Now
+      </Button>
+      <Link href="/market-insights" className="hero-link font-medium text-slate-600 hover:text-blue-600 transition-colors">
+        Check Live Material Prices
+      </Link>
+      {isAdmin && (
+        <Link href="/admin/suppliers" className="hero-link-admin flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100/50 hover:bg-slate-100 rounded-full border border-slate-200 transition-colors">
+          <ShieldCheck size={16} weight="bold" className="text-emerald-600" />
+          Open Admin Portal
+        </Link>
+      )}
+    </>
+  );
+
   return (
     <MainLayout fullWidth>
-      <div className="home-page">
-        <section className="hero reveal-item" data-delay="1">
-          <div className="hero-grid">
-            <div className="hero-copy">
-              <span className="hero-eyebrow">ESTIMATE. PROCURE. TRACK.</span>
-              <h1>One operating screen for Zimbabwe construction projects.</h1>
-              <p>
-                ZimEstimate connects BOQ generation, live pricing, procurement, and usage tracking so your
-                team can move from estimate to execution without context switching.
-              </p>
-
-              <div className="hero-actions">
-                <Button
-                  onClick={() => router.push('/boq/new?method=manual')}
-                  icon={<ArrowRight size={18} />}
-                  iconPosition="right"
-                  size="lg"
-                  className="hero-primary"
-                >
-                  Create Estimate Now
-                </Button>
-                <Link href="/market-insights" className="hero-link">
-                  Check Live Material Prices
-                </Link>
-                {isAdmin && (
-                  <Link href="/admin/suppliers" className="hero-link hero-link-admin">
-                    <ShieldCheck size={16} weight="bold" />
-                    Open Admin Portal
-                  </Link>
-                )}
+      <div className="flex flex-col gap-24 pb-24 home-page-reset overflow-x-hidden">
+        <section className="px-4 mt-8 md:px-8 max-w-[1400px] mx-auto w-full reveal-item" data-delay="1">
+          <AnimatedHero
+            title={
+              <>
+                <span className="text-xs tracking-[0.2em] font-bold text-blue-600 uppercase mb-2 block">
+                  ESTIMATE. PROCURE. TRACK.
+                </span>
+                <h1 className="text-4xl md:text-5xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.1]">
+                  One operating screen for <br className="hidden md:block" />Zimbabwe construction projects.
+                </h1>
+              </>
+            }
+            subtitle="ZimEstimate connects BOQ generation, live pricing, procurement, and usage tracking so your team can move from estimate to execution without context switching."
+            actions={heroActions}
+          >
+            {/* Nano Banana Gen Asset Placeholder */}
+            <div className="relative w-full aspect-[4/3] md:aspect-video lg:aspect-square rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-slate-900 flex items-center justify-center group cursor-pointer">
+              {/* Replace this img with the actual generated asset later */}
+              <img src="/placeholder-hero.webp" alt="Construction Site Render" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700 ease-out" />
+              <div className="relative z-10 flex flex-col items-center">
+                <div className="p-3 bg-white/10 backdrop-blur rounded-2xl mb-2 text-white/50 border border-white/10">
+                  <Scan size={32} weight="duotone" />
+                </div>
+                <span className="text-white/70 font-medium text-sm">[Nano Banana Gen Asset Here]</span>
+              </div>
+              <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur shadow-sm rounded-lg p-2 text-xs font-medium text-slate-600 flex items-center gap-1">
+                <CheckCircle weight="fill" className="text-emerald-500" /> Auto-priced BOQ
               </div>
             </div>
-          </div>
+          </AnimatedHero>
         </section>
 
-        <section className="quick-start-section reveal-item" data-delay="2">
-          <div className="quick-start-card">
-            <div className="quick-start-header">
-              <span className="qs-kicker">QUICK START</span>
-              <h2>Smart BOQ Builder</h2>
-              <p>Pick a workflow to begin in minutes.</p>
-            </div>
+        <section className="px-4 md:px-8 max-w-7xl mx-auto w-full reveal-item" data-delay="2">
+          <div className="bg-white border text-center border-slate-200/60 rounded-[2rem] p-8 md:p-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <span className="text-blue-600 text-sm font-bold tracking-wider uppercase">QUICK START</span>
+            <h2 className="text-3xl font-bold text-slate-900 mt-2 mb-8">Smart BOQ Builder</h2>
 
-            <div className="qs-workflows">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
               {workflows.map((workflow, index) => {
                 const Icon = workflow.icon;
                 return (
                   <Link
                     key={workflow.id}
                     href={workflow.href}
-                    className="qs-item reveal-item"
-                    style={{ '--delay': `${index * 80}ms` } as CSSProperties}
+                    className="group relative flex flex-col items-start p-6 rounded-2xl bg-slate-50 border border-transparent hover:border-blue-100 hover:bg-white hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
                   >
-                    <div className="qs-icon-box">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-emerald-400 transform scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-300" />
+                    <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-slate-800 group-hover:bg-blue-100 group-hover:text-blue-600 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300 mb-4">
                       <Icon size={24} weight="bold" />
                     </div>
-                    <div className="qs-content">
-                      <h3>{workflow.title}</h3>
-                      <span className="qs-label">{workflow.label}</span>
-                      <div className="qs-arrow">
-                        <ArrowRight size={20} />
-                      </div>
+                    <h3 className="text-lg font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{workflow.title}</h3>
+                    <span className="text-[10px] font-bold tracking-wider text-slate-500 uppercase mt-1 group-hover:text-blue-500 transition-colors">{workflow.label}</span>
+                    <div className="mt-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all">
+                      <ArrowRight size={20} />
                     </div>
                   </Link>
                 );
@@ -225,27 +244,96 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="cta-section reveal-item" data-delay="3">
-          <div className="cta-shell">
-            <div className="cta-copy">
-              <FileText size={24} weight="duotone" />
+        <section className="px-4 md:px-8 w-full reveal-item" data-delay="6">
+          <Timeline
+            title="One pipeline from planning to site execution."
+            description="Follow our seamless workflow to take control of your construction projects from start to finish."
+            data={workflowLine}
+          />
+        </section>
+
+        <section className="px-4 md:px-8 max-w-7xl mx-auto w-full reveal-item" data-delay="4">
+          <div className="mb-10 text-center">
+            <span className="text-blue-600 text-sm font-bold tracking-wider uppercase block mb-2">TRUST PROOF</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Built for real pricing pressure.</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {signals.map((signal, index) => {
+              const Icon = signal.icon;
+              return (
+                <div key={signal.label} className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-blue-200 transition-all">
+                  <div className="flex items-center gap-2 text-slate-500 mb-4">
+                    <Icon size={18} weight="duotone" className="text-blue-500" />
+                    <span className="text-xs font-bold tracking-widest uppercase">{signal.label}</span>
+                  </div>
+                  <strong className="text-3xl font-extrabold text-slate-900 block mb-2">{signal.value}</strong>
+                  <p className="text-sm text-slate-600 line-clamp-2">{signal.subtext}</p>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+
+        <section className="px-4 md:px-8 w-full reveal-item" data-delay="5">
+          <div className="text-center mb-12">
+            <span className="text-blue-600 text-sm font-bold tracking-wider uppercase block mb-2">PLATFORM CAPABILITIES</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Everything after the estimate is already connected.</h2>
+            <p className="text-slate-600">Core capabilities designed to reduce rework and improve cost control.</p>
+          </div>
+
+          <BentoGrid>
+            {offerings.map((offer, i) => (
+              <BentoGridItem
+                key={offer.title}
+                title={offer.title}
+                description={offer.description}
+                header={
+                  <div className="flex flex-1 w-full h-full min-h-[6rem] rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-100 relative overflow-hidden group bg-slate-900 items-center justify-center">
+                    {/* Nano Banana Gen Asset placeholder for Bento Block */}
+                    <img src={`/placeholder-bento-${i + 1}.webp`} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity duration-500 filter blur-[2px] group-hover:blur-0" />
+                    <div className="relative z-10 p-2 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 text-white/50 text-[10px] font-medium tracking-wide uppercase">
+                      [Nano Banana]
+                    </div>
+                  </div>
+                }
+                icon={<div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100"><offer.icon className="h-4 w-4" weight="bold" /></div>}
+                className={i === 0 || i === 3 ? "md:col-span-2" : ""}
+              />
+            ))}
+          </BentoGrid>
+        </section>
+
+        <section className="px-4 md:px-8 max-w-7xl mx-auto w-full reveal-item" data-delay="3">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8 bg-gradient-to-r from-slate-900 to-slate-800 rounded-[2rem] p-8 md:p-12 border border-slate-700/50 shadow-2xl relative overflow-hidden">
+
+            {/* Decorative background elements */}
+            <div className="absolute top-0 lg:-top-20 left-0 lg:-left-20 w-64 h-64 bg-blue-500 rounded-full mix-blend-color-dodge filter blur-3xl opacity-20"></div>
+            <div className="absolute bottom-0 right-0 w-64 h-64 bg-emerald-500 rounded-full mix-blend-color-dodge filter blur-3xl opacity-20"></div>
+
+            <div className="flex gap-6 items-start relative z-10 w-full md:w-1/2">
+              <div className="w-12 h-12 shrink-0 rounded-full bg-white/10 flex items-center justify-center text-white border border-white/20">
+                <FileText size={24} weight="duotone" />
+              </div>
               <div>
-                <h3>Ready to move this from estimate to execution?</h3>
-                <p>Create your account to save projects, run procurement, and export client-ready reports.</p>
+                <h3 className="text-2xl font-bold text-white leading-tight">Ready to move this from estimate to execution?</h3>
+                <p className="text-slate-400 mt-2 text-sm leading-relaxed">Create your account to save projects, run procurement, and export client-ready reports.</p>
               </div>
             </div>
-            <div className="cta-actions">
+
+            <div className="flex flex-col sm:flex-row gap-4 relative z-10 w-full md:w-auto shrink-0">
               <Button
                 onClick={() => router.push('/auth/signup')}
                 icon={<ArrowRight size={16} />}
                 iconPosition="right"
                 size="lg"
+                className="bg-white text-slate-900 hover:bg-slate-50 border border-white"
               >
                 Create Free Account
               </Button>
               <Button
                 onClick={() => router.push('/boq/new?method=manual')}
-                variant="secondary"
+                className="bg-slate-800 text-white border border-slate-700 hover:bg-slate-700"
                 size="lg"
               >
                 Start BOQ First
@@ -254,683 +342,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="proof-section reveal-item" data-delay="4">
-          <div className="proof-head">
-            <span className="section-kicker">TRUST PROOF</span>
-            <h2>Built for real pricing pressure and procurement timelines.</h2>
-          </div>
-          <div className="proof-grid">
-            {signals.map((signal, index) => {
-              const Icon = signal.icon;
-              return (
-                <div
-                  key={signal.label}
-                  className="proof-card reveal-item"
-                  style={{ '--delay': `${index * 80}ms` } as CSSProperties}
-                >
-                  <div className="proof-top">
-                    <Icon size={18} weight="duotone" />
-                    <span>{signal.label}</span>
-                  </div>
-                  <strong>{signal.value}</strong>
-                  <p>{signal.subtext}</p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="offers-section reveal-item" data-delay="5">
-          <div className="section-head">
-            <span className="section-kicker">PLATFORM CAPABILITIES</span>
-            <h2>Everything after the estimate is already connected.</h2>
-            <p>Core capabilities designed to reduce rework and improve cost control.</p>
-          </div>
-
-          <div className="offers-grid">
-            {offerings.map((offer, index) => {
-              const Icon = offer.icon;
-              return (
-                <Link
-                  key={offer.title}
-                  href={offer.href}
-                  className="offer-card reveal-item"
-                  style={{ '--delay': `${index * 70}ms` } as CSSProperties}
-                >
-                  <div className="offer-icon">
-                    <Icon size={20} weight="duotone" />
-                  </div>
-                  <h4>{offer.title}</h4>
-                  <p>{offer.description}</p>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="flowline-section reveal-item" data-delay="6">
-          <div className="section-head">
-            <span className="section-kicker">HOW IT FLOWS</span>
-            <h2>One pipeline from planning to site execution.</h2>
-          </div>
-
-          <div className="flowline-grid">
-            {workflowLine.map((item, index) => (
-              <div key={item.step} className="flow-step">
-                <span className="flow-step-no">{item.step}</span>
-                <h4>{item.title}</h4>
-                <p>{item.desc}</p>
-                {index < workflowLine.length - 1 && <span className="flow-connector" />}
-              </div>
-            ))}
-          </div>
-        </section>
-
       </div>
-
-      <style jsx>{`
-        .home-page {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 28px 22px 84px;
-          display: flex;
-          flex-direction: column;
-          gap: 48px;
-        }
-
-        .hero {
-          position: relative;
-          border-radius: 28px;
-          padding: 42px;
-          border: 1px solid rgba(148, 163, 184, 0.34);
-          background:
-            radial-gradient(circle at 85% -10%, rgba(78, 154, 247, 0.22), rgba(78, 154, 247, 0)),
-            radial-gradient(circle at 0% 100%, rgba(15, 23, 42, 0.09), rgba(15, 23, 42, 0)),
-            linear-gradient(145deg, #ffffff 12%, #f7fbff 70%, #eef6ff 100%);
-          box-shadow: 0 24px 50px rgba(15, 23, 42, 0.1);
-          overflow: hidden;
-        }
-
-        .hero::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background-image:
-            linear-gradient(rgba(78, 154, 247, 0.08) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(78, 154, 247, 0.08) 1px, transparent 1px);
-          background-size: 44px 44px;
-          opacity: 0.18;
-          pointer-events: none;
-        }
-
-        .hero-grid {
-          position: relative;
-          z-index: 1;
-          display: grid;
-          grid-template-columns: minmax(0, 1fr);
-          gap: 26px;
-          align-items: stretch;
-        }
-
-        .hero-copy {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-
-        .hero-eyebrow {
-          font-size: 0.71rem;
-          letter-spacing: 0.2em;
-          font-weight: 700;
-          color: var(--color-accent-dark);
-        }
-
-        .hero-copy h1 {
-          margin: 0;
-          font-size: clamp(2rem, 4vw, 3rem);
-          line-height: 1.05;
-          letter-spacing: -0.025em;
-          color: var(--color-primary-dark);
-        }
-
-        .hero-copy p {
-          margin: 0;
-          max-width: 620px;
-          color: var(--color-text-secondary);
-          line-height: 1.7;
-        }
-
-        .hero-actions {
-          display: flex;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 14px;
-          margin-top: 6px;
-        }
-
-        .hero-link {
-          text-decoration: none;
-          color: var(--color-primary);
-          font-size: 0.92rem;
-          font-weight: 700;
-        }
-
-        .hero-link:hover {
-          color: var(--color-accent-dark);
-        }
-
-        .hero-link-admin {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 8px 12px;
-          border: 1px dashed rgba(15, 23, 42, 0.3);
-          border-radius: 999px;
-          background: rgba(15, 23, 42, 0.04);
-        }
-
-        /* NEW QUICK START SECTION STYLES */
-        .quick-start-section {
-          display: flex;
-          justify-content: center;
-        }
-
-        .quick-start-card {
-          background: #ffffff;
-          border: 1px solid rgba(148, 163, 184, 0.15);
-          border-radius: 24px;
-          padding: 32px;
-          box-shadow: 
-            0 10px 30px -5px rgba(15, 23, 42, 0.04),
-            0 4px 12px -2px rgba(15, 23, 42, 0.02);
-          width: 100%;
-          display: flex;
-          flex-direction: column;
-          gap: 32px;
-        }
-
-        .quick-start-header {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          max-width: 100%;
-        }
-
-        .qs-kicker {
-          font-size: 0.75rem;
-          letter-spacing: 0.15em;
-          font-weight: 700;
-          color: var(--color-primary-light, #3b82f6);
-          text-transform: uppercase;
-        }
-
-        .quick-start-header h2 {
-          margin: 0;
-          font-size: 1.75rem;
-          font-weight: 600;
-          color: var(--color-primary-dark);
-          line-height: 1.2;
-        }
-
-        .quick-start-header p {
-          margin: 0;
-          color: var(--color-text-secondary);
-          font-size: 1rem;
-        }
-
-        .qs-workflows {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 24px;
-        }
-
-        .qs-item {
-          text-decoration: none;
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 16px;
-          padding: 24px;
-          border-radius: 18px;
-          background: #f8fafc;
-          border: 1px solid transparent;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
-          overflow: hidden;
-        }
-
-        .qs-item::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 4px;
-          background: linear-gradient(90deg, var(--color-primary, #2563eb), var(--color-accent-dark, #3b82f6));
-          transform: scaleX(0);
-          transform-origin: left;
-          transition: transform 0.3s ease;
-        }
-
-        .qs-item:hover {
-          background: #ffffff;
-          border-color: rgba(59, 130, 246, 0.3);
-          box-shadow: 0 12px 24px -6px rgba(59, 130, 246, 0.12);
-          transform: translateY(-6px);
-        }
-
-        .qs-item:hover::before {
-          transform: scaleX(1);
-        }
-
-        .qs-icon-box {
-          width: 48px;
-          height: 48px;
-          border-radius: 12px;
-          background: #eff6ff;
-          border: 1px solid #dbeafe;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #0f172a;
-          transition: all 0.3s ease;
-        }
-
-        .qs-item:hover .qs-icon-box {
-          background: #dbeafe;
-          transform: scale(1.05) rotate(-3deg);
-          color: var(--color-primary, #2563eb);
-          border-color: rgba(59, 130, 246, 0.2);
-        }
-
-        .qs-content {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          width: 100%;
-        }
-
-        .qs-content h3 {
-          margin: 0;
-          font-size: 1.1rem;
-          font-weight: 600;
-          color: #0f172a;
-          transition: color 0.2s ease;
-        }
-
-        .qs-item:hover h3 {
-          color: var(--color-primary, #2563eb);
-        }
-
-        .qs-label {
-          font-size: 0.7rem;
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748b;
-          padding: 2px 0;
-          transition: color 0.2s ease;
-        }
-
-        .qs-item:hover .qs-label {
-          color: var(--color-accent-dark, #3b82f6);
-        }
-
-        .qs-arrow {
-          margin-top: 12px;
-          color: #0f172a;
-          align-self: flex-end;
-          opacity: 0.3;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          transform: translateX(0);
-        }
-
-        .qs-item:hover .qs-arrow {
-          opacity: 1;
-          color: var(--color-primary, #2563eb);
-          transform: translateX(6px);
-        }
-
-        @media (max-width: 860px) {
-          .qs-workflows {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        .section-head {
-          margin-bottom: 22px;
-        }
-
-        .section-kicker {
-          font-size: 0.72rem;
-          letter-spacing: 0.16em;
-          font-weight: 700;
-          color: var(--color-accent-dark);
-        }
-
-        .section-head h2 {
-          margin: 9px 0 8px;
-          font-size: clamp(1.55rem, 2.9vw, 2.12rem);
-          line-height: 1.2;
-          color: var(--color-primary);
-        }
-
-        .section-head p {
-          margin: 0;
-          color: var(--color-text-secondary);
-          line-height: 1.6;
-        }
-
-        .proof-section {
-          border-radius: 20px;
-          padding: 20px;
-          border: 1px solid rgba(148, 163, 184, 0.24);
-          background: linear-gradient(155deg, rgba(255, 255, 255, 0.98), rgba(242, 248, 255, 0.84));
-          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
-        }
-
-        .proof-head {
-          margin-bottom: 14px;
-        }
-
-        .proof-head h2 {
-          margin: 8px 0 0;
-          font-size: clamp(1.35rem, 2.5vw, 1.8rem);
-          line-height: 1.25;
-          color: var(--color-primary);
-        }
-
-        .proof-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 12px;
-        }
-
-        .proof-card {
-          border-radius: 14px;
-          padding: 14px;
-          border: 1px solid rgba(148, 163, 184, 0.26);
-          background: rgba(255, 255, 255, 0.9);
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
-          transition: transform 0.2s ease, border-color 0.2s ease;
-        }
-
-        .proof-card:hover {
-          transform: translateY(-2px);
-          border-color: rgba(78, 154, 247, 0.48);
-        }
-
-        .proof-top {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          color: var(--color-text-muted);
-          font-size: 0.68rem;
-          letter-spacing: 0.08em;
-          font-weight: 700;
-        }
-
-        .proof-card strong {
-          display: block;
-          margin-top: 8px;
-          font-size: 1.08rem;
-          color: var(--color-primary);
-        }
-
-        .proof-card p {
-          margin: 5px 0 0;
-          font-size: 0.8rem;
-          line-height: 1.45;
-          color: var(--color-text-muted);
-        }
-
-        .offers-section {
-          padding: 22px;
-          border-radius: 24px;
-          background:
-            radial-gradient(circle at 6% 0%, rgba(78, 154, 247, 0.2), rgba(78, 154, 247, 0)),
-            linear-gradient(180deg, rgba(10, 24, 52, 0.05), rgba(255, 255, 255, 0.9));
-          border: 1px solid rgba(148, 163, 184, 0.25);
-        }
-
-        .offers-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 14px;
-        }
-
-        .offer-card {
-          text-decoration: none;
-          border-radius: 14px;
-          padding: 18px;
-          border: 1px solid rgba(148, 163, 184, 0.22);
-          background: rgba(255, 255, 255, 0.85);
-          box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
-          opacity: 0;
-          transform: translateY(10px);
-          animation: rise-in 0.45s ease both;
-          animation-delay: var(--delay);
-          transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .offer-card:hover {
-          border-color: rgba(78, 154, 247, 0.5);
-          transform: translateY(-3px);
-          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
-        }
-
-        .offer-icon {
-          width: 38px;
-          height: 38px;
-          border-radius: 10px;
-          background: linear-gradient(135deg, rgba(78, 154, 247, 0.15), rgba(78, 154, 247, 0.06));
-          color: var(--color-accent-dark);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 12px;
-        }
-
-        .offer-card h4 {
-          margin: 0 0 6px;
-          font-size: 0.95rem;
-          font-weight: 600;
-          color: var(--color-primary);
-        }
-
-        .offer-card p {
-          margin: 0;
-          color: var(--color-text-secondary);
-          font-size: 0.82rem;
-          line-height: 1.5;
-        }
-
-        .flowline-section {
-          padding: 8px 0 2px;
-        }
-
-        .flowline-grid {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 14px;
-        }
-
-        .flow-step {
-          position: relative;
-          border-radius: 14px;
-          border: 1px solid rgba(148, 163, 184, 0.3);
-          background: #ffffff;
-          padding: 15px;
-          box-shadow: 0 10px 18px rgba(15, 23, 42, 0.05);
-        }
-
-        .flow-step-no {
-          display: inline-flex;
-          width: fit-content;
-          padding: 4px 9px;
-          border-radius: 999px;
-          background: rgba(78, 154, 247, 0.14);
-          color: var(--color-accent-dark);
-          font-size: 0.67rem;
-          font-weight: 700;
-          letter-spacing: 0.08em;
-        }
-
-        .flow-step h4 {
-          margin: 10px 0 6px;
-          color: var(--color-primary);
-          font-size: 0.96rem;
-        }
-
-        .flow-step p {
-          margin: 0;
-          color: var(--color-text-secondary);
-          font-size: 0.82rem;
-          line-height: 1.52;
-        }
-
-        .flow-connector {
-          position: absolute;
-          top: 50%;
-          right: -13px;
-          width: 13px;
-          height: 2px;
-          background: rgba(78, 154, 247, 0.45);
-        }
-
-        .cta-section {
-          margin-top: 8px;
-        }
-
-        .cta-shell {
-          border-radius: 18px;
-          padding: 22px;
-          border: 1px solid rgba(148, 163, 184, 0.28);
-          background: linear-gradient(130deg, rgba(6, 20, 47, 0.05), rgba(78, 154, 247, 0.08));
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 14px;
-          box-shadow: 0 14px 24px rgba(15, 23, 42, 0.08);
-        }
-
-        .cta-copy {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          color: var(--color-primary);
-        }
-
-        .cta-copy h3 {
-          margin: 0 0 4px;
-          font-size: 1.15rem;
-        }
-
-        .cta-copy p {
-          margin: 0;
-          color: var(--color-text-secondary);
-          font-size: 0.9rem;
-        }
-
-        .cta-actions {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-
-        .hero :global(.hero-primary) {
-          box-shadow: 0 12px 22px rgba(15, 23, 42, 0.18);
-        }
-
-        @keyframes rise-in {
-          from {
-            opacity: 0;
-            transform: translateY(12px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .offer-card {
-            animation: none;
-            opacity: 1;
-            transform: none;
-          }
-
-          .offer-card {
-            transition: none;
-          }
-        }
-
-        @media (max-width: 1080px) {
-          .offers-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-          .proof-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .workflow-proof-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-          .flowline-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-          .flow-step:nth-child(2n) .flow-connector {
-            display: none;
-          }
-        }
-
-        @media (max-width: 860px) {
-          .offers-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .cta-shell {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-
-          .cta-actions {
-            width: 100%;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .home-page {
-            padding: 18px 14px 74px;
-            gap: 34px;
-          }
-
-          .hero {
-            padding: 24px;
-          }
-
-          .hero-actions {
-            align-items: flex-start;
-            flex-direction: column;
-          }
-
-          .workflow-proof-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .flowline-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .flow-connector {
-            display: none;
-          }
-        }
-      `}</style>
     </MainLayout>
   );
 }

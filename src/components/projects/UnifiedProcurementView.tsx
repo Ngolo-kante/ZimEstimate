@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback, useRef, Fragment } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
@@ -36,17 +36,60 @@ import {
   TrendUp,
   Money,
   CaretDown,
-  CaretRight,
+  CaretUp,
   Check,
   Warning,
   Clock,
   Package,
   Receipt,
   X,
+  Funnel,
+  Paperclip,
+  Cube,
+  Wall,
+  House,
+  PaintBrush,
+  Tree,
 } from '@phosphor-icons/react';
 
 type ProcurementStage = 'boq' | 'rfq' | 'history';
 type ItemStatus = 'pending' | 'in_progress' | 'purchased' | 'over_purchased';
+type GroupByOption = 'stage' | 'category' | 'none';
+type BOQStage = 'substructure' | 'superstructure' | 'roofing' | 'finishing' | 'exterior';
+
+// Consistent naming with BOQ wizard milestones
+const STAGE_CONFIG: Record<BOQStage, { label: string; icon: typeof Cube; color: string; description: string }> = {
+  substructure: {
+    label: 'Site Preparation & Foundation',
+    icon: Cube,
+    color: '#8b5cf6',
+    description: 'Foundation, DPC, floor slab'
+  },
+  superstructure: {
+    label: 'Structural Walls & Frame',
+    icon: Wall,
+    color: '#3b82f6',
+    description: 'Walls, lintels, ring beam'
+  },
+  roofing: {
+    label: 'Roofing',
+    icon: House,
+    color: '#f59e0b',
+    description: 'Timber, sheets, gutters'
+  },
+  finishing: {
+    label: 'Interior & Finishing',
+    icon: PaintBrush,
+    color: '#10b981',
+    description: 'Plastering, painting, fittings'
+  },
+  exterior: {
+    label: 'External Work',
+    icon: Tree,
+    color: '#06b6d4',
+    description: 'Boundary, gates, driveway'
+  },
+};
 
 const toIsoMidday = (dateString: string) => {
   if (!dateString) return new Date().toISOString();
@@ -58,7 +101,9 @@ const toIsoMidday = (dateString: string) => {
 interface UnifiedProcurementViewProps {
   project: Project;
   items: BOQItem[];
-  onItemsRefresh: () => void;
+  onItemsRefresh: () => Promise<void>;
+  selectedItemForPurchase?: BOQItem | null;
+  onClearSelectedItem?: () => void;
 }
 
 interface ItemWithPurchases extends BOQItem {
@@ -69,10 +114,19 @@ interface ItemWithPurchases extends BOQItem {
   remainingQty: number;
 }
 
+interface FormErrors {
+  supplierName?: string;
+  quantity?: string;
+  unitPrice?: string;
+  purchasedAt?: string;
+}
+
 export default function UnifiedProcurementView({
   project,
   items,
   onItemsRefresh,
+  selectedItemForPurchase: externalSelectedItem,
+  onClearSelectedItem,
 }: UnifiedProcurementViewProps) {
   const { success, error: showError } = useToast();
   const { formatPrice, exchangeRate } = useCurrency();
@@ -81,8 +135,10 @@ export default function UnifiedProcurementView({
   const [activeStage, setActiveStage] = useState<ProcurementStage>('boq');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<ItemStatus | 'all'>('all');
+  const [groupBy, setGroupBy] = useState<GroupByOption>('stage');
   const [isLoading, setIsLoading] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   // Data State
   const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
@@ -94,6 +150,9 @@ export default function UnifiedProcurementView({
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [selectedItemForPurchase, setSelectedItemForPurchase] = useState<BOQItem | null>(null);
   const [isSavingPurchase, setIsSavingPurchase] = useState(false);
+  const [savingItemId, setSavingItemId] = useState<string | null>(null);
+  const [optimisticPurchase, setOptimisticPurchase] = useState<PurchaseRecord | null>(null);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const realtimeRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [purchaseForm, setPurchaseForm] = useState({
     supplierName: '',
@@ -112,7 +171,6 @@ export default function UnifiedProcurementView({
     return map;
   }, [receiptDocs]);
 
-  // Calculate item status based on purchases
   const getItemStatus = (estimatedQty: number, purchasedQty: number): ItemStatus => {
     const epsilon = 0.01;
     if (purchasedQty < epsilon) return 'pending';
@@ -121,10 +179,15 @@ export default function UnifiedProcurementView({
     return 'in_progress';
   };
 
-  // Group purchases by BOQ item
   const itemsWithPurchases: ItemWithPurchases[] = useMemo(() => {
     const purchasesByItem = new Map<string, PurchaseRecord[]>();
-    purchases.forEach((p) => {
+
+    // Include optimistic purchase if present
+    const allPurchases = optimisticPurchase
+      ? [...purchases, optimisticPurchase]
+      : purchases;
+
+    allPurchases.forEach((p) => {
       const list = purchasesByItem.get(p.boq_item_id) || [];
       list.push(p);
       purchasesByItem.set(p.boq_item_id, list);
@@ -149,9 +212,8 @@ export default function UnifiedProcurementView({
         remainingQty,
       };
     });
-  }, [items, purchases]);
+  }, [items, purchases, optimisticPurchase]);
 
-  // Filter items
   const filteredItems = useMemo(() => {
     let result = itemsWithPurchases;
 
@@ -170,7 +232,46 @@ export default function UnifiedProcurementView({
     return result;
   }, [itemsWithPurchases, searchQuery, statusFilter]);
 
-  // Computed Stats
+  const groupedItems = useMemo(() => {
+    if (groupBy === 'none') {
+      return { 'All Items': filteredItems };
+    }
+
+    const groups: Record<string, ItemWithPurchases[]> = {};
+
+    filteredItems.forEach((item) => {
+      const key = groupBy === 'stage'
+        ? (item.category?.toLowerCase() as BOQStage) || 'other'
+        : item.category || 'Uncategorized';
+
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(item);
+    });
+
+    if (groupBy === 'stage') {
+      const stageOrder: BOQStage[] = ['substructure', 'superstructure', 'roofing', 'finishing', 'exterior'];
+      const sortedGroups: Record<string, ItemWithPurchases[]> = {};
+
+      stageOrder.forEach((stage) => {
+        if (groups[stage]) {
+          sortedGroups[stage] = groups[stage];
+        }
+      });
+
+      Object.keys(groups).forEach((key) => {
+        if (!sortedGroups[key]) {
+          sortedGroups[key] = groups[key];
+        }
+      });
+
+      return sortedGroups;
+    }
+
+    return groups;
+  }, [filteredItems, groupBy]);
+
   const stats = useMemo(() => {
     const totalBudget = project.total_usd || 0;
     const totalSpent = itemsWithPurchases.reduce((sum, item) => sum + item.totalSpent, 0);
@@ -216,12 +317,18 @@ export default function UnifiedProcurementView({
     }
   }, [project.id, showError]);
 
-  // Load initial data
   useEffect(() => {
     void loadData();
   }, [loadData]);
 
-  // Realtime sync for procurement data
+  // Handle external item selection (from BOQ quick action)
+  useEffect(() => {
+    if (externalSelectedItem) {
+      openPurchaseModal(externalSelectedItem);
+      onClearSelectedItem?.();
+    }
+  }, [externalSelectedItem, onClearSelectedItem]);
+
   useEffect(() => {
     const scheduleRefresh = () => {
       if (realtimeRefreshTimeoutRef.current) {
@@ -229,7 +336,7 @@ export default function UnifiedProcurementView({
       }
       realtimeRefreshTimeoutRef.current = setTimeout(() => {
         void loadData();
-        onItemsRefresh(); // Sync BOQ tab
+        void onItemsRefresh();
       }, 250);
     };
 
@@ -275,16 +382,46 @@ export default function UnifiedProcurementView({
       notes: '',
       receiptFile: null,
     });
+    setFormErrors({});
   };
 
   const openPurchaseModal = (item: BOQItem) => {
     setSelectedItemForPurchase(item);
-    // Pre-fill unit price from BOQ if available
     setPurchaseForm({
-      ...purchaseForm,
+      supplierName: '',
+      quantity: '',
       unitPrice: item.unit_price_usd ? String(item.unit_price_usd) : '',
+      purchasedAt: new Date().toISOString().split('T')[0],
+      notes: '',
+      receiptFile: null,
     });
+    setFormErrors({});
     setShowPurchaseModal(true);
+  };
+
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
+
+    if (!purchaseForm.supplierName.trim()) {
+      errors.supplierName = 'Supplier name is required';
+    }
+
+    const quantity = Number(purchaseForm.quantity);
+    if (!purchaseForm.quantity || isNaN(quantity) || quantity <= 0) {
+      errors.quantity = 'Enter a valid quantity greater than 0';
+    }
+
+    const unitPrice = Number(purchaseForm.unitPrice);
+    if (!purchaseForm.unitPrice || isNaN(unitPrice) || unitPrice <= 0) {
+      errors.unitPrice = 'Enter a valid unit price greater than 0';
+    }
+
+    if (!purchaseForm.purchasedAt) {
+      errors.purchasedAt = 'Purchase date is required';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSavePurchase = async () => {
@@ -292,27 +429,44 @@ export default function UnifiedProcurementView({
       showError('No item selected.');
       return;
     }
+
+    if (!validateForm()) {
+      return;
+    }
+
     const supplierName = purchaseForm.supplierName.trim();
-    if (!supplierName) {
-      showError('Supplier name is required.');
-      return;
-    }
     const quantity = Number(purchaseForm.quantity);
-    if (!quantity || quantity <= 0) {
-      showError('Enter a valid quantity.');
-      return;
-    }
     const unitPrice = Number(purchaseForm.unitPrice);
-    if (!unitPrice || unitPrice <= 0) {
-      showError('Enter a valid unit price.');
-      return;
-    }
+    const itemId = selectedItemForPurchase.id;
 
     const matchedSupplier = suppliers.find(
       (supplier) => supplier.name.toLowerCase() === supplierName.toLowerCase()
     );
 
+    // Create optimistic purchase record for instant UI feedback
+    const optimisticRecord: PurchaseRecord = {
+      id: `optimistic-${Date.now()}`,
+      project_id: project.id,
+      boq_item_id: itemId,
+      supplier_id: matchedSupplier?.id || null,
+      supplier_name: supplierName,
+      quantity,
+      unit_price_usd: unitPrice,
+      purchased_at: toIsoMidday(purchaseForm.purchasedAt),
+      notes: purchaseForm.notes || null,
+      receipt_document_id: null,
+      created_by: 'optimistic', // Placeholder for optimistic UI update
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    // Apply optimistic update immediately
+    setOptimisticPurchase(optimisticRecord);
+    setSavingItemId(itemId);
+    setExpandedItems((prev) => new Set(prev).add(itemId)); // Auto-expand to show new purchase
+    setShowPurchaseModal(false);
     setIsSavingPurchase(true);
+
     let receiptDocumentId: string | null = null;
 
     if (purchaseForm.receiptFile) {
@@ -324,7 +478,11 @@ export default function UnifiedProcurementView({
       );
       if (error) {
         showError(error.message || 'Failed to upload receipt');
+        // Rollback optimistic update
+        setOptimisticPurchase(null);
+        setSavingItemId(null);
         setIsSavingPurchase(false);
+        setShowPurchaseModal(true);
         return;
       }
       if (document) {
@@ -333,39 +491,54 @@ export default function UnifiedProcurementView({
       }
     }
 
-    const { error } = await createPurchaseRecord({
+    const purchasePayload: Record<string, unknown> = {
       project_id: project.id,
-      boq_item_id: selectedItemForPurchase.id,
+      boq_item_id: itemId,
       supplier_name: supplierName,
       supplier_id: matchedSupplier?.id || null,
       quantity,
       unit_price_usd: unitPrice,
       purchased_at: toIsoMidday(purchaseForm.purchasedAt),
       notes: purchaseForm.notes || null,
-      receipt_document_id: receiptDocumentId,
-      rfq_quote_id: null,
-    });
+    };
+    if (receiptDocumentId) {
+      purchasePayload.receipt_document_id = receiptDocumentId;
+    }
+
+    const { record, error } = await createPurchaseRecord(purchasePayload as Parameters<typeof createPurchaseRecord>[0]);
 
     if (error) {
       showError(error.message || 'Failed to record purchase');
+      // Rollback optimistic update
+      setOptimisticPurchase(null);
+      setSavingItemId(null);
     } else {
-      // Update BOQ item's actual_quantity and is_purchased status
-      const currentItem = itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id);
+      const currentItem = itemsWithPurchases.find(i => i.id === itemId);
       const newTotalPurchased = (currentItem?.totalPurchased || 0) + quantity;
       const estimatedQty = Number(selectedItemForPurchase.quantity) || 0;
 
-      await updateBOQItem(selectedItemForPurchase.id, {
+      const { error: boqUpdateError } = await updateBOQItem(itemId, {
         actual_quantity: newTotalPurchased,
         actual_price_usd: unitPrice,
         is_purchased: newTotalPurchased >= estimatedQty,
         purchased_date: new Date().toISOString(),
       });
 
-      success('Purchase recorded');
-      setShowPurchaseModal(false);
+      if (boqUpdateError) {
+        showError(boqUpdateError.message || 'Purchase was saved, but BOQ item sync failed');
+      }
+
+      // Replace optimistic record with real record
+      if (record) {
+        setPurchases((prev) => [record, ...prev]);
+      }
+      setOptimisticPurchase(null);
+      setSavingItemId(null);
+
+      await onItemsRefresh();
+      success('Purchase recorded successfully');
       setSelectedItemForPurchase(null);
       resetPurchaseForm();
-      onItemsRefresh();
     }
 
     setIsSavingPurchase(false);
@@ -398,17 +571,75 @@ export default function UnifiedProcurementView({
     });
   };
 
+  const toggleGroupCollapsed = (groupKey: string) => {
+    setCollapsedGroups((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupKey)) {
+        newSet.delete(groupKey);
+      } else {
+        newSet.add(groupKey);
+      }
+      return newSet;
+    });
+  };
+
+  const handleExportCSV = () => {
+    if (purchases.length === 0) {
+      showError('No purchase records to export');
+      return;
+    }
+
+    const itemMap = new Map(items.map(i => [i.id, i]));
+    const headers = ['Date', 'Material', 'Category', 'Supplier', 'Quantity', 'Unit', 'Unit Price (USD)', 'Total (USD)', 'Notes'];
+    const rows = purchases.map(record => {
+      const item = itemMap.get(record.boq_item_id);
+      const qty = Number(record.quantity);
+      const price = Number(record.unit_price_usd);
+      return [
+        new Date(record.purchased_at).toLocaleDateString(),
+        item?.material_name || 'Unknown',
+        item?.category || '',
+        record.supplier_name,
+        qty.toFixed(2),
+        item?.unit || '',
+        price.toFixed(2),
+        (qty * price).toFixed(2),
+        (record.notes || '').replace(/,/g, ';'),
+      ].join(',');
+    });
+
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${project.name.replace(/\s+/g, '_')}_purchases_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    success('Purchases exported to CSV');
+  };
+
   const getStatusConfig = (status: ItemStatus) => {
     switch (status) {
       case 'pending':
-        return { label: 'Pending', color: 'gray', icon: Clock, bgClass: 'status-pending' };
+        return { label: 'Pending', icon: Clock, bgClass: 'status-pending' };
       case 'in_progress':
-        return { label: 'In Progress', color: 'blue', icon: Package, bgClass: 'status-progress' };
+        return { label: 'In Progress', icon: Package, bgClass: 'status-progress' };
       case 'purchased':
-        return { label: 'Purchased', color: 'green', icon: Check, bgClass: 'status-purchased' };
+        return { label: 'Purchased', icon: Check, bgClass: 'status-purchased' };
       case 'over_purchased':
-        return { label: 'Over Purchased', color: 'red', icon: Warning, bgClass: 'status-over' };
+        return { label: 'Over Purchased', icon: Warning, bgClass: 'status-over' };
     }
+  };
+
+  const getStageStats = (stageItems: ItemWithPurchases[]) => {
+    const total = stageItems.length;
+    const purchased = stageItems.filter(i => i.status === 'purchased').length;
+    const inProgress = stageItems.filter(i => i.status === 'in_progress').length;
+    const totalSpent = stageItems.reduce((sum, i) => sum + i.totalSpent, 0);
+    return { total, purchased, inProgress, totalSpent };
   };
 
   const spendingBarColor = stats.spendingProgress > 100
@@ -440,7 +671,7 @@ export default function UnifiedProcurementView({
         className={`stage-tab-btn ${activeStage === 'history' ? 'active' : ''}`}
       >
         <Receipt size={16} weight="duotone" />
-        <span>Purchase History</span>
+        <span>Purchase Ledger</span>
         {purchases.length > 0 && <span className="tab-count">{purchases.length}</span>}
       </button>
     </div>
@@ -501,7 +732,7 @@ export default function UnifiedProcurementView({
           <MagnifyingGlass className="search-icon" size={16} />
           <input
             type="text"
-            placeholder="Search materials or categories..."
+            placeholder="Search materials..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-input"
@@ -520,13 +751,191 @@ export default function UnifiedProcurementView({
         </select>
       </div>
 
-      <div className="toolbar-actions">
-        <Button variant="ghost" icon={<DownloadSimple size={16} />}>
-          Export
+      <div className="toolbar-right">
+        <div className="group-toggle">
+          <Funnel size={14} />
+          <span className="group-label">Group:</span>
+          <select
+            value={groupBy}
+            onChange={(e) => setGroupBy(e.target.value as GroupByOption)}
+            className="group-select"
+          >
+            <option value="stage">By Stage</option>
+            <option value="category">By Category</option>
+            <option value="none">No Grouping</option>
+          </select>
+        </div>
+        <Button variant="ghost" icon={<DownloadSimple size={16} />} onClick={handleExportCSV}>
+          <span className="btn-text-desktop">Export CSV</span>
         </Button>
       </div>
     </div>
   );
+
+  const renderItemCard = (item: ItemWithPurchases) => {
+    const isExpanded = expandedItems.has(item.id);
+    const isSaving = savingItemId === item.id;
+    const statusConfig = getStatusConfig(item.status);
+    const StatusIcon = statusConfig.icon;
+    const progressPercent = item.quantity > 0
+      ? Math.min(100, (item.totalPurchased / Number(item.quantity)) * 100)
+      : 0;
+
+    return (
+      <div key={item.id} className={`boq-item-card ${statusConfig.bgClass} ${isSaving ? 'is-saving' : ''}`}>
+        <div
+          className="item-main"
+          onClick={() => item.purchaseRecords.length > 0 && toggleItemExpanded(item.id)}
+          role={item.purchaseRecords.length > 0 ? 'button' : undefined}
+          tabIndex={item.purchaseRecords.length > 0 ? 0 : undefined}
+        >
+          <div className="item-expand">
+            {item.purchaseRecords.length > 0 ? (
+              isExpanded ? <CaretUp size={16} weight="bold" /> : <CaretDown size={16} weight="bold" />
+            ) : (
+              <span className="expand-placeholder" />
+            )}
+          </div>
+
+          <div className="item-info">
+            <div className="item-name">{item.material_name}</div>
+            <div className="item-meta">
+              {item.category && <span className="item-category">{item.category}</span>}
+              <span className="item-unit">{item.unit}</span>
+              {item.purchaseRecords.length > 0 && (
+                <span className="purchase-count">{item.purchaseRecords.length} purchase{item.purchaseRecords.length !== 1 ? 's' : ''}</span>
+              )}
+            </div>
+          </div>
+
+          <div className="item-quantities">
+            <div className="qty-group">
+              <span className="qty-label">BOQ</span>
+              <span className="qty-value">{Number(item.quantity).toFixed(1)}</span>
+            </div>
+            <div className="qty-group">
+              <span className="qty-label">Bought</span>
+              <span className="qty-value purchased">{item.totalPurchased.toFixed(1)}</span>
+            </div>
+            <div className="qty-group">
+              <span className="qty-label">Left</span>
+              <span className={`qty-value ${item.remainingQty <= 0 ? 'complete' : 'remaining'}`}>
+                {item.remainingQty.toFixed(1)}
+              </span>
+            </div>
+          </div>
+
+          <div className="item-progress">
+            <div className="progress-bar">
+              <div
+                className={`progress-fill ${statusConfig.bgClass}`}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <span className="progress-text">{progressPercent.toFixed(0)}%</span>
+          </div>
+
+          <div className="item-spent">
+            <span className="spent-label">Spent</span>
+            <span className="spent-value">
+              {formatPrice(item.totalSpent, item.totalSpent * exchangeRate)}
+            </span>
+          </div>
+
+          <div className={`item-status ${statusConfig.bgClass}`}>
+            <StatusIcon size={14} weight="bold" />
+            <span>{statusConfig.label}</span>
+          </div>
+
+          <div className="item-actions">
+            <Button
+              size="sm"
+              variant="primary"
+              icon={<Plus size={14} />}
+              onClick={(e) => {
+                e.stopPropagation();
+                openPurchaseModal(item);
+              }}
+            >
+              <span className="btn-text">Log</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Expanded Purchase Ledger */}
+        {isExpanded && item.purchaseRecords.length > 0 && (
+          <div className="item-history">
+            <div className="history-header">
+              <Receipt size={14} weight="duotone" />
+              <span>Purchase Ledger ({item.purchaseRecords.length} entries)</span>
+            </div>
+            <div className="ledger-table-wrapper">
+              <table className="ledger-table">
+                <thead>
+                  <tr>
+                    <th className="col-date">Date</th>
+                    <th className="col-supplier">Supplier</th>
+                    <th className="col-qty">Qty</th>
+                    <th className="col-price">Unit Price</th>
+                    <th className="col-total">Total</th>
+                    <th className="col-receipt">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {item.purchaseRecords.map((record) => {
+                    const recordTotal = Number(record.quantity) * Number(record.unit_price_usd);
+                    const isOptimistic = record.id.startsWith('optimistic-');
+                    return (
+                      <tr key={record.id} className={isOptimistic ? 'optimistic-row' : ''}>
+                        <td className="col-date">
+                          <span className="date-text">{new Date(record.purchased_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                        </td>
+                        <td className="col-supplier">
+                          <div className="supplier-name">
+                            <Storefront size={14} weight="duotone" />
+                            <span>{record.supplier_name}</span>
+                          </div>
+                          {record.notes && <div className="supplier-notes">{record.notes}</div>}
+                        </td>
+                        <td className="col-qty mono">{Number(record.quantity).toFixed(2)}</td>
+                        <td className="col-price mono">{formatPrice(Number(record.unit_price_usd), Number(record.unit_price_usd) * exchangeRate)}</td>
+                        <td className="col-total mono bold">{formatPrice(recordTotal, recordTotal * exchangeRate)}</td>
+                        <td className="col-receipt">
+                          {record.receipt_document_id ? (
+                            <button
+                              className="receipt-link"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenReceipt(record.receipt_document_id);
+                              }}
+                            >
+                              <Paperclip size={12} />
+                              View
+                            </button>
+                          ) : (
+                            <span className="no-receipt">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={2} className="footer-label">Total Purchased</td>
+                    <td className="col-qty mono bold">{item.totalPurchased.toFixed(2)}</td>
+                    <td></td>
+                    <td className="col-total mono bold">{formatPrice(item.totalSpent, item.totalSpent * exchangeRate)}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderBOQContent = () => {
     if (isLoading) {
@@ -552,155 +961,58 @@ export default function UnifiedProcurementView({
     }
 
     return (
-      <div className="boq-list reveal" data-delay="4">
-        {filteredItems.map((item) => {
-          const isExpanded = expandedItems.has(item.id);
-          const statusConfig = getStatusConfig(item.status);
-          const StatusIcon = statusConfig.icon;
-          const progressPercent = item.quantity > 0
-            ? Math.min(100, (item.totalPurchased / Number(item.quantity)) * 100)
-            : 0;
+      <div className="boq-groups">
+        {Object.entries(groupedItems).map(([groupKey, groupItems]) => {
+          const isCollapsed = collapsedGroups.has(groupKey);
+          const stageConfig = STAGE_CONFIG[groupKey as BOQStage];
+          const stageStats = getStageStats(groupItems);
+          const StageIcon = stageConfig?.icon || Package;
 
           return (
-            <Fragment key={item.id}>
-              <div className={`boq-item-card ${statusConfig.bgClass}`}>
-                <div className="item-main" onClick={() => item.purchaseRecords.length > 0 && toggleItemExpanded(item.id)}>
-                  <div className="item-expand">
-                    {item.purchaseRecords.length > 0 ? (
-                      isExpanded ? <CaretDown size={16} /> : <CaretRight size={16} />
-                    ) : (
-                      <span className="expand-placeholder" />
-                    )}
-                  </div>
-
-                  <div className="item-info">
-                    <div className="item-name">{item.material_name}</div>
-                    <div className="item-meta">
-                      {item.category && <span className="item-category">{item.category}</span>}
-                      <span className="item-unit">{item.unit}</span>
+            <div key={groupKey} className="boq-group">
+              {groupBy !== 'none' && (
+                <div
+                  className="group-header"
+                  onClick={() => toggleGroupCollapsed(groupKey)}
+                  style={{ '--stage-color': stageConfig?.color || '#64748b' } as React.CSSProperties}
+                >
+                  <div className="group-header-left">
+                    <div className="group-icon" style={{ background: `${stageConfig?.color || '#64748b'}15`, color: stageConfig?.color || '#64748b' }}>
+                      <StageIcon size={18} weight="duotone" />
+                    </div>
+                    <div className="group-title">
+                      <h3>{stageConfig?.label || groupKey}</h3>
+                      <span className="group-count">{stageStats.total} item{stageStats.total !== 1 ? 's' : ''}</span>
                     </div>
                   </div>
-
-                  <div className="item-quantities">
-                    <div className="qty-group">
-                      <span className="qty-label">BOQ Qty</span>
-                      <span className="qty-value">{Number(item.quantity).toFixed(1)}</span>
+                  <div className="group-header-right">
+                    <div className="group-stats">
+                      <span className="stat purchased">{stageStats.purchased} purchased</span>
+                      {stageStats.inProgress > 0 && <span className="stat progress">{stageStats.inProgress} in progress</span>}
+                      <span className="stat spent">{formatPrice(stageStats.totalSpent, stageStats.totalSpent * exchangeRate)}</span>
                     </div>
-                    <div className="qty-group">
-                      <span className="qty-label">Purchased</span>
-                      <span className="qty-value purchased">{item.totalPurchased.toFixed(1)}</span>
+                    <div className="group-toggle-icon">
+                      {isCollapsed ? <CaretDown size={16} /> : <CaretUp size={16} />}
                     </div>
-                    <div className="qty-group">
-                      <span className="qty-label">Remaining</span>
-                      <span className={`qty-value ${item.remainingQty <= 0 ? 'complete' : ''}`}>
-                        {item.remainingQty.toFixed(1)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="item-progress">
-                    <div className="progress-bar">
-                      <div
-                        className={`progress-fill ${statusConfig.bgClass}`}
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
-                    <span className="progress-text">{progressPercent.toFixed(0)}%</span>
-                  </div>
-
-                  <div className="item-spent">
-                    <span className="spent-label">Total Spent</span>
-                    <span className="spent-value">
-                      {formatPrice(item.totalSpent, item.totalSpent * exchangeRate)}
-                    </span>
-                  </div>
-
-                  <div className={`item-status ${statusConfig.bgClass}`}>
-                    <StatusIcon size={14} weight="bold" />
-                    <span>{statusConfig.label}</span>
-                  </div>
-
-                  <div className="item-actions">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      icon={<Plus size={14} />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openPurchaseModal(item);
-                      }}
-                    >
-                      Log Purchase
-                    </Button>
                   </div>
                 </div>
+              )}
 
-                {isExpanded && item.purchaseRecords.length > 0 && (
-                  <div className="item-history">
-                    <div className="history-header">
-                      <span>Purchase History ({item.purchaseRecords.length})</span>
-                    </div>
-                    <div className="table-scroll">
-                      <table className="history-table">
-                        <thead>
-                          <tr>
-                            <th>Date</th>
-                            <th>Supplier</th>
-                            <th className="text-right">Qty</th>
-                            <th className="text-right">Unit Price</th>
-                            <th className="text-right">Total</th>
-                            <th>Receipt</th>
-                            <th>Notes</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {item.purchaseRecords.map((record) => (
-                            <tr key={record.id}>
-                              <td>{new Date(record.purchased_at).toLocaleDateString()}</td>
-                              <td className="supplier-cell">
-                                <Storefront size={14} />
-                                {record.supplier_name}
-                              </td>
-                              <td className="text-right mono">{Number(record.quantity).toFixed(2)}</td>
-                              <td className="text-right mono">
-                                {formatPrice(Number(record.unit_price_usd), Number(record.unit_price_usd) * exchangeRate)}
-                              </td>
-                              <td className="text-right mono bold">
-                                {formatPrice(
-                                  Number(record.quantity) * Number(record.unit_price_usd),
-                                  Number(record.quantity) * Number(record.unit_price_usd) * exchangeRate
-                                )}
-                              </td>
-                              <td>
-                                {record.receipt_document_id ? (
-                                  <button
-                                    className="receipt-link"
-                                    onClick={() => handleOpenReceipt(record.receipt_document_id)}
-                                  >
-                                    View
-                                  </button>
-                                ) : (
-                                  <span className="no-receipt">&mdash;</span>
-                                )}
-                              </td>
-                              <td className="notes-cell">{record.notes || '\u2014'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </Fragment>
+              {!isCollapsed && (
+                <div className="group-items">
+                  {groupItems.map((item) => renderItemCard(item))}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
     );
   };
 
+  // Ledger-style purchase history grouped by date
   const renderHistoryContent = () => {
-    const allPurchases = purchases.sort((a, b) =>
+    const allPurchases = [...purchases].sort((a, b) =>
       new Date(b.purchased_at).getTime() - new Date(a.purchased_at).getTime()
     );
 
@@ -716,59 +1028,84 @@ export default function UnifiedProcurementView({
 
     const itemMap = new Map(items.map(i => [i.id, i]));
 
+    // Group purchases by date
+    const purchasesByDate: Record<string, PurchaseRecord[]> = {};
+    allPurchases.forEach((record) => {
+      const dateKey = new Date(record.purchased_at).toLocaleDateString('en-GB', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+      if (!purchasesByDate[dateKey]) {
+        purchasesByDate[dateKey] = [];
+      }
+      purchasesByDate[dateKey].push(record);
+    });
+
     return (
-      <div className="history-content reveal" data-delay="4">
-        <div className="table-scroll">
-          <table className="full-history-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Item</th>
-                <th>Supplier</th>
-                <th className="text-right">Qty</th>
-                <th className="text-right">Unit Price</th>
-                <th className="text-right">Total</th>
-                <th>Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allPurchases.map((record) => {
-                const item = itemMap.get(record.boq_item_id);
-                return (
-                  <tr key={record.id}>
-                    <td>{new Date(record.purchased_at).toLocaleDateString()}</td>
-                    <td className="item-cell">{item?.material_name || 'Unknown'}</td>
-                    <td className="supplier-cell">
-                      <Storefront size={14} />
-                      {record.supplier_name}
-                    </td>
-                    <td className="text-right mono">{Number(record.quantity).toFixed(2)}</td>
-                    <td className="text-right mono">
-                      {formatPrice(Number(record.unit_price_usd), Number(record.unit_price_usd) * exchangeRate)}
-                    </td>
-                    <td className="text-right mono bold">
-                      {formatPrice(
-                        Number(record.quantity) * Number(record.unit_price_usd),
-                        Number(record.quantity) * Number(record.unit_price_usd) * exchangeRate
-                      )}
-                    </td>
-                    <td>
-                      {record.receipt_document_id ? (
-                        <button
-                          className="receipt-link"
-                          onClick={() => handleOpenReceipt(record.receipt_document_id)}
-                        >
-                          View
-                        </button>
-                      ) : (
-                        <span className="no-receipt">&mdash;</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      <div className="ledger-content">
+        <div className="ledger-header-bar">
+          <h3>Purchase Ledger</h3>
+          <span className="ledger-total">{purchases.length} transactions • Total: {formatPrice(stats.totalSpent, stats.totalSpent * exchangeRate)}</span>
+        </div>
+
+        <div className="ledger-container">
+          {Object.entries(purchasesByDate).map(([dateKey, dateRecords]) => {
+            const dayTotal = dateRecords.reduce((sum, r) => sum + (Number(r.quantity) * Number(r.unit_price_usd)), 0);
+            return (
+              <div key={dateKey} className="ledger-date-group">
+                <div className="ledger-date-header">
+                  <span className="ledger-date">{dateKey}</span>
+                  <span className="ledger-date-total">{formatPrice(dayTotal, dayTotal * exchangeRate)}</span>
+                </div>
+                <table className="ledger-table full-ledger">
+                  <thead>
+                    <tr>
+                      <th className="col-item">Material</th>
+                      <th className="col-supplier">Supplier</th>
+                      <th className="col-qty">Qty</th>
+                      <th className="col-unit">Unit</th>
+                      <th className="col-price">Unit Price</th>
+                      <th className="col-total">Total</th>
+                      <th className="col-receipt">Receipt</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dateRecords.map((record) => {
+                      const item = itemMap.get(record.boq_item_id);
+                      const recordTotal = Number(record.quantity) * Number(record.unit_price_usd);
+                      return (
+                        <tr key={record.id}>
+                          <td className="col-item">
+                            <span className="item-name">{item?.material_name || 'Unknown'}</span>
+                            {item?.category && <span className="item-cat">{item.category}</span>}
+                          </td>
+                          <td className="col-supplier">{record.supplier_name}</td>
+                          <td className="col-qty mono">{Number(record.quantity).toFixed(2)}</td>
+                          <td className="col-unit">{item?.unit || '—'}</td>
+                          <td className="col-price mono">{formatPrice(Number(record.unit_price_usd), Number(record.unit_price_usd) * exchangeRate)}</td>
+                          <td className="col-total mono bold">{formatPrice(recordTotal, recordTotal * exchangeRate)}</td>
+                          <td className="col-receipt">
+                            {record.receipt_document_id ? (
+                              <button
+                                className="receipt-link"
+                                onClick={() => handleOpenReceipt(record.receipt_document_id)}
+                              >
+                                <Paperclip size={12} />
+                              </button>
+                            ) : (
+                              <span className="no-receipt">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -827,7 +1164,7 @@ export default function UnifiedProcurementView({
         <div className="modal-overlay" onClick={() => { setShowPurchaseModal(false); resetPurchaseForm(); setSelectedItemForPurchase(null); }}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <div>
+              <div className="modal-title-group">
                 <h3>Log Purchase</h3>
                 <p className="modal-item-name">{selectedItemForPurchase.material_name}</p>
               </div>
@@ -837,89 +1174,142 @@ export default function UnifiedProcurementView({
             </div>
             <div className="modal-body">
               <div className="modal-item-info">
-                <div className="info-row">
-                  <span>BOQ Quantity:</span>
-                  <strong>{Number(selectedItemForPurchase.quantity).toFixed(1)} {selectedItemForPurchase.unit}</strong>
+                <div className="info-cell">
+                  <span className="info-label">BOQ Qty</span>
+                  <span className="info-value">{Number(selectedItemForPurchase.quantity).toFixed(1)} {selectedItemForPurchase.unit}</span>
                 </div>
-                <div className="info-row">
-                  <span>Already Purchased:</span>
-                  <strong>{itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id)?.totalPurchased.toFixed(1) || '0'} {selectedItemForPurchase.unit}</strong>
+                <div className="info-cell">
+                  <span className="info-label">Purchased</span>
+                  <span className="info-value">{itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id)?.totalPurchased.toFixed(1) || '0'} {selectedItemForPurchase.unit}</span>
+                </div>
+                <div className="info-cell highlight">
+                  <span className="info-label">Remaining</span>
+                  <span className="info-value">{itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id)?.remainingQty.toFixed(1) || selectedItemForPurchase.quantity} {selectedItemForPurchase.unit}</span>
                 </div>
               </div>
 
-              <div className="field">
-                <label>Supplier Name *</label>
-                <input
-                  type="text"
-                  list="supplier-list"
-                  value={purchaseForm.supplierName}
-                  onChange={(e) => setPurchaseForm({ ...purchaseForm, supplierName: e.target.value })}
-                  placeholder="e.g. PPC Zimbabwe"
-                />
-                <datalist id="supplier-list">
-                  {suppliers.map((supplier) => (
-                    <option key={supplier.id} value={supplier.name} />
-                  ))}
-                </datalist>
-              </div>
-
-              <div className="field-grid">
-                <div className="field">
-                  <label>Quantity *</label>
+              <div className="form-section">
+                <div className={`form-field ${formErrors.supplierName ? 'has-error' : ''}`}>
+                  <label htmlFor="supplier-input">
+                    Supplier Name <span className="required">*</span>
+                  </label>
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={purchaseForm.quantity}
-                    onChange={(e) => setPurchaseForm({ ...purchaseForm, quantity: e.target.value })}
-                    placeholder={`Max: ${itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id)?.remainingQty.toFixed(1) || ''}`}
+                    id="supplier-input"
+                    type="text"
+                    list="supplier-list"
+                    value={purchaseForm.supplierName}
+                    onChange={(e) => {
+                      setPurchaseForm({ ...purchaseForm, supplierName: e.target.value });
+                      if (formErrors.supplierName) setFormErrors({ ...formErrors, supplierName: undefined });
+                    }}
+                    placeholder="e.g. PPC Zimbabwe"
+                    className={formErrors.supplierName ? 'error' : ''}
+                  />
+                  <datalist id="supplier-list">
+                    {suppliers.map((supplier) => (
+                      <option key={supplier.id} value={supplier.name} />
+                    ))}
+                  </datalist>
+                  {formErrors.supplierName && <span className="field-error">{formErrors.supplierName}</span>}
+                </div>
+
+                <div className="form-row three-col">
+                  <div className={`form-field ${formErrors.quantity ? 'has-error' : ''}`}>
+                    <label htmlFor="qty-input">
+                      Quantity <span className="required">*</span>
+                    </label>
+                    <input
+                      id="qty-input"
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.01"
+                      value={purchaseForm.quantity}
+                      onChange={(e) => {
+                        setPurchaseForm({ ...purchaseForm, quantity: e.target.value });
+                        if (formErrors.quantity) setFormErrors({ ...formErrors, quantity: undefined });
+                      }}
+                      placeholder="0.00"
+                      className={formErrors.quantity ? 'error' : ''}
+                    />
+                    {formErrors.quantity && <span className="field-error">{formErrors.quantity}</span>}
+                  </div>
+                  <div className={`form-field ${formErrors.unitPrice ? 'has-error' : ''}`}>
+                    <label htmlFor="price-input">
+                      Unit Price (USD) <span className="required">*</span>
+                    </label>
+                    <input
+                      id="price-input"
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.01"
+                      value={purchaseForm.unitPrice}
+                      onChange={(e) => {
+                        setPurchaseForm({ ...purchaseForm, unitPrice: e.target.value });
+                        if (formErrors.unitPrice) setFormErrors({ ...formErrors, unitPrice: undefined });
+                      }}
+                      placeholder="0.00"
+                      className={formErrors.unitPrice ? 'error' : ''}
+                    />
+                    {formErrors.unitPrice && <span className="field-error">{formErrors.unitPrice}</span>}
+                  </div>
+                  <div className={`form-field ${formErrors.purchasedAt ? 'has-error' : ''}`}>
+                    <label htmlFor="date-input">
+                      Date <span className="required">*</span>
+                    </label>
+                    <input
+                      id="date-input"
+                      type="date"
+                      value={purchaseForm.purchasedAt}
+                      onChange={(e) => {
+                        setPurchaseForm({ ...purchaseForm, purchasedAt: e.target.value });
+                        if (formErrors.purchasedAt) setFormErrors({ ...formErrors, purchasedAt: undefined });
+                      }}
+                      className={formErrors.purchasedAt ? 'error' : ''}
+                    />
+                    {formErrors.purchasedAt && <span className="field-error">{formErrors.purchasedAt}</span>}
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="notes-input">Notes <span className="optional">(optional)</span></label>
+                  <input
+                    id="notes-input"
+                    type="text"
+                    value={purchaseForm.notes}
+                    onChange={(e) => setPurchaseForm({ ...purchaseForm, notes: e.target.value })}
+                    placeholder="Invoice reference, delivery notes..."
                   />
                 </div>
-                <div className="field">
-                  <label>Unit Price (USD) *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={purchaseForm.unitPrice}
-                    onChange={(e) => setPurchaseForm({ ...purchaseForm, unitPrice: e.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label>Purchase Date</label>
-                  <input
-                    type="date"
-                    value={purchaseForm.purchasedAt}
-                    onChange={(e) => setPurchaseForm({ ...purchaseForm, purchasedAt: e.target.value })}
-                  />
-                </div>
-              </div>
 
-              <div className="field">
-                <label>Notes (optional)</label>
-                <input
-                  type="text"
-                  value={purchaseForm.notes}
-                  onChange={(e) => setPurchaseForm({ ...purchaseForm, notes: e.target.value })}
-                  placeholder="Invoice reference or delivery notes"
-                />
-              </div>
-
-              <div className="field">
-                <label>Attach Receipt (optional)</label>
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={(e) =>
-                    setPurchaseForm({
-                      ...purchaseForm,
-                      receiptFile: e.target.files?.[0] || null,
-                    })
-                  }
-                />
+                <div className="form-field">
+                  <label>Receipt <span className="optional">(optional)</span></label>
+                  <div className="file-upload-area">
+                    <input
+                      type="file"
+                      id="receipt-file-input"
+                      accept="image/*,application/pdf"
+                      onChange={(e) =>
+                        setPurchaseForm({
+                          ...purchaseForm,
+                          receiptFile: e.target.files?.[0] || null,
+                        })
+                      }
+                    />
+                    <label htmlFor="receipt-file-input" className="file-upload-label">
+                      <Paperclip size={18} />
+                      {purchaseForm.receiptFile ? (
+                        <span className="file-name">{purchaseForm.receiptFile.name}</span>
+                      ) : (
+                        <span className="file-placeholder">Attach receipt (image or PDF)</span>
+                      )}
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="modal-actions">
+            <div className="modal-footer">
               <Button variant="secondary" onClick={() => { setShowPurchaseModal(false); resetPurchaseForm(); setSelectedItemForPurchase(null); }}>
                 Cancel
               </Button>
@@ -930,917 +1320,6 @@ export default function UnifiedProcurementView({
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        /* =============================================
-         * PROCUREMENT VIEW — Layout
-         * ============================================= */
-        .procurement-view {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-8);
-          padding-bottom: var(--space-20);
-        }
-
-        /* =============================================
-         * HERO SECTION
-         * ============================================= */
-        .procurement-hero {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-5);
-        }
-
-        .procurement-hero h2 {
-          font-family: var(--font-heading);
-          font-size: var(--text-h2);
-          font-weight: var(--font-bold);
-          margin: 0 0 var(--space-2);
-          color: var(--color-text);
-          letter-spacing: -0.02em;
-        }
-
-        .procurement-hero p {
-          margin: 0;
-          color: var(--color-text-secondary);
-          font-size: var(--text-base);
-          line-height: var(--leading-relaxed);
-        }
-
-        .hero-spending {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-2);
-          background: var(--color-surface);
-          border: 1px solid var(--color-border-light);
-          border-radius: var(--radius-lg);
-          padding: var(--space-4) var(--space-5);
-        }
-
-        .spending-labels {
-          display: flex;
-          justify-content: space-between;
-          align-items: baseline;
-        }
-
-        .spending-spent {
-          font-family: var(--font-mono);
-          font-size: var(--text-sm);
-          font-weight: var(--font-bold);
-          color: var(--color-text);
-        }
-
-        .spending-budget {
-          font-size: var(--text-xs);
-          color: var(--color-text-muted);
-        }
-
-        .spending-track {
-          height: 8px;
-          width: 100%;
-          background: var(--color-border);
-          border-radius: var(--radius-full);
-          overflow: hidden;
-        }
-
-        .spending-fill {
-          height: 100%;
-          border-radius: var(--radius-full);
-          transition: width var(--duration-slow) var(--ease-out);
-        }
-
-        .spending-percent {
-          font-size: var(--text-xs);
-          color: var(--color-text-muted);
-          font-weight: var(--font-medium);
-        }
-
-        /* =============================================
-         * SUMMARY CARDS
-         * ============================================= */
-        .summary-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: var(--space-4);
-        }
-
-        .summary-card {
-          background: var(--color-surface) !important;
-          border: 1px solid var(--color-border-light) !important;
-          border-radius: var(--radius-lg) !important;
-          padding: var(--space-5) !important;
-          display: flex !important;
-          align-items: center !important;
-          gap: var(--space-4) !important;
-          box-shadow: var(--shadow-sm) !important;
-          transition: transform var(--duration-fast) var(--ease-default),
-                      box-shadow var(--duration-fast) var(--ease-default),
-                      border-color var(--duration-fast) var(--ease-default) !important;
-        }
-
-        .summary-card.clickable {
-          cursor: pointer;
-        }
-
-        .summary-card.clickable:hover {
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-md) !important;
-          border-color: var(--color-accent-muted) !important;
-        }
-
-        .summary-icon {
-          width: 48px;
-          height: 48px;
-          border-radius: var(--radius-md);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-
-        .summary-icon-blue { background: rgba(46, 108, 246, 0.1); color: var(--color-accent); }
-        .summary-icon-green { background: rgba(22, 163, 74, 0.1); color: var(--color-emerald); }
-        .summary-icon-teal { background: rgba(8, 145, 178, 0.1); color: #0891b2; }
-        .summary-icon-red { background: rgba(220, 38, 38, 0.08); color: var(--color-danger); }
-
-        .summary-body {
-          min-width: 0;
-        }
-
-        .summary-label {
-          font-size: var(--text-xs);
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          font-weight: var(--font-semibold);
-          color: var(--color-text-secondary);
-          margin-bottom: 4px;
-        }
-
-        .summary-value {
-          font-size: var(--text-h4);
-          font-weight: var(--font-bold);
-          color: var(--color-text);
-          font-family: var(--font-mono);
-          line-height: var(--leading-tight);
-        }
-
-        .summary-sub {
-          font-size: var(--text-sm);
-          color: var(--color-text-muted);
-          font-weight: var(--font-normal);
-        }
-
-        /* =============================================
-         * STAGE TABS
-         * ============================================= */
-        .stage-tabs {
-          display: flex;
-          gap: var(--space-1);
-          padding: var(--space-1);
-          background: var(--color-mist);
-          border-radius: var(--radius-md);
-          width: fit-content;
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
-        }
-
-        .stage-tab-btn {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          padding: var(--space-2) var(--space-4);
-          border-radius: var(--radius-sm);
-          font-size: var(--text-sm);
-          font-weight: var(--font-semibold);
-          color: var(--color-text-secondary);
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          white-space: nowrap;
-          transition: all var(--duration-fast) var(--ease-default);
-        }
-
-        .stage-tab-btn:hover {
-          color: var(--color-text);
-          background: rgba(255, 255, 255, 0.5);
-        }
-
-        .stage-tab-btn.active {
-          background: var(--color-surface);
-          color: var(--color-text);
-          box-shadow: var(--shadow-sm);
-        }
-
-        .tab-count {
-          font-size: var(--text-xs);
-          font-weight: var(--font-bold);
-          background: var(--color-border);
-          color: var(--color-text-secondary);
-          padding: 1px 7px;
-          border-radius: var(--radius-full);
-          line-height: 1.5;
-        }
-
-        .stage-tab-btn.active .tab-count {
-          background: var(--color-accent-muted);
-          color: var(--color-accent);
-        }
-
-        /* =============================================
-         * CONTENT AREA & TOOLBAR
-         * ============================================= */
-        .content-area {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-6);
-        }
-
-        .procurement-toolbar {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: var(--space-4);
-          padding: var(--space-4);
-          background: var(--color-surface);
-          border: 1px solid var(--color-border-light);
-          border-radius: var(--radius-md);
-        }
-
-        .toolbar-left {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          flex: 1;
-        }
-
-        .search-box {
-          position: relative;
-          flex: 1;
-          max-width: 340px;
-        }
-
-        .search-icon {
-          position: absolute;
-          left: var(--space-3);
-          top: 50%;
-          transform: translateY(-50%);
-          color: var(--color-text-muted);
-          pointer-events: none;
-        }
-
-        .search-input {
-          width: 100%;
-          height: var(--input-height);
-          padding: 0 var(--space-3) 0 36px;
-          border: var(--input-border);
-          border-radius: var(--input-radius);
-          font-size: var(--text-sm);
-          background: var(--input-bg);
-          color: var(--color-text);
-          transition: border-color var(--duration-fast) var(--ease-default),
-                      box-shadow var(--duration-fast) var(--ease-default);
-        }
-
-        .search-input:focus {
-          outline: none;
-          border-color: var(--color-accent);
-          box-shadow: 0 0 0 3px var(--color-accent-muted);
-        }
-
-        .status-filter {
-          height: var(--input-height);
-          padding: 0 var(--space-3);
-          border: var(--input-border);
-          border-radius: var(--input-radius);
-          font-size: var(--text-sm);
-          color: var(--color-text-secondary);
-          background: var(--input-bg);
-          cursor: pointer;
-        }
-
-        .status-filter:focus {
-          outline: none;
-          border-color: var(--color-accent);
-          box-shadow: 0 0 0 3px var(--color-accent-muted);
-        }
-
-        /* =============================================
-         * LOADING STATE
-         * ============================================= */
-        .loading-state {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-3);
-          padding: var(--space-6) 0;
-        }
-
-        .loading-skeleton {
-          height: 64px;
-          background: linear-gradient(90deg, var(--color-mist) 25%, var(--color-border) 50%, var(--color-mist) 75%);
-          background-size: 200% 100%;
-          border-radius: var(--radius-md);
-          animation: skeleton-pulse 1.5s ease-in-out infinite;
-        }
-
-        .loading-skeleton.short {
-          width: 75%;
-        }
-
-        @keyframes skeleton-pulse {
-          0% { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
-        }
-
-        /* =============================================
-         * BOQ ITEM CARDS
-         * ============================================= */
-        .boq-list {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-3);
-        }
-
-        .boq-item-card {
-          background: var(--color-surface);
-          border: 1px solid var(--color-border-light);
-          border-radius: var(--radius-md);
-          overflow: hidden;
-          transition: border-color var(--duration-fast) var(--ease-default),
-                      box-shadow var(--duration-fast) var(--ease-default);
-        }
-
-        .boq-item-card:hover {
-          border-color: rgba(46, 108, 246, 0.25);
-          box-shadow: var(--shadow-sm);
-        }
-
-        /* Status left-border highlights */
-        .boq-item-card.status-purchased { border-left: 4px solid var(--color-emerald); }
-        .boq-item-card.status-progress { border-left: 4px solid var(--color-accent); }
-        .boq-item-card.status-over { border-left: 4px solid var(--color-danger); }
-        .boq-item-card.status-pending { border-left: 4px solid var(--color-border-dark); }
-
-        .item-main {
-          padding: var(--space-4) var(--space-5);
-          display: grid;
-          grid-template-columns: 24px 2fr 2fr 1.5fr 1fr 120px 140px;
-          align-items: center;
-          gap: var(--space-4);
-          cursor: pointer;
-        }
-
-        .item-expand {
-          display: flex;
-          align-items: center;
-          color: var(--color-text-muted);
-        }
-
-        .expand-placeholder {
-          display: inline-block;
-          width: 16px;
-          height: 16px;
-        }
-
-        .item-info {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          min-width: 0;
-        }
-
-        .item-name {
-          font-weight: var(--font-semibold);
-          color: var(--color-text);
-          font-size: var(--text-sm);
-          line-height: var(--leading-tight);
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .item-meta {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          font-size: var(--text-xs);
-          color: var(--color-text-muted);
-        }
-
-        .item-category {
-          background: var(--color-mist);
-          padding: 2px 6px;
-          border-radius: var(--radius-sm);
-          text-transform: uppercase;
-          font-weight: var(--font-semibold);
-          letter-spacing: 0.05em;
-        }
-
-        .item-quantities {
-          display: flex;
-          gap: var(--space-4);
-        }
-
-        .qty-group {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-
-        .qty-label {
-          font-size: 0.65rem;
-          text-transform: uppercase;
-          color: var(--color-text-muted);
-          font-weight: var(--font-semibold);
-          letter-spacing: 0.04em;
-        }
-
-        .qty-value {
-          font-family: var(--font-mono);
-          font-size: var(--text-sm);
-          color: var(--color-text);
-        }
-
-        .qty-value.purchased { color: var(--color-accent); font-weight: var(--font-semibold); }
-        .qty-value.complete { color: var(--color-emerald); }
-
-        .item-progress {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-2);
-        }
-
-        .progress-bar {
-          height: 6px;
-          width: 100%;
-          background: var(--color-border);
-          border-radius: var(--radius-full);
-          overflow: hidden;
-        }
-
-        .progress-fill {
-          height: 100%;
-          background: var(--color-border-dark);
-          border-radius: var(--radius-full);
-          transition: width var(--duration-slow) var(--ease-out);
-        }
-
-        .progress-fill.status-purchased { background: var(--color-emerald); }
-        .progress-fill.status-progress { background: var(--color-accent); }
-        .progress-fill.status-over { background: var(--color-danger); }
-
-        .progress-text {
-          font-size: var(--text-xs);
-          color: var(--color-text-muted);
-          font-weight: var(--font-medium);
-          text-align: right;
-        }
-
-        .item-spent {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 2px;
-        }
-
-        .spent-label {
-          font-size: 0.65rem;
-          text-transform: uppercase;
-          color: var(--color-text-muted);
-          font-weight: var(--font-semibold);
-          letter-spacing: 0.04em;
-        }
-
-        .spent-value {
-          font-family: var(--font-mono);
-          font-weight: var(--font-semibold);
-          font-size: var(--text-sm);
-          color: var(--color-text);
-        }
-
-        .item-status {
-          display: inline-flex;
-          align-items: center;
-          gap: var(--space-1);
-          font-size: var(--text-xs);
-          font-weight: var(--font-semibold);
-          padding: 4px 10px;
-          border-radius: var(--badge-radius);
-          white-space: nowrap;
-        }
-
-        .item-status.status-purchased { background: rgba(22, 163, 74, 0.1); color: var(--color-emerald); }
-        .item-status.status-progress { background: var(--color-accent-muted); color: var(--color-accent); }
-        .item-status.status-over { background: rgba(220, 38, 38, 0.08); color: var(--color-danger); }
-        .item-status.status-pending { background: var(--color-mist); color: var(--color-text-muted); }
-
-        .item-actions {
-          display: flex;
-          justify-content: flex-end;
-        }
-
-        /* =============================================
-         * PURCHASE HISTORY (inline per-item)
-         * ============================================= */
-        .item-history {
-          border-top: 1px solid var(--color-border-light);
-          background: var(--color-background);
-          padding: var(--space-5);
-        }
-
-        .history-header {
-          margin-bottom: var(--space-3);
-          font-size: var(--text-xs);
-          font-weight: var(--font-bold);
-          color: var(--color-text-secondary);
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-        }
-
-        .table-scroll {
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
-        }
-
-        .history-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: var(--text-sm);
-        }
-
-        .history-table th {
-          text-align: left;
-          padding: var(--table-cell-padding);
-          font-weight: var(--font-semibold);
-          color: var(--color-text-muted);
-          border-bottom: 1px solid var(--color-border-light);
-          white-space: nowrap;
-          font-size: var(--text-xs);
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-        }
-
-        .history-table td {
-          padding: var(--table-cell-padding);
-          border-bottom: 1px solid var(--color-border-light);
-          color: var(--color-text);
-        }
-
-        .history-table tbody tr:hover {
-          background: var(--table-row-hover);
-        }
-
-        .history-table tbody tr:nth-child(even) {
-          background: var(--table-zebra-bg);
-        }
-
-        .history-table tbody tr:nth-child(even):hover {
-          background: var(--table-row-hover);
-        }
-
-        .history-table .supplier-cell {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-        }
-
-        .history-table .mono { font-family: var(--font-mono); }
-        .history-table .text-right { text-align: right; }
-        .history-table .bold { font-weight: var(--font-semibold); }
-
-        .notes-cell {
-          max-width: 200px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          color: var(--color-text-secondary);
-          font-size: var(--text-xs);
-        }
-
-        .receipt-link {
-          background: none;
-          border: none;
-          color: var(--color-accent);
-          font-size: var(--text-xs);
-          font-weight: var(--font-semibold);
-          cursor: pointer;
-          padding: 2px 0;
-          transition: color var(--duration-fast) var(--ease-default);
-        }
-
-        .receipt-link:hover { color: var(--color-accent-dark); text-decoration: underline; }
-        .no-receipt { color: var(--color-text-muted); font-size: var(--text-xs); }
-
-        /* =============================================
-         * FULL HISTORY TABLE
-         * ============================================= */
-        .history-content {
-          background: var(--color-surface);
-          border: 1px solid var(--color-border-light);
-          border-radius: var(--radius-md);
-          overflow: hidden;
-        }
-
-        .full-history-table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-
-        .full-history-table th {
-          text-align: left;
-          padding: var(--space-4);
-          background: var(--table-header-bg);
-          border-bottom: 1px solid var(--color-border-light);
-          font-weight: var(--font-semibold);
-          color: var(--color-text-secondary);
-          font-size: var(--text-xs);
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          white-space: nowrap;
-        }
-
-        .full-history-table td {
-          padding: var(--space-4);
-          border-bottom: 1px solid var(--color-border-light);
-          color: var(--color-text);
-          font-size: var(--text-sm);
-        }
-
-        .full-history-table tbody tr:hover {
-          background: var(--table-row-hover);
-        }
-
-        .full-history-table tbody tr:nth-child(even) {
-          background: var(--table-zebra-bg);
-        }
-
-        .full-history-table tbody tr:nth-child(even):hover {
-          background: var(--table-row-hover);
-        }
-
-        .full-history-table .item-cell {
-          font-weight: var(--font-semibold);
-          color: var(--color-text);
-        }
-
-        .full-history-table .supplier-cell {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-        }
-
-        .full-history-table .mono { font-family: var(--font-mono); }
-        .full-history-table .text-right { text-align: right; }
-        .full-history-table .bold { font-weight: var(--font-semibold); }
-
-        /* =============================================
-         * MODAL
-         * ============================================= */
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: var(--color-surface-overlay);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: var(--z-modal);
-          backdrop-filter: blur(6px);
-          padding: var(--space-4);
-        }
-
-        .modal-card {
-          background: var(--color-surface);
-          border-radius: var(--radius-xl);
-          width: 100%;
-          max-width: 520px;
-          max-height: 90vh;
-          overflow-y: auto;
-          box-shadow: var(--shadow-xl);
-          animation: modal-in var(--duration-slow) cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .modal-header {
-          padding: var(--space-6);
-          border-bottom: 1px solid var(--color-border-light);
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          background: var(--color-background);
-        }
-
-        .modal-header h3 {
-          margin: 0;
-          font-family: var(--font-heading);
-          font-size: var(--text-h4);
-          font-weight: var(--font-bold);
-          color: var(--color-text);
-        }
-
-        .modal-item-name {
-          margin: var(--space-1) 0 0;
-          color: var(--color-text-secondary);
-          font-size: var(--text-sm);
-        }
-
-        .modal-close {
-          background: none;
-          border: none;
-          color: var(--color-text-muted);
-          cursor: pointer;
-          padding: var(--space-1);
-          border-radius: var(--radius-sm);
-          transition: background var(--duration-fast) var(--ease-default),
-                      color var(--duration-fast) var(--ease-default);
-        }
-
-        .modal-close:hover {
-          background: var(--color-mist);
-          color: var(--color-text);
-        }
-
-        .modal-body {
-          padding: var(--space-6);
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-5);
-        }
-
-        .modal-item-info {
-          background: var(--color-mist);
-          border-radius: var(--radius-md);
-          padding: var(--space-4);
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-2);
-        }
-
-        .info-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: var(--text-sm);
-        }
-
-        .info-row span {
-          color: var(--color-text-secondary);
-        }
-
-        .info-row strong {
-          font-family: var(--font-mono);
-          color: var(--color-text);
-          font-weight: var(--font-semibold);
-        }
-
-        .field {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-2);
-        }
-
-        .field label {
-          font-size: var(--text-sm);
-          font-weight: var(--font-semibold);
-          color: var(--color-text-secondary);
-        }
-
-        .field input {
-          height: var(--input-height);
-          padding: var(--input-padding);
-          border-radius: var(--input-radius);
-          border: var(--input-border);
-          font-size: var(--text-sm);
-          background: var(--input-bg);
-          color: var(--color-text);
-          transition: border-color var(--duration-fast) var(--ease-default),
-                      box-shadow var(--duration-fast) var(--ease-default);
-        }
-
-        .field input[type="file"] {
-          height: auto;
-          padding: var(--space-3);
-          font-size: var(--text-xs);
-        }
-
-        .field input:focus {
-          outline: none;
-          border-color: var(--color-accent);
-          box-shadow: 0 0 0 3px var(--color-accent-muted);
-        }
-
-        .field-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr;
-          gap: var(--space-4);
-        }
-
-        .modal-actions {
-          padding: var(--space-5) var(--space-6);
-          background: var(--color-background);
-          border-top: 1px solid var(--color-border-light);
-          display: flex;
-          justify-content: flex-end;
-          gap: var(--space-3);
-        }
-
-        @keyframes modal-in {
-          from { opacity: 0; transform: translateY(12px) scale(0.97); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        /* =============================================
-         * RESPONSIVE — Tablet
-         * ============================================= */
-        @media (max-width: 1024px) {
-          .summary-grid { grid-template-columns: repeat(2, 1fr); }
-          .item-main {
-            grid-template-columns: 24px 2fr 1.5fr 1fr 120px;
-            gap: var(--space-3);
-          }
-          .item-spent,
-          .item-actions { display: none; }
-          .field-grid { grid-template-columns: 1fr 1fr; }
-        }
-
-        /* =============================================
-         * RESPONSIVE — Mobile
-         * ============================================= */
-        @media (max-width: 640px) {
-          .procurement-view {
-            gap: var(--space-6);
-          }
-
-          .procurement-hero h2 {
-            font-size: var(--text-h3);
-          }
-
-          .summary-grid { grid-template-columns: 1fr 1fr; }
-
-          .stage-tabs {
-            width: 100%;
-          }
-
-          .procurement-toolbar {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .toolbar-left {
-            flex-direction: column;
-          }
-
-          .search-box {
-            max-width: 100%;
-          }
-
-          .item-main {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: var(--space-3);
-            padding: var(--space-4);
-          }
-
-          .item-expand { display: none; }
-
-          .item-quantities {
-            width: 100%;
-            justify-content: space-between;
-          }
-
-          .item-progress { width: 100%; }
-          .item-spent { width: 100%; align-items: flex-start; }
-          .item-actions { width: 100%; justify-content: stretch; }
-
-          .field-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .modal-card {
-            max-width: 100%;
-            border-radius: var(--radius-lg);
-          }
-
-          .modal-header,
-          .modal-body,
-          .modal-actions {
-            padding-left: var(--space-4);
-            padding-right: var(--space-4);
-          }
-        }
-
-        /* =============================================
-         * REDUCED MOTION
-         * ============================================= */
-        @media (prefers-reduced-motion: reduce) {
-          .spending-fill,
-          .progress-fill,
-          .summary-card,
-          .boq-item-card,
-          .loading-skeleton {
-            transition: none;
-            animation: none;
-          }
-        }
-      `}</style>
     </div>
   );
 }

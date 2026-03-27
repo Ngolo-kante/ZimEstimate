@@ -18,8 +18,12 @@ interface DocumentsTabProps {
     projectId: string;
 }
 
-const FILTER_OPTIONS: { value: DocumentCategory | 'all'; label: string }[] = [
+type DocumentFilter = DocumentCategory | 'all' | 'geotech';
+const GEOTECH_DOC_TAG = 'geotech_report';
+
+const FILTER_OPTIONS: { value: DocumentFilter; label: string }[] = [
     { value: 'all', label: 'All Documents' },
+    { value: 'geotech', label: 'Geotech Reports' },
     { value: 'plan', label: 'Plans & Drawings' },
     { value: 'permit', label: 'Permits' },
     { value: 'receipt', label: 'Receipts' },
@@ -33,7 +37,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
     const [documents, setDocuments] = useState<ProjectDocument[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
-    const [filter, setFilter] = useState<DocumentCategory | 'all'>('all');
+    const [filter, setFilter] = useState<DocumentFilter>('all');
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [previewDoc, setPreviewDoc] = useState<ProjectDocument | null>(null);
     const [setupRequired, setSetupRequired] = useState(false);
@@ -114,7 +118,9 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
 
     const filteredDocuments = filter === 'all'
         ? documents
-        : documents.filter((d) => d.category === filter);
+        : filter === 'geotech'
+            ? documents.filter((d) => (d.description || '').includes(GEOTECH_DOC_TAG))
+            : documents.filter((d) => d.category === filter);
 
     return (
         <>
@@ -128,7 +134,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                         <FunnelSimple size={16} />
                         <select
                             value={filter}
-                            onChange={(e) => setFilter(e.target.value as DocumentCategory | 'all')}
+                            onChange={(e) => setFilter(e.target.value as DocumentFilter)}
                         >
                             {FILTER_OPTIONS.map((opt) => (
                                 <option key={opt.value} value={opt.value}>

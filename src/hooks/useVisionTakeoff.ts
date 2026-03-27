@@ -12,6 +12,10 @@ import {
   GeneratedBOQItem,
 } from '@/lib/vision/types';
 import { generateBOQ } from '@/lib/calculations';
+import { materials, getBestPrice } from '@/lib/materials';
+import { TEMPORARY_WORKS_SUGGESTIONS } from '@/lib/buildFlowRules';
+
+const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
 
 // API call to analyze floor plan
 async function analyzeFloorPlanAPI(file: File): Promise<VisionAnalysisResult> {
@@ -30,6 +34,41 @@ async function analyzeFloorPlanAPI(file: File): Promise<VisionAnalysisResult> {
   }
 
   return result.data;
+}
+
+function addTemporaryEnablementItems(items: GeneratedBOQItem[], config: VisionConfig): GeneratedBOQItem[] {
+  const scopes = Array.isArray(config.scope) ? config.scope : [config.scope];
+  const hasSubstructureScope = scopes.includes('full_house') || scopes.includes('substructure');
+  if (!hasSubstructureScope) return items;
+
+  const enablementItems = TEMPORARY_WORKS_SUGGESTIONS.flatMap((suggestion) => {
+    if (items.some((item) => item.materialId === suggestion.id)) return [];
+    const material = materials.find((entry) => entry.id === suggestion.id);
+    const bestPrice = getBestPrice(suggestion.id);
+    if (!material || !bestPrice) return [];
+
+    const quantity = suggestion.defaultQty;
+    const totalUsd = quantity * bestPrice.priceUsd;
+    const totalZwg = quantity * bestPrice.priceZwg;
+
+    return [{
+      id: `vision-enablement-${suggestion.id}`,
+      materialId: suggestion.id,
+      materialName: material.name,
+      category: 'substructure',
+      quantity,
+      unit: material.unit,
+      unitPriceUsd: bestPrice.priceUsd,
+      unitPriceZwg: bestPrice.priceZwg,
+      totalUsd,
+      totalZwg,
+      calculationNote: `${ENABLEMENT_ITEM_TAG} ${suggestion.description}`,
+      isEdited: false,
+    }];
+  });
+
+  if (enablementItems.length === 0) return items;
+  return [...items, ...enablementItems];
 }
 
 export function useVisionTakeoff() {
@@ -202,9 +241,10 @@ export function useVisionTakeoff() {
     setTimeout(() => {
       setState((prev) => {
         const boqItems = generateBOQ(prev.editedRooms, prev.editedWalls, prev.config);
+        const boqItemsWithEnablement = addTemporaryEnablementItems(boqItems, prev.config);
         return {
           ...prev,
-          generatedBOQ: boqItems,
+          generatedBOQ: boqItemsWithEnablement,
           step: 'results',
         };
       });

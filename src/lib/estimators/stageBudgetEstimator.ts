@@ -25,8 +25,8 @@ export type StageReachInput = {
   floorAreaM2: number;
   roomCount?: number;
   wallHeightM?: number;
-  brickType?: BrickType;
-  cementType?: CementType;
+  brickTypes?: BrickType[];
+  cementTypes?: CementType[];
   locationType?: LocationType;
 };
 
@@ -58,16 +58,16 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
   const floorAreaM2 = clampPositive(input.floorAreaM2, 120);
   const roomCount = clampPositive(input.roomCount ?? Math.round(floorAreaM2 / 28), 4);
   const wallHeightM = clampPositive(input.wallHeightM ?? 2.7, 2.7);
-  const brickType = input.brickType ?? 'common';
-  const cementType = input.cementType ?? 'cement_325';
+  const brickType = (input.brickTypes && input.brickTypes.length > 0) ? input.brickTypes[0] : 'common';
+  const cementType = (input.cementTypes && input.cementTypes.length > 0) ? input.cementTypes[0] : 'cement_325';
   const locationType = input.locationType ?? 'urban';
 
   const generatedItems = generateBOQFromBasics({
     floorArea: floorAreaM2,
     roomCount,
     wallHeight: wallHeightM,
-    brickType,
-    cementType,
+    brickTypes: [brickType],
+    cementTypes: [cementType],
     scope: 'full_house',
     includeLabor: false,
     locationType,

@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import StageTab from '@/components/projects/StageTab';
 import DocumentsTab from '@/components/projects/DocumentsTab';
+import ComplianceTrackerTab from '@/components/projects/ComplianceTrackerTab';
 import ShareModal from '@/components/projects/ShareModal';
 import { RunningTotalBar } from '@/components/ui/RunningTotalBar';
 import { StageProgressCards } from '@/components/projects/StageProgressCards';
@@ -17,6 +18,7 @@ import BudgetPlanner, { NotificationChannel } from '@/components/ui/BudgetPlanne
 import PhoneNumberModal from '@/components/ui/PhoneNumberModal';
 import ProjectUsageView from '@/components/projects/ProjectUsageView';
 import UnifiedProcurementView from '@/components/projects/UnifiedProcurementView';
+import ProjectKPIDashboard from '@/components/projects/ProjectKPIDashboard';
 import SidebarSpine, { ProjectView } from '@/components/projects/SidebarSpine';
 import ProjectSettings from '@/components/projects/ProjectSettings';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
@@ -26,6 +28,8 @@ import { useReveal } from '@/hooks/useReveal';
 import {
     getProjectWithItems,
     getBOQItems,
+    getPurchaseRecords,
+    getProjectDocuments,
     getLatestWeeklyPrices,
     getLatestProjectNotification,
     createProjectNotification,
@@ -40,6 +44,9 @@ import {
 import { supabase } from '@/lib/supabase';
 import { clearCreatedProjectSnapshot, getCreatedProjectSnapshot } from '@/lib/projectCreationCache';
 import { materials, getBestPrice } from '@/lib/materials';
+import { LOCATION_PROCEDURE_RULES } from '@/lib/buildFlowRules';
+import type { LocationTypeRule } from '@/lib/buildFlowRules';
+import { getComplianceRequirementStatus, getStageRequirements } from '@/lib/compliance';
 import {
     getProjectStages,
     getStageUsageData,
@@ -47,6 +54,7 @@ import {
 import {
     Project,
     BOQItem,
+    PurchaseRecord,
     ProjectStageWithTasks,
     BOQCategory,
     ProjectRecurringReminder,
@@ -56,11 +64,13 @@ import {
     ArrowLeft,
     MapPin,
     Warning,
+    WarningCircle,
     List,
     Wallet,
     TrendUp,
     CheckCircle,
     PencilSimple,
+    X,
 } from '@phosphor-icons/react';
 import { ProjectDetailSkeleton } from '@/components/ui/Skeleton';
 
@@ -73,6 +83,48 @@ const categoryLabels: Record<BOQCategory, string> = {
     roofing: 'Roofing',
     finishing: 'Interior & Finishing',
     exterior: 'External Work',
+};
+
+const CHECKLIST_TASK_PREFIX = 'boq_checklist:';
+const GEOTECH_DOC_TAG = 'geotech_report';
+
+const CERTIFICATE_ITEMS = [
+    { id: 'approved_site_plan', label: 'Approved Site Plan' },
+    { id: 'slab_foundation_certificate', label: 'Slab/Foundation Certificate' },
+    { id: 'completion_occupation_certificate', label: 'Completion/Occupation Certificate' },
+] as const;
+
+const CERTIFICATE_STATUS_PRIORITY: Record<'pending' | 'in_progress' | 'done', number> = {
+    pending: 0,
+    in_progress: 1,
+    done: 2,
+};
+
+const SOIL_LABELS: Record<string, string> = {
+    sandy: 'Sandy',
+    clay_black_mountain: 'Clay / Black Mountain',
+    loam: 'Loam',
+    rock: 'Rock',
+};
+
+const SLOPE_LABELS: Record<string, string> = {
+    flat: 'Flat',
+    gentle: 'Gentle Slope',
+    moderate: 'Moderate Slope',
+    steep: 'Steep',
+};
+
+const LOCATION_TYPE_LABELS: Record<LocationTypeRule, string> = {
+    urban: 'Urban',
+    'peri-urban': 'Peri-Urban',
+    rural: 'Rural',
+};
+
+const parseProjectLocationType = (location?: string | null): LocationTypeRule | null => {
+    if (!location) return null;
+    const [prefix] = location.split(' — ');
+    const entry = Object.entries(LOCATION_TYPE_LABELS).find(([, label]) => label === prefix.trim());
+    return entry ? (entry[0] as LocationTypeRule) : null;
 };
 
 type PriceUpdate = {
@@ -121,18 +173,28 @@ function ProjectDetailContent() {
     const priceNotificationSentRef = useRef(false);
     const projectRealtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const stagesRealtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const materialRealtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [showCelebration, setShowCelebration] = useState(false);
     const [celebrationData, setCelebrationData] = useState<{
         title: string;
         message: string;
         stats?: { label: string; value: string; highlight?: boolean }[];
     } | null>(null);
+    const [isComplianceBannerDismissed, setIsComplianceBannerDismissed] = useState(false);
 
     // View state
     const [activeView, setActiveView] = useState<ProjectView>('overview');
     const [activeTab, setActiveTab] = useState<BOQCategory>('substructure');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [isMobileDetail, setIsMobileDetail] = useState(false);
+    const [selectedItemForPurchase, setSelectedItemForPurchase] = useState<BOQItem | null>(null);
+    const [selectedItemForUsage, setSelectedItemForUsage] = useState<BOQItem | null>(null);
+    const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
+    const [geotechDocumentSummary, setGeotechDocumentSummary] = useState<{
+        id: string;
+        fileName: string;
+        createdAt: string;
+    } | null>(null);
 
     useReveal({ deps: [isLoading, activeView, activeTab] });
 
@@ -247,6 +309,63 @@ function ProjectDetailContent() {
         return allUsage;
     }, [usageByStage]);
 
+    const substructureStage = useMemo(
+        () => stages.find((stage) => stage.boq_category === 'substructure'),
+        [stages]
+    );
+
+    const checklistSummary = useMemo(() => {
+        const checklistTasks = (substructureStage?.tasks || []).filter((task) =>
+            (task.verification_note || '').startsWith(CHECKLIST_TASK_PREFIX)
+        );
+        const completed = checklistTasks.filter((task) => task.is_completed).length;
+        return {
+            completed,
+            total: checklistTasks.length,
+        };
+    }, [substructureStage?.tasks]);
+
+    const checklistEntries = useMemo(() => {
+        return (substructureStage?.tasks || [])
+            .filter((task) => (task.verification_note || '').startsWith(CHECKLIST_TASK_PREFIX))
+            .map((task) => {
+                const ruleId = (task.verification_note || '').replace(CHECKLIST_TASK_PREFIX, '').split('|')[0];
+                const ruleLabel = LOCATION_PROCEDURE_RULES.find((rule) => rule.id === ruleId)?.label || ruleId;
+                return {
+                    id: ruleId,
+                    label: ruleLabel,
+                    completed: task.is_completed,
+                };
+            });
+    }, [substructureStage?.tasks]);
+
+    const certificateSummary = useMemo(() => {
+        const certificateState = CERTIFICATE_ITEMS.reduce<Record<string, 'pending' | 'in_progress' | 'done'>>(
+            (acc, certificate) => {
+                acc[certificate.id] = 'pending';
+                return acc;
+            },
+            {}
+        );
+
+        stages.forEach((stage) => {
+            CERTIFICATE_ITEMS.forEach((certificate) => {
+                const nextStatus = getComplianceRequirementStatus(stage.tasks, certificate.id);
+                const currentStatus = certificateState[certificate.id];
+                if (CERTIFICATE_STATUS_PRIORITY[nextStatus] > CERTIFICATE_STATUS_PRIORITY[currentStatus]) {
+                    certificateState[certificate.id] = nextStatus;
+                }
+            });
+        });
+
+        const completed = Object.values(certificateState).filter((status) => status === 'done').length;
+        return {
+            completed,
+            total: CERTIFICATE_ITEMS.length,
+            state: certificateState,
+        };
+    }, [stages]);
+
     const applyStages = useCallback((nextStages: ProjectStageWithTasks[], forcePrimaryStage = false) => {
         setStages(nextStages);
         const firstApplicable = nextStages.find((stage) => stage.is_applicable);
@@ -274,9 +393,11 @@ function ProjectDetailContent() {
             setError(null);
         }
 
-        const [projectResult, stagesResult] = await Promise.all([
+        const [projectResult, stagesResult, purchasesResult, docsResult] = await Promise.all([
             getProjectWithItems(projectId),
             getProjectStages(projectId),
+            getPurchaseRecords(projectId),
+            getProjectDocuments(projectId, 'permit'),
         ]);
 
         if (projectResult.error) {
@@ -291,6 +412,25 @@ function ProjectDetailContent() {
 
         if (!stagesResult.error) {
             applyStages(stagesResult.stages, forcePrimaryStage);
+        }
+
+        if (purchasesResult.records) {
+            setPurchases(purchasesResult.records);
+        }
+
+        if (!docsResult.error) {
+            const geotechDoc = docsResult.documents.find((document) =>
+                (document.description || '').includes(GEOTECH_DOC_TAG)
+            );
+            if (geotechDoc) {
+                setGeotechDocumentSummary({
+                    id: geotechDoc.id,
+                    fileName: geotechDoc.file_name,
+                    createdAt: geotechDoc.created_at,
+                });
+            } else {
+                setGeotechDocumentSummary(null);
+            }
         }
 
         if (showLoading) {
@@ -327,7 +467,13 @@ function ProjectDetailContent() {
 
     useEffect(() => {
         if (!profile) return;
-        if (!profile.phone_number && preferredReminderChannel !== 'email') {
+        const phoneRequired = preferredReminderChannel === 'sms' || preferredReminderChannel === 'whatsapp';
+        const telegramRequired = preferredReminderChannel === 'telegram';
+        const missingContact =
+            (phoneRequired && !profile.phone_number)
+            || (telegramRequired && !profile.telegram_chat_id);
+
+        if (missingContact) {
             setPreferredReminderChannel('email');
         }
     }, [profile, preferredReminderChannel]);
@@ -424,6 +570,27 @@ function ProjectDetailContent() {
         setUsageByStage(nextUsage);
     }, [projectId, stages]);
 
+    const refreshItems = useCallback(async () => {
+        // Refresh both items and purchases for instant updates across all views
+        const [itemsResult, purchasesResult] = await Promise.all([
+            getBOQItems(projectId),
+            getPurchaseRecords(projectId),
+        ]);
+        if (!itemsResult.error) {
+            setItems(itemsResult.items);
+        }
+        if (purchasesResult.records) {
+            setPurchases(purchasesResult.records);
+        }
+    }, [projectId]);
+
+    const refreshProjectMaterialState = useCallback(async () => {
+        await refreshItems();
+        if (project?.usage_tracking_enabled) {
+            await loadUsageData();
+        }
+    }, [loadUsageData, project?.usage_tracking_enabled, refreshItems]);
+
     // Realtime sync for project detail data
     useEffect(() => {
         const shouldRefreshUsage =
@@ -453,6 +620,19 @@ function ProjectDetailContent() {
                 }
             }, 250);
         };
+
+        const scheduleUsageRefresh = () => {
+            if (materialRealtimeTimeoutRef.current) {
+                clearTimeout(materialRealtimeTimeoutRef.current);
+            }
+            materialRealtimeTimeoutRef.current = setTimeout(() => {
+                if (shouldRefreshUsage) {
+                    void loadUsageData();
+                }
+            }, 200);
+        };
+
+        const stageIds = new Set(stages.map((stage) => stage.id));
 
         const channel = supabase
             .channel(`project-detail-${projectId}`)
@@ -492,6 +672,56 @@ function ProjectDetailContent() {
                     scheduleStageRefresh();
                 }
             )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'stage_tasks',
+                },
+                (payload) => {
+                    const candidate = (payload.new as { stage_id?: string } | null)?.stage_id
+                        || (payload.old as { stage_id?: string } | null)?.stage_id;
+                    if (candidate && stageIds.size > 0 && !stageIds.has(candidate)) return;
+                    scheduleStageRefresh();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'project_documents',
+                    filter: `project_id=eq.${projectId}`,
+                },
+                () => {
+                    scheduleProjectRefresh();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'purchase_records',
+                    filter: `project_id=eq.${projectId}`,
+                },
+                () => {
+                    scheduleProjectRefresh();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'material_usage',
+                    filter: `project_id=eq.${projectId}`,
+                },
+                () => {
+                    scheduleUsageRefresh();
+                }
+            )
             .subscribe();
 
         return () => {
@@ -503,15 +733,24 @@ function ProjectDetailContent() {
                 clearTimeout(stagesRealtimeTimeoutRef.current);
                 stagesRealtimeTimeoutRef.current = null;
             }
+            if (materialRealtimeTimeoutRef.current) {
+                clearTimeout(materialRealtimeTimeoutRef.current);
+                materialRealtimeTimeoutRef.current = null;
+            }
             void supabase.removeChannel(channel);
         };
-    }, [activeView, loadProjectData, loadUsageData, project?.usage_tracking_enabled, projectId, refreshStages]);
+    }, [activeView, loadProjectData, loadUsageData, project?.usage_tracking_enabled, projectId, refreshStages, stages]);
 
     useEffect(() => {
         if (!project?.usage_tracking_enabled) return;
         if (activeView !== 'procurement' && activeView !== 'boq' && activeView !== 'usage') return;
         loadUsageData();
     }, [activeView, project?.usage_tracking_enabled, loadUsageData]);
+
+    useEffect(() => {
+        if (activeView !== 'procurement' && activeView !== 'boq' && activeView !== 'usage') return;
+        void refreshProjectMaterialState();
+    }, [activeView, refreshProjectMaterialState]);
 
     useEffect(() => {
         if (!project || items.length === 0) return;
@@ -683,10 +922,14 @@ function ProjectDetailContent() {
             return;
         }
 
-        const isMobileChannel = channel === 'sms' || channel === 'whatsapp' || channel === 'telegram';
+        const isPhoneChannel = channel === 'sms' || channel === 'whatsapp';
         const effectivePhone = phoneOverride || profile?.phone_number || '';
-        if (isMobileChannel && !effectivePhone) {
+        if (isPhoneChannel && !effectivePhone) {
             showError('Add a phone number to schedule mobile reminders.');
+            return;
+        }
+        if (channel === 'telegram' && !profile?.telegram_chat_id) {
+            showError('Add your Telegram chat ID in Account Settings to schedule Telegram reminders.');
             return;
         }
 
@@ -813,12 +1056,43 @@ function ProjectDetailContent() {
         }
     };
 
-    const refreshItems = useCallback(async () => {
-        const { items: refreshed, error } = await getBOQItems(projectId);
-        if (!error) {
-            setItems(refreshed);
+    const currentStage = stages.find(s => s.boq_category === activeTab);
+    const hasLabor = project?.labor_preference === 'with_labor';
+    const projectLocationType = parseProjectLocationType(project?.location);
+    const activeStageComplianceWarnings = useMemo(() => {
+        if (!currentStage) return [] as string[];
+        const warnings: string[] = [];
+
+        const requirements = getStageRequirements(currentStage.boq_category).filter((requirement) => requirement.required);
+        requirements.forEach((requirement) => {
+            const requirementStage = stages.find((stage) => stage.boq_category === requirement.stage);
+            const status = getComplianceRequirementStatus(requirementStage?.tasks || [], requirement.id);
+            if (status !== 'done') {
+                warnings.push(`${requirement.label} (${categoryLabels[requirement.stage]})`);
+            }
+        });
+
+        if (currentStage.boq_category === 'substructure' && projectLocationType) {
+            const requiredRules = LOCATION_PROCEDURE_RULES.filter(
+                (rule) => rule.statusByLocation[projectLocationType] === 'required'
+            );
+            requiredRules.forEach((rule) => {
+                const marker = `${CHECKLIST_TASK_PREFIX}${rule.id}`;
+                const checklistTask = (substructureStage?.tasks || []).find(
+                    (task) => (task.verification_note || '').startsWith(marker)
+                );
+                if (!checklistTask?.is_completed) {
+                    warnings.push(`${rule.label} (required for ${LOCATION_TYPE_LABELS[projectLocationType]})`);
+                }
+            });
         }
-    }, [projectId]);
+
+        return warnings;
+    }, [currentStage, stages, projectLocationType, substructureStage?.tasks]);
+
+    useEffect(() => {
+        setIsComplianceBannerDismissed(false);
+    }, [activeTab, activeStageComplianceWarnings.length]);
 
     // Loading state - skeleton layout
     if (isLoading) {
@@ -875,13 +1149,19 @@ function ProjectDetailContent() {
         setItems([...items, item]);
     };
 
-    const handleUsageRecorded = () => {
-        loadUsageData();
+    const handleUsageRecorded = async () => {
+        await refreshProjectMaterialState();
     };
 
-    // Get current stage
-    const currentStage = stages.find(s => s.boq_category === activeTab);
-    const hasLabor = project.labor_preference === 'with_labor';
+    const handleLogPurchase = (item: BOQItem) => {
+        setSelectedItemForPurchase(item);
+        setActiveView('procurement');
+    };
+
+    const handleRecordUsage = (item: BOQItem) => {
+        setSelectedItemForUsage(item);
+        setActiveView('usage');
+    };
 
     const statusBadgeStyles: Record<string, { background: string; color: string }> = {
         active: { background: 'rgba(22, 163, 74, 0.12)', color: 'var(--color-emerald)' },
@@ -901,6 +1181,10 @@ function ProjectDetailContent() {
         boq: {
             title: 'Bill of Quantities',
             description: 'Manage stage timelines, tasks, and material line items in one place.',
+        },
+        compliance: {
+            title: 'Compliance Tracker',
+            description: 'Track certificates, approvals, admin tasks, and set reminders by stage.',
         },
         procurement: {
             title: 'Procurement Hub',
@@ -927,7 +1211,12 @@ function ProjectDetailContent() {
                 <SidebarSpine
                     project={project}
                     activeView={activeView}
-                    onViewChange={setActiveView}
+                    onViewChange={(view) => {
+                        setActiveView(view);
+                        if (view === 'procurement' || view === 'boq' || view === 'usage') {
+                            void refreshProjectMaterialState();
+                        }
+                    }}
                     isMobileOpen={isMobileSidebarOpen}
                     onMobileClose={() => setIsMobileSidebarOpen(false)}
                 />
@@ -995,14 +1284,13 @@ function ProjectDetailContent() {
                                     >
                                         Share
                                     </Button>
-                                    <Link href={`/boq/edit/${project.id}`}>
-                                        <Button
-                                            size="sm"
-                                            icon={<PencilSimple size={16} />}
-                                        >
-                                            Edit Project
-                                        </Button>
-                                    </Link>
+                                    <Button
+                                        size="sm"
+                                        icon={<PencilSimple size={16} />}
+                                        onClick={() => setActiveView('settings')}
+                                    >
+                                        Edit Project
+                                    </Button>
                                 </div>
                             </div>
 
@@ -1056,47 +1344,50 @@ function ProjectDetailContent() {
                                 />
                             </section>
 
+                            {/* KPI Dashboard */}
+                            <section className="overview-card reveal" data-delay="4">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                                        <Wallet size={24} weight="duotone" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-primary font-heading">Project KPIs</h3>
+                                        <p className="text-sm text-secondary">Key performance indicators at a glance</p>
+                                    </div>
+                                </div>
+
+                                <ProjectKPIDashboard
+                                    items={items}
+                                    purchases={purchases}
+                                    usageByItem={usageByItem}
+                                    totalBudget={project.budget_target_usd || purchaseStats.estimatedTotal}
+                                    onNavigate={(view) => setActiveView(view as ProjectView)}
+                                />
+                            </section>
+
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                {/* Left Column - Budget & Planning */}
+                                {/* Left Column - Next Steps */}
                                 <div className="lg:col-span-2 space-y-8">
-                                    {/* Budget Planner */}
-                                    <section className="overview-card reveal" data-delay="4">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
-                                                <Wallet size={24} weight="duotone" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-lg font-bold text-primary font-heading">Budget Planner</h3>
-                                                <p className="text-sm text-secondary">Track savings towards your construction goals</p>
-                                            </div>
-                                        </div>
-
-                                        <BudgetPlanner
-                                            totalBudgetUsd={purchaseStats.estimatedTotal}
-                                            amountSpentUsd={purchaseStats.actualSpent}
-                                            targetDate={project.target_purchase_date}
-                                            onTargetDateChange={handleSavingsTargetDateChange}
-                                            onSetReminder={handleSavingsReminder}
-                                            canUseMobileReminders={Boolean(profile?.phone_number)}
-                                            defaultChannel={preferredReminderChannel}
-                                            onRequestPhone={handleRequestPhone}
-                                            reminderActive={Boolean(savingsReminder?.is_active)}
-                                            reminderFrequency={(savingsReminder?.frequency as 'daily' | 'weekly' | 'monthly' | null) ?? null}
-                                            onToggleReminder={handleToggleSavingsReminder}
-                                        />
-                                    </section>
-
-                                    {/* Recent Activity / Next Steps */}
+                                    {/* Next Steps */}
                                     <section className="overview-card reveal" data-delay="5">
                                         <h3 className="text-lg font-bold text-primary mb-4 font-heading">Next Steps</h3>
                                         <div className="space-y-4">
-                                            {items.filter(i => !i.is_purchased).slice(0, 3).map(item => (
+                                            {items.filter(i => !i.is_purchased).slice(0, 5).map(item => (
                                                 <div key={item.id} className="next-step-item">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-2 h-2 rounded-full bg-accent"></div>
                                                         <span className="font-medium text-primary">{item.material_name}</span>
+                                                        <span className="text-xs text-secondary">
+                                                            {formatPrice(
+                                                                Number(item.quantity) * Number(item.unit_price_usd),
+                                                                Number(item.quantity) * Number(item.unit_price_usd) * exchangeRate
+                                                            )}
+                                                        </span>
                                                     </div>
-                                                    <Button size="sm" variant="secondary" onClick={() => setActiveView('procurement')}>
+                                                    <Button size="sm" variant="secondary" onClick={() => {
+                                                        setSelectedItemForPurchase(item);
+                                                        setActiveView('procurement');
+                                                    }}>
                                                         Purchase
                                                     </Button>
                                                 </div>
@@ -1106,6 +1397,14 @@ function ProjectDetailContent() {
                                                     <CheckCircle size={32} className="mx-auto mb-2 text-green-500" />
                                                     <p>All items purchased! Great job.</p>
                                                 </div>
+                                            )}
+                                            {items.filter(i => !i.is_purchased).length > 5 && (
+                                                <button
+                                                    className="view-all-btn"
+                                                    onClick={() => setActiveView('procurement')}
+                                                >
+                                                    View all {items.filter(i => !i.is_purchased).length} pending items
+                                                </button>
                                             )}
                                         </div>
                                     </section>
@@ -1144,7 +1443,89 @@ function ProjectDetailContent() {
                                         </div>
                                     </Card>
 
-                                    <Card className="pro-tip-card reveal" data-delay="7">
+                                    <Card className="reveal" data-delay="7">
+                                        <CardHeader>
+                                            <CardTitle>Compliance Snapshot</CardTitle>
+                                        </CardHeader>
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center py-2 border-b border-border-light">
+                                                <span className="text-sm text-secondary">Checklist Tasks</span>
+                                                <span className="font-medium text-primary">
+                                                    {checklistSummary.completed}/{checklistSummary.total}
+                                                </span>
+                                            </div>
+                                            {checklistEntries.slice(0, 3).map((entry, index) => (
+                                                <div key={`${entry.id}-${index}`} className="flex justify-between items-center text-xs">
+                                                    <span className="text-secondary">{entry.label}</span>
+                                                    <span className={`px-2 py-0.5 rounded-full font-medium ${entry.completed ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
+                                                        }`}>
+                                                        {entry.completed ? 'Done' : 'Pending'}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                            {checklistSummary.total === 0 && (
+                                                <div className="text-xs text-secondary">
+                                                    No checklist tasks synced yet.
+                                                </div>
+                                            )}
+
+                                            <div className="flex justify-between items-center py-2 border-y border-border-light">
+                                                <span className="text-sm text-secondary">Certificates</span>
+                                                <span className="font-medium text-primary">
+                                                    {certificateSummary.completed}/{certificateSummary.total}
+                                                </span>
+                                            </div>
+                                            {CERTIFICATE_ITEMS.map((certificate) => {
+                                                const status = certificateSummary.state[certificate.id];
+                                                const badgeClass = status === 'done'
+                                                    ? 'bg-green-100 text-green-700'
+                                                    : status === 'in_progress'
+                                                        ? 'bg-amber-100 text-amber-700'
+                                                        : 'bg-slate-100 text-slate-600';
+                                                const statusLabel = status === 'done'
+                                                    ? 'Received'
+                                                    : status === 'in_progress'
+                                                        ? 'In Progress'
+                                                        : 'Pending';
+                                                return (
+                                                    <div key={certificate.id} className="flex justify-between items-center text-xs">
+                                                        <span className="text-secondary">{certificate.label}</span>
+                                                        <span className={`px-2 py-0.5 rounded-full font-medium ${badgeClass}`}>
+                                                            {statusLabel}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+
+                                            <div className="pt-2 border-t border-border-light space-y-2">
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-secondary">Soil Type</span>
+                                                    <span className="font-medium text-primary">
+                                                        {project.soil_type ? (SOIL_LABELS[project.soil_type] || project.soil_type) : 'Not set'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-secondary">Site Slope</span>
+                                                    <span className="font-medium text-primary">
+                                                        {project.site_slope ? (SLOPE_LABELS[project.site_slope] || project.site_slope) : 'Not set'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-secondary">Geotech Report</span>
+                                                    <span className={`font-medium ${project.geotech_report_uploaded ? 'text-green-700' : 'text-slate-600'}`}>
+                                                        {project.geotech_report_uploaded ? 'Uploaded' : 'Not uploaded'}
+                                                    </span>
+                                                </div>
+                                                {geotechDocumentSummary && (
+                                                    <div className="text-xs text-secondary">
+                                                        {geotechDocumentSummary.fileName} ({new Date(geotechDocumentSummary.createdAt).toLocaleDateString()})
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </Card>
+
+                                    <Card className="pro-tip-card reveal" data-delay="8">
                                         <div className="p-4">
                                             <h4 className="font-bold text-blue-900 mb-2">Pro Tip</h4>
                                             <p className="text-sm text-blue-700">
@@ -1167,20 +1548,78 @@ function ProjectDetailContent() {
                     {/* BOQ View */}
                     {activeView === 'boq' && (
                         <div className="view-panel space-y-6 max-w-full mx-auto reveal">
+                            {activeStageComplianceWarnings.length > 0 && !isComplianceBannerDismissed && (
+                                <div className="compliance-warning-banner" role="alert">
+                                    <div className="compliance-warning-content">
+                                        <span className="compliance-warning-icon" aria-hidden="true">
+                                            <WarningCircle size={18} weight="fill" />
+                                        </span>
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-amber-900">Missing stage approvals</h4>
+                                            <p className="text-xs text-amber-800 mt-1">
+                                                You can continue building, but these approvals are still pending.
+                                            </p>
+                                            <ul className="mt-2 list-disc pl-5 text-xs text-amber-800 space-y-1">
+                                                {activeStageComplianceWarnings.slice(0, 6).map((issue) => (
+                                                    <li key={issue}>{issue}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div className="compliance-warning-actions">
+                                        <Button
+                                            size="sm"
+                                            variant="secondary"
+                                            onClick={() => setActiveView('compliance')}
+                                        >
+                                            Open Compliance Tracker
+                                        </Button>
+                                        <button
+                                            type="button"
+                                            className="compliance-warning-dismiss"
+                                            onClick={() => setIsComplianceBannerDismissed(true)}
+                                            aria-label="Dismiss compliance warning"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                             {currentStage && (
                                 <StageTab
                                     stage={currentStage}
                                     projectId={projectId}
                                     items={activeStageItems}
+                                    purchases={purchases}
                                     onStageUpdate={(u) => handleStageUpdate({ ...currentStage, ...u })}
                                     onItemUpdate={handleItemUpdate}
                                     onItemDelete={handleDeleteItem}
                                     onItemAdded={handleAddItem}
+                                    onLogPurchase={handleLogPurchase}
+                                    onRecordUsage={handleRecordUsage}
                                     showLabor={hasLabor}
                                     usageByItem={usageByItem}
                                     usageTrackingEnabled={project.usage_tracking_enabled}
+                                    showTasks={false}
                                 />
                             )}
+                        </div>
+                    )}
+
+                    {/* COMPLIANCE View */}
+                    {activeView === 'compliance' && (
+                        <div className="view-panel space-y-6 reveal">
+                            <ComplianceTrackerTab
+                                projectId={projectId}
+                                projectName={project.name}
+                                stages={stages}
+                                onStageUpdate={handleStageUpdate}
+                                phoneNumber={profile?.phone_number}
+                                telegramChatId={profile?.telegram_chat_id}
+                                onRequestPhone={(payload) => handleRequestPhone({ channel: payload?.channel })}
+                                preferredChannel={preferredReminderChannel}
+                                onNavigateToSettings={() => setActiveView('settings')}
+                            />
                         </div>
                     )}
 
@@ -1190,7 +1629,9 @@ function ProjectDetailContent() {
                             <UnifiedProcurementView
                                 project={project}
                                 items={items}
-                                onItemsRefresh={refreshItems}
+                                onItemsRefresh={refreshProjectMaterialState}
+                                selectedItemForPurchase={selectedItemForPurchase}
+                                onClearSelectedItem={() => setSelectedItemForPurchase(null)}
                             />
                         </div>
                     )}
@@ -1206,6 +1647,10 @@ function ProjectDetailContent() {
                                     onUsageRecorded={handleUsageRecorded}
                                     onRequestPhone={handleRequestPhone}
                                     canUseMobileReminders={Boolean(profile?.phone_number)}
+                                    selectedItemForUsage={selectedItemForUsage}
+                                    onClearSelectedItem={() => setSelectedItemForUsage(null)}
+                                    preferredChannel={preferredReminderChannel}
+                                    onNavigateToSettings={() => setActiveView('settings')}
                                 />
                             ) : (
                                 <div className="bg-surface border border-border rounded-xl p-6 shadow-card">
@@ -1239,13 +1684,6 @@ function ProjectDetailContent() {
                                 amountSpentUsd={purchaseStats.actualSpent}
                                 targetDate={project.target_purchase_date}
                                 onTargetDateChange={handleSavingsTargetDateChange}
-                                onSetReminder={handleSavingsReminder}
-                                canUseMobileReminders={Boolean(profile?.phone_number)}
-                                defaultChannel={preferredReminderChannel}
-                                onRequestPhone={handleRequestPhone}
-                                reminderActive={Boolean(savingsReminder?.is_active)}
-                                reminderFrequency={(savingsReminder?.frequency as 'daily' | 'weekly' | 'monthly' | null) ?? null}
-                                onToggleReminder={handleToggleSavingsReminder}
                             />
                         </div>
                     )}
@@ -1256,6 +1694,15 @@ function ProjectDetailContent() {
                             <ProjectSettings
                                 project={project}
                                 onUpdate={handleProjectUpdate}
+                                onSetReminder={handleSavingsReminder}
+                                canUseMobileReminders={Boolean(profile?.phone_number)}
+                                defaultReminderChannel={preferredReminderChannel}
+                                onRequestPhone={handleRequestPhone}
+                                reminderActive={Boolean(savingsReminder?.is_active)}
+                                reminderFrequency={(savingsReminder?.frequency as 'daily' | 'weekly' | 'monthly' | null) ?? null}
+                                onToggleReminder={handleToggleSavingsReminder}
+                                defaultReminderAmountUsd={Math.max(purchaseStats.estimatedTotal - purchaseStats.actualSpent, 0)}
+                                onReminderChannelChange={setPreferredReminderChannel}
                             />
                         </div>
                     )}
@@ -1489,6 +1936,62 @@ function ProjectDetailContent() {
                         box-shadow var(--dashboard-medium) var(--dashboard-ease);
                 }
 
+                .compliance-warning-banner {
+                    border: 1px solid #fcd34d;
+                    background: #fffbeb;
+                    border-radius: 14px;
+                    padding: 14px 16px;
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: space-between;
+                    gap: 12px;
+                }
+
+                .compliance-warning-content {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 10px;
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .compliance-warning-icon {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 999px;
+                    background: #fef3c7;
+                    color: #b45309;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                    margin-top: 1px;
+                }
+
+                .compliance-warning-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    flex-shrink: 0;
+                }
+
+                .compliance-warning-dismiss {
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 8px;
+                    border: 1px solid #fcd34d;
+                    background: #fff;
+                    color: #92400e;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                }
+
+                .compliance-warning-dismiss:hover {
+                    background: #fef3c7;
+                }
+
                 .overview-view {
                     padding: 8px 2px;
                 }
@@ -1591,6 +2094,25 @@ function ProjectDetailContent() {
                     box-shadow: 0 10px 18px rgba(17, 56, 95, 0.08);
                 }
 
+                .view-all-btn {
+                    width: 100%;
+                    padding: 12px 16px;
+                    background: transparent;
+                    border: 1px dashed #cbd5e1;
+                    border-radius: 10px;
+                    color: #64748b;
+                    font-size: 0.9rem;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+
+                .view-all-btn:hover {
+                    background: #f8fafc;
+                    border-color: #94a3b8;
+                    color: #475569;
+                }
+
                 .mobile-sidebar-fab {
                     display: none;
                 }
@@ -1621,6 +2143,15 @@ function ProjectDetailContent() {
 
                     .view-panel {
                         border-radius: 18px;
+                    }
+
+                    .compliance-warning-banner {
+                        flex-direction: column;
+                    }
+
+                    .compliance-warning-actions {
+                        width: 100%;
+                        justify-content: space-between;
                     }
 
                     .next-step-item {
