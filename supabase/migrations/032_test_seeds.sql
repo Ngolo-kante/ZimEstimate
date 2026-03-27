@@ -135,8 +135,8 @@ ON CONFLICT (id) DO UPDATE SET
 -- ── 3. Supplier record ────────────────────────────────────────────────────────
 
 INSERT INTO public.suppliers (
-  user_id, name, description,
-  city, physical_address,
+  user_id, name,
+  location, physical_address,
   contact_email, contact_phone,
   registration_number,
   material_categories,
@@ -146,7 +146,6 @@ INSERT INTO public.suppliers (
 VALUES (
   v_supplier_id,
   'Zimbabwe Test Supplies (Pvt) Ltd',
-  'Test supplier account for development and QA purposes.',
   'Harare',
   '123 Samora Machel Ave, Harare, Zimbabwe',
   'supplier@zimestimate.test',
