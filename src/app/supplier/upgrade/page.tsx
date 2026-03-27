@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import MainLayout from '@/components/layout/MainLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Card, { CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -142,7 +141,7 @@ export default function SupplierUpgradePage() {
 
   return (
     <ProtectedRoute>
-      <MainLayout title="Upgrade Plan">
+      <>
         <div className="upgrade-page">
           <div className="page-header">
             <Link href="/supplier/billing" className="back-link">
@@ -448,7 +447,7 @@ export default function SupplierUpgradePage() {
             .provider-options { flex-direction: column; }
           }
         `}</style>
-      </MainLayout>
+      </>
     </ProtectedRoute>
   );
 }

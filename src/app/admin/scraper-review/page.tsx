@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { materials } from '@/lib/materials';
@@ -168,7 +167,7 @@ export default function ScraperReviewPage() {
     );
 
     return (
-        <MainLayout title="Scraper Review">
+        <>
             <div className="review-page">
                 {/* Header */}
                 <div className="page-header">
@@ -542,6 +541,6 @@ export default function ScraperReviewPage() {
                     .review-table { display: block; overflow-x: auto; }
                 }
             `}</style>
-        </MainLayout>
+        </>
     );
 }

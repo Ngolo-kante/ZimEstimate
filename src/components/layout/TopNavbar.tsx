@@ -30,7 +30,6 @@ const navItems: NavItem[] = [
   { label: 'Quick Projects', href: '/quick-projects' },
   { label: 'Materials Insights', href: '/market-insights' },
   { label: 'Project Templates', href: '/templates' },
-  { label: 'Scraper', href: '/scraper', adminOnly: true },
   { label: 'Marketplace', href: '/marketplace' },
 ];
 

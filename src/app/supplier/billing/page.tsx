@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import MainLayout from '@/components/layout/MainLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Card, { CardContent, CardHeader, CardTitle, CardBadge } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -141,7 +140,7 @@ export default function SupplierBillingPage() {
 
   return (
     <ProtectedRoute>
-      <MainLayout title="Billing & Subscription">
+      <>
         <div className="billing-page">
           <div className="page-header">
             <Link href="/supplier/dashboard" className="back-link">
@@ -455,7 +454,7 @@ export default function SupplierBillingPage() {
             .payment-row span:nth-child(3) { display: none; }
           }
         `}</style>
-      </MainLayout>
+      </>
     </ProtectedRoute>
   );
 }

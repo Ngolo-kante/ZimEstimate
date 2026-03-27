@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import MainLayout from '@/components/layout/MainLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Card, { CardContent, CardHeader, CardTitle, CardBadge } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -72,7 +71,7 @@ export default function SupplierAnalyticsPage() {
 
   return (
     <ProtectedRoute>
-      <MainLayout title="Supplier Analytics">
+      <>
         <div className="supplier-analytics">
           <div className="page-header">
             <div>
@@ -527,7 +526,7 @@ export default function SupplierAnalyticsPage() {
             }
           }
         `}</style>
-      </MainLayout>
+      </>
     </ProtectedRoute>
   );
 }

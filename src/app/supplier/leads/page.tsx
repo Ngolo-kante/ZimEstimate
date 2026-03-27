@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import MainLayout from '@/components/layout/MainLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Card, { CardContent, CardHeader, CardTitle, CardBadge } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -116,7 +115,7 @@ export default function SupplierLeadsPage() {
 
   return (
     <ProtectedRoute>
-      <MainLayout title="Customer Leads">
+      <>
         <div className="leads-page">
           <div className="page-header">
             <Link href="/supplier/dashboard" className="back-link">
@@ -533,7 +532,7 @@ export default function SupplierLeadsPage() {
             .lead-actions { align-items: flex-start; min-width: auto; }
           }
         `}</style>
-      </MainLayout>
+      </>
     </ProtectedRoute>
   );
 }
