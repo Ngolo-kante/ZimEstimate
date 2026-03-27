@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Envelope, Lock, GoogleLogo, Buildings } from '@phosphor-icons/react';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { supabase } from '@/lib/supabase';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 
@@ -32,7 +33,23 @@ function LoginForm() {
             setError(signInError.message);
             setIsSubmitting(false);
         } else {
-            router.push(redirect || '/dashboard');
+            // Fetch profile to determine role-based redirect
+            const { data: { user } } = await supabase.auth.getUser();
+            let destination = redirect || '/home';
+            if (user) {
+                const { data: profileRaw } = await supabase
+                    .from('profiles')
+                    .select('tier, user_type')
+                    .eq('id', user.id)
+                    .single();
+                const profile = profileRaw as { tier: string; user_type: string } | null;
+                if (profile?.tier === 'admin' || profile?.user_type === 'admin') {
+                    destination = redirect || '/admin/revenue';
+                } else if (profile?.user_type === 'supplier') {  // eslint-disable-line @typescript-eslint/no-unnecessary-condition
+                    destination = redirect || '/supplier/dashboard';
+                }
+            }
+            router.push(destination);
         }
     };
 
