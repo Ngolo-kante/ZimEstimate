@@ -99,14 +99,17 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
         .supplier-shell {
           display: flex;
           min-height: 100vh;
-          background: #f8fafc;
+          background: #f1f5f9;
         }
 
         .supplier-sidebar {
-          width: 216px;
-          min-width: 216px;
-          background: white;
-          border-right: 1px solid #e2e8f0;
+          width: 220px;
+          min-width: 220px;
+          background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(246,250,255,0.9));
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border-right: 1px solid rgba(211,211,215,0.75);
+          box-shadow: 18px 0 30px rgba(6,20,47,0.035);
           display: flex;
           flex-direction: column;
           position: sticky;
@@ -121,7 +124,7 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
           gap: 10px;
           padding: 18px 14px;
           text-decoration: none;
-          border-bottom: 1px solid #f1f5f9;
+          border-bottom: 1px solid rgba(211,211,215,0.6);
           flex-shrink: 0;
         }
 
@@ -134,7 +137,7 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
         .logo-name {
           font-size: 0.875rem;
           font-weight: 700;
-          color: #0f172a;
+          color: #0f294b;
           letter-spacing: -0.02em;
           line-height: 1;
         }
@@ -144,8 +147,8 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.08em;
-          color: #2563eb;
-          background: #eff6ff;
+          color: #19508a;
+          background: linear-gradient(135deg, #ecf4ff, #d6e8ff);
           padding: 2px 6px;
           border-radius: 4px;
           width: fit-content;
@@ -153,40 +156,43 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
 
         .sidebar-nav {
           flex: 1;
-          padding: 10px 8px;
+          padding: 10px 10px;
           display: flex;
           flex-direction: column;
-          gap: 1px;
+          gap: 3px;
           overflow-y: auto;
         }
 
         .nav-item {
           display: flex;
           align-items: center;
-          gap: 9px;
-          padding: 9px 10px;
-          border-radius: 8px;
+          gap: 10px;
+          padding: 10px 12px;
+          border-radius: 12px;
           text-decoration: none;
           font-size: 0.8125rem;
           font-weight: 500;
-          color: #64748b;
-          transition: all 0.15s ease;
+          color: #5a6f8d;
+          background: rgba(255,255,255,0.55);
+          transition: all 0.2s ease;
         }
 
         .nav-item:hover {
-          color: #1e293b;
-          background: #f1f5f9;
+          color: #164d83;
+          background: #edf6ff;
+          transform: translateX(2px);
         }
 
         .nav-item.active {
-          color: #2563eb;
-          background: #eff6ff;
+          color: #164d83;
           font-weight: 600;
+          background: linear-gradient(135deg, #e9f4ff, #f3f9ff);
+          box-shadow: 0 10px 18px rgba(22,77,131,0.14);
         }
 
         .sidebar-bottom {
-          padding: 10px 8px;
-          border-top: 1px solid #f1f5f9;
+          padding: 10px 10px;
+          border-top: 1px solid rgba(211,211,215,0.6);
           display: flex;
           flex-direction: column;
           gap: 4px;
@@ -197,24 +203,24 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
           display: flex;
           align-items: center;
           gap: 7px;
-          padding: 7px 10px;
-          border-radius: 7px;
+          padding: 7px 12px;
+          border-radius: 10px;
           text-decoration: none;
           font-size: 0.75rem;
-          color: #94a3b8;
-          transition: all 0.15s ease;
+          color: #7689a5;
+          transition: all 0.2s ease;
         }
 
         .back-site:hover {
-          color: #475569;
-          background: #f1f5f9;
+          color: #255f9b;
+          background: rgba(233,244,255,0.65);
         }
 
         .user-row {
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 8px 10px;
+          padding: 8px 12px;
         }
 
         .user-info {
@@ -228,7 +234,7 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
         .user-name {
           font-size: 0.75rem;
           font-weight: 600;
-          color: #1e293b;
+          color: #0f294b;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -236,7 +242,7 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
 
         .user-role {
           font-size: 0.65rem;
-          color: #94a3b8;
+          color: #7689a5;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -245,19 +251,19 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
         .sign-out-btn {
           background: none;
           border: none;
-          color: #cbd5e1;
+          color: #7891b5;
           cursor: pointer;
           padding: 5px;
           border-radius: 6px;
           display: flex;
           align-items: center;
-          transition: all 0.15s ease;
+          transition: all 0.2s ease;
           flex-shrink: 0;
         }
 
         .sign-out-btn:hover {
           color: #ef4444;
-          background: #fef2f2;
+          background: rgba(239,68,68,0.08);
         }
 
         .supplier-content {

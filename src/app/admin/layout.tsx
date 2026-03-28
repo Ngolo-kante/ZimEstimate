@@ -106,16 +106,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
 
         .admin-sidebar {
-          width: 216px;
-          min-width: 216px;
-          background: #18181b;
+          width: 220px;
+          min-width: 220px;
+          background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(246,250,255,0.9));
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border-right: 1px solid rgba(211,211,215,0.75);
+          box-shadow: 18px 0 30px rgba(6,20,47,0.035);
           display: flex;
           flex-direction: column;
           position: sticky;
           top: 0;
           height: 100vh;
           overflow-y: auto;
-          border-right: 1px solid #27272a;
         }
 
         .sidebar-logo {
@@ -124,7 +127,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           gap: 10px;
           padding: 18px 14px;
           text-decoration: none;
-          border-bottom: 1px solid #27272a;
+          border-bottom: 1px solid rgba(211,211,215,0.6);
           flex-shrink: 0;
         }
 
@@ -137,7 +140,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .logo-name {
           font-size: 0.875rem;
           font-weight: 700;
-          color: #ffffff;
+          color: #0f294b;
           letter-spacing: -0.02em;
           line-height: 1;
         }
@@ -147,8 +150,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.08em;
-          color: #fbbf24;
-          background: rgba(251, 191, 36, 0.15);
+          color: #19508a;
+          background: linear-gradient(135deg, #ecf4ff, #d6e8ff);
           padding: 2px 6px;
           border-radius: 4px;
           width: fit-content;
@@ -156,43 +159,43 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         .sidebar-nav {
           flex: 1;
-          padding: 10px 8px;
+          padding: 10px 10px;
           display: flex;
           flex-direction: column;
-          gap: 1px;
+          gap: 3px;
           overflow-y: auto;
         }
 
         .nav-item {
           display: flex;
           align-items: center;
-          gap: 9px;
-          padding: 8px 10px;
-          border-radius: 8px;
+          gap: 10px;
+          padding: 10px 12px;
+          border-radius: 12px;
           text-decoration: none;
           font-size: 0.8125rem;
           font-weight: 500;
-          color: #d4d4d8;
-          transition: all 0.15s ease;
+          color: #5a6f8d;
+          background: rgba(255,255,255,0.55);
+          transition: all 0.2s ease;
         }
 
         .nav-item:hover {
-          color: #ffffff;
-          background: #27272a;
+          color: #164d83;
+          background: #edf6ff;
+          transform: translateX(2px);
         }
 
         .nav-item.active {
-          color: #ffffff;
-          background: #fbbf24;
-        }
-
-        .nav-item.active svg {
-          color: #ffffff;
+          color: #164d83;
+          font-weight: 600;
+          background: linear-gradient(135deg, #e9f4ff, #f3f9ff);
+          box-shadow: 0 10px 18px rgba(22,77,131,0.14);
         }
 
         .sidebar-bottom {
-          padding: 10px 8px;
-          border-top: 1px solid #27272a;
+          padding: 10px 10px;
+          border-top: 1px solid rgba(211,211,215,0.6);
           display: flex;
           flex-direction: column;
           gap: 4px;
@@ -203,24 +206,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           display: flex;
           align-items: center;
           gap: 7px;
-          padding: 7px 10px;
-          border-radius: 7px;
+          padding: 7px 12px;
+          border-radius: 10px;
           text-decoration: none;
           font-size: 0.75rem;
-          color: #71717a;
-          transition: all 0.15s ease;
+          color: #7689a5;
+          transition: all 0.2s ease;
         }
 
         .back-site:hover {
-          color: #d4d4d8;
-          background: #27272a;
+          color: #255f9b;
+          background: rgba(233,244,255,0.65);
         }
 
         .user-row {
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 8px 10px;
+          padding: 8px 12px;
         }
 
         .user-info {
@@ -234,7 +237,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .user-name {
           font-size: 0.75rem;
           font-weight: 600;
-          color: #e4e4e7;
+          color: #0f294b;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -242,25 +245,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         .user-role {
           font-size: 0.65rem;
-          color: #71717a;
+          color: #7689a5;
         }
 
         .sign-out-btn {
           background: none;
           border: none;
-          color: #52525b;
+          color: #7891b5;
           cursor: pointer;
           padding: 5px;
           border-radius: 6px;
           display: flex;
           align-items: center;
-          transition: all 0.15s ease;
+          transition: all 0.2s ease;
           flex-shrink: 0;
         }
 
         .sign-out-btn:hover {
-          color: #f87171;
-          background: rgba(239, 68, 68, 0.15);
+          color: #ef4444;
+          background: rgba(239,68,68,0.08);
         }
 
         .admin-content {
