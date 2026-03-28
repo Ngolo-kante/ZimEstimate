@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -23,6 +24,7 @@ import {
   Star,
   Gear,
   Export,
+  CaretLeft,
 } from '@phosphor-icons/react';
 
 const navItems = [
@@ -47,14 +49,15 @@ const navItems = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, profile, signOut } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div className="admin-shell">
       {/* Sidebar */}
-      <aside className="admin-sidebar">
-        <Link href="/admin/revenue" className="sidebar-logo">
-          <Image src="/logo.png" alt="ZimEstimate" width={28} height={28} />
-          <div className="sidebar-logo-text">
+      <aside className={`admin-sidebar${collapsed ? ' collapsed' : ''}`}>
+        <Link href="/admin/revenue" className="sidebar-logo" title={collapsed ? 'ZimEstimate Admin Hub' : undefined}>
+          <Image src="/logo.png" alt="ZimEstimate" width={28} height={28} className="logo-img" />
+          <div className={`sidebar-logo-text${collapsed ? ' hidden' : ''}`}>
             <span className="logo-name">ZimEstimate</span>
             <span className="logo-badge">Admin Hub</span>
           </div>
@@ -67,26 +70,53 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link
                 key={href}
                 href={href}
-                className={`nav-item ${active ? 'active' : ''}`}
+                className={`nav-item${active ? ' active' : ''}${collapsed ? ' collapsed' : ''}`}
+                title={collapsed ? label : undefined}
               >
-                <Icon size={18} weight={active ? 'fill' : 'regular'} />
-                <span>{label}</span>
+                <span className="nav-icon-wrap">
+                  <Icon size={18} weight={active ? 'fill' : 'regular'} />
+                  {active && <span className="active-dot" />}
+                </span>
+                <span className={`nav-label${collapsed ? ' hidden' : ''}`}>{label}</span>
               </Link>
             );
           })}
         </nav>
 
         <div className="sidebar-bottom">
-          <Link href="/home" className="back-site">
+          <Link
+            href="/home"
+            className={`back-site${collapsed ? ' collapsed' : ''}`}
+            title={collapsed ? 'Back to site' : undefined}
+          >
             <House size={15} />
-            <span>Back to site</span>
+            <span className={`back-label${collapsed ? ' hidden' : ''}`}>Back to site</span>
           </Link>
-          <div className="user-row">
-            <div className="user-info">
+
+          <button
+            className="collapse-toggle"
+            onClick={() => setCollapsed(!collapsed)}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <CaretLeft size={16} className={`toggle-icon${collapsed ? ' collapsed' : ''}`} />
+          </button>
+
+          <div className={`user-row${collapsed ? ' collapsed' : ''}`}>
+            <div
+              className="user-avatar"
+              title={(profile?.full_name || user?.email || 'U')[0].toUpperCase()}
+            >
+              {(profile?.full_name || user?.email || 'U')[0].toUpperCase()}
+            </div>
+            <div className={`user-info${collapsed ? ' hidden' : ''}`}>
               <span className="user-name">{profile?.full_name || user?.email?.split('@')[0]}</span>
               <span className="user-role">Administrator</span>
             </div>
-            <button className="sign-out-btn" onClick={() => signOut()} title="Sign out">
+            <button
+              className="sign-out-btn"
+              onClick={() => signOut()}
+              title="Sign out"
+            >
               <SignOut size={15} />
             </button>
           </div>
@@ -99,6 +129,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </main>
 
       <style jsx>{`
+        @keyframes pulse-dot {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(0.75); }
+        }
+
         .admin-shell {
           display: flex;
           min-height: 100vh;
@@ -119,6 +154,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           top: 0;
           height: 100vh;
           overflow-y: auto;
+          overflow-x: hidden;
+          transition: width 0.3s cubic-bezier(0.2,0,0,1), min-width 0.3s cubic-bezier(0.2,0,0,1);
+        }
+
+        .admin-sidebar.collapsed {
+          width: 64px;
+          min-width: 64px;
         }
 
         .sidebar-logo {
@@ -129,12 +171,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           text-decoration: none;
           border-bottom: 1px solid rgba(211,211,215,0.6);
           flex-shrink: 0;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+
+        .admin-sidebar.collapsed .sidebar-logo {
+          justify-content: center;
+          padding: 18px 0;
+        }
+
+        .logo-img {
+          flex-shrink: 0;
         }
 
         .sidebar-logo-text {
           display: flex;
           flex-direction: column;
           gap: 3px;
+          overflow: hidden;
+          transition: opacity 0.3s cubic-bezier(0.2,0,0,1), max-width 0.3s cubic-bezier(0.2,0,0,1);
+          max-width: 160px;
+          opacity: 1;
+        }
+
+        .sidebar-logo-text.hidden {
+          opacity: 0;
+          max-width: 0;
+          pointer-events: none;
         }
 
         .logo-name {
@@ -164,6 +227,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           flex-direction: column;
           gap: 3px;
           overflow-y: auto;
+          overflow-x: hidden;
         }
 
         .nav-item {
@@ -177,7 +241,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           font-weight: 500;
           color: #5a6f8d;
           background: rgba(255,255,255,0.55);
-          transition: all 0.2s ease;
+          transition: all 0.3s cubic-bezier(0.2,0,0,1);
+          white-space: nowrap;
+          overflow: hidden;
+          position: relative;
+        }
+
+        .nav-item.collapsed {
+          justify-content: center;
+          padding: 10px 0;
+          gap: 0;
         }
 
         .nav-item:hover {
@@ -186,11 +259,48 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           transform: translateX(2px);
         }
 
+        .nav-item.collapsed:hover {
+          transform: none;
+        }
+
         .nav-item.active {
           color: #164d83;
           font-weight: 600;
           background: linear-gradient(135deg, #e9f4ff, #f3f9ff);
           box-shadow: 0 10px 18px rgba(22,77,131,0.14);
+        }
+
+        .nav-icon-wrap {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .active-dot {
+          position: absolute;
+          top: -2px;
+          right: -3px;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #2f76c5;
+          box-shadow: 0 0 8px rgba(47,118,197,0.4);
+          animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        .nav-label {
+          overflow: hidden;
+          transition: opacity 0.3s cubic-bezier(0.2,0,0,1), max-width 0.3s cubic-bezier(0.2,0,0,1);
+          max-width: 160px;
+          opacity: 1;
+        }
+
+        .nav-label.hidden {
+          opacity: 0;
+          max-width: 0;
+          pointer-events: none;
         }
 
         .sidebar-bottom {
@@ -211,7 +321,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           text-decoration: none;
           font-size: 0.75rem;
           color: #7689a5;
-          transition: all 0.2s ease;
+          transition: all 0.3s cubic-bezier(0.2,0,0,1);
+          white-space: nowrap;
+          overflow: hidden;
+        }
+
+        .back-site.collapsed {
+          justify-content: center;
+          padding: 7px 0;
         }
 
         .back-site:hover {
@@ -219,11 +336,74 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           background: rgba(233,244,255,0.65);
         }
 
+        .back-label {
+          overflow: hidden;
+          transition: opacity 0.3s cubic-bezier(0.2,0,0,1), max-width 0.3s cubic-bezier(0.2,0,0,1);
+          max-width: 160px;
+          opacity: 1;
+        }
+
+        .back-label.hidden {
+          opacity: 0;
+          max-width: 0;
+          pointer-events: none;
+        }
+
+        .collapse-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          padding: 6px 0;
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #6f86a9;
+          border-radius: 8px;
+          transition: all 0.3s cubic-bezier(0.2,0,0,1);
+        }
+
+        .collapse-toggle:hover {
+          background: rgba(233,244,255,0.65);
+          color: #255f9b;
+        }
+
+        .toggle-icon {
+          transition: transform 0.3s cubic-bezier(0.2,0,0,1);
+        }
+
+        .toggle-icon.collapsed {
+          transform: rotate(180deg);
+        }
+
         .user-row {
           display: flex;
           align-items: center;
           gap: 8px;
           padding: 8px 12px;
+          overflow: hidden;
+          transition: padding 0.3s cubic-bezier(0.2,0,0,1);
+        }
+
+        .user-row.collapsed {
+          justify-content: center;
+          padding: 8px 0;
+          gap: 0;
+          flex-direction: column;
+        }
+
+        .user-avatar {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #ecf4ff, #d6e8ff);
+          color: #19508a;
+          font-weight: 700;
+          font-size: 0.8rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
         }
 
         .user-info {
@@ -232,6 +412,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           flex-direction: column;
           gap: 2px;
           min-width: 0;
+          overflow: hidden;
+          transition: opacity 0.3s cubic-bezier(0.2,0,0,1), max-width 0.3s cubic-bezier(0.2,0,0,1);
+          max-width: 120px;
+          opacity: 1;
+        }
+
+        .user-info.hidden {
+          opacity: 0;
+          max-width: 0;
+          pointer-events: none;
         }
 
         .user-name {
