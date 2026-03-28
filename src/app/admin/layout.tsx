@@ -108,13 +108,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .admin-sidebar {
           width: 216px;
           min-width: 216px;
-          background: #0f172a;
+          background: #18181b;
           display: flex;
           flex-direction: column;
           position: sticky;
           top: 0;
           height: 100vh;
           overflow-y: auto;
+          border-right: 1px solid #27272a;
         }
 
         .sidebar-logo {
@@ -123,7 +124,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           gap: 10px;
           padding: 18px 14px;
           text-decoration: none;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+          border-bottom: 1px solid #27272a;
           flex-shrink: 0;
         }
 
@@ -136,7 +137,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .logo-name {
           font-size: 0.875rem;
           font-weight: 700;
-          color: white;
+          color: #ffffff;
           letter-spacing: -0.02em;
           line-height: 1;
         }
@@ -146,8 +147,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.08em;
-          color: #60a5fa;
-          background: rgba(96, 165, 250, 0.12);
+          color: #fbbf24;
+          background: rgba(251, 191, 36, 0.15);
           padding: 2px 6px;
           border-radius: 4px;
           width: fit-content;
@@ -171,23 +172,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           text-decoration: none;
           font-size: 0.8125rem;
           font-weight: 500;
-          color: rgba(255, 255, 255, 0.82);
+          color: #d4d4d8;
           transition: all 0.15s ease;
         }
 
         .nav-item:hover {
           color: #ffffff;
-          background: rgba(255, 255, 255, 0.06);
+          background: #27272a;
         }
 
         .nav-item.active {
-          color: #93c5fd;
-          background: rgba(96, 165, 250, 0.12);
+          color: #ffffff;
+          background: #fbbf24;
+        }
+
+        .nav-item.active svg {
+          color: #ffffff;
         }
 
         .sidebar-bottom {
           padding: 10px 8px;
-          border-top: 1px solid rgba(255, 255, 255, 0.07);
+          border-top: 1px solid #27272a;
           display: flex;
           flex-direction: column;
           gap: 4px;
@@ -202,13 +207,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           border-radius: 7px;
           text-decoration: none;
           font-size: 0.75rem;
-          color: rgba(255, 255, 255, 0.35);
+          color: #71717a;
           transition: all 0.15s ease;
         }
 
         .back-site:hover {
-          color: rgba(255, 255, 255, 0.65);
-          background: rgba(255, 255, 255, 0.05);
+          color: #d4d4d8;
+          background: #27272a;
         }
 
         .user-row {
@@ -229,7 +234,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .user-name {
           font-size: 0.75rem;
           font-weight: 600;
-          color: rgba(255, 255, 255, 0.8);
+          color: #e4e4e7;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -237,13 +242,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         .user-role {
           font-size: 0.65rem;
-          color: rgba(255, 255, 255, 0.35);
+          color: #71717a;
         }
 
         .sign-out-btn {
           background: none;
           border: none;
-          color: rgba(255, 255, 255, 0.3);
+          color: #52525b;
           cursor: pointer;
           padding: 5px;
           border-radius: 6px;
@@ -255,7 +260,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         .sign-out-btn:hover {
           color: #f87171;
-          background: rgba(239, 68, 68, 0.1);
+          background: rgba(239, 68, 68, 0.15);
         }
 
         .admin-content {
