@@ -42,8 +42,6 @@ export function useServiceWorker(): UseServiceWorkerReturn {
                 setRegistration(reg);
                 setIsRegistered(true);
 
-                console.log('[App] Service Worker registered:', reg.scope);
-
                 // Check for updates
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
@@ -52,7 +50,6 @@ export function useServiceWorker(): UseServiceWorkerReturn {
                             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                                 // New version available
                                 setUpdateAvailable(true);
-                                console.log('[App] New version available!');
                             }
                         });
                     }
@@ -67,12 +64,10 @@ export function useServiceWorker(): UseServiceWorkerReturn {
         // Online/offline listeners
         const handleOnline = () => {
             setIsOnline(true);
-            console.log('[App] Back online');
         };
 
         const handleOffline = () => {
             setIsOnline(false);
-            console.log('[App] Gone offline');
         };
 
         window.addEventListener('online', handleOnline);

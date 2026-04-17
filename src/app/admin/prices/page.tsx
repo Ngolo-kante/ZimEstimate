@@ -117,10 +117,10 @@ export default function AdminPricesPage() {
                           onChange={e => setEditValue(e.target.value)}
                           autoFocus
                         />
-                        <button className="icon-btn green" onClick={() => setEditId(null)}>
+                        <button className="icon-btn green" onClick={() => setEditId(null)} aria-label="Save price">
                           <Check size={13} />
                         </button>
-                        <button className="icon-btn red" onClick={() => setEditId(null)}>
+                        <button className="icon-btn red" onClick={() => setEditId(null)} aria-label="Cancel edit">
                           <X size={13} />
                         </button>
                       </span>
@@ -148,7 +148,7 @@ export default function AdminPricesPage() {
                   </td>
                   <td className="text-muted">{item.lastUpdated}</td>
                   <td>
-                    <button className="icon-btn" onClick={() => startEdit(item)}>
+                    <button className="icon-btn" onClick={() => startEdit(item)} aria-label="Edit price">
                       <PencilSimple size={14} />
                     </button>
                   </td>

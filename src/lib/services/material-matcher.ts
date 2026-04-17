@@ -173,7 +173,6 @@ export class MaterialMatcher {
         // 3. Determine action based on confidence threshold
         if (bestMatch.score > 0.90) {
             // High confidence: Auto-create alias
-            console.log(`High confidence match (${bestMatch.score.toFixed(2)}) for "${scrapedName}" -> "${bestMatch.id}". Creating alias.`);
             await this.supabase.from('material_aliases').insert({
                 material_code: bestMatch.id,
                 alias_name: normalizedName,

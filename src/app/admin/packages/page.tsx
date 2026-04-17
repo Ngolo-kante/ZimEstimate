@@ -123,7 +123,7 @@ export default function AdminPackagesPage() {
         <Card className="form-card">
           <CardHeader>
             <CardTitle>{editPkg ? 'Edit Package' : 'New Package'}</CardTitle>
-            <button className="close-btn" onClick={() => setShowForm(false)}><X size={18} /></button>
+            <button className="close-btn" onClick={() => setShowForm(false)} aria-label="Close form"><X size={18} /></button>
           </CardHeader>
           <CardContent>
             <div className="form-grid">
@@ -153,7 +153,7 @@ export default function AdminPackagesPage() {
                   <input type="number" value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', Number(e.target.value))} className="item-input w80" min={1} />
                   <input value={item.unit} onChange={(e) => updateItem(idx, 'unit', e.target.value)} className="item-input w70" placeholder="unit" />
                   <input type="number" value={item.unit_price_usd} onChange={(e) => updateItem(idx, 'unit_price_usd', Number(e.target.value))} className="item-input w90" min={0} step={0.01} placeholder="$/unit" />
-                  <button className="remove-btn" onClick={() => removeItem(idx)}><Trash size={14} /></button>
+                  <button className="remove-btn" onClick={() => removeItem(idx)} aria-label="Remove item"><Trash size={14} /></button>
                 </div>
               ))}
             </div>

@@ -137,6 +137,7 @@ export default function UtilityBoqPreview({ config, onEdit }: UtilityBoqPreviewP
                                 className="context-edit-btn"
                                 onClick={() => onEdit(util.editKey)}
                                 title={`Edit ${util.label} settings`}
+                                aria-label={`Edit ${util.label} settings`}
                             >
                                 <PencilSimple size={18} />
                             </button>

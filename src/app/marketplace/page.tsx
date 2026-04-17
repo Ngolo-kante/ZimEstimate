@@ -1886,6 +1886,17 @@ export default function MarketplacePage() {
             grid-template-columns: 1fr;
           }
         }
+
+        @media (max-width: 640px) {
+          .compare-row {
+            grid-template-columns: 1fr;
+            gap: var(--space-2);
+          }
+
+          .price-info-row {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
       `}</style>
     </MainLayout>
   );

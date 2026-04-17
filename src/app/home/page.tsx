@@ -195,18 +195,135 @@ export default function HomePage() {
             subtitle="ZimEstimate connects BOQ generation, live pricing, procurement, and usage tracking so your team can move from estimate to execution without context switching."
             actions={heroActions}
           >
-            {/* Nano Banana Gen Asset Placeholder */}
-            <div className="relative w-full aspect-[4/3] md:aspect-video lg:aspect-square rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-slate-900 flex items-center justify-center group cursor-pointer">
-              {/* Replace this img with the actual generated asset later */}
-              <img src="/placeholder-hero.webp" alt="Construction Site Render" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700 ease-out" />
-              <div className="relative z-10 flex flex-col items-center">
-                <div className="p-3 bg-white/10 backdrop-blur rounded-2xl mb-2 text-white/50 border border-white/10">
-                  <Scan size={32} weight="duotone" />
+            {/* Product preview — live BOQ dashboard mock */}
+            <div
+              className="hero-preview relative w-full aspect-[4/3] md:aspect-video lg:aspect-square rounded-2xl overflow-hidden border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-blue-50"
+              role="img"
+              aria-label="ZimEstimate BOQ dashboard preview showing project cost, status, and line items"
+            >
+              {/* Subtle grid pattern */}
+              <div
+                className="absolute inset-0 opacity-[0.35] pointer-events-none"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(rgba(15,41,75,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(15,41,75,0.06) 1px, transparent 1px)',
+                  backgroundSize: '32px 32px',
+                }}
+                aria-hidden="true"
+              />
+
+              {/* Glow accent */}
+              <div
+                className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-blue-400/20 blur-3xl pointer-events-none"
+                aria-hidden="true"
+              />
+              <div
+                className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-emerald-300/20 blur-3xl pointer-events-none"
+                aria-hidden="true"
+              />
+
+              {/* Dashboard card */}
+              <div className="relative h-full w-full p-5 md:p-6 flex flex-col gap-4">
+                {/* Top bar */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400/70" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/70" />
+                    </div>
+                    <span className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase ml-2">
+                      Project · ZE-2041
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live pricing
+                  </span>
                 </div>
-                <span className="text-white/70 font-medium text-sm">[Nano Banana Gen Asset Here]</span>
+
+                {/* Title row */}
+                <div>
+                  <h3 className="text-sm md:text-base font-bold text-slate-900 leading-tight">
+                    Ashdown Park — 3 Bed Residence
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Concrete frame · 142 m² · Harare</p>
+                </div>
+
+                {/* Stats grid */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-white/80 backdrop-blur-sm border border-slate-200/70 rounded-lg p-2.5">
+                    <span className="text-[9px] font-bold tracking-wider uppercase text-slate-400 block">
+                      Total BOQ
+                    </span>
+                    <span className="text-sm md:text-base font-extrabold text-slate-900 block mt-0.5">
+                      $48,210
+                    </span>
+                    <span className="text-[9px] font-semibold text-emerald-600 flex items-center gap-0.5 mt-0.5">
+                      <ChartLineUp size={10} weight="bold" /> 2.1% vs last wk
+                    </span>
+                  </div>
+                  <div className="bg-white/80 backdrop-blur-sm border border-slate-200/70 rounded-lg p-2.5">
+                    <span className="text-[9px] font-bold tracking-wider uppercase text-slate-400 block">
+                      Items
+                    </span>
+                    <span className="text-sm md:text-base font-extrabold text-slate-900 block mt-0.5">
+                      67
+                    </span>
+                    <span className="text-[9px] font-semibold text-slate-500 mt-0.5 block">
+                      12 categories
+                    </span>
+                  </div>
+                  <div className="bg-white/80 backdrop-blur-sm border border-slate-200/70 rounded-lg p-2.5">
+                    <span className="text-[9px] font-bold tracking-wider uppercase text-slate-400 block">
+                      Stage
+                    </span>
+                    <span className="text-sm md:text-base font-extrabold text-slate-900 block mt-0.5">
+                      Superstructure
+                    </span>
+                    <span className="text-[9px] font-semibold text-blue-600 mt-0.5 block">
+                      4 of 7
+                    </span>
+                  </div>
+                </div>
+
+                {/* Line items */}
+                <div className="flex-1 bg-white/70 backdrop-blur-sm border border-slate-200/70 rounded-lg overflow-hidden flex flex-col min-h-0">
+                  <div className="px-3 py-1.5 border-b border-slate-200/70 bg-slate-50/50 flex items-center justify-between flex-shrink-0">
+                    <span className="text-[9px] font-bold tracking-wider uppercase text-slate-500">
+                      Auto-priced items
+                    </span>
+                    <CheckCircle size={11} weight="fill" className="text-emerald-500" />
+                  </div>
+                  <div className="flex-1 flex flex-col divide-y divide-slate-100 text-[11px] overflow-hidden">
+                    {[
+                      { label: 'Portland Cement 42.5N', qty: '48 bags', price: '$432' },
+                      { label: 'Rebar Y12 × 12m', qty: '220 units', price: '$1,870' },
+                      { label: 'River sand', qty: '18 m³', price: '$540' },
+                      { label: 'Concrete blocks 200mm', qty: '1,450 units', price: '$2,175' },
+                    ].map((row, idx) => (
+                      <div
+                        key={row.label}
+                        className="flex items-center justify-between px-3 py-1.5"
+                        style={{ animationDelay: `${idx * 90}ms` }}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Package size={11} weight="bold" className="text-slate-400 flex-shrink-0" />
+                          <span className="font-medium text-slate-700 truncate">{row.label}</span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-slate-400">{row.qty}</span>
+                          <span className="font-semibold text-slate-900 tabular-nums">{row.price}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur shadow-sm rounded-lg p-2 text-xs font-medium text-slate-600 flex items-center gap-1">
-                <CheckCircle weight="fill" className="text-emerald-500" /> Auto-priced BOQ
+
+              {/* Floating status chip */}
+              <div className="absolute top-4 right-4 bg-white shadow-lg shadow-blue-900/5 border border-slate-200/70 rounded-full px-2.5 py-1 text-[10px] font-semibold text-slate-600 flex items-center gap-1.5 hidden md:flex">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                Auto-saved
               </div>
             </div>
           </AnimatedHero>
@@ -287,12 +404,14 @@ export default function HomePage() {
                 title={offer.title}
                 description={offer.description}
                 header={
-                  <div className="flex flex-1 w-full h-full min-h-[6rem] rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-100 relative overflow-hidden group bg-slate-900 items-center justify-center">
-                    {/* Nano Banana Gen Asset placeholder for Bento Block */}
-                    <img src={`/placeholder-bento-${i + 1}.webp`} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity duration-500 filter blur-[2px] group-hover:blur-0" />
-                    <div className="relative z-10 p-2 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 text-white/50 text-[10px] font-medium tracking-wide uppercase">
-                      [Nano Banana]
-                    </div>
+                  <div className="flex flex-1 w-full h-full min-h-[6rem] rounded-xl border border-slate-200 relative overflow-hidden group bg-slate-900">
+                    <img
+                      src={`/${['placeholder-substructure', 'placeholder-superstructure', 'placeholder-roofing', 'placeholder-blueprint'][i % 4]}.webp`}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 w-full h-full object-cover opacity-55 group-hover:opacity-80 group-hover:scale-105 transition-all duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-slate-900/30 to-transparent" aria-hidden="true" />
                   </div>
                 }
                 icon={<div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100"><offer.icon className="h-4 w-4" weight="bold" /></div>}

@@ -547,7 +547,7 @@ function BoqNewPageContent() {
               {/* ── Step Header ──────────────────────────────────────────────── */}
               <div className="mb-8">
                 <span className="wiz-step-label mb-2 block">BOQ MANUAL BUILDER</span>
-                <h2 className="text-2xl font-bold mb-2" style={{color:'var(--wiz-text-primary)'}}>{WIZARD_STEPS[currentStep].title}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{color:'var(--wiz-text-primary)'}}>{WIZARD_STEPS[currentStep].title}</h2>
                 <p className="text-sm" style={{color:'var(--wiz-text-muted)'}}>{WIZARD_STEPS[currentStep].subtitle}</p>
               </div>
 
@@ -593,7 +593,7 @@ function BoqNewPageContent() {
               </div>
 
               {/* ── Navigation Footer ────────────────────────────────────────── */}
-              <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between border-t border-slate-200 bg-white/95 px-6 py-4 shadow-[0_-8px_16px_rgba(0,0,0,0.05)] backdrop-blur-md lg:static lg:mt-10 lg:bg-transparent lg:p-0 lg:pt-6 lg:shadow-none lg:backdrop-blur-none">
+              <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between gap-2 border-t border-slate-200 bg-white/95 px-3 py-3 shadow-[0_-8px_16px_rgba(0,0,0,0.05)] backdrop-blur-md sm:px-6 sm:py-4 lg:static lg:mt-10 lg:bg-transparent lg:p-0 lg:pt-6 lg:shadow-none lg:backdrop-blur-none">
                 <button
                   type="button"
                   onClick={() => {

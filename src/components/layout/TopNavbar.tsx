@@ -650,6 +650,12 @@ export default function TopNavbar() {
           .mobile-menu { display: block; border-top: 1px solid var(--color-border-light); background: #fff; padding: 16px; }
           .notification-btn { display: none; }
         }
+
+        @media (max-width: 640px) {
+          .navbar-container { padding: 0 12px; height: 56px; }
+          .navbar-right { gap: 8px; }
+          .logo-text { font-size: 1.05rem; }
+        }
       `}</style>
     </header>
   );

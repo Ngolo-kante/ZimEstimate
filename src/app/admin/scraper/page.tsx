@@ -401,10 +401,10 @@ export default function ScraperPage() {
                                         <h3>{config.site_name}</h3>
                                     </div>
                                     <div className="card-actions">
-                                        <button onClick={() => handleToggleActive(config)} title={config.is_active ? 'Pause' : 'Resume'}>
+                                        <button onClick={() => handleToggleActive(config)} title={config.is_active ? 'Pause' : 'Resume'} aria-label={config.is_active ? 'Pause scraper' : 'Resume scraper'}>
                                             {config.is_active ? <Pause size={18} /> : <Play size={18} />}
                                         </button>
-                                        <button onClick={() => handleDelete(config.id)} title="Delete" className="delete">
+                                        <button onClick={() => handleDelete(config.id)} title="Delete" aria-label="Delete scraper configuration" className="delete">
                                             <Trash size={18} />
                                         </button>
                                     </div>
@@ -456,7 +456,7 @@ export default function ScraperPage() {
                     <div className="modal-content">
                         <div className="modal-header">
                             <h3>New Configuration</h3>
-                            <button onClick={() => setShowModal(false)}>&times;</button>
+                            <button onClick={() => setShowModal(false)} aria-label="Close dialog">&times;</button>
                         </div>
                         <form onSubmit={handleCreate}>
                             <div className="form-group">

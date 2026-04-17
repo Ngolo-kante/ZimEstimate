@@ -64,16 +64,18 @@ export function CurrencyToggle() {
                 <button
                     className={`toggle-option ${currency === 'USD' ? 'active' : ''}`}
                     onClick={() => setCurrency('USD')}
+                    aria-label="Switch to USD"
                 >
                     <CurrencyDollar size={16} weight="light" />
-                    <span>USD</span>
+                    <span className="toggle-label">USD</span>
                 </button>
                 <button
                     className={`toggle-option ${currency === 'ZWG' ? 'active' : ''}`}
                     onClick={() => setCurrency('ZWG')}
+                    aria-label="Switch to ZiG"
                 >
                     <span className="zig-symbol">Z$</span>
-                    <span>ZiG</span>
+                    <span className="toggle-label">ZiG</span>
                 </button>
             </div>
 
@@ -114,6 +116,19 @@ export function CurrencyToggle() {
         .zig-symbol {
           font-weight: 600;
           font-size: 0.75rem;
+        }
+
+        @media (max-width: 640px) {
+          .currency-toggle {
+            padding: 0.125rem;
+          }
+          .toggle-option {
+            padding: 0.375rem 0.5rem;
+            gap: 0.25rem;
+          }
+          .toggle-label {
+            display: none;
+          }
         }
       `}</style>
         </>

@@ -1262,7 +1262,7 @@ function ProjectDetailContent() {
                                         <span>/</span>
                                         <span className="font-medium text-primary">{project.name}</span>
                                     </div>
-                                    <h1 className="text-3xl font-bold text-primary font-heading">{project.name}</h1>
+                                    <h1 className="text-2xl sm:text-3xl font-bold text-primary font-heading break-words">{project.name}</h1>
                                     <div className="flex items-center gap-2 text-sm text-secondary mt-1">
                                         <MapPin size={16} />
                                         {project.location || 'No location set'}
@@ -1365,7 +1365,7 @@ function ProjectDetailContent() {
                                 />
                             </section>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                                 {/* Left Column - Next Steps */}
                                 <div className="lg:col-span-2 space-y-8">
                                     {/* Next Steps */}

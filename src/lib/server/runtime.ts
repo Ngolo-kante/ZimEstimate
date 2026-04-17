@@ -12,6 +12,7 @@ const REQUIRED_RUNTIME_ENV = [
   'NEXT_PUBLIC_VAPID_PUBLIC_KEY',
   'CSRF_SECRET',
   'REMINDER_DISPATCH_SECRET',
+  'CRON_SECRET',
 ] as const;
 
 export function getMissingRuntimeEnv(): string[] {

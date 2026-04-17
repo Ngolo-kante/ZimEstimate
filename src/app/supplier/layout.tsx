@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -21,6 +21,8 @@ import {
   FileText,
   Bell,
   CaretLeft,
+  List,
+  X,
 } from '@phosphor-icons/react';
 
 const navItems = [
@@ -42,6 +44,27 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const { user, profile, signOut } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Close drawer on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Close drawer on Escape; lock body scroll while open
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileOpen(false);
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [mobileOpen]);
 
   // Don't show side nav on the register page (onboarding flow)
   if (pathname === '/supplier/register') {
@@ -50,8 +73,48 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
 
   return (
     <div className="supplier-shell">
+      {/* Mobile top bar */}
+      <header className="mobile-topbar">
+        <button
+          type="button"
+          className="mobile-menu-btn"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open navigation menu"
+          aria-expanded={mobileOpen}
+          aria-controls="supplier-sidebar"
+        >
+          <List size={22} weight="bold" />
+        </button>
+        <Link href="/supplier/dashboard" className="mobile-topbar-logo">
+          <Image src="/logo.png" alt="ZimEstimate" width={24} height={24} />
+          <span>Supplier Portal</span>
+        </Link>
+      </header>
+
+      {/* Backdrop (mobile only) */}
+      {mobileOpen && (
+        <button
+          type="button"
+          className="mobile-backdrop"
+          aria-label="Close navigation menu"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className={`supplier-sidebar${collapsed ? ' collapsed' : ''}`}>
+      <aside
+        id="supplier-sidebar"
+        className={`supplier-sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`}
+      >
+        {/* Close button (mobile only) */}
+        <button
+          type="button"
+          className="mobile-close-btn"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Close navigation menu"
+        >
+          <X size={20} weight="bold" />
+        </button>
         <Link href="/supplier/dashboard" className="sidebar-logo" title={collapsed ? 'ZimEstimate Supplier Portal' : undefined}>
           <Image src="/logo.png" alt="ZimEstimate" width={28} height={28} className="logo-img" />
           <div className={`sidebar-logo-text${collapsed ? ' hidden' : ''}`}>
@@ -462,9 +525,131 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
           overflow-y: auto;
         }
 
+        /* Mobile top bar — hidden on desktop */
+        .mobile-topbar {
+          display: none;
+          position: sticky;
+          top: 0;
+          z-index: 40;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 14px;
+          background: rgba(255,255,255,0.92);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border-bottom: 1px solid rgba(211,211,215,0.75);
+        }
+
+        .mobile-menu-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 38px;
+          height: 38px;
+          border-radius: 10px;
+          border: 1px solid rgba(211,211,215,0.75);
+          background: #fff;
+          color: #0f294b;
+          cursor: pointer;
+          transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .mobile-menu-btn:hover { background: #edf6ff; }
+        .mobile-menu-btn:active { transform: scale(0.96); }
+
+        .mobile-topbar-logo {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          text-decoration: none;
+          color: #0f294b;
+          font-weight: 700;
+          font-size: 0.9rem;
+          letter-spacing: -0.01em;
+        }
+
+        .mobile-backdrop {
+          display: none;
+          position: fixed;
+          inset: 0;
+          z-index: 49;
+          background: rgba(10,24,48,0.42);
+          backdrop-filter: blur(2px);
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          animation: backdrop-fade 0.2s ease;
+        }
+
+        @keyframes backdrop-fade {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        .mobile-close-btn {
+          display: none;
+          position: absolute;
+          top: 14px;
+          right: 12px;
+          width: 34px;
+          height: 34px;
+          border-radius: 8px;
+          background: transparent;
+          border: none;
+          color: #5a6f8d;
+          cursor: pointer;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s ease;
+        }
+
+        .mobile-close-btn:hover { background: rgba(233,244,255,0.8); color: #0f294b; }
+
         @media (max-width: 768px) {
+          .supplier-shell {
+            flex-direction: column;
+          }
+
+          .mobile-topbar {
+            display: flex;
+          }
+
           .supplier-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 50;
+            width: 280px;
+            min-width: 280px;
+            height: 100dvh;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.2,0,0,1);
+            box-shadow: 30px 0 60px rgba(6,20,47,0.25);
+          }
+
+          .supplier-sidebar.mobile-open {
+            transform: translateX(0);
+          }
+
+          .supplier-sidebar.collapsed {
+            width: 280px;
+            min-width: 280px;
+          }
+
+          .mobile-backdrop {
+            display: block;
+          }
+
+          .mobile-close-btn {
+            display: flex;
+          }
+
+          .collapse-toggle {
             display: none;
+          }
+
+          .supplier-content {
+            width: 100%;
           }
         }
       `}</style>
