@@ -2,6 +2,7 @@
 
 import { useReveal } from '@/hooks/useReveal';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
@@ -405,11 +406,13 @@ export default function HomePage() {
                 description={offer.description}
                 header={
                   <div className="flex flex-1 w-full h-full min-h-[6rem] rounded-xl border border-slate-200 relative overflow-hidden group bg-slate-900">
-                    <img
+                    <Image
                       src={`/${['placeholder-substructure', 'placeholder-superstructure', 'placeholder-roofing', 'placeholder-blueprint'][i % 4]}.webp`}
                       alt=""
                       aria-hidden="true"
-                      className="absolute inset-0 w-full h-full object-cover opacity-55 group-hover:opacity-80 group-hover:scale-105 transition-all duration-500"
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      className="object-cover opacity-55 group-hover:opacity-80 group-hover:scale-105 transition-all duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-slate-900/30 to-transparent" aria-hidden="true" />
                   </div>

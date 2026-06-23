@@ -72,8 +72,6 @@ export default function ProjectTypeSection() {
     setSelectedStages(next);
   };
 
-  const hasType = Boolean(selectedType);
-
   return (
     <div className="space-y-8">
 

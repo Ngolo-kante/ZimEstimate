@@ -70,7 +70,7 @@ export default function AdminTicketsPage() {
 
   useEffect(() => {
     if (!adminId) return;
-    loadTickets();
+    void Promise.resolve().then(loadTickets);
   }, [adminId, loadTickets]);
 
   const openTicket = async (t: Ticket) => {

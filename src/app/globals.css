@@ -113,8 +113,8 @@
   --color-muted: var(--color-text-muted);
 
   /* Fonts */
-  --font-heading: var(--font-heading);
-  --font-body: var(--font-body);
+  --font-heading: var(--font-geist-sans);
+  --font-body: var(--font-geist-sans);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

@@ -56,7 +56,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Close drawer on route change
   useEffect(() => {
-    setMobileOpen(false);
+    const timeoutId = window.setTimeout(() => setMobileOpen(false), 0);
+    return () => window.clearTimeout(timeoutId);
   }, [pathname]);
 
   // Close drawer on Escape; lock body scroll while open

@@ -6,7 +6,7 @@ import { useAdminAuth } from '@/hooks/useAdminAuth';
 import Card, { CardContent } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { getAuditLogs } from '@/lib/services/admin-analytics';
-import { ArrowLeft, MagnifyingGlass, ClockCountdown } from '@phosphor-icons/react';
+import { ArrowLeft, ClockCountdown } from '@phosphor-icons/react';
 
 interface LogRow {
   id: string;
@@ -45,7 +45,7 @@ export default function AdminLogsPage() {
 
   useEffect(() => {
     if (!adminId) return;
-    loadLogs();
+    void Promise.resolve().then(loadLogs);
   }, [adminId, loadLogs]);
 
   const totalPages = Math.ceil(total / 25);

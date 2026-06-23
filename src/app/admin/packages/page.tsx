@@ -50,7 +50,7 @@ export default function AdminPackagesPage() {
 
   useEffect(() => {
     if (!adminId) return;
-    load();
+    void Promise.resolve().then(load);
   }, [adminId]);
 
   const openCreate = () => {

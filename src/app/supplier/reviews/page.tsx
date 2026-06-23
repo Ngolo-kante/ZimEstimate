@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Star, MagnifyingGlass, ChatCircle } from '@phosphor-icons/react';
+import { Star, ChatCircle } from '@phosphor-icons/react';
 
 const MOCK_REVIEWS = [
   { id: 1, builder: 'Tafadzwa M.', project: 'Harare Residential Build', rating: 5, comment: 'Excellent service and fast delivery. Cement quality was top notch.', date: '2026-03-20', replied: false },

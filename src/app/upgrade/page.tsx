@@ -1,22 +1,11 @@
 'use client';
 
-import { Suspense, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import {
-    Crown,
-    Lightning,
-    Buildings,
-    Check,
-    X,
     RocketLaunch,
-    Brain,
-    FileText,
-    Users
 } from '@phosphor-icons/react';
-import { useAuth } from '@/components/providers/AuthProvider';
 import Button from '@/components/ui/Button';
-import { useToast } from '@/components/ui/Toast';
 import MainLayout from '@/components/layout/MainLayout';
 
 function UpgradeContent() {

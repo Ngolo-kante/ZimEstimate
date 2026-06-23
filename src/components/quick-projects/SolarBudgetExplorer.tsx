@@ -1,6 +1,6 @@
 'use client';
 // v2 — combo packages + kVA guide
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -476,7 +476,10 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
   useEffect(() => {
     if (comboLoaded) {
       const loadedPkg = SOLAR_PACKAGES.find((p) => p.id === comboLoaded);
-      if (loadedPkg && budget !== loadedPkg.price) setComboLoaded(null);
+      if (loadedPkg && budget !== loadedPkg.price) {
+        const timeoutId = window.setTimeout(() => setComboLoaded(null), 0);
+        return () => window.clearTimeout(timeoutId);
+      }
     }
   }, [budget, comboLoaded]);
 
@@ -513,7 +516,7 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
       include_contingency: false,
     };
 
-    const items = solarSizingToBOQ(sizingResult, augAnswers as any);
+    const items = solarSizingToBOQ(sizingResult, augAnswers as Parameters<typeof solarSizingToBOQ>[1]);
     setBoqItems(items);
   };
 
@@ -542,7 +545,7 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
                       backupHours: null,
                       location: '',
                       propertyType: null,
-                      appliances: {} as any,
+                      appliances: {},
                       simultaneousLoads: { kettleMicrowave: false, pumpWithHouse: false, geyserWithHouse: false },
                       roof: { type: null, shading: null, orientation: '', spaceM2: null },
                       existing: { hasExisting: false, inverterKva: null, batteryKwh: null, panelCount: null, issues: '' },
@@ -654,7 +657,7 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
 
       {/* ── Objective Selector ───────────────────────────────────────────────── */}
       <div className="mb-6">
-        <p className="text-sm font-semibold text-slate-700 mb-3">What's your priority?</p>
+        <p className="text-sm font-semibold text-slate-700 mb-3">What&apos;s your priority?</p>
         <div className="grid grid-cols-3 gap-2">
           {([
             { key: 'economy',  label: 'Economy',  sub: 'Best value, proven brands', icon: <Coins size={18} /> },
@@ -692,7 +695,7 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
             value={budget === 0 ? '' : budget}
             onChange={(e) => { setRedistribute(false); setBudget(Math.max(0, Number(e.target.value) || 0)); }}
             className="flex-1 text-4xl font-extrabold text-slate-900 bg-transparent border-none outline-none focus:ring-0 appearance-none placeholder-slate-300 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            style={{ MozAppearance: 'textfield' } as any}
+            style={{ MozAppearance: 'textfield' } as CSSProperties}
           />
         </div>
 

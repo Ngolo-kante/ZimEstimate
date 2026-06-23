@@ -102,7 +102,6 @@ export default function SupplierUpgradePage() {
   const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>('stripe');
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
-  const [supplierId, setSupplierId] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -120,7 +119,6 @@ export default function SupplierUpgradePage() {
         return;
       }
 
-      setSupplierId(profile.id);
       const plan = await getSupplierPlan(profile.id);
       setCurrentPlan(plan);
       setLoading(false);

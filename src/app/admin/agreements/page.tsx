@@ -35,7 +35,7 @@ export default function AdminAgreementsPage() {
 
   useEffect(() => {
     if (!adminId) return;
-    load();
+    void Promise.resolve().then(load);
   }, [adminId, load]);
 
   const totalPages = Math.ceil(total / 25);

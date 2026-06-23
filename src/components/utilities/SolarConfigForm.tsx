@@ -1,8 +1,6 @@
 import React from 'react';
 import {
     Sun,
-    Lightning,
-    BatteryHigh,
     HouseLine,
     WifiHigh,
     WifiSlash
@@ -11,7 +9,6 @@ import Card from '@/components/ui/Card';
 import { useSolarPreview } from '@/hooks/useSolarPreview';
 import {
     SolarConfig,
-    SolarSystemType,
     SolarDailyUsage,
     SolarAppliance,
     SolarRoofType

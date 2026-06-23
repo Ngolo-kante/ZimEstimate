@@ -1,8 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/components/providers/AuthProvider';
+import { useState } from 'react';
 import { ShoppingCart, MagnifyingGlass, Check, X, Clock } from '@phosphor-icons/react';
 
 type RfqRow = {

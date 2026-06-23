@@ -1,8 +1,5 @@
 import React from 'react';
 import {
-    CloudRain,
-    Funnel,
-    Drop,
     Cylinder,
     HouseLine
 } from '@phosphor-icons/react';

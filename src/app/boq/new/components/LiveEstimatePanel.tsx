@@ -6,10 +6,6 @@ import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useBoqWizardStore } from '@/store/boqWizardStore';
 import { calculateBoqHealth } from '@/lib/boqHealth';
 
-function formatMissingItem(id: string) {
-  return id.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
 function formatAmount(amountUsd: number, currency: 'USD' | 'ZWG', exchangeRate: number) {
   if (currency === 'ZWG') {
     return `ZiG ${(amountUsd * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;

@@ -3,12 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import Card, { CardContent, CardHeader, CardTitle, CardBadge } from '@/components/ui/Card';
+import Card, { CardContent, CardBadge } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { suspendUser } from '@/lib/services/admin-analytics';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Star, Lock, LockOpen, MagnifyingGlass } from '@phosphor-icons/react';
+import { ArrowLeft, Star, Lock, MagnifyingGlass } from '@phosphor-icons/react';
 
 interface SupplierRow {
   id: string;
@@ -41,7 +41,7 @@ export default function AdminPerformancePage() {
 
   useEffect(() => {
     if (!adminId) return;
-    load();
+    void Promise.resolve().then(load);
   }, [adminId]);
 
   const handleSuspend = async () => {

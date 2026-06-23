@@ -45,7 +45,7 @@ function LoginForm() {
                 const profile = profileRaw as { tier: string; user_type: string } | null;
                 if (profile?.tier === 'admin' || profile?.user_type === 'admin') {
                     destination = redirect || '/admin/revenue';
-                } else if (profile?.user_type === 'supplier') {  // eslint-disable-line @typescript-eslint/no-unnecessary-condition
+                } else if (profile?.user_type === 'supplier') {
                     destination = redirect || '/supplier/dashboard';
                 }
             }

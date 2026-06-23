@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { Package, Plus, PencilSimple, Trash, MagnifyingGlass, Warning } from '@phosphor-icons/react';
+import { Package, Plus, PencilSimple, Trash, MagnifyingGlass } from '@phosphor-icons/react';
 
 type Product = {
   id: string;

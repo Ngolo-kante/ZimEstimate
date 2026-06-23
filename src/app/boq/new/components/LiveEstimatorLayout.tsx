@@ -9,7 +9,7 @@ interface LiveEstimatorLayoutProps {
   heroIllustration?: ReactNode | null;
 }
 
-export default function LiveEstimatorLayout({ leftControls, rightEstimate, heroIllustration }: LiveEstimatorLayoutProps) {
+export default function LiveEstimatorLayout({ leftControls, rightEstimate }: LiveEstimatorLayoutProps) {
   if (!rightEstimate) {
     return (
       <div className="mx-auto max-w-3xl px-4 lg:px-8">

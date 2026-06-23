@@ -10,7 +10,6 @@ import {
   CurrencyDollar,
   TrendUp,
   Users,
-  ArrowUp,
   ArrowDown,
 } from '@phosphor-icons/react';
 

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import Card, { CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import Card, { CardContent } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase';
 import type { Material } from '@/lib/database.types';
@@ -61,7 +61,7 @@ export default function AdminContentPage() {
 
   useEffect(() => {
     if (!adminId) return;
-    load();
+    void Promise.resolve().then(load);
   }, [adminId, load]);
 
   const startEdit = (m: Material) => {

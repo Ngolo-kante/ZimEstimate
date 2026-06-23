@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import Card, { CardContent, CardHeader, CardTitle, CardBadge } from '@/components/ui/Card';
+import Card, { CardContent, CardBadge } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase';
 import { getUserSupplierProfile } from '@/lib/services/suppliers';
@@ -17,7 +17,6 @@ import {
   EnvelopeSimple,
   ClockCountdown,
   CheckCircle,
-  XCircle,
   ChatCircleText,
   Archive,
   Package,

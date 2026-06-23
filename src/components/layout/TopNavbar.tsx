@@ -12,7 +12,6 @@ import {
   User,
   Gear,
   SignOut,
-  Crown,
 } from '@phosphor-icons/react';
 import { CurrencyToggle } from '@/components/ui/CurrencyToggle';
 import { useAuth } from '@/components/providers/AuthProvider';

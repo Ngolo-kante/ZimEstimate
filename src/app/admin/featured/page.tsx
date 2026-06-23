@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { Star, MagnifyingGlass, ArrowsDownUp, Check, X, Plus } from '@phosphor-icons/react';
+import { Star, MagnifyingGlass, Check, X, Plus } from '@phosphor-icons/react';
 
 const MOCK_SUPPLIERS = [
   { id: 1, name: 'BuildMart Zimbabwe', category: 'General', city: 'Harare', rating: 4.8, featured: true, featuredUntil: '2026-04-30', plan: 'Pro' },

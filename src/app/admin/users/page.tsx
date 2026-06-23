@@ -53,7 +53,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     if (!adminId) return;
-    loadUsers();
+    void Promise.resolve().then(loadUsers);
   }, [adminId, loadUsers]);
 
   const handleAction = async () => {

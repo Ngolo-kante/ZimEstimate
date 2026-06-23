@@ -1,9 +1,8 @@
 // ─── Septic Tank Question Flow ─────────────────────────────────────────────────
 // Declarative config consumed by QuickProjectWizard.
 
-import type { Answers, QuestionFlow } from '../engine/types';
+import type { QuestionFlow } from '../engine/types';
 import { calculateSepticBOQ } from './calculations';
-import { calcSepticVolumeLitres } from './calculations';
 
 export const septicFlow: QuestionFlow = {
   projectType: 'septic',
@@ -45,7 +44,7 @@ export const septicFlow: QuestionFlow = {
               recommended: false,
             },
           ],
-          recommendation: (answers: Answers) => {
+          recommendation: () => {
             // Will be rendered from the parent wizard, using location context if available
             return null;
           },

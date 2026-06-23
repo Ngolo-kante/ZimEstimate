@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { FileText, UploadSimple, Check, Clock, Warning, Trash, Download } from '@phosphor-icons/react';
 
 type Doc = {
@@ -35,7 +35,6 @@ const STATUS_CONFIG = {
 
 export default function SupplierDocumentsPage() {
   const [docs, setDocs] = useState<Doc[]>(MOCK_DOCS);
-  const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
   const handleUpload = () => {

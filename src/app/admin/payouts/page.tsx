@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { Wallet, ArrowUp, ArrowDown, Check, X, MagnifyingGlass, Download } from '@phosphor-icons/react';
+import { Wallet, ArrowUp, Check, X, MagnifyingGlass, Download } from '@phosphor-icons/react';
 
 const MOCK_PAYOUTS = [
   { id: 'TXN-001', supplier: 'BuildMart Zimbabwe', amount: 340.00, type: 'Subscription', status: 'completed', date: '2026-03-25' },

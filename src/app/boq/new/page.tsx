@@ -114,34 +114,6 @@ function serializeForDiff(milestones: MilestoneData[]): string {
   );
 }
 
-const getStepIllustration = (step: number) => {
-  const illustrations = [
-    { src: '/placeholder-blueprint.webp', title: 'Step 1: Project Type', desc: 'Choose the kind of BOQ you are building.' },
-    { src: '/placeholder-substructure.webp', title: 'Step 2: Project Details', desc: 'Name and location set the pricing context.' },
-    { src: '/placeholder-blueprint.webp', title: 'Step 3: Building Design', desc: 'Define floor area and structure details.' },
-    { src: '/placeholder-superstructure.webp', title: 'Step 4: Materials & Scope', desc: 'Confirm scope and materials coverage.' },
-    { src: '/placeholder-roofing.webp', title: 'Step 5: Site Setup & Labor', desc: 'Add labor and optional site setup items.' },
-    { src: '/placeholder-blueprint.webp', title: 'Step 6: Review Estimate', desc: 'Adjust quantities before saving.' },
-  ];
-
-  const current = illustrations[step];
-  if (!current) return null;
-
-  return (
-    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-slate-900 group shadow-lg">
-      <img src={current.src} alt={current.title} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700 ease-out" />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 p-8 z-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-4 text-[10px] font-bold tracking-widest text-white uppercase">
-          [Nano Banana Gen Asset]
-        </div>
-        <h3 className="text-2xl font-bold text-white mb-2">{current.title}</h3>
-        <p className="text-slate-300 text-sm">{current.desc}</p>
-      </div>
-    </div>
-  );
-};
-
 const WIZARD_STEPS = [
   {
     id: 'project-type',

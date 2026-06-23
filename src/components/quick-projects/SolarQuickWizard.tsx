@@ -23,6 +23,9 @@ import {
   SOLAR_PANEL_WATT,
 } from '@/lib/quick-projects/solar/catalog';
 import type {
+  PropertyType,
+  RoofShading,
+  RoofType,
   SolarIntent,
   SolarWizardAnswers,
   SolarWizardOutput,
@@ -30,7 +33,6 @@ import type {
 import { solarSizingToBOQ } from '@/lib/quick-projects/solar/boq';
 import type { BOQItem, LaborConfig } from '@/lib/quick-projects/engine/types';
 import QuickBOQTable from './QuickBOQTable';
-import LaborSection from './LaborSection';
 import SolarBudgetExplorer from './SolarBudgetExplorer';
 
 const INTENTS: SolarIntent[] = ['backup', 'heavy_backup', 'off_grid', 'replace', 'budget', 'quote_check'];
@@ -356,7 +358,7 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
                 key={item.id}
                 type="button"
                 className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full border text-sm transition-colors ${answers.propertyType === item.id ? 'border-blue-600 bg-blue-50 text-blue-800 font-medium' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'}`}
-                onClick={() => updateAnswers({ propertyType: item.id as any })}
+                onClick={() => updateAnswers({ propertyType: item.id as PropertyType })}
               >
                 <HouseSimple size={16} />
                 {item.label}
@@ -553,7 +555,7 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
                 key={item.id}
                 type="button"
                 className={`pill ${answers.roof.type === item.id ? 'active' : ''}`}
-                onClick={() => updateAnswers({ roof: { ...answers.roof, type: item.id as any } })}
+                onClick={() => updateAnswers({ roof: { ...answers.roof, type: item.id as RoofType } })}
               >
                 {item.label}
               </button>
@@ -569,7 +571,7 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
                 key={item.id}
                 type="button"
                 className={`pill ${answers.roof.shading === item.id ? 'active' : ''}`}
-                onClick={() => updateAnswers({ roof: { ...answers.roof, shading: item.id as any } })}
+                onClick={() => updateAnswers({ roof: { ...answers.roof, shading: item.id as RoofShading } })}
               >
                 {item.label}
               </button>

@@ -157,7 +157,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
 
   const [activeRoomKeys, setActiveRoomKeys] = useState<RoomInputKey[]>(() => {
     return Object.entries(projectDetails.roomInputs)
-      .filter(([_, val]) => Number(val) > 0)
+      .filter(([, val]) => Number(val) > 0)
       .map(([key]) => key as RoomInputKey);
   });
 
