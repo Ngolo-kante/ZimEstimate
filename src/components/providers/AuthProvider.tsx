@@ -15,7 +15,7 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
     // Auth methods
-    signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null }>;
+    signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null; data?: { user: User | null; session: Session | null } }>;
     signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
     signInWithGoogle: () => Promise<{ error: AuthError | null }>;
     signOut: () => Promise<void>;
@@ -130,17 +130,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Sign up with email and password
     const signUp = async (email: string, password: string, fullName?: string) => {
-        const { error } = await supabase.auth.signUp({
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
                 data: {
                     full_name: fullName,
                 },
+                emailRedirectTo: `${siteUrl}/auth/callback`,
             },
         });
 
-        return { error };
+        return { error, data };
     };
 
     // Sign in with email and password

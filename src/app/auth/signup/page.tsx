@@ -41,16 +41,47 @@ function SignupForm() {
 
         // Store redirect URL so the email confirmation callback can use it
         if (redirect) {
-            try { sessionStorage.setItem('zimestimate_auth_redirect', redirect); } catch {}
+            try { sessionStorage.setItem('zimestimate_auth_redirect', redirect); } catch { /* noop */ }
         }
 
-        const { error: signUpError } = await signUp(email, password, fullName);
+        try {
+            const { error: signUpError, data } = await signUp(email, password, fullName);
 
-        if (signUpError) {
-            setError(signUpError.message);
-            setIsSubmitting(false);
-        } else {
+            if (signUpError) {
+                // Provide user-friendly messages for common errors
+                const msg = signUpError.message.toLowerCase();
+                if (msg.includes('already registered') || msg.includes('already exists')) {
+                    setError('An account with this email already exists. Please sign in instead.');
+                } else if (msg.includes('rate limit') || msg.includes('too many')) {
+                    setError('Too many signup attempts. Please wait a few minutes and try again.');
+                } else {
+                    setError(signUpError.message);
+                }
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Supabase returns a user with empty identities array when the email
+            // is already registered but unconfirmed — treat as "already exists"
+            if (data?.user && data.user.identities && data.user.identities.length === 0) {
+                setError('An account with this email already exists. Please sign in or check your email for a confirmation link.');
+                setIsSubmitting(false);
+                return;
+            }
+
+            // If Supabase auto-confirms (e.g. email confirmation disabled),
+            // a session is returned immediately — redirect to dashboard.
+            if (data?.session) {
+                const destination = redirect || '/dashboard';
+                window.location.href = destination;
+                return;
+            }
+
+            // Normal flow: email confirmation required
             setSuccess(true);
+        } catch {
+            setError('An unexpected error occurred. Please try again.');
+            setIsSubmitting(false);
         }
     };
 
