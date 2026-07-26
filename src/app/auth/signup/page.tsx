@@ -279,6 +279,10 @@ function SignupForm() {
                             Already have an account?{' '}
                             <Link href={`/auth/login${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`}>Sign in</Link>
                         </p>
+                        <p className="supplier-cta">
+                            Sell building materials?{' '}
+                            <Link href="/supplier/register">Register as a supplier</Link>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -427,7 +431,7 @@ function SignupForm() {
                 }
 
                 .tier-info li::before {
-                    content: '\\2713';
+                    content: '✓';
                     color: var(--color-success);
                     font-weight: bold;
                 }
@@ -437,6 +441,12 @@ function SignupForm() {
                     text-align: center;
                     font-size: 0.875rem;
                     color: var(--color-text-secondary);
+                }
+
+                .supplier-cta {
+                    margin-top: var(--spacing-sm);
+                    padding-top: var(--spacing-sm);
+                    border-top: 1px solid var(--color-border-light);
                 }
 
                 .auth-footer a {

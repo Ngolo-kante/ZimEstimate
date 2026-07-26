@@ -748,6 +748,10 @@ export default function MarketplacePage() {
                     </div>
                   ))}
                 </div>
+                <Link href="/supplier/register" className="become-supplier">
+                  <Storefront size={16} weight="fill" />
+                  Sell on ZimEstimate — list your business
+                </Link>
               </CardContent>
             </Card>
           </div>
@@ -1783,6 +1787,24 @@ export default function MarketplacePage() {
           font-weight: var(--font-semibold);
           color: var(--color-accent);
           margin: 0 0 var(--space-4) 0;
+        }
+
+        .become-supplier {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: var(--space-2);
+          margin-top: var(--space-4);
+          padding-top: var(--space-4);
+          border-top: 1px solid var(--color-border-light);
+          font-size: var(--text-sm);
+          font-weight: var(--font-semibold);
+          color: var(--color-accent);
+          text-decoration: none;
+        }
+
+        .become-supplier:hover {
+          text-decoration: underline;
         }
 
         .supplier-list {
