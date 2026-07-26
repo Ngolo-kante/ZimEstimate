@@ -4,7 +4,7 @@ ZimEstimate is a Next.js + Supabase application for Zimbabwe construction estima
 
 ## Core Commands
 
-Use Node 20 for local development and CI. The repo includes `.nvmrc` and CI is pinned to Node 20.
+Use Node 24 for local development and CI. The repo includes `.nvmrc` and CI is pinned to Node 24.
 
 ```bash
 npm run dev
