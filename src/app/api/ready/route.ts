@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
-import { getMissingRuntimeEnv, getRuntimeEnvironment } from '@/lib/server/runtime';
+import {
+  getMissingRuntimeEnv,
+  getMissingOptionalRuntimeEnv,
+  getRuntimeEnvironment,
+} from '@/lib/server/runtime';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET() {
   const missing = getMissingRuntimeEnv();
+  const missingOptional = getMissingOptionalRuntimeEnv();
   const ready = missing.length === 0;
 
   return NextResponse.json(
@@ -14,6 +19,7 @@ export async function GET() {
       service: 'zimestimate-web',
       environment: getRuntimeEnvironment(),
       missing,
+      missingOptional,
       timestamp: new Date().toISOString(),
     },
     {
