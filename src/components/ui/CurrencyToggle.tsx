@@ -1,46 +1,53 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { CurrencyDollar } from '@phosphor-icons/react';
+import { createContext, useContext, ReactNode } from 'react';
 
+// ZimEstimate displays prices in USD only. Zimbabwe construction trades in USD,
+// and the ZiG display multiplied by a rate that was hardcoded and never
+// refreshed, so every ZiG figure shown to users was wrong.
+//
+// The context shape is deliberately unchanged so the ~100 existing call sites
+// keep compiling: `currency` is pinned to 'USD' (ZiG branches are unreachable),
+// `setCurrency` is a no-op, and `formatPrice` ignores the ZWG argument. To
+// reintroduce ZiG later, restore the state here and source `exchangeRate` from
+// the existing `exchange_rates` table instead of a constant.
 type Currency = 'USD' | 'ZWG';
 
 interface CurrencyContextType {
     currency: Currency;
+    /** No-op: currency selection is disabled while the app is USD-only. */
     setCurrency: (currency: Currency) => void;
-    formatPrice: (priceUsd: number, priceZwg: number) => string;
+    /** The ZWG argument is ignored; amounts always render in USD. */
+    formatPrice: (priceUsd: number, priceZwg?: number) => string;
+    /**
+     * Retained only for legacy `*_zwg` column writes. Not used for display.
+     * @deprecated Read a live rate from `exchange_rates` when ZiG returns.
+     */
     exchangeRate: number;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
+const LEGACY_ZWG_RATE = 30;
+
+function formatUsd(priceUsd: number) {
+    const safe = Number.isFinite(priceUsd) ? priceUsd : 0;
+    return `$${safe.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    })}`;
+}
+
+const CURRENCY_VALUE: CurrencyContextType = {
+    currency: 'USD',
+    setCurrency: () => {},
+    formatPrice: formatUsd,
+    exchangeRate: LEGACY_ZWG_RATE,
+};
+
 export function CurrencyProvider({ children }: { children: ReactNode }) {
-    const [currency, setCurrency] = useState<Currency>(() => {
-        // Lazy initialization to load from localStorage on first render
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('preferredCurrency') as Currency;
-            if (saved === 'USD' || saved === 'ZWG') {
-                return saved;
-            }
-        }
-        return 'USD';
-    });
-    const [exchangeRate] = useState(30); // Default rate, should be fetched from DB
-
-    const handleSetCurrency = (newCurrency: Currency) => {
-        setCurrency(newCurrency);
-        localStorage.setItem('preferredCurrency', newCurrency);
-    };
-
-    const formatPrice = (priceUsd: number, priceZwg: number) => {
-        if (currency === 'USD') {
-            return `$${priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        }
-        return `ZiG ${priceZwg.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    };
-
     return (
-        <CurrencyContext.Provider value={{ currency, setCurrency: handleSetCurrency, formatPrice, exchangeRate }}>
+        <CurrencyContext.Provider value={CURRENCY_VALUE}>
             {children}
         </CurrencyContext.Provider>
     );
@@ -52,85 +59,4 @@ export function useCurrency() {
         throw new Error('useCurrency must be used within a CurrencyProvider');
     }
     return context;
-}
-
-// Toggle Component
-export function CurrencyToggle() {
-    const { currency, setCurrency } = useCurrency();
-
-    return (
-        <>
-            <div className="currency-toggle">
-                <button
-                    className={`toggle-option ${currency === 'USD' ? 'active' : ''}`}
-                    onClick={() => setCurrency('USD')}
-                    aria-label="Switch to USD"
-                >
-                    <CurrencyDollar size={16} weight="light" />
-                    <span className="toggle-label">USD</span>
-                </button>
-                <button
-                    className={`toggle-option ${currency === 'ZWG' ? 'active' : ''}`}
-                    onClick={() => setCurrency('ZWG')}
-                    aria-label="Switch to ZiG"
-                >
-                    <span className="zig-symbol">Z$</span>
-                    <span className="toggle-label">ZiG</span>
-                </button>
-            </div>
-
-            <style jsx>{`
-        .currency-toggle {
-          display: flex;
-          background: var(--color-border-light);
-          border-radius: var(--radius-md);
-          padding: 0.25rem;
-        }
-
-        .toggle-option {
-          display: flex;
-          align-items: center;
-          gap: 0.375rem;
-          padding: 0.5rem 0.75rem;
-          border: none;
-          background: transparent;
-          border-radius: var(--radius-sm);
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--color-text-secondary);
-          cursor: pointer;
-          transition: all 0.2s ease;
-          font-family: inherit;
-        }
-
-        .toggle-option:hover {
-          color: var(--color-text);
-        }
-
-        .toggle-option.active {
-          background: var(--color-surface);
-          color: var(--color-primary);
-          box-shadow: var(--shadow-sm);
-        }
-
-        .zig-symbol {
-          font-weight: 600;
-          font-size: 0.75rem;
-        }
-
-        @media (max-width: 640px) {
-          .currency-toggle {
-            padding: 0.125rem;
-          }
-          .toggle-option {
-            padding: 0.375rem 0.5rem;
-            gap: 0.25rem;
-          }
-          .toggle-label {
-            display: none;
-          }
-        }
-      `}</style>
-        </>
-    );
 }

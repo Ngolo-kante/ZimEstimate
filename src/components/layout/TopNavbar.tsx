@@ -13,7 +13,6 @@ import {
   Gear,
   SignOut,
 } from '@phosphor-icons/react';
-import { CurrencyToggle } from '@/components/ui/CurrencyToggle';
 import { useAuth } from '@/components/providers/AuthProvider';
 
 interface NavItem {
@@ -105,8 +104,6 @@ export default function TopNavbar() {
 
         {/* Right Section */}
         <div className="navbar-right">
-          <CurrencyToggle />
-
           {/* Notification Menu */}
           <div className="menu-container" ref={notificationMenuRef}>
             <button

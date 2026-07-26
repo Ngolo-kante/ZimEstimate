@@ -15,7 +15,7 @@ function formatAmount(amountUsd: number, currency: 'USD' | 'ZWG', exchangeRate: 
 }
 
 export default function LiveEstimatePanel() {
-  const { currency, setCurrency, exchangeRate } = useCurrency();
+  const { currency, exchangeRate } = useCurrency();
   const milestonesState = useBoqWizardStore((state) => state.milestonesState);
   const projectScope = useBoqWizardStore((state) => state.projectScope);
   const selectedStages = useBoqWizardStore((state) => state.selectedStages);
@@ -108,11 +108,6 @@ export default function LiveEstimatePanel() {
             <p data-testid="live-total" className="mt-1 text-3xl font-semibold wiz-text-primary">
               {formatAmount(totalUsd, currency, exchangeRate)}
             </p>
-            <p className="mt-1 text-xs wiz-text-muted">
-              {currency === 'USD'
-                ? formatAmount(totalUsd, 'ZWG', exchangeRate)
-                : formatAmount(totalUsd, 'USD', exchangeRate)}
-            </p>
           </div>
 
           {/* Export & Share — top right */}
@@ -136,22 +131,6 @@ export default function LiveEstimatePanel() {
           </div>
         </div>
 
-        <div className="mt-3 inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
-          <button
-            type="button"
-            onClick={() => setCurrency('USD')}
-            className={`rounded px-3 py-1 text-xs font-medium ${currency === 'USD' ? 'bg-white wiz-text-primary shadow-sm' : 'text-slate-600'}`}
-          >
-            USD
-          </button>
-          <button
-            type="button"
-            onClick={() => setCurrency('ZWG')}
-            className={`rounded px-3 py-1 text-xs font-medium ${currency === 'ZWG' ? 'bg-white wiz-text-primary shadow-sm' : 'text-slate-600'}`}
-          >
-            ZWG
-          </button>
-        </div>
       </div>
 
       {/* ── Compact health bar ──────────────────────────────────── */}

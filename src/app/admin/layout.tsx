@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import {
   ChartLine,
@@ -50,9 +50,26 @@ const navItems = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, profile, signOut } = useAuth();
+  const router = useRouter();
+  const { user, profile, isLoading, signOut } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isAdmin = profile?.user_type === 'admin' || profile?.tier === 'admin';
+
+  // Admin APIs already enforce requireAdmin server-side; this keeps non-admins
+  // from ever seeing the admin shell.
+  useEffect(() => {
+    if (isLoading) return;
+    if (!user) {
+      router.replace(`/auth/login?redirect=${encodeURIComponent(pathname)}`);
+      return;
+    }
+    // Wait for the profile to load before judging the role.
+    if (profile && !isAdmin) {
+      router.replace('/home');
+    }
+  }, [isLoading, user, profile, isAdmin, pathname, router]);
 
   // Close drawer on route change
   useEffect(() => {
@@ -74,6 +91,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       document.body.style.overflow = prevOverflow;
     };
   }, [mobileOpen]);
+
+  // Don't flash the admin shell while auth resolves or a redirect is pending.
+  if (isLoading || !user || !profile || !isAdmin) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
+        <p style={{ color: 'var(--color-text-secondary)' }}>
+          {isLoading || (user && !profile) ? 'Loading…' : 'Redirecting…'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-shell">

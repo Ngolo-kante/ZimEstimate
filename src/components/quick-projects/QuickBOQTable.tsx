@@ -49,7 +49,7 @@ export default function QuickBOQTable({
   const { isAuthenticated } = useAuth();
   const [items, setItems] = useState<BOQItem[]>(initialItems);
   const [markupPct, setMarkupPct] = useState(0);
-  const [currency, setCurrency] = useState<'USD' | 'ZWG'>('USD');
+  const [currency] = useState<'USD' | 'ZWG'>('USD');
   const [clientView, setClientView] = useState(false);
   const zwgRate = 27;
 
@@ -187,17 +187,6 @@ export default function QuickBOQTable({
       <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
         <h2 className="text-xl font-bold text-slate-900">Bill of Quantities</h2>
         <div className="flex items-center gap-2">
-          {/* Currency toggle */}
-          <button
-            onClick={() => setCurrency((c) => (c === 'USD' ? 'ZWG' : 'USD'))}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors ${
-              currency === 'ZWG'
-                ? 'border-amber-300 bg-amber-50 text-amber-700'
-                : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            {currency}
-          </button>
 
           {isContractor && (
             <button

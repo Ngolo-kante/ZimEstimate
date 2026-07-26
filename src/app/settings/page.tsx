@@ -293,7 +293,7 @@ function SettingsContent() {
                                 </div>
                                 <div>
                                     <h3>Currency</h3>
-                                    <p>Select display currency.</p>
+                                    <p>Prices are shown in USD.</p>
                                 </div>
                             </div>
                             <div className="card-content">
@@ -305,14 +305,6 @@ function SettingsContent() {
                                         <span className="code">USD</span>
                                         <span className="name">US Dollar</span>
                                         {preferredCurrency === 'USD' && <Check size={16} weight="bold" />}
-                                    </button>
-                                    <button
-                                        className={`currency-option ${preferredCurrency === 'ZWG' ? 'active' : ''}`}
-                                        onClick={() => setPreferredCurrency('ZWG')}
-                                    >
-                                        <span className="code">ZWG</span>
-                                        <span className="name">Zimbabwe Gold</span>
-                                        {preferredCurrency === 'ZWG' && <Check size={16} weight="bold" />}
                                     </button>
                                 </div>
                                 <div className="card-actions">

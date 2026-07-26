@@ -87,9 +87,9 @@ const signals: Array<{
     },
     {
       icon: CurrencyDollar,
-      label: 'DUAL CURRENCY',
-      value: 'USD + ZiG',
-      subtext: 'Live conversion across all project views',
+      label: 'USD PRICING',
+      value: 'Market rates',
+      subtext: 'Zimbabwe supplier prices across all project views',
     },
   ];
 

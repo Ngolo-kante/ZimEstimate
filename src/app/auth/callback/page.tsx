@@ -50,8 +50,27 @@ export default function AuthCallbackPage() {
                     }
                 }
 
-                // Successfully authenticated — determine redirect
-                let redirectUrl = '/dashboard';
+                // Successfully authenticated — determine redirect.
+                // Mirrors the role-based routing in the password login flow so
+                // OAuth users land on the right home screen too.
+                let redirectUrl = '/home';
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        const { data: profileRaw } = await supabase
+                            .from('profiles')
+                            .select('tier, user_type')
+                            .eq('id', user.id)
+                            .single();
+                        const profile = profileRaw as { tier: string; user_type: string } | null;
+                        if (profile?.tier === 'admin' || profile?.user_type === 'admin') {
+                            redirectUrl = '/admin/revenue';
+                        } else if (profile?.user_type === 'supplier') {
+                            redirectUrl = '/supplier/dashboard';
+                        }
+                    }
+                } catch { /* fall back to /home */ }
+
                 try {
                     const stored = sessionStorage.getItem('zimestimate_auth_redirect');
                     if (stored) {
