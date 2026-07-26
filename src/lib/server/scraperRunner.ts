@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import Firecrawl from '@mendable/firecrawl-js';
 import * as cheerio from 'cheerio';
 import type { Database } from '@/lib/database.types';
 import { materials } from '@/lib/materials';
@@ -72,8 +71,60 @@ function getSupabaseAdminClient() {
   return createClient<Database>(supabaseUrl, supabaseServiceKey);
 }
 
-function getFirecrawlClient() {
-  return new Firecrawl({ apiKey: process.env.FIRECRAWL_API_KEY });
+// Browser-like headers. The Zimbabwe supplier sources are server-rendered
+// WordPress/WooCommerce pages, so a plain fetch returns the same HTML a
+// headless renderer would — no third-party scraping service needed.
+const SCRAPE_HEADERS: Record<string, string> = {
+  'User-Agent':
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Cache-Control': 'no-cache',
+  Pragma: 'no-cache',
+};
+
+const SCRAPE_TIMEOUT_MS = 20_000;
+
+/**
+ * Fetch a page's HTML directly. Retries once with a Referer when a site
+ * answers 403, which is what the standalone pricing scraper does.
+ */
+async function fetchHtml(url: string): Promise<string> {
+  const attempt = (headers: Record<string, string>) =>
+    fetch(url, {
+      headers,
+      redirect: 'follow',
+      signal: AbortSignal.timeout(SCRAPE_TIMEOUT_MS),
+    });
+
+  let response: Response;
+  try {
+    response = await attempt(SCRAPE_HEADERS);
+    if (response.status === 403) {
+      response = await attempt({
+        ...SCRAPE_HEADERS,
+        Referer: new URL(url).origin,
+        'Upgrade-Insecure-Requests': '1',
+      });
+    }
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'unknown error';
+    throw new ScraperRunnerError(`Failed to fetch ${url}: ${reason}`, 502);
+  }
+
+  if (!response.ok) {
+    throw new ScraperRunnerError(
+      `Failed to fetch ${url}: HTTP ${response.status}`,
+      response.status === 404 ? 404 : 502
+    );
+  }
+
+  const html = await response.text();
+  if (!html.trim()) {
+    throw new ScraperRunnerError(`No HTML content returned from ${url}`, 502);
+  }
+
+  return html;
 }
 
 export async function runSingleScrape(payload: ScraperTestPayload): Promise<SingleScrapeResult> {
@@ -90,13 +141,8 @@ export async function runSingleScrape(payload: ScraperTestPayload): Promise<Sing
 
     const supabase = getSupabaseAdminClient();
     const matcher = new MaterialMatcher(supabase);
-    const firecrawl = getFirecrawlClient();
 
-    const scrapeResult = await firecrawl.scrape(url, { formats: ['html'] });
-    const html = scrapeResult.html;
-    if (!html) {
-      throw new Error('Firecrawl returned no HTML content');
-    }
+    const html = await fetchHtml(url);
 
     const $ = cheerio.load(html);
     const priceText = $(priceSelector).first().text().trim() || '';
@@ -203,13 +249,8 @@ export async function runCategoryScrape(payload: CategoryScrapePayload): Promise
 
   const supabase = getSupabaseAdminClient();
   const matcher = new MaterialMatcher(supabase);
-  const firecrawl = getFirecrawlClient();
 
-  const scrapeResult = await firecrawl.scrape(sanitizedUrl, { formats: ['html'] });
-  const html = scrapeResult.html;
-  if (!html) {
-    throw new Error('Firecrawl returned no HTML content');
-  }
+  const html = await fetchHtml(sanitizedUrl);
 
   const $ = cheerio.load(html);
   const containerSelector = safeContainerSelector || 'body';
@@ -283,7 +324,7 @@ export async function runCategoryScrape(payload: CategoryScrapePayload): Promise
     await supabase.from('scraper_logs').insert({
       scraper_config_id: safeConfigId,
       status: 'success',
-      message: `Category scrape (Firecrawl): ${scrapedItems.length} items found, ${matchedCount} matched, ${pendingCount} pending review`,
+      message: `Category scrape: ${scrapedItems.length} items found, ${matchedCount} matched, ${pendingCount} pending review`,
       scraped_data: { itemCount: scrapedItems.length, matchedCount, pendingCount },
     } as never);
   }
