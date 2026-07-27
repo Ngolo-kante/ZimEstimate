@@ -109,7 +109,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     // Small delay to allow profile trigger to complete
                     setTimeout(async () => {
                         const userProfile = await fetchProfile(newSession.user.id);
-                        setProfile(userProfile);
+                        // Supabase re-emits auth events on things like tab focus and
+                        // token refresh. A refetch that fails must not wipe a profile
+                        // we already have — screens that gate on it (the admin shell)
+                        // would otherwise sit on "Loading…" forever.
+                        if (userProfile) {
+                            setProfile(userProfile);
+                        }
 
                         const count = await fetchProjectCount(newSession.user.id);
                         setProjectCount(count);
