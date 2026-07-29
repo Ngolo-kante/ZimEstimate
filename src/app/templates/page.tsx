@@ -19,7 +19,6 @@ import {
 const categories = [
   { id: 'all', label: 'All Templates' },
   { id: 'residential', label: 'Residential' },
-  { id: 'commercial', label: 'Commercial' },
   { id: 'exterior', label: 'Exterior' },
 ];
 

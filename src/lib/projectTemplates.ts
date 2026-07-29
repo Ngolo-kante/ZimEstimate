@@ -12,7 +12,7 @@ import type { LocationType } from '@/lib/calculations/assumptions';
  * into an empty wizard because nothing read the template parameter. Pricing a
  * template through the generator keeps the card and the resulting BOQ in step.
  */
-export type TemplateCategory = 'residential' | 'commercial' | 'exterior';
+export type TemplateCategory = 'residential' | 'exterior';
 
 export interface ProjectTemplate {
   id: string;
@@ -77,39 +77,21 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
     finishLevels: ['economy', 'standard'],
   },
   {
-    id: 'tpl-4bed-premium',
-    name: '4-Bedroom House (Premium)',
-    description: 'Face bricks, 42.5 cement, premium finishes throughout',
-    category: 'residential',
-    popularity: 'Premium',
-    bedrooms: 4,
-    bathrooms: 3,
-    sqm: 200,
-    rooms: { bedrooms: 4, bathrooms: 3, livingRoom: 1, kitchen: 1 },
-    brickType: 'face_brick',
-    cementType: 'cement_425',
+    id: 'tpl-boundary',
+    name: 'Boundary Wall & Gates',
+    description: 'Precast durawall with vehicle and pedestrian gates, 600m² stand',
+    category: 'exterior',
+    // Exterior works only: no house, so a nominal floor area keeps the apron
+    // contribution negligible while the boundary comes off the stand size.
+    sqm: 1,
+    rooms: { bedrooms: 0, bathrooms: 0, livingRoom: 0, kitchen: 0 },
+    brickType: 'common',
+    cementType: 'cement_325',
     locationType: 'urban',
-    scope: 'full_house',
+    scope: ['exterior'],
     includeLabor: true,
-    standAreaSqm: 1000,
-    finishLevels: ['premium'],
-  },
-  {
-    id: 'tpl-5bed-executive',
-    name: '5-Bedroom Executive House',
-    description: 'Face bricks, high-end finishes, larger stand',
-    category: 'residential',
-    bedrooms: 5,
-    bathrooms: 4,
-    sqm: 280,
-    rooms: { bedrooms: 5, bathrooms: 4, livingRoom: 2, kitchen: 1 },
-    brickType: 'face_brick',
-    cementType: 'cement_425',
-    locationType: 'urban',
-    scope: 'full_house',
-    includeLabor: true,
-    standAreaSqm: 2000,
-    finishLevels: ['premium'],
+    standAreaSqm: 600,
+    finishLevels: ['standard'],
   },
   {
     id: 'tpl-cottage',

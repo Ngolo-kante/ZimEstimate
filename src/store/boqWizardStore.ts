@@ -153,7 +153,10 @@ interface BoqWizardState {
 
   // Documents
   geotechDocument: GeotechDocumentSummary | null;
+  /** Per-field validation errors from the last blocked step, keyed by field name. */
+  validationErrors: Record<string, string>;
   setGeotechDocument: (doc: GeotechDocumentSummary | null) => void;
+  setValidationErrors: (errors: Record<string, string>) => void;
 
   // Compliance
   preConstructionChecks: Record<string, boolean>;
@@ -238,6 +241,7 @@ function getInitialState(): Omit<BoqWizardState,
   | 'setIncludeSepticTank'
   | 'updateSepticDimensions'
   | 'setGeotechDocument'
+  | 'setValidationErrors'
   | 'togglePreConstructionCheck'
   | 'setCertificateStatus'
   | 'getVisibleMilestones'
@@ -265,6 +269,7 @@ function getInitialState(): Omit<BoqWizardState,
       unitPriceUsd: '95',
     },
     geotechDocument: null,
+    validationErrors: {},
     preConstructionChecks: { ...defaultPreConstructionChecks },
     certificateTracker: { ...defaultCertificateTracker },
   };
@@ -439,6 +444,8 @@ export const useBoqWizardStore = create<BoqWizardState>()(
   })),
 
   setGeotechDocument: (doc) => set({ geotechDocument: doc }),
+
+  setValidationErrors: (errors) => set({ validationErrors: errors }),
 
   togglePreConstructionCheck: (ruleId) => set((state) => ({
     preConstructionChecks: {

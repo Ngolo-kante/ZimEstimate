@@ -42,7 +42,8 @@ const ZIMBABWE_CITIES = [
 ];
 
 export default function ProjectLocationSection() {
-  const { projectDetails, updateProjectDetails } = useBoqWizardStore();
+  const { projectDetails, updateProjectDetails, validationErrors } = useBoqWizardStore();
+  const nameError = validationErrors.projectName;
   const ctx = projectDetails.locationType ? LOCATION_CONTEXT[projectDetails.locationType] : null;
 
   return (
@@ -56,12 +57,24 @@ export default function ProjectLocationSection() {
         </div>
         <div className="relative">
           <input
+            id="project-name"
             type="text"
             value={projectDetails.name}
             onChange={(e) => updateProjectDetails({ name: e.target.value })}
             placeholder="e.g. Borrowdale Family Home"
-            className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-medium wiz-text-primary placeholder:text-slate-400 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+            aria-invalid={nameError ? true : undefined}
+            aria-describedby={nameError ? 'project-name-error' : undefined}
+            className={`w-full rounded-2xl border bg-white px-5 py-4 text-base font-medium wiz-text-primary placeholder:text-slate-400 shadow-sm outline-none transition focus:ring-2 ${
+              nameError
+                ? 'border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[var(--color-error)]/15'
+                : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/15'
+            }`}
           />
+          {nameError && (
+            <p id="project-name-error" className="mt-2 text-sm text-[var(--color-error)]">
+              {nameError}
+            </p>
+          )}
           {projectDetails.name.trim() && (
             <CheckCircle weight="fill" size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500" />
           )}

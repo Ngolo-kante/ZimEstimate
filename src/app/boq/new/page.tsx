@@ -198,6 +198,7 @@ function BoqNewPageContent() {
     septicDimensions,
     geotechDocument,
     setGeotechDocument,
+    setValidationErrors,
   } = useBoqWizardStore();
 
   const projectDetailsForSave = useMemo(() => {
@@ -507,11 +508,16 @@ function BoqNewPageContent() {
     const validation = validateBOQWizardStep(currentState);
 
     if (Object.keys(validation.errors).length > 0) {
+      // Publish the per-field errors so the inputs can mark themselves. The
+      // toast alone never said which field was at fault.
+      setValidationErrors(validation.errors as Record<string, string>);
       setShakeError(true);
       if (validation.message) showError(validation.message);
       setTimeout(() => setShakeError(false), 500);
       return;
     }
+
+    setValidationErrors({});
 
     let nextStep = currentStep + 1;
     // Skip Labour step (index 4) if user chose materials_only
