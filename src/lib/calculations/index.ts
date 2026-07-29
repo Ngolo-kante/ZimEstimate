@@ -60,6 +60,7 @@ export interface ManualBuilderConfig {
   includeLabor: boolean;
   locationType?: LocationType;
   finishLevel?: FinishLevel; // Drives tiling coverage, paint coats, wet-area tiling
+  standAreaSqm?: number;     // Plot size — drives boundary wall length in exterior works
   rooms?: DetailedRoom[];   // NEW: Detailed room data
 }
 
@@ -286,6 +287,15 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
       totalWindows,
       cementType: getFirstValue(cementTypes) as CementType,
       finishLevel: normalizeFinishLevel(config.finishLevel),
+    }));
+  }
+
+  if (hasScope('exterior')) {
+    items.push(...calculateExteriorWorks({
+      floorArea,
+      perimeter,
+      standAreaSqm: config.standAreaSqm,
+      cementType,
     }));
   }
 
@@ -748,6 +758,71 @@ function calculateFinishes(input: {
   items.push(createBOQItem('pipe-40-pvc', 'PVC Waste Pipe 40mm', 'finishing', Math.max(1, Math.ceil((floorArea * 0.15) / WASTE_PIPE_LENGTH_M)), 'per 6m length', 'Waste runs'));
   items.push(createBOQItem('pipe-15-copper', 'Copper Pipe 15mm', 'finishing', Math.max(1, Math.ceil((floorArea * 0.25) / COPPER_PIPE_LENGTH_M)), 'per 5.5m length', 'Water supply'));
   items.push(createBOQItem('geyser-150', 'Geyser 150L', 'finishing', 1, 'each', 'Hot water'));
+
+  return items;
+}
+
+// ============================================
+// EXTERIOR WORKS
+// ============================================
+
+// Zimbabwe urban stands run from roughly 300m² in high density to 2000m² plus in
+// low density. 600m² is a common medium-density plot and is only a fallback —
+// the calculation note states it so the figure can be corrected on review.
+const DEFAULT_STAND_AREA_SQM = 600;
+const DURAWALL_PANEL_LENGTH_M = 2.4;
+const DURAWALL_PANELS_PER_BAY = 3;
+const APRON_WIDTH_M = 0.9;
+const APRON_THICKNESS_M = 0.075;
+const DEFAULT_DRIVEWAY_SQM = 40;
+const PAVING_WASTE = 1.08;
+
+/**
+ * Boundary wall, gates, driveway and the apron around the house.
+ *
+ * The exterior stage was selectable in the wizard and rendered as a milestone,
+ * but nothing generated items for it, so it always read "0 items — $0". Every
+ * estimate that included it therefore omitted the boundary wall, gates and
+ * paving, which local sources put at a five-figure sum on a typical build.
+ */
+function calculateExteriorWorks(input: {
+  floorArea: number;
+  perimeter: number;
+  standAreaSqm?: number;
+  cementType: CementType;
+}): GeneratedBOQItem[] {
+  const { floorArea, perimeter, standAreaSqm, cementType } = input;
+  const items: GeneratedBOQItem[] = [];
+
+  const standArea = standAreaSqm && standAreaSqm > floorArea ? standAreaSqm : DEFAULT_STAND_AREA_SQM;
+  const assumedStand = !standAreaSqm || standAreaSqm <= floorArea;
+  // Same 1.4:1 footprint assumption used for the house itself.
+  const standLength = Math.sqrt(standArea * 1.4);
+  const standWidth = standArea / standLength;
+  const boundaryLength = 2 * (standLength + standWidth);
+
+  const standNote = assumedStand
+    ? `${standArea}m² stand assumed — adjust if your stand differs`
+    : `${Math.round(standArea)}m² stand`;
+
+  // Precast durawall: panels slot between posts, three panels high per bay.
+  const bays = Math.ceil(boundaryLength / DURAWALL_PANEL_LENGTH_M);
+  items.push(createBOQItem('durawall-panel', 'Durawall Panel', 'exterior', bays * DURAWALL_PANELS_PER_BAY, 'each', `${boundaryLength.toFixed(0)}m boundary, ${DURAWALL_PANELS_PER_BAY} panels per bay (${standNote})`));
+  items.push(createBOQItem('durawall-post', 'Durawall Post', 'exterior', bays + 1, 'each', `One post per ${DURAWALL_PANEL_LENGTH_M}m bay plus an end post`));
+
+  items.push(createBOQItem('gate-vehicle', 'Vehicle Gate', 'exterior', 1, 'each', 'Driveway entrance'));
+  items.push(createBOQItem('gate-pedestrian', 'Pedestrian Gate', 'exterior', 1, 'each', 'Walkway entrance'));
+
+  // Driveway plus a walking apron around the house.
+  const apronArea = perimeter * APRON_WIDTH_M;
+  const pavingArea = (DEFAULT_DRIVEWAY_SQM + apronArea) * PAVING_WASTE;
+  items.push(createBOQItem('paving-brick', 'Paving Brick', 'exterior', roundTo(pavingArea, 1), 'per m²', `${DEFAULT_DRIVEWAY_SQM}m² driveway plus ${apronArea.toFixed(0)}m² apron`));
+
+  // Bedding and haunching concrete for the paving.
+  const apronConcrete = pavingArea * APRON_THICKNESS_M;
+  const cementInfo = CEMENT_INFO[cementType];
+  items.push(createBOQItem(cementInfo.materialId, 'Cement (Paving Bed)', 'exterior', Math.ceil(apronConcrete * getConcreteCementBagsPerM3(cementType)), 'per 50kg bag', 'Paving bedding'));
+  items.push(createBOQItem('sand-river', 'River Sand (Paving Bed)', 'exterior', roundTo(apronConcrete * SAND_M3_PER_M3_MORTAR, 1), 'per cube', 'Paving bedding sand'));
 
   return items;
 }

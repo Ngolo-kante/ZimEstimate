@@ -263,6 +263,28 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
           </div>
         )}
 
+        {/* Stand size — drives boundary wall length for exterior works */}
+        <div className="pt-1">
+          <label htmlFor="stand-size" className="mb-2 block text-sm font-semibold text-slate-700">
+            Stand size <span className="font-normal text-slate-400">(optional)</span>
+          </label>
+          <div className="relative max-w-xs">
+            <Ruler size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              id="stand-size"
+              type="number"
+              value={projectDetails.standSize}
+              onChange={(e) => updateProjectDetails({ standSize: e.target.value })}
+              placeholder="e.g. 600"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-12 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-slate-400"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400">m²</span>
+          </div>
+          <p className="mt-2 max-w-xs text-xs wiz-text-muted">
+            Used to size the boundary wall and gates. Left blank, we assume a 600m² stand.
+          </p>
+        </div>
+
         {/* Wall height */}
         <div className="pt-1">
           <label className="mb-2 block text-sm font-semibold text-slate-700">Wall height</label>

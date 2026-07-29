@@ -115,3 +115,40 @@ describe('labour sizing', () => {
     expect(share).toBeLessThan(0.35);
   });
 });
+
+describe('exterior works', () => {
+  const base = {
+    floorArea: 120,
+    roomCount: 6,
+    wallHeight: 2.7,
+    brickTypes: ['common'],
+    cementTypes: ['cement_425'],
+    scope: ['exterior'],
+    includeLabor: false,
+    locationType: 'urban',
+  } as unknown as ManualBuilderConfig;
+
+  it('generates priced boundary, gate and paving items', () => {
+    const items = generateBOQFromBasics(base).filter((i) => i.category === 'exterior');
+
+    // The stage used to render as "0 items — $0" because nothing generated it.
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) {
+      expect(getBestPrice(item.materialId)?.priceUsd ?? 0, `unpriced: ${item.materialId}`).toBeGreaterThan(0);
+    }
+
+    const ids = items.map((i) => i.materialId);
+    expect(ids).toContain('durawall-panel');
+    expect(ids).toContain('gate-vehicle');
+    expect(ids).toContain('paving-brick');
+  });
+
+  it('scales the boundary wall with stand size', () => {
+    const panels = (standAreaSqm?: number) => {
+      const items = generateBOQFromBasics({ ...base, standAreaSqm } as ManualBuilderConfig);
+      return items.find((i) => i.materialId === 'durawall-panel')?.quantity ?? 0;
+    };
+
+    expect(panels(1200)).toBeGreaterThan(panels(600));
+  });
+});

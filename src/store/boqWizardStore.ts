@@ -52,6 +52,7 @@ export interface ProjectDetailsState {
   soilType: SoilType | '';
   siteSlope: SiteSlopeType | '';
   floorPlanSize: string;
+  standSize: string;
   buildingType: string;
   wallHeight: string;
   brickTypes: BrickType[];
@@ -180,6 +181,7 @@ const initialProjectDetails: ProjectDetailsState = {
   soilType: '',
   siteSlope: '',
   floorPlanSize: '',
+  standSize: '',
   buildingType: '',
   wallHeight: '2.7',
   brickTypes: ['common'],

@@ -334,6 +334,7 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
     includeLabor: laborType === 'materials_labor',
     locationType: (projectDetails.locationType || 'urban') as 'urban' | 'peri-urban' | 'rural',
     finishLevel: projectDetails.finishLevel,
+    standAreaSqm: Number(projectDetails.standSize) || undefined,
     rooms: geometryMode === 'detailed' ? toDetailedRooms(detailedRooms) : undefined,
   }).map(toStoreItem);
 

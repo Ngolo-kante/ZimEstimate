@@ -152,6 +152,14 @@ export const materials: Material[] = [
     { id: 'hinges-door', name: 'Door Hinges (Pair)', category: 'hardware', subcategory: 'Door Hardware', unit: 'per pair', specifications: '100mm butt hinges', milestones: ['finishing'] },
     { id: 'lock-mortice', name: 'Mortice Lock', category: 'hardware', subcategory: 'Door Hardware', unit: 'each', specifications: '3-lever mortice lock', milestones: ['finishing'] },
 
+    // EXTERIOR WORKS — boundary, gates and paving. The exterior stage was
+    // selectable in the wizard but generated nothing, so a build that included it
+    // silently omitted the boundary wall, gates and driveway.
+    { id: 'durawall-post', name: 'Durawall Post', category: 'bricks', subcategory: 'Precast', unit: 'each', specifications: 'Precast concrete slotted post', milestones: ['exterior'] },
+    { id: 'gate-vehicle', name: 'Vehicle Gate (3.5m)', category: 'hardware', subcategory: 'Gates', unit: 'each', specifications: 'Steel sliding or swing vehicle gate with frame', milestones: ['exterior'] },
+    { id: 'gate-pedestrian', name: 'Pedestrian Gate', category: 'hardware', subcategory: 'Gates', unit: 'each', specifications: 'Steel pedestrian gate with frame', milestones: ['exterior'] },
+    { id: 'paving-brick', name: 'Paving Brick', category: 'bricks', subcategory: 'Paving', unit: 'per m²', specifications: 'Interlocking concrete paving brick', milestones: ['exterior'] },
+
     // FINISHING — joinery and ceilings. Needed so the finishing stage covers the
     // 25-35% of a build it represents; without these it only produced sills.
     { id: 'door-interior', name: 'Interior Door (with frame)', category: 'finishes', subcategory: 'Joinery', unit: 'each', specifications: 'Hollow-core door leaf and frame', milestones: ['finishing'] },
@@ -347,6 +355,15 @@ export const materialPrices: MaterialPrice[] = [
     { materialId: 'cornice', supplierId: 'sup-csv-baseline', priceUsd: 4, priceZwg: 120, lastUpdated: '2026-07-29', inStock: true },
     { materialId: 'hinges-door', supplierId: 'sup-4', priceUsd: 4, priceZwg: 120, lastUpdated: '2026-07-29', inStock: true },
     { materialId: 'lock-mortice', supplierId: 'sup-4', priceUsd: 14, priceZwg: 420, lastUpdated: '2026-07-29', inStock: true },
+
+    // Exterior works. durawall-panel was in the catalogue from the start but had
+    // no price in either this list or the CSV map. 2026 Zimbabwe market
+    // estimates; replace with scraped supplier data.
+    { materialId: 'durawall-panel', supplierId: 'sup-2', priceUsd: 12, priceZwg: 360, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'durawall-post', supplierId: 'sup-2', priceUsd: 14, priceZwg: 420, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'gate-vehicle', supplierId: 'sup-4', priceUsd: 450, priceZwg: 13500, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'gate-pedestrian', supplierId: 'sup-4', priceUsd: 120, priceZwg: 3600, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'paving-brick', supplierId: 'sup-2', priceUsd: 14, priceZwg: 420, lastUpdated: '2026-07-29', inStock: true },
 ];
 
 // Helper functions
