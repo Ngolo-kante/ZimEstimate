@@ -281,7 +281,7 @@ export const suppliers: Supplier[] = [
 
 // Current prices (sample data - would be fetched from DB in production)
 export const materialPrices: MaterialPrice[] = [
-    { materialId: 'brick-common', supplierId: 'sup-2', priceUsd: 0.075, priceZwg: 2.25, lastUpdated: '2026-01-30', inStock: true },
+    { materialId: 'brick-common', supplierId: 'sup-2', priceUsd: 0.085, priceZwg: 2.55, lastUpdated: '2026-07-27', inStock: true },
     { materialId: 'brick-face-red', supplierId: 'sup-2', priceUsd: 180, priceZwg: 5400, lastUpdated: '2026-01-30', inStock: true },
     { materialId: 'cement-325', supplierId: 'sup-3', priceUsd: 10, priceZwg: 300, lastUpdated: '2026-01-31', inStock: true },
     { materialId: 'cement-325', supplierId: 'sup-2', priceUsd: 10.50, priceZwg: 315, lastUpdated: '2026-01-30', inStock: true },
@@ -297,7 +297,7 @@ export const materialPrices: MaterialPrice[] = [
     { materialId: 'db-8way', supplierId: 'sup-1', priceUsd: 65, priceZwg: 1950, lastUpdated: '2026-01-29', inStock: true },
     { materialId: 'paint-pva', supplierId: 'sup-1', priceUsd: 35, priceZwg: 1050, lastUpdated: '2026-01-28', inStock: true },
     { materialId: 'tiles-floor-ceramic', supplierId: 'sup-1', priceUsd: 12, priceZwg: 360, lastUpdated: '2026-01-27', inStock: true },
-    { materialId: 'farm-brick', supplierId: 'sup-3', priceUsd: 0.03, priceZwg: 0.9, lastUpdated: '2026-02-07', inStock: true },
+    { materialId: 'farm-brick', supplierId: 'sup-3', priceUsd: 0.045, priceZwg: 1.35, lastUpdated: '2026-07-27', inStock: true },
     { materialId: 'window-sill-brick', supplierId: 'sup-1', priceUsd: 5.0, priceZwg: 150, lastUpdated: '2026-02-07', inStock: true },
     // NEW PRICES
     { materialId: 'hardcore', supplierId: 'sup-2', priceUsd: 25, priceZwg: 750, lastUpdated: '2026-01-31', inStock: true },
@@ -315,6 +315,11 @@ export const materialPrices: MaterialPrice[] = [
     { materialId: 'labor-foreman', supplierId: 'sup-6', priceUsd: 40, priceZwg: 1200, lastUpdated: '2026-01-31', inStock: true },
     { materialId: 'service-food', supplierId: 'sup-6', priceUsd: 5, priceZwg: 150, lastUpdated: '2026-01-31', inStock: true },
     { materialId: 'service-transport', supplierId: 'sup-6', priceUsd: 50, priceZwg: 1500, lastUpdated: '2026-01-31', inStock: true },
+
+    // Roof screws are generated into every roofing BOQ but had no price in
+    // either this list or the CSV-derived pricing map, so they costed at $0.
+    // 2026 Zimbabwe market estimate; replace with scraped supplier data.
+    { materialId: 'screws-roof', supplierId: 'sup-4', priceUsd: 12, priceZwg: 360, lastUpdated: '2026-07-27', inStock: true },
 ];
 
 // Helper functions

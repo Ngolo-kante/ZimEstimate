@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generateBOQFromBasics, ManualBuilderConfig } from './index';
+import { getBestPrice } from '../materials';
 
 function getItemQuantity(items: ReturnType<typeof generateBOQFromBasics>, notePrefix: string): number {
   const item = items.find((entry) => entry.calculationNote.startsWith(notePrefix));
@@ -82,5 +83,35 @@ describe('generateBOQFromBasics assumptions', () => {
       expect(item!.unitPriceUsd, `Expected non-zero price for ${materialId}`).toBeGreaterThan(0);
       expect(item!.totalUsd).toBeCloseTo(item!.quantity * item!.unitPriceUsd, 2);
     });
+  });
+});
+
+describe('labour sizing', () => {
+  it('keeps labour within the Zimbabwe market share of material cost', () => {
+    const items = generateBOQFromBasics({
+      floorArea: 120,
+      roomCount: 6,
+      wallHeight: 2.7,
+      brickTypes: ['common'],
+      cementTypes: ['cement_425'],
+      scope: ['full_house'],
+      includeLabor: true,
+      locationType: 'urban',
+    } as unknown as ManualBuilderConfig);
+
+    let materials = 0;
+    let labour = 0;
+    for (const item of items) {
+      const line = (getBestPrice(item.materialId)?.priceUsd ?? 0) * item.quantity;
+      if (item.category === 'labor') labour += line;
+      else materials += line;
+    }
+
+    expect(materials).toBeGreaterThan(0);
+    // Contractors in Zimbabwe charge roughly 25-30% of the material spend. The
+    // previous area-based model produced labour worth 113% of materials.
+    const share = labour / materials;
+    expect(share).toBeGreaterThan(0.2);
+    expect(share).toBeLessThan(0.35);
   });
 });

@@ -278,7 +278,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   }
 
   if (includeLabor) {
-    items.push(...calculateLabor(floorArea, config.scope));
+    items.push(...calculateLabor(floorArea, config.scope, items));
   }
 
   return items;
@@ -303,6 +303,22 @@ const MESH_SHEETS_PER_SQM = 0.07;
 const ROOF_SCREWS_PER_SHEET = 8;
 const ROOF_PITCH_FACTOR = 1.15;
 
+// Zimbabwe market practice: a builder/contractor charge of roughly 25-30% of the
+// material spend, with materials making up 60-70% of the total build.
+const LABOR_SHARE_OF_MATERIALS = 0.28;
+const ASSISTANTS_PER_BUILDER = 1;
+const FOREMEN_PER_BUILDER = 0.1;
+
+// Kept in sync with the catalogue rates so the crew cost used for sizing matches
+// what the BOQ is actually priced at.
+const LABOR_DAY_RATES = {
+  builder: 25,
+  assistant: 10,
+  foreman: 40,
+  food: 5,
+};
+
+// Fallback only — used when no material in the BOQ carries a price.
 const LABOR_DAYS_PER_SQM: Record<string, number> = {
   full_house: 1.2,
   substructure: 0.3,
@@ -594,19 +610,47 @@ function calculateRoofing(
 
 function calculateLabor(
   totalArea: number,
-  scope: VisionConfig['scope']
+  scope: VisionConfig['scope'],
+  materialItems: GeneratedBOQItem[] = []
 ): GeneratedBOQItem[] {
   const items: GeneratedBOQItem[] = [];
   const normalizedScope = getFirstValue(scope);
 
-  const laborDays = Math.ceil(totalArea * LABOR_DAYS_PER_SQM[normalizedScope]);
-  const builderDays = laborDays;
-  const assistantDays = Math.ceil(laborDays * 1.5);
-  const foremanDays = Math.ceil(laborDays / 10);
+  // Size the crew from the material spend rather than from floor area alone.
+  // Zimbabwe market practice is that a contractor's charge lands around 25-30%
+  // of the material bill, and materials are 60-70% of a build. Driving days off
+  // area (previously 1.2 builder-days/m², each with 1.5 assistants plus a food
+  // allowance) produced ~375 person-days for a 120m² house and left labour at
+  // 55% of the estimate — roughly double what the market carries.
+  const materialCost = materialItems.reduce((sum, item) => {
+    if (item.category === 'labor') return sum;
+    const unitPrice = getBestPrice(item.materialId)?.priceUsd ?? 0;
+    return sum + unitPrice * item.quantity;
+  }, 0);
 
-  items.push(createBOQItem('labor-builder', 'Builder (Daily Rate)', 'labor', builderDays, 'per day', `${totalArea}m² @ ${LABOR_DAYS_PER_SQM[normalizedScope]} days/m²`));
+  const targetLaborCost = materialCost * LABOR_SHARE_OF_MATERIALS;
 
-  items.push(createBOQItem('labor-assistant', 'General Hand (Daily Rate)', 'labor', assistantDays, 'per day', '1.5 assistants per builder'));
+  // Cost of running the standard crew for one builder-day: builder + one general
+  // hand + a tenth of a foreman, plus each of their food allowance.
+  const crewDayCost =
+    LABOR_DAY_RATES.builder +
+    LABOR_DAY_RATES.assistant * ASSISTANTS_PER_BUILDER +
+    LABOR_DAY_RATES.foreman * FOREMEN_PER_BUILDER +
+    LABOR_DAY_RATES.food * (1 + ASSISTANTS_PER_BUILDER + FOREMEN_PER_BUILDER);
+
+  // Fall back to the area-based estimate when nothing is priced yet, so an
+  // unpriced catalogue cannot silently zero out the labour section.
+  const builderDays =
+    targetLaborCost > 0 && crewDayCost > 0
+      ? Math.max(1, Math.round(targetLaborCost / crewDayCost))
+      : Math.ceil(totalArea * LABOR_DAYS_PER_SQM[normalizedScope]);
+
+  const assistantDays = Math.ceil(builderDays * ASSISTANTS_PER_BUILDER);
+  const foremanDays = Math.ceil(builderDays * FOREMEN_PER_BUILDER);
+
+  items.push(createBOQItem('labor-builder', 'Builder (Daily Rate)', 'labor', builderDays, 'per day', `${Math.round(LABOR_SHARE_OF_MATERIALS * 100)}% of material cost`));
+
+  items.push(createBOQItem('labor-assistant', 'General Hand (Daily Rate)', 'labor', assistantDays, 'per day', `${ASSISTANTS_PER_BUILDER} assistant per builder`));
 
   if (foremanDays > 0) {
     items.push(createBOQItem('labor-foreman', 'Foreman (Daily Rate)', 'labor', foremanDays, 'per day', 'Site supervision'));
@@ -651,7 +695,7 @@ export function generateBOQ(
   }
 
   if (includeLabor) {
-    allItems.push(...calculateLabor(totalArea, config.scope));
+    allItems.push(...calculateLabor(totalArea, config.scope, allItems));
   }
 
   return allItems;
