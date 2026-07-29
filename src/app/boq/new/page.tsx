@@ -136,8 +136,8 @@ const WIZARD_STEPS = [
   {
     id: 'materials-scope',
     label: 'Materials',
-    title: 'Materials & transport',
-    subtitle: 'Choose your brick, cement, and transport preferences for an accurate estimate.',
+    title: 'Materials & finishes',
+    subtitle: 'Choose your brick, cement, finish level, and transport preferences for an accurate estimate.',
   },
   {
     id: 'labor',
