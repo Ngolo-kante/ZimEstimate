@@ -205,6 +205,44 @@ async function markReminderSent(supabase: SupabaseClient<Database>, reminderId: 
   }
 }
 
+/**
+ * Vercel Cron entry point.
+ *
+ * Cron issues a GET carrying CRON_SECRET, while the dispatcher itself is a POST
+ * authenticated with REMINDER_DISPATCH_SECRET. Without this the reminders table
+ * filled up and nothing was ever delivered — the only scheduled job in
+ * vercel.json was the subscription sweep.
+ */
+export async function GET(request: Request) {
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = request.headers.get('authorization');
+
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const dispatcherSecret = process.env.REMINDER_DISPATCH_SECRET;
+  if (!dispatcherSecret) {
+    return NextResponse.json(
+      { error: 'REMINDER_DISPATCH_SECRET is not set.' },
+      { status: 500 }
+    );
+  }
+
+  // No origin header on a server-issued request, so the CSRF origin check
+  // passes through and the dispatcher secret satisfies authorisation.
+  return POST(
+    new Request(request.url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${dispatcherSecret}`,
+      },
+      body: JSON.stringify({ limit: 100 }),
+    })
+  );
+}
+
 export async function POST(request: Request) {
   const rateLimit = enforceRateLimit(request, {
     keyPrefix: 'reminders:dispatch',
