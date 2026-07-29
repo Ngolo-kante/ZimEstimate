@@ -4,90 +4,17 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
 import Card, { CardBadge } from '@/components/ui/Card';
-import { useCurrency } from '@/components/ui/CurrencyToggle';
 import {
   HouseSimple,
   ArrowRight,
   Cube,
 } from '@phosphor-icons/react';
-
-type TemplateCategory = 'all' | 'residential' | 'commercial' | 'exterior';
-
-// Template data
-const templates = [
-  {
-    id: 'tpl-3bed-standard',
-    name: '3-Bedroom House (Standard)',
-    description: 'Common cement bricks, IBR roofing, basic finishes',
-    icon: HouseSimple,
-    category: 'residential',
-    popularity: 'Most Popular',
-    estimatedCostUsd: 28000,
-    estimatedCostZwg: 840000,
-    bedrooms: 3,
-    bathrooms: 2,
-    sqm: 120,
-  },
-  {
-    id: 'tpl-4bed-standard',
-    name: '4-Bedroom House (Standard)',
-    description: 'Common cement bricks, IBR roofing, standard finishes',
-    icon: HouseSimple,
-    category: 'residential',
-    estimatedCostUsd: 38000,
-    estimatedCostZwg: 1140000,
-    bedrooms: 4,
-    bathrooms: 2,
-    sqm: 160,
-  },
-  {
-    id: 'tpl-4bed-premium',
-    name: '4-Bedroom House (Premium)',
-    description: 'Face bricks, tiles roofing, premium finishes',
-    icon: HouseSimple,
-    category: 'residential',
-    popularity: 'Premium',
-    estimatedCostUsd: 65000,
-    estimatedCostZwg: 1950000,
-    bedrooms: 4,
-    bathrooms: 3,
-    sqm: 200,
-  },
-  {
-    id: 'tpl-5bed-executive',
-    name: '5-Bedroom Executive House',
-    description: 'Face bricks, Harvey tiles, high-end finishes, double garage',
-    icon: HouseSimple,
-    category: 'residential',
-    estimatedCostUsd: 95000,
-    estimatedCostZwg: 2850000,
-    bedrooms: 5,
-    bathrooms: 4,
-    sqm: 280,
-  },
-  {
-    id: 'tpl-cottage',
-    name: 'Staff / Rental Cottage',
-    description: '1-bed cottage with kitchenette and bathroom',
-    icon: HouseSimple,
-    category: 'residential',
-    estimatedCostUsd: 12000,
-    estimatedCostZwg: 360000,
-    bedrooms: 1,
-    bathrooms: 1,
-    sqm: 35,
-  },
-  {
-    id: 'tpl-durawall',
-    name: 'Durawall Boundary (per 100m)',
-    description: 'Standard 2.4m durawall with 2 gates',
-    icon: Cube,
-    category: 'exterior',
-    estimatedCostUsd: 8500,
-    estimatedCostZwg: 255000,
-    sqm: 240,
-  },
-];
+import {
+  PROJECT_TEMPLATES,
+  priceTemplate,
+  resolveFinishLevel,
+  type TemplateCategory,
+} from '@/lib/projectTemplates';
 
 const categories = [
   { id: 'all', label: 'All Templates' },
@@ -96,20 +23,24 @@ const categories = [
   { id: 'exterior', label: 'Exterior' },
 ];
 
-function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: number }) {
-  const { formatPrice } = useCurrency();
-  return <>{formatPrice(priceUsd, priceZwg)}</>;
-}
-
 export default function TemplatesPage() {
-  const [selectedCategory, setSelectedCategory] = useState<TemplateCategory>('all');
+  const [selectedCategory, setSelectedCategory] = useState<TemplateCategory | 'all'>('all');
+  const [finishChoice, setFinishChoice] = useState<'economy' | 'standard'>('standard');
 
   const filteredTemplates = useMemo(() => {
-    if (selectedCategory === 'all') {
-      return templates;
-    }
-    return templates.filter((t) => t.category === selectedCategory);
+    if (selectedCategory === 'all') return PROJECT_TEMPLATES;
+    return PROJECT_TEMPLATES.filter((t) => t.category === selectedCategory);
   }, [selectedCategory]);
+
+  // Priced through the same generator the wizard runs, so the figure on the card
+  // is the total the user lands on rather than a maintained-by-hand number.
+  const priced = useMemo(
+    () => filteredTemplates.map((template) => {
+      const finishLevel = resolveFinishLevel(template, finishChoice);
+      return { template, finishLevel, totalUsd: priceTemplate(template, finishLevel) };
+    }),
+    [filteredTemplates, finishChoice]
+  );
 
   return (
     <MainLayout title="BOQ Templates">
@@ -132,12 +63,31 @@ export default function TemplatesPage() {
           ))}
         </div>
 
+        {/* Finish level toggle — re-prices every card through the calculator */}
+        <div className="finish-toggle" role="group" aria-label="Finish level">
+          {(['economy', 'standard'] as const).map((level) => (
+            <button
+              key={level}
+              type="button"
+              className={`finish-btn ${finishChoice === level ? 'active' : ''}`}
+              onClick={() => setFinishChoice(level)}
+              aria-pressed={finishChoice === level}
+            >
+              {level === 'economy' ? 'Economic' : 'Standard'}
+            </button>
+          ))}
+          <span className="finish-hint">
+            Economic tiles wet areas only and screeds the rest. Templates with a fixed
+            premium specification are unaffected.
+          </span>
+        </div>
+
         {/* Templates Grid */}
         <div className="templates-grid">
-          {filteredTemplates.map((template) => {
-            const IconComponent = template.icon;
+          {priced.map(({ template, finishLevel, totalUsd }) => {
+            const IconComponent = template.category === 'exterior' ? Cube : HouseSimple;
             return (
-              <Link key={template.id} href={`/boq/new?template=${template.id}`} className="template-link">
+              <Link key={template.id} href={`/boq/new?template=${template.id}&finish=${finishLevel}`} className="template-link">
                 <Card className="template-card">
                   <div className="template-header">
                     <div className="template-icon">
@@ -161,9 +111,11 @@ export default function TemplatesPage() {
 
                   <div className="template-footer">
                     <div className="template-price">
-                      <span className="price-label">Est. Cost</span>
+                      <span className="price-label">
+                        Est. cost &middot; {finishLevel} finish
+                      </span>
                       <span className="price-value">
-                        <PriceDisplay priceUsd={template.estimatedCostUsd} priceZwg={template.estimatedCostZwg} />
+                        ${Math.round(totalUsd).toLocaleString('en-US')}
                       </span>
                     </div>
                     <ArrowRight size={20} className="arrow-icon" />
@@ -198,6 +150,38 @@ export default function TemplatesPage() {
           color: var(--color-text-secondary);
           max-width: 600px;
           margin: 0;
+        }
+
+        .finish-toggle {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+          margin-bottom: 1.25rem;
+        }
+
+        .finish-btn {
+          padding: 0.5rem 1rem;
+          border-radius: var(--radius-md);
+          border: 1px solid var(--color-border);
+          background: var(--color-surface);
+          color: var(--color-text-secondary);
+          font-size: 0.875rem;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: inherit;
+        }
+
+        .finish-btn.active {
+          border-color: var(--color-primary);
+          color: var(--color-primary);
+          background: var(--color-primary-bg);
+        }
+
+        .finish-hint {
+          font-size: 0.75rem;
+          color: var(--color-text-muted);
+          max-width: 34ch;
         }
 
         .categories {

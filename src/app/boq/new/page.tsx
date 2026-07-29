@@ -8,7 +8,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/components/providers/AuthProvider';
 import SavingOverlay from '@/components/ui/SavingOverlay';
 import { useProjectAutoSave } from '@/hooks/useProjectAutoSave';
-import { useBoqWizardStore, type BoqMilestoneId, type MilestoneData, type BOQItem } from '@/store/boqWizardStore';
+import { useBoqWizardStore, DEFAULT_ROOM_INPUTS, type BoqMilestoneId, type MilestoneData, type BOQItem } from '@/store/boqWizardStore';
 import LiveEstimatorLayout from './components/LiveEstimatorLayout';
 import LiveEstimatePanel from './components/LiveEstimatePanel';
 import ReviewTabs from './components/ReviewTabs';
@@ -22,6 +22,7 @@ import { InteractiveRoomBuilder, type RoomInstance } from './components/Interact
 import { buildLiveMilestones } from './utils/liveEstimator';
 import { validateBOQWizardStep, type BOQWizardValidationState } from './wizardValidation';
 import { inferProjectType } from './projectTypes';
+import { getTemplateById, resolveFinishLevel } from '@/lib/projectTemplates';
 import { useToast } from '@/components/ui/Toast';
 import type { BOQItem as DbBOQItem, Project } from '@/lib/database.types';
 import './wizard-design.css';
@@ -157,10 +158,16 @@ function BoqNewPageContent() {
   const searchParams = useSearchParams();
   const { isAuthenticated, profile } = useAuth();
   const projectIdFromUrl = searchParams.get('id');
+  const templateIdFromUrl = searchParams.get('template');
+  const finishFromUrl = searchParams.get('finish');
 
   const [showInteractiveBuilder, setShowInteractiveBuilder] = useState(false);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+  // Opening from a template lands on the finished BOQ, so start there rather than
+  // rendering step one and jumping, which also keeps setState out of the effect.
+  const [currentStep, setCurrentStep] = useState(() =>
+    searchParams.get('template') ? WIZARD_STEPS.length - 1 : 0
+  );
   const [shakeError, setShakeError] = useState(false);
   const { error: showError } = useToast();
 
@@ -282,6 +289,53 @@ function BoqNewPageContent() {
   useEffect(() => {
     void useBoqWizardStore.persist.rehydrate();
   }, []);
+
+  // A template link carried a ?template= parameter that nothing read, so picking
+  // one opened an empty wizard. Apply its inputs and open the review step, which
+  // is the finished BOQ the card priced.
+  const templateAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!templateIdFromUrl || templateAppliedRef.current) return;
+    const template = getTemplateById(templateIdFromUrl);
+    if (!template) return;
+
+    templateAppliedRef.current = true;
+    const finishLevel = resolveFinishLevel(template, finishFromUrl ?? undefined);
+    const scopes = Array.isArray(template.scope) ? template.scope : [template.scope];
+
+    updateProjectDetails({
+      projectType: 'new_build',
+      name: template.name,
+      locationType: template.locationType,
+      floorPlanSize: String(template.sqm),
+      // liveEstimator gates on buildingType as a core input, so without it the
+      // review step rendered zero line items.
+      buildingType: 'single_storey',
+      standSize: template.standAreaSqm ? String(template.standAreaSqm) : '',
+      brickTypes: [template.brickType],
+      cementTypes: [template.cementType],
+      finishLevel,
+      // The live estimator sums roomInputs for its room count, so write the
+      // template's breakdown in — otherwise it falls back to floorArea / 28 and
+      // the generated BOQ drifts from the price shown on the card.
+      roomInputs: {
+        ...DEFAULT_ROOM_INPUTS,
+        bedrooms: String(template.rooms.bedrooms),
+        bathrooms: String(template.rooms.bathrooms),
+        livingRoom: String(template.rooms.livingRoom),
+        kitchen: String(template.rooms.kitchen),
+      },
+    });
+    setGeometryMode('quick');
+    setLaborType(template.includeLabor ? 'materials_labor' : 'materials_only');
+
+    if (scopes.includes('full_house')) {
+      setProjectScope('entire');
+    } else {
+      setProjectScope('stage');
+      setSelectedStages(scopes as string[]);
+    }
+  }, [templateIdFromUrl, finishFromUrl, updateProjectDetails, setGeometryMode, setLaborType, setProjectScope, setSelectedStages]);
 
   // Warn before discarding work that has not reached the database yet. Autosave
   // only runs for a signed-in user with a project, so anonymous progress lives
