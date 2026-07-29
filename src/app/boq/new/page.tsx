@@ -165,9 +165,13 @@ function BoqNewPageContent() {
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   // Opening from a template lands on the finished BOQ, so start there rather than
   // rendering step one and jumping, which also keeps setState out of the effect.
-  const [currentStep, setCurrentStep] = useState(() =>
-    searchParams.get('template') ? WIZARD_STEPS.length - 1 : 0
-  );
+  const [currentStep, setCurrentStep] = useState(() => {
+    // Only skip ahead for a template that still exists. A stale link — the
+    // premium templates were removed — would otherwise open the review step
+    // with nothing in it.
+    const requested = searchParams.get('template');
+    return requested && getTemplateById(requested) ? WIZARD_STEPS.length - 1 : 0;
+  });
   const [shakeError, setShakeError] = useState(false);
   const { error: showError } = useToast();
 
