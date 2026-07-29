@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { LOCATION_PROCEDURE_RULES, SoilType } from '@/lib/buildFlowRules';
 import { calculateBoqHealth, type BoqHealthCategoryInput, type BoqHealthResult } from '@/lib/boqHealth';
 import { STAGE_COMPLIANCE_REQUIREMENTS } from '@/lib/compliance';
@@ -292,7 +293,9 @@ function totalForMilestones(milestones: MilestoneData[]): number {
   }, 0);
 }
 
-export const useBoqWizardStore = create<BoqWizardState>((set, get) => ({
+export const useBoqWizardStore = create<BoqWizardState>()(
+  persist(
+    (set, get) => ({
   ...getInitialState(),
 
   updateProjectDetails: (updates) => set((state) => ({
@@ -480,4 +483,34 @@ export const useBoqWizardStore = create<BoqWizardState>((set, get) => ({
 
   resetWizard: () => set(getInitialState()),
   reset: () => set(getInitialState()),
-}));
+    }),
+    {
+      // The wizard runs to six steps and advertises ~12 minutes. Autosave only
+      // covers signed-in users with a project row, so without this an anonymous
+      // visitor lost everything to a refresh or a closed tab.
+      name: 'zimestimate-boq-wizard',
+      version: 1,
+      storage: createJSONStorage(() => localStorage),
+      // Rehydrate explicitly on mount so the server-rendered markup and the
+      // first client render agree.
+      skipHydration: true,
+      partialize: (state) => ({
+        projectDetails: state.projectDetails,
+        geometryMode: state.geometryMode,
+        detailedRooms: state.detailedRooms,
+        totalWindows: state.totalWindows,
+        totalDoors: state.totalDoors,
+        projectScope: state.projectScope,
+        selectedStages: state.selectedStages,
+        laborType: state.laborType,
+        milestonesState: state.milestonesState,
+        temporaryWorksSelections: state.temporaryWorksSelections,
+        includeSepticTank: state.includeSepticTank,
+        septicDimensions: state.septicDimensions,
+        geotechDocument: state.geotechDocument,
+        preConstructionChecks: state.preConstructionChecks,
+        certificateTracker: state.certificateTracker,
+      }),
+    }
+  )
+);

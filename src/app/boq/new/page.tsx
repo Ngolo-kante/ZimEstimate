@@ -277,6 +277,26 @@ function BoqNewPageContent() {
     }
   );
 
+  // The store persists to localStorage with skipHydration, so restore any
+  // in-progress wizard once we are on the client and past hydration.
+  useEffect(() => {
+    void useBoqWizardStore.persist.rehydrate();
+  }, []);
+
+  // Warn before discarding work that has not reached the database yet. Autosave
+  // only runs for a signed-in user with a project, so anonymous progress lives
+  // solely in localStorage until then.
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!hasUnsavedChanges) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   useEffect(() => {
     const currentMilestones = useBoqWizardStore.getState().milestonesState;
 
