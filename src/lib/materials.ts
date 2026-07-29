@@ -152,6 +152,14 @@ export const materials: Material[] = [
     { id: 'hinges-door', name: 'Door Hinges (Pair)', category: 'hardware', subcategory: 'Door Hardware', unit: 'per pair', specifications: '100mm butt hinges', milestones: ['finishing'] },
     { id: 'lock-mortice', name: 'Mortice Lock', category: 'hardware', subcategory: 'Door Hardware', unit: 'each', specifications: '3-lever mortice lock', milestones: ['finishing'] },
 
+    // FINISHING — joinery and ceilings. Needed so the finishing stage covers the
+    // 25-35% of a build it represents; without these it only produced sills.
+    { id: 'door-interior', name: 'Interior Door (with frame)', category: 'finishes', subcategory: 'Joinery', unit: 'each', specifications: 'Hollow-core door leaf and frame', milestones: ['finishing'] },
+    { id: 'door-exterior', name: 'Exterior Door (with frame)', category: 'finishes', subcategory: 'Joinery', unit: 'each', specifications: 'Solid timber or steel door and frame', milestones: ['finishing'] },
+    { id: 'window-steel', name: 'Steel Window Frame', category: 'finishes', subcategory: 'Joinery', unit: 'per m²', specifications: 'Standard steel casement window with glazing', milestones: ['finishing'] },
+    { id: 'ceiling-board', name: 'Ceiling Board', category: 'finishes', subcategory: 'Ceilings', unit: 'per m²', specifications: 'PVC or gypsum ceiling board', milestones: ['finishing'] },
+    { id: 'cornice', name: 'Cornice', category: 'finishes', subcategory: 'Ceilings', unit: 'per 4m length', specifications: 'Gypsum/PVC cornice', milestones: ['finishing'] },
+
     // NEW ADDITIONS (USER REQUESTED)
     { id: 'hardcore', name: 'Hardcore (Filling)', category: 'aggregates', subcategory: 'Filling', unit: 'per cube', specifications: 'Rubble/stones for compacting foundation', milestones: ['substructure'] },
     { id: 'brickforce', name: 'Brickforce', category: 'steel', subcategory: 'Reinforcement', unit: 'per roll', specifications: '150mm x 20m brick reinforcement', milestones: ['substructure', 'superstructure'] },
@@ -320,6 +328,25 @@ export const materialPrices: MaterialPrice[] = [
     // either this list or the CSV-derived pricing map, so they costed at $0.
     // 2026 Zimbabwe market estimate; replace with scraped supplier data.
     { materialId: 'screws-roof', supplierId: 'sup-4', priceUsd: 12, priceZwg: 360, lastUpdated: '2026-07-27', inStock: true },
+
+    // Finishing materials. PVA/acrylic reflect Harare retail (20L PVA listed
+    // around $38-42); the rest are 2026 market estimates pending scraped data.
+    { materialId: 'paint-acrylic', supplierId: 'sup-1', priceUsd: 55, priceZwg: 1650, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'tiles-wall-ceramic', supplierId: 'sup-1', priceUsd: 11, priceZwg: 330, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'tile-adhesive', supplierId: 'sup-1', priceUsd: 9, priceZwg: 270, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'grout', supplierId: 'sup-1', priceUsd: 6, priceZwg: 180, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'conduit-20', supplierId: 'sup-1', priceUsd: 2.50, priceZwg: 75, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'pipe-40-pvc', supplierId: 'sup-1', priceUsd: 8, priceZwg: 240, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'pipe-110-pvc', supplierId: 'sup-1', priceUsd: 16, priceZwg: 480, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'pipe-15-copper', supplierId: 'sup-1', priceUsd: 22, priceZwg: 660, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'geyser-150', supplierId: 'sup-1', priceUsd: 280, priceZwg: 8400, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'door-interior', supplierId: 'sup-csv-baseline', priceUsd: 85, priceZwg: 2550, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'door-exterior', supplierId: 'sup-csv-baseline', priceUsd: 150, priceZwg: 4500, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'window-steel', supplierId: 'sup-csv-baseline', priceUsd: 60, priceZwg: 1800, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'ceiling-board', supplierId: 'sup-csv-baseline', priceUsd: 8, priceZwg: 240, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'cornice', supplierId: 'sup-csv-baseline', priceUsd: 4, priceZwg: 120, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'hinges-door', supplierId: 'sup-4', priceUsd: 4, priceZwg: 120, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'lock-mortice', supplierId: 'sup-4', priceUsd: 14, priceZwg: 420, lastUpdated: '2026-07-29', inStock: true },
 ];
 
 // Helper functions

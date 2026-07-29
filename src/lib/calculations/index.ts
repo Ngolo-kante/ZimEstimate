@@ -275,6 +275,16 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
       'per meter',
       `${totalWindows} windows`
     ));
+
+    items.push(...calculateFinishes({
+      floorArea,
+      roomCount,
+      wallHeight,
+      perimeter,
+      internalWallLength,
+      totalWindows,
+      cementType: getFirstValue(cementTypes) as CementType,
+    }));
   }
 
   if (includeLabor) {
@@ -600,6 +610,105 @@ function calculateRoofing(
 
   const fasciaLength = Math.ceil(Math.sqrt(roofArea) * 4 / 6);
   items.push(createBOQItem('fascia-pvc', 'Fascia Board 228mm', 'roofing', fasciaLength, 'per 6m length', 'Perimeter fascia'));
+
+  return items;
+}
+
+// ============================================
+// FINISHES
+// ============================================
+
+const PLASTER_THICKNESS_M = 0.015;
+const PAINT_LITRES_PER_TIN = 20;
+const CEILING_COVERAGE_RATIO = 0.95;
+const CORNICE_LENGTH_M = 4;
+const WINDOW_AREA_M2 = 1.44;
+const EXTERIOR_DOORS = 2;
+const WET_ROOM_TILE_HEIGHT_M = 1.5;
+const CABLE_ROLL_LENGTH_M = 100;
+const CABLE_M_PER_SQM = 1.6;
+const CONDUIT_LENGTH_M = 4;
+const SOIL_PIPE_LENGTH_M = 6;
+const WASTE_PIPE_LENGTH_M = 6;
+const COPPER_PIPE_LENGTH_M = 5.5;
+
+/**
+ * Plaster, paint, tiling, ceilings, joinery and first-fix services.
+ *
+ * Finishing is 25-35% of a Zimbabwe build, but the finishing scope previously
+ * generated window sills alone (0.6% of the estimate), which is why totals sat
+ * below the market $80-150/m² band.
+ */
+function calculateFinishes(input: {
+  floorArea: number;
+  roomCount: number;
+  wallHeight: number;
+  perimeter: number;
+  internalWallLength: number;
+  totalWindows: number;
+  cementType: CementType;
+}): GeneratedBOQItem[] {
+  const { floorArea, roomCount, wallHeight, perimeter, internalWallLength, totalWindows, cementType } = input;
+  const items: GeneratedBOQItem[] = [];
+  const quality = getBuildQuality(cementType);
+  const finishWaste = 1 + BOQ_ASSUMPTIONS.finishes.waste[quality];
+
+  // Plaster both faces of internal walls and both faces of the external skin.
+  const externalWallArea = perimeter * wallHeight;
+  const internalWallArea = internalWallLength * wallHeight;
+  const plasterArea = (externalWallArea * 2 + internalWallArea * 2) * finishWaste;
+  const plasterVolume = plasterArea * PLASTER_THICKNESS_M;
+  const plasterCementBags = Math.ceil(plasterVolume * BOQ_ASSUMPTIONS.plaster.cementBagsPerM3[quality]);
+
+  items.push(createBOQItem('cement-325', 'Cement (Plaster)', 'finishing', plasterCementBags, 'per 50kg bag', `${plasterArea.toFixed(0)}m² plaster @ ${BOQ_ASSUMPTIONS.plaster.mixRatio[quality]}`));
+  items.push(createBOQItem('sand-pit', 'Pit Sand (Plaster)', 'finishing', roundTo(plasterVolume * SAND_M3_PER_M3_MORTAR, 1), 'per cube', 'Plaster sand'));
+
+  // Paint covers the plastered faces; exterior gets acrylic, interior PVA.
+  const coats = BOQ_ASSUMPTIONS.paint.coats[quality];
+  const coverage = BOQ_ASSUMPTIONS.paint.coveragePerLitrePerCoat;
+  const interiorPaintArea = internalWallArea * 2 + externalWallArea + floorArea;
+  const interiorTins = Math.ceil((interiorPaintArea * coats) / coverage / PAINT_LITRES_PER_TIN);
+  const exteriorTins = Math.ceil((externalWallArea * coats) / coverage / PAINT_LITRES_PER_TIN);
+
+  items.push(createBOQItem('paint-pva', 'PVA Paint (Interior)', 'finishing', interiorTins, 'per 20L', `${interiorPaintArea.toFixed(0)}m² @ ${coats} coats`));
+  items.push(createBOQItem('paint-acrylic', 'Acrylic Paint (Exterior)', 'finishing', exteriorTins, 'per 20L', `${externalWallArea.toFixed(0)}m² @ ${coats} coats`));
+
+  // Floor tiling across the whole floor, plus splashbacks in the two wet rooms.
+  const tileWaste = 1 + BOQ_ASSUMPTIONS.tiles.waste[quality];
+  const floorTileArea = floorArea * tileWaste;
+  const wetRoomWallArea = Math.min(roomCount, 2) * 6 * WET_ROOM_TILE_HEIGHT_M * tileWaste;
+  const adhesiveBags = Math.ceil((floorTileArea + wetRoomWallArea) / BOQ_ASSUMPTIONS.tiles.adhesiveCoverageM2PerBag);
+
+  items.push(createBOQItem('tiles-floor-ceramic', 'Floor Tiles', 'finishing', roundTo(floorTileArea, 1), 'per m²', `${floorArea}m² floor + waste`));
+  items.push(createBOQItem('tiles-wall-ceramic', 'Wall Tiles (Wet Areas)', 'finishing', roundTo(wetRoomWallArea, 1), 'per m²', 'Bathroom and kitchen splashbacks'));
+  items.push(createBOQItem('tile-adhesive', 'Tile Adhesive', 'finishing', adhesiveBags, 'per 20kg bag', 'Floor and wall tiling'));
+  items.push(createBOQItem('grout', 'Tile Grout', 'finishing', Math.ceil(adhesiveBags / 4), 'per 5kg bag', 'Tile joints'));
+
+  // Ceilings and cornice.
+  const ceilingArea = floorArea * CEILING_COVERAGE_RATIO;
+  const corniceLengths = Math.ceil((perimeter + internalWallLength * 2) / CORNICE_LENGTH_M);
+
+  items.push(createBOQItem('ceiling-board', 'Ceiling Board', 'finishing', roundTo(ceilingArea, 1), 'per m²', `${floorArea}m² ceiling`));
+  items.push(createBOQItem('cornice', 'Cornice', 'finishing', corniceLengths, 'per 4m length', 'Ceiling perimeter'));
+
+  // Joinery — one door per room plus front and back doors.
+  const interiorDoors = Math.max(1, roomCount);
+  items.push(createBOQItem('door-interior', 'Interior Door', 'finishing', interiorDoors, 'each', `${roomCount} rooms`));
+  items.push(createBOQItem('door-exterior', 'Exterior Door', 'finishing', EXTERIOR_DOORS, 'each', 'Front and back'));
+  items.push(createBOQItem('hinges-door', 'Door Hinges', 'finishing', interiorDoors + EXTERIOR_DOORS, 'per pair', 'One pair per door'));
+  items.push(createBOQItem('lock-mortice', 'Mortice Lock', 'finishing', interiorDoors + EXTERIOR_DOORS, 'each', 'One per door'));
+  items.push(createBOQItem('window-steel', 'Steel Window Frames', 'finishing', roundTo(totalWindows * WINDOW_AREA_M2, 1), 'per m²', `${totalWindows} windows`));
+
+  // First-fix electrical and plumbing.
+  const cableRolls = Math.max(1, Math.ceil((floorArea * CABLE_M_PER_SQM) / CABLE_ROLL_LENGTH_M));
+  items.push(createBOQItem('cable-25', 'Cable 2.5mm T&E', 'finishing', cableRolls, 'per 100m roll', `${floorArea}m² wiring`));
+  items.push(createBOQItem('conduit-20', 'PVC Conduit 20mm', 'finishing', Math.ceil((floorArea * 0.5) / CONDUIT_LENGTH_M), 'per 4m length', 'Wiring conduit'));
+  items.push(createBOQItem('db-8way', 'Distribution Board', 'finishing', 1, 'each', 'Consumer unit'));
+
+  items.push(createBOQItem('pipe-110-pvc', 'PVC Soil Pipe 110mm', 'finishing', Math.max(1, Math.ceil((perimeter * 0.4) / SOIL_PIPE_LENGTH_M)), 'per 6m length', 'Soil drainage'));
+  items.push(createBOQItem('pipe-40-pvc', 'PVC Waste Pipe 40mm', 'finishing', Math.max(1, Math.ceil((floorArea * 0.15) / WASTE_PIPE_LENGTH_M)), 'per 6m length', 'Waste runs'));
+  items.push(createBOQItem('pipe-15-copper', 'Copper Pipe 15mm', 'finishing', Math.max(1, Math.ceil((floorArea * 0.25) / COPPER_PIPE_LENGTH_M)), 'per 5.5m length', 'Water supply'));
+  items.push(createBOQItem('geyser-150', 'Geyser 150L', 'finishing', 1, 'each', 'Hot water'));
 
   return items;
 }
