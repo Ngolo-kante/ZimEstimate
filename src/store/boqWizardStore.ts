@@ -3,6 +3,7 @@ import { LOCATION_PROCEDURE_RULES, SoilType } from '@/lib/buildFlowRules';
 import { calculateBoqHealth, type BoqHealthCategoryInput, type BoqHealthResult } from '@/lib/boqHealth';
 import { STAGE_COMPLIANCE_REQUIREMENTS } from '@/lib/compliance';
 import { BrickType, CementType } from '@/lib/vision/types';
+import { DEFAULT_FINISH_LEVEL, type FinishLevel } from '@/lib/calculations';
 import type { RoomInstance } from '@/app/boq/new/components/room-builder/types';
 
 export type SiteSlopeType = 'flat' | 'gentle' | 'moderate' | 'steep';
@@ -54,6 +55,7 @@ export interface ProjectDetailsState {
   wallHeight: string;
   brickTypes: BrickType[];
   cementTypes: CementType[];
+  finishLevel: FinishLevel;
   roomInputs: Record<RoomInputKey, string>;
 }
 
@@ -181,6 +183,7 @@ const initialProjectDetails: ProjectDetailsState = {
   wallHeight: '2.7',
   brickTypes: ['common'],
   cementTypes: ['cement_325'],
+  finishLevel: DEFAULT_FINISH_LEVEL,
   roomInputs: { ...DEFAULT_ROOM_INPUTS },
 };
 

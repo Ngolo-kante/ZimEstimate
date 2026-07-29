@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wall, CheckCircle, Info, Truck, Question, HardHat, Package } from '@phosphor-icons/react';
 import { BRICK_INFO, CEMENT_INFO, type BrickType, type CementType } from '@/lib/vision/types';
+import type { FinishLevel } from '@/lib/calculations';
 import { useBoqWizardStore } from '@/store/boqWizardStore';
 
 const BRICK_OPTIONS = Object.entries(BRICK_INFO).map(([key, val]) => ({
@@ -38,6 +39,12 @@ const TRANSPORT_SUGGESTIONS: Record<string, { percentage: number; label: string 
   'peri-urban': { percentage: 10, label: 'Peri-urban — moderate distances' },
   rural: { percentage: 15, label: 'Rural — longer distances, higher transport costs' },
 };
+
+const FINISH_LEVEL_OPTIONS: { value: FinishLevel; label: string; description: string }[] = [
+  { value: 'economy', label: 'Economy', description: 'Wet areas tiled, rest screeded. 1–2 coats of paint.' },
+  { value: 'standard', label: 'Standard', description: 'Full floor tiling and 2 coats of paint throughout.' },
+  { value: 'premium', label: 'Premium', description: 'Full tiling, taller wet-area tiling, 3 coats of paint.' },
+];
 
 export default function MaterialsSection() {
   const { projectDetails, updateProjectDetails, laborType, setLaborType } = useBoqWizardStore();
@@ -465,6 +472,39 @@ export default function MaterialsSection() {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* Finish level */}
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-base font-bold wiz-text-primary">Finish level</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Sets how much of the floor is tiled, how many coats of paint, and the extent of wet-area tiling.
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          {FINISH_LEVEL_OPTIONS.map((opt) => {
+            const isSelected = projectDetails.finishLevel === opt.value;
+            return (
+              <motion.button
+                key={opt.value}
+                type="button"
+                whileHover={{ scale: 1.01, y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => updateProjectDetails({ finishLevel: opt.value })}
+                className={`flex flex-col gap-1 rounded-2xl border p-4 text-left transition-all duration-200 ${
+                  isSelected
+                    ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
+                    : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
+                }`}
+              >
+                <span className="text-sm font-bold wiz-text-primary">{opt.label}</span>
+                <span className="text-xs text-slate-500">{opt.description}</span>
+              </motion.button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

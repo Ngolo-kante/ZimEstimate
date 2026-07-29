@@ -59,6 +59,7 @@ export interface ManualBuilderConfig {
   scope: ProjectScope | ProjectScope[];
   includeLabor: boolean;
   locationType?: LocationType;
+  finishLevel?: FinishLevel; // Drives tiling coverage, paint coats, wet-area tiling
   rooms?: DetailedRoom[];   // NEW: Detailed room data
 }
 
@@ -284,6 +285,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
       internalWallLength,
       totalWindows,
       cementType: getFirstValue(cementTypes) as CementType,
+      finishLevel: normalizeFinishLevel(config.finishLevel),
     }));
   }
 
@@ -618,13 +620,38 @@ function calculateRoofing(
 // FINISHES
 // ============================================
 
+/**
+ * How much of the finishing spec a build carries. Zimbabwe budget builds
+ * commonly tile the wet areas only and screed the rest of the floor, adding
+ * tiles later, so tiling coverage cannot be assumed at 100% for everyone.
+ */
+export type FinishLevel = 'economy' | 'standard' | 'premium';
+
+export const DEFAULT_FINISH_LEVEL: FinishLevel = 'standard';
+
+const FINISH_LEVEL_SPEC: Record<FinishLevel, {
+  floorTileCoverage: number;
+  paintCoats: number;
+  wetWallHeightM: number;
+  exteriorDoors: number;
+}> = {
+  economy: { floorTileCoverage: 0.25, paintCoats: 1.5, wetWallHeightM: 1.2, exteriorDoors: 2 },
+  standard: { floorTileCoverage: 1, paintCoats: 2, wetWallHeightM: 1.5, exteriorDoors: 2 },
+  premium: { floorTileCoverage: 1, paintCoats: 3, wetWallHeightM: 2.1, exteriorDoors: 2 },
+};
+
+export function normalizeFinishLevel(value?: string): FinishLevel {
+  return value === 'economy' || value === 'standard' || value === 'premium'
+    ? value
+    : DEFAULT_FINISH_LEVEL;
+}
+
+const SCREED_THICKNESS_M = 0.04;
 const PLASTER_THICKNESS_M = 0.015;
 const PAINT_LITRES_PER_TIN = 20;
 const CEILING_COVERAGE_RATIO = 0.95;
 const CORNICE_LENGTH_M = 4;
 const WINDOW_AREA_M2 = 1.44;
-const EXTERIOR_DOORS = 2;
-const WET_ROOM_TILE_HEIGHT_M = 1.5;
 const CABLE_ROLL_LENGTH_M = 100;
 const CABLE_M_PER_SQM = 1.6;
 const CONDUIT_LENGTH_M = 4;
@@ -647,10 +674,12 @@ function calculateFinishes(input: {
   internalWallLength: number;
   totalWindows: number;
   cementType: CementType;
+  finishLevel: FinishLevel;
 }): GeneratedBOQItem[] {
-  const { floorArea, roomCount, wallHeight, perimeter, internalWallLength, totalWindows, cementType } = input;
+  const { floorArea, roomCount, wallHeight, perimeter, internalWallLength, totalWindows, cementType, finishLevel } = input;
   const items: GeneratedBOQItem[] = [];
   const quality = getBuildQuality(cementType);
+  const spec = FINISH_LEVEL_SPEC[finishLevel];
   const finishWaste = 1 + BOQ_ASSUMPTIONS.finishes.waste[quality];
 
   // Plaster both faces of internal walls and both faces of the external skin.
@@ -664,7 +693,7 @@ function calculateFinishes(input: {
   items.push(createBOQItem('sand-pit', 'Pit Sand (Plaster)', 'finishing', roundTo(plasterVolume * SAND_M3_PER_M3_MORTAR, 1), 'per cube', 'Plaster sand'));
 
   // Paint covers the plastered faces; exterior gets acrylic, interior PVA.
-  const coats = BOQ_ASSUMPTIONS.paint.coats[quality];
+  const coats = spec.paintCoats;
   const coverage = BOQ_ASSUMPTIONS.paint.coveragePerLitrePerCoat;
   const interiorPaintArea = internalWallArea * 2 + externalWallArea + floorArea;
   const interiorTins = Math.ceil((interiorPaintArea * coats) / coverage / PAINT_LITRES_PER_TIN);
@@ -675,11 +704,21 @@ function calculateFinishes(input: {
 
   // Floor tiling across the whole floor, plus splashbacks in the two wet rooms.
   const tileWaste = 1 + BOQ_ASSUMPTIONS.tiles.waste[quality];
-  const floorTileArea = floorArea * tileWaste;
-  const wetRoomWallArea = Math.min(roomCount, 2) * 6 * WET_ROOM_TILE_HEIGHT_M * tileWaste;
+  const tiledFloorArea = floorArea * spec.floorTileCoverage;
+  const floorTileArea = tiledFloorArea * tileWaste;
+  const wetRoomWallArea = Math.min(roomCount, 2) * 6 * spec.wetWallHeightM * tileWaste;
   const adhesiveBags = Math.ceil((floorTileArea + wetRoomWallArea) / BOQ_ASSUMPTIONS.tiles.adhesiveCoverageM2PerBag);
 
-  items.push(createBOQItem('tiles-floor-ceramic', 'Floor Tiles', 'finishing', roundTo(floorTileArea, 1), 'per m²', `${floorArea}m² floor + waste`));
+  items.push(createBOQItem('tiles-floor-ceramic', 'Floor Tiles', 'finishing', roundTo(floorTileArea, 1), 'per m²', `${roundTo(tiledFloorArea, 1)}m² tiled (${Math.round(spec.floorTileCoverage * 100)}% of floor) + waste`));
+
+  // Whatever is not tiled still needs a finished surface, so screed the balance
+  // rather than leaving an economy build with a free floor.
+  const screedArea = floorArea - tiledFloorArea;
+  if (screedArea > 0) {
+    const screedVolume = screedArea * SCREED_THICKNESS_M;
+    items.push(createBOQItem('cement-325', 'Cement (Floor Screed)', 'finishing', Math.ceil(screedVolume * BOQ_ASSUMPTIONS.plaster.cementBagsPerM3[quality]), 'per 50kg bag', `${roundTo(screedArea, 1)}m² untiled floor`));
+    items.push(createBOQItem('sand-pit', 'Pit Sand (Screed)', 'finishing', roundTo(screedVolume * SAND_M3_PER_M3_MORTAR, 1), 'per cube', 'Screed sand'));
+  }
   items.push(createBOQItem('tiles-wall-ceramic', 'Wall Tiles (Wet Areas)', 'finishing', roundTo(wetRoomWallArea, 1), 'per m²', 'Bathroom and kitchen splashbacks'));
   items.push(createBOQItem('tile-adhesive', 'Tile Adhesive', 'finishing', adhesiveBags, 'per 20kg bag', 'Floor and wall tiling'));
   items.push(createBOQItem('grout', 'Tile Grout', 'finishing', Math.ceil(adhesiveBags / 4), 'per 5kg bag', 'Tile joints'));
@@ -694,9 +733,9 @@ function calculateFinishes(input: {
   // Joinery — one door per room plus front and back doors.
   const interiorDoors = Math.max(1, roomCount);
   items.push(createBOQItem('door-interior', 'Interior Door', 'finishing', interiorDoors, 'each', `${roomCount} rooms`));
-  items.push(createBOQItem('door-exterior', 'Exterior Door', 'finishing', EXTERIOR_DOORS, 'each', 'Front and back'));
-  items.push(createBOQItem('hinges-door', 'Door Hinges', 'finishing', interiorDoors + EXTERIOR_DOORS, 'per pair', 'One pair per door'));
-  items.push(createBOQItem('lock-mortice', 'Mortice Lock', 'finishing', interiorDoors + EXTERIOR_DOORS, 'each', 'One per door'));
+  items.push(createBOQItem('door-exterior', 'Exterior Door', 'finishing', spec.exteriorDoors, 'each', 'Front and back'));
+  items.push(createBOQItem('hinges-door', 'Door Hinges', 'finishing', interiorDoors + spec.exteriorDoors, 'per pair', 'One pair per door'));
+  items.push(createBOQItem('lock-mortice', 'Mortice Lock', 'finishing', interiorDoors + spec.exteriorDoors, 'each', 'One per door'));
   items.push(createBOQItem('window-steel', 'Steel Window Frames', 'finishing', roundTo(totalWindows * WINDOW_AREA_M2, 1), 'per m²', `${totalWindows} windows`));
 
   // First-fix electrical and plumbing.

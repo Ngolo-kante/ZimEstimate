@@ -333,6 +333,7 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
     scope,
     includeLabor: laborType === 'materials_labor',
     locationType: (projectDetails.locationType || 'urban') as 'urban' | 'peri-urban' | 'rural',
+    finishLevel: projectDetails.finishLevel,
     rooms: geometryMode === 'detailed' ? toDetailedRooms(detailedRooms) : undefined,
   }).map(toStoreItem);
 
