@@ -407,7 +407,7 @@ export default function HomePage() {
                 header={
                   <div className="flex flex-1 w-full h-full min-h-[6rem] rounded-xl border border-slate-200 relative overflow-hidden group bg-slate-900">
                     <Image
-                      src={`/${['placeholder-substructure', 'placeholder-superstructure', 'placeholder-roofing', 'placeholder-blueprint'][i % 4]}.webp`}
+                      src={`/${['substructure', 'superstructure', 'roofing', 'blueprint'][i % 4]}.webp`}
                       alt=""
                       aria-hidden="true"
                       fill
