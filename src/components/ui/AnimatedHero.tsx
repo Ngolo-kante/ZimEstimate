@@ -37,9 +37,10 @@ export const AnimatedHero = ({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, ease: "easeOut" }}
                     /* The preview sits absolutely at 45% width from lg up, so the
-                       copy has to stop short of it — otherwise the headline runs
-                       full width underneath and the card clips it. */
-                    className="flex flex-col gap-6 lg:max-w-[52%]"
+                       copy has to stop short of it. 48% leaves clearance against
+                       the card's 45% plus its right offset; wider than that and
+                       the headline runs under the card and gets clipped. */
+                    className="flex flex-col gap-6 lg:max-w-[48%]"
                 >
                     {title}
                     <p className="text-lg text-slate-600 max-w-xl">

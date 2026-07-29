@@ -360,37 +360,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="px-4 md:px-8 w-full reveal-item" data-delay="6">
-          <Timeline
-            title="One pipeline from planning to site execution."
-            description="Follow our seamless workflow to take control of your construction projects from start to finish."
-            data={workflowLine}
-          />
-        </section>
-
-        <section className="px-4 md:px-8 max-w-7xl mx-auto w-full reveal-item" data-delay="4">
-          <div className="mb-10 text-center">
-            <span className="text-blue-600 text-sm font-bold tracking-wider uppercase block mb-2">TRUST PROOF</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Built for real pricing pressure.</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {signals.map((signal) => {
-              const Icon = signal.icon;
-              return (
-                <div key={signal.label} className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-blue-200 transition-all">
-                  <div className="flex items-center gap-2 text-slate-500 mb-4">
-                    <Icon size={18} weight="duotone" className="text-blue-500" />
-                    <span className="text-xs font-bold tracking-widest uppercase">{signal.label}</span>
-                  </div>
-                  <strong className="text-3xl font-extrabold text-slate-900 block mb-2">{signal.value}</strong>
-                  <p className="text-sm text-slate-600 line-clamp-2">{signal.subtext}</p>
-                </div>
-              )
-            })}
-          </div>
-        </section>
-
         <section className="px-4 md:px-8 w-full reveal-item" data-delay="5">
           <div className="text-center mb-12">
             <span className="text-blue-600 text-sm font-bold tracking-wider uppercase block mb-2">PLATFORM CAPABILITIES</span>
@@ -422,6 +391,37 @@ export default function HomePage() {
               />
             ))}
           </BentoGrid>
+        </section>
+
+        <section className="px-4 md:px-8 w-full reveal-item" data-delay="6">
+          <Timeline
+            title="One pipeline from planning to site execution."
+            description="Follow our seamless workflow to take control of your construction projects from start to finish."
+            data={workflowLine}
+          />
+        </section>
+
+        <section className="px-4 md:px-8 max-w-7xl mx-auto w-full reveal-item" data-delay="4">
+          <div className="mb-10 text-center">
+            <span className="text-blue-600 text-sm font-bold tracking-wider uppercase block mb-2">TRUST PROOF</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Built for real pricing pressure.</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {signals.map((signal) => {
+              const Icon = signal.icon;
+              return (
+                <div key={signal.label} className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-blue-200 transition-all">
+                  <div className="flex items-center gap-2 text-slate-500 mb-4">
+                    <Icon size={18} weight="duotone" className="text-blue-500" />
+                    <span className="text-xs font-bold tracking-widest uppercase">{signal.label}</span>
+                  </div>
+                  <strong className="text-3xl font-extrabold text-slate-900 block mb-2">{signal.value}</strong>
+                  <p className="text-sm text-slate-600 line-clamp-2">{signal.subtext}</p>
+                </div>
+              )
+            })}
+          </div>
         </section>
 
         <section className="px-4 md:px-8 max-w-7xl mx-auto w-full reveal-item" data-delay="3">
