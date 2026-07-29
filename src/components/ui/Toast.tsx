@@ -88,23 +88,31 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 <div className="toast-container">
                     {toasts.map((toast) => {
                         const config = toastConfig[toast.type];
+                        const isUrgent = toast.type === 'error' || toast.type === 'warning';
                         return (
                             <div
                                 key={toast.id}
                                 className="toast"
+                                // Toasts carry the only feedback for things like a
+                                // blocked wizard step. Without a live region they
+                                // were announced to nobody.
+                                role={isUrgent ? 'alert' : 'status'}
+                                aria-live={isUrgent ? 'assertive' : 'polite'}
+                                aria-atomic="true"
                                 style={{
                                     borderLeftColor: config.color,
                                 }}
                             >
-                                <span className="toast-icon" style={{ color: config.color }}>
+                                <span className="toast-icon" style={{ color: config.color }} aria-hidden="true">
                                     {config.icon}
                                 </span>
                                 <span className="toast-message">{toast.message}</span>
                                 <button
                                     className="toast-close"
                                     onClick={() => removeToast(toast.id)}
+                                    aria-label="Dismiss notification"
                                 >
-                                    <X size={16} />
+                                    <X size={16} aria-hidden="true" />
                                 </button>
                             </div>
                         );
