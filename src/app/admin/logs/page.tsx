@@ -32,15 +32,19 @@ export default function AdminLogsPage() {
 
   const loadLogs = useCallback(async () => {
     setLoading(true);
-    const result = await getAuditLogs({
-      resourceType: resourceType || undefined,
-      fromDate: fromDate || undefined,
-      page,
-      pageSize: 25,
-    });
-    setLogs(result.logs as LogRow[]);
-    setTotal(result.total);
-    setLoading(false);
+    try {
+      const result = await getAuditLogs({
+        resourceType: resourceType || undefined,
+        fromDate: fromDate || undefined,
+        page,
+        pageSize: 25,
+      });
+      setLogs(result.logs as LogRow[]);
+      setTotal(result.total);
+    } finally {
+      // Guarantees the spinner clears even if a query rejects.
+      setLoading(false);
+    }
   }, [resourceType, fromDate, page]);
 
   useEffect(() => {

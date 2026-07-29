@@ -27,10 +27,14 @@ export default function AdminAgreementsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const result = await getAllAgreements({ page });
-    setAgreements(result.agreements as Agreement[]);
-    setTotal(result.total);
-    setLoading(false);
+    try {
+      const result = await getAllAgreements({ page });
+      setAgreements(result.agreements as Agreement[]);
+      setTotal(result.total);
+    } finally {
+      // Guarantees the spinner clears even if a query rejects.
+      setLoading(false);
+    }
   }, [page]);
 
   useEffect(() => {

@@ -46,17 +46,21 @@ export default function ScraperReviewPage() {
 
     const fetchPendingMatches = async () => {
         setLoading(true);
-        const { data, error } = await supabase
-            .from('pending_matches')
-            .select('*')
-            .is('resolved_at', null)
-            .order('created_at', { ascending: false })
-            .limit(100);
+        try {
+          const { data, error } = await supabase
+              .from('pending_matches')
+              .select('*')
+              .is('resolved_at', null)
+              .order('created_at', { ascending: false })
+              .limit(100);
 
-        if (!error && data) {
-            setPendingMatches(data as PendingMatch[]);
+          if (!error && data) {
+              setPendingMatches(data as PendingMatch[]);
+          }
+        } finally {
+          // Guarantees the spinner clears even if a query rejects.
+          setLoading(false);
         }
-        setLoading(false);
     };
 
     const fetchStats = async () => {
@@ -83,7 +87,7 @@ export default function ScraperReviewPage() {
         });
     };
     useEffect(() => {
-        fetchPendingMatches(); // eslint-disable-line react-hooks/set-state-in-effect
+        fetchPendingMatches();
         fetchStats();
     }, []);
 

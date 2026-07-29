@@ -62,10 +62,14 @@ export default function AdminTicketsPage() {
 
   const loadTickets = useCallback(async () => {
     setLoading(true);
-    const result = await getAllTickets({ status: statusFilter || undefined, page, pageSize: 25 });
-    setTickets(result.tickets as Ticket[]);
-    setTotal(result.total);
-    setLoading(false);
+    try {
+      const result = await getAllTickets({ status: statusFilter || undefined, page, pageSize: 25 });
+      setTickets(result.tickets as Ticket[]);
+      setTotal(result.total);
+    } finally {
+      // Guarantees the spinner clears even if a query rejects.
+      setLoading(false);
+    }
   }, [statusFilter, page]);
 
   useEffect(() => {

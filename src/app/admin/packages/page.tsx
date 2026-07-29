@@ -43,9 +43,13 @@ export default function AdminPackagesPage() {
 
   const load = async () => {
     setLoading(true);
-    const data = await getAllPackages();
-    setPackages(data as ProductPackage[]);
-    setLoading(false);
+    try {
+      const data = await getAllPackages();
+      setPackages(data as ProductPackage[]);
+    } finally {
+      // Guarantees the spinner clears even if a query rejects.
+      setLoading(false);
+    }
   };
 
   useEffect(() => {

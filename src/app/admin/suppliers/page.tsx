@@ -60,25 +60,29 @@ export default function AdminSuppliersPage() {
 
   const loadApplications = async () => {
     setLoading(true);
+    try {
 
-    let query = supabase
-      .from('supplier_applications')
-      .select('*')
-      .order('created_at', { ascending: false });
+      let query = supabase
+        .from('supplier_applications')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (filterStatus !== 'all') {
-      query = query.eq('status', filterStatus);
+      if (filterStatus !== 'all') {
+        query = query.eq('status', filterStatus);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error loading applications:', error);
+      } else {
+        setApplications((data || []) as SupplierApplication[]);
+      }
+
+    } finally {
+      // Guarantees the spinner clears even if a query rejects.
+      setLoading(false);
     }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error loading applications:', error);
-    } else {
-      setApplications((data || []) as SupplierApplication[]);
-    }
-
-    setLoading(false);
   };
 
   const loadDocuments = async (applicationId: string) => {

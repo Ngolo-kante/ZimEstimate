@@ -30,13 +30,17 @@ export default function AdminPerformancePage() {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('suppliers')
-      .select('id, name, contact_email, verification_status, rating, user_id')
-      .is('deleted_at', null)
-      .order('rating', { ascending: false, nullsFirst: false });
-    setSuppliers((data ?? []) as SupplierRow[]);
-    setLoading(false);
+    try {
+      const { data } = await supabase
+        .from('suppliers')
+        .select('id, name, contact_email, verification_status, rating, user_id')
+        .is('deleted_at', null)
+        .order('rating', { ascending: false, nullsFirst: false });
+      setSuppliers((data ?? []) as SupplierRow[]);
+    } finally {
+      // Guarantees the spinner clears even if a query rejects.
+      setLoading(false);
+    }
   };
 
   useEffect(() => {

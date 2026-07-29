@@ -32,31 +32,35 @@ export default function AdminContentPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const offset = (page - 1) * PAGE_SIZE;
+    try {
+      const offset = (page - 1) * PAGE_SIZE;
 
-    let query = supabase
-      .from('materials')
-      .select('*')
-      .order('category', { ascending: true })
-      .order('name', { ascending: true })
-      .range(offset, offset + PAGE_SIZE - 1);
-
-    if (categoryFilter) query = query.eq('category', categoryFilter);
-    if (search) query = query.ilike('name', `%${search}%`);
-
-    const { data } = await query;
-    setMaterials((data ?? []) as Material[]);
-
-    if (categories.length === 0) {
-      const { data: cats } = await supabase
+      let query = supabase
         .from('materials')
-        .select('category')
-        .order('category');
-      const unique = [...new Set(((cats ?? []) as unknown as Array<{ category: string | null }>).map((r) => r.category).filter((c): c is string => c !== null))];
-      setCategories(unique);
-    }
+        .select('*')
+        .order('category', { ascending: true })
+        .order('name', { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1);
 
-    setLoading(false);
+      if (categoryFilter) query = query.eq('category', categoryFilter);
+      if (search) query = query.ilike('name', `%${search}%`);
+
+      const { data } = await query;
+      setMaterials((data ?? []) as Material[]);
+
+      if (categories.length === 0) {
+        const { data: cats } = await supabase
+          .from('materials')
+          .select('category')
+          .order('category');
+        const unique = [...new Set(((cats ?? []) as unknown as Array<{ category: string | null }>).map((r) => r.category).filter((c): c is string => c !== null))];
+        setCategories(unique);
+      }
+
+    } finally {
+      // Guarantees the spinner clears even if a query rejects.
+      setLoading(false);
+    }
   }, [search, categoryFilter, page, categories.length]);
 
   useEffect(() => {

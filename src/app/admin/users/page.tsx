@@ -6,6 +6,9 @@ import { useAdminAuth } from '@/hooks/useAdminAuth';
 import Card, { CardContent } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import EmptyState from '@/components/ui/EmptyState';
+import LoadingState from '@/components/ui/LoadingState';
+import ErrorState from '@/components/ui/ErrorState';
 import { listAllUsers, suspendUser, reactivateUser, type UserListRow } from '@/lib/services/admin-analytics';
 import type { UserType } from '@/lib/database.types';
 import {
@@ -32,6 +35,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<UserType | ''>('');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [actionUser, setActionUser] = useState<UserListRow | null>(null);
   const [actionType, setActionType] = useState<'suspend' | 'reactivate' | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -40,15 +44,22 @@ export default function AdminUsersPage() {
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
-    const result = await listAllUsers({
-      search: search || undefined,
-      userType: typeFilter || undefined,
-      page,
-      pageSize: PAGE_SIZE,
-    });
-    setUsers(result.users);
-    setTotal(result.total);
-    setLoading(false);
+    setLoadError(null);
+    try {
+      const result = await listAllUsers({
+        search: search || undefined,
+        userType: typeFilter || undefined,
+        page,
+        pageSize: PAGE_SIZE,
+      });
+      setUsers(result.users);
+      setTotal(result.total);
+    } catch (error) {
+      // Without this the spinner stayed up for good on any rejection.
+      setLoadError(error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
   }, [search, typeFilter, page]);
 
   useEffect(() => {
@@ -113,9 +124,18 @@ export default function AdminUsersPage() {
       <Card>
         <CardContent>
           {loading ? (
-            <div className="table-loading">Loading users...</div>
+            <LoadingState variant="table" rows={6} label="Loading users" />
+          ) : loadError ? (
+            <ErrorState
+              whatFailed="The user list could not be loaded."
+              technicalDetail={loadError}
+              onRetry={() => void loadUsers()}
+            />
           ) : users.length === 0 ? (
-            <div className="empty-state">No users found.</div>
+            <EmptyState
+              headline="No users found"
+              description={search || typeFilter ? 'Try clearing the search or filter.' : 'Users will appear here once people sign up.'}
+            />
           ) : (
             <>
               <div className="users-table">
