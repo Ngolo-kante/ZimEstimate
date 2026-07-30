@@ -121,21 +121,31 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* Base Styles */
-body {
-  background: var(--color-background);
-  color: var(--color-text);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
-}
+/* Base Styles.
+   Wrapped in Tailwind's own @layer base: unlayered CSS always beats layered
+   CSS under cascade-layer rules, regardless of specificity, and Tailwind's
+   utilities (text-white, text-slate-600, etc.) are generated inside its own
+   layers. Left unlayered, this plain `a { color }` rule silently overrode
+   every Tailwind text-color utility applied to any link app-wide — e.g. a
+   "Use the Manual BOQ Builder" button with bg-slate-900 text-white rendered
+   its text in --color-primary (navy) instead, on a near-black background,
+   making the CTA nearly unreadable. @layer base restores the precedence
+   Tailwind expects: a utility on the element wins over this default. */
+@layer base {
+  body {
+    background: var(--color-background);
+    color: var(--color-text);
+    font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  }
 
-/* Link Styles */
-a {
-  color: var(--color-primary);
-  text-decoration: none;
-}
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
 
-a:hover {
-  color: var(--color-accent);
+  a:hover {
+    color: var(--color-accent);
+  }
 }
 
 /* Button Base */
