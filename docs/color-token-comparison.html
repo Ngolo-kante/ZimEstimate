@@ -1,0 +1,541 @@
+<title>Color Token Comparison — ZimEstimate</title>
+<style>
+  :root {
+    --page-bg: #F6F7F9;
+    --page-bg-alt: #EEF0F3;
+    --ink: #1A1D23;
+    --ink-soft: #565C68;
+    --line: #DADEE4;
+    --card-bg: #FFFFFF;
+    --tag-live-bg: #E8ECF1;
+    --tag-live-ink: #3A4250;
+    --tag-unused-bg: #F1ECE4;
+    --tag-unused-ink: #6B5D48;
+    --select-ring: #2A2E36;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page-bg: #14171C;
+      --page-bg-alt: #1B1F26;
+      --ink: #E7E9EC;
+      --ink-soft: #9AA1AC;
+      --line: #2C313A;
+      --card-bg: #1B1F26;
+      --tag-live-bg: #26303E;
+      --tag-live-ink: #AEC2DA;
+      --tag-unused-bg: #322C22;
+      --tag-unused-ink: #D8C5A4;
+      --select-ring: #E7E9EC;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page-bg: #14171C; --page-bg-alt: #1B1F26; --ink: #E7E9EC; --ink-soft: #9AA1AC;
+    --line: #2C313A; --card-bg: #1B1F26; --tag-live-bg: #26303E; --tag-live-ink: #AEC2DA;
+    --tag-unused-bg: #322C22; --tag-unused-ink: #D8C5A4; --select-ring: #E7E9EC;
+  }
+  :root[data-theme="light"] {
+    --page-bg: #F6F7F9; --page-bg-alt: #EEF0F3; --ink: #1A1D23; --ink-soft: #565C68;
+    --line: #DADEE4; --card-bg: #FFFFFF; --tag-live-bg: #E8ECF1; --tag-live-ink: #3A4250;
+    --tag-unused-bg: #F1ECE4; --tag-unused-ink: #6B5D48; --select-ring: #2A2E36;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--page-bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 2.75rem 1.5rem 5rem; }
+
+  header.page-head { margin-bottom: 1.75rem; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 0.9rem;
+  }
+
+  h1 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    margin: 0 0 0.75rem;
+    text-wrap: balance;
+    max-width: 36ch;
+  }
+
+  .dek {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 0;
+  }
+
+  .dek code {
+    font-family: var(--mono);
+    font-size: 0.88em;
+    background: var(--page-bg-alt);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+  }
+
+  /* live selection banner */
+  .status-bar {
+    position: sticky;
+    top: 0.75rem;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.6rem 0.6rem 0.6rem 1.1rem;
+    margin-bottom: 2.25rem;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  }
+
+  .status-text {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+
+  .status-text strong { color: var(--ink); font-weight: 650; }
+
+  .status-cta {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+    background: var(--page-bg-alt);
+    border-radius: 999px;
+    padding: 0.45rem 0.85rem;
+    white-space: nowrap;
+  }
+
+  .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+
+  @media (max-width: 860px) {
+    .columns { grid-template-columns: 1fr; }
+    .status-bar { flex-direction: column; align-items: stretch; text-align: center; }
+  }
+
+  .palette-col {
+    border-radius: 16px;
+    border: 2px solid var(--line);
+    background: var(--card-bg);
+    padding: 1.5rem 1.5rem 1.75rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .palette-col { transition: none; }
+  }
+
+  .palette-col.selected {
+    border-color: var(--select-ring);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--select-ring) 12%, transparent);
+  }
+
+  .palette-head { margin-bottom: 1.1rem; }
+
+  .palette-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .palette-name { font-size: 1.02rem; font-weight: 650; margin: 0; }
+
+  .palette-file {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--ink-soft);
+    margin: 0 0 1rem;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.55rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .tag-live { background: var(--tag-live-bg); color: var(--tag-live-ink); }
+  .tag-unused { background: var(--tag-unused-bg); color: var(--tag-unused-ink); }
+
+  /* compact reference swatches */
+  .mini-swatches {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .mini-swatch {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.08);
+    position: relative;
+  }
+
+  /* choose button */
+  .choose-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--sans);
+    font-size: 0.86rem;
+    font-weight: 650;
+    padding: 0.7rem 1rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--select-ring);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    margin-bottom: 1.5rem;
+  }
+  .choose-btn:hover { background: var(--page-bg-alt); }
+  .choose-btn:focus-visible { outline: 2px solid var(--select-ring); outline-offset: 2px; }
+  .palette-col.selected .choose-btn {
+    background: var(--select-ring);
+    color: var(--page-bg);
+  }
+  .choose-btn .check {
+    width: 15px; height: 15px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .palette-col.selected .choose-btn .check { background: var(--page-bg); }
+  .choose-btn .check svg { display: none; width: 10px; height: 10px; }
+  .palette-col.selected .choose-btn .check svg { display: block; }
+
+  .example-label {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 1.4rem 0 0.6rem;
+  }
+  .example-label:first-of-type { margin-top: 0; }
+
+  /* ---- supplier UI examples, scoped per palette via custom props ---- */
+  .stage {
+    border-radius: 12px;
+    padding: 1.1rem 1.15rem;
+  }
+  .stage.a {
+    --m-bg: #F8FAFC; --m-surface: #FFFFFF; --m-primary: #0B1F3B; --m-accent: #2E6CF6;
+    --m-text: #0F172A; --m-text-soft: #64748B; --m-border: #E2E8F0;
+    --m-success: #16A34A; --m-warning: #F59E0B;
+    background: var(--m-bg);
+  }
+  .stage.b {
+    --m-bg: #FCFCFC; --m-surface: #FFFFFF; --m-primary: #06142F; --m-accent: #4E9AF7;
+    --m-text: #06142F; --m-text-soft: #8C8F9E; --m-border: #D3D3D7;
+    --m-success: #10B981; --m-warning: #F59E0B;
+    background: var(--m-bg);
+  }
+
+  /* Example 1 — application review card */
+  .ex-card {
+    background: var(--m-surface);
+    border: 1px solid var(--m-border);
+    border-radius: 12px;
+    padding: 1.1rem 1.2rem;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+  }
+  .ex-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.7rem; }
+  .ex-badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 0.26rem 0.5rem; border-radius: 999px;
+    background: color-mix(in srgb, var(--m-success) 16%, transparent);
+    color: var(--m-success);
+  }
+  .ex-title { font-family: var(--sans); color: var(--m-primary); font-size: 0.95rem; font-weight: 650; margin: 0 0 0.3rem; }
+  .ex-body { color: var(--m-text-soft); font-size: 0.8rem; line-height: 1.5; margin: 0 0 0.9rem; }
+  .ex-btn {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    background: var(--m-accent); color: #fff;
+    font-size: 0.8rem; font-weight: 600; padding: 0.5rem 0.9rem; border-radius: 8px; border: none;
+  }
+
+  /* Example 2 — admin queue row */
+  .ex-row {
+    background: var(--m-surface);
+    border: 1px solid var(--m-border);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.6rem;
+  }
+  .ex-row-main { min-width: 0; }
+  .ex-row-name { color: var(--m-primary); font-size: 0.86rem; font-weight: 620; margin: 0 0 0.2rem; }
+  .ex-row-meta { color: var(--m-text-soft); font-size: 0.72rem; margin: 0; }
+  .ex-pill {
+    font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.04em; text-transform: uppercase;
+    padding: 0.28rem 0.55rem; border-radius: 999px; flex-shrink: 0;
+    background: color-mix(in srgb, var(--m-warning) 18%, transparent);
+    color: color-mix(in srgb, var(--m-warning) 70%, var(--m-text));
+  }
+
+  /* Example 3 — marketplace trusted-supplier listing */
+  .ex-list {
+    background: var(--m-surface);
+    border: 1px solid var(--m-border);
+    border-radius: 10px;
+    padding: 0.2rem 0;
+    margin-top: 0.6rem;
+  }
+  .ex-list-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--m-border);
+  }
+  .ex-list-item:last-child { border-bottom: none; }
+  .ex-list-name { color: var(--m-text); font-size: 0.82rem; font-weight: 560; margin: 0; }
+  .ex-list-loc { color: var(--m-text-soft); font-size: 0.72rem; margin: 0.1rem 0 0; }
+  .ex-list-rating {
+    display: flex; align-items: center; gap: 0.3rem;
+    font-family: var(--mono); font-size: 0.76rem; font-variant-numeric: tabular-nums;
+    color: var(--m-text);
+  }
+  .ex-list-rating svg { width: 12px; height: 12px; fill: var(--m-warning); }
+  .ex-list-link { color: var(--m-accent); font-size: 0.74rem; font-weight: 600; }
+
+  .foot-note {
+    margin-top: 2.75rem;
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-width: 68ch;
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="page-head">
+    <p class="eyebrow">Token consolidation · decision needed</p>
+    <h1>Same three supplier screens, two palettes.</h1>
+    <p class="dek">
+      An approval card, an admin queue row, and a marketplace listing — the
+      actual supplier surfaces from earlier — rendered once per candidate.
+      Click <code>Choose this palette</code> under whichever reads right.
+    </p>
+  </header>
+
+  <div class="status-bar">
+    <p class="status-text" id="statusText">Nothing selected yet — click a palette below.</p>
+    <span class="status-cta">Tell me your pick in chat when ready</span>
+  </div>
+
+  <div class="columns">
+
+    <!-- ============ design-tokens.css ============ -->
+    <div class="palette-col" id="col-a" data-palette="design-tokens.css">
+      <div class="palette-head">
+        <div class="palette-name-row">
+          <p class="palette-name">design-tokens.css</p>
+          <span class="tag tag-unused">Unused intent</span>
+        </div>
+        <p class="palette-file">approved Feb 10, 2026 — not currently rendering</p>
+      </div>
+
+      <div class="mini-swatches" aria-hidden="true">
+        <div class="mini-swatch" style="background:#0B1F3B" title="--color-primary"></div>
+        <div class="mini-swatch" style="background:#2E6CF6" title="--color-accent"></div>
+        <div class="mini-swatch" style="background:#F8FAFC" title="--color-background"></div>
+        <div class="mini-swatch" style="background:#16A34A" title="--color-emerald"></div>
+        <div class="mini-swatch" style="background:#F59E0B" title="--color-amber"></div>
+        <div class="mini-swatch" style="background:#DC2626" title="--color-danger"></div>
+      </div>
+
+      <button class="choose-btn" data-select="col-a">
+        <span class="check"><svg viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        Choose this palette
+      </button>
+
+      <p class="example-label">Supplier application review</p>
+      <div class="stage a">
+        <div class="ex-card">
+          <div class="ex-card-top">
+            <span class="ex-badge">
+              <svg width="10" height="10" viewBox="0 0 20 20"><path d="M10 1l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V4z" fill="currentColor"/></svg>
+              Verified
+            </span>
+          </div>
+          <p class="ex-title">Mbudzi Building Supplies</p>
+          <p class="ex-body">Harare · Cement &amp; Concrete, Bricks &amp; Blocks, Roofing Materials</p>
+          <span class="ex-btn">View application</span>
+        </div>
+      </div>
+
+      <p class="example-label">Admin approval queue</p>
+      <div class="stage a">
+        <div class="ex-row">
+          <div class="ex-row-main">
+            <p class="ex-row-name">Mbudzi Building Supplies</p>
+            <p class="ex-row-meta">Harare · 7 yrs in business</p>
+          </div>
+          <span class="ex-pill">Pending</span>
+        </div>
+      </div>
+
+      <p class="example-label">Marketplace · trusted suppliers</p>
+      <div class="stage a">
+        <div class="ex-list">
+          <div class="ex-list-item">
+            <div>
+              <p class="ex-list-name">Union Hardware</p>
+              <p class="ex-list-loc">Harare CBD</p>
+            </div>
+            <div class="ex-list-rating">
+              <svg viewBox="0 0 20 20"><path d="M10 1l2.6 5.8 6.4.6-4.8 4.2 1.4 6.2L10 14.8 4.4 17.8l1.4-6.2L1 7.4l6.4-.6z"/></svg>
+              4.6
+            </div>
+          </div>
+          <div class="ex-list-item">
+            <div>
+              <p class="ex-list-name">Mbudzi Building Supplies</p>
+              <p class="ex-list-loc">Workington, Harare</p>
+            </div>
+            <span class="ex-list-link">View →</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ globals.css ============ -->
+    <div class="palette-col" id="col-b" data-palette="globals.css">
+      <div class="palette-head">
+        <div class="palette-name-row">
+          <p class="palette-name">globals.css</p>
+          <span class="tag tag-live">Currently live</span>
+        </div>
+        <p class="palette-file">redeclares :root — this is what ships today</p>
+      </div>
+
+      <div class="mini-swatches" aria-hidden="true">
+        <div class="mini-swatch" style="background:#06142F" title="--color-primary"></div>
+        <div class="mini-swatch" style="background:#4E9AF7" title="--color-accent"></div>
+        <div class="mini-swatch" style="background:#FCFCFC; border-color:rgba(0,0,0,0.15)" title="--color-background"></div>
+        <div class="mini-swatch" style="background:#10B981" title="--color-success"></div>
+        <div class="mini-swatch" style="background:#F59E0B" title="--color-warning"></div>
+        <div class="mini-swatch" style="background:#EF4444" title="--color-error"></div>
+      </div>
+
+      <button class="choose-btn" data-select="col-b">
+        <span class="check"><svg viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        Choose this palette
+      </button>
+
+      <p class="example-label">Supplier application review</p>
+      <div class="stage b">
+        <div class="ex-card">
+          <div class="ex-card-top">
+            <span class="ex-badge">
+              <svg width="10" height="10" viewBox="0 0 20 20"><path d="M10 1l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V4z" fill="currentColor"/></svg>
+              Verified
+            </span>
+          </div>
+          <p class="ex-title">Mbudzi Building Supplies</p>
+          <p class="ex-body">Harare · Cement &amp; Concrete, Bricks &amp; Blocks, Roofing Materials</p>
+          <span class="ex-btn">View application</span>
+        </div>
+      </div>
+
+      <p class="example-label">Admin approval queue</p>
+      <div class="stage b">
+        <div class="ex-row">
+          <div class="ex-row-main">
+            <p class="ex-row-name">Mbudzi Building Supplies</p>
+            <p class="ex-row-meta">Harare · 7 yrs in business</p>
+          </div>
+          <span class="ex-pill">Pending</span>
+        </div>
+      </div>
+
+      <p class="example-label">Marketplace · trusted suppliers</p>
+      <div class="stage b">
+        <div class="ex-list">
+          <div class="ex-list-item">
+            <div>
+              <p class="ex-list-name">Union Hardware</p>
+              <p class="ex-list-loc">Harare CBD</p>
+            </div>
+            <div class="ex-list-rating">
+              <svg viewBox="0 0 20 20"><path d="M10 1l2.6 5.8 6.4.6-4.8 4.2 1.4 6.2L10 14.8 4.4 17.8l1.4-6.2L1 7.4l6.4-.6z"/></svg>
+              4.6
+            </div>
+          </div>
+          <div class="ex-list-item">
+            <div>
+              <p class="ex-list-name">Mbudzi Building Supplies</p>
+              <p class="ex-list-loc">Workington, Harare</p>
+            </div>
+            <span class="ex-list-link">View →</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="foot-note">
+    Picking <strong>globals.css</strong> is pure cleanup — nothing currently
+    visible changes. Picking <strong>design-tokens.css</strong> re-themes the
+    whole app to the values on the left, including the PWA status-bar color
+    and every inline hex that currently matches the live navy or blue by
+    coincidence. Either way the fix is the same shape: delete the losing
+    file's overlapping <code>:root</code> declarations so each variable name
+    has exactly one value.
+  </p>
+
+</div>
+
+<script>
+  var cols = [document.getElementById('col-a'), document.getElementById('col-b')];
+  var statusText = document.getElementById('statusText');
+  document.querySelectorAll('[data-select]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var targetId = btn.getAttribute('data-select');
+      cols.forEach(function (col) {
+        var isTarget = col.id === targetId;
+        col.classList.toggle('selected', isTarget);
+      });
+      var chosen = document.getElementById(targetId);
+      statusText.innerHTML = 'Selected: <strong>' + chosen.dataset.palette + '</strong>';
+    });
+  });
+</script>

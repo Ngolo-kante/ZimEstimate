@@ -59,9 +59,9 @@ export default function Sidebar() {
         <div className="logo-icon">
           <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
             {/* Abstract Z shape formed by trend lines */}
-            <path d="M6 24L12 16L18 20L26 8" stroke="#4E9AF7" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M26 8H18" stroke="#4E9AF7" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M26 8V16" stroke="#4E9AF7" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M6 24L12 16L18 20L26 8" stroke="var(--color-accent)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M26 8H18" stroke="var(--color-accent)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M26 8V16" stroke="var(--color-accent)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
             {/* Supporting structure */}
             <rect x="6" y="26" width="4" height="4" rx="2" fill="var(--color-text-inverse)" />
             <rect x="16" y="26" width="4" height="4" rx="2" fill="var(--color-text-inverse)" />

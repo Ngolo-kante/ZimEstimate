@@ -169,7 +169,7 @@ export function CardBadge({
         }
 
         .badge-warning {
-          background: rgba(78, 154, 247, 0.15);
+          background: rgba(245, 158, 11, 0.15);
           color: var(--color-warning);
         }
 

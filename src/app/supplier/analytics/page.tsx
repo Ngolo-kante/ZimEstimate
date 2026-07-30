@@ -398,7 +398,7 @@ export default function SupplierAnalyticsPage() {
 
           .bar-fill {
             height: 100%;
-            background: linear-gradient(90deg, #4e9af7, #2b6cb0);
+            background: linear-gradient(90deg, var(--color-accent), var(--color-accent-dark));
           }
 
           .bar-hint {

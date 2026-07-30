@@ -10,57 +10,59 @@
    ============================================ */
 
 :root {
-  /* Primary Colors - Deep Navy (Trust, Architecture) */
-  --color-primary: #06142F;
+  /* Primary Colors - Deep Navy (Trust, Architecture)
+     Values below are design-tokens.css's palette, approved 2026-02-10. This
+     block used to redeclare its own values after importing design-tokens.css,
+     so its old values silently won and the approved palette never rendered. */
+  --color-primary: #0B1F3B;
   /* Deep Navy */
-  --color-primary-light: #1A2847;
+  --color-primary-light: #1A3A5C;
   /* Navy Light */
-  --color-primary-dark: #030A18;
+  --color-primary-dark: #061526;
   /* Navy Dark */
 
-  /* Accent Colors - Vibrant Blue (Action, Modern) */
-  --color-accent: #4E9AF7;
-  /* Vibrant Blue */
-  --color-accent-light: #D5E5F2;
+  /* Accent Colors - Electric Blue (Action, Modern) */
+  --color-accent: #2E6CF6;
+  /* Electric Blue */
+  --color-accent-light: #5A8DF7;
   /* Light Blue Tint */
-  --color-accent-dark: #3D7DD6;
+  --color-accent-dark: #1E4FD9;
   /* Blue Hover */
-  --color-accent-bg: rgba(78, 154, 247, 0.12);
+  --color-accent-bg: rgba(46, 108, 246, 0.12);
 
   /* Backgrounds */
-  --color-background: #FCFCFC;
+  --color-background: #F8FAFC;
   /* Off-White */
   --color-surface: #FFFFFF;
   --color-surface-elevated: #FFFFFF;
 
   /* Text */
-  --color-text: #06142F;
-  /* Deep Navy */
-  --color-text-secondary: #8C8F9E;
+  --color-text: #0F172A;
+  --color-text-secondary: #64748B;
   /* Muted Gray */
-  --color-text-muted: #A1AEC4;
+  --color-text-muted: #94A3B8;
   /* Disabled Gray */
   --color-text-inverse: #FFFFFF;
 
   /* Tinted backgrounds */
-  --color-primary-bg: rgba(78, 154, 247, 0.12);
-  --color-error-bg: rgba(239, 68, 68, 0.1);
+  --color-primary-bg: rgba(46, 108, 246, 0.12);
+  --color-error-bg: rgba(220, 38, 38, 0.1);
 
   /* Borders */
-  --color-border: #D3D3D7;
+  --color-border: #E2E8F0;
   /* Input borders, dividers */
-  --color-border-light: #E8E8EA;
+  --color-border-light: rgba(148, 163, 184, 0.25);
   /* Subtle borders */
 
   /* Status Colors */
-  --color-success: #10B981;
-  /* Emerald-500 */
+  --color-success: #16A34A;
+  /* Emerald-600 */
   --color-warning: #F59E0B;
-  --color-error: #EF4444;
-  --color-info: #4E9AF7;
+  --color-error: #DC2626;
+  --color-info: #2E6CF6;
 
   /* Disabled/Inactive States */
-  --color-disabled: #A1AEC4;
+  --color-disabled: #94A3B8;
 
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -85,8 +87,8 @@
 
 /* Tailwind Theme Inline */
 @theme inline {
-  --color-oxford-blue: #06142F;
-  --color-vibrant-blue: #4E9AF7;
+  --color-oxford-blue: #0B1F3B;
+  --color-vibrant-blue: #2E6CF6;
 
   /* Semantic Colors */
   --color-primary: var(--color-primary);

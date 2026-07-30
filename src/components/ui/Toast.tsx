@@ -40,8 +40,8 @@ const toastConfig: Record<ToastType, { icon: ReactNode; color: string; bgColor: 
     },
     info: {
         icon: <Info size={20} weight="fill" />,
-        color: '#4E9AF7',
-        bgColor: 'rgba(78, 154, 247, 0.1)',
+        color: '#2E6CF6',
+        bgColor: 'rgba(46, 108, 246, 0.1)',
     },
 };
 

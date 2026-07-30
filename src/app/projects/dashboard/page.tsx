@@ -543,7 +543,7 @@ function DashboardContent() {
 
         /* ── Hero ── */
         .dash-hero {
-          background: linear-gradient(135deg, #06142f 0%, #1e40af 50%, #2e6cf6 100%);
+          background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent-dark) 50%, var(--color-accent) 100%);
           border-radius: 20px;
           padding: 24px 28px;
           display: flex;

@@ -1048,7 +1048,7 @@ export default function QuickBudgetPage() {
           display: block;
           height: 100%;
           border-radius: 999px;
-          background: linear-gradient(90deg, #4e9af7, #2e6cf6);
+          background: linear-gradient(90deg, var(--color-accent), var(--color-accent-dark));
         }
 
         .note {
