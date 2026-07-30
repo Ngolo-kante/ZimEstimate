@@ -26,7 +26,6 @@ const PROJECT_TYPES: Array<{
   description: string;
   icon: Icon;
   minutes: number;
-  gradient: string;
   iconBg: string;
   iconColor: string;
 }> = [
@@ -36,7 +35,6 @@ const PROJECT_TYPES: Array<{
     description: 'Brick-built, precast rings, or poly tank. Includes soakaway and full pipework BOQ.',
     icon: Toilet,
     minutes: 5,
-    gradient: 'from-amber-50 to-orange-50/20 hover:border-amber-200',
     iconBg: 'bg-amber-100/80',
     iconColor: 'text-amber-600',
   },
@@ -46,7 +44,6 @@ const PROJECT_TYPES: Array<{
     description: 'Full off-grid or hybrid solar sizing with appliance checklist. Generates panel, inverter and battery BOQ.',
     icon: Lightning,
     minutes: 7,
-    gradient: 'from-yellow-50 to-amber-50/20 hover:border-yellow-200',
     iconBg: 'bg-yellow-100/80',
     iconColor: 'text-yellow-600',
   },
@@ -56,7 +53,6 @@ const PROJECT_TYPES: Array<{
     description: 'Poly tank installation with optional borehole pump and municipal connection.',
     icon: Drop,
     minutes: 5,
-    gradient: 'from-blue-50 to-sky-50/20 hover:border-blue-200',
     iconBg: 'bg-blue-100/80',
     iconColor: 'text-blue-600',
   },
@@ -66,7 +62,6 @@ const PROJECT_TYPES: Array<{
     description: 'Drilling, casing, pump, and rising main BOQ. Includes optional pump test and mobilization.',
     icon: CirclesThree,
     minutes: 4,
-    gradient: 'from-teal-50 to-emerald-50/20 hover:border-teal-200',
     iconBg: 'bg-teal-100/80',
     iconColor: 'text-teal-600',
   },
@@ -76,7 +71,6 @@ const PROJECT_TYPES: Array<{
     description: 'Precast panels, brick walls, palisade, mesh, or electric fence with gates.',
     icon: Rows,
     minutes: 4,
-    gradient: 'from-green-50 to-emerald-50/20 hover:border-green-200',
     iconBg: 'bg-green-100/80',
     iconColor: 'text-green-600',
   },
@@ -86,7 +80,6 @@ const PROJECT_TYPES: Array<{
     description: 'Interlocking bricks, concrete slabs, or cobblestones with sub-base and kerbing options.',
     icon: Path,
     minutes: 4,
-    gradient: 'from-stone-50 to-slate-50/20 hover:border-stone-200',
     iconBg: 'bg-stone-100/80',
     iconColor: 'text-stone-600',
   },
@@ -133,7 +126,7 @@ export default function QuickProjectsPage() {
               <Link
                 key={pt.id}
                 href={`/quick-projects/${pt.id}`}
-                className={`group relative flex flex-col p-8 rounded-[2rem] border border-slate-200/60 bg-gradient-to-br ${pt.gradient} shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden`}
+                className="group relative flex flex-col p-8 rounded-[2rem] border border-slate-200/60 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-slate-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <div className={`w-14 h-14 rounded-2xl ${pt.iconBg} ${pt.iconColor} flex flex-shrink-0 items-center justify-center mb-6 shadow-sm border border-white/40 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300`}>
