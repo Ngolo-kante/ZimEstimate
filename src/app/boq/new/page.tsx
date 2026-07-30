@@ -687,7 +687,10 @@ function BoqNewPageContent() {
               </div>
             </div>
           )}
-          rightEstimate={currentStep === 5 ? <LiveEstimatePanel /> : null}
+          // The running estimate belongs beside the inputs, not on the review
+          // step, where ReviewTabs already lists every line item — showing both
+          // rendered the BOQ twice.
+          rightEstimate={currentStep < WIZARD_STEPS.length - 1 ? <LiveEstimatePanel /> : null}
           heroIllustration={null}
         />
 
