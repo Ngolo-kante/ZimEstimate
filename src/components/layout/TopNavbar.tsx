@@ -12,6 +12,8 @@ import {
   User,
   Gear,
   SignOut,
+  Storefront,
+  ChartLineUp,
 } from '@phosphor-icons/react';
 import { useAuth } from '@/components/providers/AuthProvider';
 
@@ -203,14 +205,40 @@ export default function TopNavbar() {
                   </>
                 ) : (
                   <>
+                    <div className="auth-prompt">
+                      <Link
+                        href="/auth/login"
+                        className="auth-btn auth-btn-primary"
+                        onClick={() => setProfileMenuOpen(false)}
+                      >
+                        Sign In
+                      </Link>
+                      <Link
+                        href="/auth/signup"
+                        className="auth-btn auth-btn-secondary"
+                        onClick={() => setProfileMenuOpen(false)}
+                      >
+                        Create Account
+                      </Link>
+                    </div>
+                    <div className="menu-divider" />
                     <Link
-                      href="/auth/login"
+                      href="/marketplace"
                       className="menu-item"
                       onClick={() => setProfileMenuOpen(false)}
                       style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
                     >
-                      <User size={18} weight="duotone" />
-                      Sign In
+                      <Storefront size={18} weight="duotone" className="text-slate-400" />
+                      Browse Marketplace
+                    </Link>
+                    <Link
+                      href="/market-insights"
+                      className="menu-item"
+                      onClick={() => setProfileMenuOpen(false)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
+                    >
+                      <ChartLineUp size={18} weight="duotone" className="text-slate-400" />
+                      Check Live Material Prices
                     </Link>
                   </>
                 )}
@@ -508,6 +536,53 @@ export default function TopNavbar() {
           margin: 4px 0;
         }
 
+        /* Signed-out state — primary/secondary pill buttons, matching a
+           two-tier sign-in/create-account hierarchy rather than one small
+           text link. */
+        .auth-prompt {
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        /* Same styled-jsx + <Link> scoping limitation as .mobile-nav-link
+           above — these render on Link, so they need :global() to match. */
+        :global(.auth-btn) {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          padding: 12px 16px;
+          border-radius: 999px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          text-decoration: none;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          box-sizing: border-box;
+        }
+
+        :global(.auth-btn-primary) {
+          background: var(--color-primary);
+          color: #fff;
+          border: 1px solid var(--color-primary);
+        }
+
+        :global(.auth-btn-primary:hover) {
+          background: var(--color-primary-dark);
+        }
+
+        :global(.auth-btn-secondary) {
+          background: transparent;
+          color: var(--color-primary);
+          border: 1px solid var(--color-primary);
+        }
+
+        :global(.auth-btn-secondary:hover) {
+          background: var(--color-primary-bg);
+        }
+
         .menu-item {
           display: flex;
           align-items: center;
@@ -635,6 +710,42 @@ export default function TopNavbar() {
 
         .mobile-toggle {
           display: none;
+        }
+
+        /* Mobile nav links — previously had no rules at all, so they fell
+           back to default inline <a> layout and ran together as one line
+           of text with no spacing. */
+        .mobile-nav {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        /* styled-jsx can only auto-scope intrinsic HTML tags (div, nav, a);
+           it cannot inject its scope class into a custom component like
+           next/link's <Link>, so a plain scoped rule here would compile
+           correctly but never match the rendered element. :global() opts
+           these out of scoping so they apply as plain class selectors. */
+        :global(.mobile-nav-link) {
+          display: block;
+          padding: 12px 16px;
+          border-radius: 10px;
+          font-size: 0.95rem;
+          font-weight: 500;
+          color: var(--color-text-secondary);
+          text-decoration: none;
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+
+        :global(.mobile-nav-link:hover) {
+          background: rgba(0, 0, 0, 0.04);
+          color: var(--color-text);
+        }
+
+        :global(.mobile-nav-link.active) {
+          background: var(--color-primary-bg);
+          color: var(--color-primary);
+          font-weight: 600;
         }
         
         /* Typography - Concept */
