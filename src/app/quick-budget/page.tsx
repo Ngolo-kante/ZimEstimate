@@ -79,6 +79,18 @@ export default function QuickBudgetPage() {
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [isGeneratingBOD, setIsGeneratingBOD] = useState(false);
 
+  // Prefill from ?budget= so the home hero's calculator hands its number over.
+  // Read via window.location rather than useSearchParams to avoid wrapping the
+  // whole page in the Suspense boundary Next requires for that hook.
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get('budget');
+    if (!raw) return;
+    const value = Number(raw.replace(/[^0-9]/g, ''));
+    if (Number.isFinite(value) && value > 0) {
+      setBudgetInput(String(value));
+    }
+  }, []);
+
   const parsedBudget = Number(budgetInput.replace(/,/g, ''));
   const parsedArea = Number(floorAreaInput.replace(/,/g, ''));
 
