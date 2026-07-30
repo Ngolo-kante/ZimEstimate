@@ -20,6 +20,8 @@ import {
   X,
 } from '@phosphor-icons/react';
 import { supabase } from '@/lib/supabase';
+import LoadingState from '@/components/ui/LoadingState';
+import ErrorState from '@/components/ui/ErrorState';
 import type { SupplierApplication, SupplierApplicationStatus, SupplierDocument } from '@/lib/database.types';
 import {
   getSupplierApplicationDocuments,
@@ -47,6 +49,7 @@ const DOCUMENT_LABELS: Record<string, string> = {
 export default function AdminSuppliersPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [applications, setApplications] = useState<SupplierApplication[]>([]);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('pending');
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,6 +63,7 @@ export default function AdminSuppliersPage() {
 
   const loadApplications = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
 
       let query = supabase
@@ -74,7 +78,9 @@ export default function AdminSuppliersPage() {
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error loading applications:', error);
+        // Previously only logged, so a failed query rendered the empty state and
+        // read as "no applications have been submitted".
+        setLoadError(error.message);
       } else {
         setApplications((data || []) as SupplierApplication[]);
       }
@@ -412,7 +418,15 @@ export default function AdminSuppliersPage() {
       }}>
         {/* Applications List */}
         <div>
-          {filteredApplications.length === 0 ? (
+          {loading ? (
+            <LoadingState variant="cards" count={4} label="Loading supplier applications" />
+          ) : loadError ? (
+            <ErrorState
+              whatFailed="Supplier applications could not be loaded."
+              technicalDetail={loadError}
+              onRetry={() => void loadApplications()}
+            />
+          ) : filteredApplications.length === 0 ? (
             <div style={{
               backgroundColor: 'white',
               borderRadius: '12px',

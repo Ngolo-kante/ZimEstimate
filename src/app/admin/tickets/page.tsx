@@ -4,6 +4,9 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import Card, { CardContent, CardBadge } from '@/components/ui/Card';
+import EmptyState from '@/components/ui/EmptyState';
+import LoadingState from '@/components/ui/LoadingState';
+import ErrorState from '@/components/ui/ErrorState';
 import Button from '@/components/ui/Button';
 import {
   getAllTickets,
@@ -53,6 +56,7 @@ export default function AdminTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('open');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
@@ -62,10 +66,13 @@ export default function AdminTicketsPage() {
 
   const loadTickets = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const result = await getAllTickets({ status: statusFilter || undefined, page, pageSize: 25 });
       setTickets(result.tickets as Ticket[]);
       setTotal(result.total);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Unknown error');
     } finally {
       // Guarantees the spinner clears even if a query rejects.
       setLoading(false);
@@ -128,9 +135,18 @@ export default function AdminTicketsPage() {
         <Card className="tickets-list-card">
           <CardContent>
             {loading ? (
-              <div className="table-loading">Loading...</div>
+              <LoadingState variant="table" rows={6} label="Loading tickets" />
+            ) : loadError ? (
+              <ErrorState
+                whatFailed="Support tickets could not be loaded."
+                technicalDetail={loadError}
+                onRetry={() => void loadTickets()}
+              />
             ) : tickets.length === 0 ? (
-              <div className="empty-state">No tickets found.</div>
+              <EmptyState
+                headline="No tickets"
+                description="Support tickets raised by users will appear here."
+              />
             ) : (
               tickets.map((t) => (
                 <div
