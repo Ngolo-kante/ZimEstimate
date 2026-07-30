@@ -224,20 +224,18 @@ export default function TopNavbar() {
                     <div className="menu-divider" />
                     <Link
                       href="/marketplace"
-                      className="menu-item"
+                      className="quick-link"
                       onClick={() => setProfileMenuOpen(false)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
                     >
-                      <Storefront size={18} weight="duotone" className="text-slate-400" />
+                      <Storefront size={16} weight="duotone" />
                       Browse Marketplace
                     </Link>
                     <Link
                       href="/market-insights"
-                      className="menu-item"
+                      className="quick-link"
                       onClick={() => setProfileMenuOpen(false)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
                     >
-                      <ChartLineUp size={18} weight="duotone" className="text-slate-400" />
+                      <ChartLineUp size={16} weight="duotone" />
                       Check Live Material Prices
                     </Link>
                   </>
@@ -581,6 +579,28 @@ export default function TopNavbar() {
 
         :global(.auth-btn-secondary:hover) {
           background: var(--color-primary-bg);
+        }
+
+        /* Sign-in-free quick actions below the auth buttons. Dedicated class
+           (not a reuse of .menu-item, which has this same Link + styled-jsx
+           scoping issue) so padding/font-size/color are guaranteed to apply. */
+        :global(.quick-link) {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 10px 16px;
+          font-size: 0.8125rem;
+          font-weight: 500;
+          color: var(--color-text-secondary);
+          text-decoration: none;
+          box-sizing: border-box;
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+
+        :global(.quick-link:hover) {
+          background: #f9fafb;
+          color: var(--color-text);
         }
 
         .menu-item {
