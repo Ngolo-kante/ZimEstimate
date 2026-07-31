@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import StageTab from '@/components/projects/StageTab';
 import DocumentsTab from '@/components/projects/DocumentsTab';
+import ProjectViewTabs from '@/components/projects/ProjectViewTabs';
 import ComplianceTrackerTab from '@/components/projects/ComplianceTrackerTab';
 import ShareModal from '@/components/projects/ShareModal';
 import { RunningTotalBar } from '@/components/ui/RunningTotalBar';
@@ -65,7 +66,6 @@ import {
     MapPin,
     Warning,
     WarningCircle,
-    List,
     Wallet,
     TrendUp,
     CheckCircle,
@@ -186,7 +186,6 @@ function ProjectDetailContent() {
     const [activeView, setActiveView] = useState<ProjectView>('overview');
     const [activeTab, setActiveTab] = useState<BOQCategory>('substructure');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-    const [isMobileDetail, setIsMobileDetail] = useState(false);
     const [selectedItemForPurchase, setSelectedItemForPurchase] = useState<BOQItem | null>(null);
     const [selectedItemForUsage, setSelectedItemForUsage] = useState<BOQItem | null>(null);
     const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
@@ -197,14 +196,6 @@ function ProjectDetailContent() {
     } | null>(null);
 
     useReveal({ deps: [isLoading, activeView, activeTab] });
-
-    // Mobile detection for project detail
-    useEffect(() => {
-        const check = () => setIsMobileDetail(window.innerWidth <= 768);
-        check();
-        window.addEventListener('resize', check);
-        return () => window.removeEventListener('resize', check);
-    }, []);
 
     const projectPriceKey = useMemo(
         () => `boq_price_version_${projectId}`,
@@ -1222,6 +1213,19 @@ function ProjectDetailContent() {
                 />
 
                 <main className="project-main">
+                    {/* Mobile-only. The desktop sidebar stays the navigation
+                        above 768px; below it, this strip replaces a drawer the
+                        user could not open. */}
+                    <ProjectViewTabs
+                        activeView={activeView}
+                        onViewChange={(view) => {
+                            setActiveView(view);
+                            if (view === 'procurement' || view === 'boq' || view === 'usage') {
+                                void refreshProjectMaterialState();
+                            }
+                        }}
+                    />
+
                     {activeViewDetails && (
                         <section className="view-header reveal">
                             <div>
@@ -1709,16 +1713,13 @@ function ProjectDetailContent() {
                 </main>
             </div>
 
-            {/* Mobile hamburger FAB */}
-            {isMobileDetail && (
-                <button
-                    className="mobile-sidebar-fab"
-                    onClick={() => setIsMobileSidebarOpen(true)}
-                    aria-label="Open navigation"
-                >
-                    <List size={24} weight="bold" />
-                </button>
-            )}
+            {/* The mobile hamburger FAB was removed. It rendered at y732-788
+                while the global bottom navigation occupied y740-812 with the
+                same z-index, so a tap on its visible centre landed on the
+                bottom bar's "Home" link and left the project entirely — which
+                is why the page appeared not to load and why the views behind
+                the drawer were never reachable. ProjectViewTabs, rendered at
+                the top of <main>, replaces it. */}
 
             {/* Modals */}
             <PhoneNumberModal

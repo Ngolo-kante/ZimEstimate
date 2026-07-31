@@ -37,16 +37,26 @@ interface SidebarSpineProps {
     onMobileClose?: () => void;
 }
 
-const navItems: { id: ProjectView; label: string; icon: React.ReactNode }[] = [
-    { id: 'overview', label: 'Overview', icon: <House size={20} /> },
-    { id: 'budget', label: 'Budget Planner', icon: <CurrencyCircleDollar size={20} /> },
-    { id: 'boq', label: 'Bill of Quantities', icon: <ListChecks size={20} /> },
-    { id: 'compliance', label: 'Compliance Tracker', icon: <ShieldCheck size={20} /> },
-    { id: 'procurement', label: 'Procurement Hub', icon: <Truck size={20} /> },
-    { id: 'usage', label: 'Usage Tracking', icon: <Clipboard size={20} /> },
-    { id: 'documents', label: 'Documents', icon: <Files size={20} /> },
-    { id: 'settings', label: 'Configurations', icon: <Gear size={20} /> },
+/**
+ * The project's views, in order. Exported so the mobile tab strip renders the
+ * same set in the same order as this sidebar — two hand-maintained lists would
+ * drift, and a view missing from one of them is invisible on that device.
+ *
+ * `short` is for the mobile strip, where "Bill of Quantities" and "Compliance
+ * Tracker" are too wide to show several tabs at once.
+ */
+export const PROJECT_NAV_ITEMS: { id: ProjectView; label: string; short: string; icon: React.ReactNode }[] = [
+    { id: 'overview', label: 'Overview', short: 'Overview', icon: <House size={20} /> },
+    { id: 'budget', label: 'Budget Planner', short: 'Budget', icon: <CurrencyCircleDollar size={20} /> },
+    { id: 'boq', label: 'Bill of Quantities', short: 'BOQ', icon: <ListChecks size={20} /> },
+    { id: 'compliance', label: 'Compliance Tracker', short: 'Compliance', icon: <ShieldCheck size={20} /> },
+    { id: 'procurement', label: 'Procurement Hub', short: 'Procurement', icon: <Truck size={20} /> },
+    { id: 'usage', label: 'Usage Tracking', short: 'Usage', icon: <Clipboard size={20} /> },
+    { id: 'documents', label: 'Documents', short: 'Documents', icon: <Files size={20} /> },
+    { id: 'settings', label: 'Configurations', short: 'Settings', icon: <Gear size={20} /> },
 ];
+
+const navItems = PROJECT_NAV_ITEMS;
 
 export default function SidebarSpine({ project, activeView, onViewChange, isMobileOpen, onMobileClose }: SidebarSpineProps) {
     const router = useRouter();
