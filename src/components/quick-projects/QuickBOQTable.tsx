@@ -94,10 +94,24 @@ export default function QuickBOQTable({
   }, []);
 
   // ── Labor items ────────────────────────────────────────────────────────
+  // Basis for the labour percentage: excludes optional extras such as plant
+  // hire, which should not attract a builder's percentage.
   const materialsTotal = useMemo(
     () =>
       items
         .filter((i) => i.included && !i.owned && !i.optional)
+        .reduce((s, i) => s + i.totalCostUsd, 0),
+    [items],
+  );
+
+  // Everything the grand total actually counts. calculateGrandTotal keeps
+  // optional items in, so showing materialsTotal as "Materials" made the
+  // labour breakdown disagree with the Grand Total by the value of those
+  // extras — $1,230 + $307.50 displayed against a $1,687.50 total.
+  const materialsSubtotal = useMemo(
+    () =>
+      items
+        .filter((i) => i.included && !i.owned)
         .reduce((s, i) => s + i.totalCostUsd, 0),
     [items],
   );
@@ -358,6 +372,7 @@ export default function QuickBOQTable({
       <LaborSection
         labor={labor}
         materialsTotal={materialsTotal}
+        materialsSubtotal={materialsSubtotal}
         onChange={onLaborChange}
         currency={currency}
         zwgRate={zwgRate}

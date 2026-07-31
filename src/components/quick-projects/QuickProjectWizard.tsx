@@ -11,7 +11,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
-import { getActiveSteps, getVisibleQuestions, isStepComplete, updateAnswer } from '@/lib/quick-projects/engine/boqEngine';
+import { applyDefaultAnswers, getActiveSteps, getVisibleQuestions, isStepComplete, updateAnswer } from '@/lib/quick-projects/engine/boqEngine';
 import type { Answers, BOQItem, LaborConfig, QuestionFlow, QuestionOption, WizardStep } from '@/lib/quick-projects/engine/types';
 import QuickBOQTable from './QuickBOQTable';
 import BoreholeBudgetExplorer from './BoreholeBudgetExplorer';
@@ -347,7 +347,12 @@ export default function QuickProjectWizard({ flow, onSave, isContractor = false 
     }
     setShowValidation(false);
     if (isLastStep) {
-      const items = flow.calculateBOQ(answers);
+      // Fold in defaults for anything the user never touched. Controls with a
+      // defaultValue render that default but store nothing, so without this the
+      // BOQ was costed from undefined for questions the user had been shown as
+      // answered — a toggle defaulting to Yes would silently cost as No.
+      // Applied only here, so step navigation keeps working off raw answers.
+      const items = flow.calculateBOQ(applyDefaultAnswers(activeSteps, answers, notSureIds));
       setBoqItems(items);
     } else {
       setStepIndex((i) => Math.min(i + 1, totalSteps - 1));
@@ -389,7 +394,7 @@ export default function QuickProjectWizard({ flow, onSave, isContractor = false 
           labor={labor}
           onLaborChange={setLabor}
           isContractor={isContractor}
-          onSave={onSave ? (items) => onSave(items, answers, labor) : undefined}
+          onSave={onSave ? (items) => onSave(items, applyDefaultAnswers(activeSteps, answers, notSureIds), labor) : undefined}
         />
       </div>
     );

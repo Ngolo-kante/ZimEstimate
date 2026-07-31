@@ -61,10 +61,45 @@ export function isStepComplete(
     .filter((q) => q.required !== false)
     .every((q) => {
       const val = answers[q.id];
+
+      // A question carrying a defaultValue is already answered, whether or not
+      // the user touched it. Toggles render Boolean(val ?? defaultValue), so a
+      // default of false shows a perfectly valid "No" while the stored answer
+      // stays undefined — pressing Continue then failed validation on a
+      // question the user could see was answered.
+      if (val === undefined && q.defaultValue !== undefined) return true;
+
       if (val === undefined || val === null || val === '') return false;
       if (Array.isArray(val)) return val.length > 0;
       return true;
     });
+}
+
+/**
+ * Fill in any unanswered question that declares a defaultValue.
+ *
+ * Defaults were only ever applied at render time, so an untouched control
+ * displayed its default but passed `undefined` to calculateBOQ. Seeding them
+ * into the answers keeps what the user was shown and what gets costed in step.
+ * Returns the same object when there is nothing to add, so it is safe to call
+ * from an effect without causing a render loop.
+ */
+export function applyDefaultAnswers(
+  steps: WizardStep[],
+  answers: Answers,
+  notSureIds: Set<string>
+): Answers {
+  let next = answers;
+
+  steps.forEach((step) => {
+    getVisibleQuestions(step, next, notSureIds).forEach((q) => {
+      if (q.defaultValue === undefined) return;
+      if (next[q.id] !== undefined) return;
+      next = updateAnswer(next, q.id, q.defaultValue);
+    });
+  });
+
+  return next;
 }
 
 // ─── BOQ Calculation Helpers ──────────────────────────────────────────────────
