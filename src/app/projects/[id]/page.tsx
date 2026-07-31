@@ -2114,10 +2114,6 @@ function ProjectDetailContent() {
                     color: #475569;
                 }
 
-                .mobile-sidebar-fab {
-                    display: none;
-                }
-
                 @media (max-width: 1024px) {
                     .project-main {
                         padding: 18px 16px 40px;
@@ -2158,28 +2154,6 @@ function ProjectDetailContent() {
                     .next-step-item {
                         flex-direction: column;
                         align-items: flex-start;
-                    }
-
-                    .mobile-sidebar-fab {
-                        display: flex;
-                        position: fixed;
-                        bottom: 24px;
-                        left: 16px;
-                        z-index: 100;
-                        width: 56px;
-                        height: 56px;
-                        border-radius: 50%;
-                        background: var(--color-accent);
-                        color: white;
-                        border: none;
-                        align-items: center;
-                        justify-content: center;
-                        box-shadow: 0 4px 14px rgba(46, 108, 246, 0.4);
-                        cursor: pointer;
-                    }
-
-                    .mobile-sidebar-fab:active {
-                        transform: scale(0.95);
                     }
                 }
 
