@@ -79,15 +79,35 @@ export default function QuickBudgetPage() {
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [isGeneratingBOD, setIsGeneratingBOD] = useState(false);
 
-  // Prefill from ?budget= so the home hero's calculator hands its number over.
+  // Restore inputs from the query string. Serves two paths: the home hero
+  // handing its typed budget over via ?budget=, and returning from sign-in
+  // after pressing Save, which round-trips every input so the estimate the
+  // user built is still there rather than reset to defaults.
   // Read via window.location rather than useSearchParams to avoid wrapping the
   // whole page in the Suspense boundary Next requires for that hook.
   useEffect(() => {
-    const raw = new URLSearchParams(window.location.search).get('budget');
-    if (!raw) return;
-    const value = Number(raw.replace(/[^0-9]/g, ''));
-    if (Number.isFinite(value) && value > 0) {
-      setBudgetInput(String(value));
+    const params = new URLSearchParams(window.location.search);
+
+    const budgetRaw = params.get('budget');
+    if (budgetRaw) {
+      const value = Number(budgetRaw.replace(/[^0-9]/g, ''));
+      if (Number.isFinite(value) && value > 0) setBudgetInput(String(value));
+    }
+
+    const areaRaw = params.get('area');
+    if (areaRaw) {
+      const value = Number(areaRaw.replace(/[^0-9.]/g, ''));
+      if (Number.isFinite(value) && value > 0) setFloorAreaInput(String(value));
+    }
+
+    const loc = params.get('loc');
+    if (locationOptions.some((option) => option.id === loc)) {
+      setLocationType(loc as (typeof locationOptions)[number]['id']);
+    }
+
+    const profile = params.get('profile');
+    if (profileOptions.some((option) => option.id === profile)) {
+      setBuildProfile(profile as (typeof profileOptions)[number]['id']);
     }
   }, []);
 
@@ -206,8 +226,16 @@ export default function QuickBudgetPage() {
     }
 
     if (!isAuthenticated) {
+      // Carry the inputs through the sign-in round trip. Without them the user
+      // returns to a reset form and has to rebuild the estimate they just made.
+      const restore = new URLSearchParams({
+        budget: String(parsedBudget),
+        area: String(parsedArea),
+        loc: locationType,
+        profile: buildProfile,
+      });
       showInfo('Please sign in to save this project.');
-      router.push('/auth/login?redirect=/quick-budget');
+      router.push(`/auth/login?redirect=${encodeURIComponent(`/quick-budget?${restore}`)}`);
       return;
     }
 
@@ -358,7 +386,7 @@ export default function QuickBudgetPage() {
   };
 
   return (
-    <MainLayout fullWidth title="Budget Checker">
+    <MainLayout fullWidth title="Budget Estimator">
       <div className="budget-checker-page">
         <div className="ambient ambient-one" aria-hidden />
         <div className="ambient ambient-two" aria-hidden />
@@ -458,6 +486,7 @@ export default function QuickBudgetPage() {
                     <button
                       key={option.id}
                       type="button"
+                      aria-pressed={selected}
                       className={`choice ${selected ? 'selected' : ''}`}
                       onClick={() => setLocationType(option.id)}
                     >
@@ -484,6 +513,7 @@ export default function QuickBudgetPage() {
                     <button
                       key={option.id}
                       type="button"
+                      aria-pressed={selected}
                       className={`choice ${selected ? 'selected' : ''}`}
                       onClick={() => setBuildProfile(option.id)}
                     >
@@ -617,6 +647,11 @@ export default function QuickBudgetPage() {
           flex-direction: column;
           gap: 18px;
           isolation: isolate;
+          /* The decorative .ambient blurs are absolutely positioned 30-40px
+             outside this container, which pushed the document wider than the
+             viewport between roughly 1150px and 1260px. Clip them here — no
+             sticky descendants, so clipping is safe. */
+          overflow-x: clip;
         }
 
         .ambient {

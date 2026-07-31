@@ -20,16 +20,21 @@ import { useAuth } from '@/components/providers/AuthProvider';
 interface NavItem {
   label: string;
   href: string;
+  /** Highlight when the path starts with this instead of href — lets
+      "My Projects" stay lit on /projects and /projects/[id], not only on
+      its own landing URL. */
+  activePrefix?: string;
   hasDropdown?: boolean;
   adminOnly?: boolean;
 }
 
 const navItems: NavItem[] = [
   { label: 'Home', href: '/home' },
-  { label: 'My Projects', href: '/projects/dashboard' },
+  { label: 'Budget Estimator', href: '/quick-budget' },
+  { label: 'My Projects', href: '/projects/dashboard', activePrefix: '/projects' },
   { label: 'Quick Projects', href: '/quick-projects' },
-  { label: 'Materials Insights', href: '/market-insights' },
-  { label: 'Project Templates', href: '/templates' },
+  { label: 'Market Insights', href: '/market-insights' },
+  { label: 'Templates', href: '/templates' },
   { label: 'Marketplace', href: '/marketplace' },
 ];
 
@@ -41,20 +46,20 @@ export default function TopNavbar() {
   const { user, profile, signOut, isAuthenticated } = useAuth();
   const isAdmin = profile?.user_type === 'admin' || profile?.tier === 'admin';
 
-  const isActive = (href: string) => {
-    return pathname.startsWith(href);
+  const isActive = (item: NavItem) => {
+    return pathname.startsWith(item.activePrefix ?? item.href);
   };
 
   /* Notification State */
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
 
-  // Mock notifications for now - could be fetched from a store or API
-  const notifications = [
-    { id: 1, title: 'Project "Harare Home" created', time: '2 mins ago', unread: true },
-    { id: 2, title: 'Material prices updated', time: '1 hour ago', unread: false },
-    { id: 3, title: 'Welcome to ZimEstimate Pro', time: '1 day ago', unread: false },
-  ];
+  // No live feed is wired to the navbar yet. Until one is, show an honest
+  // empty state — the previous hardcoded samples ("Project 'Harare Home'
+  // created 2 mins ago") rendered for every visitor, alongside a permanent
+  // unread dot signalling activity that did not exist.
+  const notifications: { id: number; title: string; time: string; unread: boolean }[] = [];
+  const hasUnread = notifications.some((note) => note.unread);
 
   /* Close menus when clicking outside */
   useEffect(() => {
@@ -96,7 +101,7 @@ export default function TopNavbar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`nav-link ${isActive(item.href) ? 'active' : ''}`}
+              className={`nav-link ${isActive(item) ? 'active' : ''}`}
             >
               <span className="nav-label">{item.label}</span>
               {item.hasDropdown && <CaretDown size={14} weight="bold" className="dropdown-icon" />}
@@ -113,16 +118,24 @@ export default function TopNavbar() {
               onClick={() => setNotificationMenuOpen(!notificationMenuOpen)}
             >
               <Bell size={20} weight={notificationMenuOpen ? 'fill' : 'regular'} />
-              <span className="notification-dot" />
+              {hasUnread && <span className="notification-dot" />}
             </button>
 
             {notificationMenuOpen && (
               <div className="dropdown-menu notification-dropdown">
                 <div className="dropdown-header">
                   <h3>Notifications</h3>
-                  <button className="text-xs text-blue-600 font-medium hover:text-blue-700">Mark all read</button>
+                  {hasUnread && (
+                    <button className="text-xs text-blue-600 font-medium hover:text-blue-700">Mark all read</button>
+                  )}
                 </div>
                 <div className="notification-list">
+                  {notifications.length === 0 && (
+                    <div className="notification-empty">
+                      <Bell size={20} weight="duotone" aria-hidden="true" />
+                      <p>You&apos;re all caught up.</p>
+                    </div>
+                  )}
                   {notifications.map(note => (
                     <div key={note.id} className={`notification-item ${note.unread ? 'unread' : ''}`}>
                       <div className="notification-icon">
@@ -190,11 +203,10 @@ export default function TopNavbar() {
                     <div className="menu-divider" />
                     <Link
                       href="/settings"
-                      className="menu-item"
+                      className="quick-link"
                       onClick={() => setProfileMenuOpen(false)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
                     >
-                      <Gear size={18} weight="duotone" className="text-slate-400" />
+                      <Gear size={16} weight="duotone" />
                       Settings
                     </Link>
                     <div className="menu-divider" />
@@ -264,7 +276,7 @@ export default function TopNavbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`mobile-nav-link ${isActive(item.href) ? 'active' : ''}`}
+                className={`mobile-nav-link ${isActive(item) ? 'active' : ''}`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {item.label}
@@ -312,7 +324,7 @@ export default function TopNavbar() {
         .desktop-nav {
           display: flex;
           align-items: center;
-          gap: 24px;
+          gap: 20px;
         }
 
         .nav-link {
@@ -649,6 +661,21 @@ export default function TopNavbar() {
             max-height: 320px;
             overflow-y: auto;
         }
+
+        .notification-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 28px 16px;
+            color: var(--color-text-muted);
+        }
+
+        .notification-empty p {
+            margin: 0;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
         
         .notification-item {
             padding: 12px 16px;
@@ -771,7 +798,7 @@ export default function TopNavbar() {
         /* Typography - Concept */
         .logo-text { font-size: 1.25rem; font-weight: 800; color: #0f172a; letter-spacing: -0.03em; }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1100px) {
           .desktop-nav { display: none; }
           .mobile-toggle { display: flex; align-items: center; justify-content: center; border: none; background: none; width: 40px; height: 40px; }
           .mobile-menu { display: block; border-top: 1px solid var(--color-border-light); background: #fff; padding: 16px; }
