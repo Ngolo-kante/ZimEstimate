@@ -311,7 +311,7 @@ function SignupForm() {
                     margin-bottom: var(--spacing-lg);
                 }
 
-                .logo {
+                .auth-header :global(.logo) {
                     display: inline-flex;
                     align-items: center;
                     gap: var(--spacing-sm);
@@ -449,13 +449,13 @@ function SignupForm() {
                     border-top: 1px solid var(--color-border-light);
                 }
 
-                .auth-footer a {
+                .auth-footer :global(a) {
                     color: var(--color-primary);
                     text-decoration: none;
                     font-weight: 500;
                 }
 
-                .auth-footer a:hover {
+                .auth-footer :global(a:hover) {
                     text-decoration: underline;
                 }
             `}</style>

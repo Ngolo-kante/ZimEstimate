@@ -130,6 +130,10 @@ function LoginForm() {
                             required
                         />
 
+                        <div className="forgot-row">
+                            <Link href="/auth/forgot-password">Forgot password?</Link>
+                        </div>
+
                         <Button
                             type="submit"
                             fullWidth
@@ -174,7 +178,7 @@ function LoginForm() {
                     margin-bottom: var(--spacing-lg);
                 }
 
-                .logo {
+                .auth-header :global(.logo) {
                     display: inline-flex;
                     align-items: center;
                     gap: var(--spacing-sm);
@@ -262,6 +266,26 @@ function LoginForm() {
                     gap: var(--spacing-md);
                 }
 
+                .forgot-row {
+                    margin-top: calc(-1 * var(--spacing-xs));
+                    text-align: right;
+                }
+
+                /* :global() is required for these links. styled-jsx scopes rules
+                   by appending its class to each compound selector, and the
+                   anchor that next/link renders never carries that class — so
+                   an unwrapped descendant rule compiles but matches nothing. */
+                .forgot-row :global(a) {
+                    font-size: 0.8125rem;
+                    color: var(--color-primary);
+                    text-decoration: none;
+                    font-weight: 500;
+                }
+
+                .forgot-row :global(a:hover) {
+                    text-decoration: underline;
+                }
+
                 .auth-footer {
                     margin-top: var(--spacing-lg);
                     text-align: center;
@@ -269,13 +293,13 @@ function LoginForm() {
                     color: var(--color-text-secondary);
                 }
 
-                .auth-footer a {
+                .auth-footer :global(a) {
                     color: var(--color-primary);
                     text-decoration: none;
                     font-weight: 500;
                 }
 
-                .auth-footer a:hover {
+                .auth-footer :global(a:hover) {
                     text-decoration: underline;
                 }
             `}</style>
