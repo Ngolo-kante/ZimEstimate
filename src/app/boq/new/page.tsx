@@ -8,7 +8,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/components/providers/AuthProvider';
 import SavingOverlay from '@/components/ui/SavingOverlay';
 import { useProjectAutoSave } from '@/hooks/useProjectAutoSave';
-import { useBoqWizardStore, DEFAULT_ROOM_INPUTS, type BoqMilestoneId, type MilestoneData, type BOQItem } from '@/store/boqWizardStore';
+import { useBoqWizardStore, DEFAULT_ROOM_INPUTS, type BoqMilestoneId, type MilestoneData, type BOQItem, type ProjectDetailsState } from '@/store/boqWizardStore';
 import LiveEstimatorLayout from './components/LiveEstimatorLayout';
 import LiveEstimatePanel from './components/LiveEstimatePanel';
 import ReviewTabs from './components/ReviewTabs';
@@ -341,6 +341,41 @@ function BoqNewPageContent() {
       setSelectedStages(scopes as string[]);
     }
   }, [templateIdFromUrl, finishFromUrl, updateProjectDetails, setGeometryMode, setLaborType, setProjectScope, setSelectedStages]);
+
+  // Carry the /projects/new wizard's answers across. That wizard asks for a
+  // project name and location, stashes them under this key, then hands off to
+  // here — but nothing ever read the key back, so four steps of input were
+  // discarded and the builder opened on "Untitled Estimate" asking for the same
+  // details again.
+  //
+  // Only the two free-text fields are restored. The two wizards use different
+  // project-type vocabularies ('new-house' there, 'full_house' here) and they
+  // mean different things — project category versus BOQ scope — so mapping
+  // between them would guess at the user's intent rather than carry it.
+  const handoffAppliedRef = useRef(false);
+  useEffect(() => {
+    if (handoffAppliedRef.current || templateIdFromUrl) return;
+    handoffAppliedRef.current = true;
+
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem('zimestimate_new_project');
+      if (raw) sessionStorage.removeItem('zimestimate_new_project');
+    } catch {
+      return;
+    }
+    if (!raw) return;
+
+    try {
+      const handoff = JSON.parse(raw) as { name?: string; location?: string };
+      const patch: Partial<ProjectDetailsState> = {};
+      if (handoff.name?.trim()) patch.name = handoff.name.trim();
+      if (handoff.location?.trim()) patch.specificLocation = handoff.location.trim();
+      if (Object.keys(patch).length > 0) updateProjectDetails(patch);
+    } catch {
+      /* malformed handoff — fall back to an empty wizard */
+    }
+  }, [templateIdFromUrl, updateProjectDetails]);
 
   // Warn before discarding work that has not reached the database yet. Autosave
   // only runs for a signed-in user with a project, so anonymous progress lives

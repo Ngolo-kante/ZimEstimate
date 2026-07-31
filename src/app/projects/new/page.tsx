@@ -261,7 +261,9 @@ export default function NewProject() {
                 {step === 1 && (
                     <div className="step-content">
                         <div className={`tiles-grid four-cols ${fieldErrors.projectType ? 'has-error' : ''}`}>
-                            <div
+                            <button
+                                type="button"
+                                aria-pressed={formData.projectType === 'new-house'}
                                 className={`tile ${formData.projectType === 'new-house' ? 'selected' : ''}`}
                                 onClick={() => handleTypeSelect('new-house')}
                             >
@@ -270,9 +272,11 @@ export default function NewProject() {
                                 </div>
                                 <h3>New House</h3>
                                 <p>Building from scratch</p>
-                            </div>
+                            </button>
 
-                            <div
+                            <button
+                                type="button"
+                                aria-pressed={formData.projectType === 'extension'}
                                 className={`tile ${formData.projectType === 'extension' ? 'selected' : ''}`}
                                 onClick={() => handleTypeSelect('extension')}
                             >
@@ -281,9 +285,11 @@ export default function NewProject() {
                                 </div>
                                 <h3>Extension</h3>
                                 <p>Adding to existing structure</p>
-                            </div>
+                            </button>
 
-                            <div
+                            <button
+                                type="button"
+                                aria-pressed={formData.projectType === 'renovation'}
                                 className={`tile ${formData.projectType === 'renovation' ? 'selected' : ''}`}
                                 onClick={() => handleTypeSelect('renovation')}
                             >
@@ -292,9 +298,11 @@ export default function NewProject() {
                                 </div>
                                 <h3>Renovation</h3>
                                 <p>Upgrading or remodeling</p>
-                            </div>
+                            </button>
 
-                            <div
+                            <button
+                                type="button"
+                                aria-pressed={formData.projectType === 'commercial'}
                                 className={`tile ${formData.projectType === 'commercial' ? 'selected' : ''}`}
                                 onClick={() => handleTypeSelect('commercial')}
                             >
@@ -303,7 +311,7 @@ export default function NewProject() {
                                 </div>
                                 <h3>Commercial</h3>
                                 <p>Shop, office, or business</p>
-                            </div>
+                            </button>
                         </div>
                         {fieldErrors.projectType && <p className="field-error">{fieldErrors.projectType}</p>}
                     </div>
@@ -313,7 +321,9 @@ export default function NewProject() {
                 {step === 2 && (
                     <div className="step-content">
                         <div className={`tiles-grid three-cols ${fieldErrors.priority ? 'has-error' : ''}`}>
-                            <div
+                            <button
+                                type="button"
+                                aria-pressed={formData.priority === 'budget'}
                                 className={`tile priority-tile ${formData.priority === 'budget' ? 'selected' : ''}`}
                                 onClick={() => handlePrioritySelect('budget')}
                             >
@@ -323,9 +333,11 @@ export default function NewProject() {
                                 <h3>Budget-Focused</h3>
                                 <p>Find the most cost-effective materials and alternatives</p>
                                 <span className="tile-hint">Best for tight budgets</span>
-                            </div>
+                            </button>
 
-                            <div
+                            <button
+                                type="button"
+                                aria-pressed={formData.priority === 'quality'}
                                 className={`tile priority-tile ${formData.priority === 'quality' ? 'selected' : ''}`}
                                 onClick={() => handlePrioritySelect('quality')}
                             >
@@ -335,9 +347,11 @@ export default function NewProject() {
                                 <h3>Quality-First</h3>
                                 <p>Premium materials and trusted suppliers</p>
                                 <span className="tile-hint">Best for long-term value</span>
-                            </div>
+                            </button>
 
-                            <div
+                            <button
+                                type="button"
+                                aria-pressed={formData.priority === 'speed'}
                                 className={`tile priority-tile ${formData.priority === 'speed' ? 'selected' : ''}`}
                                 onClick={() => handlePrioritySelect('speed')}
                             >
@@ -347,7 +361,7 @@ export default function NewProject() {
                                 <h3>Fast Track</h3>
                                 <p>Readily available materials for quick completion</p>
                                 <span className="tile-hint">Best for tight deadlines</span>
-                            </div>
+                            </button>
                         </div>
                         {fieldErrors.priority && <p className="field-error">{fieldErrors.priority}</p>}
                     </div>
@@ -390,7 +404,9 @@ export default function NewProject() {
                 {step === 4 && (
                     <div className="step-content">
                         <div className={`tiles-grid four-cols ${fieldErrors.boqMethod ? 'has-error' : ''}`}>
-                            <div
+                            <button
+                                type="button"
+                                aria-pressed={formData.boqMethod === 'manual'}
                                 className={`tile method-tile ${formData.boqMethod === 'manual' ? 'selected' : ''}`}
                                 onClick={() => handleMethodSelect('manual')}
                             >
@@ -400,9 +416,11 @@ export default function NewProject() {
                                 <h3>Manual Builder</h3>
                                 <p>Build your BOQ step by step with guided inputs</p>
                                 <CardBadge variant="accent">Recommended</CardBadge>
-                            </div>
+                            </button>
 
-                            <div
+                            <button
+                                type="button"
+                                aria-pressed={formData.boqMethod === 'upload'}
                                 className={`tile method-tile ${formData.boqMethod === 'upload' ? 'selected' : ''}`}
                                 onClick={() => handleMethodSelect('upload')}
                             >
@@ -412,9 +430,11 @@ export default function NewProject() {
                                 <h3>Upload Floor Plan</h3>
                                 <p>AI analyzes your blueprint to extract measurements</p>
                                 <CardBadge variant="success">Best for Accuracy</CardBadge>
-                            </div>
+                            </button>
 
-                            <div
+                            <button
+                                type="button"
+                                aria-pressed={formData.boqMethod === 'photo'}
                                 className={`tile method-tile ${formData.boqMethod === 'photo' ? 'selected' : ''}`}
                                 onClick={() => handleMethodSelect('photo')}
                             >
@@ -424,9 +444,11 @@ export default function NewProject() {
                                 <h3>Photo Quote</h3>
                                 <p>Scan a handwritten quote from your hardware store</p>
                                 <CardBadge variant="default">OCR Powered</CardBadge>
-                            </div>
+                            </button>
 
-                            <div
+                            <button
+                                type="button"
+                                aria-pressed={formData.boqMethod === 'budget-checker'}
                                 className={`tile method-tile ${formData.boqMethod === 'budget-checker' ? 'selected' : ''}`}
                                 onClick={() => handleMethodSelect('budget-checker')}
                             >
@@ -436,7 +458,7 @@ export default function NewProject() {
                                 <h3>Quick Budget Checker</h3>
                                 <p>Estimate how far your budget can go by stage before you start BOQ.</p>
                                 <CardBadge variant="accent">Fast Planning</CardBadge>
-                            </div>
+                            </button>
                         </div>
                         {fieldErrors.boqMethod && <p className="field-error">{fieldErrors.boqMethod}</p>}
                     </div>
@@ -617,7 +639,18 @@ export default function NewProject() {
                     grid-template-columns: repeat(3, 1fr);
                 }
 
+                /* These tiles are <button>s. They were <div onClick>, which
+                   meant no keyboard could reach them and assistive tech never
+                   announced them as controls — the first step of creating a
+                   project was unusable without a mouse. The reset below keeps
+                   the original look now that they are real buttons. */
                 .tile {
+                    display: block;
+                    width: 100%;
+                    font: inherit;
+                    color: inherit;
+                    appearance: none;
+                    -webkit-appearance: none;
                     background: white;
                     border: 2px solid #e2e8f0;
                     border-radius: 16px;
@@ -625,6 +658,20 @@ export default function NewProject() {
                     text-align: center;
                     cursor: pointer;
                     transition: all 0.2s;
+                }
+
+                .tile:focus-visible {
+                    outline: 3px solid #2E6CF6;
+                    outline-offset: 2px;
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .tile {
+                        transition: none;
+                    }
+                    .tile:hover {
+                        transform: none;
+                    }
                 }
 
                 .tile:hover {

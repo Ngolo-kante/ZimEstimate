@@ -721,7 +721,7 @@ export default function StageBOQSection({
                                         return (
                                             <tr key={item.id} className={`item-row status-${rowStatus}${enablement ? ' enablement' : ''}`}>
                                                 {visibleColumns.item && (
-                                                    <td className="col-item">
+                                                    <td data-label="Item" className="col-item">
                                                         <div className="item-info">
                                                             <span className="item-name">{item.material_name}</span>
                                                             {enablement && (
@@ -732,14 +732,14 @@ export default function StageBOQSection({
                                                     </td>
                                                 )}
                                                 {visibleColumns.avgPrice && (
-                                                    <td className="col-price text-right">
+                                                    <td data-label="Avg. Price" className="col-price text-right">
                                                         <span className="price-subtle">
                                                             <PriceDisplay priceUsd={averagePrice} priceZwg={Number(item.unit_price_zwg)} />
                                                         </span>
                                                     </td>
                                                 )}
                                                 {visibleColumns.actualPrice && (
-                                                    <td className="col-price text-right">
+                                                    <td data-label="Actual Price" className="col-price text-right">
                                                         <InlineEdit
                                                             value={actualPrice}
                                                             type="currency"
@@ -750,7 +750,7 @@ export default function StageBOQSection({
                                                     </td>
                                                 )}
                                                 {visibleColumns.priceVar && (
-                                                    <td className="col-var text-right">
+                                                    <td data-label="Price Var %" className="col-var text-right">
                                                         <div className={`variance-badge ${getVarianceState(priceVariance)}`}>
                                                             {priceVariance === 0 ? <Minus size={10} /> : priceVariance < 0 ? <TrendDown size={12} /> : <TrendUp size={12} />}
                                                             <span>
@@ -761,7 +761,7 @@ export default function StageBOQSection({
                                                     </td>
                                                 )}
                                                 {visibleColumns.qty && (
-                                                    <td className="col-qty text-right">
+                                                    <td data-label="Qty (Est)" className="col-qty text-right">
                                                         <InlineEdit
                                                             value={Number(item.quantity)}
                                                             type="number"
@@ -772,7 +772,7 @@ export default function StageBOQSection({
                                                     </td>
                                                 )}
                                                 {visibleColumns.actualQty && (
-                                                    <td className="col-qty text-right">
+                                                    <td data-label="Actual Qty" className="col-qty text-right">
                                                         <InlineEdit
                                                             value={Number(item.actual_quantity ?? item.quantity)}
                                                             type="number"
@@ -783,7 +783,7 @@ export default function StageBOQSection({
                                                     </td>
                                                 )}
                                                 {visibleColumns.qtyVar && (
-                                                    <td className="col-var text-right">
+                                                    <td data-label="Qty Var %" className="col-var text-right">
                                                         <div className={`variance-badge ${getVarianceState(qtyVariance)}`}>
                                                             {qtyVariance === 0 ? <Minus size={10} /> : qtyVariance < 0 ? <TrendDown size={12} /> : <TrendUp size={12} />}
                                                             <span>
@@ -794,21 +794,21 @@ export default function StageBOQSection({
                                                     </td>
                                                 )}
                                                 {visibleColumns.actualTotal && (
-                                                    <td className="col-total text-right">
+                                                    <td data-label="Actual Total" className="col-total text-right">
                                                         <div className="line-total">
                                                             <PriceDisplay priceUsd={lineTotalUsd} priceZwg={lineTotalZwg} bold />
                                                         </div>
                                                     </td>
                                                 )}
                                                 {visibleColumns.estTotal && (
-                                                    <td className="col-total text-right">
+                                                    <td data-label="Est Total" className="col-total text-right">
                                                         <div className="line-total est">
                                                             <PriceDisplay priceUsd={estimatedTotal} priceZwg={estimatedTotal * exchangeRate} />
                                                         </div>
                                                     </td>
                                                 )}
                                                 {visibleColumns.totalVar && (
-                                                    <td className="col-var text-right">
+                                                    <td data-label="Total Var" className="col-var text-right">
                                                         <div className={`variance-badge ${getVarianceState(totalVariance)}`}>
                                                             {totalVariance === 0 ? <Minus size={10} /> : totalVariance < 0 ? <TrendDown size={12} /> : <TrendUp size={12} />}
                                                             <span>
@@ -819,7 +819,7 @@ export default function StageBOQSection({
                                                     </td>
                                                 )}
                                                 {visibleColumns.usage && (
-                                                    <td className="col-usage text-right">
+                                                    <td data-label="Usage" className="col-usage text-right">
                                                         {usageTrackingEnabled ? (
                                                             <div className="usage-cell">
                                                                 <span>{usage.toFixed(2)} {item.unit}</span>
@@ -835,7 +835,7 @@ export default function StageBOQSection({
                                                     const statusConfig = getStatusConfig(itemStatus);
                                                     const StatusIcon = statusConfig.icon;
                                                     return (
-                                                        <td className="col-status">
+                                                        <td data-label="Status" className="col-status">
                                                             <span className={`status-pill ${statusConfig.className}`}>
                                                                 <StatusIcon size={12} weight="bold" />
                                                                 {statusConfig.label}
@@ -843,7 +843,7 @@ export default function StageBOQSection({
                                                         </td>
                                                     );
                                                 })()}
-                                                <td className="col-actions">
+                                                <td data-label="" className="col-actions">
                                                     <div className="action-group">
                                                         {onLogPurchase && getItemStatus(item, purchases) !== 'purchased' && (
                                                             <button
@@ -1530,10 +1530,114 @@ export default function StageBOQSection({
                         grid-template-columns: 1fr;
                     }
 
-                    .boq-table th,
+                    /* Below 768px the BOQ stops being a table and becomes a
+                       stack of cards. As a table it rendered ~1070px of columns
+                       inside a ~290px viewport, so a phone showed roughly a
+                       quarter of each row and everything else was reachable
+                       only by horizontal scrolling — the figures and the item
+                       they belong to could never be on screen together.
+
+                       Each cell carries a data-label, so the column heading
+                       travels with its value instead of living in a header row
+                       that has scrolled away. Toggling columns off in the
+                       toolbar shortens the cards, exactly as it narrows the
+                       table on desktop. */
+                    .table-responsive {
+                        overflow-x: visible;
+                    }
+
+                    .boq-table,
+                    .boq-table tbody,
+                    .boq-table tr,
                     .boq-table td {
-                        padding: 12px;
-                        font-size: 0.85rem;
+                        display: block;
+                        width: auto;
+                    }
+
+                    .boq-table thead {
+                        /* Accessibly hidden rather than display:none — screen
+                           readers keep the header association. */
+                        position: absolute;
+                        width: 1px;
+                        height: 1px;
+                        overflow: hidden;
+                        clip: rect(0 0 0 0);
+                        white-space: nowrap;
+                    }
+
+                    .boq-table tr.item-row {
+                        border: 1px solid var(--color-border, #e2e8f0);
+                        border-radius: 12px;
+                        padding: 4px 14px;
+                        margin-bottom: 10px;
+                        background: var(--color-surface, #fff);
+                    }
+
+                    .boq-table tr.item-row.is-purchased {
+                        border-color: rgba(16, 185, 129, 0.35);
+                    }
+
+                    .boq-table td {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        gap: 14px;
+                        padding: 9px 0;
+                        text-align: right;
+                        font-size: 0.875rem;
+                        border: 0;
+                        border-bottom: 1px solid var(--color-border-subtle, #f1f5f9);
+                    }
+
+                    .boq-table td:last-child {
+                        border-bottom: 0;
+                    }
+
+                    .boq-table td::before {
+                        content: attr(data-label);
+                        flex-shrink: 0;
+                        text-align: left;
+                        font-size: 0.75rem;
+                        font-weight: 600;
+                        letter-spacing: 0.02em;
+                        color: var(--color-text-secondary, #64748b);
+                    }
+
+                    /* The item name leads the card: full width, no label, and
+                       visually the card's heading. */
+                    .boq-table td.col-item {
+                        display: block;
+                        text-align: left;
+                        padding: 12px 0 10px;
+                    }
+
+                    .boq-table td.col-item::before {
+                        content: none;
+                    }
+
+                    .boq-table td.col-item .item-name {
+                        font-size: 0.9375rem;
+                        font-weight: 650;
+                    }
+
+                    .boq-table td.col-actions {
+                        justify-content: flex-end;
+                        padding: 10px 0 12px;
+                    }
+
+                    .boq-table td.col-actions::before {
+                        content: none;
+                    }
+
+                    /* Touch targets: the desktop icon buttons are too small to
+                       hit reliably on a phone. */
+                    .boq-table td.col-actions .action-btn {
+                        min-width: 40px;
+                        min-height: 40px;
+                    }
+
+                    .boq-table td.col-actions .action-group {
+                        gap: 8px;
                     }
                 }
             `}</style>

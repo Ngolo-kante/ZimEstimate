@@ -387,11 +387,18 @@ export async function createRfqRequest(options: {
     });
   });
 
-  // ERR-001 FIX: Add error handling for delivery logs insert
+  // notification_deliveries only accepts rows the caller owns (auth.uid() =
+  // user_id), so the builder cannot write the supplier-addressed rows directly
+  // — the insert was rejected 403 and suppliers were never told the RFQ
+  // existed. The definer function checks RFQ edit rights, then writes only for
+  // suppliers actually invited to this RFQ.
   if (deliveryLogs.length > 0) {
-    const { error: deliveryError } = await supabase.from('notification_deliveries').insert(deliveryLogs as never);
+    const { error: deliveryError } = await supabase.rpc('log_rfq_supplier_notifications', {
+      p_rfq_id: rfqId,
+      p_rows: deliveryLogs,
+    } as never);
     if (deliveryError) {
-      logAsyncError('Insert RFQ delivery logs', deliveryError);
+      logAsyncError('Log RFQ supplier notifications', deliveryError);
     }
   }
 
@@ -402,11 +409,15 @@ export async function createRfqRequest(options: {
 export async function getProjectRfqs(projectId: string): Promise<{ rfqs: RfqWithDetails[]; error: Error | null }> {
   const { data, error } = await supabase
     .from('rfq_requests')
+    // rfq_quotes must name its foreign key. Two relationships exist between
+    // these tables — rfq_quotes.rfq_id and rfq_requests.accepted_quote_id — so
+    // an unqualified embed is ambiguous and PostgREST rejects the whole query
+    // with PGRST201 rather than picking one.
     .select(`
       *,
       rfq_items(*),
       rfq_recipients(*),
-      rfq_quotes(
+      rfq_quotes!rfq_quotes_rfq_id_fkey(
         *,
         rfq_quote_items(*),
         supplier:suppliers(id, name, verification_status, rating)
@@ -436,7 +447,7 @@ export async function getSupplierRfqInbox(supplierId: string): Promise<{ rfqs: S
       *,
       rfq_items(*),
       rfq_recipients!inner(id, supplier_id, status, notified_at, last_viewed_at, rfq_id),
-      rfq_quotes(*, rfq_quote_items(*)),
+      rfq_quotes!rfq_quotes_rfq_id_fkey(*, rfq_quote_items(*)),
       project:projects(name, location)
     `)
     .eq('rfq_recipients.supplier_id', supplierId)

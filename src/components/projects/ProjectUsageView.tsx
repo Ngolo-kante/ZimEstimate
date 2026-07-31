@@ -560,17 +560,17 @@ export default function ProjectUsageView({
                 <tbody>
                   {usageStats.map((stat) => (
                     <tr key={stat.item.id}>
-                      <td>
+                      <td className="col-material">
                         <div className="material-cell">
                           <span className="material-name">{stat.item.material_name}</span>
                           <span className="material-unit">{stat.item.unit}</span>
                         </div>
                       </td>
-                      <td className="num">{stat.availableQty.toFixed(2)}</td>
-                      <td className="num">{stat.usedQty.toFixed(2)}</td>
-                      <td className="num">{stat.remainingQty.toFixed(2)}</td>
-                      <td className="num">{stat.usagePercent.toFixed(0)}%</td>
-                      <td>
+                      <td data-label="Available" className="num">{stat.availableQty.toFixed(2)}</td>
+                      <td data-label="Used" className="num">{stat.usedQty.toFixed(2)}</td>
+                      <td data-label="Remaining" className="num">{stat.remainingQty.toFixed(2)}</td>
+                      <td data-label="Usage %" className="num">{stat.usagePercent.toFixed(0)}%</td>
+                      <td className="col-burn">
                         <div className="burn-bar">
                           <div className="burn-fill" style={{ width: `${Math.min(stat.usagePercent, 100)}%` }} />
                         </div>
@@ -1758,6 +1758,89 @@ export default function ProjectUsageView({
             }
             .form-group.flex-2 {
                 grid-column: span 1;
+            }
+        }
+
+        /* Same treatment as the BOQ table: six columns rendered ~700px wide
+           inside a ~260px viewport, so the material name and its numbers could
+           not be read together. Each row becomes a card and every figure keeps
+           its heading via data-label. */
+        @media (max-width: 768px) {
+            .usage-table,
+            .usage-table tbody,
+            .usage-table tr,
+            .usage-table td {
+                display: block;
+                width: auto;
+            }
+
+            .usage-table thead {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                overflow: hidden;
+                clip: rect(0 0 0 0);
+                white-space: nowrap;
+            }
+
+            .usage-table tr {
+                border: 1px solid var(--color-border, #e2e8f0);
+                border-radius: 12px;
+                padding: 4px 14px;
+                margin-bottom: 10px;
+                background: var(--color-surface, #fff);
+            }
+
+            .usage-table td {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 14px;
+                padding: 9px 0;
+                border: 0;
+                border-bottom: 1px solid var(--color-border-subtle, #f1f5f9);
+                text-align: right;
+            }
+
+            .usage-table td:last-child {
+                border-bottom: 0;
+            }
+
+            .usage-table td::before {
+                content: attr(data-label);
+                flex-shrink: 0;
+                text-align: left;
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: var(--color-text-secondary, #64748b);
+            }
+
+            .usage-table td.col-material,
+            .usage-table td.col-burn {
+                display: block;
+                text-align: left;
+            }
+
+            .usage-table td.col-material::before,
+            .usage-table td.col-burn::before {
+                content: none;
+            }
+
+            .usage-table td.col-material {
+                padding: 12px 0 10px;
+            }
+
+            .usage-table td.col-material .material-name {
+                font-size: 0.9375rem;
+                font-weight: 650;
+            }
+
+            .usage-table td.empty-row {
+                text-align: center;
+            }
+
+            .usage-table td.empty-row::before {
+                content: none;
             }
         }
         
