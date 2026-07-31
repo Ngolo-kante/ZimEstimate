@@ -21,8 +21,7 @@ import {
     WarningCircle,
     Bell,
     WhatsappLogo,
-    DeviceMobile,
-    PaperPlaneTilt
+    DeviceMobile
 } from '@phosphor-icons/react';
 import Link from 'next/link';
 
@@ -33,7 +32,6 @@ function SettingsContent() {
     // Profile form state
     const [fullName, setFullName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [telegramChatId, setTelegramChatId] = useState('');
     const [preferredCurrency, setPreferredCurrency] = useState<Currency>('USD');
     const [isSaving, setIsSaving] = useState(false);
 
@@ -59,7 +57,6 @@ function SettingsContent() {
         if (profile) {
             setFullName(profile.full_name || '');
             setPhoneNumber(profile.phone_number || '');
-            setTelegramChatId(profile.telegram_chat_id || '');
             setPreferredCurrency(profile.preferred_currency || 'USD');
             setNotifyEmail(profile.notify_email ?? true);
             setNotifyWhatsapp(profile.notify_whatsapp ?? false);
@@ -85,7 +82,6 @@ function SettingsContent() {
         const { error } = await updateProfile({
             full_name: fullName,
             phone_number: phoneNumber || null,
-            telegram_chat_id: telegramChatId || null,
             preferred_currency: preferredCurrency,
         });
 
@@ -205,7 +201,9 @@ function SettingsContent() {
             <div className="settings-container">
                 <div className="settings-header">
                     <div>
-                        <h1>Account Settings</h1>
+                        {/* No <h1> here: MainLayout already renders one from its
+                            title prop, so this page was shipping two competing
+                            top-level headings. */}
                         <p>Manage your profile, preferences, and security settings.</p>
                     </div>
                 </div>
@@ -259,20 +257,6 @@ function SettingsContent() {
                                         />
                                     </div>
                                 </div>
-                            </div>
-
-                            <div className="form-group">
-                                <label>Telegram Chat ID (Optional)</label>
-                                <div className="input-box">
-                                    <PaperPlaneTilt size={18} />
-                                    <input
-                                        type="text"
-                                        value={telegramChatId}
-                                        onChange={(e) => setTelegramChatId(e.target.value)}
-                                        placeholder="e.g. 123456789"
-                                    />
-                                </div>
-                                <p className="field-hint">Needed only for Telegram reminders. Use Telegram bot <strong>@userinfobot</strong> to get your chat ID.</p>
                             </div>
 
                             <div className="card-actions">
@@ -682,7 +666,7 @@ function SettingsContent() {
                 .input-box {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
+                    gap: 10px;
                     padding: 12px 14px;
                     border: 1px solid #e2e8f0;
                     border-radius: 12px;
@@ -709,10 +693,17 @@ function SettingsContent() {
                 .input-box input {
                     border: none;
                     outline: none;
+                    /* min-width:0 lets the field shrink inside the flex row.
+                       Without it the input keeps its default intrinsic width and
+                       pushes against the Verified badge, which clipped longer
+                       addresses — builder@zimestimate.test rendered as
+                       "builder@zimestimate". */
                     width: 100%;
+                    min-width: 0;
                     font-size: 0.95rem;
                     color: #0f172a;
                     background: transparent;
+                    text-overflow: ellipsis;
                 }
 
                 .input-box input:disabled {
@@ -736,6 +727,7 @@ function SettingsContent() {
                     border-radius: 99px;
                     text-transform: uppercase;
                     margin-left: auto;
+                    flex-shrink: 0;
                 }
 
                 .card-actions {
@@ -1057,7 +1049,26 @@ function SettingsContent() {
                     .split-grid, .form-row {
                         grid-template-columns: 1fr;
                     }
-                    
+
+                    /* At 375px the row is icon + value + Verified badge, which
+                       left ~150px for the address and clipped anything longer —
+                       builder@zimestimate.test showed as "builder@zimestimate".
+                       Tightening the row and the value recovers the ~30px the
+                       full address needs. */
+                    .input-box {
+                        gap: 8px;
+                        padding: 12px 10px;
+                    }
+
+                    .input-box input {
+                        font-size: 0.85rem;
+                    }
+
+                    .badge {
+                        font-size: 0.62rem;
+                        padding: 2px 6px;
+                    }
+
                     .danger-row {
                         flex-direction: column;
                         align-items: flex-start;

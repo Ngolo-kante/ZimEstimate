@@ -43,7 +43,10 @@ const MATERIAL_TO_CSV_PRICE: Record<string, { key: string; multiplier?: number }
   hardcore: { key: 'hardcore_fill' },
   'brick-common': { key: 'common_bricks' },
   'farm-brick': { key: 'common_bricks_hardburn' },
-  'brick-face-red': { key: 'facebrick_red_rustic' },
+  // The CSV prices this per brick ($0.22 each) but the material is sold and
+  // quantified 'per 1000', so without the multiplier the marketplace showed
+  // $0.22 for a thousand face bricks — understated a thousandfold.
+  'brick-face-red': { key: 'facebrick_red_rustic', multiplier: 1000 },
   'block-6inch': { key: 'concrete_blocks_6' },
   'block-8inch': { key: 'concrete_blocks_9' },
   'rebar-10': { key: 'y10_rebar' },

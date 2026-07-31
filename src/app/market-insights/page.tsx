@@ -40,18 +40,26 @@ interface MarketItem {
   name: string;
   category: string;
   unit: string;
-  priceUsd: number;
-  priceZwg: number;
-  change: number;
-  trend: 'up' | 'down' | 'stable';
-  lastUpdated: string;
+  /** null when no source has priced this material yet. */
+  priceUsd: number | null;
+  priceZwg: number | null;
+  /** null when there is not enough history to compute a real change. */
+  change: number | null;
+  trend: 'up' | 'down' | 'stable' | null;
+  lastUpdated: string | null;
 }
 
 type PriceObservation = Database['public']['Tables']['price_observations']['Row'];
 
-function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: number }) {
+function PriceDisplay({ priceUsd, priceZwg }: { priceUsd: number; priceZwg: number | null }) {
   const { formatPrice } = useCurrency();
-  return <>{formatPrice(priceUsd, priceZwg)}</>;
+  return <>{formatPrice(priceUsd, priceZwg ?? priceUsd * 30)}</>;
+}
+
+/** Catalogue units are inconsistent: some already start with "per". */
+function formatUnit(unit: string): string {
+  const u = unit.trim();
+  return /^per\b/i.test(u) ? u.charAt(0).toUpperCase() + u.slice(1) : `Per ${u}`;
 }
 
 export default function MarketInsightsPage() {
@@ -62,6 +70,7 @@ export default function MarketInsightsPage() {
   // Dynamic price data state
   const [marketPrices, setMarketPrices] = useState<MarketItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [sourceCount, setSourceCount] = useState<number | null>(null);
 
   useReveal({ deps: [marketPrices.length, selectedCategory, isLoading] });
 
@@ -70,28 +79,32 @@ export default function MarketInsightsPage() {
     const fetchPrices = async () => {
       setIsLoading(true);
 
-      // 1. Get base items from static DB (take top 25 for demo)
-      const baseItems: MarketItem[] = materials.slice(0, 25).map((m, index) => {
+      // Baseline from the catalogue. Trend is left null here and only filled in
+      // from real weekly history below.
+      //
+      // This previously invented its own market data: the trend came from
+      // `trends[index % 3]` and the percentage from a hardcoded array indexed by
+      // position in the list. Those fake numbers also fed the "Market Trend" and
+      // "Price Movers" headline stats, so a page captioned "Real-time
+      // construction material prices tracked across Zimbabwe" was reporting
+      // movements that had never happened.
+      const baseItems: MarketItem[] = materials.slice(0, 25).map((m) => {
         const bestPrice = getBestPrice(m.id);
-        const trends = ['up', 'down', 'stable'] as const;
-        // Deterministic trend based on index for demo continuity
-        const trend = trends[index % 3];
-        const changes = [2.5, -1.8, 0, 5.2, 3.1, -2.3, 8.5, 4.2, 0, 1.5];
 
         return {
           id: m.id,
           name: m.name,
           category: m.category,
           unit: m.unit,
-          priceUsd: bestPrice?.priceUsd || 0,
-          priceZwg: bestPrice?.priceZwg || 0,
-          change: changes[index % changes.length],
-          trend: trend,
-          lastUpdated: new Date().toISOString(),
+          priceUsd: bestPrice?.priceUsd ?? null,
+          priceZwg: bestPrice?.priceZwg ?? null,
+          change: null,
+          trend: null,
+          lastUpdated: bestPrice?.lastUpdated ?? null,
         };
       });
 
-      // 2. Fetch real observations from Supabase
+      // 2. Overlay scraped observations, newest per material.
       try {
         const { data } = await supabase
           .from('price_observations')
@@ -101,7 +114,6 @@ export default function MarketInsightsPage() {
         const observations = data as PriceObservation[] | null;
 
         if (observations && observations.length > 0) {
-          // Create a map of latest observation per material_key
           const latestObs = new Map<string, PriceObservation>();
           observations.forEach((obs) => {
             if (!latestObs.has(obs.material_key)) {
@@ -111,16 +123,79 @@ export default function MarketInsightsPage() {
 
           baseItems.forEach(item => {
             const obs = latestObs.get(item.id);
-            if (obs && obs.price_usd !== null) {
-              item.priceUsd = obs.price_usd;
-              if (obs.scraped_at) {
-                item.lastUpdated = obs.scraped_at;
+            if (!obs || obs.price_usd === null) return;
+
+            // Reject an observation whose unit contradicts the catalogue's.
+            const obsUnit = (obs.unit ?? '').trim().toLowerCase();
+            if (obsUnit && obsUnit !== item.unit.trim().toLowerCase()) return;
+
+            // Most scraped rows carry no unit at all, so the check above cannot
+            // protect us. Fall back to an order-of-magnitude sanity band against
+            // the catalogue price: brick-common is catalogued at $0.12 each and
+            // observed at $108, which is a per-1000 quote recorded against a
+            // material sold each — displaying it made a single brick cost $108.
+            // A disagreement that large means the two are not measuring the same
+            // quantity, so the known-good catalogue price is kept.
+            if (item.priceUsd !== null && item.priceUsd > 0) {
+              const ratio = obs.price_usd / item.priceUsd;
+              if (ratio > 10 || ratio < 0.1) {
+                console.warn(
+                  `Ignoring ${obs.material_key} observation $${obs.price_usd}: ` +
+                  `${ratio.toFixed(0)}x the catalogue price of $${item.priceUsd} per ${item.unit} — likely a different unit.`
+                );
+                return;
               }
             }
+
+            item.priceUsd = obs.price_usd;
+            item.priceZwg = null;
+            if (obs.scraped_at) item.lastUpdated = obs.scraped_at;
           });
         }
       } catch (err) {
         console.error('Failed to fetch observations:', err);
+      }
+
+      // 3. Real 30-day movement from weekly history. Anything without at least
+      // two weeks of data keeps trend === null and renders as "No data" rather
+      // than as a number nobody measured.
+      try {
+        const { data } = await supabase
+          .from('price_weekly')
+          .select('material_key, week_start, avg_price_usd')
+          .order('week_start', { ascending: false });
+
+        const weekly = (data ?? []) as { material_key: string; week_start: string; avg_price_usd: number | null }[];
+        const byMaterial = new Map<string, { week_start: string; avg_price_usd: number | null }[]>();
+        weekly.forEach((w) => {
+          if (!byMaterial.has(w.material_key)) byMaterial.set(w.material_key, []);
+          byMaterial.get(w.material_key)!.push(w);
+        });
+
+        baseItems.forEach((item) => {
+          const history = (byMaterial.get(item.id) ?? []).filter((w) => w.avg_price_usd !== null);
+          if (history.length < 2) return;
+
+          const latest = history[0].avg_price_usd!;
+          const previous = history[1].avg_price_usd!;
+          if (previous === 0) return;
+
+          const changePercent = ((latest - previous) / previous) * 100;
+          item.change = Math.round(changePercent * 10) / 10;
+          item.trend = changePercent > 1 ? 'up' : changePercent < -1 ? 'down' : 'stable';
+        });
+      } catch (err) {
+        console.error('Failed to fetch weekly prices:', err);
+      }
+
+      // 4. How many distinct sources actually back these numbers.
+      try {
+        const { count } = await supabase
+          .from('price_sources')
+          .select('id', { count: 'exact', head: true });
+        setSourceCount(count ?? 0);
+      } catch {
+        setSourceCount(0);
       }
 
       setMarketPrices(baseItems);
@@ -134,13 +209,20 @@ export default function MarketInsightsPage() {
     .filter((m) => selectedCategory === 'all' || m.category === selectedCategory)
     .filter((m) => m.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
-      if (sortBy === 'price') return b.priceUsd - a.priceUsd;
-      if (sortBy === 'change') return b.change - a.change;
+      if (sortBy === 'price') return (b.priceUsd ?? -1) - (a.priceUsd ?? -1);
+      if (sortBy === 'change') return (b.change ?? -Infinity) - (a.change ?? -Infinity);
       return a.name.localeCompare(b.name);
     });
 
-  const avgChange = marketPrices.length > 0 ? marketPrices.reduce((sum, m) => sum + m.change, 0) / marketPrices.length : 0;
+  // Averaged over the items that actually have measured movement, not the
+  // whole list — otherwise every material still awaiting history would be
+  // silently counted as 0% and drag the figure toward zero.
+  const measured = marketPrices.filter((m) => m.change !== null);
+  const avgChange = measured.length > 0
+    ? measured.reduce((sum, m) => sum + (m.change ?? 0), 0) / measured.length
+    : null;
   const risingCount = marketPrices.filter((m) => m.trend === 'up').length;
+  const pricedCount = marketPrices.filter((m) => m.priceUsd !== null && m.priceUsd > 0).length;
 
   return (
     <MainLayout title="Market Insights">
@@ -148,8 +230,12 @@ export default function MarketInsightsPage() {
         {/* Page Header */}
         <div className="page-header reveal" data-delay="1">
           <div className="header-content">
-            <h1>Market Insights</h1>
-            <p>Real-time construction material prices tracked across Zimbabwe.</p>
+            {/* MainLayout already renders an <h1> from its title prop, so this
+                page was serving two identical top-level headings. */}
+            <p>
+              Construction material prices for Zimbabwe, from our catalogue and
+              live supplier observations where available.
+            </p>
           </div>
         </div>
 
@@ -161,10 +247,21 @@ export default function MarketInsightsPage() {
             </div>
             <div>
               <p className="stat-label">Market Trend</p>
-              <p className={`stat-value ${avgChange >= 0 ? 'up' : 'down'}`}>
-                {avgChange >= 0 ? '+' : ''}{avgChange.toFixed(1)}%
-              </p>
-              <p className="stat-period">Avg. 30-day change</p>
+              {avgChange === null ? (
+                <>
+                  <p className="stat-value neutral">&mdash;</p>
+                  <p className="stat-period">Awaiting price history</p>
+                </>
+              ) : (
+                <>
+                  <p className={`stat-value ${avgChange >= 0 ? 'up' : 'down'}`}>
+                    {avgChange >= 0 ? '+' : ''}{avgChange.toFixed(1)}%
+                  </p>
+                  <p className="stat-period">
+                    Avg. 30-day change across {measured.length} tracked {measured.length === 1 ? 'item' : 'items'}
+                  </p>
+                </>
+              )}
             </div>
           </div>
 
@@ -174,8 +271,12 @@ export default function MarketInsightsPage() {
             </div>
             <div>
               <p className="stat-label">Price Movers</p>
-              <p className="stat-value neutral">{risingCount} <span className="sub">of {marketPrices.length}</span></p>
-              <p className="stat-period">Items rising in price</p>
+              <p className="stat-value neutral">
+                {measured.length === 0 ? <>&mdash;</> : <>{risingCount} <span className="sub">of {measured.length}</span></>}
+              </p>
+              <p className="stat-period">
+                {measured.length === 0 ? 'No movement recorded yet' : 'Tracked items rising in price'}
+              </p>
             </div>
           </div>
 
@@ -185,8 +286,18 @@ export default function MarketInsightsPage() {
             </div>
             <div>
               <p className="stat-label">Data Coverage</p>
-              <p className="stat-value neutral">12 <span className="sub">Sources</span></p>
-              <p className="stat-period">Live tracking active</p>
+              {/* Was hardcoded to "12 Sources / Live tracking active" while the
+                  price_sources table was empty. */}
+              <p className="stat-value neutral">
+                {pricedCount} <span className="sub">of {marketPrices.length} priced</span>
+              </p>
+              <p className="stat-period">
+                {sourceCount === null
+                  ? 'Checking sources…'
+                  : sourceCount > 0
+                    ? `${sourceCount} live ${sourceCount === 1 ? 'source' : 'sources'} tracking`
+                    : 'Catalogue pricing — no live sources connected'}
+              </p>
             </div>
           </div>
         </div>
@@ -258,29 +369,41 @@ export default function MarketInsightsPage() {
                     <tbody>
                       {filteredMaterials.map((material) => (
                         <tr key={material.id}>
-                          <td className="col-name">
+                          <td data-label="Material" className="col-name">
                             <div className="material-info">
                               <span className="name">{material.name}</span>
-                              <span className="unit">Per {material.unit}</span>
+                              {/* Units already read "per 50kg bag", so the old
+                                  "Per {unit}" prefix produced "Per per 50kg bag". */}
+                              <span className="unit">{formatUnit(material.unit)}</span>
                             </div>
                           </td>
-                          <td className="col-price">
-                            <div className="price-tag">
-                              <PriceDisplay priceUsd={material.priceUsd} priceZwg={material.priceZwg} />
-                            </div>
+                          <td data-label="Current price" className="col-price">
+                            {material.priceUsd === null || material.priceUsd <= 0 ? (
+                              <span className="no-data">Not priced yet</span>
+                            ) : (
+                              <div className="price-tag">
+                                <PriceDisplay priceUsd={material.priceUsd} priceZwg={material.priceZwg} />
+                              </div>
+                            )}
                           </td>
-                          <td className="col-trend">
-                            <div className={`trend-badge ${material.trend}`}>
-                              {material.trend === 'up' ? <TrendUp size={14} weight="bold" /> :
-                                material.trend === 'down' ? <TrendDown size={14} weight="bold" /> :
-                                  <div className="dash" />}
-                              <span>
-                                {material.change === 0 ? 'Stable' : `${Math.abs(material.change)}%`}
-                              </span>
-                            </div>
+                          <td data-label="Trend (30d)" className="col-trend">
+                            {material.trend === null ? (
+                              <span className="no-data">No history</span>
+                            ) : (
+                              <div className={`trend-badge ${material.trend}`}>
+                                {material.trend === 'up' ? <TrendUp size={14} weight="bold" /> :
+                                  material.trend === 'down' ? <TrendDown size={14} weight="bold" /> :
+                                    <div className="dash" />}
+                                <span>
+                                  {material.trend === 'stable' ? 'Stable' : `${Math.abs(material.change ?? 0)}%`}
+                                </span>
+                              </div>
+                            )}
                           </td>
-                          <td className="col-updated">
-                            {new Date(material.lastUpdated).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          <td data-label="Updated" className="col-updated">
+                            {material.lastUpdated
+                              ? new Date(material.lastUpdated).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                              : <span className="no-data">&mdash;</span>}
                           </td>
                         </tr>
                       ))}
@@ -416,6 +539,12 @@ export default function MarketInsightsPage() {
           display: grid;
           grid-template-columns: 260px 1fr;
           gap: var(--grid-gutter);
+        }
+
+        .no-data {
+          font-size: var(--text-sm);
+          color: var(--color-text-muted);
+          font-style: italic;
         }
 
         /* Sidebar */
@@ -656,11 +785,58 @@ export default function MarketInsightsPage() {
         @media (max-width: 900px) {
             .stats-row { grid-template-columns: 1fr; gap: var(--space-4); }
             .content-grid { grid-template-columns: 1fr; gap: var(--space-8); }
-            .filters-sidebar { flex-direction: row; flex-wrap: wrap; align-items: start; }
-            .category-list { width: 100%; }
-            .pills-container { flex-direction: row; flex-wrap: wrap; }
-            .category-pill { width: auto; }
+            /* Grid and flex children default to min-width:auto, so the filter
+               column refused to shrink below its content and rendered 476px
+               wide inside a 375px screen, pushing the whole page sideways. */
+            .content-grid > *, .filters-sidebar, .listings-section { min-width: 0; }
+            .filters-sidebar { flex-direction: column; gap: var(--space-4); }
+            .category-list { width: 100%; min-width: 0; }
+            .pills-container {
+              flex-direction: row;
+              flex-wrap: nowrap;
+              overflow-x: auto;
+              gap: 8px;
+              padding-bottom: 4px;
+              scrollbar-width: none;
+            }
+            .pills-container::-webkit-scrollbar { display: none; }
+            .category-pill { width: auto; flex: 0 0 auto; white-space: nowrap; }
             .page-header { flex-direction: column; align-items: flex-start; gap: var(--space-4); }
+        }
+
+        /* Below 768px the price table becomes cards, matching the BOQ and usage
+           tables. Four columns of prices do not fit a phone, and a header row
+           that has scrolled out of view labels nothing. */
+        @media (max-width: 768px) {
+            .table-responsive { overflow-x: visible; }
+            .prices-table, .prices-table tbody, .prices-table tr, .prices-table td {
+              display: block; width: auto;
+            }
+            .prices-table thead {
+              position: absolute; width: 1px; height: 1px;
+              overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+            }
+            .prices-table tr {
+              border: 1px solid var(--color-border, #e2e8f0);
+              border-radius: 12px;
+              padding: 4px 14px;
+              margin-bottom: 10px;
+              background: var(--color-surface, #fff);
+            }
+            .prices-table td {
+              display: flex; align-items: center; justify-content: space-between;
+              gap: 14px; padding: 9px 0; text-align: right;
+              border: 0; border-bottom: 1px solid var(--color-border-subtle, #f1f5f9);
+            }
+            .prices-table td:last-child { border-bottom: 0; }
+            .prices-table td::before {
+              content: attr(data-label);
+              flex-shrink: 0; text-align: left;
+              font-size: 0.75rem; font-weight: 600;
+              color: var(--color-text-secondary, #64748b);
+            }
+            .prices-table td.col-name { display: block; text-align: left; padding: 12px 0 10px; }
+            .prices-table td.col-name::before { content: none; }
         }
       `}</style>
     </MainLayout>
