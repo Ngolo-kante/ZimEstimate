@@ -10,6 +10,7 @@ import InstallPromptBanner from '../ui/InstallPromptBanner';
 import {
   House,
   Folders,
+  Calculator,
   Lightning,
   Gear,
 } from '@phosphor-icons/react';
@@ -24,10 +25,15 @@ interface MainLayoutProps {
 function MobileBottomNav() {
   const pathname = usePathname();
 
+  // Budget Estimator earns a slot here because it is a top-level destination in
+  // the desktop navigation and the main entry point for someone sizing up a
+  // build; reaching it from a phone previously meant going through the header
+  // menu. Five items is the practical ceiling at 375px.
   const navItems = [
     { label: 'Home', href: '/home', icon: House },
     { label: 'Projects', href: '/projects/dashboard', icon: Folders },
-    { label: 'Quick', href: '/quick-projects', icon: Lightning, isAction: true },
+    { label: 'Budget', href: '/quick-budget', icon: Calculator },
+    { label: 'Quick', href: '/quick-projects', icon: Lightning },
     { label: 'Settings', href: '/settings', icon: Gear },
   ];
 
@@ -37,6 +43,11 @@ function MobileBottomNav() {
     }
     if (href === '/projects/dashboard') {
       return pathname.startsWith('/projects');
+    }
+    // /quick-budget and /quick-projects share a prefix, so a plain startsWith
+    // lights up both whenever either is open.
+    if (href === '/quick-budget' || href === '/quick-projects') {
+      return pathname === href || pathname.startsWith(`${href}/`);
     }
     return pathname.startsWith(href);
   };
@@ -50,10 +61,13 @@ function MobileBottomNav() {
           <Link
             key={item.href}
             href={item.href}
-            className={`mobile-nav-item ${active ? 'active' : ''} ${item.isAction ? 'action' : ''}`}
+            aria-current={active ? 'page' : undefined}
+            className={`mobile-nav-item ${active ? 'active' : ''}`}
           >
-            <Icon size={24} weight={active ? 'fill' : 'regular'} />
-            <span>{item.label}</span>
+            <span className="nav-pill">
+              <Icon size={22} weight={active ? 'fill' : 'regular'} />
+            </span>
+            <span className="nav-text">{item.label}</span>
           </Link>
         );
       })}
@@ -68,7 +82,8 @@ function MobileBottomNav() {
           height: 72px;
           background: white;
           border-top: 1px solid var(--color-border-light);
-          padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px));
+          /* 16px side padding cost 32px that five items cannot spare at 375px. */
+          padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
           z-index: 100;
           box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
         }
@@ -76,47 +91,94 @@ function MobileBottomNav() {
         @media (max-width: 900px) {
           .mobile-bottom-nav {
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
             align-items: center;
+            gap: 2px;
           }
         }
 
-        .mobile-nav-item {
+        /* Five equal items. The old bar gave one of them a filled accent
+           background, which read as a primary action button sitting among plain
+           icons — and because the active colour was that same accent, whichever
+           item was highlighted lost its active state entirely. Every item is
+           now treated the same and only the current one is marked. */
+        :global(.mobile-nav-item) {
           display: flex;
+          flex: 1 1 0;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 4px;
+          gap: 3px;
           text-decoration: none;
           color: var(--color-text-secondary);
-          padding: 8px 16px;
-          border-radius: 12px;
-          transition: all 0.2s;
-          min-width: 64px;
+          /* Full-height target: the whole column is tappable, not just the icon. */
+          padding: 6px 2px;
+          min-width: 0;
+          border-radius: 14px;
+          -webkit-tap-highlight-color: transparent;
         }
 
-        .mobile-nav-item span {
-          font-size: 0.7rem;
+        .nav-pill {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 46px;
+          height: 28px;
+          border-radius: 999px;
+          background: transparent;
+          transition: background 0.18s ease, transform 0.18s ease;
+        }
+
+        .nav-text {
+          font-size: 0.68rem;
           font-weight: 500;
+          letter-spacing: -0.01em;
+          line-height: 1;
+          white-space: nowrap;
         }
 
-        .mobile-nav-item.active {
-          color: var(--color-accent);
+        /* Navy rather than the blue accent: on a white bar in daylight it is
+           the higher-contrast pair, and site users are often outdoors. */
+        :global(.mobile-nav-item.active) {
+          color: var(--color-primary);
         }
 
-        .mobile-nav-item.active span {
-          font-weight: 600;
+        :global(.mobile-nav-item.active) .nav-pill {
+          background: rgba(11, 31, 59, 0.09);
         }
 
-        .mobile-nav-item.action {
-          background: var(--color-accent);
-          color: white;
-          border-radius: 16px;
-          padding: 8px 20px;
+        :global(.mobile-nav-item.active) .nav-text {
+          font-weight: 650;
         }
 
-        .mobile-nav-item.action:hover {
-          background: var(--color-accent-dark);
+        /* Press feedback. Touch has no hover, so without this a tap on a slow
+           page gives no sign it registered. */
+        :global(.mobile-nav-item:active) .nav-pill {
+          transform: scale(0.88);
+        }
+
+        :global(.mobile-nav-item:focus-visible) {
+          outline: 3px solid var(--color-accent);
+          outline-offset: -3px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .nav-pill {
+            transition: none;
+          }
+          :global(.mobile-nav-item:active) .nav-pill {
+            transform: none;
+          }
+        }
+
+        /* Narrow phones: keep five labels on one line each. */
+        @media (max-width: 359px) {
+          .nav-text {
+            font-size: 0.62rem;
+          }
+          .nav-pill {
+            width: 40px;
+          }
         }
       `}</style>
     </nav>
