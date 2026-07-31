@@ -1,5 +1,6 @@
 category,material_key,material_name,unit,price_value,currency,supplier,city,notes
-Concrete,cement_50kg,Cement 50kg bag,bag,7.50,USD,PPC,Harare,
+Concrete,cement_50kg,Cement 32.5R 50kg bag,bag,11.29,USD,Khayah,Harare,2026-07 market; +42% since late 2025
+Concrete,cement_50kg_425,Cement 42.5R 50kg bag,bag,13.35,USD,Khayah SupaSet,Harare,2026-07 market
 Concrete,ready_mix_concrete,Ready mix concrete,m3,95,USD,ReadyMix,Harare,
 Concrete,blinding_concrete,Blinding concrete,m3,75,USD,ReadyMix,Harare,
 Concrete,waterproofing_compound,Concrete waterproofing,litre,6.50,USD,BuildMart,Harare,
@@ -43,7 +44,8 @@ Reinforcement,reinforcement_mesh_a193,Reinforcement mesh A193,sheet,38,USD,Steel
 Roofing,roof_truss_timber,Roof truss timber,m,4.50,USD,TimberCo,Mutare,
 Roofing,roof_purlins,Roof purlins,m,3.20,USD,TimberCo,Mutare,
 Roofing,roofing_galv_0_3,Galvanized sheets 0.3mm,m2,8.80,USD,RoofWorld,Bulawayo,
-Roofing,roofing_ibr_0_4,IBR sheets 0.4mm,m2,11.80,USD,RoofWorld,Bulawayo,
+Roofing,roofing_ibr_0_4_sheet_3m,IBR sheet 0.4mm x 3m,sheet,15.00,USD,ZBMS/Steel Centre,Harare,$5.00 per linear metre x 3m
+Roofing,roofing_ibr_0_5_sheet_3m,IBR sheet 0.5mm x 3m,sheet,19.50,USD,ZBMS,Harare,$6.50 per linear metre x 3m
 Roofing,roofing_ibr_0_3,IBR sheets 0.3mm,m2,10.20,USD,RoofWorld,Bulawayo,
 Roofing,roofing_qtile_0_4,QTile sheets 0.4mm,m2,13.80,USD,RoofWorld,Bulawayo,
 Roofing,roofing_qtile_0_3,QTile sheets 0.3mm,m2,12.20,USD,RoofWorld,Bulawayo,

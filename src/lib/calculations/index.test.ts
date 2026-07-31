@@ -86,6 +86,40 @@ describe('generateBOQFromBasics assumptions', () => {
   });
 });
 
+describe('roofing sheet coverage', () => {
+  // Roof_Sheet_Effective_Coverage was 0.85m2, a figure matching no real sheet,
+  // and a 120m2 build ordered 179 sheets — 537 linear metres of sheeting for a
+  // roof needing about 222m. These bounds are geometric rather than arbitrary,
+  // so they will fail again if the assumption drifts.
+  it('orders a sheet count consistent with 686mm IBR cover width', () => {
+    const items = generateBOQFromBasics({
+      floorArea: 120,
+      roomCount: 4,
+      wallHeight: 3.0,
+      brickTypes: ['common'],
+      cementTypes: ['cement_425'],
+      scope: 'full_house',
+      includeLabor: false,
+      locationType: 'urban',
+    });
+
+    const sheets = getItemQuantity(items, 'Roof area');
+
+    // 120m2 x 1.15 pitch = 138m2, +10% urban waste = 151.8m2.
+    // A 3m sheet covers 3 x 0.686 = 2.06m2, so ~74 sheets.
+    const roofAreaWithWaste = 120 * 1.15 * 1.1;
+    const expected = roofAreaWithWaste / 2.06;
+
+    expect(sheets).toBeGreaterThan(expected * 0.9);
+    expect(sheets).toBeLessThan(expected * 1.1);
+
+    // Guards the specific regression: the linear metres of sheet bought must
+    // stay in the same order as the roof actually needs.
+    const linearMetres = sheets * 3;
+    expect(linearMetres).toBeLessThan((roofAreaWithWaste / 0.686) * 1.15);
+  });
+});
+
 describe('labour sizing', () => {
   it('keeps labour within the Zimbabwe market share of material cost', () => {
     const items = generateBOQFromBasics({

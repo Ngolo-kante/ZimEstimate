@@ -12,7 +12,11 @@ const CSV_SUPPLIER_ID = 'sup-csv-baseline';
 const DEFAULT_ZWG_PER_USD = 30;
 
 const CSV_PRICE_USD_BY_KEY: Record<string, number> = {
-  cement_50kg: 7.5,
+  // Cement rose ~42% through late 2025/early 2026 (US$12 -> ~US$17 spot).
+  // Branded 50kg listings: Khayah 32.5R $11.29, Khayah SupaSet 42.5R $13.35.
+  // Was 7.50, which understated every foundation, mortar and plaster line.
+  cement_50kg: 11.29,
+  cement_50kg_425: 13.35,
   river_sand: 18,
   pit_sand: 16,
   plaster_sand: 20,
@@ -27,7 +31,12 @@ const CSV_PRICE_USD_BY_KEY: Record<string, number> = {
   y12_rebar: 8.5,
   y16_rebar: 12.8,
   reinforcement_mesh_a193: 38,
-  roofing_ibr_0_4: 11.8,
+  // Zimbabwe quotes IBR per linear metre: 0.4mm ~$5.00/m, 0.5mm ~$6.50/m.
+  // These keys are per 3m sheet, matching how the BOQ counts them, so the rate
+  // is multiplied by the 3m length. The old single key was $11.80 tagged 'm2'
+  // and served both gauges, pricing 0.5mm as though it were 0.4mm.
+  roofing_ibr_0_4_sheet_3m: 15.0,
+  roofing_ibr_0_5_sheet_3m: 19.5,
   roof_truss_timber: 4.5,
   roof_purlins: 3.2,
   gutters_pvc: 6.2,
@@ -35,7 +44,7 @@ const CSV_PRICE_USD_BY_KEY: Record<string, number> = {
 
 const MATERIAL_TO_CSV_PRICE: Record<string, { key: string; multiplier?: number }> = {
   'cement-325': { key: 'cement_50kg' },
-  'cement-425': { key: 'cement_50kg' },
+  'cement-425': { key: 'cement_50kg_425' },
   'sand-river': { key: 'river_sand' },
   'sand-pit': { key: 'pit_sand' },
   'sand-bricks': { key: 'pit_sand' },
@@ -54,8 +63,8 @@ const MATERIAL_TO_CSV_PRICE: Record<string, { key: string; multiplier?: number }
   'rebar-16': { key: 'y16_rebar' },
   'mesh-ref193': { key: 'reinforcement_mesh_a193' },
   'mesh-ref-193': { key: 'reinforcement_mesh_a193' },
-  'ibr-04-3m': { key: 'roofing_ibr_0_4' },
-  'ibr-05-3m': { key: 'roofing_ibr_0_4' },
+  'ibr-04-3m': { key: 'roofing_ibr_0_4_sheet_3m' },
+  'ibr-05-3m': { key: 'roofing_ibr_0_5_sheet_3m' },
   'timber-50x76': { key: 'roof_truss_timber', multiplier: 6 },
   'timber-38x38': { key: 'roof_purlins', multiplier: 6 },
   'fascia-pvc': { key: 'gutters_pvc', multiplier: 6 },

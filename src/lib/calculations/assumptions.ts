@@ -13,7 +13,15 @@ const CSV_ASSUMPTION_VALUES = {
   Plaster_Cement_Bags_per_m3_Economy: 5,
   Bricks_per_m2_Clay: 50,
   Blocks_per_m2_Cement: 12.5,
-  Roof_Sheet_Effective_Coverage: 0.85,
+  // A 3m IBR sheet covers 3m x 0.686m = 2.06m2. 686mm is the standard IBR
+  // effective cover width — the sheet is ~925mm wide and the difference is the
+  // side overlap, so this figure is already net of it. End laps and offcuts are
+  // handled separately by the roofing waste multiplier.
+  //
+  // This was 0.85, which corresponds to no real sheet: a 120m2 build was
+  // ordering 179 sheets (537 linear metres of sheeting for a roof needing about
+  // 222m), roughly 2.4x too much roofing.
+  Roof_Sheet_Effective_Coverage: 2.06,
   Roofing_Waste_Urban: 0.1,
   Roofing_Waste_PeriUrban: 0.12,
   Roofing_Waste_Rural: 0.15,
