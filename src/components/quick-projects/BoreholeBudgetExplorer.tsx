@@ -315,39 +315,69 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
 
       {/* Header */}
       <div className="mb-8">
-        <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-accent)] mb-2 block">BOREHOLE BUDGET EXPLORER</span>
-        <h2 className="text-2xl font-bold text-[var(--color-text)] mb-2">What can your budget buy?</h2>
-        <p className="text-[var(--color-text-secondary)] text-base">Enter your budget, adjust depth and options. Toggle components on/off to see what fits.</p>
+        <span className="budget-eyebrow">BOREHOLE BUDGET EXPLORER</span>
+        <h2 className="budget-display">What can your budget buy?</h2>
+        <p className="budget-lede">Enter your budget, adjust depth and options. Toggle components on/off to see what fits.</p>
       </div>
 
-      {/* ── Budget Input ─────────────────────────────────────────────────────── */}
-      <div className="p-6 rounded-2xl border border-blue-200 bg-gradient-to-br from-[var(--color-accent-muted)] to-indigo-50 mb-6">
-        <label className="block text-sm font-bold text-slate-700 mb-3">Your Budget (USD)</label>
-        <div className="flex items-center gap-4">
-          <span className="text-3xl font-extrabold text-[var(--color-text-muted)]">$</span>
-          <input
-            type="number"
-            min={1000}
-            step={500}
-            value={budget}
-            onChange={(e) => setBudget(Math.max(1000, Number(e.target.value) || 1000))}
-            className="flex-1 min-w-0 w-full text-3xl sm:text-4xl font-extrabold text-[var(--color-text)] bg-transparent border-none outline-none focus:ring-0 appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            style={numberInputStyle}
-          />
-        </div>
-        <div className="flex flex-wrap gap-2 mt-4">
-          {[2000, 3000, 5000, 7500, 10000, 15000].map((amt) => (
-            <button
-              key={amt}
-              type="button"
-              onClick={() => setBudget(amt)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                budget === amt ? 'bg-[var(--color-accent)] text-white' : 'bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-blue-300 hover:text-[var(--color-accent)]'
-              }`}
-            >
-              ${amt.toLocaleString()}
-            </button>
-          ))}
+      {/* ── Budget instrument ───────────────────────────────────────────────
+          Shares the solar explorer's panel so both budget tools read as one
+          product rather than two separately-built pages. */}
+      <div className="budget-instrument mb-6">
+        <div className="budget-instrument__grid" aria-hidden />
+
+        <div className="budget-instrument__body">
+          <label htmlFor="borehole-budget" className="budget-instrument__label">
+            Your budget
+          </label>
+
+          <div className="budget-instrument__figure">
+            <span className="budget-instrument__currency">$</span>
+            <input
+              id="borehole-budget"
+              type="number"
+              min={1000}
+              step={500}
+              value={budget}
+              onChange={(e) => setBudget(Math.max(1000, Number(e.target.value) || 1000))}
+              className="budget-instrument__input"
+              style={numberInputStyle}
+            />
+          </div>
+
+          {budget > 0 && (
+            <div className="budget-instrument__meter" aria-hidden>
+              <div
+                className={`budget-instrument__fill${remaining < 0 ? ' is-over' : ''}`}
+                style={{ width: `${Math.min(100, (totalAllocated / budget) * 100)}%` }}
+              />
+            </div>
+          )}
+
+          {budget > 0 && (
+            <div className="budget-instrument__readout">
+              <span>
+                <strong>${totalAllocated.toLocaleString()}</strong> allocated
+              </span>
+              <span className={remaining >= 0 ? 'is-good' : 'is-over'}>
+                <strong>${Math.abs(remaining).toLocaleString()}</strong>{' '}
+                {remaining >= 0 ? 'left' : 'over'}
+              </span>
+            </div>
+          )}
+
+          <div className="budget-instrument__presets">
+            {[2000, 3000, 5000, 7500, 10000, 15000].map((amt) => (
+              <button
+                key={amt}
+                type="button"
+                onClick={() => setBudget(amt)}
+                className={`budget-chip${budget === amt ? ' is-active' : ''}`}
+              >
+                ${amt.toLocaleString()}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

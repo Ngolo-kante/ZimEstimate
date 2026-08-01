@@ -13,9 +13,9 @@
    * ======================================== */
 
   /* Font Families */
-  --font-heading: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-heading: var(--font-sora), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: var(--font-instrument-sans), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
   /* Font Sizes - Headings */
   --text-h1: 2.5rem;      /* 40px */

@@ -1,0 +1,219 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Budget instrument
+   Shared by the solar and borehole budget explorers.
+
+   These pages exist to answer one question — what will my money actually buy —
+   for someone making a large, constrained decision. So the number is treated as
+   the subject rather than as a form field: a dark panel that lifts it off the
+   white page, the figure set in tabular mono so digits do not jitter while
+   typing, and a meter directly beneath answering how much is already spoken for.
+
+   Restraint is deliberate. Everything below this panel is dense financial
+   detail, and it has to stay legible.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.budget-instrument {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background:
+    radial-gradient(120% 140% at 0% 0%, #16365e 0%, transparent 55%),
+    linear-gradient(160deg, #0B1F3B 0%, #061526 100%);
+  box-shadow:
+    0 1px 2px rgba(6, 21, 38, 0.35),
+    0 18px 40px -22px rgba(6, 21, 38, 0.85);
+}
+
+/* A faint engineering grid: enough to read as a measuring surface, far too
+   quiet to compete with the figure sitting on it. */
+.budget-instrument__grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(120% 100% at 50% 0%, #000 40%, transparent 100%);
+}
+
+.budget-instrument__body {
+  position: relative;
+  padding: 22px 22px 20px;
+}
+
+.budget-instrument__label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.52);
+}
+
+.budget-instrument__figure {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.budget-instrument__currency {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1;
+}
+
+.budget-instrument__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-mono);
+  /* Tabular figures stop the number shifting sideways as digits are typed. */
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(2.25rem, 11vw, 3.25rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: #fff;
+  appearance: none;
+}
+
+.budget-instrument__input::placeholder { color: rgba(255, 255, 255, 0.22); }
+.budget-instrument__input::-webkit-outer-spin-button,
+.budget-instrument__input::-webkit-inner-spin-button { appearance: none; margin: 0; }
+
+.budget-instrument__meter {
+  height: 4px;
+  margin-top: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.budget-instrument__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #5A8DF7, #2E6CF6);
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.budget-instrument__fill.is-over {
+  background: linear-gradient(90deg, #FB7185, #E11D48);
+}
+
+.budget-instrument__readout {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 9px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.budget-instrument__readout strong {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #fff;
+}
+
+.budget-instrument__readout .is-good strong { color: #6EE7B7; }
+.budget-instrument__readout .is-over,
+.budget-instrument__readout .is-over strong { color: #FDA4AF; }
+
+.budget-instrument__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 18px;
+}
+
+.budget-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.72);
+  font: inherit;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.budget-chip:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+.budget-chip.is-active {
+  background: #fff;
+  border-color: #fff;
+  color: #0B1F3B;
+  font-weight: 600;
+}
+
+.budget-chip:focus-visible {
+  outline: 2px solid #5A8DF7;
+  outline-offset: 2px;
+}
+
+/* One quiet entrance rather than motion scattered through the page. */
+@media (prefers-reduced-motion: no-preference) {
+  .budget-instrument {
+    animation: budget-instrument-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes budget-instrument-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (min-width: 640px) {
+  .budget-instrument__body { padding: 26px 28px 24px; }
+}
+
+
+/* ─── Masthead ───────────────────────────────────────────────────────────────
+   Both explorers had their own heading sizes and weights. One treatment, using
+   the heading face the design tokens have always specified. */
+
+.budget-eyebrow {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.budget-display {
+  font-family: var(--font-heading);
+  font-size: clamp(1.6rem, 6vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  color: var(--color-text);
+  margin-bottom: 10px;
+  text-wrap: balance;
+}
+
+.budget-lede {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  max-width: 52ch;
+}

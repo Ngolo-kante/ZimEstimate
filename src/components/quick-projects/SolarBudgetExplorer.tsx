@@ -646,13 +646,13 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
       {/* Header */}
       <div className="mb-8">
-        <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-accent)] mb-2 block">
+        <span className="budget-eyebrow">
           SOLAR BUDGET EXPLORER
         </span>
-        <h2 className="text-2xl font-bold text-[var(--color-text)] mb-2">
+        <h2 className="budget-display">
           What can your budget buy?
         </h2>
-        <p className="text-[var(--color-text-secondary)] text-base">
+        <p className="budget-lede">
           Enter your budget below. Toggle components on/off and change brands to see what fits.
         </p>
       </div>
@@ -684,39 +684,67 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
         </div>
       </div>
 
-      {/* ── Budget Input ─────────────────────────────────────────────────────── */}
-      <div ref={budgetRef} className="p-6 rounded-2xl border border-blue-200 bg-gradient-to-br from-[var(--color-accent-muted)] to-indigo-50 mb-6">
-        <label className="block text-sm font-bold text-slate-700 mb-3">Your Budget (USD)</label>
-        <div className="flex items-center gap-4">
-          <span className="text-3xl font-extrabold text-[var(--color-text-muted)]">$</span>
-          <input
-            type="number"
-            min={0}
-            step={100}
-            placeholder="0"
-            value={budget === 0 ? '' : budget}
-            onChange={(e) => { setRedistribute(false); setBudget(Math.max(0, Number(e.target.value) || 0)); }}
-            className="flex-1 min-w-0 w-full text-3xl sm:text-4xl font-extrabold text-[var(--color-text)] bg-transparent border-none outline-none focus:ring-0 appearance-none placeholder-[var(--color-border-dark)] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            style={{ MozAppearance: 'textfield' } as CSSProperties}
-          />
-        </div>
+      {/* ── Budget instrument ───────────────────────────────────────────────
+          The moment of truth on this page is a single number, so it is treated
+          as one: a dark panel that lifts it off the white page, the figure set
+          in tabular mono so digits do not jitter as you type, and an allocation
+          meter directly beneath answering "how much of it is spoken for". */}
+      <div ref={budgetRef} className="budget-instrument mb-6">
+        <div className="budget-instrument__grid" aria-hidden />
 
-        {/* Quick presets */}
-        <div className="flex flex-wrap gap-2 mt-4">
-          {[500, 1000, 1500, 2500, 3500, 5000, 7500].map((amt) => (
-            <button
-              key={amt}
-              type="button"
-              onClick={() => { setRedistribute(false); setBudget(amt); }}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                budget === amt
-                  ? 'bg-[var(--color-accent)] text-white'
-                  : 'bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-blue-300 hover:text-[var(--color-accent)]'
-              }`}
-            >
-              ${amt.toLocaleString()}
-            </button>
-          ))}
+        <div className="budget-instrument__body">
+          <label htmlFor="solar-budget" className="budget-instrument__label">
+            Your budget
+          </label>
+
+          <div className="budget-instrument__figure">
+            <span className="budget-instrument__currency">$</span>
+            <input
+              id="solar-budget"
+              type="number"
+              min={0}
+              step={100}
+              placeholder="0"
+              value={budget === 0 ? '' : budget}
+              onChange={(e) => { setRedistribute(false); setBudget(Math.max(0, Number(e.target.value) || 0)); }}
+              className="budget-instrument__input"
+              style={{ MozAppearance: 'textfield' } as CSSProperties}
+            />
+          </div>
+
+          {budget > 0 && (
+            <div className="budget-instrument__meter" aria-hidden>
+              <div
+                className={`budget-instrument__fill${remaining < 0 ? ' is-over' : ''}`}
+                style={{ width: `${Math.min(100, (totalAllocated / budget) * 100)}%` }}
+              />
+            </div>
+          )}
+
+          {budget > 0 && (
+            <div className="budget-instrument__readout">
+              <span>
+                <strong>${totalAllocated.toLocaleString()}</strong> allocated
+              </span>
+              <span className={remaining >= 0 ? 'is-good' : 'is-over'}>
+                <strong>${Math.abs(remaining).toLocaleString()}</strong>{' '}
+                {remaining >= 0 ? 'left' : 'over'}
+              </span>
+            </div>
+          )}
+
+          <div className="budget-instrument__presets">
+            {[500, 1000, 1500, 2500, 3500, 5000, 7500].map((amt) => (
+              <button
+                key={amt}
+                type="button"
+                onClick={() => { setRedistribute(false); setBudget(amt); }}
+                className={`budget-chip${budget === amt ? ' is-active' : ''}`}
+              >
+                ${amt.toLocaleString()}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
