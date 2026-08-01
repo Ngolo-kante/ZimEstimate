@@ -67,7 +67,12 @@ export default function MobileEstimateBar({ children, className = '' }: MobileEs
 
   return (
     <>
-      <div className={`fixed inset-x-0 bottom-0 z-[110] border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur ${className}`}>
+      {/* Sits above the wizard's navigation footer rather than on top of it.
+          Both were fixed to bottom-0, and at z-110 against the footer's
+          z-50 this bar covered Back and Continue completely on a phone —
+          the wizard looked like it had no way forward. 68px is the
+          footer's height. */}
+      <div className={`fixed inset-x-0 bottom-[68px] z-[110] border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur ${className}`}>
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Live Estimate</p>

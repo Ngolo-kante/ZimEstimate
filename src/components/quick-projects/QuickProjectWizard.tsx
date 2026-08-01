@@ -429,7 +429,12 @@ export default function QuickProjectWizard({ flow, onSave, isContractor = false 
       </AnimatePresence>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between mt-12 pt-6 border-t border-slate-200/50">
+      {/* pb-24 on mobile clears the global bottom navigation, which is fixed,
+          72px tall and painted over anything in normal flow beneath it. Without
+          it Continue and Cancel sat underneath the nav bar and could not be
+          tapped — the same collision that hid Back and Continue in the manual
+          builder. */}
+      <div className="flex items-center justify-between mt-12 pt-6 pb-24 lg:pb-0 border-t border-slate-200/50">
         <div>
           {stepIndex > 0 ? (
             <Button variant="secondary" icon={<ArrowLeft size={16} />} onClick={handleBack} className="bg-white">

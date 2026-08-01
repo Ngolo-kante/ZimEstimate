@@ -31,6 +31,7 @@ import {
   ShieldCheck,
   MapPin,
   Storefront,
+  Briefcase,
   Plus,
   Cube,
   Package,
@@ -751,6 +752,10 @@ export default function MarketplacePage() {
                 <Link href="/supplier/register" className="become-supplier">
                   <Storefront size={16} weight="fill" />
                   Sell on ZimEstimate — list your business
+                </Link>
+                <Link href="/contractor/register" className="become-supplier">
+                  <Briefcase size={16} weight="fill" />
+                  Build for clients — register as a contractor
                 </Link>
               </CardContent>
             </Card>

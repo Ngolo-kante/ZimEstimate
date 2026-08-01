@@ -173,6 +173,15 @@ function BoqNewPageContent() {
     return requested && getTemplateById(requested) ? WIZARD_STEPS.length - 1 : 0;
   });
   const [shakeError, setShakeError] = useState(false);
+  // Furthest step the user has actually reached. Navigation is free up to here
+  // and gated beyond it, so jumping around does not skip the validation that
+  // each step performs on the way forward.
+  const [maxStepReached, setMaxStepReached] = useState(() => {
+    // Opening from a template lands on the review step, so everything before it
+    // has effectively been reached and must stay navigable.
+    const requested = searchParams.get('template');
+    return requested && getTemplateById(requested) ? WIZARD_STEPS.length - 1 : 0;
+  });
   const { error: showError } = useToast();
 
   const progressPct = Math.round((currentStep / WIZARD_STEPS.length) * 100);
@@ -563,7 +572,9 @@ function BoqNewPageContent() {
     if (nextStep === 4 && laborType !== 'materials_labor') {
       nextStep = 5; // Jump to Review
     }
-    setCurrentStep(Math.min(WIZARD_STEPS.length - 1, nextStep));
+    const target = Math.min(WIZARD_STEPS.length - 1, nextStep);
+    setCurrentStep(target);
+    setMaxStepReached((prev) => Math.max(prev, target));
   };
 
   return (
@@ -616,23 +627,37 @@ function BoqNewPageContent() {
                     transition={{ duration: 0.5, ease: 'easeOut' }}
                   />
                 </div>
-                {/* Step dots (clickable back-navigation) */}
-                <div className="flex items-center gap-1 mt-3">
-                  {WIZARD_STEPS.map((step, index) => (
-                    <div
-                      key={step.id}
-                      onClick={() => { if (index < currentStep) setCurrentStep(index); }}
-                      title={step.label}
-                      className={`wiz-step-dot ${
-                        index === currentStep
-                          ? 'wiz-step-dot--active'
-                          : index < currentStep
-                          ? 'wiz-step-dot--complete'
-                          : 'wiz-step-dot--upcoming'
-                      }`}
-                    />
-                  ))}
-                </div>
+                {/* Numbered steps. These were six anonymous 6px bars whose only
+                    label was a title tooltip, so there was nothing on screen
+                    saying which step was which, and the click handler moved
+                    backwards only. Now every step the user has reached is a
+                    labelled button they can jump to in either direction. */}
+                <nav aria-label="Estimate steps" className="mt-3 flex flex-wrap gap-1.5">
+                  {WIZARD_STEPS.map((step, index) => {
+                    const isCurrent = index === currentStep;
+                    const reachable = index <= maxStepReached;
+                    return (
+                      <button
+                        key={step.id}
+                        type="button"
+                        disabled={!reachable}
+                        aria-current={isCurrent ? 'step' : undefined}
+                        onClick={() => { if (reachable) setCurrentStep(index); }}
+                        title={reachable ? step.label : `Complete step ${index} first`}
+                        className={`wiz-step-chip ${
+                          isCurrent
+                            ? 'wiz-step-chip--active'
+                            : reachable
+                            ? 'wiz-step-chip--done'
+                            : 'wiz-step-chip--locked'
+                        }`}
+                      >
+                        <span className="wiz-step-chip__num">{index + 1}</span>
+                        <span className="wiz-step-chip__label">{step.label}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
               </div>
 
               {/* ── Step Header ──────────────────────────────────────────────── */}

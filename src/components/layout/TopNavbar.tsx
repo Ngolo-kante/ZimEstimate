@@ -13,6 +13,7 @@ import {
   Gear,
   SignOut,
   Storefront,
+  Briefcase,
   ChartLineUp,
 } from '@phosphor-icons/react';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -233,6 +234,26 @@ export default function TopNavbar() {
                         Create Account
                       </Link>
                     </div>
+                    <div className="menu-divider" />
+                    {/* Registration routes sit above the browse links: someone
+                        opening this menu signed out is more likely to be joining
+                        than shopping. */}
+                    <Link
+                      href="/supplier/register"
+                      className="quick-link"
+                      onClick={() => setProfileMenuOpen(false)}
+                    >
+                      <Storefront size={16} weight="duotone" />
+                      Register as a supplier
+                    </Link>
+                    <Link
+                      href="/contractor/register"
+                      className="quick-link"
+                      onClick={() => setProfileMenuOpen(false)}
+                    >
+                      <Briefcase size={16} weight="duotone" />
+                      Register as a contractor
+                    </Link>
                     <div className="menu-divider" />
                     <Link
                       href="/marketplace"

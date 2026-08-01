@@ -84,6 +84,88 @@
 .wiz-step-dot--complete  { background: #93C5FD;               width: 16px; cursor: pointer; }
 .wiz-step-dot--upcoming  { background: #DDE1D8;               width: 16px; }
 
+/* ── Numbered step chips ───────────────────────────────────────────────────
+   Replaces the anonymous dots above. Those were 6px bars whose only label was
+   a title attribute, so nothing on screen said which step was which. */
+.wiz-step-chip {
+  display:        inline-flex;
+  align-items:    center;
+  gap:            6px;
+  padding:        5px 10px;
+  border-radius:  999px;
+  border:         1px solid transparent;
+  background:     transparent;
+  font:           inherit;
+  font-size:      0.75rem;
+  font-weight:    600;
+  line-height:    1;
+  cursor:         pointer;
+  transition:     background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.wiz-step-chip__num {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           18px;
+  height:          18px;
+  border-radius:   999px;
+  font-size:       0.6875rem;
+  font-weight:     700;
+  flex-shrink:     0;
+}
+
+.wiz-step-chip--active {
+  background:   var(--wiz-primary);
+  border-color: var(--wiz-primary);
+  color:        #fff;
+}
+.wiz-step-chip--active .wiz-step-chip__num {
+  background: rgba(255, 255, 255, 0.25);
+  color:      #fff;
+}
+
+.wiz-step-chip--done {
+  background:   #EFF6FF;
+  border-color: #BFDBFE;
+  color:        #1D4ED8;
+}
+.wiz-step-chip--done:hover {
+  background:   #DBEAFE;
+  border-color: #93C5FD;
+}
+.wiz-step-chip--done .wiz-step-chip__num {
+  background: #BFDBFE;
+  color:      #1D4ED8;
+}
+
+.wiz-step-chip--locked {
+  background:   transparent;
+  border-color: #E2E8F0;
+  color:        #94A3B8;
+  cursor:       not-allowed;
+}
+.wiz-step-chip--locked .wiz-step-chip__num {
+  background: #F1F5F9;
+  color:      #94A3B8;
+}
+
+.wiz-step-chip:focus-visible {
+  outline:        3px solid var(--wiz-primary);
+  outline-offset: 2px;
+}
+
+/* On narrow screens keep the numbers and drop the words, so all six steps
+   still fit on one line rather than wrapping into a tall block. */
+@media (max-width: 640px) {
+  .wiz-step-chip__label { display: none; }
+  .wiz-step-chip        { padding: 5px 7px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wiz-step-chip { transition: none; }
+}
+
 /* ── CTA Buttons ───────────────────────────────────────────────────────────── */
 .wiz-btn-primary {
   display:         inline-flex;

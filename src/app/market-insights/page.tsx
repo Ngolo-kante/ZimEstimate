@@ -421,6 +421,19 @@ export default function MarketInsightsPage() {
                 Get an Official Quote &rarr;
               </Link>
             </div>
+
+            {/* This page had no route into the marketplace for the businesses
+                whose prices it reports on. */}
+            <div className="join-cta">
+              <p>
+                <strong>In the trade?</strong> List your prices where builders are already looking,
+                or register as a contractor to quote on their projects.
+              </p>
+              <div className="join-cta__actions">
+                <Link href="/supplier/register" className="join-cta__link">Register as a supplier &rarr;</Link>
+                <Link href="/contractor/register" className="join-cta__link">Register as a contractor &rarr;</Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -738,6 +751,40 @@ export default function MarketInsightsPage() {
         .col-updated {
           color: var(--color-text-muted);
           font-size: var(--text-xs);
+        }
+
+        .join-cta {
+          margin-top: var(--space-4);
+          padding: var(--space-4);
+          border: 1px solid var(--color-border-light);
+          border-radius: var(--radius-lg);
+          background: var(--color-surface);
+        }
+
+        .join-cta p {
+          font-size: var(--text-sm);
+          color: var(--color-text-secondary);
+          line-height: 1.6;
+        }
+
+        .join-cta__actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: var(--space-4);
+          margin-top: var(--space-3);
+        }
+
+        /* :global() because these are next/link anchors — styled-jsx never
+           lands its scope class on them, so an unwrapped rule matches nothing. */
+        .join-cta__actions :global(a) {
+          font-size: var(--text-sm);
+          font-weight: 600;
+          color: var(--color-accent);
+          text-decoration: none;
+        }
+
+        .join-cta__actions :global(a:hover) {
+          text-decoration: underline;
         }
 
         .market-disclaimer {

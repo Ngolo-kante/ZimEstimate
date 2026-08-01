@@ -24,6 +24,7 @@ import {
   Stack,
   CheckCircle,
   Storefront,
+  Briefcase,
   DownloadSimple,
   ShieldCheck,
   FileText,
@@ -267,6 +268,58 @@ export default function HomePage() {
           </BentoGrid>
         </section>
 
+        {/* Registration routes for the two business audiences. The supplier
+            call to action used to be the last thing on the page, below the
+            trust proof and the closing banner, where nobody reached it. */}
+        <section className="px-4 md:px-8 max-w-7xl mx-auto w-full reveal-item" data-delay="4">
+          <div className="mb-8 text-center">
+            <span className="mb-2 block text-sm font-bold uppercase tracking-wider text-blue-600">
+              Work with ZimEstimate
+            </span>
+            <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">
+              Selling materials or building for clients?
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="flex flex-col rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary-bg)] text-[var(--color-primary)]">
+                <Storefront size={24} weight="duotone" />
+              </div>
+              <h3 className="mt-4 text-xl font-bold text-slate-900">Sell building materials?</h3>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">
+                List your business, receive quote requests from builders costing real
+                projects, and manage orders and listings from your supplier dashboard.
+              </p>
+              <Link
+                href="/supplier/register"
+                className="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+              >
+                Register as a supplier
+                <ArrowRight size={16} weight="bold" />
+              </Link>
+            </div>
+
+            <div className="flex flex-col rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary-bg)] text-[var(--color-primary)]">
+                <Briefcase size={24} weight="duotone" />
+              </div>
+              <h3 className="mt-4 text-xl font-bold text-slate-900">Build for clients?</h3>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">
+                Put your margin on an estimate, share a client view that hides it, and list
+                your company in the contractor directory so homeowners can find you.
+              </p>
+              <Link
+                href="/contractor/register"
+                className="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+              >
+                Register as a contractor
+                <ArrowRight size={16} weight="bold" />
+              </Link>
+            </div>
+          </div>
+        </section>
+
         <section className="px-4 md:px-8 w-full reveal-item" data-delay="6">
           <Timeline
             title="One pipeline from planning to site execution."
@@ -339,30 +392,6 @@ export default function HomePage() {
         {/* Suppliers are a separate audience with their own portal — leads,
             listings, orders and analytics — but the only ways in were the signup
             page and the marketplace, so the home page never spoke to them. */}
-        <section className="px-4 md:px-8 max-w-7xl mx-auto w-full reveal-item" data-delay="4">
-          <div className="flex flex-col gap-6 rounded-[2rem] border border-slate-200 bg-white p-8 md:flex-row md:items-center md:justify-between md:p-10">
-            <div className="flex items-start gap-5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-bg)] text-[var(--color-primary)]">
-                <Storefront size={24} weight="duotone" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-900">Sell building materials?</h3>
-                <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
-                  List your business, receive quote requests from builders costing real
-                  projects, and manage orders and listings from your supplier dashboard.
-                </p>
-              </div>
-            </div>
-
-            <Link
-              href="/supplier/register"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
-            >
-              Register as a supplier
-              <ArrowRight size={16} weight="bold" />
-            </Link>
-          </div>
-        </section>
 
       </div>
     </MainLayout>
