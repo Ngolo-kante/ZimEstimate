@@ -112,7 +112,34 @@ interface BoreholeBudgetExplorerProps {
 
 export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Borehole Setup', isContractor = false, onSave }: BoreholeBudgetExplorerProps) {
   // Budget
-  const [budget, setBudget] = useState<number>(5000);
+  // The field holds raw text and the number is derived from it. Clamping with
+  // Math.max(1000, ...) inside onChange meant every keystroke snapped back to
+  // 1000, so the field could not be cleared and a value could not be typed
+  // downward — pressing backspace on "5000" jumped straight to 1000 again.
+  const [budgetInput, setBudgetInput] = useState<string>('5000');
+  const budget = Number(budgetInput.replace(/[^0-9]/g, '')) || 0;
+  const setBudget = (amount: number) => setBudgetInput(String(amount));
+
+  // Guidance rather than validation: the estimate still runs, we just say when
+  // the figure looks unlikely to buy a working borehole.
+  const budgetNotice = (() => {
+    if (budgetInput.trim() === '' || budget === 0) {
+      return { tone: 'hint' as const, text: 'Enter what you have available and we will show what it covers.' };
+    }
+    if (budget < 2000) {
+      return {
+        tone: 'warn' as const,
+        text: 'Most boreholes in Zimbabwe start near $2,500 once drilling, casing and a pump are counted. This will show you how far short you are.',
+      };
+    }
+    if (budget > 100000) {
+      return {
+        tone: 'warn' as const,
+        text: 'That is far above a typical residential borehole — worth checking the figure before you plan around it.',
+      };
+    }
+    return null;
+  })();
 
   // Depth slider
   const [depth, setDepth] = useState<number>(40);
@@ -336,10 +363,12 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
             <input
               id="borehole-budget"
               type="number"
-              min={1000}
+              inputMode="numeric"
+              min={0}
               step={500}
-              value={budget}
-              onChange={(e) => setBudget(Math.max(1000, Number(e.target.value) || 1000))}
+              value={budgetInput}
+              onChange={(e) => setBudgetInput(e.target.value.replace(/[^0-9]/g, ''))}
+              aria-describedby="borehole-budget-notice"
               className="budget-instrument__input"
               style={numberInputStyle}
             />
@@ -354,6 +383,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
             </div>
           )}
 
+
           {budget > 0 && (
             <div className="budget-instrument__readout">
               <span>
@@ -364,6 +394,15 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                 {remaining >= 0 ? 'left' : 'over'}
               </span>
             </div>
+          )}
+
+          {budgetNotice && (
+            <p
+              id="borehole-budget-notice"
+              className={`budget-instrument__notice${budgetNotice.tone === 'warn' ? ' is-warn' : ''}`}
+            >
+              {budgetNotice.text}
+            </p>
           )}
 
           <div className="budget-instrument__presets">

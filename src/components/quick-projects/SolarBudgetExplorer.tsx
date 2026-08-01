@@ -360,7 +360,29 @@ interface SolarBudgetExplorerProps {
 
 export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar Setup', isContractor = false, onSave }: SolarBudgetExplorerProps) {
   // Budget — starts at 0 so user enters their amount
-  const [budget, setBudget] = useState<number>(0);
+  const [budgetInput, setBudgetInput] = useState<string>('');
+  const budget = Number(budgetInput.replace(/[^0-9]/g, '')) || 0;
+  const setBudget = (amount: number) => setBudgetInput(String(amount));
+
+  // Guidance, not validation — the explorer still runs and shows the shortfall.
+  const budgetNotice = (() => {
+    if (budgetInput.trim() === '' || budget === 0) {
+      return { tone: 'hint' as const, text: 'Enter what you have available and we will show what it buys.' };
+    }
+    if (budget < 400) {
+      return {
+        tone: 'warn' as const,
+        text: 'Even a starter solar kit — one panel, a small battery and an inverter — runs close to $750. This will show you the gap.',
+      };
+    }
+    if (budget > 60000) {
+      return {
+        tone: 'warn' as const,
+        text: 'That is well beyond a residential system — worth checking the figure before planning around it.',
+      };
+    }
+    return null;
+  })();
 
   // Objective
   const [objective, setObjective] = useState<Objective>('balanced');
@@ -702,15 +724,18 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
             <input
               id="solar-budget"
               type="number"
+              inputMode="numeric"
               min={0}
               step={100}
               placeholder="0"
-              value={budget === 0 ? '' : budget}
-              onChange={(e) => { setRedistribute(false); setBudget(Math.max(0, Number(e.target.value) || 0)); }}
+              value={budgetInput}
+              onChange={(e) => { setRedistribute(false); setBudgetInput(e.target.value.replace(/[^0-9]/g, '')); }}
+              aria-describedby="solar-budget-notice"
               className="budget-instrument__input"
               style={{ MozAppearance: 'textfield' } as CSSProperties}
             />
           </div>
+
 
           {budget > 0 && (
             <div className="budget-instrument__meter" aria-hidden>
@@ -731,6 +756,15 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                 {remaining >= 0 ? 'left' : 'over'}
               </span>
             </div>
+          )}
+
+          {budgetNotice && (
+            <p
+              id="solar-budget-notice"
+              className={`budget-instrument__notice${budgetNotice.tone === 'warn' ? ' is-warn' : ''}`}
+            >
+              {budgetNotice.text}
+            </p>
           )}
 
           <div className="budget-instrument__presets">

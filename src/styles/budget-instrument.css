@@ -128,6 +128,21 @@
 .budget-instrument__readout .is-over,
 .budget-instrument__readout .is-over strong { color: #FDA4AF; }
 
+/* Guidance under the figure. Deliberately not styled as a form error: the
+   estimate still runs, and someone who has under-budgeted for a borehole is
+   better served by being told what it usually costs than by being blocked. */
+.budget-instrument__notice {
+  margin-top: 14px;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.5);
+  max-width: 46ch;
+}
+
+.budget-instrument__notice.is-warn {
+  color: #FDE68A;
+}
+
 .budget-instrument__presets {
   display: flex;
   flex-wrap: wrap;
