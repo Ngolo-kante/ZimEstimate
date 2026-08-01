@@ -15,7 +15,16 @@ import {
 import Link from 'next/link';
 
 /**
- * ZimEstimate community page.
+ * ZimEstimate community page. CURRENTLY UNPUBLISHED — the /community route was
+ * removed so nothing serves this. The component is kept so it can be brought
+ * back by recreating src/app/community/page.tsx:
+ *
+ *   export default function CommunityPage() {
+ *     return <main className="min-h-screen bg-[var(--color-background)] px-4 py-8 sm:px-6 lg:px-8">
+ *       <FacebookBrandHub />
+ *     </main>;
+ *   }
+ *
  *
  * This was previously built as a mock Facebook page and stated a good deal that
  * is not true: 14.8k likes and 16.2k followers, verified check marks, "Official
