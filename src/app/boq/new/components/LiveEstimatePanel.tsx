@@ -14,7 +14,7 @@ function formatAmount(amountUsd: number, currency: 'USD' | 'ZWG', exchangeRate: 
   return `$${amountUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
-export default function LiveEstimatePanel() {
+export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: () => void } = {}) {
   const { currency, exchangeRate } = useCurrency();
   const milestonesState = useBoqWizardStore((state) => state.milestonesState);
   const projectScope = useBoqWizardStore((state) => state.projectScope);
@@ -72,11 +72,16 @@ export default function LiveEstimatePanel() {
     });
   }, [visibleMilestones]);
 
+  // Was a scroll to #boq-review, an id that only exists inside ReviewTabs and
+  // therefore only on the final step — so on every other step the button looked
+  // for an element that was not in the document and silently did nothing. It
+  // now navigates to the review step, which is what "View Full BOQ" implies.
   const openReview = () => {
-    const review = document.getElementById('boq-review');
-    if (review) {
-      review.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (onViewFullBoq) {
+      onViewFullBoq();
+      return;
     }
+    document.getElementById('boq-review')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const exportEstimate = () => {

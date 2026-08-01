@@ -322,7 +322,17 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
                 type="button"
                 whileHover={{ scale: 1.015, y: -2 }}
                 whileTap={{ scale: 0.97 }}
-                onClick={() => setGeometryMode(mode.key)}
+                onClick={() => {
+                  setGeometryMode(mode.key);
+                  // The panel this reveals sits below the fold, so selecting a
+                  // mode looked like nothing happened and users did not find
+                  // the room inputs they were being asked for.
+                  requestAnimationFrame(() => {
+                    document
+                      .getElementById('plan-details-panel')
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  });
+                }}
                 className={`relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-all duration-200 ${
                   isSelected
                     ? `bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm`
@@ -381,6 +391,8 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
       <AnimatePresence>
         {geometryMode === 'quick' && (
           <motion.div
+            id="plan-details-panel"
+            style={{ scrollMarginTop: 160 }}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
@@ -403,14 +415,37 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
                   </button>
                   {isRoomMenuOpen && (
                     <>
-                      <div className="fixed inset-0 z-10" onClick={() => setIsRoomMenuOpen(false)} />
-                      <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-slate-200 bg-white shadow-xl z-20 overflow-hidden">
-                        <div className="max-h-60 overflow-y-auto py-1">
+                      {/* The backdrop is fixed and covers the page, so it also
+                          swallowed the scroll. Combined with a dropdown that
+                          always opened downward, a menu opened near the bottom
+                          of a phone was cut off with no way to reach the rest.
+                          Below sm it is now a bottom sheet, which cannot be
+                          clipped and scrolls on its own. */}
+                      <div
+                        className="fixed inset-0 z-[60] bg-slate-900/30 sm:bg-transparent"
+                        onClick={() => setIsRoomMenuOpen(false)}
+                      />
+                      <div
+                        className="fixed inset-x-0 bottom-0 z-[70] max-h-[70vh] overflow-hidden rounded-t-2xl border border-slate-200 bg-white shadow-xl
+                                   sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:bottom-auto sm:mt-2 sm:w-48 sm:max-h-none sm:rounded-xl"
+                      >
+                        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:hidden">
+                          <span className="text-sm font-bold text-slate-900">Add a room</span>
+                          <button
+                            type="button"
+                            onClick={() => setIsRoomMenuOpen(false)}
+                            className="rounded-lg px-2 py-1 text-sm text-slate-500"
+                            aria-label="Close"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        <div className="max-h-[55vh] overflow-y-auto py-1 sm:max-h-60">
                           {availableRooms.map((room) => (
                             <button
                               key={room.key}
                               type="button"
-                              className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:wiz-text-primary transition-colors"
+                              className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 hover:wiz-text-primary transition-colors sm:py-2"
                               onClick={() => {
                                 setActiveRoomKeys((prev) => [...prev, room.key]);
                                 updateProjectDetails({ roomInputs: { ...projectDetails.roomInputs, [room.key]: '1' } });
@@ -465,6 +500,8 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
 
         {geometryMode === 'detailed' && (
           <motion.div
+            id="plan-details-panel"
+            style={{ scrollMarginTop: 160 }}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
@@ -499,6 +536,8 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
 
         {geometryMode === 'upload' && (
           <motion.div
+            id="plan-details-panel"
+            style={{ scrollMarginTop: 160 }}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}

@@ -766,7 +766,15 @@ function BoqNewPageContent() {
           // The running estimate belongs beside the inputs, not on the review
           // step, where ReviewTabs already lists every line item — showing both
           // rendered the BOQ twice.
-          rightEstimate={currentStep < WIZARD_STEPS.length - 1 ? <LiveEstimatePanel /> : null}
+          rightEstimate={currentStep < WIZARD_STEPS.length - 1 ? (
+            <LiveEstimatePanel
+              onViewFullBoq={() => {
+                const review = WIZARD_STEPS.length - 1;
+                setCurrentStep(review);
+                setMaxStepReached((prev) => Math.max(prev, review));
+              }}
+            />
+          ) : null}
           heroIllustration={null}
         />
 
