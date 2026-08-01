@@ -578,9 +578,15 @@ function BoqNewPageContent() {
   };
 
   return (
-    <MainLayout fullWidth hideBottomNav>
+    <MainLayout fullWidth>
       <div className="wiz-root min-h-[calc(100vh-80px)]">
-        <div className="wiz-topbar sticky top-0 z-40 border-b">
+        {/* Static, not sticky. It was `sticky top-0` while the app navbar also
+            occupies the top of the viewport, so the project name and Save
+            Estimate rendered directly on top of the logo and account menu.
+            Letting it scroll away leaves one sticky element below the navbar
+            — the live estimate — instead of three fighting for the same
+            64 pixels. */}
+        <div className="wiz-topbar border-b">
           <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-4 lg:px-8">
             <div className="flex items-center gap-3">
               <span className="font-semibold" style={{color:'var(--wiz-text-primary)'}}>{projectDetails.name || 'Untitled Estimate'}</span>
@@ -709,7 +715,11 @@ function BoqNewPageContent() {
               </div>
 
               {/* ── Navigation Footer ────────────────────────────────────────── */}
-              <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between gap-2 border-t border-slate-200 bg-white/95 px-3 py-3 shadow-[0_-8px_16px_rgba(0,0,0,0.05)] backdrop-blur-md sm:px-6 sm:py-4 lg:static lg:mt-10 lg:bg-transparent lg:p-0 lg:pt-6 lg:shadow-none lg:backdrop-blur-none">
+              {/* In normal flow, like the quick-project wizards. As a fixed
+                  bar it sat under the live estimate bar and above the global
+                  bottom navigation, so Back and Continue were unreachable and
+                  the quick menu was covered. pb-24 clears the 72px nav bar. */}
+              <div className="flex items-center justify-between gap-2 border-t border-slate-200 mt-10 pt-6 pb-24 lg:pb-0">
                 <button
                   type="button"
                   onClick={() => {

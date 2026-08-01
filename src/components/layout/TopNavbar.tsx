@@ -37,6 +37,9 @@ const navItems: NavItem[] = [
   { label: 'Market Insights', href: '/market-insights' },
   { label: 'Templates', href: '/templates' },
   { label: 'Marketplace', href: '/marketplace' },
+  // Sits beside Marketplace: both are directories of businesses, one of
+  // materials and one of the people who fit them.
+  { label: 'Contractors', href: '/contractors' },
 ];
 
 export default function TopNavbar() {
