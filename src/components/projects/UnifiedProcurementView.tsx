@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
+import RfqPanel from './RfqPanel';
 import { useToast } from '@/components/ui/Toast';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import {
@@ -1111,11 +1112,15 @@ export default function UnifiedProcurementView({
     );
   };
 
+  // Was an EmptyState reading "RFQ management coming soon". The RFQ backend
+  // worked the whole time — only the Marketplace ever called it, one material
+  // at a time — so a builder could not raise a request from their own BOQ.
   const renderRFQContent = () => (
-    <EmptyState
-      icon={<FileText size={48} weight="light" />}
-      title="RFQ management coming soon"
-      description="Use the Supplier dashboard for RFQ workflows while this feature is being built"
+    <RfqPanel
+      project={project}
+      items={items}
+      rfqs={rfqs}
+      onRefresh={loadData}
     />
   );
 
