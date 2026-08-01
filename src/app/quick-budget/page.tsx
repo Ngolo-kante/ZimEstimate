@@ -12,7 +12,12 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
 import { createProject, saveProjectWithItems } from '@/lib/services/projects';
 import { setCreatedProjectSnapshot, setOptimisticProjectCard } from '@/lib/projectCreationCache';
+import SolarBudgetExplorer from '@/components/quick-projects/SolarBudgetExplorer';
+import BoreholeBudgetExplorer from '@/components/quick-projects/BoreholeBudgetExplorer';
 import {
+  House,
+  SunHorizon,
+  Drop,
   ShareNetwork,
   FloppyDisk,
   FilePdf,
@@ -78,6 +83,10 @@ export default function QuickBudgetPage() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [isGeneratingBOD, setIsGeneratingBOD] = useState(false);
+  // Which budget the user is checking. The house estimator was the only one
+  // reachable from here, while the solar and borehole explorers were buried
+  // inside their quick-project wizards.
+  const [budgetMode, setBudgetMode] = useState<'house' | 'solar' | 'borehole'>('house');
 
   // Restore inputs from the query string. Serves two paths: the home hero
   // handing its typed budget over via ?budget=, and returning from sign-in
@@ -385,11 +394,57 @@ export default function QuickBudgetPage() {
     }
   };
 
+  // Solar and borehole have their own budget explorers, previously reachable
+  // only from inside their quick-project wizards. Rendering them here keeps one
+  // page answering "how far does my money go" whatever is being built.
+  if (budgetMode !== 'house') {
+    return (
+      <MainLayout title="Budget Estimator">
+        <div className="mx-auto max-w-4xl px-4 py-8">
+          {budgetMode === 'solar' ? (
+            <SolarBudgetExplorer onBack={() => setBudgetMode('house')} backLabel="Back to budget options" />
+          ) : (
+            <BoreholeBudgetExplorer onBack={() => setBudgetMode('house')} backLabel="Back to budget options" />
+          )}
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout fullWidth title="Budget Estimator">
       <div className="budget-checker-page">
         <div className="ambient ambient-one" aria-hidden />
         <div className="ambient ambient-two" aria-hidden />
+
+        {/* What kind of budget? The house estimator used to be the whole page,
+            with no sign that solar and borehole budgets existed at all. */}
+        <div className="budget-modes">
+          <p className="budget-modes__label">What are you budgeting for?</p>
+          <div className="budget-modes__grid">
+            {([
+              { id: 'house', icon: House, title: 'House build', hint: 'How far your budget carries a full build, stage by stage.' },
+              { id: 'solar', icon: SunHorizon, title: 'Solar system', hint: 'What panel, battery and inverter setup your budget buys.' },
+              { id: 'borehole', icon: Drop, title: 'Borehole', hint: 'Drilling, casing and pump against what you have to spend.' },
+            ] as const).map((mode) => {
+              const Icon = mode.icon;
+              const active = budgetMode === mode.id;
+              return (
+                <button
+                  key={mode.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setBudgetMode(mode.id)}
+                  className={`budget-mode-card${active ? ' is-active' : ''}`}
+                >
+                  <Icon size={22} weight="duotone" />
+                  <strong>{mode.title}</strong>
+                  <span>{mode.hint}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <header className={`studio-hero tone-${coverageTone}`}>
           <div className="hero-head">
@@ -679,6 +734,92 @@ export default function QuickBudgetPage() {
           bottom: 12%;
           background: radial-gradient(circle, rgba(6, 20, 47, 0.22), rgba(6, 20, 47, 0));
           animation-delay: 0.9s;
+        }
+
+        .budget-modes {
+          position: relative;
+          z-index: 1;
+          margin-bottom: 20px;
+        }
+
+        .budget-modes__label {
+          font-size: 0.75rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: var(--color-text-secondary);
+          margin-bottom: 10px;
+        }
+
+        .budget-modes__grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .budget-mode-card {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 6px;
+          padding: 16px;
+          border-radius: 16px;
+          border: 1px solid var(--color-border, #e2e8f0);
+          background: var(--color-surface, #fff);
+          text-align: left;
+          font: inherit;
+          cursor: pointer;
+          transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .budget-mode-card:hover {
+          border-color: #94a3b8;
+        }
+
+        .budget-mode-card.is-active {
+          border-color: var(--color-accent, #2E6CF6);
+          box-shadow: 0 0 0 1px var(--color-accent, #2E6CF6);
+        }
+
+        .budget-mode-card :global(svg) {
+          color: var(--color-accent, #2E6CF6);
+        }
+
+        .budget-mode-card strong {
+          font-size: 0.9375rem;
+          font-weight: 700;
+          color: var(--color-text);
+        }
+
+        .budget-mode-card span {
+          font-size: 0.75rem;
+          line-height: 1.45;
+          color: var(--color-text-secondary);
+        }
+
+        .budget-mode-card:focus-visible {
+          outline: 3px solid var(--color-accent, #2E6CF6);
+          outline-offset: 2px;
+        }
+
+        /* One per row on a phone: three cards side by side leaves each too
+           narrow for its description to be readable. */
+        @media (max-width: 720px) {
+          .budget-modes__grid {
+            grid-template-columns: 1fr;
+          }
+          .budget-mode-card {
+            flex-direction: row;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 14px;
+          }
+          .budget-mode-card strong {
+            flex: 1 1 auto;
+          }
+          .budget-mode-card span {
+            flex: 1 0 100%;
+          }
         }
 
         .studio-hero {

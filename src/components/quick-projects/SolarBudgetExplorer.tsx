@@ -229,14 +229,14 @@ function PackageCard({
   const chips = pkg.appliances.split(',').map((s) => s.trim()).filter(Boolean);
 
   return (
-    <div className={`rounded-xl border p-4 transition-all ${isLoaded ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-400/20' : 'border-slate-200 bg-white hover:border-blue-200'}`}>
+    <div className={`rounded-xl border p-4 transition-all ${isLoaded ? 'border-blue-400 bg-[var(--color-accent-muted)] ring-2 ring-blue-400/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-200'}`}>
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="flex-shrink-0 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+          <span className="flex-shrink-0 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--color-border-light)] text-[var(--color-text-secondary)]">
             {pkg.kva} kVA
           </span>
-          <span className="font-semibold text-sm text-slate-900 truncate">{pkg.name}</span>
+          <span className="font-semibold text-sm text-[var(--color-text)] truncate">{pkg.name}</span>
         </div>
         <div className="flex-shrink-0 flex flex-col items-end gap-0.5">
           <span className={`font-bold text-base tabular-nums ${over ? 'text-amber-600' : 'text-emerald-600'}`}>
@@ -249,7 +249,7 @@ function PackageCard({
       </div>
 
       {/* Specs */}
-      <p className="text-xs text-slate-500 mb-2">
+      <p className="text-xs text-[var(--color-text-secondary)] mb-2">
         {pkg.batteryKwh}kWh battery · {pkg.panelCount}×{pkg.panelWatt}W panels
         {pkg.includesInstall && (
           <span className="ml-1.5 inline-block text-[10px] font-bold uppercase tracking-wide bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
@@ -261,7 +261,7 @@ function PackageCard({
       {/* Appliance chips */}
       <div className="flex flex-wrap gap-1 mb-3">
         {chips.map((chip) => (
-          <span key={chip} className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+          <span key={chip} className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--color-border-light)] text-[var(--color-text-secondary)] font-medium">
             {chip}
           </span>
         ))}
@@ -269,15 +269,15 @@ function PackageCard({
 
       {/* Select button */}
       {isLoaded ? (
-        <div className="flex items-center gap-1.5 text-sm font-semibold text-blue-700">
-          <CheckCircle size={16} weight="fill" className="text-blue-500" />
+        <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-accent-dark)]">
+          <CheckCircle size={16} weight="fill" className="text-[var(--color-accent)]" />
           Loaded into explorer
         </div>
       ) : (
         <button
           type="button"
           onClick={() => onSelect(pkg)}
-          className="w-full py-1.5 rounded-lg text-xs font-semibold text-blue-700 border border-blue-200 hover:bg-blue-50 hover:border-blue-400 transition-colors"
+          className="w-full py-1.5 rounded-lg text-xs font-semibold text-[var(--color-accent-dark)] border border-blue-200 hover:bg-[var(--color-accent-muted)] hover:border-blue-400 transition-colors"
         >
           Select This Combo
         </button>
@@ -292,17 +292,17 @@ function KvaGuide({ defaultOpen = false }: { defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm mb-6 overflow-hidden">
+    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm mb-6 overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
       >
-        <span className="font-bold text-slate-900 flex items-center gap-2 text-sm">
+        <span className="font-bold text-[var(--color-text)] flex items-center gap-2 text-sm">
           <Lightning size={16} weight="duotone" className="text-yellow-500" />
           kVA Size Guide — What Can Each System Power?
         </span>
-        {open ? <CaretUp size={16} className="text-slate-400" /> : <CaretDown size={16} className="text-slate-400" />}
+        {open ? <CaretUp size={16} className="text-[var(--color-text-muted)]" /> : <CaretDown size={16} className="text-[var(--color-text-muted)]" />}
       </button>
 
       <AnimatePresence initial={false}>
@@ -314,14 +314,14 @@ function KvaGuide({ defaultOpen = false }: { defaultOpen?: boolean }) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 space-y-3 border-t border-slate-100">
+            <div className="px-4 pb-4 space-y-3 border-t border-[var(--color-border-light)]">
               {KVA_POWER_GUIDE.map((tier) => (
                 <div key={tier.kva} className="pt-3">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-sm text-slate-800">{tier.label}</span>
-                    <span className="text-xs font-medium text-slate-500">{tier.priceRange}</span>
+                    <span className="font-semibold text-sm text-[var(--color-text)]">{tier.label}</span>
+                    <span className="text-xs font-medium text-[var(--color-text-secondary)]">{tier.priceRange}</span>
                   </div>
-                  <p className="text-xs text-slate-500 mb-2">{tier.typicalUse}</p>
+                  <p className="text-xs text-[var(--color-text-secondary)] mb-2">{tier.typicalUse}</p>
                   <div className="flex flex-wrap gap-1 mb-1.5">
                     {tier.canPower.map((item) => (
                       <span key={item} className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium border border-emerald-100">
@@ -350,13 +350,15 @@ function KvaGuide({ defaultOpen = false }: { defaultOpen?: boolean }) {
 
 interface SolarBudgetExplorerProps {
   onBack: () => void;
+  /** Names the destination; the default matches the wizard these came from. */
+  backLabel?: string;
   isContractor?: boolean;
   onSave?: (output: SolarWizardOutput & { boqItems?: BOQItem[] }) => void;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 
-export default function SolarBudgetExplorer({ onBack, isContractor = false, onSave }: SolarBudgetExplorerProps) {
+export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar Setup', isContractor = false, onSave }: SolarBudgetExplorerProps) {
   // Budget — starts at 0 so user enters their amount
   const [budget, setBudget] = useState<number>(0);
 
@@ -526,7 +528,7 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
       <div className="w-full max-w-5xl mx-auto animate-fade-in pb-24">
         <button
           onClick={() => setBoqItems(null)}
-          className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors mb-6"
+          className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors mb-6"
         >
           <ArrowLeft size={16} /> Back to Budget Explorer
         </button>
@@ -637,20 +639,20 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
       {/* Back button */}
       <button
         onClick={onBack}
-        className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors mb-6"
+        className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors mb-6"
       >
-        <ArrowLeft size={16} /> Back to Solar Setup
+        <ArrowLeft size={16} /> {backLabel}
       </button>
 
       {/* Header */}
       <div className="mb-8">
-        <span className="text-xs font-bold uppercase tracking-[0.2em] text-blue-500 mb-2 block">
+        <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-accent)] mb-2 block">
           SOLAR BUDGET EXPLORER
         </span>
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">
+        <h2 className="text-2xl font-bold text-[var(--color-text)] mb-2">
           What can your budget buy?
         </h2>
-        <p className="text-slate-600 text-base">
+        <p className="text-[var(--color-text-secondary)] text-base">
           Enter your budget below. Toggle components on/off and change brands to see what fits.
         </p>
       </div>
@@ -670,23 +672,23 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
               onClick={() => setObjectiveAndBrands(key)}
               className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all ${
                 objective === key
-                  ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/20 text-blue-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'
+                  ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-2 ring-[var(--color-accent)]/20 text-[var(--color-accent-dark)]'
+                  : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-blue-300'
               }`}
             >
-              <span className={objective === key ? 'text-blue-600' : 'text-slate-400'}>{icon}</span>
+              <span className={objective === key ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}>{icon}</span>
               <span className="text-sm font-semibold">{label}</span>
-              <span className="text-[11px] text-slate-500 leading-tight">{sub}</span>
+              <span className="text-[11px] text-[var(--color-text-secondary)] leading-tight">{sub}</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* ── Budget Input ─────────────────────────────────────────────────────── */}
-      <div ref={budgetRef} className="p-6 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 mb-6">
+      <div ref={budgetRef} className="p-6 rounded-2xl border border-blue-200 bg-gradient-to-br from-[var(--color-accent-muted)] to-indigo-50 mb-6">
         <label className="block text-sm font-bold text-slate-700 mb-3">Your Budget (USD)</label>
         <div className="flex items-center gap-4">
-          <span className="text-3xl font-extrabold text-slate-400">$</span>
+          <span className="text-3xl font-extrabold text-[var(--color-text-muted)]">$</span>
           <input
             type="number"
             min={0}
@@ -694,7 +696,7 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
             placeholder="0"
             value={budget === 0 ? '' : budget}
             onChange={(e) => { setRedistribute(false); setBudget(Math.max(0, Number(e.target.value) || 0)); }}
-            className="flex-1 text-4xl font-extrabold text-slate-900 bg-transparent border-none outline-none focus:ring-0 appearance-none placeholder-slate-300 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="flex-1 min-w-0 w-full text-3xl sm:text-4xl font-extrabold text-[var(--color-text)] bg-transparent border-none outline-none focus:ring-0 appearance-none placeholder-[var(--color-border-dark)] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             style={{ MozAppearance: 'textfield' } as CSSProperties}
           />
         </div>
@@ -708,8 +710,8 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
               onClick={() => { setRedistribute(false); setBudget(amt); }}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                 budget === amt
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600'
+                  ? 'bg-[var(--color-accent)] text-white'
+                  : 'bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-blue-300 hover:text-[var(--color-accent)]'
               }`}
             >
               ${amt.toLocaleString()}
@@ -725,13 +727,13 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border border-blue-200 mb-4"
+            className="flex items-center gap-3 p-3 rounded-xl bg-[var(--color-accent-muted)] border border-blue-200 mb-4"
           >
-            <CheckCircle size={16} weight="fill" className="text-blue-500 flex-shrink-0" />
+            <CheckCircle size={16} weight="fill" className="text-[var(--color-accent)] flex-shrink-0" />
             <p className="text-sm text-blue-800 flex-1">
               <strong>Combo loaded.</strong> Budget and brands have been updated from the selected package.
             </p>
-            <button type="button" onClick={() => setComboLoaded(null)} className="text-xs text-blue-600 hover:underline">
+            <button type="button" onClick={() => setComboLoaded(null)} className="text-xs text-[var(--color-accent)] hover:underline">
               Dismiss
             </button>
           </motion.div>
@@ -741,9 +743,9 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
       {/* Empty state — no budget entered yet */}
       {budget === 0 && (
         <div>
-          <div className="text-center py-10 mb-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50">
-            <Lightning size={36} weight="duotone" className="text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500 text-sm">Enter your budget above or tap a quick amount to see what you can get.</p>
+          <div className="text-center py-10 mb-6 rounded-2xl border border-dashed border-[var(--color-border)] bg-slate-50/50">
+            <Lightning size={36} weight="duotone" className="text-[var(--color-border-dark)] mx-auto mb-3" />
+            <p className="text-[var(--color-text-secondary)] text-sm">Enter your budget above or tap a quick amount to see what you can get.</p>
           </div>
           <KvaGuide defaultOpen={true} />
         </div>
@@ -763,15 +765,15 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
                   : `$${Math.abs(remaining).toLocaleString()} over budget`}
               </span>
             </div>
-            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-3 w-full bg-[var(--color-border-light)] rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ease-out ${
-                  budgetPct > 100 ? 'bg-red-500' : budgetPct > 90 ? 'bg-amber-500' : 'bg-gradient-to-r from-blue-500 to-emerald-400'
+                  budgetPct > 100 ? 'bg-red-500' : budgetPct > 90 ? 'bg-amber-500' : 'bg-gradient-to-r from-[var(--color-accent)] to-emerald-400'
                 }`}
                 style={{ width: `${Math.min(budgetPct, 100)}%` }}
               />
             </div>
-            <div className="flex justify-between text-xs text-slate-400 mt-1">
+            <div className="flex justify-between text-xs text-[var(--color-text-muted)] mt-1">
               <span>$0</span>
               <span>${budget.toLocaleString()}</span>
             </div>
@@ -832,14 +834,14 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
           {/* ── Matching Packages (grouped by kVA) ──────────────────────────────── */}
           {packageGroups.length > 0 && (
             <div className="mb-6">
-              <h4 className="font-bold text-slate-900 mb-1 text-sm flex items-center gap-2">
+              <h4 className="font-bold text-[var(--color-text)] mb-1 text-sm flex items-center gap-2">
                 <Lightning size={16} weight="duotone" className="text-yellow-500" />
                 Packages Within Your Budget
               </h4>
-              <p className="text-xs text-slate-500 mb-4">Real Zimbabwe market combos — click to load into the explorer.</p>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-4">Real Zimbabwe market combos — click to load into the explorer.</p>
               {packageGroups.map((group) => (
                 <div key={group.label} className="mb-4">
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">{group.label}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">{group.label}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {group.packages.map((pkg) => (
                       <PackageCard
@@ -866,8 +868,8 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
                   key={card.id}
                   className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
                     card.enabled
-                      ? 'border-blue-200 bg-white shadow-sm'
-                      : 'border-slate-200 bg-slate-50/50 opacity-60'
+                      ? 'border-blue-200 bg-[var(--color-surface)] shadow-sm'
+                      : 'border-[var(--color-border)] bg-slate-50/50 opacity-60'
                   }`}
                 >
                   {/* Card header */}
@@ -876,37 +878,37 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
                     <button
                       onClick={() => toggleCard(card.id)}
                       className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
-                        card.enabled ? 'bg-blue-600' : 'bg-slate-300'
+                        card.enabled ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border-dark)]'
                       }`}
                     >
                       <div
-                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-[var(--color-surface)] shadow transition-transform ${
                           card.enabled ? 'translate-x-[22px]' : 'translate-x-0.5'
                         }`}
                       />
                     </button>
 
                     {/* Icon + label */}
-                    <div className={`flex-shrink-0 ${card.enabled ? 'text-blue-600' : 'text-slate-400'}`}>
+                    <div className={`flex-shrink-0 ${card.enabled ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}`}>
                       {card.icon}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className={`font-semibold text-sm ${card.enabled ? 'text-slate-900' : 'text-slate-500'}`}>
+                        <span className={`font-semibold text-sm ${card.enabled ? 'text-[var(--color-text)]' : 'text-[var(--color-text-secondary)]'}`}>
                           {card.label}
                         </span>
-                        <span className={`text-lg font-bold tabular-nums ${card.enabled ? 'text-slate-900' : 'text-slate-400'}`}>
+                        <span className={`text-lg font-bold tabular-nums ${card.enabled ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`}>
                           {card.enabled && card.cost > 0 ? `$${card.cost.toLocaleString()}` : card.enabled ? '—' : '$0'}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5 truncate">{card.description}</p>
+                      <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 truncate">{card.description}</p>
                     </div>
 
                     {/* Expand button */}
                     {card.enabled && (card.hasBrandPicker || card.hasCustomInput) && (
                       <button
                         onClick={() => toggleExpand(card.id)}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors flex-shrink-0"
+                        className="p-1.5 rounded-lg hover:bg-[var(--color-border-light)] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors flex-shrink-0"
                       >
                         {isExpanded ? <CaretUp size={16} /> : <CaretDown size={16} />}
                       </button>
@@ -923,7 +925,7 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden"
                       >
-                        <div className="px-4 pb-4 pt-1 border-t border-slate-100">
+                        <div className="px-4 pb-4 pt-1 border-t border-[var(--color-border-light)]">
 
                           {/* Panel brand picker */}
                           {card.id === 'panels' && (
@@ -931,11 +933,11 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
                               {PANEL_BRANDS.map((b) => (
                                 <button key={b.brand} type="button" onClick={() => setPanelBrand(b.brand)}
                                   className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
-                                    panelBrand === b.brand ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500/20' : 'border-slate-200 bg-white hover:border-blue-300'
+                                    panelBrand === b.brand ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
                                   }`}
                                 >
-                                  <span className="font-semibold text-slate-800">{b.label}</span>
-                                  <span className="text-xs text-slate-500">{b.watt}W · ${b.pricePerPanel}/panel</span>
+                                  <span className="font-semibold text-[var(--color-text)]">{b.label}</span>
+                                  <span className="text-xs text-[var(--color-text-secondary)]">{b.watt}W · ${b.pricePerPanel}/panel</span>
                                 </button>
                               ))}
                             </div>
@@ -949,17 +951,17 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
                                 return (
                                   <button key={b.brand} type="button" onClick={() => setInverterBrand(b.brand)}
                                     className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
-                                      inverterBrand === b.brand ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500/20' : 'border-slate-200 bg-white hover:border-blue-300'
+                                      inverterBrand === b.brand ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
                                     }`}
                                   >
                                     <div className="flex w-full items-center justify-between">
-                                      <span className="font-semibold text-slate-800">{b.label}</span>
+                                      <span className="font-semibold text-[var(--color-text)]">{b.label}</span>
                                       <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                                        b.tier === 'budget' ? 'bg-green-100 text-green-700' : b.tier === 'premium' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                                        b.tier === 'budget' ? 'bg-green-100 text-green-700' : b.tier === 'premium' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-[var(--color-accent-dark)]'
                                       }`}>{b.tier}</span>
                                     </div>
-                                    <span className="text-xs text-slate-500 mt-1">{b.description}</span>
-                                    <span className="text-xs font-medium text-slate-600 mt-1">~${price5kva} for 5kVA</span>
+                                    <span className="text-xs text-[var(--color-text-secondary)] mt-1">{b.description}</span>
+                                    <span className="text-xs font-medium text-[var(--color-text-secondary)] mt-1">~${price5kva} for 5kVA</span>
                                   </button>
                                 );
                               })}
@@ -972,17 +974,17 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
                               {BATTERY_BRANDS.map((b) => (
                                 <button key={b.brand} type="button" onClick={() => setBatteryBrand(b.brand)}
                                   className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
-                                    batteryBrand === b.brand ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500/20' : 'border-slate-200 bg-white hover:border-blue-300'
+                                    batteryBrand === b.brand ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
                                   }`}
                                 >
                                   <div className="flex w-full items-center justify-between">
-                                    <span className="font-semibold text-slate-800">{b.label}</span>
+                                    <span className="font-semibold text-[var(--color-text)]">{b.label}</span>
                                     <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                                      b.tier === 'budget' ? 'bg-green-100 text-green-700' : b.tier === 'premium' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                                      b.tier === 'budget' ? 'bg-green-100 text-green-700' : b.tier === 'premium' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-[var(--color-accent-dark)]'
                                     }`}>{b.tier}</span>
                                   </div>
-                                  <span className="text-xs text-slate-500 mt-1">{b.description}</span>
-                                  <span className="text-xs font-medium text-slate-600 mt-1">
+                                  <span className="text-xs text-[var(--color-text-secondary)] mt-1">{b.description}</span>
+                                  <span className="text-xs font-medium text-[var(--color-text-secondary)] mt-1">
                                     ${b.unitPrice} per {b.unitKwh}kWh · ${b.pricePerKwh}/kWh
                                   </span>
                                 </button>
@@ -993,11 +995,11 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
                           {/* Installation custom amount */}
                           {card.id === 'installation' && (
                             <div className="space-y-3">
-                              <p className="text-xs text-slate-500 mb-2">
+                              <p className="text-xs text-[var(--color-text-secondary)] mb-2">
                                 Leave blank to use <strong>20% of hardware cost</strong> (Zimbabwe standard). Or enter the amount your installer quoted.
                               </p>
                               <div className="flex items-center gap-2">
-                                <span className="text-slate-400 font-semibold">$</span>
+                                <span className="text-[var(--color-text-muted)] font-semibold">$</span>
                                 <input
                                   type="number"
                                   min={0}
@@ -1005,12 +1007,12 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
                                   placeholder={`${Math.round((allocation.panels.cost + allocation.inverter.cost + allocation.battery.cost + allocation.protection.cost) * 0.20)} (auto)`}
                                   value={installCustom ?? ''}
                                   onChange={(e) => setInstallCustom(e.target.value === '' ? null : Math.max(0, Number(e.target.value)))}
-                                  className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
+                                  className="flex-1 rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-blue-400"
                                 />
                                 {installCustom !== null && (
                                   <button
                                     onClick={() => setInstallCustom(null)}
-                                    className="text-xs text-blue-600 hover:underline whitespace-nowrap"
+                                    className="text-xs text-[var(--color-accent)] hover:underline whitespace-nowrap"
                                   >
                                     Reset to auto
                                   </button>
@@ -1030,9 +1032,9 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
 
           {/* ── System Summary Card ────────────────────────────────────────────── */}
           {totalAllocated > 0 && (
-            <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm mb-6">
-              <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <CheckCircle size={20} weight="fill" className="text-blue-600" />
+            <div className="p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm mb-6">
+              <h4 className="font-bold text-[var(--color-text)] mb-4 flex items-center gap-2">
+                <CheckCircle size={20} weight="fill" className="text-[var(--color-accent)]" />
                 Your System Summary
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
@@ -1047,21 +1049,21 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
                   .filter((r) => r.show)
                   .map((row) => (
                     <div key={row.label} className="flex justify-between p-2.5 rounded-lg bg-slate-50">
-                      <span className="text-slate-500">{row.label}</span>
-                      <strong className="text-slate-900">{row.value}</strong>
+                      <span className="text-[var(--color-text-secondary)]">{row.label}</span>
+                      <strong className="text-[var(--color-text)]">{row.value}</strong>
                     </div>
                   ))}
               </div>
 
-              <div className="mt-4 p-3 rounded-lg bg-blue-50/50 border border-blue-100/50">
+              <div className="mt-4 p-3 rounded-lg bg-[var(--color-accent-muted)]/50 border border-blue-100/50">
                 <p className="text-xs font-semibold text-blue-800 mb-1">Assumptions</p>
-                <ul className="text-xs text-blue-700 space-y-0.5">
+                <ul className="text-xs text-[var(--color-accent-dark)] space-y-0.5">
                   <li>Prices: Zimbabwe Q1 2026 mid-range market rates</li>
                   <li>Sun hours: 5.5h/day average (Zimbabwe)</li>
                   <li>Installation: {allocation.installation.isCustom ? 'custom amount' : '20% of hardware cost'}</li>
                   <li>Battery: LiFePO4 with 90-95% depth of discharge</li>
                   {!enabledCards.transport && (
-                    <li className="text-slate-600">Transport not included — enable if your supplier charges separately</li>
+                    <li className="text-[var(--color-text-secondary)]">Transport not included — enable if your supplier charges separately</li>
                   )}
                   {!enabledCards.protection && (
                     <li className="text-amber-700 font-semibold">
@@ -1102,53 +1104,53 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
                 </p>
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   {/* Ideal column */}
-                  <div className="p-3 rounded-xl bg-white border border-amber-200">
+                  <div className="p-3 rounded-xl bg-[var(--color-surface)] border border-amber-200">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 mb-2">Ideal</p>
                     <div className="space-y-1.5 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Array</span>
-                        <strong className="text-slate-900">{idealArrayKw.toFixed(1)} kW</strong>
+                        <span className="text-[var(--color-text-secondary)]">Array</span>
+                        <strong className="text-[var(--color-text)]">{idealArrayKw.toFixed(1)} kW</strong>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Panels</span>
-                        <strong className="text-slate-900">{idealPanelCount}× {pBrand.watt}W</strong>
+                        <span className="text-[var(--color-text-secondary)]">Panels</span>
+                        <strong className="text-[var(--color-text)]">{idealPanelCount}× {pBrand.watt}W</strong>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Battery</span>
-                        <strong className="text-slate-900">{idealBatteryKwh.toFixed(1)} kWh</strong>
+                        <span className="text-[var(--color-text-secondary)]">Battery</span>
+                        <strong className="text-[var(--color-text)]">{idealBatteryKwh.toFixed(1)} kWh</strong>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Units</span>
-                        <strong className="text-slate-900">{idealBatteryUnits}× {activeBatBrand.unitKwh}kWh</strong>
+                        <span className="text-[var(--color-text-secondary)]">Units</span>
+                        <strong className="text-[var(--color-text)]">{idealBatteryUnits}× {activeBatBrand.unitKwh}kWh</strong>
                       </div>
                     </div>
                   </div>
 
                   {/* Current column */}
-                  <div className="p-3 rounded-xl bg-white border border-slate-200">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Your Budget</p>
+                  <div className="p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Your Budget</p>
                     <div className="space-y-1.5 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Array</span>
-                        <strong className={`${enabledCards.panels && currentPanels > 0 ? (currentPanels >= idealPanelCount ? 'text-emerald-600' : 'text-amber-700') : 'text-slate-400'}`}>
+                        <span className="text-[var(--color-text-secondary)]">Array</span>
+                        <strong className={`${enabledCards.panels && currentPanels > 0 ? (currentPanels >= idealPanelCount ? 'text-emerald-600' : 'text-amber-700') : 'text-[var(--color-text-muted)]'}`}>
                           {enabledCards.panels && currentPanels > 0 ? `${systemKw} kW` : '—'}
                         </strong>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Panels</span>
-                        <strong className={`${enabledCards.panels && currentPanels > 0 ? (currentPanels >= idealPanelCount ? 'text-emerald-600' : 'text-amber-700') : 'text-slate-400'}`}>
+                        <span className="text-[var(--color-text-secondary)]">Panels</span>
+                        <strong className={`${enabledCards.panels && currentPanels > 0 ? (currentPanels >= idealPanelCount ? 'text-emerald-600' : 'text-amber-700') : 'text-[var(--color-text-muted)]'}`}>
                           {enabledCards.panels && currentPanels > 0 ? `${currentPanels}× ${pBrand.watt}W` : '—'}
                         </strong>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Battery</span>
-                        <strong className={`${enabledCards.battery && currentBatteryUnits > 0 ? (currentBatteryUnits >= idealBatteryUnits ? 'text-emerald-600' : 'text-amber-700') : 'text-slate-400'}`}>
+                        <span className="text-[var(--color-text-secondary)]">Battery</span>
+                        <strong className={`${enabledCards.battery && currentBatteryUnits > 0 ? (currentBatteryUnits >= idealBatteryUnits ? 'text-emerald-600' : 'text-amber-700') : 'text-[var(--color-text-muted)]'}`}>
                           {enabledCards.battery && currentBatteryUnits > 0 ? `${currentStorageKwh} kWh` : '—'}
                         </strong>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Units</span>
-                        <strong className={`${enabledCards.battery && currentBatteryUnits > 0 ? (currentBatteryUnits >= idealBatteryUnits ? 'text-emerald-600' : 'text-amber-700') : 'text-slate-400'}`}>
+                        <span className="text-[var(--color-text-secondary)]">Units</span>
+                        <strong className={`${enabledCards.battery && currentBatteryUnits > 0 ? (currentBatteryUnits >= idealBatteryUnits ? 'text-emerald-600' : 'text-amber-700') : 'text-[var(--color-text-muted)]'}`}>
                           {enabledCards.battery && currentBatteryUnits > 0 ? `${currentBatteryUnits}× ${activeBatBrand.unitKwh}kWh` : '—'}
                         </strong>
                       </div>
@@ -1163,7 +1165,7 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
                     Your system matches the ideal sizing for this inverter. Great setup!
                   </div>
                 ) : (
-                  <div className="flex items-start gap-2 p-3 rounded-xl bg-white border border-amber-200">
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-[var(--color-surface)] border border-amber-200">
                     <ArrowUp size={16} className="flex-shrink-0 mt-0.5 text-amber-600" />
                     <div className="text-sm text-amber-900">
                       To reach ideal:{' '}
@@ -1206,7 +1208,7 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
           )}
 
           {/* ── Action Buttons ────────────────────────────────────────────────── */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-6 border-t border-slate-200">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-6 border-t border-[var(--color-border)]">
             <Button
               variant="primary"
               onClick={generateBOQ}
@@ -1220,7 +1222,7 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
                 variant="secondary"
                 onClick={() => setShowSaveDialog(true)}
                 icon={<FloppyDisk size={18} />}
-                className="bg-white"
+                className="bg-[var(--color-surface)]"
               >
                 Save as Project
               </Button>
@@ -1244,9 +1246,9 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-white rounded-2xl p-6 shadow-xl"
+              className="w-full max-w-md bg-[var(--color-surface)] rounded-2xl p-6 shadow-xl"
             >
-              <h3 className="text-lg font-bold text-slate-900 mb-4">Save Project</h3>
+              <h3 className="text-lg font-bold text-[var(--color-text)] mb-4">Save Project</h3>
               <Input
                 label="Project name"
                 placeholder="e.g. My Solar System"
@@ -1254,7 +1256,7 @@ export default function SolarBudgetExplorer({ onBack, isContractor = false, onSa
                 onChange={(e) => setProjectName(e.target.value)}
               />
               <div className="flex gap-3 mt-6">
-                <Button variant="secondary" onClick={() => setShowSaveDialog(false)} className="flex-1 bg-white">
+                <Button variant="secondary" onClick={() => setShowSaveDialog(false)} className="flex-1 bg-[var(--color-surface)]">
                   Cancel
                 </Button>
                 <Button
