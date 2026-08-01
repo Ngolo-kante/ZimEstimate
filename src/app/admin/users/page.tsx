@@ -24,6 +24,7 @@ import {
 const USER_TYPE_LABELS: Record<UserType, string> = {
   builder: 'Builder',
   supplier: 'Supplier',
+  contractor: 'Contractor',
   admin: 'Admin',
 };
 

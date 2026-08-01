@@ -45,8 +45,12 @@ export default function QuickProjectPage({ params }: { params: Promise<{ type: s
     notFound();
   }
 
-  // UserType includes 'builder' | 'supplier' | 'admin'; treat 'builder' as contractor-eligible
-  const isContractor = profile?.user_type === 'builder';
+  // 'builder' is the default user_type for every new signup, so treating it as
+  // contractor-eligible showed a "Contractor Markup — Contractor only" field to
+  // homeowners estimating their own house, and offered a client-facing view to
+  // people with no client. Migration 037 makes contractor a real role, so this
+  // can now test for it.
+  const isContractor = profile?.user_type === 'contractor';
 
   async function handleSave(items: BOQItem[], answers: Answers, labor: LaborConfig) {
     try {

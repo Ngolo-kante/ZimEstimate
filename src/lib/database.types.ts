@@ -38,7 +38,9 @@ export type DocumentCategory = 'plan' | 'permit' | 'receipt' | 'contract' | 'pho
 
 export type SavingsFrequency = 'weekly' | 'monthly' | 'quarterly';
 
-export type UserType = 'builder' | 'supplier' | 'admin';
+// 'contractor' added in migration 037. Keep in step with the
+// profiles_user_type_check constraint.
+export type UserType = 'builder' | 'supplier' | 'contractor' | 'admin';
 
 export type VerificationStatus = 'unverified' | 'pending' | 'verified' | 'trusted' | 'premium';
 
