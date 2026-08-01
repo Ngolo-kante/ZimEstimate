@@ -155,11 +155,25 @@
   outline-offset: 2px;
 }
 
-/* On narrow screens keep the numbers and drop the words, so all six steps
-   still fit on one line rather than wrapping into a tall block. */
-@media (max-width: 640px) {
-  .wiz-step-chip__label { display: none; }
-  .wiz-step-chip        { padding: 5px 7px; }
+/* Horizontal scroller rather than wrapping or hiding the words. Dropping the
+   labels on narrow screens left a row of bare numbers under the progress bar,
+   which read as a step counter rather than named, clickable steps. */
+.wiz-step-nav {
+  display:                    flex;
+  gap:                        6px;
+  overflow-x:                 auto;
+  scroll-snap-type:           x proximity;
+  padding-bottom:             4px;
+  scrollbar-width:            none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.wiz-step-nav::-webkit-scrollbar { display: none; }
+
+.wiz-step-chip {
+  flex:             0 0 auto;
+  scroll-snap-align: center;
+  white-space:      nowrap;
 }
 
 @media (prefers-reduced-motion: reduce) {

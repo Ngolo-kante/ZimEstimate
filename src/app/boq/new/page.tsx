@@ -638,7 +638,7 @@ function BoqNewPageContent() {
                     saying which step was which, and the click handler moved
                     backwards only. Now every step the user has reached is a
                     labelled button they can jump to in either direction. */}
-                <nav aria-label="Estimate steps" className="mt-3 flex flex-wrap gap-1.5">
+                <nav aria-label="Estimate steps" className="wiz-step-nav mt-3">
                   {WIZARD_STEPS.map((step, index) => {
                     const isCurrent = index === currentStep;
                     const reachable = index <= maxStepReached;
@@ -650,6 +650,12 @@ function BoqNewPageContent() {
                         aria-current={isCurrent ? 'step' : undefined}
                         onClick={() => { if (reachable) setCurrentStep(index); }}
                         title={reachable ? step.label : `Complete step ${index} first`}
+                        ref={isCurrent ? (el) => {
+                          // Keep the current step on screen. Without this, moving
+                          // to step 5 leaves the strip showing step 1 and the user
+                          // has no sign of where they are.
+                          el?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+                        } : undefined}
                         className={`wiz-step-chip ${
                           isCurrent
                             ? 'wiz-step-chip--active'
