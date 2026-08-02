@@ -54,13 +54,22 @@ export default function QuickProjectPage({ params }: { params: Promise<{ type: s
 
   async function handleSave(items: BOQItem[], answers: Answers, labor: LaborConfig) {
     try {
-      await createQuickBOQ({
+      // createQuickBOQ reports failure by returning an error, not by throwing —
+      // ignoring it meant a signed-out user was told the estimate saved and then
+      // sent to an empty list.
+      const { error } = await createQuickBOQ({
         projectType: type as ProjectType,
         answers,
         boqItems: items,
         labor,
         currency: 'USD',
       });
+
+      if (error) {
+        showError(error.message || 'Failed to save estimate. Please try again.');
+        return;
+      }
+
       success(`${PROJECT_TITLES[type]} estimate saved successfully!`);
       router.push('/projects/quick');
     } catch (err) {

@@ -5,32 +5,54 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Briefcase, CheckCircle, Percent } from '@phosphor-icons/react';
 import MainLayout from '@/components/layout/MainLayout';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { getMyContractorProfile, registerAsContractor } from '@/lib/services/contractors';
+import { getMyContractorProfile, registerAsContractor, updateContractorProfile } from '@/lib/services/contractors';
+import {
+  clearRegistrationDraft,
+  loadRegistrationDraft,
+  saveRegistrationDraft,
+  setPostAuthRedirect,
+} from '@/lib/registrationDraft';
 // Shared with the directory filter — see the note in constants.ts. Using a
 // separate list here meant a contractor could register with a trade the
 // directory could never filter for.
 import { CONTRACTOR_TRADES, ZIMBABWE_SERVICE_AREAS } from '@/components/contractors/constants';
+import DemandProof from '@/components/marketplace/DemandProof';
 
 /**
  * Self-serve contractor registration.
  *
  * No approval queue by design: contractor features are private pricing tools
- * (markup, client view), not a public listing. Directory visibility is a
- * separate opt-in on the contractor profile and defaults to off, so registering
- * here exposes nothing publicly.
+ * (markup, client view), not a public listing. Directory visibility is an
+ * explicit opt-in below and defaults to off.
+ *
+ * No sign-in wall either. This page used to sit behind ProtectedRoute, so
+ * someone arriving from the marketplace CTA met a login form before a single
+ * word about what a contractor account gives them. Nothing on the form needs an
+ * account until submit, so the account is created there instead — by which
+ * point they have already done the work and are finishing rather than starting.
  */
 
 const INPUT =
   'w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 ' +
   'focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
 
+interface ContractorDraft {
+  companyName: string;
+  contactPhone: string;
+  contactEmail: string;
+  trades: string[];
+  serviceAreas: string[];
+  yearsExperience: string;
+  about: string;
+  listInDirectory: boolean;
+}
+
 function ContractorRegisterContent() {
   const router = useRouter();
-  const { profile, refreshProfile } = useAuth();
+  const { profile, refreshProfile, signUp, isAuthenticated, isLoading: authLoading } = useAuth();
   const { success, error: showError } = useToast();
 
   const [companyName, setCompanyName] = useState('');
@@ -40,19 +62,67 @@ function ContractorRegisterContent() {
   const [serviceAreas, setServiceAreas] = useState<string[]>([]);
   const [yearsExperience, setYearsExperience] = useState('');
   const [about, setAbout] = useState('');
+  // contractors.is_listed defaults to false and register_as_contractor never
+  // sets it, so before this every contractor finished registration invisible
+  // and the directory could only ever report "0 listed contractors". Asking
+  // here — opt-in, unticked — is what actually populates it.
+  const [listInDirectory, setListInDirectory] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [alreadyRegistered, setAlreadyRegistered] = useState(false);
 
-  // Prefill when the account is already a contractor, so this page doubles as
-  // "edit my details" rather than erroring or silently overwriting with blanks.
+  // Only collected when there is no account yet; the form above is the same
+  // either way.
+  const [accountEmail, setAccountEmail] = useState('');
+  const [accountPassword, setAccountPassword] = useState('');
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+
+  const draftPayload = (): ContractorDraft => ({
+    companyName,
+    contactPhone,
+    contactEmail,
+    trades,
+    serviceAreas,
+    yearsExperience,
+    about,
+    listInDirectory,
+  });
+
+  // Three cases share this effect: an existing contractor editing their
+  // details, someone returning from email confirmation with a draft waiting,
+  // and a first-time visitor with neither.
   useEffect(() => {
     let active = true;
+
+    const applyDraft = () => {
+      const draft = loadRegistrationDraft<ContractorDraft>('contractor');
+      if (!draft || !active) return false;
+      setCompanyName(draft.companyName ?? '');
+      setContactPhone(draft.contactPhone ?? '');
+      setContactEmail(draft.contactEmail ?? '');
+      setTrades(draft.trades ?? []);
+      setServiceAreas(draft.serviceAreas ?? []);
+      setYearsExperience(draft.yearsExperience ?? '');
+      setAbout(draft.about ?? '');
+      setListInDirectory(Boolean(draft.listInDirectory));
+      return true;
+    };
+
     const load = async () => {
-      if (!profile?.id) { setIsLoading(false); return; }
+      if (authLoading) return;
+
+      if (!profile?.id) {
+        // Signed out: nothing to fetch, but a draft may be waiting from a
+        // half-finished attempt on this device.
+        applyDraft();
+        if (active) setIsLoading(false);
+        return;
+      }
+
       const contractor = await getMyContractorProfile(profile.id);
       if (!active) return;
+
       if (contractor) {
         setAlreadyRegistered(true);
         setCompanyName(contractor.company_name);
@@ -62,12 +132,19 @@ function ContractorRegisterContent() {
         setServiceAreas(contractor.service_areas ?? []);
         setYearsExperience(contractor.years_experience?.toString() ?? '');
         setAbout(contractor.about ?? '');
+        setListInDirectory(contractor.is_listed);
+        // The saved record wins over any stale draft.
+        clearRegistrationDraft('contractor');
+      } else {
+        applyDraft();
       }
+
       setIsLoading(false);
     };
+
     load();
     return () => { active = false; };
-  }, [profile?.id]);
+  }, [authLoading, profile?.id]);
 
   const toggle = (list: string[], value: string, set: (v: string[]) => void) => {
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
@@ -82,9 +159,52 @@ function ContractorRegisterContent() {
     }
 
     setIsSubmitting(true);
+
+    // No account yet: create one from the fields at the bottom of the form. The
+    // draft is written first so nothing is lost whichever way signUp resolves.
+    if (!isAuthenticated) {
+      if (!accountEmail.trim() || !accountPassword) {
+        showError('Enter an email and password to finish setting up your account.');
+        setIsSubmitting(false);
+        return;
+      }
+      if (accountPassword.length < 6) {
+        showError('Password must be at least 6 characters.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      saveRegistrationDraft('contractor', draftPayload());
+      setPostAuthRedirect('/contractor/register');
+
+      const { error: signUpError, data } = await signUp(accountEmail.trim(), accountPassword, companyName.trim());
+
+      if (signUpError) {
+        const message = signUpError.message.toLowerCase();
+        showError(
+          message.includes('already registered') || message.includes('already exists')
+            ? 'An account with this email already exists — sign in and your details will still be here.'
+            : signUpError.message
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Email confirmation is on: there is no session to register with yet.
+      // Stop here and finish when they come back confirmed.
+      if (!data?.session) {
+        setAwaitingConfirmation(true);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Auto-confirmed, so a session exists and registration can continue below.
+      await refreshProfile?.();
+    }
+
     const parsedYears = parseInt(yearsExperience, 10);
 
-    const { error } = await registerAsContractor({
+    const { contractorId, error } = await registerAsContractor({
       companyName,
       contactPhone: contactPhone || undefined,
       contactEmail: contactEmail || undefined,
@@ -100,12 +220,27 @@ function ContractorRegisterContent() {
       return;
     }
 
+    // The RPC owns the record and the role switch but has no is_listed
+    // parameter, so visibility is applied separately. Both directions: leaving
+    // the box unticked on a re-save has to be able to unlist you again.
+    if (contractorId) {
+      const { success: listingSaved, error: listingError } = await updateContractorProfile(contractorId, {
+        is_listed: listInDirectory,
+      });
+      if (!listingSaved) {
+        showError(listingError || 'Details saved, but directory listing could not be updated.');
+      }
+    }
+
     // user_type has changed server-side; without this the app keeps the old
     // role until a reload and contractor features stay hidden.
     await refreshProfile?.();
 
+    clearRegistrationDraft('contractor');
     success(alreadyRegistered ? 'Contractor details updated.' : 'You are now set up as a contractor.');
-    router.push('/quick-projects');
+    // Somewhere they can see the result of the choice they just made, rather
+    // than the quick-projects list which says nothing about being listed.
+    router.push(listInDirectory && contractorId ? `/contractors/${contractorId}` : '/quick-projects');
   };
 
   // A supplier or admin cannot become a contractor — register_as_contractor
@@ -117,6 +252,24 @@ function ContractorRegisterContent() {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center text-sm text-slate-500">
         Loading…
+      </div>
+    );
+  }
+
+  // Their details are saved on this device; the confirmation link brings them
+  // back here and the effect above refills the form.
+  if (awaitingConfirmation) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-12">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+          <CheckCircle size={40} weight="duotone" className="mx-auto text-emerald-600" />
+          <h1 className="mt-3 text-lg font-bold text-slate-900">Confirm your email to finish</h1>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600">
+            We sent a confirmation link to <strong>{accountEmail}</strong>. Open it and you will
+            land back on this page — your details for {companyName} are saved, so you only need
+            to press the button once more.
+          </p>
+        </div>
       </div>
     );
   }
@@ -153,9 +306,10 @@ function ContractorRegisterContent() {
         </h1>
         <p className="mt-2 text-sm text-slate-600 leading-relaxed">
           Contractor accounts get a markup on estimates and a client view that shares a
-          BOQ without showing your margin. Nothing here is published — appearing in the
-          public directory is a separate choice you make later.
+          BOQ without showing your margin. Nothing is published unless you choose to be
+          listed in the public directory below.
         </p>
+        <DemandProof audience="contractor" className="mt-4" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -282,6 +436,29 @@ function ContractorRegisterContent() {
           />
         </div>
 
+        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <label htmlFor="listed" className="flex cursor-pointer items-start gap-3">
+            <input
+              id="listed"
+              type="checkbox"
+              checked={listInDirectory}
+              onChange={(e) => setListInDirectory(e.target.checked)}
+              className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span>
+              <span className="block text-sm font-bold text-slate-900">
+                List me in the public contractor directory
+              </span>
+              <span className="mt-1 block text-xs leading-relaxed text-slate-600">
+                Clients searching for {trades.length > 0 ? trades.slice(0, 2).join(' or ').toLowerCase() : 'your trade'} in{' '}
+                {serviceAreas.length > 0 ? serviceAreas.slice(0, 2).join(' or ') : 'your area'} will see your trading
+                name, trades, service areas, and the phone and email above. Leave it off and your
+                account stays completely private. You can change this any time in your profile.
+              </span>
+            </span>
+          </label>
+        </div>
+
         <div className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
           <Percent size={16} className="mt-0.5 flex-shrink-0 text-slate-400" aria-hidden="true" />
           <span>
@@ -290,9 +467,66 @@ function ContractorRegisterContent() {
           </span>
         </div>
 
+        {/* Last, not first. Everything above works signed out; the account is
+            what turns a filled-in form into a saved one. */}
+        {!isAuthenticated && (
+          <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-5">
+            <h2 className="text-sm font-bold text-slate-900">Create your account to finish</h2>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600">
+              This is what you will sign in with. Your details above are kept if you need to
+              confirm your email first.
+            </p>
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="account-email" className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="account-email"
+                  type="email"
+                  autoComplete="email"
+                  className={INPUT}
+                  value={accountEmail}
+                  onChange={(e) => setAccountEmail(e.target.value)}
+                  placeholder="you@example.com"
+                />
+              </div>
+              <div>
+                <label htmlFor="account-password" className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="account-password"
+                  type="password"
+                  autoComplete="new-password"
+                  className={INPUT}
+                  value={accountPassword}
+                  onChange={(e) => setAccountPassword(e.target.value)}
+                  placeholder="At least 6 characters"
+                />
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-slate-600">
+              Already have an account?{' '}
+              <Link
+                href="/auth/login?redirect=%2Fcontractor%2Fregister"
+                onClick={() => saveRegistrationDraft('contractor', draftPayload())}
+                className="font-bold text-blue-700 hover:underline"
+              >
+                Sign in
+              </Link>{' '}
+              — your details stay on this page.
+            </p>
+          </div>
+        )}
+
         <div className="flex items-center gap-3">
           <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
-            {alreadyRegistered ? 'Save changes' : 'Set up contractor account'}
+            {alreadyRegistered
+              ? 'Save changes'
+              : isAuthenticated
+                ? 'Set up contractor account'
+                : 'Create account and finish'}
           </Button>
           <Link href="/home" className="text-sm font-semibold text-slate-500 hover:text-slate-700">
             Cancel
@@ -312,10 +546,8 @@ function ContractorRegisterContent() {
 
 export default function ContractorRegisterPage() {
   return (
-    <ProtectedRoute>
-      <MainLayout title="Contractor Account">
-        <ContractorRegisterContent />
-      </MainLayout>
-    </ProtectedRoute>
+    <MainLayout title="Contractor Account">
+      <ContractorRegisterContent />
+    </MainLayout>
   );
 }

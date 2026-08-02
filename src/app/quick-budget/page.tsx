@@ -12,6 +12,9 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
 import { createProject, saveProjectWithItems } from '@/lib/services/projects';
 import { setCreatedProjectSnapshot, setOptimisticProjectCard } from '@/lib/projectCreationCache';
+import { createQuickBOQ } from '@/lib/services/quickBoq';
+import FindContractorCTA from '@/components/contractors/FindContractorCTA';
+import type { BOQItem, LaborConfig } from '@/lib/quick-projects/engine/types';
 import SolarBudgetExplorer from '@/components/quick-projects/SolarBudgetExplorer';
 import BoreholeBudgetExplorer from '@/components/quick-projects/BoreholeBudgetExplorer';
 import {
@@ -20,7 +23,7 @@ import {
   Drop,
   ShareNetwork,
   FloppyDisk,
-  FilePdf,
+  FileText,
   CheckCircle,
   HouseLine,
   MapPin,
@@ -82,7 +85,7 @@ export default function QuickBudgetPage() {
   const [stageEstimate, setStageEstimate] = useState<ReturnType<typeof estimateStageReach> | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSavingProject, setIsSavingProject] = useState(false);
-  const [isGeneratingBOD, setIsGeneratingBOD] = useState(false);
+  const [isGeneratingBOQ, setIsGeneratingBOQ] = useState(false);
   // Which budget the user is checking. The house estimator was the only one
   // reachable from here, while the solar and borehole explorers were buried
   // inside their quick-project wizards.
@@ -118,6 +121,11 @@ export default function QuickBudgetPage() {
     if (profileOptions.some((option) => option.id === profile)) {
       setBuildProfile(profile as (typeof profileOptions)[number]['id']);
     }
+
+    // Solar and borehole send the user through sign-in with ?mode=, so Save
+    // returns them to the tab they pressed it on rather than the house tab.
+    const mode = params.get('mode');
+    if (mode === 'solar' || mode === 'borehole') setBudgetMode(mode);
   }, []);
 
   const parsedBudget = Number(budgetInput.replace(/,/g, ''));
@@ -351,17 +359,17 @@ export default function QuickBudgetPage() {
     }
   };
 
-  const handleGenerateDetailedBOD = () => {
+  const handleGenerateBOQ = () => {
     if (!manualBuilderConfig || detailedItems.length === 0) {
-      showError('Complete valid inputs first to generate a detailed BOD.');
+      showError('Complete valid inputs first to generate a BOQ.');
       return;
     }
 
-    setIsGeneratingBOD(true);
+    setIsGeneratingBOQ(true);
     try {
       exportBOQToPDF(
         {
-          projectName: `Detailed BOD - ${parsedArea}m2`,
+          projectName: `Detailed BOQ - ${parsedArea}m2`,
           location: locationLabel,
           totalArea: parsedArea,
           items: detailedItems.map((item) => ({
@@ -385,13 +393,40 @@ export default function QuickBudgetPage() {
         },
         'USD'
       );
-      showSuccess('Detailed BOD generated.');
+      showSuccess('Detailed BOQ generated.');
     } catch (error) {
       console.error(error);
-      showError('Failed to generate detailed BOD.');
+      showError('Failed to generate detailed BOQ.');
     } finally {
-      setIsGeneratingBOD(false);
+      setIsGeneratingBOQ(false);
     }
+  };
+
+  // Save Project on the solar and borehole tabs. Without an onSave the explorers
+  // have nothing to save to, and their Save button used to be hidden entirely on
+  // this page — which is why the three tabs disagreed about their action row.
+  const saveQuickBudget = async (
+    projectType: 'solar' | 'borehole',
+    boqItems: BOQItem[],
+    answers: Record<string, unknown>,
+    labor: LaborConfig
+  ) => {
+    if (!isAuthenticated) {
+      // Same round trip as the house tab: come back to the tab they were on.
+      showInfo('Please sign in to save this project.');
+      router.push(`/auth/login?redirect=${encodeURIComponent(`/quick-budget?mode=${projectType}`)}`);
+      return;
+    }
+
+    const { error } = await createQuickBOQ({ projectType, answers, boqItems, labor, currency: 'USD' });
+
+    if (error) {
+      showError(error.message || 'Failed to save estimate.');
+      return;
+    }
+
+    showSuccess('Project saved successfully.');
+    router.push('/projects/quick');
   };
 
   // Solar and borehole have their own budget explorers, previously reachable
@@ -402,9 +437,23 @@ export default function QuickBudgetPage() {
       <MainLayout title="Budget Estimator">
         <div className="mx-auto max-w-4xl px-4 py-8">
           {budgetMode === 'solar' ? (
-            <SolarBudgetExplorer onBack={() => setBudgetMode('house')} backLabel="Back to budget options" />
+            <SolarBudgetExplorer
+              onBack={() => setBudgetMode('house')}
+              backLabel="Back to budget options"
+              onSave={(output) =>
+                saveQuickBudget('solar', output.boqItems ?? [], output.answers as unknown as Record<string, unknown>, {
+                  enabled: false,
+                  method: 'percentage',
+                  percentage: 25,
+                })
+              }
+            />
           ) : (
-            <BoreholeBudgetExplorer onBack={() => setBudgetMode('house')} backLabel="Back to budget options" />
+            <BoreholeBudgetExplorer
+              onBack={() => setBudgetMode('house')}
+              backLabel="Back to budget options"
+              onSave={(items, answers, labor) => saveQuickBudget('borehole', items, answers, labor)}
+            />
           )}
         </div>
       </MainLayout>
@@ -657,6 +706,13 @@ export default function QuickBudgetPage() {
                   supplier negotiations.
                 </p>
 
+                <FindContractorCTA projectType="house" />
+
+
+                {/* Save Project / Share / Generate BOQ, in this order, is the
+                    action row every budget tab shows — the solar and borehole
+                    explorers repeat it so switching tabs does not change what
+                    the buttons at the bottom are or where they sit. */}
                 <div className="actions">
                   <Button
                     variant="primary"
@@ -671,11 +727,11 @@ export default function QuickBudgetPage() {
                   </Button>
                   <Button
                     variant="secondary"
-                    icon={<FilePdf size={16} />}
-                    onClick={handleGenerateDetailedBOD}
-                    loading={isGeneratingBOD}
+                    icon={<FileText size={16} />}
+                    onClick={handleGenerateBOQ}
+                    loading={isGeneratingBOQ}
                   >
-                    Generate Detailed BOD
+                    Generate BOQ
                   </Button>
                 </div>
               </>

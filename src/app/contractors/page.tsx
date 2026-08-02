@@ -19,6 +19,26 @@ export default function ContractorsPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  // Estimates link here with the trade they need already chosen. Filters are
+  // read on mount rather than seeded into useState so the server and client
+  // first render agree; the fetch waits for them so it only runs once.
+  const [filtersReady, setFiltersReady] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    /* eslint-disable react-hooks/set-state-in-effect -- reading window.location
+       has to happen after mount; seeding useState from it would make the server
+       and client first render disagree. */
+    const trade = params.get('trade');
+    if (trade && CONTRACTOR_TRADES.includes(trade)) setSelectedTrade(trade);
+
+    const area = params.get('area');
+    if (area && ZIMBABWE_SERVICE_AREAS.includes(area)) setSelectedArea(area);
+
+    setFiltersReady(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
 
   const loadContractors = useCallback(async (offset = 0, append = false) => {
     if (offset === 0) setLoading(true);
@@ -40,9 +60,10 @@ export default function ContractorsPage() {
   }, [selectedArea, selectedTrade]);
 
   useEffect(() => {
+    if (!filtersReady) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- filters intentionally trigger a fresh query.
     loadContractors(0, false);
-  }, [loadContractors]);
+  }, [filtersReady, loadContractors]);
 
   const visibleContractors = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();

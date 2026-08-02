@@ -16,6 +16,7 @@ import LaborSection from './LaborSection';
 import ContractorMarkup from './ContractorMarkup';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { persistQuickBOQSession } from '@/lib/services/quickBoq';
+import FindContractorCTA from '@/components/contractors/FindContractorCTA';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -410,6 +411,9 @@ export default function QuickBOQTable({
           )}
         </div>
       </div>
+
+      {/* ── Next step ──────────────────────────────────────────────────── */}
+      <FindContractorCTA projectType={projectType} />
 
       {/* ── Disclaimer ─────────────────────────────────────────────────── */}
       <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500 leading-relaxed">

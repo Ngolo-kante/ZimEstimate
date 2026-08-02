@@ -15,8 +15,23 @@ import {
   Package,
   Timer,
   ArrowLeft,
+  WhatsappLogo,
 } from '@phosphor-icons/react';
 import type { Supplier, SupplierProduct } from '@/lib/database.types';
+
+/**
+ * wa.me needs a bare international number. Local listings are written every way
+ * people say them — "077 123 4567", "+263 77 123 4567", "263-77-123-4567" — so
+ * normalise to a 263 prefix and give up rather than guess when it looks wrong.
+ */
+function toWhatsAppNumber(phone: string): string | null {
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) return null;
+  if (digits.startsWith('263')) return digits.length >= 12 ? digits : null;
+  if (digits.startsWith('0')) return `263${digits.slice(1)}`;
+  if (digits.length === 9) return `263${digits}`;
+  return null;
+}
 
 const STOCK_LABELS: Record<string, { label: string; color: string }> = {
   in_stock: { label: 'In Stock', color: '#16a34a' },
@@ -109,6 +124,10 @@ export default function SupplierDetailPage() {
     };
   }, [products]);
 
+  const whatsAppNumber = supplier?.contact_phone ? toWhatsAppNumber(supplier.contact_phone) : null;
+  // Listings store numbers with spaces in them; tel: wants none.
+  const telHref = supplier?.contact_phone ? `tel:${supplier.contact_phone.replace(/\s/g, '')}` : null;
+
   if (loading) {
     return (
       <MainLayout title="Supplier">
@@ -153,11 +172,11 @@ export default function SupplierDetailPage() {
               {supplier.location && (
                 <span><MapPin size={12} />{supplier.location}</span>
               )}
-              {supplier.contact_phone && (
-                <span><Phone size={12} />{supplier.contact_phone}</span>
+              {supplier.contact_phone && telHref && (
+                <a href={telHref}><Phone size={12} />{supplier.contact_phone}</a>
               )}
               {supplier.contact_email && (
-                <span><Envelope size={12} />{supplier.contact_email}</span>
+                <a href={`mailto:${supplier.contact_email}`}><Envelope size={12} />{supplier.contact_email}</a>
               )}
             </div>
           </div>
@@ -190,6 +209,40 @@ export default function SupplierDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* The page listed a phone number and an email as plain text and gave a
+            buyer no way to act on either. Contacting the supplier is the whole
+            point of the page, and on a phone it should be one tap. */}
+        {(supplier.contact_phone || supplier.contact_email) && (
+          <div className="contact-bar">
+            <div className="contact-copy">
+              <strong>Contact {supplier.name}</strong>
+              <span>Mention ZimEstimate and the quantities from your BOQ to get a firm quote.</span>
+            </div>
+            <div className="contact-actions">
+              {telHref && (
+                <a className="contact-btn primary" href={telHref}>
+                  <Phone size={16} weight="fill" />Call
+                </a>
+              )}
+              {supplier.contact_phone && whatsAppNumber && (
+                <a
+                  className="contact-btn whatsapp"
+                  href={`https://wa.me/${whatsAppNumber}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <WhatsappLogo size={16} weight="fill" />WhatsApp
+                </a>
+              )}
+              {supplier.contact_email && (
+                <a className="contact-btn" href={`mailto:${supplier.contact_email}`}>
+                  <Envelope size={16} weight="fill" />Email
+                </a>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="section">
           <h2>Product Catalog</h2>
@@ -295,10 +348,18 @@ export default function SupplierDetailPage() {
           font-size: 0.8rem;
         }
 
-        .meta-row span {
+        .meta-row span,
+        .meta-row a {
           display: inline-flex;
           align-items: center;
           gap: 4px;
+          color: inherit;
+          text-decoration: none;
+        }
+
+        .meta-row a:hover {
+          color: var(--color-accent);
+          text-decoration: underline;
         }
 
         .rating {
@@ -337,6 +398,89 @@ export default function SupplierDetailPage() {
           font-size: 1rem;
           font-weight: 600;
           color: var(--color-text);
+        }
+
+        .contact-bar {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 18px 20px;
+          border-radius: 16px;
+          border: 1px solid var(--color-border-light);
+          background: var(--color-surface);
+        }
+
+        .contact-copy {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          min-width: 0;
+        }
+
+        .contact-copy strong {
+          font-size: 0.95rem;
+          color: var(--color-text);
+        }
+
+        .contact-copy span {
+          font-size: 0.8rem;
+          color: var(--color-text-muted);
+        }
+
+        .contact-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .contact-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 10px 16px;
+          border-radius: 10px;
+          border: 1px solid var(--color-border);
+          background: var(--color-surface);
+          color: var(--color-text);
+          font-size: 0.85rem;
+          font-weight: 600;
+          text-decoration: none;
+          transition: filter 0.15s ease, border-color 0.15s ease;
+        }
+
+        .contact-btn:hover {
+          filter: brightness(0.97);
+          border-color: var(--color-accent);
+        }
+
+        .contact-btn.primary {
+          background: var(--color-accent);
+          border-color: var(--color-accent);
+          color: #fff;
+        }
+
+        .contact-btn.whatsapp {
+          background: #25d366;
+          border-color: #25d366;
+          color: #06301a;
+        }
+
+        @media (max-width: 560px) {
+          .contact-bar {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .contact-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+          }
+
+          .contact-btn {
+            justify-content: center;
+          }
         }
 
         .section {

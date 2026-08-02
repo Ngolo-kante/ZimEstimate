@@ -3,7 +3,7 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import { useToast } from '@/components/ui/Toast';
 import {
   Lightning,
   BatteryCharging,
@@ -17,6 +17,8 @@ import {
   Warning,
   Info,
   FloppyDisk,
+  ShareNetwork,
+  FileText,
   ArrowLeft,
   ArrowsClockwise,
   Coins,
@@ -353,7 +355,7 @@ interface SolarBudgetExplorerProps {
   /** Names the destination; the default matches the wizard these came from. */
   backLabel?: string;
   isContractor?: boolean;
-  onSave?: (output: SolarWizardOutput & { boqItems?: BOQItem[] }) => void;
+  onSave?: (output: SolarWizardOutput & { boqItems?: BOQItem[] }) => void | Promise<void>;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -409,8 +411,8 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
   const [batteryBrand, setBatteryBrand] = useState<string>('dyness');
 
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
-  const [projectName, setProjectName] = useState('');
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { success: showSuccess, error: showError } = useToast();
   const [boqItems, setBoqItems] = useState<BOQItem[] | null>(null);
   const [labor, setLabor] = useState<LaborConfig>({ enabled: false, method: 'percentage', percentage: 25 });
   const [comboLoaded, setComboLoaded] = useState<string | null>(null);
@@ -507,8 +509,23 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
     }
   }, [budget, comboLoaded]);
 
+  // The answers a budget-mode solar estimate carries. Shared by the BOQ build
+  // and by save, which previously described the same estimate in two places.
+  const buildAnswers = () => ({
+    intent: 'budget' as const,
+    backupHours: null,
+    location: '',
+    propertyType: null,
+    appliances: {},
+    simultaneousLoads: { kettleMicrowave: false, pumpWithHouse: false, geyserWithHouse: false },
+    roof: { type: null, shading: null, orientation: '', spaceM2: null },
+    existing: { hasExisting: false, inverterKva: null, batteryKwh: null, panelCount: null, issues: '' },
+    budgetUsd: budget,
+    quote: { totalUsd: null, inverterKva: null, batteryKwh: null, panelCount: null, panelWatt: null, notes: '' },
+  });
+
   // Generate BOQ
-  const generateBOQ = () => {
+  const buildBoqItems = () => {
     const sizingResult = {
       peakLoadWatts: allocation.inverter.kva * 800,
       inverterKva: allocation.inverter.kva,
@@ -522,16 +539,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
     };
 
     const augAnswers = {
-      intent: 'budget' as const,
-      backupHours: null,
-      location: '',
-      propertyType: null,
-      appliances: {},
-      simultaneousLoads: { kettleMicrowave: false, pumpWithHouse: false, geyserWithHouse: false },
-      roof: { type: null, shading: null, orientation: '', spaceM2: null },
-      existing: { hasExisting: false, inverterKva: null, batteryKwh: null, panelCount: null, issues: '' },
-      budgetUsd: budget,
-      quote: { totalUsd: null, inverterKva: null, batteryKwh: null, panelCount: null, panelWatt: null, notes: '' },
+      ...buildAnswers(),
       panel_brand: panelBrand,
       inverter_brand: inverterBrand,
       battery_brand: batteryBrand,
@@ -540,8 +548,45 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       include_contingency: false,
     };
 
-    const items = solarSizingToBOQ(sizingResult, augAnswers as Parameters<typeof solarSizingToBOQ>[1]);
-    setBoqItems(items);
+    return solarSizingToBOQ(sizingResult, augAnswers as Parameters<typeof solarSizingToBOQ>[1]);
+  };
+
+  const generateBOQ = () => setBoqItems(buildBoqItems());
+
+  // Saves from the action row rather than from inside the BOQ table, so the
+  // three budget tabs offer the same actions in the same place. The dialog that
+  // used to sit here asked for a project name and then discarded it — it only
+  // ever called generateBOQ, so nothing was saved.
+  const handleSaveProject = async () => {
+    if (!onSave) return;
+    setIsSaving(true);
+    try {
+      await onSave({ answers: buildAnswers(), result: null, boqItems: buildBoqItems() } as Parameters<NonNullable<typeof onSave>>[0]);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const shareText = [
+      'ZimEstimate Solar Budget',
+      `Budget: $${budget.toLocaleString()}`,
+      `System: ${systemKw} kW array, ${allocation.inverter.kva} kVA inverter`,
+      `Battery: ${(allocation.battery.units * bBrand.unitKwh).toFixed(1)} kWh`,
+      `Allocated: $${Math.round(totalAllocated).toLocaleString()}`,
+    ].join('\n');
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Solar Budget Estimate', text: shareText, url: window.location.href });
+        showSuccess('Estimate shared.');
+        return;
+      }
+      await navigator.clipboard.writeText(`${shareText}\n\n${window.location.href}`);
+      showSuccess('Estimate summary copied to clipboard.');
+    } catch {
+      showError('Sharing was cancelled or unavailable.');
+    }
   };
 
   // ── BOQ View ──────────────────────────────────────────────────────────────────
@@ -563,22 +608,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
           onSave={
             onSave
               ? (items) =>
-                  onSave({
-                    answers: {
-                      intent: 'budget',
-                      backupHours: null,
-                      location: '',
-                      propertyType: null,
-                      appliances: {},
-                      simultaneousLoads: { kettleMicrowave: false, pumpWithHouse: false, geyserWithHouse: false },
-                      roof: { type: null, shading: null, orientation: '', spaceM2: null },
-                      existing: { hasExisting: false, inverterKva: null, batteryKwh: null, panelCount: null, issues: '' },
-                      budgetUsd: budget,
-                      quote: { totalUsd: null, inverterKva: null, batteryKwh: null, panelCount: null, panelWatt: null, notes: '' },
-                    },
-                    result: null,
-                    boqItems: items,
-                  })
+                  onSave({ answers: buildAnswers(), result: null, boqItems: items } as Parameters<NonNullable<typeof onSave>>[0])
               : undefined
           }
         />
@@ -1270,70 +1300,38 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
           )}
 
           {/* ── Action Buttons ────────────────────────────────────────────────── */}
+          {/* Same three actions, same order and labels as the house and borehole
+              budget tabs — see the note in quick-budget/page.tsx. */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-6 border-t border-[var(--color-border)]">
             <Button
               variant="primary"
-              onClick={generateBOQ}
-              className="shadow-lg shadow-blue-500/25 flex-1"
-              disabled={totalAllocated === 0}
+              icon={<FloppyDisk size={16} />}
+              onClick={handleSaveProject}
+              loading={isSaving}
+              disabled={!onSave || totalAllocated === 0}
             >
-              Generate Detailed BOQ
+              Save Project
             </Button>
-            {onSave && (
-              <Button
-                variant="secondary"
-                onClick={() => setShowSaveDialog(true)}
-                icon={<FloppyDisk size={18} />}
-                className="bg-[var(--color-surface)]"
-              >
-                Save as Project
-              </Button>
-            )}
+            <Button
+              variant="secondary"
+              icon={<ShareNetwork size={16} />}
+              onClick={handleShare}
+              className="bg-[var(--color-surface)]"
+            >
+              Share
+            </Button>
+            <Button
+              variant="secondary"
+              icon={<FileText size={16} />}
+              onClick={generateBOQ}
+              disabled={totalAllocated === 0}
+              className="bg-[var(--color-surface)]"
+            >
+              Generate BOQ
+            </Button>
           </div>
         </>
       )}
-
-      {/* ── Save Dialog ──────────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showSaveDialog && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-            onClick={() => setShowSaveDialog(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-[var(--color-surface)] rounded-2xl p-6 shadow-xl"
-            >
-              <h3 className="text-lg font-bold text-[var(--color-text)] mb-4">Save Project</h3>
-              <Input
-                label="Project name"
-                placeholder="e.g. My Solar System"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-              />
-              <div className="flex gap-3 mt-6">
-                <Button variant="secondary" onClick={() => setShowSaveDialog(false)} className="flex-1 bg-[var(--color-surface)]">
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={() => { generateBOQ(); setShowSaveDialog(false); }}
-                  disabled={!projectName.trim()}
-                  className="flex-1"
-                >
-                  Save
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

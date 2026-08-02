@@ -3,7 +3,6 @@
 import { useCallback, useMemo, useState, type CSSProperties } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 import {
   Drop,
   Lightning,
@@ -15,10 +14,13 @@ import {
   Warning,
   Info,
   FloppyDisk,
+  ShareNetwork,
+  FileText,
   ArrowLeft,
   Funnel,
   Gauge,
 } from '@phosphor-icons/react';
+import { useToast } from '@/components/ui/Toast';
 import { BOREHOLE_PRICES as P, LOCATION_DEFAULTS } from '@/lib/quick-projects/borehole/catalog';
 import { calculateBoreholeBOQ } from '@/lib/quick-projects/borehole/calculations';
 import type { BOQItem, LaborConfig, Answers } from '@/lib/quick-projects/engine/types';
@@ -105,7 +107,7 @@ interface BoreholeBudgetExplorerProps {
   /** Names the destination; the default matches the wizard these came from. */
   backLabel?: string;
   isContractor?: boolean;
-  onSave?: (items: BOQItem[], answers: Answers, labor: LaborConfig) => void;
+  onSave?: (items: BOQItem[], answers: Answers, labor: LaborConfig) => void | Promise<void>;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -174,9 +176,9 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
   const [boqItems, setBoqItems] = useState<BOQItem[] | null>(null);
   const [labor, setLabor] = useState<LaborConfig>({ enabled: false, method: 'percentage', percentage: 25 });
 
-  // Save dialog
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [projectName, setProjectName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const { success: showSuccess, error: showError } = useToast();
 
   const locMeta = LOCATION_DEFAULTS[location] || LOCATION_DEFAULTS.other;
   const areaType = ['harare', 'bulawayo', 'chitungwiza'].includes(location) ? 'urban' : 'peri_urban';
@@ -237,18 +239,54 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
     setExpandedCard((prev) => (prev === id ? null : id));
   }, []);
 
+  const buildAnswers = (): Answers => ({
+    estimate_mode: 'budget',
+    budget_amount: String(budget),
+    budget_depth: String(depth),
+    borehole_purpose: purpose,
+    project_location: location,
+    area_type: areaType,
+  });
+
   // Generate BOQ using existing budget calculator
   const generateBOQ = () => {
-    const answers: Answers = {
-      estimate_mode: 'budget',
-      budget_amount: String(budget),
-      budget_depth: String(depth),
-      borehole_purpose: purpose,
-      project_location: location,
-      area_type: areaType,
-    };
-    const items = calculateBoreholeBOQ(answers);
-    setBoqItems(items);
+    setBoqItems(calculateBoreholeBOQ(buildAnswers()));
+  };
+
+  // Saves from the action row rather than from inside the BOQ table, so the
+  // three budget tabs offer the same actions in the same place. The dialog that
+  // used to sit here asked for a project name and then discarded it — it only
+  // ever called generateBOQ, so nothing was saved.
+  const handleSaveProject = async () => {
+    if (!onSave) return;
+    setIsSaving(true);
+    try {
+      await onSave(calculateBoreholeBOQ(buildAnswers()), buildAnswers(), labor);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const shareText = [
+      'ZimEstimate Borehole Budget',
+      `Budget: $${budget.toLocaleString()}`,
+      `Depth: ${depth}m`,
+      `Pump: ${pumpType}`,
+      `Allocated: $${Math.round(totalAllocated).toLocaleString()} (${budgetPct}% of budget)`,
+    ].join('\n');
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Borehole Budget Estimate', text: shareText, url: window.location.href });
+        showSuccess('Estimate shared.');
+        return;
+      }
+      await navigator.clipboard.writeText(`${shareText}\n\n${window.location.href}`);
+      showSuccess('Estimate summary copied to clipboard.');
+    } catch {
+      showError('Sharing was cancelled or unavailable.');
+    }
   };
 
   // ── BOQ View ──────────────────────────────────────────────────────────────
@@ -736,32 +774,31 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
       )}
 
       {/* ── Action Buttons ───────────────────────────────────────────────────── */}
+      {/* Same three actions, same order and labels as the house and solar budget
+          tabs — see the note in quick-budget/page.tsx. */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-6 border-t border-[var(--color-border)]">
-        <Button variant="primary" onClick={generateBOQ} className="shadow-lg shadow-blue-500/25 flex-1" disabled={totalAllocated === 0}>
-          Generate Detailed BOQ
+        <Button
+          variant="primary"
+          icon={<FloppyDisk size={16} />}
+          onClick={handleSaveProject}
+          loading={isSaving}
+          disabled={!onSave || totalAllocated === 0}
+        >
+          Save Project
         </Button>
-        {onSave && (
-          <Button variant="secondary" onClick={() => setShowSaveDialog(true)} icon={<FloppyDisk size={18} />} className="bg-[var(--color-surface)]">
-            Save as Project
-          </Button>
-        )}
+        <Button variant="secondary" icon={<ShareNetwork size={16} />} onClick={handleShare} className="bg-[var(--color-surface)]">
+          Share
+        </Button>
+        <Button
+          variant="secondary"
+          icon={<FileText size={16} />}
+          onClick={generateBOQ}
+          disabled={totalAllocated === 0}
+          className="bg-[var(--color-surface)]"
+        >
+          Generate BOQ
+        </Button>
       </div>
-
-      {/* ── Save Dialog ──────────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showSaveDialog && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowSaveDialog(false)}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-[var(--color-surface)] rounded-2xl p-6 shadow-xl">
-              <h3 className="text-lg font-bold text-[var(--color-text)] mb-4">Save Project</h3>
-              <Input label="Project name" placeholder="e.g. My Borehole Project" value={projectName} onChange={(e) => setProjectName(e.target.value)} />
-              <div className="flex gap-3 mt-6">
-                <Button variant="secondary" onClick={() => setShowSaveDialog(false)} className="flex-1 bg-[var(--color-surface)]">Cancel</Button>
-                <Button variant="primary" onClick={() => { generateBOQ(); setShowSaveDialog(false); }} disabled={!projectName.trim()} className="flex-1">Save</Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
