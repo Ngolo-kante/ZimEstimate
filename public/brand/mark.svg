@@ -1,0 +1,21 @@
+<!--
+  ZimEstimate brand mark — house outline + ascending bars.
+
+  Derived from the existing logo.png, sampled for its exact colours
+  (#D1922C gold, #2B373D slate). The rising arrow from the full logo is
+  deliberately dropped: at the sizes this mark is used (120px on the Google
+  consent screen, 32px in a browser tab) the arrow merged with the bars into
+  an unreadable dark mass. The house and the ascending bars carry the
+  identity on their own.
+
+  Transparent background — see oauth-logo-120.png for the flattened version
+  Google requires.
+-->
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ZimEstimate">
+  <path d="M26 100 L26 54 L60 25 L94 54 L94 100" fill="none" stroke="#D1922C" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#2B373D">
+    <rect x="37" y="80" width="12" height="20" rx="3.5"/>
+    <rect x="54" y="70" width="12" height="30" rx="3.5"/>
+    <rect x="71" y="60" width="12" height="40" rx="3.5"/>
+  </g>
+</svg>
