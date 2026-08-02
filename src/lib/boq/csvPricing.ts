@@ -52,10 +52,12 @@ const MATERIAL_TO_CSV_PRICE: Record<string, { key: string; multiplier?: number }
   hardcore: { key: 'hardcore_fill' },
   'brick-common': { key: 'common_bricks' },
   'farm-brick': { key: 'common_bricks_hardburn' },
-  // The CSV prices this per brick ($0.22 each) but the material is sold and
-  // quantified 'per 1000', so without the multiplier the marketplace showed
-  // $0.22 for a thousand face bricks — understated a thousandfold.
-  'brick-face-red': { key: 'facebrick_red_rustic', multiplier: 1000 },
+  // The x1000 multiplier that used to be here made the marketplace listing
+  // agree with a 'per 1000' unit, but the BOQ generator counts individual
+  // bricks and labels them 'each' — so every face-brick wall was costed at
+  // $220 per brick. The material is now per-brick throughout and the CSV rate
+  // is already per brick, so no conversion belongs here.
+  'brick-face-red': { key: 'facebrick_red_rustic' },
   'block-6inch': { key: 'concrete_blocks_6' },
   'block-8inch': { key: 'concrete_blocks_9' },
   'rebar-10': { key: 'y10_rebar' },

@@ -124,11 +124,17 @@ const researchData = {
             location: "Harare"
         }
     ],
+    // Zimbabwe sells bricks by the thousand, so every source below quotes a
+    // per-1000 figure. price_usd must be PER BRICK, because the material ids
+    // these map to are all unit 'each' and the BOQ multiplies by a brick count.
+    // Seeding the per-1000 figure raw put $395 against a single face brick and
+    // inflated every masonry line a thousandfold. The source price is kept in
+    // the comment so the conversion stays checkable against the URL.
     bricks: [
         {
             product_name: "Semi-common Bricks",
             material_code: "farm-brick",
-            price_usd: 65.00,
+            price_usd: 0.065, // $65 / 1000
             source_url: "https://www.towtruck24zim.co.zw/blog/post/2199355/bricks-prices-in-harare",
             supplier: "Bonita Logistics",
             location: "Harare"
@@ -136,7 +142,7 @@ const researchData = {
         {
             product_name: "Rustic Face Bricks",
             material_code: "brick-face-red",
-            price_usd: 395.00,
+            price_usd: 0.395, // $395 / 1000
             source_url: "https://www.towtruck24zim.co.zw/blog/post/2199355/bricks-prices-in-harare",
             supplier: "Bonita Logistics",
             location: "Harare"
@@ -144,7 +150,7 @@ const researchData = {
         {
             product_name: "Red Common Bricks",
             material_code: "brick-face-red",
-            price_usd: 140.00,
+            price_usd: 0.14, // $140 / 1000
             source_url: "https://www.facebook.com/groups/419512348407386/",
             supplier: "Marketplace",
             location: "Harare"
@@ -152,7 +158,7 @@ const researchData = {
         {
             product_name: "Common Bricks",
             material_code: "brick-common",
-            price_usd: 108.00,
+            price_usd: 0.108, // $108 / 1000
             source_url: "https://www.classifieds.co.zw/zimbabwe-cement-bricks",
             supplier: "Macdonald Bricks",
             location: "Harare"
@@ -160,7 +166,7 @@ const researchData = {
         {
             product_name: "Cement Common Bricks",
             material_code: "brick-common",
-            price_usd: 90.00,
+            price_usd: 0.09, // $90 / 1000
             source_url: "https://www.facebook.com/groups/419512348407386/",
             supplier: "Marketplace",
             location: "Harare"
@@ -168,7 +174,7 @@ const researchData = {
         {
             product_name: "Botswana Face Bricks",
             material_code: "brick-face-brown",
-            price_usd: 450.00,
+            price_usd: 0.45, // $450 / 1000
             source_url: "https://www.facebook.com/groups/1218411402314810/",
             supplier: "Marketplace",
             location: "Harare"

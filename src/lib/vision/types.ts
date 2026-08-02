@@ -211,7 +211,11 @@ export const BRICK_INFO: Record<BrickType, {
   },
   semi_common: {
     name: 'Semi-Common Brick',
-    materialId: 'brick-semi',
+    // 'brick-semi' does not exist in materials.ts, so getBestPrice returned
+    // undefined and getMaterialPrice fell back to $0 — a semi-common wall came
+    // out free. farm-brick is what the price aliases already map "semi common
+    // bricks" onto, so it is the id that actually resolves to a price.
+    materialId: 'farm-brick',
     bricksPerSqm: 50,
     description: 'Higher quality fired bricks for exposed work',
   },

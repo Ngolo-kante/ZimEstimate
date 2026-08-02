@@ -69,8 +69,13 @@ export const categoryInfo: Record<MaterialCategory, { label: string; icon: strin
 export const materials: Material[] = [
     // BRICKS & BLOCKS
     { id: 'brick-common', name: 'Common Cement Brick', category: 'bricks', subcategory: 'Cement Bricks', unit: 'each', milestones: ['substructure', 'superstructure'] },
-    { id: 'brick-face-red', name: 'Face Brick (Red)', category: 'bricks', subcategory: 'Face Bricks', unit: 'per 1000', specifications: 'Standard red face brick', milestones: ['superstructure'] },
-    { id: 'brick-face-brown', name: 'Face Brick (Brown)', category: 'bricks', subcategory: 'Face Bricks', unit: 'per 1000', specifications: 'Brown mottled face brick', milestones: ['superstructure'] },
+    // Priced and quantified per brick, like every other brick and block here.
+    // These two were the only masonry units declared 'per 1000' while the BOQ
+    // generator counts individual bricks and labels the line 'each', so a
+    // face-brick wall was costed at the per-thousand rate for every single
+    // brick — a 1000x overstatement on the largest line in the BOQ.
+    { id: 'brick-face-red', name: 'Face Brick (Red)', category: 'bricks', subcategory: 'Face Bricks', unit: 'each', specifications: 'Standard red face brick', milestones: ['superstructure'] },
+    { id: 'brick-face-brown', name: 'Face Brick (Brown)', category: 'bricks', subcategory: 'Face Bricks', unit: 'each', specifications: 'Brown mottled face brick', milestones: ['superstructure'] },
     { id: 'block-6inch', name: 'Hollow Block 6"', category: 'bricks', subcategory: 'Blocks', unit: 'each', specifications: '150mm hollow concrete block', milestones: ['substructure', 'superstructure', 'exterior'] },
     { id: 'block-8inch', name: 'Hollow Block 8"', category: 'bricks', subcategory: 'Blocks', unit: 'each', specifications: '200mm hollow concrete block', milestones: ['substructure', 'superstructure', 'exterior'] },
     { id: 'durawall-panel', name: 'Durawall Panel', category: 'bricks', subcategory: 'Precast', unit: 'each', specifications: '2.4m precast concrete panel', milestones: ['exterior'] },
@@ -298,7 +303,12 @@ export const suppliers: Supplier[] = [
 // Current prices (sample data - would be fetched from DB in production)
 export const materialPrices: MaterialPrice[] = [
     { materialId: 'brick-common', supplierId: 'sup-2', priceUsd: 0.085, priceZwg: 2.55, lastUpdated: '2026-07-27', inStock: true },
-    { materialId: 'brick-face-red', supplierId: 'sup-2', priceUsd: 180, priceZwg: 5400, lastUpdated: '2026-01-30', inStock: true },
+    // $180/1000 quoted by the supplier, stored per brick to match the unit.
+    { materialId: 'brick-face-red', supplierId: 'sup-2', priceUsd: 0.18, priceZwg: 5.4, lastUpdated: '2026-01-30', inStock: true },
+    // Brown face brick had no price at all, so getBestPrice returned undefined
+    // and every brown-brick line silently costed $0. $450/1000 (Botswana face
+    // brick, Harare marketplace) expressed per brick.
+    { materialId: 'brick-face-brown', supplierId: 'sup-2', priceUsd: 0.45, priceZwg: 13.5, lastUpdated: '2026-01-30', inStock: true },
     { materialId: 'cement-325', supplierId: 'sup-3', priceUsd: 10, priceZwg: 300, lastUpdated: '2026-01-31', inStock: true },
     { materialId: 'cement-325', supplierId: 'sup-2', priceUsd: 10.50, priceZwg: 315, lastUpdated: '2026-01-30', inStock: true },
     { materialId: 'cement-425', supplierId: 'sup-3', priceUsd: 12, priceZwg: 360, lastUpdated: '2026-01-31', inStock: true },
