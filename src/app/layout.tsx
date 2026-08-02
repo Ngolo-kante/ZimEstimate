@@ -32,7 +32,7 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://zimestimate.co.zw";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://zimestimate.com";
 
 const geistSans = localFont({
   variable: "--font-geist-sans",
@@ -86,7 +86,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_ZW",
-    url: "https://zimestimate.co.zw",
+    // Follows siteUrl rather than repeating it — these two disagreeing is how
+    // canonical and og:url drift apart on a domain change.
+    url: siteUrl,
     siteName: "ZimEstimate",
     title: "ZimEstimate - Construction Cost Estimation",
     description: "Build smarter estimates for your Zimbabwe construction projects",
