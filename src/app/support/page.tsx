@@ -15,12 +15,12 @@ const detailStyle = { fontWeight: 700, color: 'var(--color-text)', margin: '0 0 
 const supportChannels = [
   {
     title: 'General Support',
-    detail: 'support@zimestimate.co.zw',
+    detail: 'support@zimestimate.com',
     helper: 'Use for account access, project issues, pricing questions, and launch support.',
   },
   {
     title: 'Supplier Support',
-    detail: 'support@zimestimate.co.zw',
+    detail: 'support@zimestimate.com',
     helper: 'Use for supplier registration, product catalogue issues, and profile verification questions.',
   },
   {

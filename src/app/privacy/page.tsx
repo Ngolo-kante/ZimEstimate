@@ -35,7 +35,7 @@ export default function PrivacyPage() {
             <strong>Data Controller:</strong> ZimEstimate (Private) Limited<br />
             <strong>CIPA Registration:</strong> [To be inserted upon incorporation]<br />
             <strong>Registered address:</strong> [Physical address, Harare, Zimbabwe]<br />
-            <strong>Data Protection Officer (DPO):</strong> privacy@zimestimate.co.zw<br />
+            <strong>Data Protection Officer (DPO):</strong> privacy@zimestimate.com<br />
             <strong>ZDPA Registration Number:</strong> [To be inserted upon registration with the Zimbabwe Data Protection Authority]
           </p>
           <p style={{ ...bodyStyle, marginTop: '10px' }}>
@@ -251,7 +251,7 @@ export default function PrivacyPage() {
             <li><strong>Not to be subject to automated decisions:</strong> Not to be subject to a decision based solely on automated processing that produces significant legal or similar effects, without human review.</li>
           </ul>
           <p style={{ ...bodyStyle, marginTop: '10px' }}>
-            To exercise any right, email <strong>privacy@zimestimate.co.zw</strong> with your name, account email,
+            To exercise any right, email <strong>privacy@zimestimate.com</strong> with your name, account email,
             and the right you wish to exercise. We may request proof of identity before processing the request.
             If you are not satisfied with our response, you may lodge a complaint with the
             <strong> Zimbabwe Data Protection Authority (ZDPA)</strong>.
@@ -265,7 +265,7 @@ export default function PrivacyPage() {
             We will only send you marketing emails or product update newsletters if you have given us
             explicit consent (opt-in checkbox at registration or via your account settings). You can
             unsubscribe at any time by clicking &ldquo;Unsubscribe&rdquo; in any marketing email, or by
-            emailing privacy@zimestimate.co.zw. Transactional and service notifications (invoices,
+            emailing privacy@zimestimate.com. Transactional and service notifications (invoices,
             security alerts, subscription renewals) are sent as part of our contract with you and cannot
             be opted out of while your account is active.
           </p>
@@ -330,12 +330,12 @@ export default function PrivacyPage() {
         <section style={sectionStyle}>
           <h2 style={titleStyle}>Contact &amp; Data Requests</h2>
           <p style={bodyStyle}>
-            <strong>Data Protection Officer:</strong> privacy@zimestimate.co.zw<br />
-            <strong>General support:</strong> support@zimestimate.co.zw<br />
+            <strong>Data Protection Officer:</strong> privacy@zimestimate.com<br />
+            <strong>General support:</strong> support@zimestimate.com<br />
             <strong>Postal:</strong> ZimEstimate (Private) Limited, [Registered address, Harare, Zimbabwe]<br />
             <br />
             To exercise your data subject rights or raise a privacy concern, please email
-            privacy@zimestimate.co.zw with &ldquo;Privacy Request&rdquo; in the subject line.
+            privacy@zimestimate.com with &ldquo;Privacy Request&rdquo; in the subject line.
           </p>
         </section>
       </div>

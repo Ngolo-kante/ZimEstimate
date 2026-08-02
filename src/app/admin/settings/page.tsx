@@ -9,7 +9,7 @@ export default function AdminSettingsPage() {
   const [saved, setSaved] = useState(false);
   const [settings, setSettings] = useState({
     platformName: 'ZimEstimate',
-    supportEmail: 'support@zimestimate.co.zw',
+    supportEmail: 'support@zimestimate.com',
     defaultCurrency: 'USD',
     allowRegistrations: true,
     requireEmailVerification: true,

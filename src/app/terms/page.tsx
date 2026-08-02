@@ -35,9 +35,9 @@ export default function TermsPage() {
             <strong>Legal name:</strong> ZimEstimate (Private) Limited<br />
             <strong>CIPA registration:</strong> [Registration number — to be inserted upon incorporation]<br />
             <strong>Registered address:</strong> [Physical address, Harare, Zimbabwe]<br />
-            <strong>Primary email:</strong> support@zimestimate.co.zw<br />
+            <strong>Primary email:</strong> support@zimestimate.com<br />
             <strong>ZIMRA TIN:</strong> [Tax Identification Number — to be inserted upon registration]<br />
-            <strong>Data Protection Officer:</strong> privacy@zimestimate.co.zw
+            <strong>Data Protection Officer:</strong> privacy@zimestimate.com
           </p>
         </section>
 
@@ -67,7 +67,7 @@ export default function TermsPage() {
             <li>Be at least 18 years old and legally capable of entering contracts under Zimbabwe law.</li>
             <li>Provide accurate, current, and complete registration information.</li>
             <li>Maintain the confidentiality of your login credentials. You are responsible for all activity under your account.</li>
-            <li>Notify us immediately at support@zimestimate.co.zw of any unauthorised access to your account.</li>
+            <li>Notify us immediately at support@zimestimate.com of any unauthorised access to your account.</li>
           </ul>
           <p style={{ ...bodyStyle, marginTop: '10px' }}>
             Supplier accounts additionally require: valid CIPA registration, a ZIMRA Tax Identification Number,
@@ -114,7 +114,7 @@ export default function TermsPage() {
             <li><strong>Price changes:</strong> We will give you at least <strong>30 days&rsquo; written notice</strong> (by email to your registered address) before increasing subscription fees. Continued use after the effective date constitutes acceptance of the new price.</li>
             <li><strong>Currency:</strong> USD prices are charged via Stripe (card). ZWG equivalent payments are available via Paynow Zimbabwe (EcoCash). The applicable exchange rate for ZWG transactions is determined at the time of payment using the prevailing RBZ interbank rate.</li>
             <li><strong>Failed payments:</strong> If a payment fails, we will retry up to three times over 7 days. If payment remains outstanding, your account may be downgraded to Basic tier until payment is resolved.</li>
-            <li><strong>Taxes:</strong> Prices are exclusive of VAT. We will add VAT at the applicable rate once ZimEstimate is VAT-registered with ZIMRA. If your business is VAT-registered, you may request a VAT invoice from billing@zimestimate.co.zw.</li>
+            <li><strong>Taxes:</strong> Prices are exclusive of VAT. We will add VAT at the applicable rate once ZimEstimate is VAT-registered with ZIMRA. If your business is VAT-registered, you may request a VAT invoice from billing@zimestimate.com.</li>
           </ul>
         </section>
 
@@ -176,7 +176,7 @@ export default function TermsPage() {
             We process personal data in accordance with the Zimbabwe <strong>Cyber and Data Protection Act
             (CDPA), Chapter 12:07</strong> and our <a href="/privacy" style={{ color: 'var(--color-primary)' }}>Privacy
             Policy</a>, which is incorporated into these Terms by reference. Our Data Protection Officer can
-            be contacted at <strong>privacy@zimestimate.co.zw</strong>. By using the Platform you acknowledge
+            be contacted at <strong>privacy@zimestimate.com</strong>. By using the Platform you acknowledge
             that we collect and process data as described in the Privacy Policy.
           </p>
         </section>
@@ -220,7 +220,7 @@ export default function TermsPage() {
         <section style={sectionStyle}>
           <h2 style={titleStyle}>11. Dispute Resolution</h2>
           <p style={bodyStyle}>
-            <strong>Internal complaints:</strong> Contact support@zimestimate.co.zw. We will acknowledge within
+            <strong>Internal complaints:</strong> Contact support@zimestimate.com. We will acknowledge within
             2 business days and endeavour to resolve complaints within 14 business days.
           </p>
           <p style={{ ...bodyStyle, marginTop: '10px' }}>
@@ -252,9 +252,9 @@ export default function TermsPage() {
         <section style={sectionStyle}>
           <h2 style={titleStyle}>Support &amp; Legal Contact</h2>
           <p style={bodyStyle}>
-            Questions about these Terms: <strong>legal@zimestimate.co.zw</strong><br />
-            General support: <strong>support@zimestimate.co.zw</strong><br />
-            Data protection / privacy: <strong>privacy@zimestimate.co.zw</strong>
+            Questions about these Terms: <strong>legal@zimestimate.com</strong><br />
+            General support: <strong>support@zimestimate.com</strong><br />
+            Data protection / privacy: <strong>privacy@zimestimate.com</strong>
           </p>
         </section>
       </div>
