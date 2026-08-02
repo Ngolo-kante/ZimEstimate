@@ -39,20 +39,10 @@ const workflows: Array<{
   label: string;
   href: string;
 }> = [
-    {
-      id: 'vision',
-      icon: Scan,
-      title: 'Vision AI Takeoff',
-      label: 'HIGH PRECISION',
-      href: '/ai/vision-takeoff',
-    },
-    {
-      id: 'scanner',
-      icon: Camera,
-      title: 'Smart Quote Scanner',
-      label: 'FIELD READY',
-      href: '/ai/quote-scanner',
-    },
+    // Ordered by how many people can actually start here. Manual Builder needs
+    // nothing but the figures in your head; the AI routes need a drawing or a
+    // quote to photograph, so leading with them asked for an upload before the
+    // product had shown anything.
     {
       id: 'manual',
       icon: NotePencil,
@@ -66,6 +56,20 @@ const workflows: Array<{
       title: 'Quick Projects',
       label: 'UTILITIES & ADD-ONS',
       href: '/quick-projects',
+    },
+    {
+      id: 'scanner',
+      icon: Camera,
+      title: 'Smart Quote Scanner',
+      label: 'FIELD READY',
+      href: '/ai/quote-scanner',
+    },
+    {
+      id: 'vision',
+      icon: Scan,
+      title: 'Vision AI Takeoff',
+      label: 'HIGH PRECISION',
+      href: '/ai/vision-takeoff',
     },
   ];
 
