@@ -37,8 +37,18 @@ const DEFAULT_ALLOWED_ORIGINS = [
 
 function normalizeOrigin(value: string) {
   if (!value) return value;
-  if (value.startsWith('http://') || value.startsWith('https://')) return value;
-  return `https://${value}`;
+
+  // Trailing whitespace is invisible in a dashboard field and survives a paste.
+  // NEXT_PUBLIC_SITE_URL once held "https://zimestimate.com\n", which made the
+  // allow-list entry unequal to the Origin header the browser actually sends,
+  // so every origin-checked POST returned "Invalid request origin" — including
+  // the support form, from the real domain. Also strip a trailing slash: an
+  // Origin header never carries one, so "https://site.com/" would never match.
+  const cleaned = value.trim().replace(/\/+$/, '');
+  if (!cleaned) return cleaned;
+
+  if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) return cleaned;
+  return `https://${cleaned}`;
 }
 
 export function getClientIp(req: RequestLike): string {

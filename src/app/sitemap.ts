@@ -1,6 +1,7 @@
+import { getSiteUrl } from '@/lib/siteUrl';
 import type { MetadataRoute } from 'next';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zimestimate.com';
+const siteUrl = getSiteUrl();
 
 const publicRoutes = [
   '/',

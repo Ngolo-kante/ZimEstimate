@@ -9,6 +9,7 @@ import { ServiceWorkerProvider } from "@/components/providers/ServiceWorkerProvi
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { CurrencyProvider } from "@/components/ui/CurrencyToggle";
 import { ToastProvider } from "@/components/ui/Toast";
+import { getSiteUrl } from "@/lib/siteUrl";
 import "./globals.css";
 
 const sora = Sora({
@@ -32,7 +33,7 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://zimestimate.com";
+const siteUrl = getSiteUrl();
 
 const geistSans = localFont({
   variable: "--font-geist-sans",

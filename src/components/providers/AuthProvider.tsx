@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef } f
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { Profile, TIER_LIMITS } from '@/lib/database.types';
+import { getBrowserSiteUrl } from '@/lib/siteUrl';
 
 interface AuthState {
     user: User | null;
@@ -137,7 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Sign up with email and password
     const signUp = async (email: string, password: string, fullName?: string) => {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+        const siteUrl = getBrowserSiteUrl();
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
