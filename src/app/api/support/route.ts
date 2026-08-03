@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase';
 import { enforceCsrf, enforceRateLimit, sanitizeText } from '@/lib/server/security';
+import { escapeHtml, getSupportInbox, sendEmail } from '@/lib/server/email';
 import { logger } from '@/lib/logger';
 
 /**
@@ -103,11 +104,44 @@ export async function POST(request: Request) {
     );
   }
 
-  const reference = (ticket as { id: string } | null)?.id ?? null;
+  const ticketId = (ticket as { id: string } | null)?.id ?? null;
+  // Something to quote back at us. Short enough to read over the phone.
+  const reference = ticketId ? ticketId.slice(0, 8).toUpperCase() : null;
 
-  return NextResponse.json({
-    success: true,
-    // Something to quote back at us. Short enough to read over the phone.
-    reference: reference ? reference.slice(0, 8).toUpperCase() : null,
+  // Awaited rather than fired and forgotten: this runs in a serverless
+  // function, which can be frozen the moment the response is returned, and a
+  // detached promise would be killed mid-flight. sendEmail never throws and
+  // never rejects, so a failure here costs a few hundred milliseconds and
+  // nothing else — the ticket is already saved and the reference already
+  // earned.
+  await sendEmail({
+    to: getSupportInbox(),
+    replyTo: contactEmail,
+    subject: `[${reference ?? 'SUPPORT'}] ${category}: ${subject}`,
+    text: [
+      `From: ${contactName || 'Not given'} <${contactEmail}>`,
+      `Category: ${category}`,
+      `Account: ${userId ? `signed in (${userId})` : 'not signed in'}`,
+      `Reference: ${reference ?? 'unknown'}`,
+      '',
+      description,
+    ].join('\n'),
+    html: `
+      <div style="font-family:system-ui,-apple-system,sans-serif;max-width:600px">
+        <p style="margin:0 0 4px"><strong>${escapeHtml(contactName || 'Someone')}</strong>
+          &lt;${escapeHtml(contactEmail)}&gt;</p>
+        <p style="margin:0 0 16px;color:#64748b;font-size:13px">
+          ${escapeHtml(category)} &middot; ${userId ? 'signed in' : 'not signed in'}
+          &middot; ref ${escapeHtml(reference ?? 'unknown')}
+        </p>
+        <p style="margin:0 0 8px;font-weight:600">${escapeHtml(subject)}</p>
+        <div style="white-space:pre-wrap;line-height:1.6">${escapeHtml(description)}</div>
+        <p style="margin:20px 0 0;color:#64748b;font-size:12px">
+          Reply to this email to answer them directly.
+        </p>
+      </div>
+    `,
   });
+
+  return NextResponse.json({ success: true, reference });
 }
