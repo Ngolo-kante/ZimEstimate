@@ -15,6 +15,7 @@ import {
   Storefront,
   Briefcase,
   ChartLineUp,
+  ChatCircleText,
 } from '@phosphor-icons/react';
 import { useAuth } from '@/components/providers/AuthProvider';
 
@@ -212,6 +213,14 @@ export default function TopNavbar() {
                     >
                       <Gear size={16} weight="duotone" />
                       Settings
+                    </Link>
+                    <Link
+                      href="/support"
+                      className="quick-link"
+                      onClick={() => setProfileMenuOpen(false)}
+                    >
+                      <ChatCircleText size={16} weight="duotone" />
+                      Help &amp; support
                     </Link>
                     <div className="menu-divider" />
                     <button className="menu-item logout" onClick={handleSignOut} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>

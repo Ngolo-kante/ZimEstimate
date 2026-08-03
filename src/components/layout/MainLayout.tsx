@@ -219,7 +219,7 @@ export default function MainLayout({
               <Link href="/market-insights">Market Reports</Link>
               <Link href="/privacy">Privacy Policy</Link>
               <Link href="/terms">Terms</Link>
-              <Link href="/support">Support</Link>
+              <Link href="/support">Contact support</Link>
             </div>
           </div>
         </footer>

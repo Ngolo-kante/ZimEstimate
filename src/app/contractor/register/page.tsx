@@ -20,6 +20,7 @@ import {
 // directory could never filter for.
 import { CONTRACTOR_TRADES, ZIMBABWE_SERVICE_AREAS } from '@/components/contractors/constants';
 import DemandProof from '@/components/marketplace/DemandProof';
+import ContactSupportLink from '@/components/support/ContactSupportLink';
 
 /**
  * Self-serve contractor registration.
@@ -532,6 +533,13 @@ function ContractorRegisterContent() {
             Cancel
           </Link>
         </div>
+
+        <p className="text-xs text-slate-500">
+          Something not working?{' '}
+          <ContactSupportLink category="contractor" subject="Contractor registration" showIcon={false}>
+            Contact support
+          </ContactSupportLink>
+        </p>
 
         {alreadyRegistered && (
           <p className="flex items-center gap-1.5 text-xs text-emerald-700">

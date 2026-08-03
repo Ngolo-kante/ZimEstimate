@@ -25,6 +25,7 @@ import {
 } from '@phosphor-icons/react';
 import MainLayout from '@/components/layout/MainLayout';
 import DemandProof from '@/components/marketplace/DemandProof';
+import ContactSupportLink from '@/components/support/ContactSupportLink';
 import { useAuth } from '@/components/providers/AuthProvider';
 import {
   submitSupplierApplication,
@@ -1021,8 +1022,18 @@ export default function SupplierRegisterPage() {
             </section>
           )}
 
+          {/* Stuck is a real outcome on a six-step form with document uploads.
+              Carries the category so the queue shows where people give up. */}
+          <p className="mt-6 text-xs text-[var(--color-text-muted)]">
+            Stuck on this step?{' '}
+            <ContactSupportLink category="supplier" subject="Supplier registration" showIcon={false}>
+              Contact support
+            </ContactSupportLink>{' '}
+            and we will help you finish.
+          </p>
+
           {/* Navigation */}
-          <div className="mt-7 flex items-center justify-between gap-3 border-t border-[var(--color-border)] pt-5">
+          <div className="mt-4 flex items-center justify-between gap-3 border-t border-[var(--color-border)] pt-5">
             {currentIndex > 0 ? (
               <button
                 type="button"

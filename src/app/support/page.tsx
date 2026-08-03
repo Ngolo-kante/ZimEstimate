@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { CheckCircle, LifebuoyIcon, PaperPlaneTilt, Warning } from '@phosphor-icons/react';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
@@ -39,8 +40,16 @@ const INPUT =
 
 const LABEL = 'mb-1.5 block text-xs font-bold text-[var(--color-text-secondary)]';
 
-export default function SupportPage() {
+function SupportForm() {
   const { user, profile } = useAuth();
+  const searchParams = useSearchParams();
+
+  // Contextual links carry where the person came from, so the ticket queue
+  // records which surface caused the problem instead of everything landing as
+  // "general". Derived, not copied into state — an unrecognised value falls
+  // back rather than selecting nothing.
+  const paramCategory = searchParams.get('category');
+  const paramSubject = searchParams.get('subject');
 
   // null means "not touched yet", so the profile fills the gap until the user
   // types. Derived rather than synced in an effect: auth resolves after the
@@ -51,8 +60,12 @@ export default function SupportPage() {
   const contactName = nameInput ?? profile?.full_name ?? '';
   const contactEmail = emailInput ?? user?.email ?? '';
 
-  const [category, setCategory] = useState<string>('general');
-  const [subject, setSubject] = useState('');
+  const [categoryInput, setCategoryInput] = useState<string | null>(null);
+  const [subjectInput, setSubjectInput] = useState<string | null>(null);
+  const category =
+    categoryInput ??
+    (CATEGORIES.some((c) => c.value === paramCategory) ? (paramCategory as string) : 'general');
+  const subject = subjectInput ?? paramSubject ?? '';
   const [description, setDescription] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -169,7 +182,7 @@ export default function SupportPage() {
             <select
               id="category"
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => setCategoryInput(e.target.value)}
               className={INPUT}
             >
               {CATEGORIES.map((option) => (
@@ -184,7 +197,7 @@ export default function SupportPage() {
             label="Subject *"
             placeholder="One line on what is happening"
             value={subject}
-            onChange={(e) => setSubject(e.target.value)}
+            onChange={(e) => setSubjectInput(e.target.value)}
           />
 
           <div>
@@ -217,5 +230,21 @@ export default function SupportPage() {
         </form>
       </div>
     </MainLayout>
+  );
+}
+
+export default function SupportPage() {
+  return (
+    <Suspense
+      fallback={
+        <MainLayout title="Support">
+          <div className="mx-auto max-w-2xl px-4 py-12 text-center text-sm text-[var(--color-text-secondary)]">
+            Loading…
+          </div>
+        </MainLayout>
+      }
+    >
+      <SupportForm />
+    </Suspense>
   );
 }

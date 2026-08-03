@@ -17,6 +17,7 @@ import ContractorMarkup from './ContractorMarkup';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { persistQuickBOQSession } from '@/lib/services/quickBoq';
 import FindContractorCTA from '@/components/contractors/FindContractorCTA';
+import ContactSupportLink from '@/components/support/ContactSupportLink';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -423,6 +424,15 @@ export default function QuickBOQTable({
           site-specific conditions, ground composition, and material availability. Final
           costs are subject to a professional site assessment and hydrogeologist&apos;s
           report. Prices are indicative as of Q1 2026 and subject to change.
+        </p>
+        {/* Users spot bad prices before we do — a face brick was priced per
+            thousand against a per-brick count for a long time before anyone
+            noticed. This makes reporting one a single click. */}
+        <p className="mt-2">
+          Spotted a price that looks wrong?{' '}
+          <ContactSupportLink category="bug" subject="Price looks wrong" showIcon={false}>
+            Tell us
+          </ContactSupportLink>
         </p>
       </div>
     </div>
