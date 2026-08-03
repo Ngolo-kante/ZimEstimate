@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FloppyDisk, X, CircleNotch, CaretLeft, CaretRight, Check } from '@phosphor-icons/react';
+import { FloppyDisk, X, CircleNotch, CaretLeft, CaretRight, Check, ShareNetwork, FileArrowDown } from '@phosphor-icons/react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/components/providers/AuthProvider';
 import SavingOverlay from '@/components/ui/SavingOverlay';
@@ -12,6 +12,7 @@ import { useBoqWizardStore, DEFAULT_ROOM_INPUTS, type BoqMilestoneId, type Miles
 import LiveEstimatorLayout from './components/LiveEstimatorLayout';
 import LiveEstimatePanel from './components/LiveEstimatePanel';
 import ReviewTabs from './components/ReviewTabs';
+import { exportBOQToPDF } from '@/lib/pdf-export';
 import ProjectTypeSection from './components/sections/ProjectTypeSection';
 import ProjectLocationSection from './components/sections/ProjectLocationSection';
 import BuildingDesignSection from './components/sections/BuildingDesignSection';
@@ -217,6 +218,80 @@ function BoqNewPageContent() {
     const target = chip.offsetLeft - nav.clientWidth / 2 + chip.clientWidth / 2;
     nav.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
   }, [currentStep]);
+
+  const isReviewStep = currentStep === WIZARD_STEPS.length - 1;
+
+  /**
+   * The finished BOQ, assembled the same way BOQTable assembles it — scope and
+   * labour decide which milestones count, and a line is quantity x actual price.
+   */
+  const reviewBoq = useMemo(() => {
+    const visible = milestonesState.filter((m) => {
+      if (m.id === 'labor') return laborType === 'materials_labor';
+      if (projectScope === 'stage') return selectedStages.includes(m.id);
+      return true;
+    });
+
+    const items = visible.flatMap((m) =>
+      m.items.map((item) => ({
+        material_name: item.materialName,
+        category: m.label ?? m.id,
+        quantity: item.quantity || 0,
+        unit: item.unit,
+        unit_price_usd: item.actualPriceUsd,
+        unit_price_zwg: item.actualPriceZwg,
+      }))
+    );
+
+    const usd = items.reduce((sum, i) => sum + i.quantity * i.unit_price_usd, 0);
+    const zwg = items.reduce((sum, i) => sum + i.quantity * i.unit_price_zwg, 0);
+    return { items, usd, zwg };
+  }, [milestonesState, projectScope, selectedStages, laborType]);
+
+  // Free, and deliberately so: the PDF is the thing that gets forwarded to a
+  // builder or a lender, and it carries our name with it.
+  const handleDownloadPdf = () => {
+    if (reviewBoq.items.length === 0) {
+      showError('Add some items to the estimate before downloading.');
+      return;
+    }
+    exportBOQToPDF(
+      {
+        projectName: projectDetails.name || 'ZimEstimate BOQ',
+        location: projectDetails.locationType || '',
+        totalArea: Number(projectDetails.floorPlanSize) || 0,
+        items: reviewBoq.items,
+        totals: { usd: reviewBoq.usd, zwg: reviewBoq.zwg },
+        config: {
+          scope: projectScope === 'stage' ? 'stages' : 'entire_house',
+          brickType: projectDetails.brickTypes?.[0] ?? 'common',
+          cementType: projectDetails.cementTypes?.[0] ?? 'cement_325',
+          includeLabor: laborType === 'materials_labor',
+        },
+      },
+      'USD'
+    );
+  };
+
+  const handleShareEstimate = async () => {
+    const text = [
+      `ZimEstimate — ${projectDetails.name || 'Construction estimate'}`,
+      projectDetails.floorPlanSize ? `Floor area: ${projectDetails.floorPlanSize} m2` : '',
+      `Items: ${reviewBoq.items.length}`,
+      `Estimated total: $${Math.round(reviewBoq.usd).toLocaleString()}`,
+    ].filter(Boolean).join('\n');
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'ZimEstimate BOQ', text, url: window.location.href });
+        return;
+      }
+      await navigator.clipboard.writeText(`${text}\n\n${window.location.href}`);
+      showError('Estimate summary copied to clipboard.');
+    } catch {
+      /* dismissed by the user — nothing to report */
+    }
+  };
 
   const progressPct = Math.round((currentStep / WIZARD_STEPS.length) * 100);
   const minsRemaining = Math.max(1, (WIZARD_STEPS.length - currentStep) * 2);
@@ -617,14 +692,20 @@ function BoqNewPageContent() {
               ) : null}
             </div>
 
-            <button
-              type="button"
-              className="wiz-btn-save hidden lg:inline-flex"
-              onClick={handleSave}
-            >
-              <FloppyDisk size={15} weight="fill" />
-              {isSaving ? 'Saving...' : 'Save Estimate'}
-            </button>
+            {/* Hidden on the review step, where the action row below carries
+                Save. Two Save Estimate buttons on the same screen was the
+                complaint; mid-wizard this one is still the way to save
+                progress to an account. */}
+            {!isReviewStep && (
+              <button
+                type="button"
+                className="wiz-btn-save hidden lg:inline-flex"
+                onClick={handleSave}
+              >
+                <FloppyDisk size={15} weight="fill" />
+                {isSaving ? 'Saving...' : 'Save Estimate'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -758,13 +839,22 @@ function BoqNewPageContent() {
                     Continue <CaretRight size={16} />
                   </motion.button>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    className="wiz-btn-primary"
-                  >
-                    {isSaving ? <><CircleNotch weight="bold" className="animate-spin" /> Saving</> : <><Check weight="bold" size={16} /> Save Estimate</>}
-                  </button>
+                  /* Save Project / Share / Download BOQ, in that order — the
+                     same row the budget estimator tabs use, so the actions do
+                     not change shape between one part of the app and another.
+                     Share and the PDF work signed out; only Save needs an
+                     account, because only Save needs somewhere to put it. */
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={handleSave} className="wiz-btn-primary">
+                      {isSaving ? <><CircleNotch weight="bold" className="animate-spin" /> Saving</> : <><Check weight="bold" size={16} /> Save Project</>}
+                    </button>
+                    <button type="button" onClick={handleShareEstimate} className="wiz-btn-secondary">
+                      <ShareNetwork size={16} weight="bold" /> Share
+                    </button>
+                    <button type="button" onClick={handleDownloadPdf} className="wiz-btn-secondary">
+                      <FileArrowDown size={16} weight="bold" /> Download BOQ
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
