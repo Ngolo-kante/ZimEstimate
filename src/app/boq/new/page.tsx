@@ -198,6 +198,26 @@ function BoqNewPageContent() {
     setValidationErrors,
   } = useBoqWizardStore();
 
+  // Keeps the active step visible in the strip.
+  //
+  // This used to be a scrollIntoView in a ref callback on the active chip. Two
+  // problems: block:'nearest' scrolls VERTICALLY as well, so whenever the user
+  // had scrolled down past the header the page was yanked back up to the
+  // stepper — which is what made selecting a card appear to jump to the top.
+  // And the ref was an inline arrow, so React reattached it on every render and
+  // re-ran the scroll on every state change, not just when the step moved.
+  //
+  // Scrolling the strip's own scrollLeft touches the horizontal axis only and
+  // cannot move the page.
+  const stepNavRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const nav = stepNavRef.current;
+    const chip = nav?.children[currentStep] as HTMLElement | undefined;
+    if (!nav || !chip) return;
+    const target = chip.offsetLeft - nav.clientWidth / 2 + chip.clientWidth / 2;
+    nav.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
+  }, [currentStep]);
+
   const progressPct = Math.round((currentStep / WIZARD_STEPS.length) * 100);
   const minsRemaining = Math.max(1, (WIZARD_STEPS.length - currentStep) * 2);
 
@@ -630,7 +650,7 @@ function BoqNewPageContent() {
                     saying which step was which, and the click handler moved
                     backwards only. Now every step the user has reached is a
                     labelled button they can jump to in either direction. */}
-                <nav aria-label="Estimate steps" className="wiz-step-nav mt-3">
+                <nav ref={stepNavRef} aria-label="Estimate steps" className="wiz-step-nav mt-3">
                   {WIZARD_STEPS.map((step, index) => {
                     const isCurrent = index === currentStep;
                     const reachable = index <= maxStepReached;
@@ -642,12 +662,6 @@ function BoqNewPageContent() {
                         aria-current={isCurrent ? 'step' : undefined}
                         onClick={() => { if (reachable) setCurrentStep(index); }}
                         title={reachable ? step.label : `Complete step ${index} first`}
-                        ref={isCurrent ? (el) => {
-                          // Keep the current step on screen. Without this, moving
-                          // to step 5 leaves the strip showing step 1 and the user
-                          // has no sign of where they are.
-                          el?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
-                        } : undefined}
                         className={`wiz-step-chip ${
                           isCurrent
                             ? 'wiz-step-chip--active'
