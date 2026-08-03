@@ -32,7 +32,12 @@ const STATUS_VARIANT: Record<string, 'error' | 'warning' | 'success' | 'default'
 
 interface Ticket {
   id: string;
-  user_id: string;
+  // Null on tickets filed from the public support form. Typing this as a plain
+  // string is why `user_id.slice(...)` below type-checked and then threw at
+  // runtime, taking the whole list down with it.
+  user_id: string | null;
+  contact_name?: string | null;
+  contact_email?: string | null;
   subject: string;
   description: string;
   status: string;
@@ -49,6 +54,17 @@ interface Reply {
   is_internal: boolean;
   created_at: string;
   profiles?: { email: string; full_name: string | null } | null;
+}
+
+/**
+ * Who to answer. A signed-in user is identified by their account; a ticket from
+ * the public form carries its own contact details instead, and those are the
+ * only way to reply to it.
+ */
+function requesterLabel(t: Ticket): string {
+  if (t.profiles?.email) return t.profiles.email;
+  if (t.contact_email) return t.contact_name ? `${t.contact_name} · ${t.contact_email}` : t.contact_email;
+  return t.user_id ? t.user_id.slice(0, 8) : 'Anonymous';
 }
 
 export default function AdminTicketsPage() {
@@ -162,7 +178,7 @@ export default function AdminTicketsPage() {
                     </div>
                   </div>
                   <div className="ticket-item-meta">
-                    <span>{t.profiles?.email ?? t.user_id.slice(0, 8)}</span>
+                    <span>{requesterLabel(t)}</span>
                     <span>{new Date(t.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
@@ -194,6 +210,18 @@ export default function AdminTicketsPage() {
                   <option value="resolved">Resolved</option>
                   <option value="closed">Closed</option>
                 </select>
+              </div>
+              {/* Without this an anonymous ticket showed its message and no way
+                  to answer it — the reply box posts into the thread, which
+                  someone who has never signed in cannot read. */}
+              <div className="detail-requester">
+                <span className="detail-requester-label">From</span>
+                <span>{requesterLabel(selectedTicket)}</span>
+                {selectedTicket.contact_email && (
+                  <a href={`mailto:${selectedTicket.contact_email}?subject=Re: ${encodeURIComponent(selectedTicket.subject)}`}>
+                    Reply by email
+                  </a>
+                )}
               </div>
               <p className="detail-desc">{selectedTicket.description}</p>
               <div className="replies-list">
@@ -257,6 +285,10 @@ export default function AdminTicketsPage() {
         .close-btn:hover { color: #475569; }
         .detail-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
         .status-select { padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; }
+        .detail-requester { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 13px; color: #334155; }
+        .detail-requester-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #94a3b8; font-weight: 700; }
+        .detail-requester a { color: #1e40af; font-weight: 600; text-decoration: none; }
+        .detail-requester a:hover { text-decoration: underline; }
         .detail-desc { font-size: 14px; color: #475569; margin: 0 0 16px; line-height: 1.6; }
         .replies-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; max-height: 300px; overflow-y: auto; }
         .reply { padding: 10px 14px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0; }
