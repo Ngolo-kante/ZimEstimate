@@ -1,8 +1,11 @@
 // ZimEstimate Service Worker
 // Provides offline caching for critical app resources
 
-const CACHE_NAME = 'zimestimate-v2';
-const DYNAMIC_CACHE = 'zimestimate-dynamic-v2';
+// Bumped so the activate handler purges the v2 caches, which hold HTML from
+// before navigations went network-first. Bump this whenever the caching
+// strategy changes — existing visitors carry the old cache until you do.
+const CACHE_NAME = 'zimestimate-v3';
+const DYNAMIC_CACHE = 'zimestimate-dynamic-v3';
 
 // Resources to cache on install
 const STATIC_ASSETS = [
@@ -82,8 +85,27 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
+    // Page loads must go to the network first.
+    //
+    // Navigations matched neither pattern list, so they fell through to
+    // stale-while-revalidate: the browser was handed the PREVIOUS HTML, which
+    // references the previous build's hashed chunks. Every deploy therefore
+    // served the old app until a second navigation, and a hard reload looked
+    // like it "did not apply". Fixed code appeared missing, an old button kept
+    // rendering, a page appeared to ship with no CSS at all.
+    //
+    // networkFirst still falls back to the cache and then to /offline, so
+    // offline support is unchanged — the cache stops being preferred while the
+    // network is available, which is the only thing that was wrong.
+    if (request.mode === 'navigate') {
+        event.respondWith(networkFirst(request));
+        return;
+    }
+
     // Determine caching strategy based on URL pattern
     if (CACHE_FIRST_PATTERNS.some((pattern) => pattern.test(url.pathname))) {
+        // Safe: these are content-hashed by the build, so a changed file is a
+        // changed URL and can never be served stale.
         event.respondWith(cacheFirst(request));
     } else if (NETWORK_FIRST_PATTERNS.some((pattern) => pattern.test(url.pathname))) {
         event.respondWith(networkFirst(request));
