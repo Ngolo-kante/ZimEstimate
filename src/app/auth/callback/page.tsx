@@ -12,14 +12,18 @@ export default function AuthCallbackPage() {
         const handleCallback = async () => {
             try {
                 // Supabase email confirmation links may use:
-                // 1. PKCE flow: ?code=... in the URL search params
-                // 2. Implicit/hash flow: #access_token=... in the URL hash
+                // 1. token_hash + type — the email template builds the link on
+                //    OUR domain and we verify it here
+                // 2. PKCE flow: ?code=... in the URL search params
+                // 3. Implicit/hash flow: #access_token=... in the URL hash
                 //
                 // The Supabase client auto-detects hash fragments on init,
                 // but we still need to handle the code exchange for PKCE.
 
                 const url = new URL(window.location.href);
                 const code = url.searchParams.get('code');
+                const tokenHash = url.searchParams.get('token_hash');
+                const otpType = url.searchParams.get('type');
                 const errorParam = url.searchParams.get('error');
                 const errorDescription = url.searchParams.get('error_description');
 
@@ -29,7 +33,25 @@ export default function AuthCallbackPage() {
                     return;
                 }
 
-                if (code) {
+                if (tokenHash) {
+                    // Default Supabase templates link to {{ .ConfirmationURL }},
+                    // which lives on the project's supabase.co host. An email
+                    // sent from zimestimate.com whose only link points at an
+                    // unrelated domain is the exact shape of a credential-
+                    // phishing message, and Gmail flags it as dangerous.
+                    // Templates that build the link from {{ .SiteURL }} and
+                    // {{ .TokenHash }} keep sender and destination on the same
+                    // domain; this verifies the token they carry.
+                    const { error: otpError } = await supabase.auth.verifyOtp({
+                        token_hash: tokenHash,
+                        type: (otpType as 'email' | 'signup' | 'invite' | 'magiclink' | 'recovery') || 'email',
+                    });
+                    if (otpError) {
+                        console.error('Token verification error:', otpError);
+                        router.push('/auth/login?error=callback_failed');
+                        return;
+                    }
+                } else if (code) {
                     // PKCE code exchange
                     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
                     if (exchangeError) {
