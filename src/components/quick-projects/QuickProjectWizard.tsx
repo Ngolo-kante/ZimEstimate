@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useEffect, useState } from 'react';
+import { restoreQuickBOQSession, clearQuickBOQSession } from '@/lib/services/quickBoq';
 import {
   ArrowLeft,
   ArrowRight,
@@ -301,16 +302,33 @@ export default function QuickProjectWizard({ flow, onSave, isContractor = false 
   const [answers, setAnswers] = useState<Answers>({});
   const [notSureIds, setNotSureIds] = useState<Set<string>>(new Set());
   const [stepIndex, setStepIndex] = useState(0);
-  const [boqItems, setBoqItems] = useState<BOQItem[] | null>(null);
+  // Restored from a save attempt that bounced through sign-in. Read once, in a
+  // lazy initialiser, so the BOQ is on screen from the first render rather than
+  // flashing question one and jumping. restoreQuickBOQSession clears the entry
+  // as it reads, so a later visit starts fresh.
+  const restored = useState(() =>
+    typeof window === 'undefined' ? null : restoreQuickBOQSession()
+  )[0];
+  const restoredForThisFlow = restored?.projectType === flow.projectType ? restored : null;
+
+  // Cleared here rather than in the read, so StrictMode's second invocation of
+  // the initialiser above still sees the value.
+  useEffect(() => {
+    if (restoredForThisFlow) clearQuickBOQSession();
+  }, [restoredForThisFlow]);
+
+  const [boqItems, setBoqItems] = useState<BOQItem[] | null>(restoredForThisFlow?.boqItems ?? null);
   const [showValidation, setShowValidation] = useState(false);
-  const [labor, setLabor] = useState<LaborConfig>({
-    enabled: false,
-    method: 'percentage',
-    percentage: 25,
-    dailyRateUsd: 35,
-    days: 5,
-    workerCount: 2,
-  });
+  const [labor, setLabor] = useState<LaborConfig>(
+    restoredForThisFlow?.labor ?? {
+      enabled: false,
+      method: 'percentage',
+      percentage: 25,
+      dailyRateUsd: 35,
+      days: 5,
+      workerCount: 2,
+    }
+  );
 
   const activeSteps = useMemo(() => getActiveSteps(flow, answers), [flow, answers]);
   const currentStep = activeSteps[stepIndex];

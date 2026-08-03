@@ -183,8 +183,13 @@ export async function deleteQuickBOQ(
 }
 
 // ─── Session Persistence (guest mode) ─────────────────────────────────────────
-// Mirrors the manual BOQ wizard pattern: save answers to sessionStorage before
-// redirecting to auth, restore after login.
+// Save a finished BOQ before redirecting to auth, and restore it on the way
+// back — otherwise signing in to save costs the user the estimate they were
+// trying to save.
+//
+// localStorage, not sessionStorage. Email confirmation is required on this
+// project, so creating an account means leaving for an inbox and often
+// returning in a different tab, where sessionStorage is already gone.
 
 const SESSION_KEY = 'quick_boq_session';
 
@@ -197,9 +202,9 @@ export function persistQuickBOQSession(data: {
   currency: 'USD' | 'ZWG';
 }): void {
   try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
+    localStorage.setItem(SESSION_KEY, JSON.stringify(data));
   } catch {
-    // sessionStorage may be unavailable in SSR context
+    // Unavailable during SSR, and in private browsing on some engines.
   }
 }
 
@@ -212,11 +217,24 @@ export function restoreQuickBOQSession(): {
   currency: 'USD' | 'ZWG';
 } | null {
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
+    const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
-    sessionStorage.removeItem(SESSION_KEY);
+    // Deliberately does NOT clear. This is read from a useState initialiser,
+    // and React StrictMode invokes those twice in development — a read that
+    // cleared as a side effect handed the data to the first call and null to
+    // the second, so the restore silently did nothing. Call
+    // clearQuickBOQSession from an effect once the value is safely in state.
     return JSON.parse(raw);
   } catch {
     return null;
+  }
+}
+
+/** Drop a restored session once its contents are held in component state. */
+export function clearQuickBOQSession(): void {
+  try {
+    localStorage.removeItem(SESSION_KEY);
+  } catch {
+    /* nothing to clear */
   }
 }

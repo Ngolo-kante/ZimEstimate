@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -34,6 +34,7 @@ import { solarSizingToBOQ } from '@/lib/quick-projects/solar/boq';
 import type { BOQItem, LaborConfig } from '@/lib/quick-projects/engine/types';
 import QuickBOQTable from './QuickBOQTable';
 import SolarBudgetExplorer from './SolarBudgetExplorer';
+import { restoreQuickBOQSession, clearQuickBOQSession } from '@/lib/services/quickBoq';
 
 const INTENTS: SolarIntent[] = ['backup', 'heavy_backup', 'off_grid', 'replace', 'budget', 'quote_check'];
 
@@ -160,9 +161,24 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
   const [includeInstall, setIncludeInstall] = useState(true);
   const [includeContingency, setIncludeContingency] = useState(false);
 
-  // BOQ output
-  const [boqItems, setBoqItems] = useState<BOQItem[] | null>(null);
-  const [labor, setLabor] = useState<LaborConfig>({ enabled: false, method: 'percentage', percentage: 25 });
+  // BOQ output. Restored from a save attempt that bounced through sign-in —
+  // read in a lazy initialiser so the finished BOQ is on screen immediately
+  // rather than flashing the first question and jumping.
+  const restored = useState(() =>
+    typeof window === 'undefined' ? null : restoreQuickBOQSession()
+  )[0];
+  const restoredSolar = restored?.projectType === 'solar' ? restored : null;
+
+  // Cleared here rather than in the read, so StrictMode's second invocation of
+  // the initialiser above still sees the value.
+  useEffect(() => {
+    if (restoredSolar) clearQuickBOQSession();
+  }, [restoredSolar]);
+
+  const [boqItems, setBoqItems] = useState<BOQItem[] | null>(restoredSolar?.boqItems ?? null);
+  const [labor, setLabor] = useState<LaborConfig>(
+    restoredSolar?.labor ?? { enabled: false, method: 'percentage', percentage: 25 }
+  );
 
   const activeSteps = useMemo(() => {
     return stepOrder.filter((step) => {
