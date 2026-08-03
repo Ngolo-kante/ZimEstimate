@@ -1,17 +1,18 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Envelope, Lock, User, GoogleLogo, Buildings, CheckCircle } from '@phosphor-icons/react';
+import { Envelope, Lock, User, Buildings, CheckCircle } from '@phosphor-icons/react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 
 function SignupForm() {
     const searchParams = useSearchParams();
     const redirect = searchParams.get('redirect');
-    const { signUp, signInWithGoogle, isLoading } = useAuth();
+    const { signUp, isLoading } = useAuth();
 
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
@@ -85,17 +86,12 @@ function SignupForm() {
         }
     };
 
-    const handleGoogleSignIn = async () => {
-        setError('');
-        // Store redirect URL for the OAuth callback to pick up
-        if (redirect) {
-            try { sessionStorage.setItem('zimestimate_auth_redirect', redirect); } catch {}
-        }
-        const { error: googleError } = await signInWithGoogle();
-        if (googleError) {
-            setError(googleError.message);
-        }
-    };
+    // The redirect fallback inside GoogleSignInButton still round-trips through
+    // /auth/callback, which reads this back out.
+    useEffect(() => {
+        if (!redirect) return;
+        try { sessionStorage.setItem('zimestimate_auth_redirect', redirect); } catch { /* noop */ }
+    }, [redirect]);
 
     if (isLoading) {
         return (
@@ -198,14 +194,10 @@ function SignupForm() {
                     )}
 
                     {/* Google Sign Up */}
-                    <button
-                        type="button"
-                        className="google-btn"
-                        onClick={handleGoogleSignIn}
-                    >
-                        <GoogleLogo size={20} weight="bold" />
-                        Continue with Google
-                    </button>
+                    <GoogleSignInButton
+                        redirectTo={redirect || '/dashboard'}
+                        onError={(message) => setError(message)}
+                    />
 
                     <div className="divider">
                         <span>or sign up with email</span>

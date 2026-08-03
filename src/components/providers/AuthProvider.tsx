@@ -18,6 +18,7 @@ interface AuthContextType extends AuthState {
     signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null; data?: { user: User | null; session: Session | null } }>;
     signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
     signInWithGoogle: () => Promise<{ error: AuthError | null }>;
+    signInWithGoogleIdToken: (token: string, nonce: string) => Promise<{ error: AuthError | null }>;
     signOut: () => Promise<void>;
 
     // Profile methods
@@ -161,13 +162,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error };
     };
 
-    // Sign in with Google OAuth
+    // Sign in with Google OAuth.
+    //
+    // The redirect flow. Kept as the fallback for when NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    // is unset, because it works with no extra configuration — at the cost of
+    // Google's sign-in screen naming the Supabase host rather than ours. See
+    // lib/googleIdentity.ts for why that string cannot be changed here.
     const signInWithGoogle = async () => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}/auth/callback`,
             },
+        });
+
+        return { error };
+    };
+
+    // Exchanges a Google ID token obtained in the browser for a Supabase
+    // session. No redirect through Supabase, so Google shows our own origin.
+    const signInWithGoogleIdToken = async (token: string, nonce: string) => {
+        const { error } = await supabase.auth.signInWithIdToken({
+            provider: 'google',
+            token,
+            nonce,
         });
 
         return { error };
@@ -277,6 +295,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signUp,
         signIn,
         signInWithGoogle,
+        signInWithGoogleIdToken,
         signOut,
         refreshProfile,
         updateProfile,

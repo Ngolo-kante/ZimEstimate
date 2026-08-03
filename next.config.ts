@@ -18,8 +18,13 @@ const securityHeaders = [
     value: "camera=(), microphone=(), geolocation=()",
   },
   {
+    // Google Identity Services signs in through a popup and posts the result
+    // back to the opener. Strict "same-origin" severs that channel, so the
+    // popup completes and the page never hears about it. "same-origin-allow-popups"
+    // is the setting Google documents for this, and still blocks cross-origin
+    // windows from reaching into ours.
     key: "Cross-Origin-Opener-Policy",
-    value: "same-origin",
+    value: "same-origin-allow-popups",
   },
 ];
 
