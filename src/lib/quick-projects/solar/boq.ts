@@ -38,6 +38,52 @@ const SOLAR_PRICES: Record<string, number> = {
   install_labor_pct:        0.20,  // 20% of hardware cost (was 25%)
 };
 
+/**
+ * Balance-of-system and protection cost for a given system size.
+ *
+ * The budget explorer used to carry its own constant for this — PROTECTION_FIXED,
+ * a hardcoded $461 — while the BOQ priced the same parts per item, with cable
+ * and trunking scaling by panel count. The two disagreed by over $100 on a
+ * small system and by more as the array grew, so the figure shown while
+ * choosing a budget was never the figure the BOQ produced.
+ *
+ * One function, used by both. Everything here mirrors the items
+ * solarSizingToBOQ emits, so if you add a part there, add it here.
+ */
+export function solarBalanceOfSystemCost(panelCount: number, hasBattery: boolean): number {
+  const dcCableM = panelCount * 4 + 5;
+  const acCableM = 10;
+
+  const fixed =
+    SOLAR_PRICES.mounting_kit +
+    SOLAR_PRICES.antitheft_brackets +
+    SOLAR_PRICES.combiner_4str +
+    SOLAR_PRICES.dc_isolator +
+    SOLAR_PRICES.ac_isolator +
+    SOLAR_PRICES.surge_dc +
+    SOLAR_PRICES.surge_ac +
+    SOLAR_PRICES.avs +
+    SOLAR_PRICES.changeover_switch +
+    SOLAR_PRICES.distribution_board +
+    SOLAR_PRICES.earthing_kit;
+
+  const cable =
+    dcCableM * SOLAR_PRICES.dc_cable_6mm +
+    acCableM * SOLAR_PRICES.ac_cable_4mm +
+    (dcCableM + acCableM) * SOLAR_PRICES.cable_trunking_m;
+
+  // Only meaningful when there is a battery to isolate.
+  const batteryProtection = hasBattery ? SOLAR_PRICES.battery_breaker : 0;
+
+  return +(fixed + cable + batteryProtection).toFixed(2);
+}
+
+/** The share of hardware cost the BOQ adds for installation labour. */
+export const SOLAR_INSTALL_LABOR_PCT = SOLAR_PRICES.install_labor_pct;
+
+/** Transport cost the BOQ adds when delivery is included. */
+export const SOLAR_TRANSPORT_COST = SOLAR_PRICES.transport;
+
 // ─── Brand Lookup Helpers ──────────────────────────────────────────────────────
 
 function panelPrice(brand: string): { price: number; watt: number; label: string } {
@@ -83,6 +129,8 @@ export function solarSizingToBOQ(
     battery_brand?: string;
     include_transport?: boolean;
     include_install?: boolean;
+    /** Defaults to true — a system without protection is not one anyone should quote. */
+    include_protection?: boolean;
     include_contingency?: boolean;
   }
 ): BOQItem[] {
@@ -97,7 +145,13 @@ export function solarSizingToBOQ(
 
   const panel = panelPrice(pBrand);
   const battery = batteryUnitPrice(bBrand);
-  const batteryUnits = Math.max(1, Math.ceil(result.batteryKwh / battery.kwh));
+  // Was Math.max(1, ...), which forced a battery into every BOQ even when the
+  // sizing had deliberately allocated none. On a $1,000 budget the explorer
+  // could not fit the $790 battery and allocated zero, then the BOQ added one
+  // anyway — on its own that put the estimate $790 over the budget the user
+  // had just typed in. A system with no battery is a real configuration
+  // (day-use / grid-tie); silently charging for one is not.
+  const batteryUnits = Math.max(0, Math.ceil(result.batteryKwh / battery.kwh));
   const dcCableM = result.panelCount * 4 + 5;
   const acCableM = 10;
   const invPrice = inverterPrice(result.inverterKva, iBrand);
@@ -118,14 +172,31 @@ export function solarSizingToBOQ(
       1, 'each', invPrice,
       { owned: ownedInverter }
     ),
-    makeItem(
-      'sol_batteries', 'Batteries',
-      `${battery.kwh}kWh ${battery.label} LiFePO4 × ${batteryUnits}`,
-      batteryUnits, 'each', battery.price,
-      { owned: ownedBatteries, notes: `${(batteryUnits * battery.kwh).toFixed(1)}kWh total storage` }
-    ),
+    // Omitted entirely at zero units rather than listed as "× 0" — and the
+    // battery breaker below goes with it, since there is nothing to protect.
+    ...(batteryUnits > 0
+      ? [
+          makeItem(
+            'sol_batteries', 'Batteries',
+            `${battery.kwh}kWh ${battery.label} LiFePO4 × ${batteryUnits}`,
+            batteryUnits, 'each', battery.price,
+            { owned: ownedBatteries, notes: `${(batteryUnits * battery.kwh).toFixed(1)}kWh total storage` }
+          ),
+        ]
+      : []),
 
-    // ── Protection Layer (critical for system longevity) ──────────────────
+  ];
+
+  // ── Protection Layer (critical for system longevity) ──────────────────────
+  //
+  // The budget explorer has a protection toggle, default OFF, and this function
+  // had no matching flag — so it emitted these items unconditionally. The
+  // explorer therefore budgeted nothing for balance-of-system while the BOQ
+  // charged for all of it, then added installation as a percentage on top. That
+  // was the single largest reason a $1,000 budget produced a $2,139 BOQ.
+  const includeProtection = answers.include_protection !== false;
+  if (includeProtection) {
+    items.push(
     makeItem('sol_mount',       'Balance of System', 'Panel mounting kit (rails + hardware + anti-theft)',       1,         'set',  SOLAR_PRICES.mounting_kit + SOLAR_PRICES.antitheft_brackets),
     makeItem('sol_dc_cable',    'Balance of System', 'DC cable 6mm² (UV-resistant)',                            dcCableM,  'm',    SOLAR_PRICES.dc_cable_6mm),
     makeItem('sol_ac_cable',    'Balance of System', 'AC cable 4mm²',                                          acCableM,  'm',    SOLAR_PRICES.ac_cable_4mm),
@@ -138,12 +209,15 @@ export function solarSizingToBOQ(
       { notes: 'Shields inverter from grid-side surges' }),
     makeItem('sol_avs',         'Protection',        'Automatic Voltage Switcher (AVS)',                        1,         'each', SOLAR_PRICES.avs,
       { notes: 'Disconnects system during ZESA brownouts or over-voltage' }),
-    makeItem('sol_bat_breaker', 'Protection',        'Battery DC breaker (125A)',                               1,         'each', SOLAR_PRICES.battery_breaker),
+    ...(batteryUnits > 0
+      ? [makeItem('sol_bat_breaker', 'Protection', 'Battery DC breaker (125A)', 1, 'each', SOLAR_PRICES.battery_breaker)]
+      : []),
     makeItem('sol_changeover',  'Protection',        'Changeover switch (Solar/ZESA/Generator)',                 1,         'each', SOLAR_PRICES.changeover_switch),
     makeItem('sol_db',          'Protection',        'Distribution board (8-way)',                               1,         'each', SOLAR_PRICES.distribution_board),
     makeItem('sol_earth',       'Protection',        'Earthing kit (solar + AC, <5Ω)',                          1,         'set',  SOLAR_PRICES.earthing_kit),
     makeItem('sol_trunking',    'Balance of System', 'Cable trunking / conduit',                                dcCableM + acCableM, 'm', SOLAR_PRICES.cable_trunking_m),
-  ];
+    );
+  }
 
   // ── Transport ─────────────────────────────────────────────────────────
   if (answers.include_transport) {

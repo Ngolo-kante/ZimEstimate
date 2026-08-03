@@ -39,15 +39,23 @@ import {
   type PanelOption,
   type SolarPackage,
 } from '@/lib/quick-projects/solar/catalog';
-import { solarSizingToBOQ } from '@/lib/quick-projects/solar/boq';
+import {
+  solarSizingToBOQ,
+  solarBalanceOfSystemCost,
+  SOLAR_INSTALL_LABOR_PCT,
+  SOLAR_TRANSPORT_COST,
+} from '@/lib/quick-projects/solar/boq';
 import type { BOQItem, LaborConfig } from '@/lib/quick-projects/engine/types';
 import type { SolarWizardOutput } from '@/lib/quick-projects/solar/types';
 import QuickBOQTable from './QuickBOQTable';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-const TRANSPORT_COST = 85; // USD — standard urban delivery in Zimbabwe
-const PROTECTION_FIXED = 35 + 28 + 45 + 55 + 45 + 25 + 25 + 22 + 18 + 35 + 120 + 8;
+// Was a local 85 while the BOQ charged 80 — another quiet divergence.
+const TRANSPORT_COST = SOLAR_TRANSPORT_COST;
+// Indicative figure for the 'protection disabled' warning only. Real cost is
+// computed per system by solarBalanceOfSystemCost.
+const PROTECTION_FIXED = Math.round(solarBalanceOfSystemCost(4, true));
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -95,10 +103,13 @@ function allocateBudget(
   }[objective];
 
   const transportCost = enabledCards.transport ? TRANSPORT_COST : 0;
-  const protectionCost = enabledCards.protection ? PROTECTION_FIXED : 0;
+  // Reserved with no panels yet, because cable and trunking scale with the
+  // array. The exact figure is recomputed once the panel count is known and
+  // the whole allocation is trimmed to fit below.
+  const protectionReserve = enabledCards.protection ? solarBalanceOfSystemCost(0, true) : 0;
 
   // Reserve installation cost upfront so core components get a clean budget
-  let coreBudget = totalBudget - transportCost - protectionCost;
+  let coreBudget = totalBudget - transportCost - protectionReserve;
   if (enabledCards.installation) {
     coreBudget = installCustom !== null
       ? Math.max(0, coreBudget - installCustom)
@@ -168,21 +179,54 @@ function allocateBudget(
     }
   }
 
-  // ── Step 5: Installation ────────────────────────────────────────────────────
-  const hardwareTotal = inverterCost + batteryCost + panelCost + protectionCost;
-  let installCost = 0;
-  let installPct = 20;
-  let isCustom = false;
-  if (enabledCards.installation) {
-    if (installCustom !== null && installCustom > 0) {
-      installCost = installCustom;
-      installPct = hardwareTotal > 0 ? Math.round((installCustom / hardwareTotal) * 100) : 0;
-      isCustom = true;
-    } else {
-      installCost = Math.round(hardwareTotal * 0.20);
-      installPct = 20;
-    }
+  // ── Step 5: Price it the way the BOQ will, then make it fit ────────────────
+  //
+  // Everything above allocates against estimates. This step prices the result
+  // with the same functions solarSizingToBOQ uses and trims until the total is
+  // actually within budget. Without it the two disagreed badly: on a $1,000
+  // budget the explorer reported $869 allocated and the BOQ came out at
+  // $2,139 — the number the user had typed in meant nothing.
+  const priceAll = (panels: number, batteries: number) => {
+    const activeBattery = fallbackBattery ?? batteryBrand;
+    const panelsCost = panels * panelBrand.pricePerPanel;
+    const batteriesCost = batteries * activeBattery.unitPrice;
+    const protection = enabledCards.protection
+      ? solarBalanceOfSystemCost(panels, batteries > 0)
+      : 0;
+    const hardware = inverterCost + batteriesCost + panelsCost + protection;
+    const install = enabledCards.installation
+      ? installCustom !== null && installCustom > 0
+        ? installCustom
+        : Math.round(hardware * SOLAR_INSTALL_LABOR_PCT)
+      : 0;
+    return { panelsCost, batteriesCost, protection, hardware, install, total: hardware + install + transportCost };
+  };
+
+  let priced = priceAll(panelCount, batteryUnits);
+
+  // Drop panels first — they are the divisible part of the system. A battery or
+  // an inverter cannot be bought in fractions, and removing either changes what
+  // the system can do rather than just how much of it there is.
+  while (priced.total > totalBudget && panelCount > 0) {
+    panelCount -= 1;
+    priced = priceAll(panelCount, batteryUnits);
   }
+
+  // Still over with no panels left: the battery is what does not fit.
+  while (priced.total > totalBudget && batteryUnits > 0) {
+    batteryUnits -= 1;
+    priced = priceAll(panelCount, batteryUnits);
+  }
+
+  panelCost = priced.panelsCost;
+  batteryCost = priced.batteriesCost;
+  const protectionCost = priced.protection;
+  const installCost = priced.install;
+  const installPct =
+    installCustom !== null && installCustom > 0 && priced.hardware > 0
+      ? Math.round((installCustom / priced.hardware) * 100)
+      : Math.round(SOLAR_INSTALL_LABOR_PCT * 100);
+  const isCustom = installCustom !== null && installCustom > 0;
 
   return {
     panels: { count: panelCount, brand: panelBrand, cost: panelCost },
@@ -397,7 +441,13 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
     panels: true,
     inverter: true,
     battery: true,
-    protection: false, // OFF by default — panels+inverter+battery are the combo that matters
+    // Was OFF by default. That made the headline "what your budget buys" figure
+    // describe a system with no isolators, surge protection, earthing or AVS —
+    // which this same component warns is unsafe and which no installer would
+    // quote. The budget looked further-stretching than it was, and the BOQ then
+    // added the missing parts anyway. On by default; the toggle still lets
+    // someone price the difference deliberately.
+    protection: true,
     installation: true,
     transport: false,  // OFF by default — typically bundled in ZW urban quotes
   });
@@ -545,6 +595,9 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       battery_brand: batteryBrand,
       include_transport: enabledCards.transport,
       include_install: enabledCards.installation,
+      // Was never passed, so the BOQ always charged for protection regardless
+      // of the toggle the user had just set.
+      include_protection: enabledCards.protection,
       include_contingency: false,
     };
 
