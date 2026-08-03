@@ -334,6 +334,22 @@ export default function MarketInsightsPage() {
                 })}
               </div>
             </div>
+
+            {/* Sat at the very bottom of the page — roughly 2,500px down, below
+                the price table and the disclaimer. The people it is addressed
+                to are reading the prices, and never scrolled that far. In the
+                sidebar it sits beside what they came to look at, and on narrow
+                screens the sidebar stacks above the table rather than after it. */}
+            <div className="join-cta">
+              <p>
+                <strong>In the trade?</strong> List your prices where builders are already looking,
+                or register as a contractor to quote on their projects.
+              </p>
+              <div className="join-cta__actions">
+                <Link href="/supplier/register" className="join-cta__link">Register as a supplier &rarr;</Link>
+                <Link href="/contractor/register" className="join-cta__link">Register as a contractor &rarr;</Link>
+              </div>
+            </div>
           </div>
 
           {/* Main Content */}
@@ -422,18 +438,6 @@ export default function MarketInsightsPage() {
               </Link>
             </div>
 
-            {/* This page had no route into the marketplace for the businesses
-                whose prices it reports on. */}
-            <div className="join-cta">
-              <p>
-                <strong>In the trade?</strong> List your prices where builders are already looking,
-                or register as a contractor to quote on their projects.
-              </p>
-              <div className="join-cta__actions">
-                <Link href="/supplier/register" className="join-cta__link">Register as a supplier &rarr;</Link>
-                <Link href="/contractor/register" className="join-cta__link">Register as a contractor &rarr;</Link>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -565,6 +569,11 @@ export default function MarketInsightsPage() {
           display: flex;
           flex-direction: column;
           gap: var(--space-6);
+          /* A grid item stretches to its row by default, so this column was as
+             tall as the price table and the join CTA at its end landed ~2,200px
+             down — the same burial it had at the page bottom. Sizing to content
+             keeps the CTA directly under the categories. */
+          align-self: start;
         }
 
         .category-list h3 {

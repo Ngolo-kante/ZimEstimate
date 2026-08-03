@@ -151,12 +151,18 @@ export default function SupplierDirectoryPage() {
         </div>
 
         <div className="directory-filters reveal" data-delay="2">
+          {/* No className="search-input" here. That is a global rule in
+              procurement-view.css written for a bare <input> — border, radius,
+              background, and 36px of left padding for a separately positioned
+              icon. Input puts className on its WRAPPER, so the page rendered a
+              bordered box containing a second bordered box, offset by padding
+              meant for an icon this component already draws inside itself. It
+              read as two search bars. Input styles itself; leave it alone. */}
           <Input
             placeholder="Search suppliers by name or location..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             icon={<MagnifyingGlass size={18} weight="light" />}
-            className="search-input"
           />
 
           <div className="category-filters">
