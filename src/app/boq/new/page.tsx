@@ -165,29 +165,13 @@ function BoqNewPageContent() {
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   // Opening from a template lands on the finished BOQ, so start there rather than
   // rendering step one and jumping, which also keeps setState out of the effect.
-  const [currentStep, setCurrentStep] = useState(() => {
-    // Only skip ahead for a template that still exists. A stale link — the
-    // premium templates were removed — would otherwise open the review step
-    // with nothing in it.
-    const requested = searchParams.get('template');
-    return requested && getTemplateById(requested) ? WIZARD_STEPS.length - 1 : 0;
-  });
   const [shakeError, setShakeError] = useState(false);
-  // Furthest step the user has actually reached. Navigation is free up to here
-  // and gated beyond it, so jumping around does not skip the validation that
-  // each step performs on the way forward.
-  const [maxStepReached, setMaxStepReached] = useState(() => {
-    // Opening from a template lands on the review step, so everything before it
-    // has effectively been reached and must stay navigable.
-    const requested = searchParams.get('template');
-    return requested && getTemplateById(requested) ? WIZARD_STEPS.length - 1 : 0;
-  });
   const { error: showError } = useToast();
 
-  const progressPct = Math.round((currentStep / WIZARD_STEPS.length) * 100);
-  const minsRemaining = Math.max(1, (WIZARD_STEPS.length - currentStep) * 2);
-
   const {
+    currentStep,
+    setCurrentStep,
+    maxStepReached,
     projectDetails,
     updateProjectDetails,
     geometryMode,
@@ -213,6 +197,9 @@ function BoqNewPageContent() {
     setGeotechDocument,
     setValidationErrors,
   } = useBoqWizardStore();
+
+  const progressPct = Math.round((currentStep / WIZARD_STEPS.length) * 100);
+  const minsRemaining = Math.max(1, (WIZARD_STEPS.length - currentStep) * 2);
 
   const projectDetailsForSave = useMemo(() => {
     const hasProTier = profile?.tier === 'pro' || profile?.tier === 'admin';
@@ -349,7 +336,13 @@ function BoqNewPageContent() {
       setProjectScope('stage');
       setSelectedStages(scopes as string[]);
     }
-  }, [templateIdFromUrl, finishFromUrl, updateProjectDetails, setGeometryMode, setLaborType, setProjectScope, setSelectedStages]);
+
+    // A template card prices a finished build, so it opens on the review step.
+    // This used to come from a lazy useState initialiser; the step now lives in
+    // the persisted store, so the jump belongs here with the rest of the
+    // template's inputs.
+    setCurrentStep(WIZARD_STEPS.length - 1);
+  }, [templateIdFromUrl, finishFromUrl, updateProjectDetails, setGeometryMode, setLaborType, setProjectScope, setSelectedStages, setCurrentStep]);
 
   // Carry the /projects/new wizard's answers across. That wizard asks for a
   // project name and location, stashes them under this key, then hands off to
@@ -574,7 +567,6 @@ function BoqNewPageContent() {
     }
     const target = Math.min(WIZARD_STEPS.length - 1, nextStep);
     setCurrentStep(target);
-    setMaxStepReached((prev) => Math.max(prev, target));
   };
 
   return (
@@ -771,7 +763,6 @@ function BoqNewPageContent() {
               onViewFullBoq={() => {
                 const review = WIZARD_STEPS.length - 1;
                 setCurrentStep(review);
-                setMaxStepReached((prev) => Math.max(prev, review));
               }}
             />
           ) : null}

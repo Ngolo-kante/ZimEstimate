@@ -106,6 +106,17 @@ interface BoqWizardState {
   projectDetails: ProjectDetailsState;
   updateProjectDetails: (updates: Partial<ProjectDetailsState>) => void;
 
+  // Where in the wizard the user is. Persisted with the answers because these
+  // used to be component state: after a redirect to sign in, every answer came
+  // back from localStorage but the step reset to zero, so the user landed on
+  // question one with a full form behind them and had to click through the
+  // whole wizard again to reach their BOQ. It read as losing the work.
+  currentStep: number;
+  setCurrentStep: (step: number) => void;
+  /** Furthest step actually reached, so navigation stays open up to it. */
+  maxStepReached: number;
+  setMaxStepReached: (step: number) => void;
+
   // Geometry mode
   geometryMode: 'quick' | 'detailed' | 'upload' | null;
   setGeometryMode: (mode: 'quick' | 'detailed' | 'upload' | null) => void;
@@ -221,6 +232,8 @@ const defaultCertificateTracker = STAGE_COMPLIANCE_REQUIREMENTS.reduce<Record<st
 
 function getInitialState(): Omit<BoqWizardState,
   | 'updateProjectDetails'
+  | 'setCurrentStep'
+  | 'setMaxStepReached'
   | 'setGeometryMode'
   | 'setDetailedRooms'
   | 'setTotalWindows'
@@ -252,6 +265,8 @@ function getInitialState(): Omit<BoqWizardState,
   | 'reset'> {
   return {
     projectDetails: { ...initialProjectDetails },
+    currentStep: 0,
+    maxStepReached: 0,
     geometryMode: null,
     detailedRooms: [],
     totalWindows: 0,
@@ -309,6 +324,9 @@ export const useBoqWizardStore = create<BoqWizardState>()(
     projectDetails: { ...state.projectDetails, ...updates },
   })),
 
+  setCurrentStep: (step) =>
+    set((state) => ({ currentStep: step, maxStepReached: Math.max(state.maxStepReached, step) })),
+  setMaxStepReached: (step) => set((state) => ({ maxStepReached: Math.max(state.maxStepReached, step) })),
   setGeometryMode: (mode) => set({ geometryMode: mode }),
   setDetailedRooms: (rooms) => set({ detailedRooms: rooms }),
   setTotalWindows: (value) => set({ totalWindows: Math.max(0, value) }),
@@ -505,6 +523,8 @@ export const useBoqWizardStore = create<BoqWizardState>()(
       skipHydration: true,
       partialize: (state) => ({
         projectDetails: state.projectDetails,
+        currentStep: state.currentStep,
+        maxStepReached: state.maxStepReached,
         geometryMode: state.geometryMode,
         detailedRooms: state.detailedRooms,
         totalWindows: state.totalWindows,
