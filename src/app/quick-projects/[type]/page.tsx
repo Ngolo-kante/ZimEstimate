@@ -74,7 +74,7 @@ export default function QuickProjectPage({ params }: { params: Promise<{ type: s
       // Straight to the saved estimate, not to a list. Saving from the manual
       // builder and saving here used to land on two different pages with
       // different tab sets, which is what made the app feel like two apps.
-      router.push(boq ? `/projects/quick/${boq.id}` : '/projects');
+      router.push(boq ? `/projects?saved=${boq.id}` : '/projects');
     } catch (err) {
       console.error('Failed to save quick BOQ:', err);
       showError('Failed to save estimate. Please try again.');

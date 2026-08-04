@@ -187,7 +187,7 @@ export default function NewProject() {
                         project,
                         items: [],
                     });
-                    router.push(`/projects?created=1`);
+                    router.push(`/projects?saved=${project.id}`);
                 }
             } catch (err) {
                 console.error('Error creating project:', err);

@@ -36,6 +36,8 @@ import {
     Funnel,
     SortAscending,
     X,
+    Check,
+    CaretRight,
     CaretDown,
     TrendUp,
     ChartBar,
@@ -532,6 +534,50 @@ function ProjectsContent() {
         }
     }, [projects, optimisticProject, isLoading]);
 
+    // ── Landing here straight after a save ───────────────────────────────────
+    // Every builder used to finish somewhere different: the manual builder sat
+    // on the BOQ with only a toast, quick projects went to their estimate page,
+    // the budget estimator went to the workspace, and three others came here.
+    // They all pass ?saved=<id> now, which works for a project or a quick
+    // estimate because the id is all this needs.
+    //
+    // Separate from ?created=1, which depends on an optimistic card cached
+    // before navigation and so could never cover the paths that did not write
+    // one.
+    const [justSavedId, setJustSavedId] = useState<string | null>(null);
+    useEffect(() => {
+        const saved = searchParams.get('saved');
+        if (!saved) return;
+        setJustSavedId(saved);
+        setHighlightedProjectId(saved);
+        // Cleared from the URL immediately so a refresh, or a back-navigation
+        // later, does not re-announce a save that happened ten minutes ago.
+        router.replace('/projects');
+    }, [searchParams, router]);
+
+    // Resolved against both tables, because ?saved= carries only an id and it
+    // may belong to either. A quick estimate opens its estimate page; a project
+    // opens its workspace.
+    const justSaved = useMemo(() => {
+        if (!justSavedId) return null;
+        const project = projects.find((p) => p.id === justSavedId);
+        if (project) return { name: project.name, href: `/projects/${project.id}` };
+        const quick = quickItems.find((q) => q.id === justSavedId);
+        if (quick) return { name: quick.name, href: quick.href };
+        // Still loading, or saved then deleted elsewhere — say nothing rather
+        // than announce a save with no subject.
+        return null;
+    }, [justSavedId, projects, quickItems]);
+
+    // Scrolled to once the row it refers to actually exists. Doing this on the
+    // same tick as the highlight would target a card that has not rendered —
+    // the list is still loading when the redirect lands.
+    useEffect(() => {
+        if (!justSavedId || isLoading) return;
+        const card = document.querySelector(`[data-saved-id="${justSavedId}"]`);
+        card?.scrollIntoView({ block: 'center' });
+    }, [justSavedId, isLoading, projects, quickItems]);
+
     // Refresh when coming from create/delete flows
     useEffect(() => {
         if (searchParams.get('refresh') === '1') {
@@ -608,6 +654,30 @@ function ProjectsContent() {
         <MainLayout title="My Projects" fullWidth>
             <ProjectsSubNav active="all" />
             <div className="projects-page">
+                {/* Confirmation that the save landed, and a way straight into the
+                    thing that was saved. Landing on the list answers "did it
+                    save?"; this answers "and where is it?" without making the
+                    user hunt for a card among however many they own. */}
+                {justSaved && (
+                    <div className="saved-banner" role="status">
+                        <span className="saved-icon"><Check size={16} weight="bold" /></span>
+                        <span className="saved-text">
+                            <strong>{justSaved.name}</strong> saved.
+                        </span>
+                        <Link href={justSaved.href} className="saved-open">
+                            Open <CaretRight size={14} weight="bold" />
+                        </Link>
+                        <button
+                            type="button"
+                            className="saved-dismiss"
+                            aria-label="Dismiss"
+                            onClick={() => { setJustSavedId(null); setHighlightedProjectId(null); }}
+                        >
+                            <X size={14} weight="bold" />
+                        </button>
+                    </div>
+                )}
+
                 {/* Hero KPI Section */}
                 <div className="hero-kpi-section reveal" data-delay="1">
                     <div className="kpi-card highlight">
@@ -862,8 +932,8 @@ function ProjectsContent() {
                             </div>
                         )}
                         {filteredQuick.map((item, index) => (
-                            <Link key={item.id} href={item.href} className="project-link">
-                                <Card className="project-card reveal" data-delay={(index % 4) + 1}>
+                            <Link key={item.id} href={item.href} className="project-link" data-saved-id={item.id}>
+                                <Card className={`project-card${highlightedProjectId === item.id ? ' highlight-new' : ''} reveal`} data-delay={(index % 4) + 1}>
                                     <CardHeader>
                                         <div className="project-header">
                                             <CardTitle>{item.name}</CardTitle>
@@ -908,7 +978,7 @@ function ProjectsContent() {
                             </Link>
                         ))}
                         {visibleProjects.map((project, index) => (
-                            <Link key={project.id} href={`/projects/${project.id}`} className="project-link">
+                            <Link key={project.id} href={`/projects/${project.id}`} className="project-link" data-saved-id={project.id}>
                                 <Card className={`project-card${highlightedProjectId === project.id ? ' highlight-new' : ''} reveal`} data-delay={(index % 4) + 1}>
                                     <CardHeader>
                                         <div className="project-header">
@@ -1282,6 +1352,52 @@ function ProjectsContent() {
                 .type-pill-count {
                     font-size: 11px;
                     opacity: 0.75;
+                }
+
+                .saved-banner {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 12px 16px;
+                    margin-bottom: 20px;
+                    border-radius: 10px;
+                    border: 1px solid var(--color-success);
+                    background: var(--color-success-muted, #dcfce7);
+                    color: var(--color-text);
+                    font-size: 0.9rem;
+                }
+                .saved-icon {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 50%;
+                    background: var(--color-success);
+                    color: #fff;
+                    flex-shrink: 0;
+                }
+                .saved-text { flex: 1; min-width: 0; }
+                .saved-open {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    padding: 6px 12px;
+                    border-radius: 8px;
+                    background: var(--color-success);
+                    color: #fff;
+                    font-weight: 600;
+                    font-size: 0.85rem;
+                    text-decoration: none;
+                    flex-shrink: 0;
+                }
+                .saved-dismiss {
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    padding: 4px;
+                    color: var(--color-text-secondary);
+                    flex-shrink: 0;
                 }
 
                 .filter-group {

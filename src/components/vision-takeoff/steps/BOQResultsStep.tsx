@@ -306,7 +306,7 @@ export default function BOQResultsStep({
         });
 
         // Redirect to projects page
-        router.push('/projects?created=1&refresh=1');
+        router.push(`/projects?saved=${project.id}&refresh=1`);
       } catch (err) {
         setSaveError(err instanceof Error ? err.message : 'Failed to save project');
         setIsSaving(false);

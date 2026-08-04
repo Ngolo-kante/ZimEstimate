@@ -317,7 +317,7 @@ export default function QuickBudgetPage() {
       });
 
       showSuccess('Project saved successfully.');
-      router.push(`/projects/${savedProject.id}`);
+      router.push(`/projects?saved=${savedProject.id}`);
     } catch (error) {
       console.error(error);
       showError('Failed to save project.');
@@ -418,15 +418,17 @@ export default function QuickBudgetPage() {
       return;
     }
 
-    const { error } = await createQuickBOQ({ projectType, answers, boqItems, labor, currency: 'USD' });
+    const { boq, error } = await createQuickBOQ({ projectType, answers, boqItems, labor, currency: 'USD' });
 
     if (error) {
       showError(error.message || 'Failed to save estimate.');
       return;
     }
 
-    showSuccess('Project saved successfully.');
-    router.push('/projects/quick');
+    // The sixth and last save path. It went to /projects/quick, a list that no
+    // longer exists as its own page — every builder now finishes in the same
+    // place, on the row it just created.
+    router.push(boq ? `/projects?saved=${boq.id}` : '/projects');
   };
 
   // Solar and borehole have their own budget explorers, previously reachable

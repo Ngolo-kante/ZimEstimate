@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FloppyDisk, X, CircleNotch, CaretLeft, CaretRight, Check, ShareNetwork, FileArrowDown } from '@phosphor-icons/react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -157,6 +157,7 @@ const WIZARD_STEPS = [
 
 function BoqNewPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { isAuthenticated, profile } = useAuth();
   const projectIdFromUrl = searchParams.get('id');
   const templateIdFromUrl = searchParams.get('template');
@@ -167,7 +168,7 @@ function BoqNewPageContent() {
   // Opening from a template lands on the finished BOQ, so start there rather than
   // rendering step one and jumping, which also keeps setState out of the effect.
   const [shakeError, setShakeError] = useState(false);
-  const { error: showError, success: showSuccess } = useToast();
+  const { error: showError } = useToast();
 
   const {
     currentStep,
@@ -652,15 +653,23 @@ function BoqNewPageContent() {
    */
   const runSave = async (): Promise<boolean> => {
     try {
-      if (!project?.id) {
+      // createNewProject returns the new id; `project` state has not caught up
+      // by the time this line runs, so the returned value is what the redirect
+      // has to use.
+      let savedId = project?.id ?? null;
+      if (!savedId) {
         const created = await createNewProject(projectDetailsForSave);
         if (!created) {
           showError(saveError || 'Could not save the estimate. Please try again.');
           return false;
         }
+        savedId = created;
       }
       await saveNow();
-      showSuccess('Estimate saved. Find it under My Projects.');
+      // To My Projects rather than staying on the BOQ. "Find it under My
+      // Projects" asked the user to go and look; six builders each finished
+      // somewhere different, and this was the only one that finished nowhere.
+      router.push(savedId ? `/projects?saved=${savedId}` : '/projects');
       return true;
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Could not save the estimate.');
