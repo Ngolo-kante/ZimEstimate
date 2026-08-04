@@ -72,20 +72,24 @@ export async function listSavedWork(): Promise<{ items: SavedWorkItem[]; partial
 
   const quickItems: SavedWorkItem[] = (quickResult.boqs ?? []).map((q) => {
     const type = q.projectType as ProjectType;
+    // Whatever the user called it wins. A card reading "Solar estimate" next to
+    // a detail page reading "Rooftop solar — Borrowdale" looks like two
+    // different records.
+    const named = typeof q.answers?.project_name === 'string' ? q.answers.project_name.trim() : '';
     return {
       id: q.id,
       kind: 'quick',
-      name: QUICK_TYPE_LABELS[type] ? `${QUICK_TYPE_LABELS[type]} estimate` : 'Quick estimate',
+      name: named || (QUICK_TYPE_LABELS[type] ? `${QUICK_TYPE_LABELS[type]} estimate` : 'Quick estimate'),
       typeLabel: QUICK_TYPE_LABELS[type] ?? 'Quick',
       filterKey: type,
       totalUsd: quickTotal(q.boqItems),
       updatedAt: q.updatedAt || q.createdAt,
       location: null,
       status: null,
-      // Quick estimates open their BOQ rather than the project workspace. The
-      // type chip on the row is what makes that difference visible — rows that
-      // look identical but behave differently are worse than two honest tabs.
-      href: `/projects/quick?id=${q.id}`,
+      // Opens the saved BOQ. This used to point at the quick list page with an
+      // id it never read, whose own cards then pushed to the blank wizard — so
+      // clicking a saved estimate threw the user back to the form.
+      href: `/projects/quick/${q.id}`,
     };
   });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Download,
   FloppyDisk,
@@ -15,7 +15,7 @@ import type { BOQItem, LaborConfig, ProjectType } from '@/lib/quick-projects/eng
 import LaborSection from './LaborSection';
 import ContractorMarkup from './ContractorMarkup';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { persistQuickBOQSession } from '@/lib/services/quickBoq';
+import { persistQuickBOQSession, PENDING_QUICK_SAVE_KEY } from '@/lib/services/quickBoq';
 import FindContractorCTA from '@/components/contractors/FindContractorCTA';
 import ContactSupportLink from '@/components/support/ContactSupportLink';
 
@@ -28,6 +28,14 @@ interface QuickBOQTableProps {
   onLaborChange: (l: LaborConfig) => void;
   isContractor?: boolean;
   onSave?: (items: BOQItem[]) => void;
+  /**
+   * The answers this BOQ was calculated from. Carried through the sign-in
+   * bounce so the estimate can be recalculated or edited afterwards — without
+   * them a restored session had a BOQ it could no longer explain.
+   */
+  answers?: Record<string, unknown>;
+  /** Where to return after signing in. Defaults to this project's wizard. */
+  returnTo?: string;
 }
 
 // ─── Currency formatter ───────────────────────────────────────────────────────
@@ -47,6 +55,8 @@ export default function QuickBOQTable({
   onLaborChange,
   isContractor = false,
   onSave,
+  answers = {},
+  returnTo,
 }: QuickBOQTableProps) {
   const { isAuthenticated } = useAuth();
   const [items, setItems] = useState<BOQItem[]>(initialItems);
@@ -132,18 +142,35 @@ export default function QuickBOQTable({
     if (!isAuthenticated) {
       persistQuickBOQSession({
         projectType,
-        answers: {},
+        answers,
         boqItems: items,
         labor,
         markupPct,
         currency,
       });
-      window.location.href = `/auth/login?redirect=/quick-projects/${projectType}`;
+      const destination = returnTo ?? `/quick-projects/${projectType}`;
+      // Resume the save automatically on the way back. Without this the user
+      // signed in, landed on their restored BOQ, and had to find and press Save
+      // a second time — having already pressed it once.
+      if (action === 'save') sessionStorage.setItem(PENDING_QUICK_SAVE_KEY, projectType);
+      window.location.href = `/auth/login?redirect=${encodeURIComponent(destination)}`;
       return;
     }
     if (action === 'save' && onSave) onSave(items);
     if (action === 'pdf') window.print();
   }
+
+  // ── Resume a save that bounced through sign-in ─────────────────────────
+  // Guarded by a ref because onSave is a fresh closure on most renders, and
+  // depending on it would fire the save repeatedly.
+  const resumedRef = useRef(false);
+  useEffect(() => {
+    if (resumedRef.current || !isAuthenticated || !onSave) return;
+    if (sessionStorage.getItem(PENDING_QUICK_SAVE_KEY) !== projectType) return;
+    resumedRef.current = true;
+    sessionStorage.removeItem(PENDING_QUICK_SAVE_KEY);
+    onSave(items);
+  }, [isAuthenticated, onSave, projectType, items]);
 
   // ── Client view (contractor feature) ───────────────────────────────────
   if (isContractor && clientView) {

@@ -13,7 +13,8 @@ import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { getProjects, deleteProject, archiveProject } from '@/lib/services/projects';
-import { listSavedWork, type SavedWorkItem } from '@/lib/services/savedWork';
+import { listSavedWork, type SavedWorkItem, type SavedWorkKind } from '@/lib/services/savedWork';
+import { deleteQuickBOQ } from '@/lib/services/quickBoq';
 import { clearOptimisticProjectCard, getOptimisticProjectCard } from '@/lib/projectCreationCache';
 import { supabase } from '@/lib/supabase';
 import { Project, ProjectStatus, ProjectScope } from '@/lib/database.types';
@@ -203,7 +204,9 @@ function ProjectsContent() {
     const [isLoading, setIsLoading] = useState(() => !readOptimisticProject());
     const [error, setError] = useState<string | null>(null);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-    const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+    // Carries the kind because the two live in different tables and delete
+    // through different services, while sharing one confirmation dialog.
+    const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; kind: SavedWorkKind } | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const [highlightedProjectId, setHighlightedProjectId] = useState<string | null>(null);
@@ -391,20 +394,49 @@ function ProjectsContent() {
         setOpenMenuId(null);
         const project = projects.find(p => p.id === projectId);
         if (project) {
-            setDeleteTarget({ id: projectId, name: project.name });
+            setDeleteTarget({ id: projectId, name: project.name, kind: 'project' });
         }
+    };
+
+    // ── Quick estimate card actions ──────────────────────────────────────────
+    // Same menu affordance as a full build; different table underneath. Archive
+    // is absent on purpose — there are no stages to pause, and the user was
+    // explicit that quick estimates get no lifecycle controls.
+    const handleQuickShare = (e: React.MouseEvent, item: SavedWorkItem) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpenMenuId(null);
+        const url = `${window.location.origin}${item.href}`;
+        void navigator.clipboard.writeText(url).then(
+            () => success('Link copied to clipboard'),
+            () => showError('Could not copy the link'),
+        );
+    };
+
+    const handleQuickDelete = (e: React.MouseEvent, item: SavedWorkItem) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpenMenuId(null);
+        setDeleteTarget({ id: item.id, name: item.name, kind: 'quick' });
     };
 
     const confirmDelete = async () => {
         if (!deleteTarget) return;
 
         setIsDeleting(true);
-        const { error } = await deleteProject(deleteTarget.id);
+        const isQuick = deleteTarget.kind === 'quick';
+        const { error } = isQuick
+            ? await deleteQuickBOQ(deleteTarget.id)
+            : await deleteProject(deleteTarget.id);
 
         if (error) {
-            showError('Failed to delete project. Please try again.');
+            showError(`Failed to delete ${isQuick ? 'estimate' : 'project'}. Please try again.`);
         } else {
-            setProjects(projects.filter(p => p.id !== deleteTarget.id));
+            if (isQuick) {
+                setQuickItems(quickItems.filter(i => i.id !== deleteTarget.id));
+            } else {
+                setProjects(projects.filter(p => p.id !== deleteTarget.id));
+            }
             success(`"${deleteTarget.name}" has been deleted`);
         }
 
@@ -809,14 +841,38 @@ function ProjectsContent() {
                                     <CardHeader>
                                         <div className="project-header">
                                             <CardTitle>{item.name}</CardTitle>
-                                            {/* The chip is what makes it obvious these rows open a BOQ
-                                                rather than the project workspace. Cards that look
-                                                identical but behave differently would be worse than
-                                                the two tabs this replaced. */}
+                                            {/* The type chip is the only difference that survives.
+                                                Everything structural — meta row, budget block, menu —
+                                                matches a full build, because a quick estimate is a
+                                                real project and a card that looks like a lesser
+                                                object teaches the wrong thing. */}
                                             <CardBadge variant="info">{item.typeLabel}</CardBadge>
                                         </div>
+                                        <div className="menu-container" ref={openMenuId === item.id ? menuRef : null}>
+                                            <button className="menu-btn" onClick={(e) => handleMenuToggle(e, item.id)}>
+                                                <DotsThreeVertical size={20} weight="bold" />
+                                            </button>
+                                            {openMenuId === item.id && (
+                                                <div className="dropdown-menu">
+                                                    <button onClick={(e) => handleQuickShare(e, item)}>
+                                                        <ShareNetwork size={16} /> Copy link
+                                                    </button>
+                                                    <button className="danger" onClick={(e) => handleQuickDelete(e, item)}>
+                                                        <Trash size={16} /> Delete
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </CardHeader>
-                                    <div className="quick-card-body">
+
+                                    <div className="project-meta">
+                                        <span className="meta-item">
+                                            <Calendar size={14} weight="light" />
+                                            {new Date(item.updatedAt).toLocaleDateString()}
+                                        </span>
+                                    </div>
+
+                                    <div className="project-budget">
                                         <span className="budget-label">Estimated</span>
                                         <span className="budget-value">
                                             <PriceDisplay priceUsd={item.totalUsd} priceZwg={item.totalUsd * 30} />
@@ -905,33 +961,52 @@ function ProjectsContent() {
             </div>
 
             {/* Mobile Bottom Sheet Menu */}
-            {isMobile && mobileMenuProjectId && (
+            {/* The same button opens this sheet for both kinds, so it has to know
+                which it is holding — Edit and Archive would otherwise call project
+                services with a quick_boqs id and fail silently. */}
+            {isMobile && mobileMenuProjectId && (() => {
+                const quickTarget = quickItems.find(i => i.id === mobileMenuProjectId);
+                return (
                 <>
                     <div className="mobile-menu-backdrop" onClick={() => setMobileMenuProjectId(null)} />
                     <div className="mobile-bottom-sheet">
                         <div className="bottom-sheet-handle" />
-                        <button className="bottom-sheet-item" onClick={(e) => { handleEdit(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
-                            <PencilSimple size={20} /> Edit
-                        </button>
-                        <button className="bottom-sheet-item" onClick={(e) => { handleShare(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
-                            <ShareNetwork size={20} /> Share
-                        </button>
-                        <button className="bottom-sheet-item" onClick={(e) => { handleArchive(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
-                            <Archive size={20} /> Archive
-                        </button>
-                        <button className="bottom-sheet-item danger" onClick={(e) => { handleDelete(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
-                            <Trash size={20} /> Delete
-                        </button>
+                        {quickTarget ? (
+                            <>
+                                <button className="bottom-sheet-item" onClick={(e) => { handleQuickShare(e, quickTarget); setMobileMenuProjectId(null); }}>
+                                    <ShareNetwork size={20} /> Copy link
+                                </button>
+                                <button className="bottom-sheet-item danger" onClick={(e) => { handleQuickDelete(e, quickTarget); setMobileMenuProjectId(null); }}>
+                                    <Trash size={20} /> Delete
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button className="bottom-sheet-item" onClick={(e) => { handleEdit(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
+                                    <PencilSimple size={20} /> Edit
+                                </button>
+                                <button className="bottom-sheet-item" onClick={(e) => { handleShare(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
+                                    <ShareNetwork size={20} /> Share
+                                </button>
+                                <button className="bottom-sheet-item" onClick={(e) => { handleArchive(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
+                                    <Archive size={20} /> Archive
+                                </button>
+                                <button className="bottom-sheet-item danger" onClick={(e) => { handleDelete(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
+                                    <Trash size={20} /> Delete
+                                </button>
+                            </>
+                        )}
                     </div>
                 </>
-            )}
+                );
+            })()}
 
             {/* Delete Confirmation Dialog */}
             <ConfirmDialog
                 isOpen={!!deleteTarget}
                 onClose={() => setDeleteTarget(null)}
                 onConfirm={confirmDelete}
-                title="Delete Project"
+                title={deleteTarget?.kind === 'quick' ? 'Delete Estimate' : 'Delete Project'}
                 message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone and all associated data will be permanently removed.`}
                 confirmText="Delete"
                 cancelText="Cancel"
@@ -1175,13 +1250,6 @@ function ProjectsContent() {
                 .type-pill-count {
                     font-size: 11px;
                     opacity: 0.75;
-                }
-
-                .quick-card-body {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 2px;
-                    padding: 0 20px 20px;
                 }
 
                 .filter-group {

@@ -148,7 +148,27 @@ interface SolarQuickWizardProps {
 }
 
 export default function SolarQuickWizard({ onChange, isContractor = false, onSave }: SolarQuickWizardProps) {
-  const [answers, setAnswers] = useState<SolarWizardAnswers>(defaultAnswers);
+  // Restored from a save attempt that bounced through sign-in, or from "Edit
+  // inputs" on a saved estimate. Read in a lazy initialiser so restored state
+  // is on screen immediately rather than flashing the first question.
+  const restored = useState(() =>
+    typeof window === 'undefined' ? null : restoreQuickBOQSession()
+  )[0];
+  const restoredSolar = restored?.projectType === 'solar' ? restored : null;
+
+  // Cleared here rather than in the read, so StrictMode's second invocation of
+  // the initialiser above still sees the value.
+  useEffect(() => {
+    if (restoredSolar) clearQuickBOQSession();
+  }, [restoredSolar]);
+
+  // Merged over the defaults rather than replacing them, so a session saved
+  // before a new question was added still yields a complete answer set.
+  const [answers, setAnswers] = useState<SolarWizardAnswers>(
+    restoredSolar?.answers
+      ? { ...defaultAnswers, ...(restoredSolar.answers as Partial<SolarWizardAnswers>) }
+      : defaultAnswers
+  );
   const [currentStep, setCurrentStep] = useState<StepId>('intent');
 
   // Brand preferences
@@ -161,21 +181,11 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
   const [includeInstall, setIncludeInstall] = useState(true);
   const [includeContingency, setIncludeContingency] = useState(false);
 
-  // BOQ output. Restored from a save attempt that bounced through sign-in —
-  // read in a lazy initialiser so the finished BOQ is on screen immediately
-  // rather than flashing the first question and jumping.
-  const restored = useState(() =>
-    typeof window === 'undefined' ? null : restoreQuickBOQSession()
-  )[0];
-  const restoredSolar = restored?.projectType === 'solar' ? restored : null;
-
-  // Cleared here rather than in the read, so StrictMode's second invocation of
-  // the initialiser above still sees the value.
-  useEffect(() => {
-    if (restoredSolar) clearQuickBOQSession();
-  }, [restoredSolar]);
-
-  const [boqItems, setBoqItems] = useState<BOQItem[] | null>(restoredSolar?.boqItems ?? null);
+  // An empty list means "reopen the questions with these answers filled in",
+  // which is what Edit inputs wants; only a populated list jumps to the BOQ.
+  const [boqItems, setBoqItems] = useState<BOQItem[] | null>(
+    restoredSolar?.boqItems?.length ? restoredSolar.boqItems : null
+  );
   const [labor, setLabor] = useState<LaborConfig>(
     restoredSolar?.labor ?? { enabled: false, method: 'percentage', percentage: 25 }
   );
@@ -287,6 +297,7 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
           labor={labor}
           onLaborChange={setLabor}
           isContractor={isContractor}
+          answers={answers as unknown as Record<string, unknown>}
           onSave={onSave ? (items) => onSave({ answers, result, boqItems: items }) : undefined}
         />
       </div>

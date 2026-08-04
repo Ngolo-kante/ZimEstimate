@@ -230,6 +230,13 @@ export function restoreQuickBOQSession(): {
   }
 }
 
+/**
+ * Set when a signed-out user presses Save, so the save can complete itself once
+ * they are back. Session-scoped rather than local: a pending save is only
+ * meaningful for the trip through sign-in, and should not outlive the tab.
+ */
+export const PENDING_QUICK_SAVE_KEY = 'zimestimate_quick_pending_save';
+
 /** Drop a restored session once its contents are held in component state. */
 export function clearQuickBOQSession(): void {
   try {

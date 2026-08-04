@@ -299,13 +299,10 @@ function StepView({
 // ─── Main Wizard ──────────────────────────────────────────────────────────────
 
 export default function QuickProjectWizard({ flow, onSave, isContractor = false }: QuickProjectWizardProps) {
-  const [answers, setAnswers] = useState<Answers>({});
-  const [notSureIds, setNotSureIds] = useState<Set<string>>(new Set());
-  const [stepIndex, setStepIndex] = useState(0);
-  // Restored from a save attempt that bounced through sign-in. Read once, in a
-  // lazy initialiser, so the BOQ is on screen from the first render rather than
-  // flashing question one and jumping. restoreQuickBOQSession clears the entry
-  // as it reads, so a later visit starts fresh.
+  // Restored either from a save attempt that bounced through sign-in, or from
+  // "Edit inputs" on a saved estimate. Read once, in a lazy initialiser, so the
+  // restored state is on screen from the first render rather than flashing
+  // question one and jumping.
   const restored = useState(() =>
     typeof window === 'undefined' ? null : restoreQuickBOQSession()
   )[0];
@@ -317,7 +314,21 @@ export default function QuickProjectWizard({ flow, onSave, isContractor = false 
     if (restoredForThisFlow) clearQuickBOQSession();
   }, [restoredForThisFlow]);
 
-  const [boqItems, setBoqItems] = useState<BOQItem[] | null>(restoredForThisFlow?.boqItems ?? null);
+  // The answers were persisted all along and then thrown away on the way back
+  // in, so a restored session rebuilt its BOQ from an empty answer set. That
+  // also left "Edit inputs" with nothing to edit.
+  const [answers, setAnswers] = useState<Answers>(
+    (restoredForThisFlow?.answers as Answers) ?? {}
+  );
+  const [notSureIds, setNotSureIds] = useState<Set<string>>(new Set());
+  const [stepIndex, setStepIndex] = useState(0);
+
+  // An empty item list means "reopen the questions with these answers filled
+  // in", which is what Edit inputs wants. Only a populated list should jump
+  // straight to the finished BOQ.
+  const [boqItems, setBoqItems] = useState<BOQItem[] | null>(
+    restoredForThisFlow?.boqItems?.length ? restoredForThisFlow.boqItems : null
+  );
   const [showValidation, setShowValidation] = useState(false);
   const [labor, setLabor] = useState<LaborConfig>(
     restoredForThisFlow?.labor ?? {
@@ -412,6 +423,7 @@ export default function QuickProjectWizard({ flow, onSave, isContractor = false 
           labor={labor}
           onLaborChange={setLabor}
           isContractor={isContractor}
+          answers={applyDefaultAnswers(activeSteps, answers, notSureIds)}
           onSave={onSave ? (items) => onSave(items, applyDefaultAnswers(activeSteps, answers, notSureIds), labor) : undefined}
         />
       </div>

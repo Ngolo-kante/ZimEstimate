@@ -275,7 +275,12 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
           labor={labor}
           onLaborChange={setLabor}
           isContractor={isContractor}
-          onSave={onSave ? (items) => onSave(items, { estimate_mode: 'budget', budget_amount: String(budget), budget_depth: String(depth), borehole_purpose: purpose, project_location: location, area_type: areaType }, labor) : undefined}
+          // buildAnswers carries configured:true and every component choice.
+          // This call site used to inline its own five-field answer object, so
+          // saving from the BOQ table persisted an estimate that recalculated
+          // to a different casing grade and pump than the one on screen.
+          answers={buildAnswers() as unknown as Record<string, unknown>}
+          onSave={onSave ? (items) => onSave(items, buildAnswers(), labor) : undefined}
         />
       </div>
     );

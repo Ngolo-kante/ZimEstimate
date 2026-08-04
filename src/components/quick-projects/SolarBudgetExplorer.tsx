@@ -658,6 +658,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
           labor={labor}
           onLaborChange={setLabor}
           isContractor={isContractor}
+          answers={buildAnswers() as unknown as Record<string, unknown>}
           onSave={
             onSave
               ? (items) =>

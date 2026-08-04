@@ -57,7 +57,7 @@ export default function QuickProjectPage({ params }: { params: Promise<{ type: s
       // createQuickBOQ reports failure by returning an error, not by throwing —
       // ignoring it meant a signed-out user was told the estimate saved and then
       // sent to an empty list.
-      const { error } = await createQuickBOQ({
+      const { boq, error } = await createQuickBOQ({
         projectType: type as ProjectType,
         answers,
         boqItems: items,
@@ -71,7 +71,10 @@ export default function QuickProjectPage({ params }: { params: Promise<{ type: s
       }
 
       success(`${PROJECT_TITLES[type]} estimate saved successfully!`);
-      router.push('/projects/quick');
+      // Straight to the saved estimate, not to a list. Saving from the manual
+      // builder and saving here used to land on two different pages with
+      // different tab sets, which is what made the app feel like two apps.
+      router.push(boq ? `/projects/quick/${boq.id}` : '/projects');
     } catch (err) {
       console.error('Failed to save quick BOQ:', err);
       showError('Failed to save estimate. Please try again.');
