@@ -2,6 +2,7 @@
 // Wrapper for Google's Generative AI for floor plan analysis
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { VISION_MODEL } from './model';
 import { VisionAnalysisResult, DetectedRoom, DetectedWall } from './types';
 
 // Lazy initialization of Gemini client
@@ -138,7 +139,7 @@ export async function analyzeFloorPlan(
 ): Promise<VisionAnalysisResult> {
   try {
     const ai = getGenAI();
-    const model = ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = ai.getGenerativeModel({ model: VISION_MODEL });
 
     const result = await model.generateContent([
       FLOOR_PLAN_PROMPT,

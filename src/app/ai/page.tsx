@@ -23,13 +23,16 @@ const aiFeatures = [
         features: ['Automatic room detection', 'Dimension extraction', 'Material calculation', 'BOQ generation'],
     },
     {
-        id: 'quote-scanner',
-        title: 'Quote Scanner',
-        description: 'Take a photo of any supplier quote — handwritten or printed — and extract materials, quantities, and prices automatically using OCR.',
+        id: 'boq-scanner',
+        title: 'BOQ Scanner',
+        // Named for the document, not the technique. "OCR text extraction" told
+        // the user how it works rather than what they get, and the previous
+        // wording promised price harmonisation the feature never did.
+        description: 'Photograph a bill of quantities — handwritten on site or printed — and turn it into a project you can manage. Figures are read from the page, never estimated.',
         icon: Camera,
-        href: '/ai/quote-scanner',
+        href: '/ai/boq-scanner',
         badge: 'New',
-        features: ['OCR text extraction', 'Material matching', 'Price harmonization', 'Import to estimate'],
+        features: ['Reads handwriting', 'Line-by-line confidence', 'Edit before saving', 'Becomes a project'],
     },
     {
         id: 'inflation-engine',
