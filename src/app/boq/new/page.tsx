@@ -167,7 +167,7 @@ function BoqNewPageContent() {
   // Opening from a template lands on the finished BOQ, so start there rather than
   // rendering step one and jumping, which also keeps setState out of the effect.
   const [shakeError, setShakeError] = useState(false);
-  const { error: showError } = useToast();
+  const { error: showError, success: showSuccess } = useToast();
 
   const {
     currentStep,
@@ -324,6 +324,7 @@ function BoqNewPageContent() {
     saveNow,
     createNewProject,
     markChanged,
+    error: saveError,
   } = useProjectAutoSave(
     projectDetailsForSave,
     projectScope,
@@ -599,9 +600,37 @@ function BoqNewPageContent() {
     setShowInteractiveBuilder(false);
   };
 
+  const PENDING_SAVE_KEY = 'zimestimate_boq_pending_save';
+
   const persistInSessionAndRedirect = (url: string) => {
-    sessionStorage.setItem('zimestimate_boq_pending_save', 'true');
+    sessionStorage.setItem(PENDING_SAVE_KEY, 'true');
     window.location.href = url;
+  };
+
+  /**
+   * Returns whether the estimate actually reached the database.
+   *
+   * createNewProject swallows its failure and returns null, and the caller used
+   * to ignore that — so a save that never happened looked exactly like one that
+   * did: the button span, stopped, and nothing was said. The estimate was not
+   * on the dashboard afterwards because it had never been written.
+   */
+  const runSave = async (): Promise<boolean> => {
+    try {
+      if (!project?.id) {
+        const created = await createNewProject(projectDetailsForSave);
+        if (!created) {
+          showError(saveError || 'Could not save the estimate. Please try again.');
+          return false;
+        }
+      }
+      await saveNow();
+      showSuccess('Estimate saved. Find it under My Projects.');
+      return true;
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Could not save the estimate.');
+      return false;
+    }
   };
 
   const handleSave = async () => {
@@ -609,17 +638,32 @@ function BoqNewPageContent() {
       setShowSavePrompt(true);
       return;
     }
-
-    if (!project?.id) {
-      const created = await createNewProject(projectDetailsForSave);
-      if (created) {
-        await saveNow();
-      }
-      return;
-    }
-
-    await saveNow();
+    await runSave();
   };
+
+  /**
+   * Finishes a save that was interrupted by signing in.
+   *
+   * persistInSessionAndRedirect set this flag and nothing ever read it, so the
+   * sequence "press Save, sign in, come back" ended with the wizard restored,
+   * the user believing it was saved, and nothing written. Reported as an
+   * estimate that never appeared on the dashboard.
+   *
+   * The flag is cleared before saving, not after, so a failure cannot leave it
+   * set to retry forever on every subsequent visit.
+   */
+  const resumeRef = useRef(false);
+  useEffect(() => {
+    if (resumeRef.current || !isAuthenticated || isLoading) return;
+    if (sessionStorage.getItem(PENDING_SAVE_KEY) !== 'true') return;
+
+    resumeRef.current = true;
+    sessionStorage.removeItem(PENDING_SAVE_KEY);
+    void runSave();
+    // runSave is recreated each render; the ref guard is what keeps this to one
+    // attempt, so it is deliberately not a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isLoading]);
 
   const handleNextStep = () => {
     const currentState: BOQWizardValidationState = {
