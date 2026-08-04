@@ -5,6 +5,7 @@ import {
     createProject,
     getProjectWithItems,
     saveProjectWithItems,
+    humaniseSaveError,
 } from '@/lib/services/projects';
 import { createDefaultStages, setProjectStagesApplicability } from '@/lib/services/stages';
 import { Project, BOQItem, ProjectScope, LaborPreference, ProjectSoilType, SiteSlopeType } from '@/lib/database.types';
@@ -219,7 +220,9 @@ export function useProjectAutoSave(
             }
         } catch (err) {
             const error = err instanceof Error ? err : new Error('Failed to save');
-            setError(error.message);
+            // Raw text to the console for us, plain English to the user.
+            console.error('Project save failed:', error.message);
+            setError(humaniseSaveError(error.message));
             onSaveError?.(error);
         } finally {
             if (isAutoSave) {
@@ -289,7 +292,8 @@ export function useProjectAutoSave(
             return null;
         } catch (err) {
             const error = err instanceof Error ? err : new Error('Failed to create project');
-            setError(error.message);
+            console.error('Project create failed:', error.message);
+            setError(humaniseSaveError(error.message));
             return null;
         } finally {
             setIsSaving(false);

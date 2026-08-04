@@ -46,7 +46,23 @@ export type VerificationStatus = 'unverified' | 'pending' | 'verified' | 'truste
 
 export type SupplierApplicationStatus = 'pending' | 'under_review' | 'approved' | 'rejected';
 
-export type ProjectSoilType = 'loam' | 'sandy' | 'clay_black_mountain' | 'rock' | 'not_sure';
+/**
+ * Kept as a runtime array, not just a type, so it can be checked against the
+ * database constraint in a test.
+ *
+ * These drifted apart once already: the UI offered 'not_sure', this type
+ * declared it, and projects_soil_type_check had never heard of it — so picking
+ * "Not Sure" made a finished BOQ impossible to save, and the only warning was a
+ * raw Postgres constraint name in a toast.
+ */
+export const PROJECT_SOIL_TYPES = ['loam', 'sandy', 'clay_black_mountain', 'rock', 'not_sure'] as const;
+export type ProjectSoilType = (typeof PROJECT_SOIL_TYPES)[number];
+
+export const PROJECT_SITE_SLOPES = ['flat', 'gentle', 'moderate', 'steep'] as const;
+export type ProjectSiteSlope = (typeof PROJECT_SITE_SLOPES)[number];
+
+export const PROJECT_GEOTECH_MODES = ['manual', 'pro_available', 'pro_applied'] as const;
+export type ProjectGeotechMode = (typeof PROJECT_GEOTECH_MODES)[number];
 export type SiteSlopeType = 'flat' | 'gentle' | 'moderate' | 'steep';
 
 export type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock' | 'discontinued';

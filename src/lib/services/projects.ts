@@ -201,6 +201,36 @@ export async function unarchiveProject(projectId: string): Promise<{ project: Pr
 // ============================================
 
 /** Fetch BOQ items for a project. */
+/**
+ * Turns a Postgres error into something a builder can act on.
+ *
+ * A save that failed on a CHECK constraint surfaced as
+ *   new row for relation "projects" violates check constraint
+ *   "projects_soil_type_check"
+ * in a toast, at the end of a long form, with the finished BOQ lost. That tells
+ * the user nothing they can use and does not even say which answer was at
+ * fault. The raw message still goes to the console for us.
+ */
+export function humaniseSaveError(raw: string): string {
+    const constraint = raw.match(/check constraint "([a-z_]+)"/i)?.[1];
+
+    const byConstraint: Record<string, string> = {
+        projects_soil_type_check: 'That soil type is not one we can store. Go back to Site Conditions and pick another option.',
+        projects_site_slope_check: 'That site slope is not one we can store. Go back to Site Conditions and pick another option.',
+        projects_geotech_analysis_mode_check: 'Something is wrong with the geotechnical settings on this estimate. Please contact support.',
+    };
+
+    if (constraint && byConstraint[constraint]) return byConstraint[constraint];
+    if (constraint) return 'One of your answers is not in a format we can save. Please check the earlier steps and try again.';
+
+    if (/duplicate key/i.test(raw)) return 'A project with those details already exists.';
+    if (/violates foreign key/i.test(raw)) return 'Something this estimate refers to no longer exists. Please reload and try again.';
+    if (/JWT|not authenticated/i.test(raw)) return 'Your session expired. Please sign in again — your work is still here.';
+    if (/fetch|network/i.test(raw)) return 'We could not reach the server. Check your connection and try again.';
+
+    return 'Could not save the estimate. Please try again.';
+}
+
 export async function getBOQItems(projectId: string): Promise<{ items: BOQItem[]; error: Error | null }> {
     const { data: items, error } = await db
         .from('boq_items')
