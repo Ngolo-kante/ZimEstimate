@@ -192,7 +192,10 @@ function DashboardContent() {
     );
   }
 
-  if (!analytics || analytics.totalProjects === 0) {
+  // Quick estimates count as saved work. Testing only totalProjects told
+  // someone who had saved several solar or borehole estimates that they had
+  // nothing and should start their first project.
+  if (!analytics || (analytics.totalProjects === 0 && analytics.quickEstimates === 0)) {
     return (
       <MainLayout title="My Projects">
         <ProjectsSubNav active="dashboard" />
@@ -265,6 +268,20 @@ function DashboardContent() {
       icon: <ChartLineUp size={18} weight="duotone" />,
       tone: 'default' as const,
     },
+    // Quick estimates were saved and then invisible here, because this page
+    // only ever counted the projects table. Shown as their own figure rather
+    // than folded into the budget, which has purchases behind it.
+    ...(analytics.quickEstimates > 0
+      ? [
+          {
+            label: 'Quick Estimates',
+            value: String(analytics.quickEstimates),
+            sub: `${formatValue(analytics.quickEstimatesValueUsd)} estimated`,
+            icon: <Lightning size={18} weight="duotone" />,
+            tone: 'default' as const,
+          },
+        ]
+      : []),
   ];
 
   return (

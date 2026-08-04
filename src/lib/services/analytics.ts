@@ -292,6 +292,18 @@ export interface PortfolioAnalyticsData {
   spendTimeline: SpendTimelinePoint[];
   topSuppliers: SupplierSpendRow[];
   projectSummaries: ProjectComparisonRow[];
+  /**
+   * Solar, borehole and the other quick estimates. They live in quick_boqs
+   * rather than projects, and this page counted only projects — so someone who
+   * had saved several quick estimates was shown an empty dashboard telling them
+   * to create their first project.
+   *
+   * Kept separate from totalBudgetUsd on purpose: quick estimates have no
+   * purchases or stages behind them, so folding their value into the budget
+   * would make the budget-versus-spend variance compare unlike things.
+   */
+  quickEstimates: number;
+  quickEstimatesValueUsd: number;
 }
 
 /** Fetch portfolio-wide analytics for a builder. */
@@ -314,6 +326,26 @@ export async function getPortfolioAnalytics(): Promise<{ data: PortfolioAnalytic
 
   const projectRows = (projects || []) as Project[];
   const projectIds = projectRows.map((p) => p.id);
+
+  // Quick estimates are saved work too, and the dashboard has to know they exist.
+  const { data: quickRows } = await supabase
+    .from('quick_boqs')
+    .select('id, boq_items')
+    .eq('user_id', authData.user.id);
+
+  const quickEstimates = quickRows?.length ?? 0;
+  const quickEstimatesValueUsd = (quickRows ?? []).reduce((sum, row) => {
+    const items = (row as { boq_items?: unknown }).boq_items;
+    if (!Array.isArray(items)) return sum;
+    return (
+      sum +
+      items.reduce((lineSum: number, raw) => {
+        const item = raw as { included?: boolean; owned?: boolean; totalCostUsd?: number };
+        if (item.included === false || item.owned) return lineSum;
+        return lineSum + (Number(item.totalCostUsd) || 0);
+      }, 0)
+    );
+  }, 0);
 
   // Fetch all purchases across projects
   const { data: purchases } = projectIds.length
@@ -406,6 +438,8 @@ export async function getPortfolioAnalytics(): Promise<{ data: PortfolioAnalytic
       spendTimeline,
       topSuppliers,
       projectSummaries,
+      quickEstimates,
+      quickEstimatesValueUsd,
     },
     error: null,
   };
