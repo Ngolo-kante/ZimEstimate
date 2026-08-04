@@ -1,5 +1,17 @@
 import { makeItem, type Answers, type BOQItem } from '../engine/types';
 import { BOREHOLE_PRICES as P, LOCATION_DEFAULTS } from './catalog';
+import {
+  getCasingLabel,
+  getCasingPrice,
+  getMobilisationCost,
+  getPumpPrice,
+  getSurveyCost,
+  getTankCost,
+  type CasingDiameter,
+  type CasingGrade,
+  type PumpType,
+  type TankSize,
+} from './pricing';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -48,10 +60,102 @@ function getMobilizationCost(areaType: string, distanceKm?: number): number {
 // ─── Main Calculator ─────────────────────────────────────────────────────────
 
 export function calculateBoreholeBOQ(answers: Answers): BOQItem[] {
+  // The budget explorer sends the configuration the user actually chose, so the
+  // BOQ itemises that rather than re-deciding it. Without this the explorer
+  // could display "Class 6 — standard" and the BOQ emit "Class 10 — premium",
+  // and every toggle the user switched off was ignored.
+  if (answers.estimate_mode === 'budget' && answers.configured === true) {
+    return calculateConfiguredBoreholeBOQ(answers);
+  }
   if (answers.estimate_mode === 'budget') return calculateBudgetBOQ(answers);
   if (answers.project_scope === 'quick_service') return calculateQuickServiceBOQ(answers);
   if (answers.project_scope === 'existing_borehole') return calculateExistingBoreholeBOQ(answers);
   return calculateNewBoreholeBOQ(answers);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONFIGURED BUDGET BOQ
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Itemises exactly the system the budget explorer is showing.
+ *
+ * calculateBudgetBOQ below runs its own greedy allocation — permits, drilling,
+ * casing capped at 30% of what is left, then a pump, then a tank if enough
+ * remains. That is the right behaviour when all we know is a budget, and the
+ * wrong behaviour once the user has picked a pump type, a casing grade and a
+ * tank size, because it silently overrides all of them. Measured at $5,000 the
+ * two disagreed by $503 and swapped the casing grade.
+ *
+ * Every price here comes from ./pricing, which the explorer also uses, so the
+ * two cannot drift apart again.
+ */
+function calculateConfiguredBoreholeBOQ(answers: Answers): BOQItem[] {
+  const depth = parseInt(answers.budget_depth as string) || 40;
+  const purpose = (answers.borehole_purpose as string) || 'domestic';
+  const location = (answers.project_location as string) || 'other';
+  const areaType = (answers.area_type as string) || 'peri_urban';
+  const locMeta = LOCATION_DEFAULTS[location] || LOCATION_DEFAULTS.other;
+
+  const pumpType = ((answers.pump_power_source as string) || 'solar') as PumpType;
+  const casingGrade = ((answers.casing_class as string) || 'class_6') as CasingGrade;
+  const diameter = (purpose === 'domestic' ? '140mm' : '180mm') as CasingDiameter;
+  const tankSize = ((answers.tank_capacity as string) || '5000') as TankSize;
+  const useCombo = answers.use_combo !== false;
+
+  // Absent means enabled — a caller that does not pass toggles gets everything.
+  const on = (key: string) => answers[key] !== false;
+
+  const items: BOQItem[] = [];
+
+  if (on('include_permits')) {
+    items.push(makeItem('bg_zinwa', 'Permits & Compliance', 'ZINWA drilling permit (Form GW1)', 1, 'each', P.zinwa_permit_gw1));
+    items.push(makeItem('bg_council', 'Permits & Compliance', 'Local council approval fee', 1, 'each', locMeta.councilFee));
+  }
+
+  if (on('include_transport')) {
+    items.push(makeItem('bg_mobilization', 'Transport & Logistics', 'Drilling rig transport to site', 1, 'each', getMobilisationCost(areaType)));
+  }
+
+  if (on('include_drilling')) {
+    items.push(makeItem('bg_drilling', 'Drilling', 'Borehole drilling', depth, 'm', P.drilling_per_m));
+  }
+
+  if (on('include_casing')) {
+    const casingPerM = getCasingPrice(casingGrade, diameter);
+    items.push(makeItem('bg_casing', 'Casing', `PVC casing ${diameter} (${getCasingLabel(casingGrade)})`, depth, 'm', casingPerM));
+    const gravelM3 = +(depth * 0.03).toFixed(1);
+    items.push(makeItem('bg_gravel', 'Casing', 'Gravel pack (filter)', gravelM3, 'm³', P.gravel_pack_per_m3));
+    items.push(makeItem('bg_wellhead', 'Wellhead', 'Wellhead assembly & sanitary seal', 1, 'each', P.wellhead_assembly));
+  }
+
+  if (on('include_pump')) {
+    const pump = getPumpPrice(pumpType, depth);
+    items.push(makeItem('bg_pump', 'Pump & Power', pump.desc, 1, pumpType === 'hand' ? 'each' : 'kit', pump.price));
+    if (pumpType !== 'hand') {
+      const risingRate = purpose === 'domestic' ? P.rising_hdpe_25mm : P.rising_hdpe_32mm;
+      const risingDia = purpose === 'domestic' ? '25mm' : '32mm';
+      items.push(makeItem('bg_rising', 'Pipework', `HDPE rising main — ${risingDia}`, depth + 5, 'm', risingRate));
+    }
+    items.push(makeItem('bg_pump_install', 'Transport & Logistics', 'Pump installation labour', 1, 'each', P.pump_installation));
+  }
+
+  if (on('include_tank') && tankSize !== 'none') {
+    const tank = getTankCost(tankSize, useCombo);
+    items.push(makeItem('bg_tank', 'Storage', tank.desc, 1, 'set', tank.cost, {
+      notes: 'Tank and stand are quoted together — a tank with no stand cannot gravity feed.',
+    }));
+  }
+
+  if (on('include_services')) {
+    items.push(makeItem('bg_survey', 'Professional Services', 'Site survey', 1, 'each', getSurveyCost(areaType)));
+    items.push(makeItem('bg_flushing', 'Professional Services', 'Borehole flushing & cleaning', 1, 'each', P.borehole_flushing));
+    items.push(makeItem('bg_yield', 'Professional Services', 'Water yield / capacity test', 1, 'each', P.yield_test));
+    items.push(makeItem('bg_water_test', 'Professional Services', 'Bacteriological water test', 1, 'each', P.water_test_bacteriological));
+  }
+
+  return items;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

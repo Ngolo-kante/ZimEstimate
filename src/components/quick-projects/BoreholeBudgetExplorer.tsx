@@ -23,6 +23,20 @@ import {
 import { useToast } from '@/components/ui/Toast';
 import { BOREHOLE_PRICES as P, LOCATION_DEFAULTS } from '@/lib/quick-projects/borehole/catalog';
 import { calculateBoreholeBOQ } from '@/lib/quick-projects/borehole/calculations';
+// Shared with calculations.ts. These used to be defined here as well, and the
+// two copies drifted — the explorer showed one casing grade and the BOQ quoted
+// another.
+import {
+  getCasingLabel,
+  getCasingPrice,
+  getMobilisationCost,
+  getPumpPrice,
+  getSurveyCost,
+  getTankCost,
+  type CasingGrade,
+  type PumpType,
+  type TankSize,
+} from '@/lib/quick-projects/borehole/pricing';
 import type { BOQItem, LaborConfig, Answers } from '@/lib/quick-projects/engine/types';
 import QuickBOQTable from './QuickBOQTable';
 
@@ -37,68 +51,12 @@ interface ComponentCard {
   description: string;
 }
 
-type PumpType = 'solar' | 'hybrid' | 'electric' | 'hand';
-type CasingGrade = 'class_6' | 'class_9' | 'class_10';
-type TankSize = '2000' | '2500' | '5000' | '10000' | 'none';
 
 const numberInputStyle: CSSProperties = {
   MozAppearance: 'textfield',
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
-
-function getSolarKitPrice(depth: number): { price: number; desc: string } {
-  if (depth > 120) return { price: P.solar_kit_3hp, desc: '3.0 HP solar kit (deep/commercial)' };
-  if (depth > 100) return { price: P.solar_kit_2hp, desc: '2.0 HP solar kit' };
-  if (depth > 80)  return { price: P.solar_kit_15hp, desc: '1.5 HP solar kit (high yield)' };
-  if (depth > 50)  return { price: P.solar_kit_1hp, desc: '1.0 HP solar kit' };
-  if (depth > 30)  return { price: P.solar_kit_075hp, desc: '0.75 HP solar kit' };
-  return { price: P.solar_kit_05hp, desc: '0.5 HP solar kit' };
-}
-
-function getHybridKitPrice(depth: number): { price: number; desc: string } {
-  if (depth > 100) return { price: P.hybrid_kit_2hp, desc: '2.0 HP hybrid AC/DC kit' };
-  if (depth > 60)  return { price: P.hybrid_kit_15hp, desc: '1.5 HP hybrid AC/DC kit' };
-  return { price: P.hybrid_kit_1hp, desc: '1.0 HP hybrid AC/DC kit' };
-}
-
-function getElectricKitPrice(depth: number): { price: number; desc: string } {
-  if (depth > 120) return { price: P.electric_kit_3hp, desc: '3.0 HP electric submersible' };
-  if (depth > 100) return { price: P.electric_kit_2hp, desc: '2.0 HP electric submersible' };
-  if (depth > 50)  return { price: P.electric_kit_1hp, desc: '1.0 HP electric submersible' };
-  return { price: P.electric_kit_075hp, desc: '0.75 HP electric submersible' };
-}
-
-function getPumpPrice(type: PumpType, depth: number): { price: number; desc: string } {
-  switch (type) {
-    case 'solar': return getSolarKitPrice(depth);
-    case 'hybrid': return getHybridKitPrice(depth);
-    case 'electric': return getElectricKitPrice(depth);
-    case 'hand': return { price: P.pump_hand_afridev, desc: 'Afridev hand pump' };
-  }
-}
-
-function getCasingPrice(grade: CasingGrade, diameter: '140mm' | '180mm'): number {
-  const d = diameter === '180mm' ? '180' : '140';
-  const c = grade === 'class_10' ? 'c10' : grade === 'class_9' ? 'c9' : 'c6';
-  const key = `casing_upvc_${d}_${c}` as keyof typeof P;
-  return (P[key] as number) ?? P.casing_upvc_140_c6;
-}
-
-function getCasingLabel(grade: CasingGrade): string {
-  if (grade === 'class_10') return 'Class 10 — premium';
-  if (grade === 'class_9') return 'Class 9 — mid-grade';
-  return 'Class 6 — standard';
-}
-
-function getTankCost(size: TankSize, useCombo: boolean): { cost: number; desc: string } {
-  if (size === 'none') return { cost: 0, desc: 'No tank' };
-  if (useCombo && size === '10000') return { cost: P.combo_10000L_4m, desc: '10,000L tank + 4m stand (combo)' };
-  if (useCombo && size === '5000') return { cost: P.combo_5000L_4m, desc: '5,000L tank + 4m stand (combo)' };
-  const tankKey = `tank_${size}L` as keyof typeof P;
-  const tankPrice = (P[tankKey] as number) ?? 700;
-  return { cost: tankPrice + P.tank_stand_4m, desc: `${Number(size).toLocaleString()}L tank + 4m stand (separate)` };
-}
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
 
@@ -199,17 +157,14 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
     const tank = getTankCost(tankSize, useCombo);
     const tankCost = enabledCards.tank ? tank.cost : 0;
 
-    const surveyKey = `site_survey_${areaType}` as keyof typeof P;
-    const surveyCost = (P[surveyKey] as number) || P.site_survey_peri_urban;
+    const surveyCost = getSurveyCost(areaType);
     const servicesCost = enabledCards.services
       ? surveyCost + P.borehole_flushing + P.yield_test + P.water_test_bacteriological
       : 0;
 
     const permitsCost = enabledCards.permits ? P.zinwa_permit_gw1 + locMeta.councilFee : 0;
 
-    const extraKm = areaType === 'urban' ? 0 : 15;
-    const mobilCost = P.mobilization_base + Math.max(0, extraKm) * P.mobilization_per_km;
-    const transportCost = enabledCards.transport ? mobilCost : 0;
+    const transportCost = enabledCards.transport ? getMobilisationCost(areaType) : 0;
 
     return {
       drilling: drillingCost,
@@ -239,13 +194,28 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
     setExpandedCard((prev) => (prev === id ? null : id));
   }, []);
 
+  // Everything the user chose. Previously only the first six went across, so
+  // the BOQ re-picked the pump, the casing grade and the tank for itself and
+  // ignored every component switched off here.
   const buildAnswers = (): Answers => ({
     estimate_mode: 'budget',
+    configured: true,
     budget_amount: String(budget),
     budget_depth: String(depth),
     borehole_purpose: purpose,
     project_location: location,
     area_type: areaType,
+    pump_power_source: pumpType,
+    casing_class: casingGrade,
+    tank_capacity: tankSize,
+    use_combo: useCombo,
+    include_drilling: enabledCards.drilling,
+    include_casing: enabledCards.casing,
+    include_pump: enabledCards.pump,
+    include_tank: enabledCards.tank,
+    include_services: enabledCards.services,
+    include_permits: enabledCards.permits,
+    include_transport: enabledCards.transport,
   });
 
   // Generate BOQ using existing budget calculator
