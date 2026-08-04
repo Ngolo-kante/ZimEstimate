@@ -4,6 +4,7 @@
 import { supabase } from '@/lib/supabase';
 import type { Database, Json } from '@/lib/database.types';
 import type { BOQItem, LaborConfig, ProjectType, QuickBOQ } from '@/lib/quick-projects/engine/types';
+import type { ComplianceStatus } from '@/lib/quick-projects/compliance';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,6 +32,9 @@ interface DBQuickBOQ {
   labor_enabled: boolean;
   markup_pct: number;
   currency: 'USD' | 'ZWG';
+  target_date: string | null;
+  funds_saved_usd: number;
+  compliance: Json;
   created_at: string;
   updated_at: string;
 }
@@ -64,6 +68,9 @@ function toQuickBOQ(row: DBQuickBOQ): QuickBOQ {
     labor,
     markupPct: row.markup_pct,
     currency: row.currency,
+    targetDate: row.target_date ?? null,
+    fundsSavedUsd: Number(row.funds_saved_usd) || 0,
+    compliance: (row.compliance ?? {}) as Record<string, ComplianceStatus>,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -153,6 +160,9 @@ export async function updateQuickBOQ(
     markupPct?: number;
     currency?: 'USD' | 'ZWG';
     projectId?: string;
+    targetDate?: string | null;
+    fundsSavedUsd?: number;
+    compliance?: Record<string, ComplianceStatus>;
   }
 ): Promise<{ boq: QuickBOQ | null; error: Error | null }> {
   const update: QuickBoqUpdate = {};
@@ -160,6 +170,9 @@ export async function updateQuickBOQ(
   if (patch.markupPct !== undefined) update.markup_pct = patch.markupPct;
   if (patch.currency !== undefined) update.currency = patch.currency;
   if (patch.projectId !== undefined) update.project_id = patch.projectId ?? null;
+  if (patch.targetDate !== undefined) update.target_date = patch.targetDate;
+  if (patch.fundsSavedUsd !== undefined) update.funds_saved_usd = patch.fundsSavedUsd;
+  if (patch.compliance !== undefined) update.compliance = patch.compliance as unknown as Json;
   if (patch.labor !== undefined) Object.assign(update, laborToColumns(patch.labor));
 
   const { data: row, error } = await supabase

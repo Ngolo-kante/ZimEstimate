@@ -116,6 +116,13 @@ export interface WizardState {
 
 // ─── Quick BOQ (persisted record) ─────────────────────────────────────────────
 
+/**
+ * Declared here rather than in compliance.ts, which imports ProjectType from
+ * this file — defining it there and importing it back would make the two
+ * modules circular.
+ */
+export type ComplianceStatus = 'not_started' | 'in_progress' | 'done' | 'not_applicable';
+
 export interface QuickBOQ {
   id: string;
   userId?: string;
@@ -126,6 +133,12 @@ export interface QuickBOQ {
   labor: LaborConfig;
   markupPct: number;
   currency: 'USD' | 'ZWG';
+  /** When the user wants this done. Null is a real answer, not a missing one. */
+  targetDate: string | null;
+  /** Money set aside so far — forward-looking, not spend. */
+  fundsSavedUsd: number;
+  /** Requirement id -> status. Catalogue lives in quick-projects/compliance.ts. */
+  compliance: Record<string, ComplianceStatus>;
   createdAt: string;
   updatedAt: string;
 }

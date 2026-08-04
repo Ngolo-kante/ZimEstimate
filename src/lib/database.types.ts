@@ -343,6 +343,11 @@ export interface Database {
                     labor_enabled: boolean;
                     markup_pct: number;
                     currency: Currency;
+                    // Migration 043 — a quick estimate is a project, so it
+                    // plans and complies like one.
+                    target_date: string | null;
+                    funds_saved_usd: number;
+                    compliance: Json;
                     created_at: string;
                     updated_at: string;
                 };
@@ -360,6 +365,9 @@ export interface Database {
                     labor_enabled?: boolean;
                     markup_pct?: number;
                     currency?: Currency;
+                    target_date?: string | null;
+                    funds_saved_usd?: number;
+                    compliance?: Json;
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -377,6 +385,9 @@ export interface Database {
                     labor_enabled?: boolean;
                     markup_pct?: number;
                     currency?: Currency;
+                    target_date?: string | null;
+                    funds_saved_usd?: number;
+                    compliance?: Json;
                     created_at?: string;
                     updated_at?: string;
                 };

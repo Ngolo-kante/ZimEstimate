@@ -23,6 +23,16 @@ import {
   updateQuickBOQ,
   persistQuickBOQSession,
 } from '@/lib/services/quickBoq';
+import {
+  listQuickQuotes,
+  summariseQuotes,
+  createQuickQuoteRequest,
+  type QuoteSummary,
+} from '@/lib/services/quickQuotes';
+import BudgetPlanCard from '@/components/quick-projects/BudgetPlanCard';
+import ComplianceCard from '@/components/quick-projects/ComplianceCard';
+import NextStepsCard from '@/components/quick-projects/NextStepsCard';
+import type { ComplianceStatus } from '@/lib/quick-projects/compliance';
 import { exportBOQToPDF } from '@/lib/pdf-export';
 import type { BOQItem, LaborConfig, QuickBOQ } from '@/lib/quick-projects/engine/types';
 import { ArrowLeft, PencilSimple, ShareNetwork, Download, Warning } from '@phosphor-icons/react';
@@ -52,6 +62,10 @@ function SavedQuickEstimate() {
   const [labor, setLabor] = useState<LaborConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  // Null until loaded, so "Waiting on 2 suppliers" is never rendered as a
+  // confident zero while the request is still in flight.
+  const [quotes, setQuotes] = useState<QuoteSummary | null>(null);
+  const [requestingQuotes, setRequestingQuotes] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,6 +79,20 @@ function SavedQuickEstimate() {
         setLabor(found.labor);
       }
       setIsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // Separate from the BOQ load: quotes are secondary, and a failure to read
+  // them should not stop the estimate itself from opening.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { requests, error } = await listQuickQuotes(id);
+      if (cancelled || error) return;
+      setQuotes(summariseQuotes(requests));
     })();
     return () => {
       cancelled = true;
@@ -94,6 +122,53 @@ function SavedQuickEstimate() {
     },
     [boq, labor, showError, success],
   );
+
+  const handlePlanSave = useCallback(
+    async (patch: { targetDate: string | null; fundsSavedUsd: number }) => {
+      if (!boq) return;
+      const { error } = await updateQuickBOQ(boq.id, patch);
+      if (error) {
+        showError('Could not save your plan.');
+        return;
+      }
+      setBoq({ ...boq, targetDate: patch.targetDate, fundsSavedUsd: patch.fundsSavedUsd });
+      success('Plan saved.');
+    },
+    [boq, showError, success],
+  );
+
+  // Optimistic: a dropdown that waits on a round trip before showing the value
+  // you picked feels broken. Reverted on failure so the UI never claims a
+  // status the database does not hold.
+  const handleComplianceChange = useCallback(
+    async (reqId: string, status: ComplianceStatus) => {
+      if (!boq) return;
+      const previous = boq.compliance;
+      const next = { ...previous, [reqId]: status };
+      setBoq({ ...boq, compliance: next });
+
+      const { error } = await updateQuickBOQ(boq.id, { compliance: next });
+      if (error) {
+        setBoq((current) => (current ? { ...current, compliance: previous } : current));
+        showError('Could not save that change.');
+      }
+    },
+    [boq, showError],
+  );
+
+  const handleRequestQuotes = useCallback(async () => {
+    if (!boq) return;
+    setRequestingQuotes(true);
+    const { error } = await createQuickQuoteRequest(boq.id, boq.boqItems);
+    if (error) {
+      showError(error.message || 'Could not send the request.');
+    } else {
+      const { requests } = await listQuickQuotes(boq.id);
+      setQuotes(summariseQuotes(requests));
+      success('Request sent. Suppliers will be notified.');
+    }
+    setRequestingQuotes(false);
+  }, [boq, showError, success]);
 
   // Reopens the wizard with these answers filled in. Routed through the same
   // session mechanism the sign-in bounce uses, so there is one restore path
@@ -234,6 +309,32 @@ function SavedQuickEstimate() {
           </button>
         </div>
       </header>
+
+      {/* The estimate is the project surface. No stages, no workspace — the
+          user was explicit that neither applies to a borehole — but everything
+          that does travel: what it costs, what to put aside, what it has to
+          clear legally, and who can price or build it. */}
+      <BudgetPlanCard
+        totalUsd={total}
+        targetDate={boq.targetDate}
+        fundsSavedUsd={boq.fundsSavedUsd}
+        onSave={handlePlanSave}
+      />
+
+      <NextStepsCard
+        projectType={boq.projectType}
+        area={(boq.answers?.project_location as string) || undefined}
+        quoteSummary={quotes}
+        onRequestQuotes={() => void handleRequestQuotes()}
+        requestingQuotes={requestingQuotes}
+      />
+
+      <ComplianceCard
+        projectType={boq.projectType}
+        answers={boq.answers as unknown as Record<string, unknown>}
+        statuses={boq.compliance as Record<string, ComplianceStatus>}
+        onChange={(reqId, status) => void handleComplianceChange(reqId, status)}
+      />
 
       <QuickBOQTable
         projectType={boq.projectType}
