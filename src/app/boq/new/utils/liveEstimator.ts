@@ -1,4 +1,4 @@
-import { generateBOQFromBasics } from '@/lib/calculations';
+import { generateBOQFromBasics, DEFAULT_FINISH_LEVEL } from '@/lib/calculations';
 import { getBestPrice, materials } from '@/lib/materials';
 import type { DetailedRoom, GeneratedBOQItem, ProjectScope as VisionProjectScope } from '@/lib/vision/types';
 import {
@@ -333,7 +333,13 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
     scope,
     includeLabor: laborType === 'materials_labor',
     locationType: (projectDetails.locationType || 'urban') as 'urban' | 'peri-urban' | 'rural',
-    finishLevel: projectDetails.finishLevel,
+    // 'not_sure' and unanswered both price as standard — the estimate has to
+    // produce a number either way. The difference is that the answer is now
+    // recorded, so the review step can say the assumption was ours.
+    finishLevel:
+      projectDetails.finishLevel && projectDetails.finishLevel !== 'not_sure'
+        ? projectDetails.finishLevel
+        : DEFAULT_FINISH_LEVEL,
     standAreaSqm: Number(projectDetails.standSize) || undefined,
     rooms: geometryMode === 'detailed' ? toDetailedRooms(detailedRooms) : undefined,
   }).map(toStoreItem);

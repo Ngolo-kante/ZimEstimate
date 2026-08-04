@@ -11,6 +11,7 @@ const baseState: BOQWizardValidationState = {
     floorPlanSize: '120',
     buildingType: 'single_storey',
     brickTypes: ['common'],
+    finishLevel: 'standard',
   },
   projectScope: 'entire',
   selectedStages: ['substructure'],
@@ -129,5 +130,51 @@ describe('validateBOQWizardStep', () => {
     expect(result.errors.floorPlanSize).toBeUndefined();
     expect(result.errors.buildingType).toBeUndefined();
     expect(result.errors.brickTypes).toBeUndefined();
+  });
+
+  /**
+   * Standard used to be preselected, so this question could be walked straight
+   * past without being read while still moving the estimate — and neither the
+   * user nor the app could tell a deliberate "standard" from a skipped step.
+   */
+  describe('finish level has to be answered', () => {
+    it('blocks the scope step when no finish level has been chosen', () => {
+      const result = validateBOQWizardStep({
+        ...baseState,
+        currentSection: 'scope',
+        projectDetails: { ...baseState.projectDetails, finishLevel: null },
+      });
+      expect(result.errors.finishLevel).toBeTruthy();
+      expect(result.message).toBe('Select scope details to continue.');
+    });
+
+    it('accepts "not sure" as a real answer', () => {
+      // It prices as standard, but it is recorded as an assumption rather than
+      // a decision — which is the honest state for most people costing a house.
+      const result = validateBOQWizardStep({
+        ...baseState,
+        currentSection: 'scope',
+        projectDetails: { ...baseState.projectDetails, finishLevel: 'not_sure' },
+      });
+      expect(result.errors.finishLevel).toBeUndefined();
+    });
+
+    it.each(['economy', 'standard', 'premium'])('accepts %s', (level) => {
+      const result = validateBOQWizardStep({
+        ...baseState,
+        currentSection: 'scope',
+        projectDetails: { ...baseState.projectDetails, finishLevel: level },
+      });
+      expect(result.errors.finishLevel).toBeUndefined();
+    });
+
+    it('does not ask for it on earlier steps', () => {
+      const result = validateBOQWizardStep({
+        ...baseState,
+        currentSection: 'project',
+        projectDetails: { ...baseState.projectDetails, finishLevel: null },
+      });
+      expect(result.errors.finishLevel).toBeUndefined();
+    });
   });
 });

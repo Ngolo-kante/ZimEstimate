@@ -40,10 +40,18 @@ const TRANSPORT_SUGGESTIONS: Record<string, { percentage: number; label: string 
   rural: { percentage: 15, label: 'Rural — longer distances, higher transport costs' },
 };
 
-const FINISH_LEVEL_OPTIONS: { value: FinishLevel; label: string; description: string }[] = [
+const FINISH_LEVEL_CHOICES: {
+  value: FinishLevel | 'not_sure';
+  label: string;
+  description: string;
+}[] = [
   { value: 'economy', label: 'Economy', description: 'Wet areas tiled, rest screeded. 1–2 coats of paint.' },
   { value: 'standard', label: 'Standard', description: 'Full floor tiling and 2 coats of paint throughout.' },
   { value: 'premium', label: 'Premium', description: 'Full tiling, taller wet-area tiling, 3 coats of paint.' },
+  // Priced as standard, but recorded as an assumption rather than a decision —
+  // most people costing a house have not settled the finish yet, and forcing a
+  // guess produces a number they do not trust.
+  { value: 'not_sure', label: 'Not sure yet', description: 'We will assume standard. You can change this later.' },
 ];
 
 export default function MaterialsSection() {
@@ -483,8 +491,13 @@ export default function MaterialsSection() {
           </p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          {FINISH_LEVEL_OPTIONS.map((opt) => {
+        {/* Nothing is preselected. Standard used to be chosen for the user, so
+            the estimate carried a finish they had never picked — and neither
+            they nor we could tell a deliberate "standard" from a question that
+            was skipped. "Not sure" is a real answer: it prices as standard and
+            says so, rather than pretending to be a choice. */}
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {FINISH_LEVEL_CHOICES.map((opt) => {
             const isSelected = projectDetails.finishLevel === opt.value;
             return (
               <motion.button

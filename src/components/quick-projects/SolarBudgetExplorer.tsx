@@ -4,6 +4,8 @@ import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState }
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { gateSaveBehindSignIn } from '@/lib/services/quickBoq';
 import {
   Lightning,
   BatteryCharging,
@@ -463,6 +465,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { success: showSuccess, error: showError } = useToast();
+  const { isAuthenticated } = useAuth();
   const [boqItems, setBoqItems] = useState<BOQItem[] | null>(null);
   const [labor, setLabor] = useState<LaborConfig>({ enabled: false, method: 'percentage', percentage: 25 });
   const [comboLoaded, setComboLoaded] = useState<string | null>(null);
@@ -612,9 +615,22 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
   // ever called generateBOQ, so nothing was saved.
   const handleSaveProject = async () => {
     if (!onSave) return;
+    const answers = buildAnswers();
+    const items = buildBoqItems();
+
+    // Same gap as the borehole explorer: Save called onSave with no auth check,
+    // so a signed-out user pressed it and nothing happened at all.
+    if (gateSaveBehindSignIn({
+      isAuthenticated,
+      projectType: 'solar',
+      answers: answers as unknown as Record<string, unknown>,
+      boqItems: items,
+      labor,
+    })) return;
+
     setIsSaving(true);
     try {
-      await onSave({ answers: buildAnswers(), result: null, boqItems: buildBoqItems() } as Parameters<NonNullable<typeof onSave>>[0]);
+      await onSave({ answers, result: null, boqItems: items } as Parameters<NonNullable<typeof onSave>>[0]);
     } finally {
       setIsSaving(false);
     }

@@ -4,7 +4,7 @@ import { LOCATION_PROCEDURE_RULES, SoilType } from '@/lib/buildFlowRules';
 import { calculateBoqHealth, type BoqHealthCategoryInput, type BoqHealthResult } from '@/lib/boqHealth';
 import { STAGE_COMPLIANCE_REQUIREMENTS } from '@/lib/compliance';
 import { BrickType, CementType } from '@/lib/vision/types';
-import { DEFAULT_FINISH_LEVEL, type FinishLevel } from '@/lib/calculations';
+import type { FinishLevel } from '@/lib/calculations';
 import type { RoomInstance } from '@/app/boq/new/components/room-builder/types';
 
 export type SiteSlopeType = 'flat' | 'gentle' | 'moderate' | 'steep';
@@ -57,7 +57,11 @@ export interface ProjectDetailsState {
   wallHeight: string;
   brickTypes: BrickType[];
   cementTypes: CementType[];
-  finishLevel: FinishLevel;
+  // Null until answered. It used to default to 'standard', which meant an
+  // estimate carried a finish assumption the user had never made — and neither
+  // they nor we could tell a deliberate 'standard' from a question skipped.
+  // 'not_sure' is an answer: use the default, but record that it was not chosen.
+  finishLevel: FinishLevel | 'not_sure' | null;
   roomInputs: Record<RoomInputKey, string>;
 }
 
@@ -200,7 +204,7 @@ const initialProjectDetails: ProjectDetailsState = {
   wallHeight: '2.7',
   brickTypes: ['common'],
   cementTypes: ['cement_325'],
-  finishLevel: DEFAULT_FINISH_LEVEL,
+  finishLevel: null,
   roomInputs: { ...DEFAULT_ROOM_INPUTS },
 };
 

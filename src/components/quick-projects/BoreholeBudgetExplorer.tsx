@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import {
@@ -21,12 +21,15 @@ import {
   Gauge,
 } from '@phosphor-icons/react';
 import { useToast } from '@/components/ui/Toast';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { gateSaveBehindSignIn } from '@/lib/services/quickBoq';
 import { BOREHOLE_PRICES as P, LOCATION_DEFAULTS } from '@/lib/quick-projects/borehole/catalog';
 import { calculateBoreholeBOQ } from '@/lib/quick-projects/borehole/calculations';
 // Shared with calculations.ts. These used to be defined here as well, and the
 // two copies drifted — the explorer showed one casing grade and the BOQ quoted
 // another.
 import {
+  fitBoreholeToBudget,
   getCasingLabel,
   getCasingPrice,
   getMobilisationCost,
@@ -71,6 +74,7 @@ interface BoreholeBudgetExplorerProps {
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Borehole Setup', isContractor = false, onSave }: BoreholeBudgetExplorerProps) {
+  const { isAuthenticated } = useAuth();
   // Budget
   // The field holds raw text and the number is derived from it. Clamping with
   // Math.max(1000, ...) inside onChange meant every keystroke snapped back to
@@ -130,6 +134,12 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
   // Expanded card
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
+  // Set once the user picks a component themselves, after which the budget
+  // stops re-choosing for them. Without this, changing the budget would
+  // silently overwrite a pump they had deliberately selected — the explorer
+  // would be arguing with them.
+  const [userPickedComponents, setUserPickedComponents] = useState(false);
+
   // BOQ view
   const [boqItems, setBoqItems] = useState<BOQItem[] | null>(null);
   const [labor, setLabor] = useState<LaborConfig>({ enabled: false, method: 'percentage', percentage: 25 });
@@ -140,6 +150,27 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
 
   const locMeta = LOCATION_DEFAULTS[location] || LOCATION_DEFAULTS.other;
   const areaType = ['harare', 'bulawayo', 'chitungwiza'].includes(location) ? 'urban' : 'peri_urban';
+
+  // ── Fit the configuration to the budget ──────────────────────────────────
+  // The heading asks "what can your budget buy?" and this is what makes that
+  // true. Before it, the explorer held fixed defaults and reported $5,495
+  // allocated whether the budget was $15,000 or $2,000 — a maxed-out bar and
+  // "$3,495 over" that no amount of typing would change.
+  const fit = useMemo(
+    () => fitBoreholeToBudget({ budget, depth, purpose, areaType, councilFee: locMeta.councilFee }),
+    [budget, depth, purpose, areaType, locMeta.councilFee],
+  );
+
+  useEffect(() => {
+    // Once someone has chosen a pump or a casing grade themselves, that choice
+    // is theirs to keep. Re-fitting from here would overwrite it every time
+    // they nudged the budget.
+    if (userPickedComponents || budget === 0) return;
+    setPumpType(fit.pumpType);
+    setCasingGrade(fit.casingGrade);
+    setTankSize(fit.tankSize);
+    setUseCombo(fit.useCombo);
+  }, [fit, userPickedComponents, budget]);
   const diameter = purpose === 'domestic' ? '140mm' as const : '180mm' as const;
 
   // ── Costs ─────────────────────────────────────────────────────────────────
@@ -229,9 +260,23 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
   // ever called generateBOQ, so nothing was saved.
   const handleSaveProject = async () => {
     if (!onSave) return;
+    const answers = buildAnswers();
+    const items = calculateBoreholeBOQ(answers);
+
+    // Signed out, this used to call onSave anyway; createQuickBOQ returned
+    // "Not authenticated" and nothing was shown. Pressing Save and getting
+    // silence reads as a broken button, not as "you need an account".
+    if (gateSaveBehindSignIn({
+      isAuthenticated,
+      projectType: 'borehole',
+      answers: answers as unknown as Record<string, unknown>,
+      boqItems: items,
+      labor,
+    })) return;
+
     setIsSaving(true);
     try {
-      await onSave(calculateBoreholeBOQ(buildAnswers()), buildAnswers(), labor);
+      await onSave(items, answers, labor);
     } finally {
       setIsSaving(false);
     }
@@ -505,6 +550,16 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
             {remaining >= 0 ? `$${remaining.toLocaleString(undefined, { maximumFractionDigits: 0 })} remaining` : `$${Math.abs(remaining).toLocaleString(undefined, { maximumFractionDigits: 0 })} over budget`}
           </span>
         </div>
+        {/* Over budget on an auto-fitted configuration means something specific:
+            we already went as lean as a working borehole allows and it still
+            does not fit. Saying so beats an unexplained red bar that looks like
+            the user has over-specified something they could turn off. */}
+        {fit.budgetTooLow && !userPickedComponents && (
+          <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
+            This is already the leanest working setup at {depth}m — a hand pump and
+            standard casing. Reduce the depth or raise the budget to close the gap.
+          </p>
+        )}
         <div className="h-3 w-full bg-[var(--color-border-light)] rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ease-out ${
@@ -581,7 +636,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                             return (
                               <button
                                 key={opt.id}
-                                onClick={() => setPumpType(opt.id)}
+                                onClick={() => { setUserPickedComponents(true); setPumpType(opt.id); }}
                                 className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
                                   pumpType === opt.id ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
                                 }`}
@@ -612,7 +667,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                             return (
                               <button
                                 key={opt.id}
-                                onClick={() => setCasingGrade(opt.id)}
+                                onClick={() => { setUserPickedComponents(true); setCasingGrade(opt.id); }}
                                 className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
                                   casingGrade === opt.id ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
                                 }`}
@@ -640,7 +695,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                               return (
                                 <button
                                   key={opt.id}
-                                  onClick={() => setTankSize(opt.id)}
+                                  onClick={() => { setUserPickedComponents(true); setTankSize(opt.id); }}
                                   className={`flex flex-col items-center p-3 rounded-xl border text-sm transition-colors ${
                                     tankSize === opt.id ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
                                   }`}
@@ -656,7 +711,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                               <input
                                 type="checkbox"
                                 checked={useCombo}
-                                onChange={(e) => setUseCombo(e.target.checked)}
+                                onChange={(e) => { setUserPickedComponents(true); setUseCombo(e.target.checked); }}
                                 className="w-4 h-4 rounded border-[var(--color-border-dark)] text-[var(--color-accent)] focus:ring-[var(--color-accent)]"
                               />
                               <span className="text-sm text-emerald-800 font-medium">Use combo package (tank + stand bundled — saves ~$200)</span>

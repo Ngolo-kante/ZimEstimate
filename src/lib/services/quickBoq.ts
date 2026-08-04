@@ -250,6 +250,52 @@ export function restoreQuickBOQSession(): {
  */
 export const PENDING_QUICK_SAVE_KEY = 'zimestimate_quick_pending_save';
 
+/**
+ * Gate a save behind sign-in, preserving the work.
+ *
+ * Returns true when it has taken over and redirected — the caller should stop.
+ *
+ * Every screen that can save had to grow its own copy of this, and the two
+ * budget explorers never did: their Save Project buttons called onSave
+ * directly, createQuickBOQ returned "Not authenticated", and the page showed
+ * nothing at all. A signed-out user pressed Save and the app did not respond —
+ * which reads as broken rather than as "you need an account".
+ */
+export function gateSaveBehindSignIn(params: {
+  isAuthenticated: boolean;
+  projectType: ProjectType;
+  answers: Record<string, unknown>;
+  boqItems: BOQItem[];
+  labor: LaborConfig;
+  markupPct?: number;
+  currency?: 'USD' | 'ZWG';
+  /** Where to come back to. Defaults to this project's wizard. */
+  returnTo?: string;
+}): boolean {
+  if (params.isAuthenticated) return false;
+
+  persistQuickBOQSession({
+    projectType: params.projectType,
+    answers: params.answers,
+    boqItems: params.boqItems,
+    labor: params.labor,
+    markupPct: params.markupPct ?? 0,
+    currency: params.currency ?? 'USD',
+  });
+
+  // Resume the save on the way back, rather than making them find and press
+  // Save a second time having already pressed it once.
+  try {
+    sessionStorage.setItem(PENDING_QUICK_SAVE_KEY, params.projectType);
+  } catch {
+    /* private browsing — the redirect still works, the resume just will not */
+  }
+
+  const destination = params.returnTo ?? `/quick-projects/${params.projectType}`;
+  window.location.href = `/auth/login?redirect=${encodeURIComponent(destination)}`;
+  return true;
+}
+
 /** Drop a restored session once its contents are held in component state. */
 export function clearQuickBOQSession(): void {
   try {

@@ -10,6 +10,7 @@ export type BOQWizardFieldValidation = Partial<Record<
   'brickTypes' |
   'projectScope' |
   'selectedStages' |
+  'finishLevel' |
   'laborType',
   string
 >>;
@@ -32,6 +33,8 @@ export type BOQWizardValidationState = {
     floorPlanSize: string;
     buildingType: string;
     brickTypes: BrickType[];
+    /** Null until answered. 'not_sure' counts as answered. */
+    finishLevel?: string | null;
   };
   projectScope: string;
   selectedStages: string[];
@@ -109,7 +112,13 @@ export function validateBOQWizardStep(state: BOQWizardValidationState): BOQWizar
     if (projectScope === 'stage' && selectedStages.length === 0) {
       errors.selectedStages = 'Please select at least one stage.';
     }
-    if (errors.projectScope || errors.selectedStages) {
+    // Standard used to be preselected, so this question could be walked past
+    // without being read while still moving the estimate. Asking for an answer
+    // — including "not sure" — is what makes the resulting number the user's.
+    if (!projectDetails.finishLevel) {
+      errors.finishLevel = 'Please choose a finish level, or select "Not sure yet".';
+    }
+    if (errors.projectScope || errors.selectedStages || errors.finishLevel) {
       message = 'Select scope details to continue.';
     }
   }

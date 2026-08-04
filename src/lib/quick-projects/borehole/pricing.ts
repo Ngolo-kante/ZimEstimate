@@ -79,6 +79,120 @@ export function getTankCost(size: TankSize, useCombo: boolean): { cost: number; 
   return { cost: tankPrice + P.tank_stand_4m, desc: `${Number(size).toLocaleString()}L tank + 4m stand (separate)` };
 }
 
+export interface BoreholeFit {
+  casingGrade: CasingGrade;
+  pumpType: PumpType;
+  tankSize: TankSize;
+  useCombo: boolean;
+  /** True when even the leanest viable borehole costs more than the budget. */
+  budgetTooLow: boolean;
+  /** What the fitted configuration costs, so callers can show it honestly. */
+  fittedCostUsd: number;
+}
+
+/**
+ * The best borehole a budget will actually buy.
+ *
+ * The explorer asked "what can your budget buy?" and then ignored the answer:
+ * it held fixed defaults — 40m, Class 6 casing, a 0.75HP solar kit, a 5,000L
+ * combo tank — and reported $5,495 allocated whether the budget was $15,000 or
+ * $2,000, with a maxed-out bar and "$3,495 over". The fitting logic existed in
+ * calculateBudgetBOQ but was unreachable, because the explorer always sends
+ * configured:true so the BOQ would itemise the configuration on screen.
+ *
+ * Extracted here so the explorer picks the configuration and the BOQ prices it,
+ * rather than each deciding separately and disagreeing.
+ *
+ * Depth is an input, not a variable to solve for: the user sets it on a slider
+ * and silently redrilling to 20m to hit a number would be dishonest.
+ */
+export function fitBoreholeToBudget(params: {
+  budget: number;
+  depth: number;
+  purpose: 'domestic' | 'commercial';
+  areaType: string;
+  councilFee: number;
+}): BoreholeFit {
+  const { budget, depth, purpose, areaType, councilFee } = params;
+  const diameter: CasingDiameter = purpose === 'domestic' ? '140mm' : '180mm';
+
+  // Non-negotiables first — permit, council, transport, survey, drilling. A
+  // borehole without these is not a cheaper borehole, it is not a borehole.
+  const fixed =
+    P.zinwa_permit_gw1 +
+    councilFee +
+    getMobilisationCost(areaType) +
+    getSurveyCost(areaType) +
+    depth * P.drilling_per_m +
+    +(depth * 0.03).toFixed(1) * P.gravel_pack_per_m3 +
+    P.wellhead_assembly;
+
+  let remaining = budget - fixed;
+
+  // Casing: best grade fitting inside 30% of what is left, cheapest as floor.
+  // Class 6 is not optional — it is the minimum that holds a hole open.
+  const casingGrades: CasingGrade[] = ['class_10', 'class_9', 'class_6'];
+  let casingGrade: CasingGrade = 'class_6';
+  for (const grade of casingGrades) {
+    if (getCasingPrice(grade, diameter) * depth <= remaining * 0.3) {
+      casingGrade = grade;
+      break;
+    }
+  }
+  remaining -= getCasingPrice(casingGrade, diameter) * depth;
+
+  // Pump: richest option fitting inside 70%, leaving room for storage. A hand
+  // pump is the floor rather than "no pump" — a borehole you cannot draw from
+  // is not a saving.
+  const pumpTypes: PumpType[] = ['solar', 'hybrid', 'electric', 'hand'];
+  let pumpType: PumpType = 'hand';
+  for (const type of pumpTypes) {
+    if (getPumpPrice(type, depth).price <= remaining * 0.7) {
+      pumpType = type;
+      break;
+    }
+  }
+  remaining -= getPumpPrice(pumpType, depth).price;
+  if (pumpType !== 'hand') {
+    const risingRate = purpose === 'domestic' ? P.rising_hdpe_25mm : P.rising_hdpe_32mm;
+    remaining -= (depth + 5) * risingRate + P.pump_installation;
+  }
+
+  // Storage: largest that fits, else none. getTankCost always includes a stand,
+  // so this never proposes a tank with nothing to raise it on.
+  const tankSizes: TankSize[] = ['10000', '5000', '2500', '2000'];
+  let tankSize: TankSize = 'none';
+  let useCombo = true;
+  for (const size of tankSizes) {
+    const combo = getTankCost(size, true);
+    if (combo.cost <= remaining) {
+      tankSize = size;
+      useCombo = true;
+      break;
+    }
+    const separate = getTankCost(size, false);
+    if (separate.cost <= remaining) {
+      tankSize = size;
+      useCombo = false;
+      break;
+    }
+  }
+  remaining -= getTankCost(tankSize, useCombo).cost;
+
+  const fittedCostUsd = budget - remaining;
+
+  return {
+    casingGrade,
+    pumpType,
+    tankSize,
+    useCombo,
+    // Reported rather than hidden: at $2,000 for a 40m hole the honest answer is
+    // "this does not cover it", not a configuration pretending otherwise.
+    budgetTooLow: fittedCostUsd > budget,
+    fittedCostUsd,
+  };
+}
+
 export function getMobilisationCost(areaType: string): number {
   const extraKm = areaType === 'urban' ? 0 : 15;
   return P.mobilization_base + Math.max(0, extraKm) * P.mobilization_per_km;
