@@ -219,6 +219,41 @@ function BoqNewPageContent() {
     nav.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
   }, [currentStep]);
 
+  // Puts the next step's heading at the top of the viewport.
+  //
+  // Removing the old scrollIntoView stopped the page being yanked upward mid
+  // step, but left nothing to reset the scroll when the step actually changed.
+  // Pressing Continue at the bottom of a long step rendered the next one and
+  // kept the old offset, so the user arrived at the bottom of a question whose
+  // top they had never seen.
+  //
+  // Called from the navigation handlers rather than from an effect on
+  // currentStep. An effect looked correct and did nothing: this content sits
+  // inside a Suspense boundary that re-suspends across a step change, so the
+  // component remounts, a "previous step" ref re-initialises to the new value,
+  // and the guard skipped every time. Scrolling where the user actually
+  // pressed the button has no such failure mode.
+  const scrollStepIntoView = () => {
+    // Measured and scrolled synchronously, before the new step renders.
+    //
+    // That works because everything above this point — the top bar, the
+    // progress bar, the step strip — is identical on every step, so the
+    // heading's target position does not depend on which step is about to
+    // mount. Waiting was the thing that kept breaking: rAF and timers are both
+    // throttled in a backgrounded tab, and this content remounts across a step
+    // change, so anything deferred either fired late or found a detached ref.
+    const header = document.querySelector('.wiz-step-header') as HTMLElement | null;
+    if (!header) return;
+    // Measured, not hardcoded — the bar grows on small screens.
+    const bar = document.querySelector('.wiz-topbar') as HTMLElement | null;
+    const offset = (bar?.offsetHeight ?? 0) + 16;
+    const top = header.getBoundingClientRect().top + window.scrollY - offset;
+    // Instant, not smooth. A step change is a discrete navigation, and animating
+    // a 2,000px trip is slow rather than polished. behavior:'smooth' also
+    // silently does nothing in some engines, which hides the failure.
+    window.scrollTo(0, Math.max(0, top));
+  };
+
   const isReviewStep = currentStep === WIZARD_STEPS.length - 1;
 
   /**
@@ -706,10 +741,11 @@ function BoqNewPageContent() {
     }
     const target = Math.min(WIZARD_STEPS.length - 1, nextStep);
     setCurrentStep(target);
+    scrollStepIntoView();
   };
 
   return (
-    <MainLayout fullWidth>
+    <>
       <div className="wiz-root min-h-[calc(100vh-80px)]">
         {/* Static, not sticky. It was `sticky top-0` while the app navbar also
             occupies the top of the viewport, so the project name and Save
@@ -785,7 +821,7 @@ function BoqNewPageContent() {
                         type="button"
                         disabled={!reachable}
                         aria-current={isCurrent ? 'step' : undefined}
-                        onClick={() => { if (reachable) setCurrentStep(index); }}
+                        onClick={() => { if (reachable) { setCurrentStep(index); scrollStepIntoView(); } }}
                         title={reachable ? step.label : `Complete step ${index} first`}
                         className={`wiz-step-chip ${
                           isCurrent
@@ -804,7 +840,7 @@ function BoqNewPageContent() {
               </div>
 
               {/* ── Step Header ──────────────────────────────────────────────── */}
-              <div className="mb-8">
+              <div className="wiz-step-header mb-8">
                 <span className="wiz-step-label mb-2 block">BOQ MANUAL BUILDER</span>
                 <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{color:'var(--wiz-text-primary)'}}>{WIZARD_STEPS[currentStep].title}</h2>
                 <p className="text-sm" style={{color:'var(--wiz-text-muted)'}}>{WIZARD_STEPS[currentStep].subtitle}</p>
@@ -866,10 +902,12 @@ function BoqNewPageContent() {
                       prevStep = 3;
                     }
                     setCurrentStep(Math.max(0, prevStep));
+                    scrollStepIntoView();
                   }}
-                  className={`wiz-btn-secondary ${currentStep === 0 ? 'invisible' : 'visible'}`}
+                  aria-label="Back"
+                  className={`wiz-btn-secondary shrink-0 ${currentStep === 0 ? 'invisible' : 'visible'}`}
                 >
-                  <CaretLeft size={16} /> Back
+                  <CaretLeft size={16} /> <span className="hidden sm:inline">Back</span>
                 </button>
 
                 {currentStep < WIZARD_STEPS.length - 1 ? (
@@ -888,15 +926,21 @@ function BoqNewPageContent() {
                      not change shape between one part of the app and another.
                      Share and the PDF work signed out; only Save needs an
                      account, because only Save needs somewhere to put it. */
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button type="button" onClick={handleSave} className="wiz-btn-primary">
-                      {isSaving ? <><CircleNotch weight="bold" className="animate-spin" /> Saving</> : <><Check weight="bold" size={16} /> Save Project</>}
+                  /* On a phone the labels are hidden and the icons carry the
+                     row. Four words across a 360px screen wrapped onto three
+                     lines, which pushed the actions below the fold on the one
+                     screen where they matter most. Save keeps its word at every
+                     width — it is the action people are looking for, and an
+                     unlabelled tick is a guess. */
+                  <div className="flex items-center justify-end gap-2 min-w-0">
+                    <button type="button" onClick={handleSave} className="wiz-btn-primary shrink-0">
+                      {isSaving ? <><CircleNotch weight="bold" className="animate-spin" /> Saving</> : <><Check weight="bold" size={16} /> Save<span className="hidden sm:inline">&nbsp;Project</span></>}
                     </button>
-                    <button type="button" onClick={handleShareEstimate} className="wiz-btn-secondary">
-                      <ShareNetwork size={16} weight="bold" /> Share
+                    <button type="button" onClick={handleShareEstimate} aria-label="Share estimate" title="Share" className="wiz-btn-secondary shrink-0">
+                      <ShareNetwork size={16} weight="bold" /> <span className="hidden sm:inline">Share</span>
                     </button>
-                    <button type="button" onClick={handleDownloadPdf} className="wiz-btn-secondary">
-                      <FileArrowDown size={16} weight="bold" /> Download BOQ
+                    <button type="button" onClick={handleDownloadPdf} aria-label="Download BOQ as PDF" title="Download BOQ" className="wiz-btn-secondary shrink-0">
+                      <FileArrowDown size={16} weight="bold" /> <span className="hidden sm:inline">Download BOQ</span>
                     </button>
                   </div>
                 )}
@@ -911,6 +955,7 @@ function BoqNewPageContent() {
               onViewFullBoq={() => {
                 const review = WIZARD_STEPS.length - 1;
                 setCurrentStep(review);
+                scrollStepIntoView();
               }}
             />
           ) : null}
@@ -986,14 +1031,25 @@ function BoqNewPageContent() {
           message={isSaving ? 'Saving estimate...' : 'Loading project...'}
         />
       </div>
-    </MainLayout>
+    </>
   );
 }
 
 export default function BoqNewPage() {
   return (
-    <Suspense fallback={<MainLayout title="New BOQ"><div className="p-8 text-center">Loading BOQ builder...</div></MainLayout>}>
-      <BoqNewPageContent />
-    </Suspense>
+    // MainLayout sits OUTSIDE the boundary, and the fallback is bare.
+    //
+    // Both sides used to render their own MainLayout — the fallback one and the
+    // content one — and the boundary kept the fallback's DOM mounted rather
+    // than dropping it. The result was two <main> landmarks and a full ghost
+    // copy of the wizard chrome sitting above the real one: two step headers,
+    // two step navs, two of every id. Effects and refs bound against whichever
+    // copy mounted last, which is not something to leave to chance in the one
+    // flow the whole product is built around.
+    <MainLayout fullWidth>
+      <Suspense fallback={<div className="p-8 text-center">Loading BOQ builder...</div>}>
+        <BoqNewPageContent />
+      </Suspense>
+    </MainLayout>
   );
 }

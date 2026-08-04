@@ -12,7 +12,8 @@ import { ProjectCardSkeleton, KpiSkeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
-import { getProjects, deleteProject, archiveProject } from '@/lib/services/projects';
+import { getProjects, deleteProject, archiveProject, getBOQItems } from '@/lib/services/projects';
+import { downloadBOQPDF } from '@/lib/pdf-export';
 import { listSavedWork, type SavedWorkItem, type SavedWorkKind } from '@/lib/services/savedWork';
 import { deleteQuickBOQ } from '@/lib/services/quickBoq';
 import { clearOptimisticProjectCard, getOptimisticProjectCard } from '@/lib/projectCreationCache';
@@ -29,6 +30,7 @@ import {
     PencilSimple,
     Trash,
     ShareNetwork,
+    FileArrowDown,
     Archive,
     MagnifyingGlass,
     Funnel,
@@ -396,6 +398,30 @@ function ProjectsContent() {
         if (project) {
             setDeleteTarget({ id: projectId, name: project.name, kind: 'project' });
         }
+    };
+
+    // The BOQ is the thing that gets forwarded to a builder or a lender, so it
+    // should be reachable from the card rather than only from inside the
+    // project. Items are fetched on demand — the list query deliberately does
+    // not carry every line item for every project.
+    const handleDownloadPdf = async (e: React.MouseEvent, projectId: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpenMenuId(null);
+
+        const project = projects.find(p => p.id === projectId);
+        if (!project) return;
+
+        const { items, error } = await getBOQItems(projectId);
+        if (error) {
+            showError('Could not load the BOQ for this project.');
+            return;
+        }
+        if (items.length === 0) {
+            showError(`"${project.name}" has no BOQ items to download yet.`);
+            return;
+        }
+        downloadBOQPDF(project, items);
     };
 
     // ── Quick estimate card actions ──────────────────────────────────────────
@@ -903,6 +929,9 @@ function ProjectsContent() {
                                                     <button onClick={(e) => handleShare(e, project.id)}>
                                                         <ShareNetwork size={16} /> Share
                                                     </button>
+                                                    <button onClick={(e) => { void handleDownloadPdf(e, project.id); }}>
+                                                        <FileArrowDown size={16} /> Download BOQ PDF
+                                                    </button>
                                                     <button onClick={(e) => handleArchive(e, project.id)}>
                                                         <Archive size={16} /> Archive
                                                     </button>
@@ -987,6 +1016,9 @@ function ProjectsContent() {
                                 </button>
                                 <button className="bottom-sheet-item" onClick={(e) => { handleShare(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
                                     <ShareNetwork size={20} /> Share
+                                </button>
+                                <button className="bottom-sheet-item" onClick={(e) => { void handleDownloadPdf(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
+                                    <FileArrowDown size={20} /> Download BOQ PDF
                                 </button>
                                 <button className="bottom-sheet-item" onClick={(e) => { handleArchive(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
                                     <Archive size={20} /> Archive

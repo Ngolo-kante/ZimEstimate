@@ -46,6 +46,23 @@ export function ServiceWorkerProvider({ children }: ServiceWorkerProviderProps) 
     useEffect(() => {
         if (typeof window === 'undefined' || !isSupported) return;
 
+        // Not in development. The worker caches built assets, so on a dev server
+        // it serves the previous build's JS chunks after an edit — the page
+        // looks unchanged, or worse, half-changed. That has repeatedly sent
+        // debugging down the wrong path: a fix reads as broken, gets "fixed"
+        // again, and the second change is the one that is actually wrong.
+        //
+        // Existing registrations are torn down rather than merely skipped,
+        // because a worker installed before this guard keeps controlling the
+        // page until something removes it.
+        if (process.env.NODE_ENV === 'development') {
+            void navigator.serviceWorker.getRegistrations().then((regs) => {
+                regs.forEach((reg) => void reg.unregister());
+            });
+            void caches?.keys().then((keys) => keys.forEach((k) => void caches.delete(k)));
+            return;
+        }
+
         // Register service worker
         const registerSW = async () => {
             try {
