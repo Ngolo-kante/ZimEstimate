@@ -89,7 +89,7 @@ export const projectTips: Record<string, Tip[]> = {
             id: 'be-1',
             category: 'pro-tip',
             title: 'Use the AI Scanner',
-            content: 'Have an existing quote? Use our AI Quote Scanner to automatically extract items and compare prices with market rates.'
+            content: 'Have a BOQ on paper? Photograph it with From Paper and it becomes a project you can manage.'
         },
         {
             id: 'be-2',

@@ -165,7 +165,7 @@ export default function InflationEnginePage() {
   const highRiskCount = filteredPredictions.filter((p) => p.volatility === 'high').length;
 
   return (
-    <MainLayout title="Inflation Engine">
+    <MainLayout title="Price Outlook">
       <div className="inflation-page">
         {/* Header Stats */}
         <div className="stats-row">

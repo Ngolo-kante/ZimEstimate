@@ -60,7 +60,7 @@ const workflows: Array<{
     {
       id: 'scanner',
       icon: Camera,
-      title: 'Smart Quote Scanner',
+      title: 'From Paper',
       label: 'FIELD READY',
       href: '/ai/quote-scanner',
     },

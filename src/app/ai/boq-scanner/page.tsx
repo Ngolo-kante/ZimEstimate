@@ -167,10 +167,10 @@ function BoqScannerContent() {
 
   return (
     <div className="wrap">
-      <Link href="/ai" className="crumb"><ArrowLeft size={16} /> AI Tools</Link>
+      <Link href="/ai" className="crumb"><ArrowLeft size={16} /> Start from what you have</Link>
 
       <header className="head">
-        <h1>BOQ Scanner</h1>
+        <h1>From Paper</h1>
         <p>
           Photograph a bill of quantities — handwritten on site or printed — and it becomes a
           project you can manage. Figures are read from the page, never estimated.

@@ -15,20 +15,24 @@ import {
 const aiFeatures = [
     {
         id: 'vision-takeoff',
-        title: 'Vision Takeoff',
-        description: 'Upload a floor plan and let AI automatically extract room dimensions, door/window counts, and generate a complete Bill of Quantities.',
+        title: 'From a Plan',
+        // Named for what the user is holding, not for the technology. Someone
+        // landing here is not shopping for "vision takeoff" — they have a
+        // drawing and want to know what it costs. "Takeoff" is correct
+        // quantity-surveying terminology and meaningless to a homeowner.
+        description: 'Have architectural drawings? Upload the floor plan and we read the room sizes, doors and windows off it, then price the materials.',
         icon: Image,
         href: '/ai/vision-takeoff',
         badge: 'Popular',
-        features: ['Automatic room detection', 'Dimension extraction', 'Material calculation', 'BOQ generation'],
+        features: ['Reads room sizes', 'Counts doors and windows', 'Prices the materials', 'Becomes a project'],
     },
     {
         id: 'boq-scanner',
-        title: 'BOQ Scanner',
+        title: 'From Paper',
         // Named for the document, not the technique. "OCR text extraction" told
         // the user how it works rather than what they get, and the previous
         // wording promised price harmonisation the feature never did.
-        description: 'Photograph a bill of quantities — handwritten on site or printed — and turn it into a project you can manage. Figures are read from the page, never estimated.',
+        description: 'Have a BOQ on paper? Photograph it — handwritten or printed — and it becomes a project you can manage. Figures are read from the page, never estimated.',
         icon: Camera,
         href: '/ai/boq-scanner',
         badge: 'New',
@@ -36,26 +40,30 @@ const aiFeatures = [
     },
     {
         id: 'inflation-engine',
-        title: 'Inflation Engine',
-        description: 'AI-powered price predictions based on market trends, historical data, and economic indicators. Plan your purchases strategically.',
+        title: 'Price Outlook',
+        description: 'Not buying yet? See where material prices are heading so you can decide when to buy rather than guessing.',
         icon: ChartLine,
         href: '/ai/inflation-engine',
         badge: null,
-        features: ['1-12 month forecasts', 'Volatility tracking', 'Key factor analysis', 'Confidence scoring'],
+        features: ['1–12 month outlook', 'Which prices move most', 'What is driving them', 'How sure we are'],
     },
 ];
 
 export default function AIHubPage() {
     return (
-        <MainLayout title="AI Tools">
+        <MainLayout title="Start from what you have">
             <div className="ai-hub">
                 {/* Hero Section */}
                 <div className="hero">
                     <div className="hero-icon">
                         <Sparkle size={32} weight="fill" />
                     </div>
-                    <h1>AI-Powered Construction Tools</h1>
-                    <p>Leverage machine learning to save time, reduce errors, and make smarter decisions for your building projects.</p>
+                    <h1>Start from what you have</h1>
+                    {/* The old line sold machine learning. Nobody arrives wanting
+                        machine learning — they arrive holding a drawing, or a
+                        sheet of paper, or nothing yet, and want to know which
+                        door is theirs. */}
+                    <p>A drawing, a BOQ scribbled on site, or nothing but a budget — each one is a way in. Pick whichever matches what is in front of you.</p>
                 </div>
 
                 {/* Feature Cards */}

@@ -5,7 +5,7 @@ import VisionTakeoffWizard from '@/components/vision-takeoff/VisionTakeoffWizard
 
 export default function VisionTakeoffPage() {
   return (
-    <MainLayout title="AI Vision Takeoff">
+    <MainLayout title="From a Plan">
       <VisionTakeoffWizard />
     </MainLayout>
   );
