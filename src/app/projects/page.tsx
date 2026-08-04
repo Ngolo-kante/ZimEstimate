@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { getProjects, deleteProject, archiveProject } from '@/lib/services/projects';
+import { listSavedWork, type SavedWorkItem } from '@/lib/services/savedWork';
 import { clearOptimisticProjectCard, getOptimisticProjectCard } from '@/lib/projectCreationCache';
 import { supabase } from '@/lib/supabase';
 import { Project, ProjectStatus, ProjectScope } from '@/lib/database.types';
@@ -36,7 +37,6 @@ import {
     TrendUp,
     ChartBar,
     Folders,
-    Lightning,
 } from '@phosphor-icons/react';
 
 // Sub-navigation for My Projects section
@@ -44,26 +44,23 @@ function ProjectsSubNav({ active }: { active: 'dashboard' | 'all' | 'quick' }) {
   return (
     <div className="projects-subnav">
       <nav className="subnav-tabs">
-        <Link
-          href="/projects/dashboard"
-          className={`subnav-tab ${active === 'dashboard' ? 'active' : ''}`}
-        >
-          <ChartBar size={18} />
-          Dashboard
-        </Link>
+        {/* My Work leads. Insights is analytics — with one draft estimate and no
+            purchases recorded it is a screen of $0.00 and 0%, which reads as
+            "this product has nothing for you" when the honest answer is "here
+            are your two estimates". */}
         <Link
           href="/projects"
           className={`subnav-tab ${active === 'all' ? 'active' : ''}`}
         >
           <Folders size={18} />
-          All Projects
+          My Work
         </Link>
         <Link
-          href="/projects/quick"
-          className={`subnav-tab ${active === 'quick' ? 'active' : ''}`}
+          href="/projects/dashboard"
+          className={`subnav-tab ${active === 'dashboard' ? 'active' : ''}`}
         >
-          <Lightning size={18} />
-          Quick BOQs
+          <ChartBar size={18} />
+          Insights
         </Link>
       </nav>
 
@@ -75,7 +72,7 @@ function ProjectsSubNav({ active }: { active: 'dashboard' | 'all' | 'quick' }) {
         .subnav-tabs {
           display: flex;
           gap: 8px;
-          background: #f1f5f9;
+          background: var(--color-background);
           padding: 4px;
           border-radius: 12px;
           width: fit-content;
@@ -88,20 +85,20 @@ function ProjectsSubNav({ active }: { active: 'dashboard' | 'all' | 'quick' }) {
           padding: 10px 20px;
           font-size: 0.9rem;
           font-weight: 500;
-          color: #64748b;
+          color: var(--color-text-secondary);
           text-decoration: none;
           border-radius: 8px;
           transition: all 0.2s;
         }
 
         .subnav-tab:hover {
-          color: #0f172a;
+          color: var(--color-text);
           background: rgba(255, 255, 255, 0.5);
         }
 
         .subnav-tab.active {
           background: white;
-          color: #0f172a;
+          color: var(--color-text);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
@@ -197,6 +194,11 @@ function ProjectsContent() {
     const { success, error: showError } = useToast();
     const readOptimisticProject = () => getOptimisticProjectCard();
     const [projects, setProjects] = useState<Project[]>([]);
+    // Quick estimates live in a different table and used to have their own tab,
+    // which asked the user to remember which kind of thing they had made in
+    // order to find it again. They render as cards in the same grid now.
+    const [quickItems, setQuickItems] = useState<SavedWorkItem[]>([]);
+    const [typeFilter, setTypeFilter] = useState<string>('all');
     const [optimisticProject, setOptimisticProject] = useState<{ id: string; name: string; location: string } | null>(() => readOptimisticProject());
     const [isLoading, setIsLoading] = useState(() => !readOptimisticProject());
     const [error, setError] = useState<string | null>(null);
@@ -264,6 +266,37 @@ function ProjectsContent() {
 
         return result;
     }, [projects, searchQuery, statusFilter, scopeFilter, sortBy]);
+
+    // Quick estimates answer to the search box and the type pills. Status and
+    // scope are project concepts and do not apply to them.
+    const filteredQuick = useMemo(() => {
+        let result = quickItems;
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            result = result.filter((i) => i.name.toLowerCase().includes(q) || i.typeLabel.toLowerCase().includes(q));
+        }
+        if (typeFilter !== 'all') result = result.filter((i) => i.filterKey === typeFilter);
+        return result;
+    }, [quickItems, searchQuery, typeFilter]);
+
+    // Selecting a quick type hides full builds, and vice versa.
+    const visibleProjects = useMemo(
+        () => (typeFilter === 'all' || typeFilter === 'project' ? filteredProjects : []),
+        [filteredProjects, typeFilter]
+    );
+
+    const typeFilters = useMemo(() => {
+        const counts = new Map<string, { label: string; count: number }>();
+        if (projects.length) counts.set('project', { label: 'Full build', count: projects.length });
+        quickItems.forEach((i) => {
+            const prev = counts.get(i.filterKey);
+            counts.set(i.filterKey, { label: i.typeLabel, count: (prev?.count ?? 0) + 1 });
+        });
+        return [
+            { key: 'all', label: 'All', count: projects.length + quickItems.length },
+            ...[...counts.entries()].map(([key, v]) => ({ key, ...v })).sort((a, b) => b.count - a.count),
+        ];
+    }, [projects.length, quickItems]);
 
     const projectStats = useMemo(() => {
         const total = projects.length;
@@ -386,13 +419,21 @@ function ProjectsContent() {
         }
         setError(null);
 
-        const { projects: loadedProjects, error: loadError } = await getProjects();
+        const [{ projects: loadedProjects, error: loadError }, saved] = await Promise.all([
+            getProjects(),
+            listSavedWork(),
+        ]);
 
         if (loadError) {
             setError(loadError.message);
         } else {
             setProjects(loadedProjects);
         }
+
+        // listSavedWork returns both kinds; the projects half is already loaded
+        // above with the fields this page needs, so only the quick estimates are
+        // taken from it.
+        setQuickItems(saved.items.filter((i) => i.kind === 'quick'));
 
         if (showLoadingState) {
             setIsLoading(false);
@@ -613,6 +654,25 @@ function ProjectsContent() {
                             )}
                         </div>
 
+                        {/* Built from what the user actually has, so someone with no
+                            solar estimate is never offered a Solar filter. */}
+                        {typeFilters.length > 2 && (
+                            <div className="type-pills">
+                                {typeFilters.map((f) => (
+                                    <button
+                                        key={f.key}
+                                        type="button"
+                                        className={`type-pill${typeFilter === f.key ? ' active' : ''}`}
+                                        onClick={() => setTypeFilter(f.key)}
+                                        aria-pressed={typeFilter === f.key}
+                                    >
+                                        {f.label}
+                                        <span className="type-pill-count">{f.count}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
                         <div className={`filter-group${isMobile ? ' mobile-filters' : ''}${isMobile && !showFilters ? ' hidden' : ''}`}>
                             <div className="filter-select">
                                 <Funnel size={16} weight="light" />
@@ -704,7 +764,7 @@ function ProjectsContent() {
                 )}
 
                 {/* No Results State */}
-                {!isLoading && !error && projects.length > 0 && filteredProjects.length === 0 && !optimisticProject && (
+                {!isLoading && !error && (projects.length > 0 || quickItems.length > 0) && visibleProjects.length === 0 && filteredQuick.length === 0 && !optimisticProject && (
                     <Card className="empty-state">
                         <MagnifyingGlass size={48} weight="light" />
                         <h3>No matching projects</h3>
@@ -716,7 +776,7 @@ function ProjectsContent() {
                 )}
 
                 {/* Projects Grid */}
-                {!error && (optimisticProject || (!isLoading && filteredProjects.length > 0)) && (
+                {!error && (optimisticProject || (!isLoading && (visibleProjects.length > 0 || filteredQuick.length > 0))) && (
                     <div className="projects-grid">
                         {/* Optimistic "Creating..." card */}
                         {optimisticProject && (
@@ -743,7 +803,29 @@ function ProjectsContent() {
                                 </Card>
                             </div>
                         )}
-                        {filteredProjects.map((project, index) => (
+                        {filteredQuick.map((item, index) => (
+                            <Link key={item.id} href={item.href} className="project-link">
+                                <Card className="project-card reveal" data-delay={(index % 4) + 1}>
+                                    <CardHeader>
+                                        <div className="project-header">
+                                            <CardTitle>{item.name}</CardTitle>
+                                            {/* The chip is what makes it obvious these rows open a BOQ
+                                                rather than the project workspace. Cards that look
+                                                identical but behave differently would be worse than
+                                                the two tabs this replaced. */}
+                                            <CardBadge variant="info">{item.typeLabel}</CardBadge>
+                                        </div>
+                                    </CardHeader>
+                                    <div className="quick-card-body">
+                                        <span className="budget-label">Estimated</span>
+                                        <span className="budget-value">
+                                            <PriceDisplay priceUsd={item.totalUsd} priceZwg={item.totalUsd * 30} />
+                                        </span>
+                                    </div>
+                                </Card>
+                            </Link>
+                        ))}
+                        {visibleProjects.map((project, index) => (
                             <Link key={project.id} href={`/projects/${project.id}`} className="project-link">
                                 <Card className={`project-card${highlightedProjectId === project.id ? ' highlight-new' : ''} reveal`} data-delay={(index % 4) + 1}>
                                     <CardHeader>
@@ -1060,6 +1142,48 @@ function ProjectsContent() {
                     padding: 4px;
                 }
                 
+                .type-pills {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    margin-bottom: 12px;
+                }
+
+                .type-pill {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 6px 12px;
+                    border-radius: 999px;
+                    border: 1px solid var(--color-border);
+                    background: var(--color-surface);
+                    color: var(--color-text-secondary);
+                    font-size: 13px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+                }
+
+                .type-pill:hover { border-color: var(--color-accent); }
+
+                .type-pill.active {
+                    background: var(--color-accent);
+                    border-color: var(--color-accent);
+                    color: #fff;
+                }
+
+                .type-pill-count {
+                    font-size: 11px;
+                    opacity: 0.75;
+                }
+
+                .quick-card-body {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                    padding: 0 20px 20px;
+                }
+
                 .filter-group {
                     display: flex;
                     gap: var(--space-3);

@@ -34,11 +34,11 @@ const PROJECT_TYPE_CONFIG: Record<string, {
   icon: typeof Lightning;
   gradient: string;
 }> = {
-  septic:   { label: 'Septic Tank',   icon: Toilet,        gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+  septic:   { label: 'Septic Tank',   icon: Toilet,        gradient: 'linear-gradient(135deg, var(--color-warning), #d97706)' },
   solar:    { label: 'Solar System',   icon: Lightning,     gradient: 'linear-gradient(135deg, #eab308, #ca8a04)' },
-  water:    { label: 'Water Tank',     icon: Drop,          gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)' },
+  water:    { label: 'Water Tank',     icon: Drop,          gradient: 'linear-gradient(135deg, var(--color-accent), var(--color-accent))' },
   borehole: { label: 'Borehole',       icon: CirclesThree,  gradient: 'linear-gradient(135deg, #14b8a6, #0d9488)' },
-  fencing:  { label: 'Fencing',        icon: Rows,          gradient: 'linear-gradient(135deg, #22c55e, #16a34a)' },
+  fencing:  { label: 'Fencing',        icon: Rows,          gradient: 'linear-gradient(135deg, #22c55e, var(--color-success))' },
   paving:   { label: 'Paving',         icon: Path,          gradient: 'linear-gradient(135deg, #78716c, #57534e)' },
 };
 
@@ -50,11 +50,11 @@ function ProjectsSubNav() {
       <nav className="subnav-tabs">
         <Link href="/projects/dashboard" className="subnav-tab">
           <ChartBar size={18} />
-          Dashboard
+          Insights
         </Link>
         <Link href="/projects" className="subnav-tab">
           <Folders size={18} />
-          All Projects
+          My Work
         </Link>
         <Link href="/projects/quick" className="subnav-tab active">
           <Lightning size={18} />
@@ -69,7 +69,7 @@ function ProjectsSubNav() {
         .subnav-tabs {
           display: flex;
           gap: 8px;
-          background: #f1f5f9;
+          background: var(--color-background);
           padding: 4px;
           border-radius: 12px;
           width: fit-content;
@@ -81,18 +81,18 @@ function ProjectsSubNav() {
           padding: 10px 20px;
           font-size: 0.9rem;
           font-weight: 500;
-          color: #64748b;
+          color: var(--color-text-secondary);
           text-decoration: none;
           border-radius: 8px;
           transition: all 0.2s;
         }
         .subnav-tab:hover {
-          color: #0f172a;
+          color: var(--color-text);
           background: rgba(255, 255, 255, 0.5);
         }
         .subnav-tab.active {
           background: white;
-          color: #0f172a;
+          color: var(--color-text);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         @media (max-width: 480px) {
@@ -179,10 +179,10 @@ function QuickBOQsContent() {
             gap: '12px',
           }}>
             <div>
-              <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
                 Quick BOQs
               </h1>
-              <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '4px' }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
                 Your saved utility and quick project estimates
               </p>
             </div>
@@ -204,9 +204,9 @@ function QuickBOQsContent() {
               {[1, 2, 3].map((i) => (
                 <Card key={i}>
                   <div style={{ padding: '24px' }}>
-                    <div style={{ height: '20px', width: '60%', background: '#e2e8f0', borderRadius: '6px', marginBottom: '12px' }} />
-                    <div style={{ height: '14px', width: '40%', background: '#f1f5f9', borderRadius: '4px', marginBottom: '8px' }} />
-                    <div style={{ height: '14px', width: '50%', background: '#f1f5f9', borderRadius: '4px' }} />
+                    <div style={{ height: '20px', width: '60%', background: 'var(--color-border)', borderRadius: '6px', marginBottom: '12px' }} />
+                    <div style={{ height: '14px', width: '40%', background: 'var(--color-background)', borderRadius: '4px', marginBottom: '8px' }} />
+                    <div style={{ height: '14px', width: '50%', background: 'var(--color-background)', borderRadius: '4px' }} />
                   </div>
                 </Card>
               ))}
@@ -220,11 +220,11 @@ function QuickBOQsContent() {
                 padding: '64px 24px',
                 textAlign: 'center',
               }}>
-                <Lightning size={48} weight="duotone" style={{ color: '#94a3b8', marginBottom: '16px' }} />
+                <Lightning size={48} weight="duotone" style={{ color: 'var(--color-text-muted)', marginBottom: '16px' }} />
                 <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>
                   No quick estimates yet
                 </h3>
-                <p style={{ color: '#64748b', marginBottom: '24px', maxWidth: '400px', margin: '0 auto 24px' }}>
+                <p style={{ color: 'var(--color-text-secondary)', marginBottom: '24px', maxWidth: '400px', margin: '0 auto 24px' }}>
                   Create your first quick estimate for solar, water, septic, borehole, fencing, or paving projects.
                 </p>
                 <Link href="/quick-projects">
@@ -248,7 +248,7 @@ function QuickBOQsContent() {
                 const config = PROJECT_TYPE_CONFIG[boq.projectType] || {
                   label: boq.projectType,
                   icon: Lightning,
-                  gradient: 'linear-gradient(135deg, #94a3b8, #64748b)',
+                  gradient: 'linear-gradient(135deg, var(--color-text-muted), var(--color-text-secondary))',
                 };
                 const Icon = config.icon;
                 const total = getTotal(boq);
@@ -285,10 +285,10 @@ function QuickBOQsContent() {
                               <Icon size={20} weight="fill" style={{ color: 'white' }} />
                             </div>
                             <div>
-                              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a', margin: 0 }}>
+                              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)', margin: 0 }}>
                                 {(boq.answers?.project_name as string) || config.label}
                               </h3>
-                              <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                                 {config.label} &middot; {itemCount} items
                               </span>
                             </div>
@@ -313,7 +313,7 @@ function QuickBOQsContent() {
                           marginBottom: '12px',
                         }}>
                           <CurrencyDollar size={18} weight="duotone" style={{ color: '#22c55e' }} />
-                          <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
+                          <span style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text)' }}>
                             {formatPrice(total, total * exchangeRate)}
                           </span>
                         </div>
@@ -324,7 +324,7 @@ function QuickBOQsContent() {
                           alignItems: 'center',
                           gap: '6px',
                           fontSize: '0.8rem',
-                          color: '#94a3b8',
+                          color: 'var(--color-text-muted)',
                         }}>
                           <Calendar size={14} />
                           {formatDate(boq.createdAt)}
@@ -360,14 +360,14 @@ function QuickBOQsContent() {
           .delete-btn {
             background: none;
             border: none;
-            color: #94a3b8;
+            color: var(--color-text-muted);
             cursor: pointer;
             padding: 6px;
             border-radius: 6px;
             transition: all 0.15s;
           }
           .delete-btn:hover {
-            color: #ef4444;
+            color: var(--color-error);
             background: #fef2f2;
           }
         `}</style>

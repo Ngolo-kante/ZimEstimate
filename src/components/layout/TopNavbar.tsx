@@ -33,7 +33,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Home', href: '/home' },
   { label: 'Budget Estimator', href: '/quick-budget' },
-  { label: 'My Projects', href: '/projects/dashboard', activePrefix: '/projects' },
+  { label: 'My Projects', href: '/projects', activePrefix: '/projects' },
   { label: 'Quick Projects', href: '/quick-projects' },
   { label: 'Market Insights', href: '/market-insights' },
   { label: 'Templates', href: '/templates' },

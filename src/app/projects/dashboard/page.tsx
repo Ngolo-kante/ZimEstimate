@@ -52,26 +52,23 @@ function ProjectsSubNav({ active }: { active: 'dashboard' | 'all' | 'quick' }) {
   return (
     <div className="projects-subnav">
       <nav className="subnav-tabs">
-        <Link
-          href="/projects/dashboard"
-          className={`subnav-tab ${active === 'dashboard' ? 'active' : ''}`}
-        >
-          <ChartBar size={18} />
-          Dashboard
-        </Link>
+        {/* My Work leads. Insights is analytics — with one draft estimate and no
+            purchases recorded it is a screen of $0.00 and 0%, which reads as
+            "this product has nothing for you" when the honest answer is "here
+            are your two estimates". */}
         <Link
           href="/projects"
           className={`subnav-tab ${active === 'all' ? 'active' : ''}`}
         >
           <Folders size={18} />
-          All Projects
+          My Work
         </Link>
         <Link
-          href="/projects/quick"
-          className={`subnav-tab ${active === 'quick' ? 'active' : ''}`}
+          href="/projects/dashboard"
+          className={`subnav-tab ${active === 'dashboard' ? 'active' : ''}`}
         >
-          <Lightning size={18} />
-          Quick BOQs
+          <ChartBar size={18} />
+          Insights
         </Link>
       </nav>
 
@@ -83,7 +80,7 @@ function ProjectsSubNav({ active }: { active: 'dashboard' | 'all' | 'quick' }) {
         .subnav-tabs {
           display: flex;
           gap: 8px;
-          background: #f1f5f9;
+          background: var(--color-background);
           padding: 4px;
           border-radius: 12px;
           width: fit-content;
@@ -96,20 +93,20 @@ function ProjectsSubNav({ active }: { active: 'dashboard' | 'all' | 'quick' }) {
           padding: 10px 20px;
           font-size: 0.9rem;
           font-weight: 500;
-          color: #64748b;
+          color: var(--color-text-secondary);
           text-decoration: none;
           border-radius: 8px;
           transition: all 0.2s;
         }
 
         .subnav-tab:hover {
-          color: #0f172a;
+          color: var(--color-text);
           background: rgba(255, 255, 255, 0.5);
         }
 
         .subnav-tab.active {
           background: white;
-          color: #0f172a;
+          color: var(--color-text);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
@@ -176,14 +173,14 @@ function DashboardContent() {
             justify-content: center;
             min-height: 400px;
             gap: 16px;
-            color: #64748b;
+            color: var(--color-text-secondary);
           }
           .spinner {
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            border: 3px solid #e2e8f0;
-            border-top-color: #3b82f6;
+            border: 3px solid var(--color-border);
+            border-top-color: var(--color-accent);
             animation: spin 0.8s linear infinite;
           }
           @keyframes spin { to { transform: rotate(360deg); } }
@@ -216,11 +213,11 @@ function DashboardContent() {
             min-height: 500px;
             gap: 16px;
             text-align: center;
-            color: #64748b;
+            color: var(--color-text-secondary);
           }
           .empty-dashboard h2 {
             margin: 0;
-            color: #0f172a;
+            color: var(--color-text);
             font-size: 1.5rem;
           }
           .empty-dashboard p {
@@ -233,10 +230,10 @@ function DashboardContent() {
   }
 
   const toneColors = {
-    default: { border: 'transparent', iconBg: '#f1f5f9', iconColor: '#64748b' },
-    positive: { border: '#16a34a', iconBg: '#dcfce7', iconColor: '#16a34a' },
-    negative: { border: '#ef4444', iconBg: '#fee2e2', iconColor: '#ef4444' },
-    warning: { border: '#f59e0b', iconBg: '#fef3c7', iconColor: '#f59e0b' },
+    default: { border: 'transparent', iconBg: 'var(--color-background)', iconColor: 'var(--color-text-secondary)' },
+    positive: { border: 'var(--color-success)', iconBg: '#dcfce7', iconColor: 'var(--color-success)' },
+    negative: { border: 'var(--color-error)', iconBg: '#fee2e2', iconColor: 'var(--color-error)' },
+    warning: { border: 'var(--color-warning)', iconBg: '#fef3c7', iconColor: 'var(--color-warning)' },
   };
 
   const kpis = [
@@ -384,7 +381,7 @@ function DashboardContent() {
                       <div className="spend-micro-bar">
                         <div className="spend-micro-fill" style={{
                           width: `${spendPct}%`,
-                          background: overBudget ? '#ef4444' : spendPct > 75 ? '#f59e0b' : '#3b82f6',
+                          background: overBudget ? 'var(--color-error)' : spendPct > 75 ? 'var(--color-warning)' : 'var(--color-accent)',
                         }} />
                       </div>
                     </div>
@@ -452,7 +449,7 @@ function DashboardContent() {
                       r="42"
                       style={{
                         strokeDasharray: `${spendProgress * 2.64} 264`,
-                        stroke: spendProgress > 100 ? '#ef4444' : spendProgress > 75 ? '#f59e0b' : '#16a34a',
+                        stroke: spendProgress > 100 ? 'var(--color-error)' : spendProgress > 75 ? 'var(--color-warning)' : 'var(--color-success)',
                       }}
                     />
                     <text x="50" y="54" className="ring-text">{spendProgress.toFixed(0)}%</text>
@@ -464,7 +461,7 @@ function DashboardContent() {
                   className="pb-fill"
                   style={{
                     width: `${Math.min(spendProgress, 100)}%`,
-                    background: spendProgress > 100 ? '#ef4444' : spendProgress > 75 ? '#f59e0b' : '#16a34a',
+                    background: spendProgress > 100 ? 'var(--color-error)' : spendProgress > 75 ? 'var(--color-warning)' : 'var(--color-success)',
                   }}
                 />
               </div>
@@ -617,7 +614,7 @@ function DashboardContent() {
 
         .kpi-card {
           background: white;
-          border: 1px solid #e2e8f0;
+          border: 1px solid var(--color-border);
           border-left-width: 4px;
           border-radius: 14px;
           padding: 18px 20px;
@@ -640,7 +637,7 @@ function DashboardContent() {
         .kpi-label {
           font-size: 0.8rem;
           font-weight: 600;
-          color: #64748b;
+          color: var(--color-text-secondary);
           text-transform: uppercase;
           letter-spacing: 0.04em;
         }
@@ -657,20 +654,20 @@ function DashboardContent() {
         .kpi-value {
           font-size: 1.35rem;
           font-weight: 800;
-          color: #0f172a;
+          color: var(--color-text);
           letter-spacing: -0.01em;
         }
 
         .kpi-sub {
           font-size: 0.75rem;
-          color: #94a3b8;
+          color: var(--color-text-muted);
           margin-top: 4px;
         }
 
         /* ── Projects Panel ── */
         .projects-panel {
           background: white;
-          border: 1px solid #e2e8f0;
+          border: 1px solid var(--color-border);
           border-radius: 18px;
           overflow: hidden;
           box-shadow: 0 2px 8px rgba(0,0,0,0.04);
@@ -681,13 +678,13 @@ function DashboardContent() {
           justify-content: space-between;
           align-items: center;
           padding: 18px 24px;
-          border-bottom: 1px solid #f1f5f9;
+          border-bottom: 1px solid var(--color-background);
         }
 
         .panel-head h2 {
           font-size: 1.1rem;
           font-weight: 700;
-          color: #0f172a;
+          color: var(--color-text);
           margin: 0;
         }
 
@@ -697,7 +694,7 @@ function DashboardContent() {
           gap: 6px;
           font-size: 0.82rem;
           font-weight: 600;
-          color: #3b82f6;
+          color: var(--color-accent);
           text-decoration: none;
           padding: 6px 14px;
           border-radius: 8px;
@@ -723,7 +720,7 @@ function DashboardContent() {
           gap: 8px;
           padding: 0 24px;
           min-height: 56px;
-          border-bottom: 1px solid #f1f5f9;
+          border-bottom: 1px solid var(--color-background);
           transition: background 0.12s ease;
         }
 
@@ -764,7 +761,7 @@ function DashboardContent() {
         .pt-header .pt-cell {
           font-size: 0.7rem;
           font-weight: 700;
-          color: #94a3b8;
+          color: var(--color-text-muted);
           text-transform: uppercase;
           letter-spacing: 0.06em;
         }
@@ -776,7 +773,7 @@ function DashboardContent() {
         }
 
         .pt-data:hover {
-          background: #f8fafc;
+          background: var(--color-background);
         }
 
         .pt-row-link:last-child .pt-data {
@@ -786,7 +783,7 @@ function DashboardContent() {
         .pt-project-name {
           font-size: 0.92rem;
           font-weight: 600;
-          color: #0f172a;
+          color: var(--color-text);
           display: block;
           white-space: nowrap;
           overflow: hidden;
@@ -798,7 +795,7 @@ function DashboardContent() {
           align-items: center;
           gap: 3px;
           font-size: 0.7rem;
-          color: #94a3b8;
+          color: var(--color-text-muted);
           margin-top: 2px;
         }
 
@@ -817,35 +814,35 @@ function DashboardContent() {
         }
 
         .pt-badge.draft {
-          background: #f1f5f9;
-          color: #64748b;
+          background: var(--color-background);
+          color: var(--color-text-secondary);
         }
 
         .pt-badge.active {
           background: #dcfce7;
-          color: #16a34a;
+          color: var(--color-success);
         }
 
         .pt-badge.completed {
           background: #dbeafe;
-          color: #2563eb;
+          color: var(--color-accent);
         }
 
         /* Money cells */
         .pt-money {
           font-size: 0.92rem;
           font-weight: 700;
-          color: #0f172a;
+          color: var(--color-text);
           white-space: nowrap;
         }
 
         .pt-money.over {
-          color: #ef4444;
+          color: var(--color-error);
         }
 
         .spend-micro-bar {
           height: 3px;
-          background: #e2e8f0;
+          background: var(--color-border);
           border-radius: 99px;
           overflow: hidden;
           margin-top: 5px;
@@ -863,10 +860,10 @@ function DashboardContent() {
           height: 38px;
           border-radius: 50%;
           background: conic-gradient(
-            #3b82f6 0deg,
-            #3b82f6 var(--pct),
-            #e2e8f0 var(--pct),
-            #e2e8f0 360deg
+            var(--color-accent) 0deg,
+            var(--color-accent) var(--pct),
+            var(--color-border) var(--pct),
+            var(--color-border) 360deg
           );
           display: flex;
           align-items: center;
@@ -899,7 +896,7 @@ function DashboardContent() {
         }
 
         .pt-data:hover .pt-arrow {
-          color: #3b82f6;
+          color: var(--color-accent);
           transform: translateX(3px);
         }
 
@@ -911,7 +908,7 @@ function DashboardContent() {
           padding: 48px 24px;
           text-align: center;
           gap: 12px;
-          color: #94a3b8;
+          color: var(--color-text-muted);
         }
 
         .empty-projects p {
@@ -939,13 +936,13 @@ function DashboardContent() {
 
         .spend-label {
           font-size: 0.82rem;
-          color: #64748b;
+          color: var(--color-text-secondary);
         }
 
         .spend-value {
           font-size: 1.2rem;
           font-weight: 700;
-          color: #0f172a;
+          color: var(--color-text);
         }
 
         .progress-ring-lg {
@@ -960,7 +957,7 @@ function DashboardContent() {
 
         .ring-bg {
           fill: none;
-          stroke: #e2e8f0;
+          stroke: var(--color-border);
           stroke-width: 8;
         }
 
@@ -972,7 +969,7 @@ function DashboardContent() {
         }
 
         .ring-text {
-          fill: #0f172a;
+          fill: var(--color-text);
           font-size: 18px;
           font-weight: 700;
           text-anchor: middle;
@@ -982,7 +979,7 @@ function DashboardContent() {
 
         .progress-bar-lg {
           height: 7px;
-          background: #e2e8f0;
+          background: var(--color-border);
           border-radius: 99px;
           overflow: hidden;
         }
@@ -1022,14 +1019,14 @@ function DashboardContent() {
         .bar-wrapper .bar-fill {
           width: 100%;
           min-height: 4px;
-          background: linear-gradient(180deg, #3b82f6, #1e40af);
+          background: linear-gradient(180deg, var(--color-accent), #1e40af);
           border-radius: 5px 5px 0 0;
           transition: height 0.3s ease;
         }
 
         .bar-label {
           font-size: 0.68rem;
-          color: #94a3b8;
+          color: var(--color-text-muted);
           text-transform: uppercase;
           letter-spacing: 0.03em;
           font-weight: 600;
@@ -1038,7 +1035,7 @@ function DashboardContent() {
         .bar-value {
           font-size: 0.68rem;
           font-weight: 600;
-          color: #64748b;
+          color: var(--color-text-secondary);
         }
 
         /* Shared list section */
@@ -1067,18 +1064,18 @@ function DashboardContent() {
 
         .supplier-icon {
           background: #eff6ff;
-          color: #3b82f6;
+          color: var(--color-accent);
         }
 
         .purchase-icon {
           background: #f0fdf4;
-          color: #16a34a;
+          color: var(--color-success);
         }
 
         .list-name {
           font-size: 0.88rem;
           font-weight: 500;
-          color: #0f172a;
+          color: var(--color-text);
           flex: 1;
           min-width: 0;
           overflow: hidden;
@@ -1095,27 +1092,27 @@ function DashboardContent() {
 
         .list-meta {
           font-size: 0.72rem;
-          color: #94a3b8;
+          color: var(--color-text-muted);
         }
 
         .list-bar {
           flex: 1;
           height: 5px;
-          background: #e2e8f0;
+          background: var(--color-border);
           border-radius: 99px;
           overflow: hidden;
         }
 
         .list-bar .bar-fill {
           height: 100%;
-          background: linear-gradient(90deg, #3b82f6, #1e40af);
+          background: linear-gradient(90deg, var(--color-accent), #1e40af);
           border-radius: 99px;
         }
 
         .list-amount {
           font-weight: 700;
           font-size: 0.85rem;
-          color: #0f172a;
+          color: var(--color-text);
           min-width: 70px;
           text-align: right;
           white-space: nowrap;
@@ -1124,7 +1121,7 @@ function DashboardContent() {
         .empty-sub {
           padding: 24px;
           text-align: center;
-          color: #94a3b8;
+          color: var(--color-text-muted);
           font-size: 0.88rem;
         }
 
