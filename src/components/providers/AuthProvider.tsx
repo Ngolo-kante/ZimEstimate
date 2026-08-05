@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { Profile, TIER_LIMITS } from '@/lib/database.types';
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, [fetchProfile, fetchProjectCount]);
 
     // Sign up with email and password
-    const signUp = async (email: string, password: string, fullName?: string) => {
+    const signUp = useCallback(async (email: string, password: string, fullName?: string) => {
         const siteUrl = getBrowserSiteUrl();
         const { data, error } = await supabase.auth.signUp({
             email,
@@ -151,17 +151,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         return { error, data };
-    };
+    }, []);
 
     // Sign in with email and password
-    const signIn = async (email: string, password: string) => {
+    const signIn = useCallback(async (email: string, password: string) => {
         const { error } = await supabase.auth.signInWithPassword({
             email,
             password,
         });
 
         return { error };
-    };
+    }, []);
 
     // Sign in with Google OAuth.
     //
@@ -169,7 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // is unset, because it works with no extra configuration — at the cost of
     // Google's sign-in screen naming the Supabase host rather than ours. See
     // lib/googleIdentity.ts for why that string cannot be changed here.
-    const signInWithGoogle = async () => {
+    const signInWithGoogle = useCallback(async () => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
@@ -178,11 +178,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         return { error };
-    };
+    }, []);
 
     // Exchanges a Google ID token obtained in the browser for a Supabase
     // session. No redirect through Supabase, so Google shows our own origin.
-    const signInWithGoogleIdToken = async (token: string, nonce: string) => {
+    const signInWithGoogleIdToken = useCallback(async (token: string, nonce: string) => {
         const { error } = await supabase.auth.signInWithIdToken({
             provider: 'google',
             token,
@@ -190,16 +190,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         return { error };
-    };
+    }, []);
 
     // Sign out
-    const signOut = async () => {
+    const signOut = useCallback(async () => {
         await supabase.auth.signOut();
         setUser(null);
         setProfile(null);
         setSession(null);
         setProjectCount(0);
-    };
+    }, []);
 
     // Refresh profile data
     const refreshProfile = async () => {
@@ -287,7 +287,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
     }, [fetchProjectCount, user?.id]);
 
-    const value: AuthContextType = {
+    // Memoised, because this object is handed to every useAuth() consumer in the
+    // app. Rebuilt on each render it made all of them re-render whenever
+    // anything here changed, and handed out a fresh signInWithGoogleIdToken
+    // every time — which is one of the two things that had the Google button
+    // rebuilding itself mid-typing on the login page.
+    //
+    // refreshProfile, updateProfile and the tier helpers stay unmemoised on
+    // purpose: they close over `user`, `profile` and `projectCount`, so a
+    // useCallback would need those as dependencies and change just as often.
+    // Listing them here is honest about that rather than hiding it behind a
+    // wrapper that does nothing.
+    const value: AuthContextType = useMemo(() => ({
         user,
         profile,
         session,
@@ -304,7 +315,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         canUseAIFeatures,
         canUseAdvancedExport,
         projectCount,
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }), [
+        user, profile, session, isLoading, projectCount,
+        signUp, signIn, signInWithGoogle, signInWithGoogleIdToken, signOut,
+    ]);
 
     return (
         <AuthContext.Provider value={value}>

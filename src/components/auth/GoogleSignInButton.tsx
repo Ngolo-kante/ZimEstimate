@@ -37,6 +37,21 @@ export default function GoogleSignInButton({
   const [useFallback, setUseFallback] = useState(!getGoogleClientId());
   const [isWorking, setIsWorking] = useState(false);
 
+  // Held in refs so the setup effect below does not depend on them.
+  //
+  // Callers pass onError as an inline arrow — onError={(m) => setError(m)} —
+  // which is a new function on every render of the page. With it in the
+  // dependency array, every keystroke in the email field tore down and rebuilt
+  // Google's iframe button, so the page visibly flickered while typing and did
+  // a fresh nonce generation per character. signInWithGoogleIdToken has the
+  // same problem: it is recreated on every AuthProvider render.
+  const onErrorRef = useRef(onError);
+  const signInWithTokenRef = useRef(signInWithGoogleIdToken);
+  useEffect(() => {
+    onErrorRef.current = onError;
+    signInWithTokenRef.current = signInWithGoogleIdToken;
+  });
+
   const handleFallback = useCallback(async () => {
     setIsWorking(true);
     const { error } = await signInWithGoogle();
@@ -65,10 +80,10 @@ export default function GoogleSignInButton({
             setIsWorking(true);
             // Supabase gets the raw nonce and hashes it to compare against the
             // hash Google embedded in the token.
-            const { error } = await signInWithGoogleIdToken(response.credential, raw);
+            const { error } = await signInWithTokenRef.current(response.credential, raw);
 
             if (error) {
-              onError?.(error.message);
+              onErrorRef.current?.(error.message);
               setIsWorking(false);
               return;
             }
@@ -78,6 +93,11 @@ export default function GoogleSignInButton({
             window.location.href = redirectTo;
           },
         });
+
+        // Emptied first: StrictMode mounts, unmounts and remounts in
+        // development, and renderButton appends rather than replaces, so
+        // without this the dev build shows two Google buttons stacked.
+        containerRef.current.innerHTML = '';
 
         window.google.accounts.id.renderButton(containerRef.current, {
           type: 'standard',
@@ -99,7 +119,9 @@ export default function GoogleSignInButton({
     return () => {
       cancelled = true;
     };
-  }, [onError, redirectTo, signInWithGoogleIdToken]);
+    // redirectTo only. Everything else the setup needs is read through a ref at
+    // call time, so a parent re-rendering cannot rebuild Google's button.
+  }, [redirectTo]);
 
   // Styles live here rather than on the pages: styled-jsx scopes to the
   // component that declares it, so the .google-btn rules on the login and
