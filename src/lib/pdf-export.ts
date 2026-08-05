@@ -434,6 +434,64 @@ interface VisionBOQData {
     };
 }
 
+/**
+ * A saved quick estimate, in the shape exportBOQToPDF expects.
+ *
+ * Pulled out so the same PDF a user gets by opening the estimate is also what
+ * they get from the three-dot menu on its card — before this, only the detail
+ * page could produce one, so "Download BOQ PDF" existed on a full-project card
+ * and had no equivalent on a quick estimate's.
+ */
+export interface QuickEstimatePdfSource {
+    name: string;
+    typeLabel: string;
+    location: string | null;
+    boqItems: Array<{
+        description: string;
+        category: string;
+        quantity: number;
+        unit: string;
+        unitCostUsd: number;
+        included?: boolean;
+        owned?: boolean;
+    }>;
+    labor?: { enabled?: boolean };
+}
+
+export function downloadQuickEstimatePDF(boq: QuickEstimatePdfSource): { error: string | null } {
+    const included = boq.boqItems.filter((i) => i.included !== false && !i.owned);
+    if (included.length === 0) {
+        return { error: 'This estimate has no items to download.' };
+    }
+
+    const totalUsd = included.reduce((sum, i) => sum + i.quantity * i.unitCostUsd, 0);
+
+    exportBOQToPDF(
+        {
+            projectName: boq.name,
+            location: boq.location || '',
+            totalArea: 0,
+            items: included.map((i) => ({
+                material_name: i.description,
+                category: i.category,
+                quantity: i.quantity,
+                unit: i.unit,
+                unit_price_usd: i.unitCostUsd,
+                unit_price_zwg: i.unitCostUsd * 27,
+            })),
+            totals: { usd: totalUsd, zwg: totalUsd * 27 },
+            config: {
+                scope: boq.typeLabel,
+                brickType: '',
+                cementType: '',
+                includeLabor: boq.labor?.enabled ?? false,
+            },
+        },
+        'USD',
+    );
+    return { error: null };
+}
+
 export function exportBOQToPDF(data: VisionBOQData, currency: 'USD' | 'ZWG' = 'USD'): void {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();

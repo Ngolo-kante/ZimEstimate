@@ -87,7 +87,11 @@ export default function PhoneNumberModal({
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 50;
+          /* Was 50 — below MainLayout's persistent bottom nav bar (z-index:
+             100), which rendered on top of this modal's lower portion on any
+             page short enough for the centred content to reach the bottom
+             72px of the viewport. */
+          z-index: var(--z-modal);
           padding: 24px;
         }
 

@@ -1885,7 +1885,11 @@ export default function MarketplacePage() {
             background: var(--color-surface);
             padding: var(--space-6);
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
-            z-index: 100;
+            /* Was 100 — an exact tie with MainLayout's persistent bottom nav
+               bar, which this page uses and which is visible at this same
+               breakpoint. Ties resolve by DOM order, and the nav renders
+               after page content, so it won every time. */
+            z-index: var(--z-modal);
             max-height: 50vh;
             overflow-y: auto;
           }

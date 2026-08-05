@@ -976,7 +976,10 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     bottom: 0;
                     background: rgba(15, 23, 42, 0.4);
                     backdrop-filter: blur(4px);
-                    z-index: 100;
+                    /* Was 100 — an exact tie with MainLayout's persistent bottom
+                       nav bar. Ties resolve by DOM order, and the nav renders
+                       after page content, so it won every time. */
+                    z-index: var(--z-modal);
                     display: flex;
                     align-items: center;
                     justify-content: center;

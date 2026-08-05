@@ -217,7 +217,11 @@ export default function SolarConfigForm({ config, onChange }: SolarConfigFormPro
           display: flex;
           gap: 40px;
           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-          z-index: 100;
+          /* Was 100 — an exact tie with MainLayout's persistent bottom nav
+             bar, and at 20px from the bottom this floating pill sits entirely
+             within the nav's 72px strip, so the nav would fully hide it on
+             any page that renders this component inside MainLayout. */
+          z-index: var(--z-modal);
           width: fit-content;
         }
 

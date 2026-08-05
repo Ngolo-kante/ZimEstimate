@@ -13,9 +13,9 @@ import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { getProjects, deleteProject, archiveProject, getBOQItems } from '@/lib/services/projects';
-import { downloadBOQPDF } from '@/lib/pdf-export';
-import { listSavedWork, type SavedWorkItem, type SavedWorkKind } from '@/lib/services/savedWork';
-import { deleteQuickBOQ } from '@/lib/services/quickBoq';
+import { downloadBOQPDF, downloadQuickEstimatePDF } from '@/lib/pdf-export';
+import { listSavedWork, QUICK_TYPE_LABELS, type SavedWorkItem, type SavedWorkKind } from '@/lib/services/savedWork';
+import { deleteQuickBOQ, getQuickBOQ } from '@/lib/services/quickBoq';
 import { clearOptimisticProjectCard, getOptimisticProjectCard } from '@/lib/projectCreationCache';
 import { supabase } from '@/lib/supabase';
 import { Project, ProjectStatus, ProjectScope } from '@/lib/database.types';
@@ -439,6 +439,32 @@ function ProjectsContent() {
             () => success('Link copied to clipboard'),
             () => showError('Could not copy the link'),
         );
+    };
+
+    // The list view only carries totals, not line items — fetched on demand,
+    // same reasoning as the full-project version above. Shares the actual PDF
+    // generation with the estimate's own page via downloadQuickEstimatePDF, so
+    // the file this produces is identical to the one "Download BOQ PDF" on the
+    // estimate itself produces, not a second implementation that can drift.
+    const handleQuickDownloadPdf = async (e: React.MouseEvent, item: SavedWorkItem) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpenMenuId(null);
+
+        const { boq, error } = await getQuickBOQ(item.id);
+        if (error || !boq) {
+            showError('Could not load this estimate.');
+            return;
+        }
+
+        const { error: pdfError } = downloadQuickEstimatePDF({
+            name: item.name,
+            typeLabel: QUICK_TYPE_LABELS[boq.projectType] ?? item.typeLabel,
+            location: (boq.answers?.project_location as string) || null,
+            boqItems: boq.boqItems,
+            labor: boq.labor,
+        });
+        if (pdfError) showError(pdfError);
     };
 
     const handleQuickDelete = (e: React.MouseEvent, item: SavedWorkItem) => {
@@ -953,6 +979,9 @@ function ProjectsContent() {
                                                     <button onClick={(e) => handleQuickShare(e, item)}>
                                                         <ShareNetwork size={16} /> Copy link
                                                     </button>
+                                                    <button onClick={(e) => { void handleQuickDownloadPdf(e, item); }}>
+                                                        <FileArrowDown size={16} /> Download BOQ PDF
+                                                    </button>
                                                     <button className="danger" onClick={(e) => handleQuickDelete(e, item)}>
                                                         <Trash size={16} /> Delete
                                                     </button>
@@ -1074,6 +1103,9 @@ function ProjectsContent() {
                             <>
                                 <button className="bottom-sheet-item" onClick={(e) => { handleQuickShare(e, quickTarget); setMobileMenuProjectId(null); }}>
                                     <ShareNetwork size={20} /> Copy link
+                                </button>
+                                <button className="bottom-sheet-item" onClick={(e) => { void handleQuickDownloadPdf(e, quickTarget); setMobileMenuProjectId(null); }}>
+                                    <FileArrowDown size={20} /> Download BOQ PDF
                                 </button>
                                 <button className="bottom-sheet-item danger" onClick={(e) => { handleQuickDelete(e, quickTarget); setMobileMenuProjectId(null); }}>
                                     <Trash size={20} /> Delete
@@ -1555,7 +1587,11 @@ function ProjectsContent() {
                     border-radius: var(--radius-md);
                     box-shadow: var(--shadow-lg);
                     padding: 4px;
-                    z-index: 10;
+                    /* This page switches to the bottom sheet at 768px, but the
+                       global nav bar stays visible until 900px — so between
+                       those two widths, a card near the bottom of the list
+                       opened this dropdown underneath the nav instead. */
+                    z-index: var(--z-modal);
                     animation: fadeIn 0.1s ease-out;
                 }
                 
@@ -1751,10 +1787,17 @@ function ProjectsContent() {
                         position: fixed;
                         inset: 0;
                         background: rgba(0,0,0,0.5);
-                        z-index: 50;
+                        /* Was 50 — below MainLayout's persistent bottom nav bar
+                           (z-index: 100), which paints later in the DOM and so
+                           wins ties too. The nav sat in front of this sheet and
+                           its last one or two actions were unreachable. Using
+                           the modal tier, the same one ConfirmDialog already
+                           uses safely, so this cannot fall behind page chrome
+                           again by accident. */
+                        z-index: var(--z-modal-backdrop);
                         animation: fadeIn 0.2s ease-out;
                     }
-                    
+
                     .mobile-bottom-sheet {
                         position: fixed;
                         bottom: 0;
@@ -1763,7 +1806,7 @@ function ProjectsContent() {
                         background: var(--color-surface);
                         border-radius: 20px 20px 0 0;
                         padding: 24px 16px 40px;
-                        z-index: 51;
+                        z-index: var(--z-modal);
                         animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         display: flex;
                         flex-direction: column;

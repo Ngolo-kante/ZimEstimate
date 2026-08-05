@@ -33,23 +33,15 @@ import BudgetPlanCard from '@/components/quick-projects/BudgetPlanCard';
 import ComplianceCard from '@/components/quick-projects/ComplianceCard';
 import NextStepsCard from '@/components/quick-projects/NextStepsCard';
 import type { ComplianceStatus } from '@/lib/quick-projects/compliance';
-import { exportBOQToPDF } from '@/lib/pdf-export';
+import { downloadQuickEstimatePDF } from '@/lib/pdf-export';
+import { QUICK_TYPE_LABELS } from '@/lib/services/savedWork';
 import type { BOQItem, LaborConfig, QuickBOQ } from '@/lib/quick-projects/engine/types';
 import { ArrowLeft, PencilSimple, ShareNetwork, Download, Warning } from '@phosphor-icons/react';
-
-const TYPE_LABELS: Record<string, string> = {
-  solar: 'Solar',
-  borehole: 'Borehole',
-  septic: 'Septic',
-  water: 'Water',
-  fencing: 'Fencing',
-  paving: 'Paving',
-};
 
 function estimateName(boq: QuickBOQ): string {
   const named = boq.answers?.project_name;
   if (typeof named === 'string' && named.trim()) return named.trim();
-  return `${TYPE_LABELS[boq.projectType] ?? 'Quick'} estimate`;
+  return `${QUICK_TYPE_LABELS[boq.projectType] ?? 'Quick'} estimate`;
 }
 
 function SavedQuickEstimate() {
@@ -188,37 +180,20 @@ function SavedQuickEstimate() {
     router.push(`/quick-projects/${boq.projectType}`);
   }, [boq, router]);
 
+  // Shared with the card menu in My Work via downloadQuickEstimatePDF, so the
+  // PDF from either place is generated the same way rather than two functions
+  // quietly drifting apart.
   const handleDownloadPdf = useCallback(() => {
     if (!boq) return;
-    const included = boq.boqItems.filter((i) => i.included !== false && !i.owned);
-    if (included.length === 0) {
-      showError('This estimate has no items to download.');
-      return;
-    }
-    exportBOQToPDF(
-      {
-        projectName: estimateName(boq),
-        location: (boq.answers?.project_location as string) || '',
-        totalArea: 0,
-        items: included.map((i) => ({
-          material_name: i.description,
-          category: i.category,
-          quantity: i.quantity,
-          unit: i.unit,
-          unit_price_usd: i.unitCostUsd,
-          unit_price_zwg: i.unitCostUsd * 27,
-        })),
-        totals: { usd: total, zwg: total * 27 },
-        config: {
-          scope: TYPE_LABELS[boq.projectType] ?? boq.projectType,
-          brickType: '',
-          cementType: '',
-          includeLabor: boq.labor?.enabled ?? false,
-        },
-      },
-      'USD',
-    );
-  }, [boq, total, showError]);
+    const { error } = downloadQuickEstimatePDF({
+      name: estimateName(boq),
+      typeLabel: QUICK_TYPE_LABELS[boq.projectType] ?? boq.projectType,
+      location: (boq.answers?.project_location as string) || null,
+      boqItems: boq.boqItems,
+      labor: boq.labor,
+    });
+    if (error) showError(error);
+  }, [boq, showError]);
 
   const handleShare = useCallback(async () => {
     if (!boq) return;
@@ -285,7 +260,7 @@ function SavedQuickEstimate() {
 
       <header className="head">
         <div className="head-text">
-          <span className="type-chip">{TYPE_LABELS[boq.projectType] ?? 'Quick'}</span>
+          <span className="type-chip">{QUICK_TYPE_LABELS[boq.projectType] ?? 'Quick'}</span>
           <h1>{estimateName(boq)}</h1>
           <p className="meta">
             Saved {new Date(boq.updatedAt || boq.createdAt).toLocaleDateString('en-ZW', {

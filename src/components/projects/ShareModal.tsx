@@ -223,7 +223,10 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 100;
+          /* Was 100 — an exact tie with MainLayout's persistent bottom nav
+             bar. Ties resolve by DOM order, and the nav renders after page
+             content, so it won every time. */
+          z-index: var(--z-modal);
           padding: var(--spacing-lg);
         }
 
