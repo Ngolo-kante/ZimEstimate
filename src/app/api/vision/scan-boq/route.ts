@@ -9,15 +9,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractBoqFromImage } from '@/lib/vision/boq-scan';
 import { enforceCsrf, enforceRateLimit } from '@/lib/server/security';
-import { requireAuth } from '@/lib/server/auth';
 
 const VALID_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'application/pdf'];
 const MAX_BYTES = 10 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
   try {
-    // Each scan is a model call that costs money, so this is the throttle that
-    // stops a stuck client from spending it.
+    // No requireAuth: scanning a document is free to try, matching Vision
+    // Takeoff and every other estimate path in the app — only saving the
+    // project it produces needs an account. Each scan is still a paid model
+    // call, so the rate limit below (not auth) is what actually bounds cost.
     const rateLimit = enforceRateLimit(request, {
       keyPrefix: 'vision:scan-boq',
       limit: 10,
@@ -27,9 +28,6 @@ export async function POST(request: NextRequest) {
 
     const csrf = enforceCsrf(request);
     if (csrf) return csrf;
-
-    const auth = await requireAuth(request);
-    if (auth instanceof NextResponse) return auth;
 
     if (!process.env.GOOGLE_GEMINI_API_KEY) {
       return NextResponse.json(

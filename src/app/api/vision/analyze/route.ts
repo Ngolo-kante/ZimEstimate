@@ -5,10 +5,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyzeFloorPlan } from '@/lib/vision/gemini-client';
 import { enforceCsrf, enforceRateLimit } from '@/lib/server/security';
-import { requireAuth } from '@/lib/server/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    // No requireAuth: reading a floor plan is free to try, same as the manual
+    // builder and quick projects. Only saving the resulting project needs an
+    // account. Rate limiting below is IP-based and is what actually bounds
+    // cost, not the auth check that used to sit here.
     const rateLimit = enforceRateLimit(request, {
       keyPrefix: 'vision:analyze',
       limit: 10,
@@ -18,9 +21,6 @@ export async function POST(request: NextRequest) {
 
     const csrf = enforceCsrf(request);
     if (csrf) return csrf;
-
-    const auth = await requireAuth(request);
-    if (auth instanceof NextResponse) return auth;
 
     // Check for API key
     if (!process.env.GOOGLE_GEMINI_API_KEY) {

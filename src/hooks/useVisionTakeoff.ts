@@ -19,21 +19,24 @@ import { supabase } from '@/lib/supabase';
 const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
 
 // API call to analyze floor plan
+//
+// Reading the plan does not require an account — only saving the project it
+// produces does, gated separately in BOQResultsStep. The route's own defence
+// against cost abuse is IP-based rate limiting (10/min), not auth, so nothing
+// is given up by letting an anonymous visitor try the tool before signing up
+// for it.
 async function analyzeFloorPlanAPI(file: File): Promise<VisionAnalysisResult> {
   const { data } = await supabase.auth.getSession();
   const accessToken = data.session?.access_token;
-  if (!accessToken) {
-    throw new Error('You need to be signed in to analyze a floor plan.');
-  }
 
   const formData = new FormData();
   formData.append('file', file);
 
   const response = await fetch('/api/vision/analyze', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
+    // Sent when a session already exists, purely so the request is
+    // attributable; the endpoint does not require it.
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
     body: formData,
   });
 

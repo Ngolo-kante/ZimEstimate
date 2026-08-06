@@ -15,12 +15,12 @@
 // the rows, and anything the model found hard to read is flagged for checking
 // against the document in the user's hand.
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useToast } from '@/components/ui/Toast';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { createProject, saveProjectWithItems } from '@/lib/services/projects';
 import type { ScannedBoq, ScannedBoqItem } from '@/lib/vision/boq-scan';
@@ -36,9 +36,21 @@ const REVIEW_THRESHOLD = 70;
 const slug = (text: string) =>
   text.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 48) || 'item';
 
+/**
+ * Where an unsigned-in Save stashes its work across the trip to /auth/login.
+ *
+ * Scanning is a paid Gemini call, so a save that lost the result and made the
+ * user re-photograph the document to try again would be a real cost as well
+ * as a bad experience — this is what lets Save resume itself on return
+ * instead, the same pattern already used by the manual builder and quick
+ * projects.
+ */
+const PENDING_SCAN_SAVE_KEY = 'zimestimate_boq_scan_pending_save';
+
 function BoqScannerContent() {
   const router = useRouter();
   const { success, error: showError } = useToast();
+  const { isAuthenticated } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [stage, setStage] = useState<Stage>('upload');
@@ -73,16 +85,18 @@ function BoqScannerContent() {
     setStage('scanning');
 
     try {
+      // Scanning does not require an account — only Save does, below. Sent
+      // when a session exists purely for attribution; the endpoint itself
+      // does not require it.
       const { data } = await supabase.auth.getSession();
       const accessToken = data.session?.access_token;
-      if (!accessToken) throw new Error('Please sign in again.');
 
       const form = new FormData();
       form.append('file', file);
 
       const response = await fetch('/api/vision/scan-boq', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
         body: form,
       });
       const result = await response.json();
@@ -118,12 +132,15 @@ function BoqScannerContent() {
     );
   };
 
-  const handleSave = async () => {
-    if (items.length === 0) return;
+  // The actual save, factored out so both the button and the post-sign-in
+  // resume below can call it with an explicit payload rather than reading
+  // component state that may not have caught up yet after a restore.
+  const runSave = useCallback(async (name: string, saveItems: ScannedBoqItem[]) => {
+    if (saveItems.length === 0) return;
     setIsSaving(true);
     try {
       const { project, error: createError } = await createProject({
-        name: projectName.trim() || 'Scanned BOQ',
+        name: name.trim() || 'Scanned BOQ',
         location: '',
         scope: 'entire_house',
         labor_preference: 'materials_only',
@@ -140,7 +157,7 @@ function BoqScannerContent() {
       const { error: saveError } = await saveProjectWithItems(
         project.id,
         { status: 'draft' },
-        items.map((item, index) => ({
+        saveItems.map((item, index) => ({
           // No catalogue match exists for transcribed text. A synthetic id keeps
           // the NOT NULL column honest about where the row came from rather than
           // borrowing an unrelated material's id.
@@ -163,7 +180,57 @@ function BoqScannerContent() {
       showError(err instanceof Error ? err.message : 'Could not save this BOQ.');
       setIsSaving(false);
     }
+  }, [router, success, showError]);
+
+  const handleSave = () => {
+    if (items.length === 0) return;
+
+    // The only point at which an account is required. Scanning already ran
+    // for free; the scan result is persisted here so signing in resumes the
+    // save instead of sending the user back to re-photograph the document —
+    // that photograph was a real, paid model call, not something to discard.
+    if (!isAuthenticated) {
+      try {
+        localStorage.setItem(PENDING_SCAN_SAVE_KEY, JSON.stringify({ projectName, items }));
+      } catch {
+        // Private browsing, or storage disabled — the redirect still works,
+        // the automatic resume on return just will not.
+      }
+      router.push(`/auth/login?redirect=${encodeURIComponent('/ai/boq-scanner')}`);
+      return;
+    }
+
+    void runSave(projectName, items);
   };
+
+  // Completes a save that was interrupted by signing in. Guarded to fire once
+  // — otherwise a re-render after auth resolves would file the estimate as a
+  // project a second time.
+  const resumedSaveRef = useRef(false);
+  useEffect(() => {
+    if (resumedSaveRef.current || !isAuthenticated) return;
+
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem(PENDING_SCAN_SAVE_KEY);
+    } catch {
+      return;
+    }
+    if (!stored) return;
+
+    resumedSaveRef.current = true;
+    localStorage.removeItem(PENDING_SCAN_SAVE_KEY);
+
+    try {
+      const restored = JSON.parse(stored) as { projectName: string; items: ScannedBoqItem[] };
+      setProjectName(restored.projectName);
+      setItems(restored.items);
+      setStage('review');
+      void runSave(restored.projectName, restored.items);
+    } catch {
+      showError('Could not restore your scanned estimate. Please scan the document again.');
+    }
+  }, [isAuthenticated, runSave, showError]);
 
   return (
     <div className="wrap">
@@ -315,7 +382,7 @@ function BoqScannerContent() {
             <button
               type="button"
               className="primary"
-              onClick={() => void handleSave()}
+              onClick={handleSave}
               disabled={isSaving || items.length === 0}
             >
               {isSaving
@@ -418,11 +485,12 @@ function BoqScannerContent() {
 }
 
 export default function BoqScannerPage() {
+  // No ProtectedRoute: scanning a document is free to try, same as every
+  // other estimate path in the app. Sign-in is required only inside
+  // handleSave, at the moment it is actually needed.
   return (
     <MainLayout>
-      <ProtectedRoute>
-        <BoqScannerContent />
-      </ProtectedRoute>
+      <BoqScannerContent />
     </MainLayout>
   );
 }
