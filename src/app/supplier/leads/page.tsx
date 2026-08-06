@@ -10,7 +10,6 @@ import { supabase } from '@/lib/supabase';
 import { getUserSupplierProfile } from '@/lib/services/suppliers';
 import { getSupplierRfqInbox, type SupplierInboxRfq } from '@/lib/services/rfq';
 import { getContactRequests, updateContactRequestStatus } from '@/lib/services/leads';
-import { requirePlanFeature } from '@/lib/services/subscriptions';
 import type { ContactRequest } from '@/lib/database.types';
 import {
   ArrowLeft,
@@ -20,8 +19,6 @@ import {
   ChatCircleText,
   Archive,
   Package,
-  Star,
-  Lock,
   ArrowRight,
 } from '@phosphor-icons/react';
 
@@ -44,7 +41,6 @@ export default function SupplierLeadsPage() {
   const [supplierId, setSupplierId] = useState<string | null>(null);
   const [rfqs, setRfqs] = useState<SupplierInboxRfq[]>([]);
   const [contacts, setContacts] = useState<ContactRequest[]>([]);
-  const [contactAllowed, setContactAllowed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterFrom, setFilterFrom] = useState('');
@@ -69,18 +65,18 @@ export default function SupplierLeadsPage() {
 
       setSupplierId(profile.id);
 
-      const [rfqResult, contactFeature] = await Promise.all([
+      // Contact requests used to sit behind a Pro plan check. Suppliers and
+      // contractors are free while the platform is early, and a paywall over
+      // leads a builder has already sent is the wrong thing to be charging for
+      // at this stage — the gate can come back via requirePlanFeature when
+      // there is enough supply-side density to be worth monetising.
+      const [rfqResult, contactRequests] = await Promise.all([
         getSupplierRfqInbox(profile.id),
-        requirePlanFeature(profile.id, 'contact_requests'),
+        getContactRequests(profile.id),
       ]);
 
       setRfqs(rfqResult.rfqs);
-      setContactAllowed(contactFeature.allowed);
-
-      if (contactFeature.allowed) {
-        const cr = await getContactRequests(profile.id);
-        setContacts(cr);
-      }
+      setContacts(contactRequests);
 
       setLoading(false);
     };
@@ -144,12 +140,11 @@ export default function SupplierLeadsPage() {
             >
               <ChatCircleText size={18} />
               Contact Requests
-              {contactAllowed && contacts.filter((c) => c.status === 'new').length > 0 && (
+              {contacts.filter((c) => c.status === 'new').length > 0 && (
                 <span className="tab-badge new">
                   {contacts.filter((c) => c.status === 'new').length}
                 </span>
               )}
-              {!contactAllowed && <Lock size={14} className="tab-lock" />}
             </button>
           </div>
 
@@ -191,7 +186,7 @@ export default function SupplierLeadsPage() {
               className="filter-date"
               placeholder="To"
             />
-            {tab === 'contact' && contactAllowed && (
+            {tab === 'contact' && (
               <Button size="sm" variant="secondary" onClick={loadContacts}>
                 Apply
               </Button>
@@ -272,21 +267,7 @@ export default function SupplierLeadsPage() {
               {/* Contact Requests Tab */}
               {tab === 'contact' && (
                 <>
-                  {!contactAllowed ? (
-                    <div className="upgrade-gate">
-                      <Lock size={40} />
-                      <h3>Pro Feature</h3>
-                      <p>
-                        Upgrade to <strong>Pro</strong> to receive direct contact requests from
-                        builders browsing the marketplace.
-                      </p>
-                      <Link href="/supplier/upgrade">
-                        <Button variant="primary" icon={<Star size={16} />}>
-                          Upgrade to Pro — $15/month
-                        </Button>
-                      </Link>
-                    </div>
-                  ) : contacts.length === 0 ? (
+                  {contacts.length === 0 ? (
                     <div className="leads-empty">
                       <EnvelopeSimple size={40} />
                       <p>No contact requests yet</p>
@@ -427,7 +408,6 @@ export default function SupplierLeadsPage() {
             border-radius: 9999px;
           }
           .tab-badge.new { background: #dbeafe; color: #1e40af; }
-          .tab-lock { color: #94a3b8; margin-left: 2px; }
           .leads-filters {
             display: flex;
             gap: 10px;
@@ -521,15 +501,6 @@ export default function SupplierLeadsPage() {
           }
           .leads-empty p { font-size: 18px; font-weight: 600; color: #475569; margin: 12px 0 6px; }
           .leads-empty span { font-size: 14px; }
-          .upgrade-gate {
-            text-align: center;
-            padding: 64px 24px;
-            background: #f8fafc;
-            border: 2px dashed #e2e8f0;
-            border-radius: 20px;
-          }
-          .upgrade-gate h3 { font-size: 22px; font-weight: 700; color: #1e293b; margin: 12px 0 8px; }
-          .upgrade-gate p { color: #64748b; margin: 0 0 20px; font-size: 15px; }
           @media (max-width: 600px) {
             .lead-card-row { flex-direction: column; }
             .lead-actions { align-items: flex-start; min-width: auto; }
