@@ -10,13 +10,10 @@ import {
   Funnel,
   ChartLine,
   CreditCard,
-  Star,
   UserCircle,
   SignOut,
   Buildings,
   Package,
-  ShoppingCart,
-  ChatCircle,
   FileText,
   Bell,
   CaretLeft,
@@ -24,13 +21,18 @@ import {
   X,
 } from '@phosphor-icons/react';
 
+// Orders, Messages and Reviews used to sit in here. All three rendered
+// hardcoded arrays and touched no database at all: invented conversations,
+// invented orders from invented builders, and invented reviews carrying an
+// invented average rating for the supplier's own business. There is no
+// messages or reviews table to point them at, and "Orders" was a second,
+// fictional copy of what Leads already shows for real — so they are gone
+// rather than quietly unlinked, which would have left the fabrications a
+// URL away.
 const navItems = [
   { label: 'Dashboard', href: '/supplier/dashboard', icon: House },
   { label: 'Products', href: '/supplier/products', icon: Package },
-  { label: 'Orders', href: '/supplier/orders', icon: ShoppingCart },
   { label: 'Leads', href: '/supplier/leads', icon: Funnel },
-  { label: 'Messages', href: '/supplier/messages', icon: ChatCircle },
-  { label: 'Reviews', href: '/supplier/reviews', icon: Star },
   { label: 'Analytics', href: '/supplier/analytics', icon: ChartLine },
   { label: 'Documents', href: '/supplier/documents', icon: FileText },
   { label: 'Notifications', href: '/supplier/notifications', icon: Bell },
