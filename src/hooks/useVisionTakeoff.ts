@@ -264,6 +264,35 @@ export function useVisionTakeoff() {
     }, 2500); // 2.5 second calculation animation
   }, []);
 
+  /**
+   * Jumps straight to the results step with a previously-computed BOQ, skipping
+   * upload, analysis and every editing step in between.
+   *
+   * Exists for one caller: resuming a save that was interrupted by signing in.
+   * The floor plan analysis is a paid Gemini call, so re-running upload →
+   * analyze → edit → configure from scratch because the visitor had not yet
+   * created an account would be asking them to pay for a second scan of the
+   * same document. uploadedFile and editedWalls are deliberately left out —
+   * a File cannot survive a JSON round trip through storage, and nothing past
+   * this step reads walls again.
+   */
+  const restoreResults = useCallback((restored: {
+    projectInfo: ProjectInfo;
+    config: VisionConfig;
+    editedRooms: DetectedRoom[];
+    generatedBOQ: GeneratedBOQItem[];
+  }) => {
+    setState((prev) => ({
+      ...prev,
+      projectInfo: restored.projectInfo,
+      config: restored.config,
+      editedRooms: restored.editedRooms,
+      generatedBOQ: restored.generatedBOQ,
+      step: 'results',
+      error: null,
+    }));
+  }, []);
+
   // ============================================
   // BOQ EDITING
   // ============================================
@@ -352,6 +381,9 @@ export function useVisionTakeoff() {
     // BOQ
     updateBOQItem,
     removeBOQItem,
+
+    // Resuming a save interrupted by sign-in
+    restoreResults,
   };
 }
 

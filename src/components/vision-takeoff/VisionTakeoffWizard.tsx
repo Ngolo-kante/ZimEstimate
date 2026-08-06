@@ -1,6 +1,8 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { useVisionTakeoff } from '@/hooks/useVisionTakeoff';
+import { useAuth } from '@/components/providers/AuthProvider';
 import UploadStep from './steps/UploadStep';
 import AnalysisProgress from './steps/AnalysisProgress';
 import ConfidenceWarning from './steps/ConfidenceWarning';
@@ -8,11 +10,47 @@ import FloorPlanEditor from './FloorPlanEditor/FloorPlanEditor';
 import ProjectInfoStep from './steps/ProjectInfoStep';
 import ConfigurationStep from './steps/ConfigurationStep';
 import CalculationAnimation from './steps/CalculationAnimation';
-import BOQResultsStep from './steps/BOQResultsStep';
+import BOQResultsStep, { PENDING_VISION_SAVE_KEY } from './steps/BOQResultsStep';
 
 export default function VisionTakeoffWizard() {
   const wizard = useVisionTakeoff();
   const { state } = wizard;
+  const { isAuthenticated } = useAuth();
+
+  // True only for the render right after a save was resumed, so
+  // BOQResultsStep knows to complete it automatically rather than wait for a
+  // second click on a button the user already pressed once.
+  const [justResumed, setJustResumed] = useState(false);
+  const resumedRef = useRef(false);
+
+  useEffect(() => {
+    if (resumedRef.current || !isAuthenticated) return;
+
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem(PENDING_VISION_SAVE_KEY);
+    } catch {
+      return;
+    }
+    if (!stored) return;
+
+    resumedRef.current = true;
+    localStorage.removeItem(PENDING_VISION_SAVE_KEY);
+
+    try {
+      const restored = JSON.parse(stored);
+      wizard.restoreResults(restored);
+      setJustResumed(true);
+    } catch {
+      // Malformed payload — the wizard just starts fresh, the same as it
+      // always did before this existed. Nothing left to clean up; the key
+      // is already removed above.
+    }
+    // wizard is a fresh object every render (useVisionTakeoff returns a new
+    // one each time); depending on it here would re-run this on every state
+    // change, defeating resumedRef's one-shot guard.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   return (
     <div className="vision-takeoff-wizard">
@@ -87,10 +125,12 @@ export default function VisionTakeoffWizard() {
           projectInfo={state.projectInfo}
           totalArea={wizard.totalArea}
           config={state.config}
+          editedRooms={state.editedRooms}
           onItemUpdate={wizard.updateBOQItem}
           onItemRemove={wizard.removeBOQItem}
           onBack={() => wizard.goToStep('config')}
           onStartOver={wizard.reset}
+          autoSave={justResumed}
         />
       )}
 

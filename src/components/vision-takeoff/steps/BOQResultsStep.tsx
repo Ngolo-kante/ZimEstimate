@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import SavingOverlay from '@/components/ui/SavingOverlay';
@@ -22,8 +22,19 @@ import {
   CaretRight,
   CircleNotch,
 } from '@phosphor-icons/react';
-import { GeneratedBOQItem, ProjectInfo, VisionConfig, normalizeConfigToArrays } from '@/lib/vision/types';
+import { GeneratedBOQItem, ProjectInfo, VisionConfig, DetectedRoom, normalizeConfigToArrays } from '@/lib/vision/types';
 import { exportBOQToPDF } from '@/lib/pdf-export';
+
+/**
+ * Where an unsigned-in Save stashes its work across the trip to /auth/login.
+ *
+ * Reading the floor plan is a paid Gemini call, so a save that lost the
+ * result and made the user re-upload and re-scan the plan to try again would
+ * cost them a second analysis as well as their patience. VisionTakeoffWizard
+ * reads this back on mount and calls restoreResults to jump straight to this
+ * step, then passes autoSave so the interrupted save completes itself.
+ */
+export const PENDING_VISION_SAVE_KEY = 'zimestimate_vision_pending_save';
 
 interface BOQResultsStepProps {
   items: GeneratedBOQItem[];
@@ -31,10 +42,14 @@ interface BOQResultsStepProps {
   projectInfo: ProjectInfo;
   totalArea: number;
   config: VisionConfig;
+  /** Not displayed here — carried only so a sign-in redirect can restore it. */
+  editedRooms: DetectedRoom[];
   onItemUpdate: (itemId: string, updates: Partial<GeneratedBOQItem>) => void;
   onItemRemove: (itemId: string) => void;
   onBack: () => void;
   onStartOver: () => void;
+  /** True when this render is a resume after signing in — fires Save once, automatically. */
+  autoSave?: boolean;
 }
 
 interface EditingState {
@@ -85,10 +100,12 @@ export default function BOQResultsStep({
   projectInfo,
   totalArea,
   config,
+  editedRooms,
   onItemUpdate,
   onItemRemove,
   onBack,
   onStartOver,
+  autoSave = false,
 }: BOQResultsStepProps) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
@@ -317,6 +334,41 @@ export default function BOQResultsStep({
     }
   };
 
+  // Fires the interrupted save exactly once, as soon as this render is the
+  // resumed one. isAuthenticated is already true by the time autoSave is set
+  // — VisionTakeoffWizard only restores after auth has resolved — so this
+  // reaches the real save branch above rather than reopening the prompt.
+  const autoSavedRef = useRef(false);
+  useEffect(() => {
+    if (!autoSave || autoSavedRef.current) return;
+    autoSavedRef.current = true;
+    void handleSave();
+    // handleSave closes over items/projectInfo/config, which are exactly what
+    // was just restored — re-running this on every one of their changes would
+    // defeat the "once" guard above, so it is intentionally omitted.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSave]);
+
+  /**
+   * Persists what would otherwise be lost on the redirect, then sends the
+   * user to sign in or register. Mirrors the manual builder's
+   * persistInSessionAndRedirect and the BOQ Scanner's equivalent — same
+   * shape, because a user should not be able to tell which tool they were
+   * using from how the sign-in interruption behaves.
+   */
+  const persistAndRedirect = (url: string) => {
+    try {
+      localStorage.setItem(
+        PENDING_VISION_SAVE_KEY,
+        JSON.stringify({ projectInfo, config, editedRooms, generatedBOQ: items }),
+      );
+    } catch {
+      // Private browsing, or storage disabled — the redirect still works,
+      // the automatic resume on return just will not.
+    }
+    window.location.href = url;
+  };
+
   return (
     <div className="boq-results">
       <div className="results-header">
@@ -536,13 +588,16 @@ export default function BOQResultsStep({
               </button>
               <button
                 className="btn btn-primary"
-                onClick={() => window.location.href = '/auth/login?redirect=/ai/vision-takeoff'}
+                onClick={() => persistAndRedirect('/auth/login?redirect=/ai/vision-takeoff')}
               >
                 Sign In
               </button>
               <button
                 className="btn btn-accent"
-                onClick={() => window.location.href = '/auth/register?redirect=/ai/vision-takeoff'}
+                // The route was /auth/register, which does not exist in this
+                // app — only /auth/signup does. Fixed alongside the persist
+                // change since it is the same button.
+                onClick={() => persistAndRedirect('/auth/signup?redirect=/ai/vision-takeoff')}
               >
                 Create Account
               </button>
