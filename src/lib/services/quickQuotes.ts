@@ -6,6 +6,7 @@
 // adds quick_boq_id, and constrains rows to exactly one owner.
 
 import { supabase } from '@/lib/supabase';
+import { createRfqRequestForQuickBoq } from '@/lib/services/rfq';
 import type { BOQItem } from '@/lib/quick-projects/engine/types';
 
 export type QuoteStatus = 'open' | 'quoted' | 'accepted' | 'expired' | 'cancelled';
@@ -67,60 +68,44 @@ export function summariseQuotes(requests: QuickQuoteRequest[]): QuoteSummary {
   return { open, quoted, total: requests.length };
 }
 
+/**
+ * Creates the request and, where a matching supplier can be found, actually
+ * notifies them of it.
+ *
+ * Used to just write rfq_requests and rfq_items directly — a real database
+ * row with no recipient attached to it and no notification queued, so a
+ * request that looked identical to a full project's sat there reaching
+ * nobody. Now goes through the same matching, recipient and notification
+ * pipeline createRfqRequest already uses for full projects, via the RPC both
+ * now share.
+ */
 export async function createQuickQuoteRequest(
   quickBoqId: string,
   items: BOQItem[],
   options: { notes?: string; requiredBy?: string | null } = {},
 ): Promise<{ id: string | null; error: Error | null }> {
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) return { id: null, error: new Error('Not authenticated') };
-
   const priceable = items.filter((i) => i.included !== false && !i.owned);
   if (priceable.length === 0) {
     return { id: null, error: new Error('This estimate has no items to quote.') };
   }
 
-  const { data: rfq, error: rfqError } = await supabase
-    .from('rfq_requests')
-    .insert({
-      quick_boq_id: quickBoqId,
-      project_id: null,
-      user_id: user.id,
-      notes: options.notes ?? null,
-      required_by: options.requiredBy ?? null,
-      status: 'open',
-    } as never)
-    .select('id')
-    .single();
-
-  if (rfqError || !rfq) {
-    return { id: null, error: new Error(rfqError?.message ?? 'Could not create the request.') };
-  }
-
-  const rfqId = (rfq as { id: string }).id;
-
-  const { error: itemsError } = await supabase.from('rfq_items').insert(
-    priceable.map((item) => ({
-      rfq_id: rfqId,
-      // NOT NULL. Quick BOQ items carry a stable generated id rather than a
-      // catalogue key, which is the closest honest equivalent.
-      material_key: item.id,
+  const { rfq, error } = await createRfqRequestForQuickBoq({
+    quickBoqId,
+    notes: options.notes ?? null,
+    requiredBy: options.requiredBy ?? null,
+    items: priceable.map((item) => ({
+      // NOT NULL on rfq_items. Quick BOQ items carry a stable generated id
+      // rather than a catalogue key, which is the closest honest equivalent.
+      material_id: item.id,
       material_name: item.description,
       quantity: item.quantity,
       unit: item.unit,
-    })) as never,
-  );
+    })),
+  });
 
-  if (itemsError) {
-    // A request with no lines is worse than no request: it shows as "waiting on
-    // suppliers" forever and there is nothing for anyone to price.
-    await supabase.from('rfq_requests').delete().eq('id', rfqId);
-    return { id: null, error: new Error(itemsError.message) };
+  if (error || !rfq) {
+    return { id: null, error: error ?? new Error('Could not create the request.') };
   }
 
-  return { id: rfqId, error: null };
+  return { id: rfq.id, error: null };
 }

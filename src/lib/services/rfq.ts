@@ -405,6 +405,205 @@ export async function createRfqRequest(options: {
   return { rfq: rfq as RfqRequest, recipients, matches, error: null };
 }
 
+/** Type labels for the estimate types quick projects cover — matches savedWork.ts. */
+const QUICK_TYPE_LABELS: Record<string, string> = {
+  solar: 'Solar', borehole: 'Borehole', septic: 'Septic', water: 'Water', fencing: 'Fencing', paving: 'Paving',
+};
+
+/**
+ * The quick-estimate sibling of createRfqRequest.
+ *
+ * Shares its matching, preference lookup and notification logic almost
+ * exactly — this was written as a close mirror rather than a generic
+ * "owner-agnostic" version of the original, because the two differ in real
+ * ways: a quick estimate has no projects row to read a name or location from,
+ * so location scoring is skipped rather than faked, and quick-project items
+ * carry synthetic ids (bg_drilling, scanned:cement_32_5n) that do not exist
+ * in the materials catalogue getRequestedCategories matches against — so
+ * category scoring will typically find nothing and matching falls back to
+ * location/verification/rating alone. That is an honest limitation, not a
+ * bug: it means a quote is more likely to reach a general supplier than one
+ * who specifically stocks solar panels, until quick-project items carry a
+ * real category of their own.
+ */
+export async function createRfqRequestForQuickBoq(options: {
+  quickBoqId: string;
+  requiredBy?: string | null;
+  notes?: string | null;
+  items: Pick<BOQItem, 'material_id' | 'material_name' | 'quantity' | 'unit'>[];
+  maxSuppliers?: number;
+}): Promise<{ rfq: RfqRequest | null; recipients: RfqRecipient[]; matches: SupplierMatch[]; error: Error | null }> {
+  const { quickBoqId, requiredBy, notes, items, maxSuppliers } = options;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { rfq: null, recipients: [], matches: [], error: new Error('Not authenticated') };
+  }
+
+  const { data: quickBoqRow } = await supabase
+    .from('quick_boqs')
+    .select('project_type, answers')
+    .eq('id', quickBoqId)
+    .single();
+
+  const projectType = (quickBoqRow as { project_type?: string } | null)?.project_type;
+  const answers = (quickBoqRow as { answers?: Record<string, unknown> } | null)?.answers;
+  const estimateName =
+    (typeof answers?.project_name === 'string' && answers.project_name.trim()) ||
+    (projectType && QUICK_TYPE_LABELS[projectType] ? `${QUICK_TYPE_LABELS[projectType]} estimate` : 'Quick estimate');
+
+  // No project row to read a location from, so this scores on
+  // verification/rating/category alone rather than guessing at one.
+  const { matches, error: matchError } = await matchSuppliersForItems({ items, maxSuppliers });
+  if (matchError) {
+    return { rfq: null, recipients: [], matches: [], error: matchError };
+  }
+
+  const supplierUserIds = matches.map((match) => match.supplier.user_id).filter(Boolean) as string[];
+
+  const { data: preferenceRows } = supplierUserIds.length
+    ? await supabase
+      .from('profiles')
+      .select('id, notify_email, notify_whatsapp, notify_rfq, phone_number')
+      .in('id', supplierUserIds)
+    : { data: [] };
+
+  const preferencesByUser = new Map<string, {
+    notify_email: boolean; notify_whatsapp: boolean; notify_rfq: boolean; phone_number: string | null;
+  }>();
+  (preferenceRows || []).forEach((row: {
+    id: string; notify_email: boolean; notify_whatsapp: boolean; notify_rfq: boolean; phone_number: string | null;
+  }) => preferencesByUser.set(row.id, row));
+
+  const channelsBySupplier = new Map<string, Array<'email' | 'whatsapp'>>();
+
+  const itemsForTransaction = items.map((item) => ({
+    material_key: item.material_id,
+    material_name: item.material_name,
+    quantity: Number(item.quantity),
+    unit: item.unit || null,
+  }));
+
+  const recipientsForTransaction = matches.map((match) => {
+    const userId = match.supplier.user_id || '';
+    const preferences = userId ? preferencesByUser.get(userId) : null;
+    const allowRfq = preferences?.notify_rfq ?? true;
+    const allowEmail = preferences?.notify_email ?? true;
+    const allowWhatsapp = preferences?.notify_whatsapp ?? false;
+    const phoneNumber = preferences?.phone_number || match.supplier.contact_phone;
+
+    const channels: Array<'email' | 'whatsapp'> = [];
+    if (allowRfq && allowEmail) channels.push('email');
+    if (allowRfq && allowWhatsapp && phoneNumber) channels.push('whatsapp');
+    channelsBySupplier.set(match.supplier.id, channels);
+
+    return { supplier_id: match.supplier.id, status: 'notified', notification_channels: channels };
+  });
+
+  const { data: transactionResult, error: transactionError } = await supabase
+    .rpc('create_rfq_with_items_and_recipients', {
+      p_quick_boq_id: quickBoqId,
+      p_user_id: user.id,
+      p_required_by: requiredBy || null,
+      p_notes: notes || null,
+      p_items: itemsForTransaction,
+      p_recipients: recipientsForTransaction,
+    } as never);
+
+  if (transactionError) {
+    logAsyncError('Create quick-BOQ RFQ transaction', transactionError);
+    return { rfq: null, recipients: [], matches: [], error: new Error(transactionError.message) };
+  }
+
+  const result = transactionResult as { rfq_id: string };
+  const rfqId = result.rfq_id;
+
+  const { data: rfq, error: rfqFetchError } = await supabase
+    .from('rfq_requests').select('*').eq('id', rfqId).single();
+  if (rfqFetchError) {
+    return { rfq: null, recipients: [], matches, error: new Error(rfqFetchError.message) };
+  }
+
+  const { data: recipientRows } = await supabase
+    .from('rfq_recipients').select('*').eq('rfq_id', rfqId);
+  const recipients = (recipientRows || []) as RfqRecipient[];
+
+  const itemPayload = items.map((item) => ({
+    rfq_id: rfqId,
+    material_key: item.material_id,
+    material_name: item.material_name,
+    quantity: Number(item.quantity),
+    unit: item.unit || null,
+  }));
+
+  const notifications: RfqNotificationInsert[] = matches.flatMap((match) => {
+    const payloadBase = {
+      rfq_id: rfqId,
+      supplier_id: match.supplier.id,
+      payload: {
+        supplierName: match.supplier.name,
+        contactEmail: match.supplier.contact_email,
+        contactPhone: match.supplier.contact_phone,
+        rfqId,
+        quickBoqId,
+        items: itemPayload.map((item) => ({
+          material_key: item.material_key, material_name: item.material_name,
+          quantity: item.quantity, unit: item.unit,
+        })),
+      },
+    };
+    const channels = channelsBySupplier.get(match.supplier.id) || [];
+    return channels.map((channel) => ({ ...payloadBase, channel }));
+  });
+
+  if (notifications.length > 0) {
+    const { error: notifError } = await supabase.from('rfq_notification_queue').insert(notifications as never);
+    if (notifError) logAsyncError('Queue quick-BOQ RFQ notifications', notifError);
+  }
+
+  const deliveryLogs = matches.flatMap((match) => {
+    const userId = match.supplier.user_id;
+    if (!userId) return [];
+    const channels = channelsBySupplier.get(match.supplier.id) || [];
+    const templateData = {
+      rfqId,
+      projectName: estimateName,
+      itemCount: itemPayload.length,
+      requiredBy: requiredBy || 'N/A',
+    };
+    return channels.map((channel) => {
+      const message = renderNotificationTemplate('rfq_received', channel, templateData);
+      return {
+        user_id: userId,
+        channel,
+        template_key: 'rfq_received',
+        payload: {
+          rfq_id: rfqId,
+          quick_boq_id: quickBoqId,
+          supplier_id: match.supplier.id,
+          title: message.title,
+          body: message.body,
+          contact_email: match.supplier.contact_email,
+          contact_phone: match.supplier.contact_phone,
+        },
+      };
+    });
+  });
+
+  // Same reason as the full-project path: notification_deliveries only
+  // accepts rows the caller owns, so a supplier-addressed row from the
+  // builder's own session is rejected 403 without this definer function.
+  if (deliveryLogs.length > 0) {
+    const { error: deliveryError } = await supabase.rpc('log_rfq_supplier_notifications', {
+      p_rfq_id: rfqId,
+      p_rows: deliveryLogs,
+    } as never);
+    if (deliveryError) logAsyncError('Log quick-BOQ RFQ supplier notifications', deliveryError);
+  }
+
+  return { rfq: rfq as RfqRequest, recipients, matches, error: null };
+}
+
 /** Fetch RFQs for a project with related items, recipients, and quotes. */
 export async function getProjectRfqs(projectId: string): Promise<{ rfqs: RfqWithDetails[]; error: Error | null }> {
   const { data, error } = await supabase
