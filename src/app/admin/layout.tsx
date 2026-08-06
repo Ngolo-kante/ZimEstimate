@@ -19,25 +19,26 @@ import {
   MagnifyingGlass,
   SignOut,
   House,
-  Tag,
-  Wallet,
-  Star,
-  Gear,
-  Export,
   CaretLeft,
   List,
   X,
 } from '@phosphor-icons/react';
 
+// Material Prices, Payouts, Featured, Reports and Settings used to be here.
+// The first three read hardcoded arrays and no database — Payouts in
+// particular showed invented money an admin could have acted on. The other two
+// were working buttons attached to nothing: Settings flashed "Saved" and
+// persisted none of it, and Reports ran a spinner for 1.8 seconds and produced
+// no file. Material Prices also overlapped Review Queue, which does the same
+// job against real scraped data.
+//
+// Deleted rather than unlinked, so the fabrications are not one URL away. Real
+// prices live under Review Queue and Scraper; real money lives under Revenue.
 const navItems = [
   { label: 'Revenue', href: '/admin/revenue', icon: ChartLine },
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Suppliers', href: '/admin/suppliers', icon: Storefront },
   { label: 'Performance', href: '/admin/performance', icon: TrendUp },
-  { label: 'Material Prices', href: '/admin/prices', icon: Tag },
-  { label: 'Payouts', href: '/admin/payouts', icon: Wallet },
-  { label: 'Featured', href: '/admin/featured', icon: Star },
-  { label: 'Reports', href: '/admin/reports', icon: Export },
   { label: 'Content', href: '/admin/content', icon: Package },
   { label: 'Tickets', href: '/admin/tickets', icon: ChatCircle },
   { label: 'Agreements', href: '/admin/agreements', icon: FileText },
@@ -45,7 +46,6 @@ const navItems = [
   { label: 'Audit Logs', href: '/admin/logs', icon: ClipboardText },
   { label: 'Scraper', href: '/admin/scraper', icon: Robot },
   { label: 'Review Queue', href: '/admin/scraper-review', icon: MagnifyingGlass },
-  { label: 'Settings', href: '/admin/settings', icon: Gear },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
