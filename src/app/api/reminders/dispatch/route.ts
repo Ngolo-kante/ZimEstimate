@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
 import { requireAdmin } from '@/lib/server/auth';
 import { enforceCsrf, enforceRateLimit, sanitizeNumber } from '@/lib/server/security';
+import { dispatchQueuedNotifications } from '@/lib/server/notificationDispatch';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -206,12 +207,23 @@ async function markReminderSent(supabase: SupabaseClient<Database>, reminderId: 
 }
 
 /**
- * Vercel Cron entry point.
+ * Vercel Cron entry point — the daily outbound sweep.
  *
  * Cron issues a GET carrying CRON_SECRET, while the dispatcher itself is a POST
  * authenticated with REMINDER_DISPATCH_SECRET. Without this the reminders table
  * filled up and nothing was ever delivered — the only scheduled job in
  * vercel.json was the subscription sweep.
+ *
+ * It drains the notification queue on the same run. That queue wants its own,
+ * far more frequent schedule, but the Hobby plan allows two cron jobs at one
+ * run a day each and vercel.json already spends both; a third entry is refused
+ * at deploy time rather than ignored, taking the whole deployment with it.
+ * Riding along here means supplier notifications go out at least daily on the
+ * free plan. For anything faster, point an external scheduler at
+ * /api/notifications/dispatch with CRON_SECRET — this stays as the floor.
+ *
+ * A failure in either queue must not take the other down with it, so the two
+ * are reported side by side and neither can throw past this handler.
  */
 export async function GET(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
@@ -231,7 +243,7 @@ export async function GET(request: Request) {
 
   // No origin header on a server-issued request, so the CSRF origin check
   // passes through and the dispatcher secret satisfies authorisation.
-  return POST(
+  const remindersResponse = await POST(
     new Request(request.url, {
       method: 'POST',
       headers: {
@@ -241,6 +253,17 @@ export async function GET(request: Request) {
       body: JSON.stringify({ limit: 100 }),
     })
   );
+
+  const reminders = await remindersResponse.json().catch(() => ({ error: 'Unreadable reminder result.' }));
+
+  let notifications: unknown;
+  try {
+    notifications = await dispatchQueuedNotifications({ limit: 100 });
+  } catch (error) {
+    notifications = { error: error instanceof Error ? error.message : 'Notification dispatch failed.' };
+  }
+
+  return NextResponse.json({ reminders, notifications });
 }
 
 export async function POST(request: Request) {
