@@ -249,7 +249,11 @@ export default function SupplierLeadsPage() {
                                   Quote submitted
                                 </span>
                               ) : (
-                                <Link href="/supplier/dashboard">
+                                // The quote form lives on the dashboard, so this
+                                // has to name the RFQ it means. Without the
+                                // query it landed on Overview and the supplier
+                                // had to find this same request again by hand.
+                                <Link href={`/supplier/dashboard?tab=quotes&rfq=${item.id}`}>
                                   <Button size="sm" variant="primary">
                                     Submit Quote
                                     <ArrowRight size={14} />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -66,6 +66,9 @@ export default function SupplierDashboardPage() {
   const [supplierApplication, setSupplierApplication] = useState<SupplierApplication | null>(null);
   const [products, setProducts] = useState<SupplierProduct[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  // Which RFQ the supplier arrived here to quote, if they came from a lead.
+  const [targetRfqId, setTargetRfqId] = useState<string | null>(null);
+  const scrolledToTargetRef = useRef(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [rfqInbox, setRfqInbox] = useState<SupplierInboxRfq[]>([]);
   const [rfqLoading, setRfqLoading] = useState(false);
@@ -96,6 +99,42 @@ export default function SupplierDashboardPage() {
   });
 
   useReveal({ deps: [activeTab, products.length, rfqInbox.length, apiKeys.length, loading, rfqLoading] });
+
+  // ─── Arriving from a lead ───────────────────────────────────────────────────
+  //
+  // /supplier/leads used to send every "Submit Quote" click to this page with
+  // no indication of which RFQ was meant, landing the supplier on Overview to
+  // hunt for it again under a different tab. Reading the link's intent here is
+  // what makes that button lead somewhere.
+  //
+  // Read from window rather than useSearchParams: this page is statically
+  // rendered, and useSearchParams would force a Suspense boundary around it for
+  // a value only ever needed after mount.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    const tab = params.get('tab');
+    if (tab === 'overview' || tab === 'products' || tab === 'quotes' || tab === 'settings') {
+      setActiveTab(tab);
+    }
+
+    const rfq = params.get('rfq');
+    if (rfq) setTargetRfqId(rfq);
+  }, []);
+
+  // Runs once the inbox has actually rendered, since the card cannot be scrolled
+  // to before it exists. Guarded so it does not yank the page back if the
+  // supplier has since scrolled away or switched tabs and returned.
+  useEffect(() => {
+    if (!targetRfqId || scrolledToTargetRef.current) return;
+    if (activeTab !== 'quotes' || rfqInbox.length === 0) return;
+
+    const card = document.getElementById(`rfq-${targetRfqId}`);
+    if (!card) return;
+
+    scrolledToTargetRef.current = true;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [targetRfqId, activeTab, rfqInbox]);
 
   const loadSupplierDocuments = async (supplierId: string, applicationId?: string | null) => {
     setDocumentsLoading(true);
@@ -862,7 +901,12 @@ export default function SupplierDashboardPage() {
                 return (
                   <div
                     key={rfq.id}
-                    className="bg-surface rounded-xl p-6 shadow-card border border-border-light grid gap-4 reveal"
+                    id={`rfq-${rfq.id}`}
+                    className={`bg-surface rounded-xl p-6 shadow-card grid gap-4 reveal border ${
+                      rfq.id === targetRfqId
+                        ? 'border-accent ring-2 ring-accent/30'
+                        : 'border-border-light'
+                    }`}
                   >
                     <div className="flex justify-between items-start gap-4 flex-wrap">
                       <div>
