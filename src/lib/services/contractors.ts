@@ -60,6 +60,10 @@ type ContractorQuery = PromiseLike<ContractorListResult> & {
   range(from: number, to: number): ContractorQuery;
   limit(count: number): ContractorQuery;
   single(): Promise<ContractorSingleResult>;
+  // single() answers "no rows" with HTTP 406, which the browser console logs as
+  // a failed request for every signed-in user who is not a contractor — that is
+  // most of them. maybeSingle() returns 200 with null data for the same case.
+  maybeSingle(): Promise<ContractorSingleResult>;
   update(values: ContractorUpdate): ContractorQuery;
 };
 
@@ -80,7 +84,7 @@ export async function getMyContractorProfile(userId: string): Promise<Contractor
     .select('*')
     .eq('user_id', userId)
     .is('deleted_at', null)
-    .single();
+    .maybeSingle();
 
   if (error && error.code !== 'PGRST116') {
     logger.error('Fetch contractor profile failed', { error });
@@ -159,7 +163,7 @@ export async function getListedContractor(contractorId: string): Promise<Contrac
     .eq('id', contractorId)
     .eq('is_listed', true)
     .is('deleted_at', null)
-    .single();
+    .maybeSingle();
 
   if (error && error.code !== 'PGRST116') {
     logger.error('Fetch listed contractor failed', { error });

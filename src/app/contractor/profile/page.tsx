@@ -11,6 +11,8 @@ import {
   updateContractorProfile,
   type ContractorRow,
 } from '@/lib/services/contractors';
+import { getContractorEnquiries, updateContactRequestStatus } from '@/lib/services/leads';
+import type { ContactRequest } from '@/lib/database.types';
 import {
   ArrowRight,
   CheckCircle,
@@ -64,6 +66,7 @@ export default function ContractorProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [enquiries, setEnquiries] = useState<ContactRequest[]>([]);
 
   const isContractor = String(profile?.user_type) === 'contractor';
 
@@ -79,12 +82,27 @@ export default function ContractorProfilePage() {
       setLoading(true);
       const result = await getMyContractorProfile(user.id);
       setContractor(result);
-      if (result) setForm(fromContractor(result));
+      if (result) {
+        setForm(fromContractor(result));
+        setEnquiries(await getContractorEnquiries(result.id));
+      }
       setLoading(false);
     };
 
     loadProfile();
   }, [authLoading, isAuthenticated, router, user]);
+
+  const newEnquiryCount = enquiries.filter((entry) => entry.status === 'new').length;
+
+  const markEnquiryRead = async (enquiryId: string) => {
+    // Optimistic: the badge should drop the moment it is clicked. A failed
+    // write leaves the row untouched in the database and the next load puts
+    // it back, which is a better outcome than a spinner on a status flag.
+    setEnquiries((current) =>
+      current.map((entry) => (entry.id === enquiryId ? { ...entry, status: 'read' } : entry))
+    );
+    await updateContactRequestStatus(enquiryId, 'read');
+  };
 
   const publicSummary = useMemo(() => {
     const exposed = ['Company name', 'Trades', 'Service areas', 'Phone', 'Email'];
@@ -208,7 +226,87 @@ export default function ContractorProfilePage() {
             </Link>
           </section>
         ) : (
-          <form onSubmit={handleSubmit} className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
+          <>
+            {/* Contractors had no inbox at all: the only route to one was a
+                mailto: link that left no trace. Enquiries land here now, above
+                the listing form, because a waiting customer matters more than
+                editing your trades list. */}
+            <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-lg font-bold text-slate-950">
+                  Enquiries
+                  {newEnquiryCount > 0 && (
+                    <span className="ml-2 rounded-full bg-blue-600 px-2 py-0.5 text-xs font-bold text-white">
+                      {newEnquiryCount} new
+                    </span>
+                  )}
+                </h2>
+                <span className="text-xs text-slate-500">{enquiries.length} total</span>
+              </div>
+
+              {enquiries.length === 0 ? (
+                <p className="mt-3 text-sm leading-6 text-slate-600">
+                  No enquiries yet. People who find your listing can send one without
+                  needing an account, and it will appear here.
+                </p>
+              ) : (
+                <ul className="mt-4 space-y-3">
+                  {enquiries.map((enquiry) => (
+                    <li
+                      key={enquiry.id}
+                      className={`rounded-md border p-4 ${
+                        enquiry.status === 'new'
+                          ? 'border-blue-200 bg-blue-50/60'
+                          : 'border-slate-200 bg-white'
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <strong className="text-sm text-slate-950">
+                          {enquiry.builder_name || 'Someone'}
+                        </strong>
+                        <span className="text-xs text-slate-500">
+                          {new Date(enquiry.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">
+                        {enquiry.message}
+                      </p>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
+                        {enquiry.builder_email && (
+                          <a
+                            href={`mailto:${enquiry.builder_email}`}
+                            className="font-semibold text-blue-700 underline"
+                          >
+                            {enquiry.builder_email}
+                          </a>
+                        )}
+                        {enquiry.builder_phone && (
+                          <a
+                            href={`tel:${enquiry.builder_phone}`}
+                            className="font-semibold text-blue-700 underline"
+                          >
+                            {enquiry.builder_phone}
+                          </a>
+                        )}
+                        {enquiry.status === 'new' && (
+                          <button
+                            type="button"
+                            onClick={() => markEnquiryRead(enquiry.id)}
+                            className="ml-auto rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-600 transition hover:bg-slate-50"
+                          >
+                            Mark as read
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <form onSubmit={handleSubmit} className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
             <section className="space-y-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="grid gap-2 text-sm font-semibold text-slate-700">
@@ -372,7 +470,8 @@ export default function ContractorProfilePage() {
                 Save contractor profile
               </button>
             </aside>
-          </form>
+            </form>
+          </>
         )}
       </main>
     </MainLayout>

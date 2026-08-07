@@ -19,12 +19,9 @@ import type { SupplierSubscription, SubscriptionPayment } from '@/lib/database.t
 import {
   ArrowLeft,
   CreditCard,
-  Star,
   CheckCircle,
   XCircle,
   Clock,
-  ArrowSquareOut,
-  ArrowUp,
   Warning,
   Trash,
 } from '@phosphor-icons/react';
@@ -127,15 +124,20 @@ export default function SupplierBillingPage() {
     ? new Date(subscription.current_period_end).toLocaleDateString()
     : '—';
 
+  // This list showed padlocks against features no code has ever gated, which
+  // made a free supplier think they were missing things they already had.
+  // Only two limits are genuinely enforced anywhere: checkProductLimit on
+  // products, and requirePlanFeature('api_access') on the API. Everything else
+  // is open to every supplier while the platform is free, so it says so.
   const FEATURES: { key: string; label: string; allowed: boolean }[] = [
     { key: 'products', label: `Products (${productCount}/${productLimit ?? '∞'})`, allowed: true },
     { key: 'rfq', label: 'RFQ Requests', allowed: true },
-    { key: 'contact', label: 'Contact Requests', allowed: planId !== 'basic' },
-    { key: 'analytics', label: 'Advanced Analytics', allowed: planId !== 'basic' },
-    { key: 'badge', label: 'Verified Badge', allowed: planId !== 'basic' },
-    { key: 'featured', label: 'Featured Listing', allowed: planId === 'premium' },
+    { key: 'contact', label: 'Contact Requests', allowed: true },
+    { key: 'analytics', label: 'Advanced Analytics', allowed: true },
+    { key: 'badge', label: 'Verified Badge', allowed: true },
+    { key: 'featured', label: 'Featured Listing', allowed: true },
+    { key: 'packages', label: 'Product Packages', allowed: true },
     { key: 'api', label: 'API Access', allowed: planId === 'premium' },
-    { key: 'packages', label: 'Product Packages', allowed: planId === 'premium' },
   ];
 
   return (
@@ -191,21 +193,19 @@ export default function SupplierBillingPage() {
                       Renews {periodEnd}
                     </div>
                   )}
+                  {/* The upgrade route is gone while the platform is free —
+                      see the note on plan-free-note below. Cancel stays: a
+                      supplier who already has a paid plan must still be able
+                      to end it. */}
                   <div className="plan-actions">
                     {planId === 'basic' && (
-                      <Link href="/supplier/upgrade">
-                        <Button variant="primary" icon={<Star size={16} />} fullWidth>
-                          Upgrade to Pro
-                        </Button>
-                      </Link>
+                      <p className="plan-free-note">
+                        Every supplier feature is free while ZimEstimate is getting started.
+                        There is nothing to upgrade to yet.
+                      </p>
                     )}
                     {planId === 'pro' && !subscription?.cancel_at_period_end && (
                       <div className="plan-action-row">
-                        <Link href="/supplier/upgrade">
-                          <Button variant="secondary" icon={<ArrowUp size={16} />}>
-                            Upgrade to Premium
-                          </Button>
-                        </Link>
                         <Button
                           variant="ghost"
                           icon={<Trash size={16} />}
@@ -246,12 +246,6 @@ export default function SupplierBillingPage() {
                           <XCircle size={16} weight="fill" className="feature-icon no" />
                         )}
                         <span>{f.label}</span>
-                        {!f.allowed && (
-                          <Link href="/supplier/upgrade" className="upgrade-hint">
-                            Upgrade
-                            <ArrowSquareOut size={12} />
-                          </Link>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -381,6 +375,12 @@ export default function SupplierBillingPage() {
             margin-bottom: 12px;
           }
           .plan-actions { margin-top: 4px; }
+          .plan-free-note {
+            margin: 0;
+            font-size: 0.8125rem;
+            line-height: 1.5;
+            color: var(--color-text-muted, #64748b);
+          }
           .plan-action-row { display: flex; gap: 8px; flex-wrap: wrap; }
           .cancel-success {
             font-size: 13px;

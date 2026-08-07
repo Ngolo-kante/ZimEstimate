@@ -21,6 +21,13 @@ import {
   X,
 } from '@phosphor-icons/react';
 
+// Upgrade is gone too. It presented a full checkout — plan cards, a Stripe or
+// EcoCash choice — whose button ended in alert("Payment ... coming soon"), for
+// a tier whose advertised features are almost entirely ungated in code. Of the
+// seven, only api_access is actually enforced, and contact_requests was freed
+// outright. Suppliers and contractors are free while the platform is early, so
+// there is nothing here to sell yet.
+//
 // Orders, Messages and Reviews used to sit in here. All three rendered
 // hardcoded arrays and touched no database at all: invented conversations,
 // invented orders from invented builders, and invented reviews carrying an
@@ -37,7 +44,6 @@ const navItems = [
   { label: 'Documents', href: '/supplier/documents', icon: FileText },
   { label: 'Notifications', href: '/supplier/notifications', icon: Bell },
   { label: 'Billing', href: '/supplier/billing', icon: CreditCard },
-  { label: 'Upgrade', href: '/supplier/upgrade', icon: UserCircle },
   { label: 'Profile', href: '/supplier/profile/edit', icon: UserCircle },
 ];
 

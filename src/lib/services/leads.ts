@@ -57,6 +57,42 @@ export async function getContactRequests(
   return (data ?? []) as unknown as ContactRequest[];
 }
 
+/**
+ * The contractor-side twin of getContactRequests.
+ *
+ * A separate function rather than an owner-agnostic one: the two callers know
+ * perfectly well which kind of listing they are, and passing
+ * {supplierId?, contractorId?} into one function would just move the "exactly
+ * one of these" problem into TypeScript, where it is weaker than the CHECK
+ * constraint already enforcing it in the database.
+ */
+export async function getContractorEnquiries(
+  contractorId: string,
+  options: GetContactRequestsOptions = {}
+): Promise<ContactRequest[]> {
+  let query = supabase
+    .from('contact_requests')
+    .select('*')
+    .eq('contractor_id', contractorId)
+    .order('created_at', { ascending: false });
+
+  if (options.status) {
+    query = query.eq('status', options.status);
+  }
+  if (options.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    logger.error('leads: failed to fetch contractor enquiries', { error, contractorId });
+    return [];
+  }
+
+  return (data ?? []) as unknown as ContactRequest[];
+}
+
 export async function updateContactRequestStatus(
   requestId: string,
   status: ContactRequestStatus

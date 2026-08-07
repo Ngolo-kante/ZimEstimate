@@ -1819,10 +1819,15 @@ export interface Database {
                 };
             };
             contact_requests: {
+                // builder_id and supplier_id became nullable in migration 046:
+                // an enquiry can come from someone without an account, and can
+                // be addressed to a contractor instead of a supplier. Exactly
+                // one of supplier_id / contractor_id is set.
                 Row: {
                     id: string;
-                    builder_id: string;
-                    supplier_id: string;
+                    builder_id: string | null;
+                    supplier_id: string | null;
+                    contractor_id: string | null;
                     project_id: string | null;
                     message: string;
                     status: string;
@@ -1834,8 +1839,9 @@ export interface Database {
                 };
                 Insert: {
                     id?: string;
-                    builder_id: string;
-                    supplier_id: string;
+                    builder_id?: string | null;
+                    supplier_id?: string | null;
+                    contractor_id?: string | null;
                     project_id?: string | null;
                     message: string;
                     status?: string;

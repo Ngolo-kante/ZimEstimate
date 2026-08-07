@@ -18,6 +18,7 @@ import {
   WhatsappLogo,
 } from '@phosphor-icons/react';
 import type { Supplier, SupplierProduct } from '@/lib/database.types';
+import EnquiryForm from '@/components/enquiries/EnquiryForm';
 
 /**
  * wa.me needs a bare international number. Local listings are written every way
@@ -244,6 +245,13 @@ export default function SupplierDetailPage() {
           </div>
         )}
 
+        {/* The supplier Leads page has a Contact Requests inbox that nothing
+            has ever written to — createContactRequest existed but no UI called
+            it, which is why that table sits empty. This is the missing sender. */}
+        <div className="enquiry-slot">
+          <EnquiryForm supplierId={supplier.id} recipientName={supplier.name} />
+        </div>
+
         <div className="section">
           <h2>Product Catalog</h2>
           {products.length === 0 ? (
@@ -398,6 +406,10 @@ export default function SupplierDetailPage() {
           font-size: 1rem;
           font-weight: 600;
           color: var(--color-text);
+        }
+
+        .enquiry-slot {
+          margin: 16px 0 4px;
         }
 
         .contact-bar {

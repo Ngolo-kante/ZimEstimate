@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import { getListedContractor, type ContractorRow } from '@/lib/services/contractors';
+import EnquiryForm from '@/components/enquiries/EnquiryForm';
 import { ArrowLeft, Briefcase, EnvelopeSimple, MapPin, Phone, SpinnerGap } from '@phosphor-icons/react';
 
 export default function ContractorDetailPage() {
@@ -111,6 +112,17 @@ export default function ContractorDetailPage() {
                   {!contractor.contact_phone && !contractor.contact_email && (
                     <p className="rounded-md bg-white p-3 text-slate-500">No contact details provided.</p>
                   )}
+                </div>
+
+                {/* A tel:/mailto: link leaves nothing behind — the contractor
+                    gets nothing if they miss it, and neither side has a record
+                    to follow up against. This records the enquiry and notifies
+                    them, without taking the phone buttons away. */}
+                <div className="mt-4">
+                  <EnquiryForm
+                    contractorId={contractor.id}
+                    recipientName={contractor.company_name}
+                  />
                 </div>
 
                 <div className="mt-5 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
