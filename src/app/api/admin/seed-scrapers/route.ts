@@ -7,7 +7,7 @@ import { requireAdmin } from '@/lib/server/auth';
 type ScraperConfigInsert = Database['public']['Tables']['scraper_configs']['Insert'];
 
 export async function GET(request: NextRequest) {
-    const rateLimit = enforceRateLimit(request, {
+    const rateLimit = await enforceRateLimit(request, {
         keyPrefix: 'scraper:seed',
         limit: 3,
         windowMs: 60_000,

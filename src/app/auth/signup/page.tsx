@@ -8,10 +8,11 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
+import { sanitizeAuthRedirect } from '@/lib/authRedirect';
 
 function SignupForm() {
     const searchParams = useSearchParams();
-    const redirect = searchParams.get('redirect');
+    const redirect = sanitizeAuthRedirect(searchParams.get('redirect'));
     const { signUp, isLoading } = useAuth();
 
     const [fullName, setFullName] = useState('');

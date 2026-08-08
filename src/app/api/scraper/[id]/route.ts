@@ -12,7 +12,7 @@ export async function DELETE(
     context: { params: Promise<{ id: string }> } // Awaiting params for Next.js 15+ compatibility
 ) {
     try {
-        const rateLimit = enforceRateLimit(req, {
+        const rateLimit = await enforceRateLimit(req, {
             keyPrefix: 'scraper:delete',
             limit: 15,
             windowMs: 60_000,
@@ -59,7 +59,7 @@ export async function PATCH(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const rateLimit = enforceRateLimit(req, {
+        const rateLimit = await enforceRateLimit(req, {
             keyPrefix: 'scraper:update',
             limit: 15,
             windowMs: 60_000,

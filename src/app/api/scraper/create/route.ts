@@ -9,7 +9,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function POST(req: NextRequest) {
     try {
-        const rateLimit = enforceRateLimit(req, {
+        const rateLimit = await enforceRateLimit(req, {
             keyPrefix: 'scraper:create',
             limit: 15,
             windowMs: 60_000,

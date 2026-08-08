@@ -7,7 +7,7 @@ export async function POST(
     req: NextRequest
 ): Promise<NextResponse<CategoryScrapeResult | { success: false; url: string; itemsFound: number; itemsMatched: number; itemsPending: number; items: []; error: string }>> {
     try {
-        const rateLimit = enforceRateLimit(req, {
+        const rateLimit = await enforceRateLimit(req, {
             keyPrefix: 'scraper:category',
             limit: 10,
             windowMs: 60_000,

@@ -19,6 +19,21 @@ export type ContractorRow = {
   deleted_at: string | null;
 };
 
+export type PublicContractorRow = Pick<
+  ContractorRow,
+  | 'id'
+  | 'company_name'
+  | 'contact_phone'
+  | 'contact_email'
+  | 'trades'
+  | 'service_areas'
+  | 'years_experience'
+  | 'about'
+  | 'is_verified'
+  | 'created_at'
+  | 'updated_at'
+>;
+
 export type ContractorUpdate = Partial<{
   company_name: string;
   contact_phone: string | null;
@@ -40,42 +55,46 @@ export type ContractorFilters = {
   offset?: number;
 };
 
-type ContractorListResult = {
-  data: ContractorRow[] | null;
+type ContractorListResult<Row> = {
+  data: Row[] | null;
   error: { message: string } | null;
   count?: number | null;
 };
 
-type ContractorSingleResult = {
-  data: ContractorRow | null;
+type ContractorSingleResult<Row> = {
+  data: Row | null;
   error: { message: string; code?: string } | null;
 };
 
-type ContractorQuery = PromiseLike<ContractorListResult> & {
-  select(columns?: string, options?: { count?: 'exact'; head?: boolean }): ContractorQuery;
-  eq(column: string, value: string | boolean | number): ContractorQuery;
-  is(column: string, value: null): ContractorQuery;
-  contains(column: string, value: string[]): ContractorQuery;
-  order(column: string, options?: { ascending?: boolean }): ContractorQuery;
-  range(from: number, to: number): ContractorQuery;
-  limit(count: number): ContractorQuery;
-  single(): Promise<ContractorSingleResult>;
+type ContractorQuery<Row> = PromiseLike<ContractorListResult<Row>> & {
+  select(columns?: string, options?: { count?: 'exact'; head?: boolean }): ContractorQuery<Row>;
+  eq(column: string, value: string | boolean | number): ContractorQuery<Row>;
+  is(column: string, value: null): ContractorQuery<Row>;
+  contains(column: string, value: string[]): ContractorQuery<Row>;
+  order(column: string, options?: { ascending?: boolean }): ContractorQuery<Row>;
+  range(from: number, to: number): ContractorQuery<Row>;
+  limit(count: number): ContractorQuery<Row>;
+  single(): Promise<ContractorSingleResult<Row>>;
   // single() answers "no rows" with HTTP 406, which the browser console logs as
   // a failed request for every signed-in user who is not a contractor — that is
   // most of them. maybeSingle() returns 200 with null data for the same case.
-  maybeSingle(): Promise<ContractorSingleResult>;
-  update(values: ContractorUpdate): ContractorQuery;
+  maybeSingle(): Promise<ContractorSingleResult<Row>>;
+  update(values: ContractorUpdate): ContractorQuery<Row>;
 };
 
 type ContractorSupabase = {
-  from(table: 'contractors'): ContractorQuery;
+  from(table: 'contractors'): ContractorQuery<ContractorRow>;
+};
+
+type PublicContractorSupabase = {
+  from(table: 'public_contractors'): ContractorQuery<PublicContractorRow>;
 };
 
 const contractorsTable = () =>
   (supabase as unknown as ContractorSupabase).from('contractors');
 
-const PUBLIC_CONTRACTOR_COLUMNS =
-  'id, company_name, contact_phone, contact_email, trades, service_areas, years_experience, about, is_listed, is_verified, created_at, updated_at, deleted_at, user_id';
+const publicContractorsView = () =>
+  (supabase as unknown as PublicContractorSupabase).from('public_contractors');
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -127,11 +146,8 @@ export async function listListedContractors({
   serviceArea,
   limit = 24,
   offset = 0,
-}: ContractorFilters = {}): Promise<{ contractors: ContractorRow[]; count: number; error?: string }> {
-  let query = contractorsTable()
-    .select(PUBLIC_CONTRACTOR_COLUMNS, { count: 'exact' })
-    .eq('is_listed', true)
-    .is('deleted_at', null);
+}: ContractorFilters = {}): Promise<{ contractors: PublicContractorRow[]; count: number; error?: string }> {
+  let query = publicContractorsView().select('*', { count: 'exact' });
 
   if (trade && trade !== 'all') {
     query = query.contains('trades', [trade]);
@@ -153,16 +169,14 @@ export async function listListedContractors({
   return { contractors: data || [], count: count || 0 };
 }
 
-export async function getListedContractor(contractorId: string): Promise<ContractorRow | null> {
+export async function getListedContractor(contractorId: string): Promise<PublicContractorRow | null> {
   if (!UUID_PATTERN.test(contractorId)) {
     return null;
   }
 
-  const { data, error } = await contractorsTable()
-    .select(PUBLIC_CONTRACTOR_COLUMNS)
+  const { data, error } = await publicContractorsView()
+    .select('*')
     .eq('id', contractorId)
-    .eq('is_listed', true)
-    .is('deleted_at', null)
     .maybeSingle();
 
   if (error && error.code !== 'PGRST116') {

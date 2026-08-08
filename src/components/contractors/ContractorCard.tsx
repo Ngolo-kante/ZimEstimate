@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { ArrowRight, Briefcase, EnvelopeSimple, MapPin, Phone } from '@phosphor-icons/react';
-import type { ContractorRow } from '@/lib/services/contractors';
+import type { PublicContractorRow } from '@/lib/services/contractors';
 
 type ContractorCardProps = {
-  contractor: ContractorRow;
+  contractor: PublicContractorRow;
 };
 
 const visibleTags = (values: string[] | null | undefined, fallback: string) => {

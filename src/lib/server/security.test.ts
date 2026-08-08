@@ -57,10 +57,10 @@ describe('security helpers', () => {
       headers: { 'x-forwarded-for': '127.0.0.1' },
     });
 
-    const first = enforceRateLimit(req, { keyPrefix: 'test', limit: 1, windowMs: 60_000 });
+    const first = await enforceRateLimit(req, { keyPrefix: 'test', limit: 1, windowMs: 60_000 });
     expect(first).toBeNull();
 
-    const second = enforceRateLimit(req, { keyPrefix: 'test', limit: 1, windowMs: 60_000 });
+    const second = await enforceRateLimit(req, { keyPrefix: 'test', limit: 1, windowMs: 60_000 });
     expect(second).not.toBeNull();
     expect(second?.status).toBe(429);
   });

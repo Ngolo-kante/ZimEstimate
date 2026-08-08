@@ -267,7 +267,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const rateLimit = enforceRateLimit(request, {
+  const rateLimit = await enforceRateLimit(request, {
     keyPrefix: 'reminders:dispatch',
     limit: 30,
     windowMs: 60_000,

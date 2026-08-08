@@ -4,6 +4,7 @@ import type { Database } from '@/lib/database.types';
 import { materials } from '@/lib/materials';
 import { MaterialMatcher, type MatchResult } from '@/lib/services/material-matcher';
 import { sanitizeNumber, sanitizeText, sanitizeUrl } from '@/lib/server/security';
+import { validatePublicHttpUrl } from '@/lib/server/outboundUrl';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -84,47 +85,100 @@ const SCRAPE_HEADERS: Record<string, string> = {
 };
 
 const SCRAPE_TIMEOUT_MS = 20_000;
+const MAX_REDIRECTS = 5;
+const MAX_HTML_BYTES = 5 * 1024 * 1024;
+
+async function readHtmlWithLimit(response: Response): Promise<string> {
+  const declaredLength = Number(response.headers.get('content-length') || 0);
+  if (declaredLength > MAX_HTML_BYTES) {
+    throw new ScraperRunnerError('Scraper response exceeded the 5MB limit.', 502);
+  }
+
+  if (!response.body) return '';
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_HTML_BYTES) {
+      await reader.cancel();
+      throw new ScraperRunnerError('Scraper response exceeded the 5MB limit.', 502);
+    }
+    chunks.push(value);
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
+}
 
 /**
  * Fetch a page's HTML directly. Retries once with a Referer when a site
  * answers 403, which is what the standalone pricing scraper does.
  */
 async function fetchHtml(url: string): Promise<string> {
-  const attempt = (headers: Record<string, string>) =>
-    fetch(url, {
+  const attempt = (target: URL, headers: Record<string, string>) =>
+    fetch(target, {
       headers,
-      redirect: 'follow',
+      redirect: 'manual',
       signal: AbortSignal.timeout(SCRAPE_TIMEOUT_MS),
     });
 
-  let response: Response;
-  try {
-    response = await attempt(SCRAPE_HEADERS);
-    if (response.status === 403) {
-      response = await attempt({
-        ...SCRAPE_HEADERS,
-        Referer: new URL(url).origin,
-        'Upgrade-Insecure-Requests': '1',
-      });
+  let currentUrl = new URL(url);
+
+  for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
+    let safeUrl: URL;
+    let response: Response;
+    try {
+      safeUrl = await validatePublicHttpUrl(currentUrl);
+      response = await attempt(safeUrl, SCRAPE_HEADERS);
+      if (response.status === 403) {
+        response = await attempt(safeUrl, {
+          ...SCRAPE_HEADERS,
+          Referer: safeUrl.origin,
+          'Upgrade-Insecure-Requests': '1',
+        });
+      }
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'unknown error';
+      throw new ScraperRunnerError(`Failed to fetch scraper URL: ${reason}`, 502);
     }
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : 'unknown error';
-    throw new ScraperRunnerError(`Failed to fetch ${url}: ${reason}`, 502);
+
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      const location = response.headers.get('location');
+      if (!location) throw new ScraperRunnerError('Scraper redirect had no destination.', 502);
+      currentUrl = new URL(location, safeUrl);
+      continue;
+    }
+
+    if (!response.ok) {
+      throw new ScraperRunnerError(
+        `Scraper destination returned HTTP ${response.status}`,
+        response.status === 404 ? 404 : 502
+      );
+    }
+
+    const contentType = response.headers.get('content-type')?.toLowerCase() || '';
+    if (contentType && !contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
+      throw new ScraperRunnerError('Scraper destination did not return HTML.', 502);
+    }
+
+    const html = await readHtmlWithLimit(response);
+    if (!html.trim()) {
+      throw new ScraperRunnerError('No HTML content returned from scraper destination.', 502);
+    }
+    return html;
   }
 
-  if (!response.ok) {
-    throw new ScraperRunnerError(
-      `Failed to fetch ${url}: HTTP ${response.status}`,
-      response.status === 404 ? 404 : 502
-    );
-  }
-
-  const html = await response.text();
-  if (!html.trim()) {
-    throw new ScraperRunnerError(`No HTML content returned from ${url}`, 502);
-  }
-
-  return html;
+  throw new ScraperRunnerError(`Scraper exceeded ${MAX_REDIRECTS} redirects.`, 502);
 }
 
 export async function runSingleScrape(payload: ScraperTestPayload): Promise<SingleScrapeResult> {

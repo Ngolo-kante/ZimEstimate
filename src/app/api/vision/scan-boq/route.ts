@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     // Takeoff and every other estimate path in the app — only saving the
     // project it produces needs an account. Each scan is still a paid model
     // call, so the rate limit below (not auth) is what actually bounds cost.
-    const rateLimit = enforceRateLimit(request, {
+    const rateLimit = await enforceRateLimit(request, {
       keyPrefix: 'vision:scan-boq',
       limit: 10,
       windowMs: 60_000,

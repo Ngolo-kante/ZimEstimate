@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { createServiceRoleClient } from '@/lib/supabase';
 
 type RequestLike = Request;
 
@@ -84,13 +85,49 @@ function computeRateLimit(key: string, options: RateLimitOptions): RateLimitResu
   };
 }
 
-export function enforceRateLimit(req: RequestLike, options: RateLimitOptions) {
+async function computeDistributedRateLimit(key: string, options: RateLimitOptions): Promise<RateLimitResult> {
+  const supabase = createServiceRoleClient();
+  const { data, error } = await supabase.rpc('consume_api_rate_limit' as never, {
+    p_bucket_key: key,
+    p_limit: options.limit,
+    p_window_ms: options.windowMs,
+  } as never);
+
+  if (error) throw new Error(error.message);
+  const value = Array.isArray(data) ? data[0] : data;
+  const row = value as { allowed?: boolean; remaining?: number; reset_at?: string } | null;
+  const resetAt = row?.reset_at ? new Date(row.reset_at).getTime() : Number.NaN;
+  if (!row || typeof row.allowed !== 'boolean' || typeof row.remaining !== 'number' || !Number.isFinite(resetAt)) {
+    throw new Error('Invalid distributed rate-limit response.');
+  }
+
+  return { allowed: row.allowed, remaining: row.remaining, resetAt };
+}
+
+export async function enforceRateLimit(req: RequestLike, options: RateLimitOptions) {
   // SEC-001 FIX: Removed insecure internal header bypass
   // Internal requests should use proper authentication, not spoofable headers
 
   const ip = getClientIp(req);
   const key = `${options.keyPrefix}:${ip}`;
-  const result = computeRateLimit(key, options);
+  let result: RateLimitResult;
+
+  if (process.env.NODE_ENV === 'test') {
+    result = computeRateLimit(key, options);
+  } else {
+    try {
+      result = await computeDistributedRateLimit(key, options);
+    } catch (error) {
+      console.error('Distributed rate limit unavailable:', error);
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          { error: 'Request protection is temporarily unavailable. Please try again.' },
+          { status: 503 }
+        );
+      }
+      result = computeRateLimit(key, options);
+    }
+  }
 
   if (result.allowed) return null;
 

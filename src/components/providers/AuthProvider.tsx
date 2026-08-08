@@ -14,6 +14,23 @@ interface AuthState {
     isAuthenticated: boolean;
 }
 
+type EditableProfile = Pick<
+    Profile,
+    | 'full_name'
+    | 'avatar_url'
+    | 'preferred_currency'
+    | 'phone_number'
+    | 'whatsapp_reminders'
+    | 'notify_email'
+    | 'notify_whatsapp'
+    | 'notify_push'
+    | 'notify_rfq'
+    | 'notify_quote_updates'
+    | 'notify_price_alerts'
+    | 'notify_project_reminders'
+    | 'telegram_chat_id'
+>;
+
 interface AuthContextType extends AuthState {
     // Auth methods
     signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null; data?: { user: User | null; session: Session | null } }>;
@@ -24,7 +41,7 @@ interface AuthContextType extends AuthState {
 
     // Profile methods
     refreshProfile: () => Promise<void>;
-    updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
+    updateProfile: (updates: Partial<EditableProfile>) => Promise<{ error: Error | null }>;
 
     // Tier helpers
     canCreateProject: () => boolean;
@@ -213,7 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     // Update profile
-    const updateProfile = async (updates: Partial<Profile>) => {
+    const updateProfile = async (updates: Partial<EditableProfile>) => {
         if (!user) {
             return { error: new Error('Not authenticated') };
         }

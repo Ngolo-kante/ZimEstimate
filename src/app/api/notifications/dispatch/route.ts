@@ -60,7 +60,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const rateLimit = enforceRateLimit(request, {
+  const rateLimit = await enforceRateLimit(request, {
     keyPrefix: 'notifications:dispatch',
     limit: 20,
     windowMs: 60_000,

@@ -5,13 +5,13 @@ import MainLayout from '@/components/layout/MainLayout';
 import { useReveal } from '@/hooks/useReveal';
 import ContractorCard from '@/components/contractors/ContractorCard';
 import { CONTRACTOR_TRADES, ZIMBABWE_SERVICE_AREAS } from '@/components/contractors/constants';
-import { listListedContractors, type ContractorRow } from '@/lib/services/contractors';
+import { listListedContractors, type PublicContractorRow } from '@/lib/services/contractors';
 import { MagnifyingGlass, SlidersHorizontal, SpinnerGap, UsersThree } from '@phosphor-icons/react';
 
 const PAGE_SIZE = 24;
 
 export default function ContractorsPage() {
-  const [contractors, setContractors] = useState<ContractorRow[]>([]);
+  const [contractors, setContractors] = useState<PublicContractorRow[]>([]);
   const [selectedTrade, setSelectedTrade] = useState('all');
   const [selectedArea, setSelectedArea] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');

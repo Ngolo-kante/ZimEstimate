@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   // Runs before validation so a script cannot probe the endpoint cheaply. A
   // rejected submission therefore costs an attempt, so the ceiling leaves room
   // for someone fixing a typo: generous for a person, useless for a spammer.
-  const limited = enforceRateLimit(request, {
+  const limited = await enforceRateLimit(request, {
     keyPrefix: 'enquiry-intake',
     limit: 10,
     windowMs: 60 * 60 * 1000,

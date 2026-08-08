@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
-import { getListedContractor, type ContractorRow } from '@/lib/services/contractors';
+import { getListedContractor, type PublicContractorRow } from '@/lib/services/contractors';
 import EnquiryForm from '@/components/enquiries/EnquiryForm';
 import { ArrowLeft, Briefcase, EnvelopeSimple, MapPin, Phone, SpinnerGap } from '@phosphor-icons/react';
 
 export default function ContractorDetailPage() {
   const params = useParams<{ id: string }>();
-  const [contractor, setContractor] = useState<ContractorRow | null>(null);
+  const [contractor, setContractor] = useState<PublicContractorRow | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

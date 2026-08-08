@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   // means a rejected submission also costs an attempt, so the ceiling has to
   // leave room for someone correcting a typo. Ten an hour is forgiving for a
   // person and useless for a spammer.
-  const limited = enforceRateLimit(request, {
+  const limited = await enforceRateLimit(request, {
     keyPrefix: 'support-intake',
     limit: 10,
     windowMs: 60 * 60 * 1000,

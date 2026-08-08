@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
+import { sanitizeAuthRedirect } from '@/lib/authRedirect';
 
 function LoginForm() {
     const router = useRouter();
@@ -21,7 +22,7 @@ function LoginForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const callbackError = searchParams.get('error');
-    const redirect = searchParams.get('redirect');
+    const redirect = sanitizeAuthRedirect(searchParams.get('redirect'));
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

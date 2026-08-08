@@ -5,7 +5,7 @@ import { ScraperRunnerError, runSingleScrape, type ScraperTestPayload } from '@/
 
 export async function POST(req: NextRequest) {
     try {
-        const rateLimit = enforceRateLimit(req, {
+        const rateLimit = await enforceRateLimit(req, {
             keyPrefix: 'scraper:test',
             limit: 10,
             windowMs: 60_000,

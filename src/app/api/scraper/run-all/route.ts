@@ -48,7 +48,7 @@ interface ScraperConfigRow {
 
 export async function POST(req: NextRequest): Promise<NextResponse<RunAllResponse>> {
     try {
-        const rateLimit = enforceRateLimit(req, {
+        const rateLimit = await enforceRateLimit(req, {
             keyPrefix: 'scraper:run-all',
             limit: 5,
             windowMs: 60_000,

@@ -9,6 +9,7 @@ import {
   loadGoogleIdentity,
   type GoogleCredentialResponse,
 } from '@/lib/googleIdentity';
+import { sanitizeAuthRedirect } from '@/lib/authRedirect';
 
 /**
  * "Continue with Google" that keeps Google's sign-in screen on our own origin.
@@ -36,6 +37,7 @@ export default function GoogleSignInButton({
   const containerRef = useRef<HTMLDivElement>(null);
   const [useFallback, setUseFallback] = useState(!getGoogleClientId());
   const [isWorking, setIsWorking] = useState(false);
+  const safeRedirectTo = sanitizeAuthRedirect(redirectTo) ?? '/dashboard';
 
   // Held in refs so the setup effect below does not depend on them.
   //
@@ -90,7 +92,7 @@ export default function GoogleSignInButton({
 
             // Full navigation, not router.push — the session lands in storage
             // and every server component needs to see it.
-            window.location.href = redirectTo;
+            window.location.href = safeRedirectTo;
           },
         });
 
@@ -121,7 +123,7 @@ export default function GoogleSignInButton({
     };
     // redirectTo only. Everything else the setup needs is read through a ref at
     // call time, so a parent re-rendering cannot rebuild Google's button.
-  }, [redirectTo]);
+  }, [safeRedirectTo]);
 
   // Styles live here rather than on the pages: styled-jsx scopes to the
   // component that declares it, so the .google-btn rules on the login and

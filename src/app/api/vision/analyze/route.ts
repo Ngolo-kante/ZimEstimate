@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     // builder and quick projects. Only saving the resulting project needs an
     // account. Rate limiting below is IP-based and is what actually bounds
     // cost, not the auth check that used to sit here.
-    const rateLimit = enforceRateLimit(request, {
+    const rateLimit = await enforceRateLimit(request, {
       keyPrefix: 'vision:analyze',
       limit: 10,
       windowMs: 60_000,

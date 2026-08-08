@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { sanitizeAuthRedirect } from '@/lib/authRedirect';
 
 export default function AuthCallbackPage() {
     const router = useRouter();
@@ -95,9 +96,12 @@ export default function AuthCallbackPage() {
 
                 try {
                     const stored = sessionStorage.getItem('zimestimate_auth_redirect');
-                    if (stored) {
+                    const safeRedirect = sanitizeAuthRedirect(stored);
+                    if (safeRedirect) {
                         sessionStorage.removeItem('zimestimate_auth_redirect');
-                        redirectUrl = stored;
+                        redirectUrl = safeRedirect;
+                    } else if (stored) {
+                        sessionStorage.removeItem('zimestimate_auth_redirect');
                     }
                 } catch { /* sessionStorage unavailable */ }
 
