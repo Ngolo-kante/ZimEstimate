@@ -260,7 +260,7 @@ export default function TopNavbar() {
                     unoptimized
                   />
                 ) : (
-                  <User size={17} weight="bold" />
+                  <User size={20} weight="fill" />
                 )}
               </span>
               <span className="trigger-copy" aria-hidden="true">
@@ -676,7 +676,7 @@ export default function TopNavbar() {
           color: var(--color-text);
           cursor: pointer;
           transition: all 0.2s ease;
-          padding: 3px 8px 3px 3px;
+          padding: 0 8px 0 0;
           gap: 8px;
         }
 
@@ -686,14 +686,14 @@ export default function TopNavbar() {
         }
 
         .trigger-avatar {
-          width: 32px;
-          height: 32px;
+          width: 38px;
+          height: 38px;
           display: flex;
           align-items: center;
           justify-content: center;
           flex: 0 0 auto;
           overflow: hidden;
-          border-radius: 6px;
+          border-radius: 7px 0 0 7px;
           color: #fff;
           background: var(--color-primary);
         }
@@ -1158,7 +1158,8 @@ export default function TopNavbar() {
           .logo-text { font-size: 1.05rem; }
           .trigger-copy,
           .profile-caret { display: none; }
-          .user-btn { width: 40px; padding: 3px; }
+          .user-btn { width: 40px; padding: 0; gap: 0; }
+          .trigger-avatar { border-radius: 7px; }
           .profile-dropdown {
             position: fixed;
             top: 64px;
