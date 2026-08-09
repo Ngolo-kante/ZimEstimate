@@ -57,6 +57,9 @@ test.describe('Public launch surfaces', () => {
     await expect(page.getByRole('link', { name: 'Contact support' })).toBeVisible();
 
     await page.setViewportSize({ width: 320, height: 720 });
+    await expect(page.getByRole('img', {
+      name: 'Illustration of a house building up stage by stage as the budget increases',
+    })).toBeVisible();
     const mobileWidth = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
       content: document.documentElement.scrollWidth,

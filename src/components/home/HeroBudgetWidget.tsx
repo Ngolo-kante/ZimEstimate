@@ -58,7 +58,7 @@ function BuildingHouse({ coverage }: { coverage: Record<string, number> }) {
       viewBox="0 0 220 132"
       role="img"
       aria-label="Illustration of a house building up stage by stage as the budget increases"
-      className="w-full h-28 md:h-32 lg:h-36"
+      className="w-full h-20 sm:h-28 md:h-32 lg:h-36"
     >
       {/* Ground */}
       <line x1="10" y1="126" x2="210" y2="126" stroke="#CBD5E1" strokeWidth="2" strokeLinecap="round" />
@@ -205,7 +205,7 @@ export default function HeroBudgetWidget() {
         </label>
 
         {/* The house that builds itself */}
-        <div className="hidden sm:block flex-shrink-0">
+        <div className="block flex-shrink-0">
           <BuildingHouse coverage={coverage} />
         </div>
 
