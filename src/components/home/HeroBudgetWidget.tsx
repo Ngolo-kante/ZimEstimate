@@ -156,8 +156,8 @@ export default function HeroBudgetWidget() {
           <span className="text-[10px] font-bold tracking-normal text-blue-600 uppercase">
             Budget reality check
           </span>
-          <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" aria-hidden="true" />
+          <span className="text-[10px] font-semibold text-[var(--color-success-fg)] bg-[var(--color-success-bg)] border border-[var(--color-success-border)] rounded-full px-2 py-0.5 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] animate-pulse" aria-hidden="true" />
             Live
           </span>
         </div>
@@ -175,13 +175,13 @@ export default function HeroBudgetWidget() {
               assumption behind every number above it, so it reads as a spec
               here instead of a disclaimer down there. */}
           <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-bold text-slate-900 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 tabular-nums">
+            <span className="text-[11px] font-bold text-[var(--color-info-fg)] bg-[var(--color-info-bg)] border border-[var(--color-info-border)] rounded px-1.5 py-0.5 tabular-nums">
               {PLAN_AREA_M2}m²
             </span>
-            <span className="text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">
+            <span className="text-[11px] font-semibold text-[var(--color-info-fg)] bg-[var(--color-info-bg)] border border-[var(--color-info-border)] rounded px-1.5 py-0.5">
               {PLAN_BEDROOMS}-bed
             </span>
-            <span className="text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 capitalize">
+            <span className="text-[11px] font-semibold text-[var(--color-info-fg)] bg-[var(--color-info-bg)] border border-[var(--color-info-border)] rounded px-1.5 py-0.5 capitalize">
               {PLAN_LOCATION}
             </span>
           </div>
@@ -220,7 +220,7 @@ export default function HeroBudgetWidget() {
                 </span>
                 <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-blue-500 transition-all duration-500 motion-reduce:transition-none"
+                    className="h-full rounded-full bg-[var(--color-success)] transition-all duration-500 motion-reduce:transition-none"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -242,7 +242,7 @@ export default function HeroBudgetWidget() {
         <div className="bg-slate-50 border border-slate-200 rounded-md px-3.5 py-2.5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             {fullyFunded && (
-              <CheckCircle size={16} weight="fill" className="text-blue-600 flex-shrink-0" aria-hidden="true" />
+              <CheckCircle size={16} weight="fill" className="text-[var(--color-success)] flex-shrink-0" aria-hidden="true" />
             )}
             <p className="text-[11px] md:text-[12px] font-semibold text-slate-700 leading-snug">
               {verdict}

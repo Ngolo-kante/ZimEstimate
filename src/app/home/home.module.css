@@ -145,15 +145,19 @@
 
 .secondaryButton {
   padding: 13px 17px;
-  color: white;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.42);
+  color: var(--color-primary);
+  background: white;
+  border: 1px solid white;
 }
 
 .secondaryButton:hover {
   transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.72);
+  background: #eef4ff;
+  border-color: #bfd2ea;
+}
+
+.secondaryArrow {
+  flex: 0 0 auto;
 }
 
 .heroAssurances {
@@ -874,8 +878,13 @@
   .heroActions .secondaryButton {
     height: 56px;
     padding: 0 5px;
+    gap: 6px;
     font-size: 0.73rem;
     line-height: 1.25;
+  }
+
+  .secondaryButton > svg:first-child {
+    display: none;
   }
 
   .heroAssurances {

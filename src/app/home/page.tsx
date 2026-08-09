@@ -104,14 +104,17 @@ export default function HomePage() {
                 <Link href="/contractors" className={styles.secondaryButton}>
                   <Briefcase size={19} weight="bold" aria-hidden="true" />
                   Find a contractor
+                  <ArrowRight size={16} weight="bold" className={styles.secondaryArrow} aria-hidden="true" />
                 </Link>
                 <Link href="/quick-projects" className={styles.secondaryButton}>
                   <Lightning size={18} weight="bold" aria-hidden="true" />
                   Quick Projects
+                  <ArrowRight size={16} weight="bold" className={styles.secondaryArrow} aria-hidden="true" />
                 </Link>
                 <Link href="/contractor/register" className={styles.secondaryButton}>
                   <UserPlus size={18} weight="bold" aria-hidden="true" />
                   Register as a Contractor
+                  <ArrowRight size={16} weight="bold" className={styles.secondaryArrow} aria-hidden="true" />
                 </Link>
               </div>
 
