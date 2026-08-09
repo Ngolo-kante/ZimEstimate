@@ -1,0 +1,412 @@
+/* Skeleton loading state for /home — mirrors the real page geometry so the
+   layout does not jump when content resolves. */
+
+/* Shared shimmer pulse */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.bone {
+  background: #dfe6ee;
+  border-radius: 4px;
+  animation: skeletonPulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+  }
+}
+
+/* ---- Page wrapper ---- */
+.page {
+  margin: -32px -24px 0;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+/* ---- Hero skeleton ---- */
+.hero {
+  position: relative;
+  height: clamp(520px, calc(100svh - 132px), 680px);
+  min-height: 520px;
+  display: flex;
+  align-items: stretch;
+  background: var(--color-primary);
+}
+
+.heroInner {
+  width: min(100%, 1280px);
+  margin: 0 auto;
+  padding-inline: 32px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(390px, 0.72fr);
+  align-items: center;
+  gap: 56px;
+  padding-block: 64px 76px;
+}
+
+.heroCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.eyebrow {
+  width: 110px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.headingLine {
+  height: 52px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+}
+
+.headingLine:nth-child(3) {
+  width: 70%;
+}
+
+.subLine {
+  width: 85%;
+  height: 16px;
+  margin-top: 6px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.heroButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.btnSkeleton {
+  height: 48px;
+  width: 220px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+}
+
+.btnRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 650px;
+}
+
+.btnRowItem {
+  height: 56px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+}
+
+.heroBudget {
+  width: 100%;
+  max-width: 470px;
+  justify-self: end;
+}
+
+.widgetBox {
+  width: 100%;
+  min-height: 380px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.widgetHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.widgetLabel {
+  width: 120px;
+  height: 12px;
+}
+
+.widgetBadge {
+  width: 48px;
+  height: 20px;
+  border-radius: 999px;
+}
+
+.widgetTitle {
+  width: 75%;
+  height: 16px;
+}
+
+.widgetSubtitle {
+  width: 60%;
+  height: 11px;
+}
+
+.widgetInput {
+  height: 44px;
+  border-radius: 6px;
+  background: #eef2f7;
+}
+
+.widgetChart {
+  flex: 1;
+  min-height: 100px;
+  border-radius: 6px;
+  background: #f1f4f8;
+}
+
+.widgetVerdict {
+  height: 42px;
+  border-radius: 6px;
+  background: #f1f4f8;
+}
+
+/* ---- Start section (four BOQ cards) ---- */
+.startSection {
+  padding: 64px 0 72px;
+  background: white;
+  border-bottom: 1px solid #dfe5ed;
+}
+
+.sectionInner {
+  width: min(100%, 1280px);
+  margin: 0 auto;
+  padding-inline: 32px;
+}
+
+.startHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  align-items: end;
+  gap: 48px;
+  margin-bottom: 30px;
+}
+
+.startHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionLabel {
+  width: 180px;
+  height: 13px;
+}
+
+.sectionTitle {
+  width: 90%;
+  height: 28px;
+}
+
+.sectionDesc {
+  width: 80%;
+  height: 14px;
+}
+
+.startGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.card {
+  min-height: 310px;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 24px 22px;
+  background: #f8fafc;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+}
+
+.cardIcon {
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+}
+
+.cardTitle {
+  width: 70%;
+  height: 18px;
+  margin-top: 24px;
+}
+
+.cardDesc1 {
+  width: 95%;
+  height: 12px;
+  margin-top: 14px;
+}
+
+.cardDesc2 {
+  width: 80%;
+  height: 12px;
+  margin-top: 8px;
+}
+
+.cardFooter {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid #d8e0eb;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cardDetail {
+  width: 55%;
+  height: 10px;
+}
+
+.cardAction {
+  width: 65%;
+  height: 13px;
+}
+
+/* ---- Hint of the next section (pathways) ---- */
+.pathwayHint {
+  padding: 88px 0 40px;
+  background: #f8fafc;
+}
+
+.pathwayHintLabel {
+  width: 170px;
+  height: 13px;
+}
+
+.pathwayHintTitle {
+  width: 60%;
+  height: 28px;
+  margin-top: 10px;
+}
+
+/* ---- Responsive ---- */
+
+@media (max-width: 1080px) {
+  .heroInner {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 0.78fr);
+    gap: 32px;
+  }
+
+  .headingLine {
+    height: 44px;
+  }
+
+  .startGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .card {
+    min-height: 280px;
+  }
+}
+
+@media (max-width: 820px) {
+  .heroInner,
+  .sectionInner {
+    padding-inline: 22px;
+  }
+
+  .heroInner {
+    grid-template-columns: 1fr;
+    gap: 34px;
+  }
+
+  .heroBudget {
+    max-width: 520px;
+    justify-self: start;
+  }
+
+  .startHeader {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    margin-top: -32px;
+  }
+
+  .hero {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .heroInner {
+    align-items: center;
+    gap: 18px;
+    padding-block: 24px 30px;
+  }
+
+  .headingLine {
+    height: 30px;
+  }
+
+  .headingLine:nth-child(3) {
+    width: 55%;
+  }
+
+  .subLine {
+    display: none;
+  }
+
+  .btnSkeleton {
+    width: 100%;
+  }
+
+  .btnRow {
+    width: 100%;
+  }
+
+  .btnRowItem {
+    height: 56px;
+  }
+
+  .heroBudget {
+    max-width: none;
+  }
+
+  .widgetBox {
+    min-height: 260px;
+  }
+
+  .startSection,
+  .pathwayHint {
+    padding-block: 68px;
+  }
+
+  .startGrid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Measured against the live cards rather than estimated: 280px at 390px wide.
+     The previous 250px left each card 30px short, and with four stacked cards
+     the page collapsed by roughly the height of a card when content resolved. */
+  .card {
+    min-height: 280px;
+  }
+}
+
+@media (max-width: 380px) {
+  .headingLine {
+    height: 26px;
+  }
+
+  .btnRow {
+    gap: 10px;
+  }
+
+  /* Cards get taller as the viewport narrows, because the title and
+     description wrap onto more lines — 302px measured at 320px wide. */
+  .card {
+    min-height: 300px;
+  }
+}

@@ -179,7 +179,7 @@
 }
 
 .heroAssurances svg {
-  color: #56c596;
+  color: var(--color-success);
 }
 
 .startSection {
@@ -255,7 +255,7 @@
 }
 
 .startCard:focus-visible {
-  outline: 3px solid rgba(27, 93, 170, 0.28);
+  outline: 3px solid var(--color-focus-ring);
   outline-offset: 3px;
   background: #eef4ff;
   border-color: #8eadd5;
@@ -488,7 +488,7 @@
 .estimateContent li svg {
   flex: 0 0 auto;
   margin-top: 2px;
-  color: #138a61;
+  color: var(--color-success-fg);
 }
 
 .pathActionPrimary {
@@ -725,7 +725,9 @@
 .pathActionPrimary:focus-visible,
 .secondaryPathContent a:focus-visible,
 .inlineAction:focus-visible {
-  outline: 3px solid #e4b44a;
+  /* These controls sit on the navy hero and the dark closing band, where the
+     standard blue ring does not reach 3:1. */
+  outline: 3px solid var(--color-focus-ring-inverse);
   outline-offset: 3px;
 }
 

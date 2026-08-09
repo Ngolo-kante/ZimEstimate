@@ -62,6 +62,39 @@
   --color-error: #DC2626;
   --color-info: #2E6CF6;
 
+  /* Semantic Status Roles
+     Name by meaning, not hue. Text values target >= 4.5:1 on white (AA). */
+
+  /* Success / complete / on track */
+  --color-success-fg: #15803D;
+  --color-success-bg: rgba(22, 163, 74, 0.1);
+  --color-success-border: rgba(22, 163, 74, 0.32);
+
+  /* Warning / attention / stale pricing */
+  --color-warning-fg: #92400E;
+  --color-warning-bg: rgba(245, 158, 11, 0.1);
+  --color-warning-border: rgba(245, 158, 11, 0.36);
+
+  /* Danger / destructive / over budget */
+  --color-danger-fg: #B91C1C;
+  --color-danger-bg: rgba(220, 38, 38, 0.08);
+  --color-danger-border: rgba(220, 38, 38, 0.3);
+
+  /* Information / neutral guidance */
+  --color-info-fg: #1D4ED8;
+  --color-info-bg: rgba(46, 108, 246, 0.08);
+  --color-info-border: rgba(46, 108, 246, 0.24);
+
+  /* Interactive focus — on light surfaces, and on dark ones.
+     Was rgba(46, 108, 246, 0.5). At 50% alpha it composited to 2.03:1 against a
+     white card, below the 3:1 WCAG 2.1 minimum for a focus indicator. The same
+     blue at full opacity is 4.57:1.
+     The inverse role exists because that blue only reaches 3.61:1 on the navy
+     hero, and 1.87:1 at half alpha; the amber is 8.58:1 there. It is named for
+     the surface it is used on rather than for its hue. */
+  --color-focus-ring: #2E6CF6;
+  --color-focus-ring-inverse: #E4B44A;
+
   /* Disabled/Inactive States */
   --color-disabled: #94A3B8;
 
@@ -105,8 +138,22 @@
   --color-mist: var(--color-mist);
 
   --color-success: var(--color-success);
+  --color-success-fg: var(--color-success-fg);
+  --color-success-bg: var(--color-success-bg);
+  --color-success-border: var(--color-success-border);
   --color-warning: var(--color-warning);
+  --color-warning-fg: var(--color-warning-fg);
+  --color-warning-bg: var(--color-warning-bg);
+  --color-warning-border: var(--color-warning-border);
   --color-error: var(--color-error);
+  --color-danger-fg: var(--color-danger-fg);
+  --color-danger-bg: var(--color-danger-bg);
+  --color-danger-border: var(--color-danger-border);
+  --color-info-fg: var(--color-info-fg);
+  --color-info-bg: var(--color-info-bg);
+  --color-info-border: var(--color-info-border);
+  --color-focus-ring: var(--color-focus-ring);
+  --color-focus-ring-inverse: var(--color-focus-ring-inverse);
 
   --color-border: var(--color-border);
   --color-border-light: var(--color-border-light);

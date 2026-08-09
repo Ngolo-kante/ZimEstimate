@@ -44,6 +44,13 @@ test.describe('Public launch surfaces', () => {
     await expect(page.getByRole('link', { name: 'Privacy Policy' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Terms' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Contact support' })).toBeVisible();
+
+    await page.setViewportSize({ width: 320, height: 720 });
+    const mobileWidth = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+    }));
+    expect(mobileWidth.content).toBeLessThanOrEqual(mobileWidth.viewport);
   });
 
   test('homepage estimate CTA starts a fresh manual wizard', async ({ page }) => {

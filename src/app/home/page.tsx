@@ -186,7 +186,6 @@ export default function HomePage() {
             <div className={styles.sectionHeading}>
               <span className={styles.sectionIndex}>Choose your next move</span>
               <h2 id="pathways-heading">Begin with a number. Move toward a real build.</h2>
-              <p>Estimating comes first, with people and prices ready when you need them.</p>
             </div>
 
             <div className={styles.pathwayGrid}>
@@ -317,9 +316,8 @@ export default function HomePage() {
           />
           <div className={styles.closingOverlay} aria-hidden="true" />
           <div className={styles.closingInner}>
-            <span className={styles.eyebrow}>Your build starts with clarity</span>
             <h2 id="closing-heading">Put the first reliable number on your project.</h2>
-            <p>Create the estimate first. Save it when you are ready.</p>
+            <p>No account needed to start. Sign in when you want to save it.</p>
             <Link href="/boq/new?method=manual&fresh=1" className={styles.closingButton}>
               <Calculator size={20} weight="bold" aria-hidden="true" />
               Start your estimate
