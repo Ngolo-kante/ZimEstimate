@@ -27,35 +27,35 @@ const estimateBenefits = [
 const estimateStarts = [
   {
     title: 'Create Your BOQ',
+    category: 'Guided build',
     description: 'Answer guided questions and create a complete construction BOQ.',
     detail: 'Best for a full house or detailed build',
     href: '/boq/new?method=manual&fresh=1',
-    action: 'Open BOQ builder',
     icon: PencilLine,
     recommended: true,
   },
   {
     title: 'Plan to BOQ',
+    category: 'Floor plan',
     description: 'Let AI read room sizes, doors, and windows, then generate the quantities.',
     detail: 'PDF, PNG, JPG or WEBP',
     href: '/ai/vision-takeoff',
-    action: 'Upload your plan',
     icon: UploadSimple,
   },
   {
     title: 'Quote to Project',
+    category: 'Document scan',
     description: 'Turn a photographed supplier quote or BOQ into a project you can manage.',
     detail: 'Figures are read from the document',
     href: '/ai/boq-scanner',
-    action: 'Scan your document',
     icon: FileText,
   },
   {
     title: 'Quick Project',
+    category: 'Focused build',
     description: 'Generate a focused BOQ for solar, water, boreholes, septic, fencing, or paving.',
     detail: 'Typically takes 4-7 minutes',
     href: '/quick-projects',
-    action: 'Choose a quick project',
     icon: Lightning,
   },
 ];
@@ -86,16 +86,6 @@ export default function HomePage() {
     <MainLayout fullWidth>
       <div className={styles.page}>
         <section className={styles.hero} aria-labelledby="home-heading">
-          <Image
-            src="/blueprint.webp"
-            alt="House plan, calculator, measuring tape, brick, and hard hat on a builder's workbench"
-            fill
-            priority
-            sizes="100vw"
-            className={styles.heroImage}
-          />
-          <div className={styles.heroOverlay} aria-hidden="true" />
-
           <div className={styles.heroInner}>
             <div className={styles.heroCopy}>
               <span className={styles.eyebrow}>ZimEstimate</span>
@@ -147,7 +137,7 @@ export default function HomePage() {
             </div>
 
             <div className={styles.startGrid}>
-              {estimateStarts.map((item) => {
+              {estimateStarts.map((item, index) => {
                 const Icon = item.icon;
                 return (
                   <Link
@@ -156,23 +146,26 @@ export default function HomePage() {
                     className={styles.startCard}
                   >
                     <div className={styles.startCardTopline}>
-                      <div className={styles.startCardIcon}>
-                        <Icon size={24} weight="duotone" aria-hidden="true" />
-                      </div>
+                      <span className={styles.startCardRank}>{String(index + 1).padStart(2, '0')}</span>
+                      <span className={styles.startCardCategory}>{item.category}</span>
                       {item.recommended && (
                         <span className={styles.startCardBadge}>Best for full builds</span>
                       )}
                     </div>
-                    <div className={styles.startCardCopy}>
-                      <h3>{item.title}</h3>
-                      <p>{item.description}</p>
+                    <div className={styles.startCardBody}>
+                      <div className={styles.startCardIcon}>
+                        <Icon size={26} weight="duotone" aria-hidden="true" />
+                      </div>
+                      <div className={styles.startCardCopy}>
+                        <h3>{item.title}</h3>
+                        <p>{item.description}</p>
+                      </div>
                     </div>
                     <div className={styles.startCardFooter}>
-                      <span>{item.detail}</span>
-                      <strong>
-                        {item.action}
-                        <ArrowRight size={16} weight="bold" aria-hidden="true" />
-                      </strong>
+                      <span className={styles.startCardDetail}>{item.detail}</span>
+                      <span className={styles.startCardArrow} aria-hidden="true">
+                        <ArrowRight size={16} weight="bold" />
+                      </span>
                     </div>
                   </Link>
                 );
@@ -307,14 +300,6 @@ export default function HomePage() {
         </section>
 
         <section className={styles.closingSection} aria-labelledby="closing-heading">
-          <Image
-            src="/superstructure.webp"
-            alt="Brick structure taking shape on a Zimbabwean building site"
-            fill
-            sizes="100vw"
-            className={styles.closingImage}
-          />
-          <div className={styles.closingOverlay} aria-hidden="true" />
           <div className={styles.closingInner}>
             <h2 id="closing-heading">Put the first reliable number on your project.</h2>
             <p>No account needed to start. Sign in when you want to save it.</p>

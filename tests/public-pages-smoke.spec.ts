@@ -25,16 +25,27 @@ test.describe('Public launch surfaces', () => {
     await expect.poll(() => manualMethod.evaluate((element) => getComputedStyle(element).transform))
       .not.toBe('none');
 
-    await expect(page.getByRole('link', { name: /^Plan to BOQ/i }))
-      .toHaveAttribute('href', '/ai/vision-takeoff');
-    await expect(page.getByRole('link', { name: /^Quote to Project/i }))
-      .toHaveAttribute('href', '/ai/boq-scanner');
+    const planMethod = page
+      .getByRole('link')
+      .filter({ has: page.getByRole('heading', { name: 'Plan to BOQ', exact: true }) });
+    await expect(planMethod).toHaveAttribute('href', '/ai/vision-takeoff');
+    const quoteMethod = page
+      .getByRole('link')
+      .filter({ has: page.getByRole('heading', { name: 'Quote to Project', exact: true }) });
+    await expect(quoteMethod).toHaveAttribute('href', '/ai/boq-scanner');
     const methods = page.getByRole('region', { name: 'Four ways to create your BOQ.' });
-    await expect(methods.getByRole('link', { name: /^Quick Project/i }))
-      .toHaveAttribute('href', '/quick-projects');
+    const quickMethod = methods
+      .getByRole('link')
+      .filter({ has: page.getByRole('heading', { name: 'Quick Project', exact: true }) });
+    await expect(quickMethod).toHaveAttribute('href', '/quick-projects');
 
     const budgetInput = page.getByRole('textbox', { name: /Your budget in US dollars/ });
-    await expect(budgetInput).toHaveValue('');
+    // The widget ships pre-filled so the house and stage bars are populated on
+    // arrival rather than showing the demo switched off. This asserted '' when
+    // the field started empty.
+    await expect(budgetInput).toHaveValue('15,000');
+    // The plan being costed has to be visible, not buried in the footnote.
+    await expect(page.getByText('120m²', { exact: true })).toBeVisible();
     await budgetInput.fill('');
     await budgetInput.pressSequentially('25000');
     await expect(page.getByRole('link', { name: 'Customize' }))

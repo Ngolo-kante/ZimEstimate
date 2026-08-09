@@ -5,32 +5,25 @@
   overflow: hidden;
 }
 
+/* The hero used to be a photograph behind a four-stop translucent gradient
+   that faded from 94% to 18% opacity across the width. It made the right-hand
+   side busy behind the budget widget and the text contrast varied with the
+   photo underneath it. A solid brand navy is calmer, keeps the identity, and
+   holds white text at a constant 15.9:1. */
 .hero {
   position: relative;
-  height: clamp(520px, calc(100svh - 132px), 680px);
-  min-height: 520px;
+  /* min-height, not height. With a fixed height the trust badges under the
+     buttons overflowed the section by 16px and bled onto the white band below.
+     The clamp still sets the intended size; the section is now allowed to grow
+     when the content needs it rather than spilling out of itself. */
+  min-height: clamp(520px, calc(100svh - 132px), 680px);
   display: flex;
   align-items: stretch;
-  isolation: isolate;
   background: var(--color-primary);
 }
 
-.heroImage,
-.closingImage,
 .coverImage {
   object-fit: cover;
-}
-
-.heroImage {
-  object-position: center;
-  z-index: -2;
-}
-
-.heroOverlay {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(90deg, rgba(6, 21, 38, 0.94) 0%, rgba(11, 31, 59, 0.84) 46%, rgba(11, 31, 59, 0.32) 78%, rgba(6, 21, 38, 0.18) 100%);
 }
 
 .heroInner,
@@ -218,61 +211,64 @@
 }
 
 .startCard {
+  --method-accent: var(--color-accent);
+  --method-soft: var(--color-info-bg);
   position: relative;
-  isolation: isolate;
   overflow: hidden;
-  min-height: 310px;
+  min-width: 0;
+  min-height: 280px;
   display: flex;
   flex-direction: column;
-  padding: 26px 24px 22px;
+  padding: 20px;
   color: var(--color-text);
-  background: #f8fafc;
+  background: white;
   border: 1px solid #d8e0eb;
+  border-top: 3px solid var(--method-accent);
   border-radius: 8px;
   text-decoration: none;
-  box-shadow: 0 8px 20px rgba(15, 31, 59, 0.03);
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease, border-color 220ms ease, background-color 220ms ease, color 220ms ease;
-}
-
-.startCard::after {
-  content: '';
-  position: absolute;
-  inset: auto 18px 0;
-  z-index: -1;
-  height: 3px;
-  border-radius: 3px 3px 0 0;
-  background: var(--color-accent);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 6px 18px rgba(11, 31, 59, 0.05);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .startCard:hover {
-  background: #eef4ff;
-  border-color: #b9ccea;
-  box-shadow: 0 18px 34px rgba(11, 31, 59, 0.12);
-  transform: translateY(-6px);
+  border-color: var(--method-accent);
+  box-shadow: 0 12px 28px rgba(11, 31, 59, 0.11);
+  transform: translateY(-3px);
 }
 
 .startCard:focus-visible {
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 3px;
-  background: #eef4ff;
-  border-color: #8eadd5;
-  box-shadow: 0 18px 34px rgba(11, 31, 59, 0.12);
-}
-
-.startCard:hover::after,
-.startCard:focus-visible::after {
-  transform: scaleX(1);
+  border-color: var(--method-accent);
 }
 
 .startCardTopline {
-  min-height: 46px;
+  min-height: 24px;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
+}
+
+.startCardRank {
+  color: var(--method-accent);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.startCardCategory {
+  color: var(--color-text-muted);
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.startCardBody {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 15px;
+  margin-top: 18px;
 }
 
 .startCardIcon {
@@ -281,83 +277,87 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-primary);
-  background: white;
-  border: 1px solid #d8e0eb;
-  border-radius: 8px;
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), color 220ms ease, background-color 220ms ease;
+  color: var(--method-accent);
+  background: var(--method-soft);
+  border: 1px solid var(--color-info-border);
+  border-radius: 7px;
+  transition: transform 180ms ease;
 }
 
 .startCard:hover .startCardIcon {
-  color: var(--color-accent);
-  transform: translateY(-3px) rotate(-3deg);
+  transform: rotate(-4deg) scale(1.05);
 }
 
 .startCardBadge {
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
-  min-height: 26px;
-  padding: 4px 9px;
+  min-height: 22px;
+  padding: 3px 7px;
   color: #174f91;
   background: #e8f1fc;
   border: 1px solid #bfd2ea;
-  border-radius: 999px;
-  font-size: 0.68rem;
+  border-radius: 5px;
+  font-size: 0.64rem;
   font-weight: 800;
   line-height: 1.2;
   text-align: center;
 }
 
 .startCardCopy {
-  flex: 1;
+  min-width: 0;
 }
 
 .startCard h3 {
-  margin: 24px 0 0;
+  margin: 0;
   font-family: var(--font-heading);
-  font-size: 1.18rem;
+  font-size: 1.15rem;
   font-weight: 800;
-  line-height: 1.25;
+  line-height: 1.3;
   letter-spacing: 0;
 }
 
 .startCard p {
-  margin: 11px 0 0;
+  margin: 7px 0 0;
   color: var(--color-text-secondary);
-  font-size: 0.88rem;
-  line-height: 1.58;
+  font-size: 0.8rem;
+  line-height: 1.55;
 }
 
 .startCardFooter {
-  padding-top: 20px;
-  border-top: 1px solid #d8e0eb;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 17px;
+  border-top: 1px solid #e3e8ef;
 }
 
-.startCardFooter > span {
-  display: block;
-  min-height: 31px;
-  color: #748196;
-  font-size: 0.72rem;
+.startCardDetail {
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
   line-height: 1.35;
 }
 
-.startCardFooter strong {
-  display: flex;
+.startCardArrow {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 9px;
-  color: var(--color-primary);
-  font-size: 0.82rem;
-  font-weight: 750;
+  justify-content: center;
+  margin-left: auto;
+  color: white;
+  background: var(--color-primary);
+  border-radius: 6px;
+  transition: transform 180ms ease, background-color 180ms ease;
 }
 
-.startCardFooter strong svg {
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.startCard:hover .startCardFooter strong svg {
-  transform: translateX(5px);
+.startCard:hover .startCardArrow {
+  background: var(--method-accent);
+  transform: translateX(3px);
 }
 
 .pathways {
@@ -674,25 +674,15 @@
   line-height: 1.58;
 }
 
+/* Cleaned alongside the hero. Leaving a photograph under a 76% scrim here
+   while the hero above became flat navy would have read as two different
+   pages. */
 .closingSection {
   position: relative;
   min-height: 430px;
   display: flex;
   align-items: center;
-  isolation: isolate;
   background: var(--color-primary);
-}
-
-.closingImage {
-  z-index: -2;
-  object-position: center 55%;
-}
-
-.closingOverlay {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: rgba(6, 21, 38, 0.76);
 }
 
 .closingInner {
@@ -855,14 +845,6 @@
     max-height: none;
   }
 
-  .heroImage {
-    object-position: 61% center;
-  }
-
-  .heroOverlay {
-    background: rgba(6, 21, 38, 0.78);
-  }
-
   .heroInner {
     align-items: center;
     gap: 18px;
@@ -1017,9 +999,8 @@
   }
 
   .startCard,
-  .startCard::after,
   .startCardIcon,
-  .startCardFooter strong svg {
+  .startCardArrow {
     transition: none;
     transform: none !important;
   }

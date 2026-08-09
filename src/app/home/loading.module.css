@@ -217,31 +217,66 @@
 }
 
 .card {
-  min-height: 310px;
+  min-height: 280px;
   display: flex;
   flex-direction: column;
-  padding: 26px 24px 22px;
-  background: #f8fafc;
+  padding: 20px;
+  background: white;
   border: 1px solid #d8e0eb;
+  border-top: 3px solid #b7cdf4;
   border-radius: 8px;
+}
+
+.cardTopline {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cardRank {
+  width: 16px;
+  height: 9px;
+}
+
+.cardCategory {
+  width: 74px;
+  height: 9px;
+}
+
+.cardBadge {
+  width: 90px;
+  height: 22px;
+  margin-left: auto;
+  border-radius: 5px;
+}
+
+.cardBody {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 15px;
+  margin-top: 18px;
+}
+
+.cardCopy {
+  min-width: 0;
 }
 
 .cardIcon {
   width: 46px;
   height: 46px;
-  border-radius: 8px;
+  border-radius: 7px;
 }
 
 .cardTitle {
   width: 70%;
   height: 18px;
-  margin-top: 24px;
 }
 
 .cardDesc1 {
   width: 95%;
   height: 12px;
-  margin-top: 14px;
+  margin-top: 10px;
 }
 
 .cardDesc2 {
@@ -265,8 +300,10 @@
 }
 
 .cardAction {
-  width: 65%;
-  height: 13px;
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  border-radius: 6px;
 }
 
 /* ---- Hint of the next section (pathways) ---- */
@@ -387,11 +424,8 @@
     grid-template-columns: 1fr;
   }
 
-  /* Measured against the live cards rather than estimated: 280px at 390px wide.
-     The previous 250px left each card 30px short, and with four stacked cards
-     the page collapsed by roughly the height of a card when content resolved. */
   .card {
-    min-height: 280px;
+    min-height: 250px;
   }
 }
 
@@ -404,9 +438,7 @@
     gap: 10px;
   }
 
-  /* Cards get taller as the viewport narrows, because the title and
-     description wrap onto more lines — 302px measured at 320px wide. */
   .card {
-    min-height: 300px;
+    min-height: 270px;
   }
 }

@@ -54,10 +54,19 @@ export default function HomeLoading() {
             <div className={s.startGrid}>
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} className={s.card}>
-                  <div className={`${s.bone} ${s.cardIcon}`} />
-                  <div className={`${s.bone} ${s.cardTitle}`} />
-                  <div className={`${s.bone} ${s.cardDesc1}`} />
-                  <div className={`${s.bone} ${s.cardDesc2}`} />
+                  <div className={s.cardTopline}>
+                    <div className={`${s.bone} ${s.cardRank}`} />
+                    <div className={`${s.bone} ${s.cardCategory}`} />
+                    {i === 0 && <div className={`${s.bone} ${s.cardBadge}`} />}
+                  </div>
+                  <div className={s.cardBody}>
+                    <div className={`${s.bone} ${s.cardIcon}`} />
+                    <div className={s.cardCopy}>
+                      <div className={`${s.bone} ${s.cardTitle}`} />
+                      <div className={`${s.bone} ${s.cardDesc1}`} />
+                      <div className={`${s.bone} ${s.cardDesc2}`} />
+                    </div>
+                  </div>
                   <div className={s.cardFooter}>
                     <div className={`${s.bone} ${s.cardDetail}`} />
                     <div className={`${s.bone} ${s.cardAction}`} />

@@ -28,7 +28,19 @@ const STAGE_SHORT_LABELS: Record<string, string> = {
   exterior: 'External Works',
 };
 
-const DEFAULT_BUDGET = '';
+/* The plan the estimate is for. Named once and used by the calculator, the
+   spec chips, and the footnote, so the visible size can never drift from the
+   size actually being costed. */
+const PLAN_AREA_M2 = 120;
+const PLAN_BEDROOMS = 3;
+const PLAN_LOCATION = 'urban';
+
+/* Starts populated rather than empty. An empty field left the house as a bare
+   silhouette and every stage bar at zero, so the first thing a visitor saw was
+   the demo switched off. $15,000 lands mid-build — enough stages funded to show
+   the thing working, not so many that there is nothing left to discover by
+   typing. */
+const DEFAULT_BUDGET = '15000';
 
 /** Ghost-to-solid: 0% funded stays a faint silhouette, 100% is fully built. */
 function stageOpacity(pct: number): number {
@@ -102,8 +114,8 @@ export default function HeroBudgetWidget() {
     if (!hasValidBudget) return null;
     return estimateStageReach({
       budgetUsd: parsedBudget,
-      floorAreaM2: 120,
-      locationType: 'urban',
+      floorAreaM2: PLAN_AREA_M2,
+      locationType: PLAN_LOCATION,
       wallHeightM: 3.0,
       cementTypes: ['cement_425'],
     });
@@ -157,6 +169,22 @@ export default function HeroBudgetWidget() {
           <p className="text-[11px] text-slate-500 mt-0.5">
             Type an amount — watch the house build itself.
           </p>
+
+          {/* The size being costed was previously only in 9.5px grey type at the
+              very bottom of the card. It is the single most important
+              assumption behind every number above it, so it reads as a spec
+              here instead of a disclaimer down there. */}
+          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] font-bold text-slate-900 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 tabular-nums">
+              {PLAN_AREA_M2}m²
+            </span>
+            <span className="text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">
+              {PLAN_BEDROOMS}-bed
+            </span>
+            <span className="text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 capitalize">
+              {PLAN_LOCATION}
+            </span>
+          </div>
         </div>
 
         {/* Budget input */}
@@ -228,8 +256,10 @@ export default function HeroBudgetWidget() {
           </Link>
         </div>
 
+        {/* The spec itself now sits under the heading, so this is only the
+            caveat and the way out of it. */}
         <p className="hidden sm:block text-[9.5px] text-slate-400 leading-snug">
-          Materials estimate for a 120m² 3-bed urban standard build. Adjust size, location and finish in the Budget Studio.
+          Materials only, standard finish. Adjust size, location and finish in the Budget Studio.
         </p>
       </div>
     </div>
