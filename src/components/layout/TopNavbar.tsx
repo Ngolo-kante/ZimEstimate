@@ -363,7 +363,7 @@ export default function TopNavbar() {
                     </div>
                     <div className="menu-divider" />
                     <div className="menu-section compact">
-                      <span className="menu-section-label">Join the directory</span>
+                      <span className="menu-section-label menu-section-label-secondary">Join the directory</span>
                       <Link
                         href="/supplier/register"
                         className="quick-link"
@@ -383,7 +383,7 @@ export default function TopNavbar() {
                     </div>
                     <div className="menu-divider" />
                     <div className="menu-section compact">
-                      <span className="menu-section-label">Explore</span>
+                      <span className="menu-section-label menu-section-label-secondary">Explore</span>
                       <Link
                         href="/marketplace"
                         className="quick-link"
@@ -838,6 +838,14 @@ export default function TopNavbar() {
           font-weight: 750;
           letter-spacing: 0;
           text-transform: uppercase;
+        }
+
+        .menu-section-label-secondary {
+          font-size: 0.58rem;
+          text-decoration-line: underline;
+          text-decoration-color: currentColor;
+          text-decoration-thickness: 1px;
+          text-underline-offset: 3px;
         }
 
         /* Signed-out state — primary/secondary pill buttons, matching a
