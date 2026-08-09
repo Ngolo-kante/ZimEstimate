@@ -1,0 +1,1024 @@
+.page {
+  margin: -32px -24px 0;
+  color: var(--color-text);
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.hero {
+  position: relative;
+  height: clamp(520px, calc(100svh - 132px), 680px);
+  min-height: 520px;
+  display: flex;
+  align-items: stretch;
+  isolation: isolate;
+  background: var(--color-primary);
+}
+
+.heroImage,
+.closingImage,
+.coverImage {
+  object-fit: cover;
+}
+
+.heroImage {
+  object-position: center;
+  z-index: -2;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgba(6, 21, 38, 0.94) 0%, rgba(11, 31, 59, 0.84) 46%, rgba(11, 31, 59, 0.32) 78%, rgba(6, 21, 38, 0.18) 100%);
+}
+
+.heroInner,
+.sectionInner,
+.closingInner {
+  width: min(100%, 1280px);
+  margin: 0 auto;
+  padding-inline: 32px;
+}
+
+.heroInner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(390px, 0.72fr);
+  align-items: center;
+  gap: 56px;
+  padding-block: 64px 76px;
+}
+
+.heroCopy {
+  width: 100%;
+  color: white;
+  animation: heroEnter 520ms ease-out both;
+}
+
+.heroBudget {
+  width: 100%;
+  max-width: 470px;
+  justify-self: end;
+  animation: heroToolEnter 620ms 90ms ease-out both;
+}
+
+.eyebrow,
+.sectionIndex,
+.pathLabel {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  color: #dce8ff;
+  margin-bottom: 18px;
+}
+
+.hero h1 {
+  max-width: 670px;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 4.15rem;
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.heroCopy > p {
+  max-width: 590px;
+  margin: 24px 0 0;
+  color: #dbe6f5;
+  font-size: 1.12rem;
+  line-height: 1.65;
+}
+
+.heroActions {
+  width: min(100%, 650px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.heroActions .primaryButton {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.heroActions .secondaryButton {
+  width: 100%;
+  height: 56px;
+  min-width: 0;
+  padding: 0 10px;
+  text-align: center;
+}
+
+.primaryButton,
+.secondaryButton,
+.closingButton,
+.pathActionPrimary {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 6px;
+  font-size: 0.94rem;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-decoration: none;
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.primaryButton {
+  padding: 13px 18px;
+  color: var(--color-primary);
+  background: white;
+  border: 1px solid white;
+}
+
+.primaryButton:hover,
+.closingButton:hover {
+  transform: translateY(-2px);
+  background: #eef4ff;
+}
+
+.secondaryButton {
+  padding: 13px 17px;
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+}
+
+.secondaryButton:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.72);
+}
+
+.heroAssurances {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 28px;
+  color: #dbe6f5;
+  font-size: 0.82rem;
+}
+
+.heroAssurances span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.heroAssurances svg {
+  color: #56c596;
+}
+
+.startSection {
+  padding: 64px 0 72px;
+  background: white;
+  border-bottom: 1px solid #dfe5ed;
+}
+
+.startHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  align-items: end;
+  gap: 48px;
+  margin-bottom: 30px;
+}
+
+.startHeader h2 {
+  margin: 9px 0 0;
+  font-family: var(--font-heading);
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.startHeader > p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.65;
+}
+
+.startGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.startCard {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 310px;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 24px 22px;
+  color: var(--color-text);
+  background: #f8fafc;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(15, 31, 59, 0.03);
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease, border-color 220ms ease, background-color 220ms ease, color 220ms ease;
+}
+
+.startCard::after {
+  content: '';
+  position: absolute;
+  inset: auto 18px 0;
+  z-index: -1;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.startCard:hover {
+  background: #eef4ff;
+  border-color: #b9ccea;
+  box-shadow: 0 18px 34px rgba(11, 31, 59, 0.12);
+  transform: translateY(-6px);
+}
+
+.startCard:focus-visible {
+  outline: 3px solid rgba(27, 93, 170, 0.28);
+  outline-offset: 3px;
+  background: #eef4ff;
+  border-color: #8eadd5;
+  box-shadow: 0 18px 34px rgba(11, 31, 59, 0.12);
+}
+
+.startCard:hover::after,
+.startCard:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.startCardTopline {
+  min-height: 46px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.startCardIcon {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  background: white;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), color 220ms ease, background-color 220ms ease;
+}
+
+.startCard:hover .startCardIcon {
+  color: var(--color-accent);
+  transform: translateY(-3px) rotate(-3deg);
+}
+
+.startCardBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 9px;
+  color: #174f91;
+  background: #e8f1fc;
+  border: 1px solid #bfd2ea;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.startCardCopy {
+  flex: 1;
+}
+
+.startCard h3 {
+  margin: 24px 0 0;
+  font-family: var(--font-heading);
+  font-size: 1.18rem;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.startCard p {
+  margin: 11px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.58;
+}
+
+.startCardFooter {
+  padding-top: 20px;
+  border-top: 1px solid #d8e0eb;
+}
+
+.startCardFooter > span {
+  display: block;
+  min-height: 31px;
+  color: #748196;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.startCardFooter strong {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 9px;
+  color: var(--color-primary);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.startCardFooter strong svg {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.startCard:hover .startCardFooter strong svg {
+  transform: translateX(5px);
+}
+
+.pathways {
+  padding: 88px 0 96px;
+  background: #f8fafc;
+}
+
+.sectionHeading {
+  max-width: 760px;
+  margin-bottom: 38px;
+}
+
+.sectionIndex,
+.pathLabel {
+  color: var(--color-accent);
+}
+
+.sectionHeading h2,
+.budgetCopy h2,
+.workflowHeader h2,
+.closingInner h2 {
+  margin: 10px 0 0;
+  font-family: var(--font-heading);
+  font-size: 2.45rem;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.sectionHeading > p {
+  max-width: 610px;
+  margin: 14px 0 0;
+  color: var(--color-text-secondary);
+  line-height: 1.65;
+}
+
+.pathwayGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.9fr);
+  gap: 18px;
+}
+
+.estimatePath,
+.secondaryPath {
+  overflow: hidden;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  background: white;
+}
+
+.estimatePath {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.82fr) minmax(320px, 1.18fr);
+  min-height: 560px;
+}
+
+.pathImage,
+.secondaryPathImage {
+  position: relative;
+  min-height: 220px;
+  overflow: hidden;
+  background: #dfe6ee;
+}
+
+.pathImage::after,
+.secondaryPathImage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 31, 59, 0.08);
+}
+
+.estimateContent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 42px 38px;
+}
+
+.pathIconPrimary {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 24px;
+  color: white;
+  background: var(--color-accent);
+  border-radius: 6px;
+}
+
+.estimateContent h3,
+.secondaryPathContent h3,
+.workflowStep h3 {
+  margin: 9px 0 0;
+  font-family: var(--font-heading);
+  font-weight: 780;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.estimateContent h3 {
+  font-size: 1.85rem;
+}
+
+.estimateContent > p {
+  margin: 14px 0 0;
+  color: var(--color-text-secondary);
+  line-height: 1.65;
+}
+
+.estimateContent ul {
+  display: grid;
+  gap: 10px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  color: #314158;
+  font-size: 0.88rem;
+}
+
+.estimateContent li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.estimateContent li svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: #138a61;
+}
+
+.pathActionPrimary {
+  margin-top: auto;
+  padding: 12px 16px;
+  color: white;
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.pathActionPrimary:hover {
+  transform: translateY(-2px);
+  background: var(--color-primary-light);
+}
+
+.secondaryPaths {
+  display: grid;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.secondaryPath {
+  display: grid;
+  grid-template-columns: 42% 58%;
+  min-height: 271px;
+}
+
+.secondaryPathImage {
+  min-height: 100%;
+}
+
+.secondaryPathContent {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 26px 24px;
+}
+
+.secondaryPathContent > svg {
+  color: #c45d3e;
+}
+
+.secondaryPathContent h3 {
+  font-size: 1.3rem;
+}
+
+.secondaryPathContent p {
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.secondaryPathContent a,
+.inlineAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: auto;
+  color: var(--color-accent-dark);
+  font-size: 0.86rem;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-decoration: none;
+}
+
+.budgetSection {
+  padding: 96px 0;
+  background: white;
+  border-block: 1px solid #e2e8f0;
+}
+
+.budgetInner {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(430px, 0.72fr);
+  align-items: center;
+  gap: 84px;
+}
+
+.budgetCopy h2 {
+  max-width: 620px;
+}
+
+.budgetCopy > p {
+  max-width: 610px;
+  margin: 18px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  line-height: 1.72;
+}
+
+.budgetNotes {
+  display: grid;
+  gap: 10px;
+  margin-top: 28px;
+  color: #314158;
+  font-size: 0.88rem;
+}
+
+.budgetNotes span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.budgetNotes svg {
+  color: #c45d3e;
+}
+
+.inlineAction {
+  margin-top: 30px;
+  font-size: 0.92rem;
+}
+
+.budgetTool {
+  width: 100%;
+  max-width: 500px;
+  justify-self: end;
+}
+
+.workflowSection {
+  padding: 92px 0 100px;
+  background: #eef3f8;
+}
+
+.workflowHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.7fr);
+  align-items: end;
+  gap: 64px;
+}
+
+.workflowHeader p {
+  margin: 0 0 3px;
+  color: var(--color-text-secondary);
+  line-height: 1.65;
+}
+
+.workflowSteps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 44px;
+  border-top: 2px solid var(--color-primary);
+}
+
+.workflowStep {
+  min-height: 220px;
+  padding: 28px 30px 24px 0;
+  border-right: 1px solid #cbd5e1;
+}
+
+.workflowStep + .workflowStep {
+  padding-left: 30px;
+}
+
+.workflowStep:last-child {
+  border-right: 0;
+}
+
+.stepTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-accent);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.stepTopline svg {
+  color: #c45d3e;
+}
+
+.workflowStep h3 {
+  margin-top: 28px;
+  font-size: 1.32rem;
+}
+
+.workflowStep p {
+  margin: 10px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.58;
+}
+
+.closingSection {
+  position: relative;
+  min-height: 430px;
+  display: flex;
+  align-items: center;
+  isolation: isolate;
+  background: var(--color-primary);
+}
+
+.closingImage {
+  z-index: -2;
+  object-position: center 55%;
+}
+
+.closingOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(6, 21, 38, 0.76);
+}
+
+.closingInner {
+  padding-block: 72px;
+  color: white;
+}
+
+.closingInner h2 {
+  max-width: 700px;
+  font-size: 2.65rem;
+}
+
+.closingInner p {
+  margin: 16px 0 0;
+  color: #dbe6f5;
+  font-size: 1rem;
+}
+
+.closingButton {
+  margin-top: 30px;
+  padding: 13px 18px;
+  color: var(--color-primary);
+  background: white;
+  border: 1px solid white;
+}
+
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.closingButton:focus-visible,
+.pathActionPrimary:focus-visible,
+.secondaryPathContent a:focus-visible,
+.inlineAction:focus-visible {
+  outline: 3px solid #e4b44a;
+  outline-offset: 3px;
+}
+
+@keyframes heroEnter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroToolEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 1080px) {
+  .heroInner {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 0.78fr);
+    gap: 32px;
+  }
+
+  .hero h1 {
+    font-size: 3.55rem;
+  }
+
+  .pathwayGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .startGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .startCard {
+    min-height: 280px;
+  }
+
+  .secondaryPaths {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+  }
+
+  .secondaryPath {
+    grid-template-columns: 44% 56%;
+  }
+
+  .budgetInner {
+    gap: 48px;
+  }
+}
+
+@media (max-width: 820px) {
+  .heroInner,
+  .sectionInner,
+  .closingInner {
+    padding-inline: 22px;
+  }
+
+  .heroInner {
+    grid-template-columns: 1fr;
+    gap: 34px;
+  }
+
+  .heroBudget {
+    max-width: 520px;
+    justify-self: start;
+  }
+
+  .hero h1 {
+    font-size: 3.05rem;
+  }
+
+  .startHeader {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .estimatePath {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .pathImage {
+    min-height: 310px;
+  }
+
+  .pathActionPrimary {
+    margin-top: 28px;
+  }
+
+  .secondaryPaths,
+  .budgetInner,
+  .workflowHeader {
+    grid-template-columns: 1fr;
+  }
+
+  .budgetTool {
+    max-width: 520px;
+    justify-self: start;
+  }
+
+  .workflowHeader {
+    gap: 18px;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    margin-top: -32px;
+  }
+
+  .hero {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .heroImage {
+    object-position: 61% center;
+  }
+
+  .heroOverlay {
+    background: rgba(6, 21, 38, 0.78);
+  }
+
+  .heroInner {
+    align-items: center;
+    gap: 18px;
+    padding-block: 24px 30px;
+  }
+
+  .hero h1 {
+    font-size: 2rem;
+    line-height: 1.04;
+  }
+
+  .heroCopy > p {
+    margin-top: 14px;
+    font-size: 1rem;
+    line-height: 1.45;
+  }
+
+  .heroActions {
+    margin-top: 18px;
+  }
+
+  .heroActions .primaryButton {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .heroActions .secondaryButton {
+    height: 56px;
+    padding: 0 5px;
+    font-size: 0.73rem;
+    line-height: 1.25;
+  }
+
+  .heroAssurances {
+    display: none;
+  }
+
+  .heroBudget {
+    max-width: none;
+  }
+
+  .pathways,
+  .startSection,
+  .budgetSection,
+  .workflowSection {
+    padding-block: 68px;
+  }
+
+  .sectionHeading h2,
+  .startHeader h2,
+  .budgetCopy h2,
+  .workflowHeader h2,
+  .closingInner h2 {
+    font-size: 2rem;
+  }
+
+  .startGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .startCard {
+    min-height: 250px;
+  }
+
+  .pathImage {
+    min-height: 230px;
+  }
+
+  .estimateContent {
+    padding: 30px 24px;
+  }
+
+  .estimateContent h3 {
+    font-size: 1.55rem;
+  }
+
+  .secondaryPath {
+    grid-template-columns: 1fr;
+  }
+
+  .secondaryPathImage {
+    min-height: 190px;
+  }
+
+  .secondaryPathContent {
+    min-height: 228px;
+  }
+
+  .budgetInner {
+    gap: 38px;
+  }
+
+  .workflowSteps {
+    grid-template-columns: 1fr;
+  }
+
+  .workflowStep,
+  .workflowStep + .workflowStep {
+    min-height: auto;
+    padding: 24px 0 28px;
+    border-right: 0;
+    border-bottom: 1px solid #cbd5e1;
+  }
+
+  .workflowStep:last-child {
+    border-bottom: 0;
+  }
+
+  .workflowStep h3 {
+    margin-top: 18px;
+  }
+
+  .closingSection {
+    min-height: 410px;
+  }
+}
+
+@media (max-width: 380px) {
+  .hero h1 {
+    font-size: 1.82rem;
+  }
+
+  .heroCopy > p,
+  .heroAssurances {
+    display: none;
+  }
+
+  .heroActions {
+    gap: 10px;
+  }
+
+  .sectionHeading h2,
+  .startHeader h2,
+  .budgetCopy h2,
+  .workflowHeader h2,
+  .closingInner h2 {
+    font-size: 1.8rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroCopy,
+  .heroBudget {
+    animation: none;
+  }
+
+  .primaryButton,
+  .secondaryButton,
+  .closingButton,
+  .pathActionPrimary {
+    transition: none;
+  }
+
+  .startCard,
+  .startCard::after,
+  .startCardIcon,
+  .startCardFooter strong svg {
+    transition: none;
+    transform: none !important;
+  }
+}

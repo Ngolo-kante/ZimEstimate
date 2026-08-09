@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import { getProjects } from '@/lib/services/projects';
 import { Project } from '@/lib/database.types';
@@ -30,6 +31,7 @@ export default function ProjectPickerModal({
     description = 'Choose a project to add the item to',
     confirmLabel = 'Add to Project',
 }: ProjectPickerModalProps) {
+    const router = useRouter();
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -89,7 +91,7 @@ export default function ProjectPickerModal({
                                 <Button
                                     variant="secondary"
                                     icon={<Plus size={16} />}
-                                    onClick={() => window.location.href = '/boq/new'}
+                                    onClick={() => router.push('/boq/new')}
                                 >
                                     Create New Project
                                 </Button>

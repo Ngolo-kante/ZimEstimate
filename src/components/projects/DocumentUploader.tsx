@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import Button from '@/components/ui/Button';
-import { CloudArrowUp, File, X, CircleNotch } from '@phosphor-icons/react';
+import { Camera, CloudArrowUp, File, X, CircleNotch } from '@phosphor-icons/react';
 import { DocumentCategory } from '@/lib/database.types';
 
 interface DocumentUploaderProps {
@@ -126,8 +126,9 @@ export default function DocumentUploader({ onUpload, isUploading }: DocumentUplo
                         onClick={() => fileInputRef.current?.click()}
                     >
                         <CloudArrowUp size={40} weight="light" className="upload-icon" />
+                        <Camera size={24} weight="duotone" className="camera-icon" />
                         <p className="drop-text">
-                            Drag & drop a file here, or <span className="browse-link">browse</span>
+                            <span className="desktop-upload-copy">Drag &amp; drop a file here, or </span><span className="browse-link">Choose file</span>
                         </p>
                         <p className="drop-hint">Images (PNG, JPEG) or PDF up to 10MB</p>
                         <input
@@ -224,6 +225,12 @@ export default function DocumentUploader({ onUpload, isUploading }: DocumentUplo
                 .drop-zone :global(.upload-icon) {
                     color: var(--color-text-muted);
                     margin-bottom: var(--spacing-md);
+                }
+
+                .drop-zone :global(.camera-icon) {
+                    display: none;
+                    color: var(--color-primary);
+                    margin-bottom: 8px;
                 }
 
                 .drop-text {
@@ -362,6 +369,34 @@ export default function DocumentUploader({ onUpload, isUploading }: DocumentUplo
                 @keyframes spin {
                     from { transform: rotate(0deg); }
                     to { transform: rotate(360deg); }
+                }
+
+                @media (max-width: 640px) {
+                    .drop-zone {
+                        padding: 18px 14px;
+                        border-radius: 8px;
+                    }
+
+                    .drop-zone :global(.upload-icon),
+                    .desktop-upload-copy {
+                        display: none;
+                    }
+
+                    .drop-zone :global(.camera-icon) {
+                        display: inline-block;
+                    }
+
+                    .browse-link {
+                        display: inline-flex;
+                        min-height: 44px;
+                        align-items: center;
+                        text-decoration: none;
+                        font-weight: 700;
+                    }
+
+                    .drop-hint::before {
+                        content: 'Take a photo or select an image/PDF. ';
+                    }
                 }
             `}</style>
         </>

@@ -365,11 +365,9 @@ export default function StageBOQSection({
                     .boq-card {
                         background: #ffffff;
                         border: 1px solid var(--color-border-light);
-                        border-radius: 20px;
+                        border-radius: 8px;
                         overflow: hidden;
-                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 
-                                    0 2px 4px -1px rgba(0, 0, 0, 0.01);
-                        transition: border-color 0.2s, box-shadow 0.2s;
+                        box-shadow: none;
                     }
                     .card-header {
                         display: flex;
@@ -389,8 +387,8 @@ export default function StageBOQSection({
                         justify-content: center;
                         width: 36px;
                         height: 36px;
-                        background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-                        border-radius: 10px;
+                        background: #eff6ff;
+                        border-radius: 7px;
                         color: #0284c7;
                         box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.1);
                     }
@@ -430,7 +428,7 @@ export default function StageBOQSection({
                         width: 100%;
                         padding: 12px;
                         border: 1px solid #cbd5e1;
-                        border-radius: 10px;
+                        border-radius: 7px;
                         font-size: 0.9rem;
                         background: #fff;
                         outline: none;
@@ -888,17 +886,14 @@ export default function StageBOQSection({
                 .boq-card {
                     background: #ffffff;
                     border: 1px solid var(--color-border-light);
-                    border-radius: 20px;
+                    border-radius: 8px;
                     overflow: hidden;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 
-                                0 2px 4px -1px rgba(0, 0, 0, 0.01);
-                    transition: border-color 0.2s, box-shadow 0.2s;
+                    box-shadow: none;
                     margin-bottom: 24px;
                 }
                 
                 .boq-card.expanded {
-                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 
-                                0 4px 6px -2px rgba(0, 0, 0, 0.02);
+                    box-shadow: none;
                 }
 
                 .card-header {
@@ -937,8 +932,8 @@ export default function StageBOQSection({
                     justify-content: center;
                     width: 40px;
                     height: 40px;
-                    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-                    border-radius: 12px;
+                    background: #eff6ff;
+                    border-radius: 7px;
                     color: #0284c7;
                     box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.1);
                     flex-shrink: 0;
@@ -969,8 +964,8 @@ export default function StageBOQSection({
                 }
 
                 .purchased-badge {
-                    color: #059669;
-                    background: #ecfdf5;
+                    color: var(--color-accent-dark);
+                    background: var(--color-accent-muted);
                     padding: 2px 8px;
                     border-radius: 99px;
                 }
@@ -1038,7 +1033,7 @@ export default function StageBOQSection({
                     justify-content: space-between;
                     align-items: center;
                     padding: 16px 24px;
-                    background: linear-gradient(180deg, #ffffff, #f8fbff);
+                    background: #f8fafc;
                     gap: 16px;
                     border-bottom: 1px solid #eef2f7;
                 }
@@ -1056,7 +1051,7 @@ export default function StageBOQSection({
                     align-items: center;
                     color: #94a3b8;
                     background: #f8fafc;
-                    border-radius: 10px;
+                    border-radius: 7px;
                     border: 1px solid transparent;
                     transition: all 0.2s;
                     width: 240px;
@@ -1126,10 +1121,10 @@ export default function StageBOQSection({
 
                 .view-toggle {
                     display: flex;
-                    background: linear-gradient(180deg, #e2e8f0, #f1f5f9);
+                    background: #f1f5f9;
                     border: 1px solid #d7dee9;
                     padding: 4px;
-                    border-radius: 10px;
+                    border-radius: 7px;
                 }
 
                 .view-toggle button {
@@ -1191,7 +1186,7 @@ export default function StageBOQSection({
                     width: 200px;
                     background: #fff;
                     border: 1px solid #e2e8f0;
-                    border-radius: 12px;
+                    border-radius: 8px;
                     padding: 8px;
                     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
                     z-index: 50;
@@ -1424,7 +1419,7 @@ export default function StageBOQSection({
                 
                 .variance-badge.neutral { color: #94a3b8; }
                 .variance-badge.positive { color: #dc2626; } 
-                .variance-badge.negative { color: #16a34a; } 
+                .variance-badge.negative { color: var(--color-accent-dark); }
 
                 .action-group {
                     display: flex;
@@ -1455,12 +1450,12 @@ export default function StageBOQSection({
                 }
 
                 .action-btn.usage {
-                    color: #10b981;
+                    color: var(--color-accent);
                 }
 
                 .action-btn.usage:hover {
-                    background: #d1fae5;
-                    color: #059669;
+                    background: var(--color-accent-muted);
+                    color: var(--color-accent-dark);
                 }
 
                 .action-btn.delete:hover {
@@ -1485,7 +1480,7 @@ export default function StageBOQSection({
 
                 @media (max-width: 768px) {
                     .card-header {
-                        padding: 14px 16px;
+                        padding: 12px;
                     }
 
                     .header-title {
@@ -1499,7 +1494,8 @@ export default function StageBOQSection({
                     }
 
                     .header-actions .add-btn-header {
-                        display: none;
+                        display: inline-flex;
+                        min-height: 44px;
                     }
 
                     .table-toolbar {
@@ -1511,6 +1507,10 @@ export default function StageBOQSection({
 
                     .toolbar-left, .toolbar-right {
                         width: 100%;
+                    }
+
+                    .toolbar-right {
+                        display: none;
                     }
 
                     .search-input {
@@ -1567,7 +1567,7 @@ export default function StageBOQSection({
 
                     .boq-table tr.item-row {
                         border: 1px solid var(--color-border, #e2e8f0);
-                        border-radius: 12px;
+                        border-radius: 8px;
                         padding: 4px 14px;
                         margin-bottom: 10px;
                         background: var(--color-surface, #fff);

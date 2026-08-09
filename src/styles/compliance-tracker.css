@@ -79,13 +79,13 @@
 }
 
 .compliance-stat-card .stat-icon.tasks {
-    background: rgba(217, 122, 74, 0.1);
-    color: var(--color-clay);
+    background: var(--color-accent-muted);
+    color: var(--color-primary);
 }
 
 .compliance-stat-card .stat-icon.completed {
-    background: rgba(22, 163, 74, 0.1);
-    color: var(--color-emerald);
+    background: var(--color-accent-muted);
+    color: var(--color-accent);
 }
 
 .compliance-stat-card .stat-icon.pending {
@@ -242,7 +242,7 @@
 .compliance-stage-header .progress-bar-fill {
     height: 100%;
     border-radius: var(--radius-full);
-    background: linear-gradient(90deg, var(--color-accent), var(--color-emerald));
+    background: var(--color-accent);
     transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -338,8 +338,8 @@
 }
 
 .compliance-cert-row.is-done .cert-check {
-    border-color: var(--color-emerald);
-    background: var(--color-emerald);
+    border-color: var(--color-accent);
+    background: var(--color-accent);
     color: var(--color-white);
 }
 
@@ -350,7 +350,7 @@
 }
 
 .compliance-cert-row.is-done .cert-label {
-    color: var(--color-emerald);
+    color: var(--color-primary);
 }
 
 .compliance-cert-row .cert-desc {
@@ -580,8 +580,8 @@
 }
 
 .compliance-task-row.is-done .task-check {
-    border-color: var(--color-emerald);
-    background: var(--color-emerald);
+    border-color: var(--color-accent);
+    background: var(--color-accent);
     color: var(--color-white);
 }
 
@@ -709,15 +709,28 @@
     .compliance-page-header h2 {
         font-size: var(--text-h4);
     }
+
+    .compliance-stat-card {
+        padding: 10px;
+        gap: 8px;
+        box-shadow: none;
+    }
+
+    .compliance-stat-card .stat-icon {
+        width: 32px;
+        height: 32px;
+    }
+
+    .compliance-stage-section,
+    .compliance-cert-row {
+        border-radius: 8px;
+        box-shadow: none;
+    }
 }
 
 @media (max-width: 480px) {
     .compliance-summary-bar {
-        grid-template-columns: 1fr;
-    }
-
-    .compliance-stat-card {
-        padding: var(--space-2) var(--space-3);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .compliance-reminder-inline {

@@ -3,7 +3,16 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Briefcase, CheckCircle, Percent } from '@phosphor-icons/react';
+import {
+  Briefcase,
+  CheckCircle,
+  Eye,
+  LockKey,
+  MapPin,
+  Percent,
+  UserCircle,
+  Wrench,
+} from '@phosphor-icons/react';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
@@ -21,6 +30,7 @@ import {
 import { CONTRACTOR_TRADES, ZIMBABWE_SERVICE_AREAS } from '@/components/contractors/constants';
 import DemandProof from '@/components/marketplace/DemandProof';
 import ContactSupportLink from '@/components/support/ContactSupportLink';
+import styles from './register.module.css';
 
 /**
  * Self-serve contractor registration.
@@ -35,10 +45,6 @@ import ContactSupportLink from '@/components/support/ContactSupportLink';
  * account until submit, so the account is created there instead — by which
  * point they have already done the work and are finishing rather than starting.
  */
-
-const INPUT =
-  'w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 ' +
-  'focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
 
 interface ContractorDraft {
   companyName: string;
@@ -296,265 +302,174 @@ function ContractorRegisterContent() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:py-12">
-      <div className="mb-6">
-        <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
-          <Briefcase size={14} weight="fill" />
-          {alreadyRegistered ? 'Contractor account' : 'Set up as a contractor'}
-        </div>
-        <h1 className="mt-3 text-2xl font-black text-slate-900">
-          {alreadyRegistered ? 'Your contractor details' : 'Build for clients?'}
-        </h1>
-        <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-          Contractor accounts get a markup on estimates and a client view that shares a
-          BOQ without showing your margin. Nothing is published unless you choose to be
-          listed in the public directory below.
+    <div className={styles.page}>
+      <header className={styles.intro}>
+        <span className={styles.eyebrow}>
+          <Briefcase size={15} weight="fill" aria-hidden="true" />
+          {alreadyRegistered ? 'Contractor account' : 'Contractor setup'}
+        </span>
+        <h1>{alreadyRegistered ? 'Keep your contractor profile current.' : 'Build for clients with better numbers.'}</h1>
+        <p>
+          Add the details clients need, choose where you work, and decide whether your profile appears in the public directory.
         </p>
-        <DemandProof audience="contractor" className="mt-4" />
+        <DemandProof audience="contractor" className={styles.demandProof} />
+      </header>
+
+      <div className={styles.layout}>
+        <aside className={styles.summary} aria-label="Contractor account benefits">
+          <h2>What you get</h2>
+          <ul>
+            <li><Percent size={19} weight="duotone" /><span><strong>Private markup</strong>Set your margin on each estimate.</span></li>
+            <li><Eye size={19} weight="duotone" /><span><strong>Client-ready view</strong>Share the BOQ without exposing margin.</span></li>
+            <li><UserCircle size={19} weight="duotone" /><span><strong>Optional public profile</strong>Be found by trade and service area.</span></li>
+          </ul>
+          <p>Nothing is published unless you turn on directory listing in step 5.</p>
+        </aside>
+
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <section className={styles.formSection} aria-labelledby="business-heading">
+            <div className={styles.sectionHeading}>
+              <span>1</span>
+              <div><h2 id="business-heading">Business details</h2><p>How clients can identify and contact you.</p></div>
+            </div>
+            <div className={styles.fields}>
+              <label className={styles.fieldWide} htmlFor="company">
+                <span>Trading name <b>*</b></span>
+                <input id="company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="e.g. Chikwanha Building Contractors" required />
+              </label>
+              <label htmlFor="phone">
+                <span>Phone</span>
+                <input id="phone" type="tel" autoComplete="tel" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="+263 ..." />
+              </label>
+              <label htmlFor="email">
+                <span>Contact email</span>
+                <input id="email" type="email" autoComplete="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="you@example.com" />
+              </label>
+              <label htmlFor="years">
+                <span>Years in the trade</span>
+                <input id="years" type="number" inputMode="numeric" min={0} max={80} value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} placeholder="e.g. 8" />
+              </label>
+            </div>
+          </section>
+
+          <fieldset className={styles.formSection}>
+            <div className={styles.sectionHeading}>
+              <span>2</span>
+              <div><legend>Trades and services</legend><p>Select every type of work you take on.</p></div>
+              {trades.length > 0 && <strong>{trades.length} selected</strong>}
+            </div>
+            <div className={styles.choiceGrid}>
+              {CONTRACTOR_TRADES.map((trade) => {
+                const on = trades.includes(trade);
+                return (
+                  <label key={trade} className={`${styles.choice} ${on ? styles.choiceSelected : ''}`}>
+                    <input type="checkbox" checked={on} onChange={() => toggle(trades, trade, setTrades)} />
+                    <Wrench size={16} weight={on ? 'fill' : 'regular'} aria-hidden="true" />
+                    <span>{trade}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <fieldset className={styles.formSection}>
+            <div className={styles.sectionHeading}>
+              <span>3</span>
+              <div><legend>Service areas</legend><p>Choose the places where clients can hire you.</p></div>
+              {serviceAreas.length > 0 && <strong>{serviceAreas.length} selected</strong>}
+            </div>
+            <div className={styles.choiceGrid}>
+              {ZIMBABWE_SERVICE_AREAS.map((city) => {
+                const on = serviceAreas.includes(city);
+                return (
+                  <label key={city} className={`${styles.choice} ${on ? styles.choiceSelected : ''}`}>
+                    <input type="checkbox" checked={on} onChange={() => toggle(serviceAreas, city, setServiceAreas)} />
+                    <MapPin size={16} weight={on ? 'fill' : 'regular'} aria-hidden="true" />
+                    <span>{city}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <section className={styles.formSection} aria-labelledby="profile-heading">
+            <div className={styles.sectionHeading}>
+              <span>4</span>
+              <div><h2 id="profile-heading">Profile summary</h2><p>Give clients a useful reason to open your profile.</p></div>
+            </div>
+            <label className={styles.aboutField} htmlFor="about">
+              <span>About your work <em>Optional</em></span>
+              <textarea id="about" rows={5} value={about} onChange={(e) => setAbout(e.target.value)} maxLength={800} placeholder="Describe the jobs you take on, your approach, and anything a client should know." />
+              <small>{about.length}/800</small>
+            </label>
+          </section>
+
+          <section className={styles.formSection} aria-labelledby="visibility-heading">
+            <div className={styles.sectionHeading}>
+              <span>5</span>
+              <div><h2 id="visibility-heading">Directory visibility</h2><p>You control whether clients can find this profile.</p></div>
+            </div>
+            <label htmlFor="listed" className={`${styles.visibilityChoice} ${listInDirectory ? styles.visibilityChoiceOn : ''}`}>
+              <input id="listed" type="checkbox" checked={listInDirectory} onChange={(e) => setListInDirectory(e.target.checked)} />
+              <span className={styles.toggle} aria-hidden="true"><i /></span>
+              <span>
+                <strong>List me in the public contractor directory</strong>
+                <small>
+                  Clients searching for {trades.length > 0 ? trades.slice(0, 2).join(' or ').toLowerCase() : 'your trade'} in{' '}
+                  {serviceAreas.length > 0 ? serviceAreas.slice(0, 2).join(' or ') : 'your area'} can see your trading name, trades, service areas, phone, and contact email.
+                </small>
+              </span>
+            </label>
+            <p className={styles.privateNote}>Leave this off and your contractor account remains private. You can change it later.</p>
+          </section>
+
+          {/* Last, not first. Everything above works signed out; the account is
+              what turns a filled-in form into a saved one. */}
+          {!isAuthenticated && (
+            <section className={`${styles.formSection} ${styles.accountSection}`} aria-labelledby="account-heading">
+              <div className={styles.sectionHeading}>
+                <span><LockKey size={17} weight="bold" /></span>
+                <div><h2 id="account-heading">Create your account to finish</h2><p>Your completed profile stays on this device if email confirmation is needed.</p></div>
+              </div>
+              <div className={styles.fields}>
+                <label htmlFor="account-email">
+                  <span>Email <b>*</b></span>
+                  <input id="account-email" type="email" autoComplete="email" value={accountEmail} onChange={(e) => setAccountEmail(e.target.value)} placeholder="you@example.com" />
+                </label>
+                <label htmlFor="account-password">
+                  <span>Password <b>*</b></span>
+                  <input id="account-password" type="password" autoComplete="new-password" value={accountPassword} onChange={(e) => setAccountPassword(e.target.value)} placeholder="At least 6 characters" />
+                </label>
+              </div>
+              <p className={styles.signInNote}>
+                Already have an account?{' '}
+                <Link href="/auth/login?redirect=%2Fcontractor%2Fregister" onClick={() => saveRegistrationDraft('contractor', draftPayload())}>Sign in</Link>
+                {' '}and your entered details will stay here.
+              </p>
+            </section>
+          )}
+
+          <div className={styles.formFooter}>
+            <Button type="submit" loading={isSubmitting} disabled={isSubmitting} fullWidth className={styles.submitButton}>
+              {alreadyRegistered ? 'Save changes' : isAuthenticated ? 'Set up contractor account' : 'Create account and finish'}
+            </Button>
+            <div>
+              <Link href="/contractors">Cancel</Link>
+              <span>Need help? <ContactSupportLink category="contractor" subject="Contractor registration" showIcon={false}>Contact support</ContactSupportLink></span>
+            </div>
+            {alreadyRegistered && (
+              <p><CheckCircle size={15} weight="fill" /> This account already has contractor tools enabled.</p>
+            )}
+          </div>
+        </form>
       </div>
-
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
-          <div>
-            <label htmlFor="company" className="block text-xs font-bold text-slate-700 mb-1.5">
-              Trading name <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="company"
-              className={INPUT}
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="e.g. Chikwanha Building Contractors"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="phone" className="block text-xs font-bold text-slate-700 mb-1.5">
-                Phone
-              </label>
-              <input
-                id="phone"
-                type="tel"
-                className={INPUT}
-                value={contactPhone}
-                onChange={(e) => setContactPhone(e.target.value)}
-                placeholder="+263 …"
-              />
-            </div>
-            <div>
-              <label htmlFor="email" className="block text-xs font-bold text-slate-700 mb-1.5">
-                Contact email
-              </label>
-              <input
-                id="email"
-                type="email"
-                className={INPUT}
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-                placeholder="you@example.com"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="years" className="block text-xs font-bold text-slate-700 mb-1.5">
-              Years in the trade
-            </label>
-            <input
-              id="years"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={80}
-              className={`${INPUT} sm:w-40`}
-              value={yearsExperience}
-              onChange={(e) => setYearsExperience(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <fieldset className="rounded-2xl border border-slate-200 bg-white p-5">
-          <legend className="px-1 text-xs font-bold text-slate-700">What do you do?</legend>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {CONTRACTOR_TRADES.map((t) => {
-              const on = trades.includes(t);
-              return (
-                <button
-                  key={t}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => toggle(trades, t, setTrades)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    on
-                      ? 'border-blue-600 bg-blue-600 text-white'
-                      : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400'
-                  }`}
-                >
-                  {t}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
-
-        <fieldset className="rounded-2xl border border-slate-200 bg-white p-5">
-          <legend className="px-1 text-xs font-bold text-slate-700">Where do you work?</legend>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {ZIMBABWE_SERVICE_AREAS.map((city) => {
-              const on = serviceAreas.includes(city);
-              return (
-                <button
-                  key={city}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => toggle(serviceAreas, city, setServiceAreas)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    on
-                      ? 'border-blue-600 bg-blue-600 text-white'
-                      : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400'
-                  }`}
-                >
-                  {city}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <label htmlFor="about" className="block text-xs font-bold text-slate-700 mb-1.5">
-            About your work <span className="font-normal text-slate-400">(optional)</span>
-          </label>
-          <textarea
-            id="about"
-            rows={4}
-            className={INPUT}
-            value={about}
-            onChange={(e) => setAbout(e.target.value)}
-            placeholder="The kind of jobs you take on, and anything a client should know."
-          />
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <label htmlFor="listed" className="flex cursor-pointer items-start gap-3">
-            <input
-              id="listed"
-              type="checkbox"
-              checked={listInDirectory}
-              onChange={(e) => setListInDirectory(e.target.checked)}
-              className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span>
-              <span className="block text-sm font-bold text-slate-900">
-                List me in the public contractor directory
-              </span>
-              <span className="mt-1 block text-xs leading-relaxed text-slate-600">
-                Clients searching for {trades.length > 0 ? trades.slice(0, 2).join(' or ').toLowerCase() : 'your trade'} in{' '}
-                {serviceAreas.length > 0 ? serviceAreas.slice(0, 2).join(' or ') : 'your area'} will see your trading
-                name, trades, service areas, and the phone and email above. Leave it off and your
-                account stays completely private. You can change this any time in your profile.
-              </span>
-            </span>
-          </label>
-        </div>
-
-        <div className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-          <Percent size={16} className="mt-0.5 flex-shrink-0 text-slate-400" aria-hidden="true" />
-          <span>
-            Your markup starts at 15% and can be changed on any estimate. It is only ever
-            shown to you — client view hides it.
-          </span>
-        </div>
-
-        {/* Last, not first. Everything above works signed out; the account is
-            what turns a filled-in form into a saved one. */}
-        {!isAuthenticated && (
-          <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-5">
-            <h2 className="text-sm font-bold text-slate-900">Create your account to finish</h2>
-            <p className="mt-1 text-xs leading-relaxed text-slate-600">
-              This is what you will sign in with. Your details above are kept if you need to
-              confirm your email first.
-            </p>
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="account-email" className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="account-email"
-                  type="email"
-                  autoComplete="email"
-                  className={INPUT}
-                  value={accountEmail}
-                  onChange={(e) => setAccountEmail(e.target.value)}
-                  placeholder="you@example.com"
-                />
-              </div>
-              <div>
-                <label htmlFor="account-password" className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Password <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="account-password"
-                  type="password"
-                  autoComplete="new-password"
-                  className={INPUT}
-                  value={accountPassword}
-                  onChange={(e) => setAccountPassword(e.target.value)}
-                  placeholder="At least 6 characters"
-                />
-              </div>
-            </div>
-            <p className="mt-3 text-xs text-slate-600">
-              Already have an account?{' '}
-              <Link
-                href="/auth/login?redirect=%2Fcontractor%2Fregister"
-                onClick={() => saveRegistrationDraft('contractor', draftPayload())}
-                className="font-bold text-blue-700 hover:underline"
-              >
-                Sign in
-              </Link>{' '}
-              — your details stay on this page.
-            </p>
-          </div>
-        )}
-
-        <div className="flex items-center gap-3">
-          <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
-            {alreadyRegistered
-              ? 'Save changes'
-              : isAuthenticated
-                ? 'Set up contractor account'
-                : 'Create account and finish'}
-          </Button>
-          <Link href="/home" className="text-sm font-semibold text-slate-500 hover:text-slate-700">
-            Cancel
-          </Link>
-        </div>
-
-        <p className="text-xs text-slate-500">
-          Something not working?{' '}
-          <ContactSupportLink category="contractor" subject="Contractor registration" showIcon={false}>
-            Contact support
-          </ContactSupportLink>
-        </p>
-
-        {alreadyRegistered && (
-          <p className="flex items-center gap-1.5 text-xs text-emerald-700">
-            <CheckCircle size={14} weight="fill" />
-            This account already has contractor tools enabled.
-          </p>
-        )}
-      </form>
     </div>
   );
 }
 
 export default function ContractorRegisterPage() {
   return (
-    <MainLayout title="Contractor Account">
+    <MainLayout>
       <ContractorRegisterContent />
     </MainLayout>
   );

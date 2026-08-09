@@ -6,7 +6,18 @@ import { useReveal } from '@/hooks/useReveal';
 import ContractorCard from '@/components/contractors/ContractorCard';
 import { CONTRACTOR_TRADES, ZIMBABWE_SERVICE_AREAS } from '@/components/contractors/constants';
 import { listListedContractors, type PublicContractorRow } from '@/lib/services/contractors';
-import { MagnifyingGlass, SlidersHorizontal, SpinnerGap, UsersThree } from '@phosphor-icons/react';
+import Link from 'next/link';
+import {
+  ArrowRight,
+  Briefcase,
+  MagnifyingGlass,
+  ShieldCheck,
+  SlidersHorizontal,
+  SpinnerGap,
+  UsersThree,
+  X,
+} from '@phosphor-icons/react';
+import styles from './contractors.module.css';
 
 const PAGE_SIZE = 24;
 
@@ -84,119 +95,138 @@ export default function ContractorsPage() {
   }, [contractors, searchQuery]);
 
   const hasMore = contractors.length < totalCount;
+  const hasActiveFilters = selectedTrade !== 'all' || selectedArea !== 'all' || searchQuery.trim().length > 0;
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedTrade('all');
+    setSelectedArea('all');
+  };
 
   useReveal({ deps: [visibleContractors.length, loading, selectedTrade, selectedArea] });
 
   return (
     <MainLayout fullWidth>
-      <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 md:px-8 md:py-10">
-        <section className="reveal rounded-lg border border-slate-200 bg-white px-5 py-6 shadow-sm md:px-8 md:py-8" data-delay="1">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
-              <p className="text-sm font-bold uppercase tracking-[0.18em] text-blue-600">Contractor directory</p>
-              <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-950 md:text-4xl">
-                Find listed construction contractors in Zimbabwe.
-              </h1>
-              <p className="mt-3 text-base leading-7 text-slate-600">
-                Browse contractors who have chosen to make their company name, trades, service areas and contact details public.
+      <main className={styles.page}>
+        <section className={styles.hero} aria-labelledby="contractor-directory-heading">
+          <div className={styles.heroInner}>
+            <div className={styles.heroCopy}>
+              <span className={styles.eyebrow}>Contractor directory</span>
+              <h1 id="contractor-directory-heading">Find the right trade for your next build.</h1>
+              <p>
+                Search public contractor profiles by the work you need and the places they serve across Zimbabwe.
               </p>
-            </div>
-            <div className="rounded-md border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-900">
-              {totalCount} listed {totalCount === 1 ? 'contractor' : 'contractors'}
-            </div>
-          </div>
-        </section>
-
-        <section className="reveal grid gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[1fr_220px_220px]" data-delay="2">
-          <label className="relative block">
-            <span className="sr-only">Search contractors</span>
-            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search name, trade, area or contact..."
-              className="h-11 w-full rounded-md border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-            />
-          </label>
-
-          <label className="block">
-            <span className="sr-only">Filter by trade</span>
-            <select
-              value={selectedTrade}
-              onChange={(event) => setSelectedTrade(event.target.value)}
-              className="h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-            >
-              <option value="all">All trades</option>
-              {CONTRACTOR_TRADES.map((trade) => (
-                <option key={trade} value={trade}>{trade}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="sr-only">Filter by service area</span>
-            <select
-              value={selectedArea}
-              onChange={(event) => setSelectedArea(event.target.value)}
-              className="h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-            >
-              <option value="all">All service areas</option>
-              {ZIMBABWE_SERVICE_AREAS.map((area) => (
-                <option key={area} value={area}>{area}</option>
-              ))}
-            </select>
-          </label>
-        </section>
-
-        {loading ? (
-          <div className="reveal flex min-h-64 flex-col items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white text-slate-500">
-            <SpinnerGap size={32} className="animate-spin" />
-            <p>Loading listed contractors...</p>
-          </div>
-        ) : error ? (
-          <div className="reveal rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-            Could not load contractors: {error}
-          </div>
-        ) : visibleContractors.length === 0 ? (
-          <div className="reveal flex min-h-72 flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
-            <UsersThree size={44} weight="duotone" className="text-slate-400" />
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">No listed contractors found</h2>
-              <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                Contractors only appear here after they turn on directory listing in their profile.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="reveal flex items-center gap-2 text-sm text-slate-500">
-              <SlidersHorizontal size={16} />
-              Showing {visibleContractors.length} of {totalCount} matching listed contractors
-            </div>
-
-            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {visibleContractors.map((contractor, index) => (
-                <div key={contractor.id} data-delay={(index % 7) + 1}>
-                  <ContractorCard contractor={contractor} />
-                </div>
-              ))}
-            </section>
-
-            {hasMore && !searchQuery.trim() && (
-              <div className="reveal flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => loadContractors(contractors.length, true)}
-                  disabled={loadingMore}
-                  className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loadingMore && <SpinnerGap size={16} className="animate-spin" />}
-                  Load more contractors
-                </button>
+              <div className={styles.disclaimer}>
+                <ShieldCheck size={18} weight="duotone" aria-hidden="true" />
+                <span>Profiles are contractor-submitted. A listing does not imply verification by ZimEstimate.</span>
               </div>
+            </div>
+            <div className={styles.heroAction}>
+              <Briefcase size={28} weight="duotone" aria-hidden="true" />
+              <strong>Build for clients?</strong>
+              <span>Create a contractor profile and choose whether to appear here.</span>
+              <Link href="/contractor/register">
+                List your business
+                <ArrowRight size={17} weight="bold" aria-hidden="true" />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <div className={styles.content}>
+          <section className={styles.filters} aria-label="Filter contractors">
+            <label className={styles.searchField}>
+              <span>Search directory</span>
+              <div className={styles.inputWrap}>
+                <MagnifyingGlass size={19} aria-hidden="true" />
+                <input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Company, trade, area or contact"
+                  type="search"
+                />
+              </div>
+            </label>
+
+            <label>
+              <span>Trade</span>
+              <select value={selectedTrade} onChange={(event) => setSelectedTrade(event.target.value)}>
+                <option value="all">All trades</option>
+                {CONTRACTOR_TRADES.map((trade) => (
+                  <option key={trade} value={trade}>{trade}</option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>Service area</span>
+              <select value={selectedArea} onChange={(event) => setSelectedArea(event.target.value)}>
+                <option value="all">All service areas</option>
+                {ZIMBABWE_SERVICE_AREAS.map((area) => (
+                  <option key={area} value={area}>{area}</option>
+                ))}
+              </select>
+            </label>
+
+            {hasActiveFilters && (
+              <button type="button" className={styles.clearButton} onClick={clearFilters}>
+                <X size={15} weight="bold" aria-hidden="true" />
+                Clear
+              </button>
             )}
-          </>
-        )}
+          </section>
+
+          {loading ? (
+            <div className={styles.statePanel}>
+              <SpinnerGap size={32} className="animate-spin" />
+              <p>Loading listed contractors...</p>
+            </div>
+          ) : error ? (
+            <div className={`${styles.statePanel} ${styles.errorPanel}`}>
+              <h2>We could not load the directory</h2>
+              <p>{error}</p>
+              <button type="button" onClick={() => loadContractors(0, false)}>Try again</button>
+            </div>
+          ) : visibleContractors.length === 0 ? (
+            <div className={styles.statePanel}>
+              <UsersThree size={44} weight="duotone" aria-hidden="true" />
+              <h2>No contractors match these filters</h2>
+              <p>Try another trade or service area, or clear the current search.</p>
+              {hasActiveFilters ? (
+                <button type="button" onClick={clearFilters}>Clear all filters</button>
+              ) : (
+                <Link href="/contractor/register">Create the first public profile</Link>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className={styles.resultsHeader}>
+                <div>
+                  <SlidersHorizontal size={17} aria-hidden="true" />
+                  <span>
+                    Showing <strong>{visibleContractors.length}</strong> of <strong>{totalCount}</strong> listed contractors
+                  </span>
+                </div>
+                <span>Public profiles only</span>
+              </div>
+
+              <section className={styles.resultsGrid} aria-label="Contractor results">
+                {visibleContractors.map((contractor) => (
+                  <ContractorCard key={contractor.id} contractor={contractor} />
+                ))}
+              </section>
+
+              {hasMore && !searchQuery.trim() && (
+                <div className={styles.loadMore}>
+                  <button type="button" onClick={() => loadContractors(contractors.length, true)} disabled={loadingMore}>
+                    {loadingMore && <SpinnerGap size={16} className="animate-spin" />}
+                    Load more contractors
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </main>
     </MainLayout>
   );

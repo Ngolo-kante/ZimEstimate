@@ -16,7 +16,6 @@ import {
     ChatCircleText,
     WhatsappLogo,
     EnvelopeSimple,
-    Gear,
     PaperPlaneTilt,
     Package,
     CurrencyDollar,
@@ -138,7 +137,7 @@ const ALERT_DEFINITIONS: AlertConfig[] = [
         icon: <ListChecks size={20} weight="duotone" />,
         title: 'Admin Task Reminders',
         description: 'Regular nudges for pending admin and compliance tasks on your project.',
-        color: 'var(--color-emerald)',
+        color: 'var(--color-accent)',
         hasFrequency: true,
     },
     {
@@ -146,7 +145,7 @@ const ALERT_DEFINITIONS: AlertConfig[] = [
         icon: <ShieldCheck size={20} weight="duotone" />,
         title: 'Compliance Deadline Alerts',
         description: 'Alerts for upcoming certificate and approval deadlines.',
-        color: '#7C3AED',
+        color: 'var(--color-primary)',
         hasFrequency: true,
     },
 ];
@@ -301,6 +300,7 @@ export default function ProjectSettings({
 
     // --- Notification Centre State ---
     const [selectedChannel, setSelectedChannel] = useState<NotificationChannel>(defaultReminderChannel);
+    const [openSections, setOpenSections] = useState<Set<string>>(new Set(['general']));
     const [expandedAlerts, setExpandedAlerts] = useState<Set<string>>(new Set(['low_stock', 'budget_reminder']));
     const [alertStates, setAlertStates] = useState<Record<string, AlertRowState>>(() => ({
         low_stock: {
@@ -385,6 +385,15 @@ export default function ProjectSettings({
         });
     }, []);
 
+    const toggleSection = (id: string) => {
+        setOpenSections(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
     const updateAlertState = useCallback((id: string, updates: Partial<AlertRowState>) => {
         setAlertStates(prev => ({
             ...prev,
@@ -447,15 +456,6 @@ export default function ProjectSettings({
         <div className="settings-page">
             {/* ========== HEADER ========== */}
             <div className="settings-header">
-                <div className="settings-header-content">
-                    <div className="settings-header-icon">
-                        <Gear size={24} weight="duotone" />
-                    </div>
-                    <div>
-                        <h2>Project Configurations</h2>
-                        <p>Manage stages, alerts, and notification preferences.</p>
-                    </div>
-                </div>
                 <Button
                     onClick={handleSave}
                     disabled={isSaving}
@@ -470,11 +470,11 @@ export default function ProjectSettings({
 
             {/* ========== 1. GENERAL ========== */}
             <div className="settings-card">
-                <div className="settings-card-header">
-                    <h3>General Parameters</h3>
-                    <p>Basic project information and location details.</p>
-                </div>
-                <div className="settings-card-content">
+                <button type="button" className="settings-card-header" onClick={() => toggleSection('general')} aria-expanded={openSections.has('general')}>
+                    <span><h3>General</h3><p>Project name and location.</p></span>
+                    {openSections.has('general') ? <CaretUp size={18} /> : <CaretDown size={18} />}
+                </button>
+                {openSections.has('general') && <div className="settings-card-content">
                     <div className="form-grid">
                         <div className="form-group">
                             <label className="form-label">Project Name</label>
@@ -502,16 +502,16 @@ export default function ProjectSettings({
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>}
             </div>
 
             {/* ========== 2. STAGE VISIBILITY ========== */}
             <div className="settings-card">
-                <div className="settings-card-header">
-                    <h3>Substage Visibility</h3>
-                    <p>Toggle stages to show or hide throughout the project.</p>
-                </div>
-                <div className="settings-card-content">
+                <button type="button" className="settings-card-header" onClick={() => toggleSection('stages')} aria-expanded={openSections.has('stages')}>
+                    <span><h3>Project Stages</h3><p>{selectedStages.length} stages visible.</p></span>
+                    {openSections.has('stages') ? <CaretUp size={18} /> : <CaretDown size={18} />}
+                </button>
+                {openSections.has('stages') && <div className="settings-card-content">
                     {STAGE_CATEGORIES.map((stage) => {
                         const isVisible = selectedStages.includes(stage.id);
                         return (
@@ -539,12 +539,12 @@ export default function ProjectSettings({
                             </div>
                         );
                     })}
-                </div>
+                </div>}
             </div>
 
             {/* ========== 3. NOTIFICATION CENTRE ========== */}
             <div className="settings-card notification-centre">
-                <div className="settings-card-header">
+                <button type="button" className="settings-card-header" onClick={() => toggleSection('alerts')} aria-expanded={openSections.has('alerts')}>
                     <div className="notif-header-row">
                         <div>
                             <h3>
@@ -557,9 +557,10 @@ export default function ProjectSettings({
                             {enabledCount} active
                         </div>
                     </div>
-                </div>
+                    {openSections.has('alerts') ? <CaretUp size={18} /> : <CaretDown size={18} />}
+                </button>
 
-                <div className="settings-card-content">
+                {openSections.has('alerts') && <div className="settings-card-content">
                     {/* === Preferred Channel === */}
                     <div className="notif-channel-section">
                         <label className="form-label">Preferred Notification Method</label>
@@ -599,7 +600,7 @@ export default function ProjectSettings({
                             />
                         ))}
                     </div>
-                </div>
+                </div>}
             </div>
         </div>
     );

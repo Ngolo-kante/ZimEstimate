@@ -7,6 +7,7 @@ import { FloppyDisk, X, CircleNotch, CaretLeft, CaretRight, Check, ShareNetwork,
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/components/providers/AuthProvider';
 import SavingOverlay from '@/components/ui/SavingOverlay';
+import WorkflowProgress from '@/components/boq/WorkflowProgress';
 import { useProjectAutoSave } from '@/hooks/useProjectAutoSave';
 import { useBoqWizardStore, DEFAULT_ROOM_INPUTS, type BoqMilestoneId, type MilestoneData, type BOQItem, type ProjectDetailsState } from '@/store/boqWizardStore';
 import LiveEstimatorLayout from './components/LiveEstimatorLayout';
@@ -162,6 +163,7 @@ function BoqNewPageContent() {
   const projectIdFromUrl = searchParams.get('id');
   const templateIdFromUrl = searchParams.get('template');
   const finishFromUrl = searchParams.get('finish');
+  const freshStartFromHome = searchParams.get('fresh') === '1';
 
   const [showInteractiveBuilder, setShowInteractiveBuilder] = useState(false);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
@@ -199,26 +201,6 @@ function BoqNewPageContent() {
     setGeotechDocument,
     setValidationErrors,
   } = useBoqWizardStore();
-
-  // Keeps the active step visible in the strip.
-  //
-  // This used to be a scrollIntoView in a ref callback on the active chip. Two
-  // problems: block:'nearest' scrolls VERTICALLY as well, so whenever the user
-  // had scrolled down past the header the page was yanked back up to the
-  // stepper — which is what made selecting a card appear to jump to the top.
-  // And the ref was an inline arrow, so React reattached it on every render and
-  // re-ran the scroll on every state change, not just when the step moved.
-  //
-  // Scrolling the strip's own scrollLeft touches the horizontal axis only and
-  // cannot move the page.
-  const stepNavRef = useRef<HTMLElement | null>(null);
-  useEffect(() => {
-    const nav = stepNavRef.current;
-    const chip = nav?.children[currentStep] as HTMLElement | undefined;
-    if (!nav || !chip) return;
-    const target = chip.offsetLeft - nav.clientWidth / 2 + chip.clientWidth / 2;
-    nav.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
-  }, [currentStep]);
 
   // Puts the next step's heading at the top of the viewport.
   //
@@ -329,7 +311,6 @@ function BoqNewPageContent() {
     }
   };
 
-  const progressPct = Math.round((currentStep / WIZARD_STEPS.length) * 100);
   const minsRemaining = Math.max(1, (WIZARD_STEPS.length - currentStep) * 2);
 
   const projectDetailsForSave = useMemo(() => {
@@ -417,11 +398,23 @@ function BoqNewPageContent() {
     }
   );
 
-  // The store persists to localStorage with skipHydration, so restore any
-  // in-progress wizard once we are on the client and past hydration.
+  // Homepage CTAs intentionally start a new estimate. Direct visits continue
+  // to restore an in-progress draft, while project and template links retain
+  // their own loading behavior.
   useEffect(() => {
-    void useBoqWizardStore.persist.rehydrate();
-  }, []);
+    const prepareWizard = async () => {
+      if (freshStartFromHome && !projectIdFromUrl && !templateIdFromUrl) {
+        await useBoqWizardStore.persist.clearStorage();
+        useBoqWizardStore.getState().resetWizard();
+        router.replace('/boq/new?method=manual');
+        return;
+      }
+
+      await useBoqWizardStore.persist.rehydrate();
+    };
+
+    void prepareWizard();
+  }, [freshStartFromHome, projectIdFromUrl, router, templateIdFromUrl]);
 
   // A template link carried a ?template= parameter that nothing read, so picking
   // one opened an empty wizard. Apply its inputs and open the review step, which
@@ -801,59 +794,27 @@ function BoqNewPageContent() {
         <LiveEstimatorLayout
           leftControls={(
             <div className="flex flex-col h-full min-h-[600px]">
-              {/* ── Progress Bar (QP-style) ───────────────────────────────────── */}
               <div className="mb-8">
-                <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider mb-2" style={{color:'var(--wiz-text-faint)'}}>
-                  <span>Step {currentStep + 1} of {WIZARD_STEPS.length}</span>
-                  <span style={{color:'var(--wiz-primary)'}}>{progressPct}%</span>
-                  <span>~{minsRemaining} min to complete</span>
-                </div>
-                <div className="wiz-progress-bar-track w-full">
-                  <motion.div
-                    className="wiz-progress-bar-fill"
-                    style={{ width: `${progressPct}%` }}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                  />
-                </div>
-                {/* Numbered steps. These were six anonymous 6px bars whose only
-                    label was a title tooltip, so there was nothing on screen
-                    saying which step was which, and the click handler moved
-                    backwards only. Now every step the user has reached is a
-                    labelled button they can jump to in either direction. */}
-                <nav ref={stepNavRef} aria-label="Estimate steps" className="wiz-step-nav mt-3">
-                  {WIZARD_STEPS.map((step, index) => {
-                    const isCurrent = index === currentStep;
-                    const reachable = index <= maxStepReached;
-                    return (
-                      <button
-                        key={step.id}
-                        type="button"
-                        disabled={!reachable}
-                        aria-current={isCurrent ? 'step' : undefined}
-                        onClick={() => { if (reachable) { setCurrentStep(index); scrollStepIntoView(); } }}
-                        title={reachable ? step.label : `Complete step ${index} first`}
-                        className={`wiz-step-chip ${
-                          isCurrent
-                            ? 'wiz-step-chip--active'
-                            : reachable
-                            ? 'wiz-step-chip--done'
-                            : 'wiz-step-chip--locked'
-                        }`}
-                      >
-                        <span className="wiz-step-chip__num">{index + 1}</span>
-                        <span className="wiz-step-chip__label">{step.label}</span>
-                      </button>
-                    );
-                  })}
-                </nav>
+                <WorkflowProgress
+                  currentStep={currentStep}
+                  maxStepReached={maxStepReached}
+                  steps={WIZARD_STEPS}
+                  minutesRemaining={minsRemaining}
+                  onStepSelect={(index) => {
+                    setCurrentStep(index);
+                    scrollStepIntoView();
+                  }}
+                />
               </div>
 
               {/* ── Step Header ──────────────────────────────────────────────── */}
-              <div className="wiz-step-header mb-8">
-                <span className="wiz-step-label mb-2 block">BOQ MANUAL BUILDER</span>
-                <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{color:'var(--wiz-text-primary)'}}>{WIZARD_STEPS[currentStep].title}</h2>
-                <p className="text-sm" style={{color:'var(--wiz-text-muted)'}}>{WIZARD_STEPS[currentStep].subtitle}</p>
-              </div>
+              {!isReviewStep && (
+                <div className="wiz-step-header mb-8">
+                  <span className="wiz-step-label mb-2 block">BOQ MANUAL BUILDER</span>
+                  <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{color:'var(--wiz-text-primary)'}}>{WIZARD_STEPS[currentStep].title}</h2>
+                  <p className="text-sm" style={{color:'var(--wiz-text-muted)'}}>{WIZARD_STEPS[currentStep].subtitle}</p>
+                </div>
+              )}
 
               {/* Step Content */}
               <div className="flex-1 space-y-5 relative">

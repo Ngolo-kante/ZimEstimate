@@ -13,7 +13,7 @@
     "lint": "eslint",
     "scrape:prices": "node scripts/pricing/scrape.mjs",
     "typecheck": "next typegen && tsc --noEmit",
-    "test:unit": "VITE_CJS_IGNORE_WARNING=1 vitest run",
+    "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test tests/public-pages-smoke.spec.ts tests/project-creation-smoke.spec.ts",
     "test": "npm run test:unit && npm run test:e2e",

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Calendar, TrendUp, Target, PiggyBank } from '@phosphor-icons/react';
+import { Calendar, TrendUp, Target } from '@phosphor-icons/react';
 import { useCurrency } from './CurrencyToggle';
 
 export type NotificationChannel = 'sms' | 'whatsapp' | 'telegram' | 'email';
@@ -61,19 +61,6 @@ export default function BudgetPlanner({
 
   return (
     <div className="budget-planner">
-      <div className="planner-header">
-        <div className="header-icon-wrapper">
-          <PiggyBank size={32} weight="duotone" />
-        </div>
-        <div className="header-content">
-          <h3>Budget Planner</h3>
-          <p>Optimize your project savings & timeline</p>
-        </div>
-        <div className="header-badge">
-          {percentComplete >= 100 ? 'Goal Reached' : 'In Progress'}
-        </div>
-      </div>
-
       {/* Progress Card */}
       <div className="planner-card progress-card">
         <div className="card-row">
@@ -202,75 +189,16 @@ export default function BudgetPlanner({
 
       <style jsx>{`
         .budget-planner {
-          background: rgba(255, 255, 255, 0.94);
-          border: 1px solid #d8e7f6;
-          border-radius: 20px;
-          padding: 24px;
-          box-shadow: 0 14px 22px rgba(6, 20, 47, 0.04);
+          background: transparent;
+          padding: 0;
           font-family: var(--font-sans);
-          transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        .budget-planner:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 18px 28px rgba(6, 20, 47, 0.08);
-        }
-
-        .planner-header {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 24px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--color-border-light);
-        }
-
-        .header-icon-wrapper {
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, #ecf4ff 0%, #d5e8ff 100%);
-            color: #2f76c5;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 8px 16px rgba(47, 118, 197, 0.16);
-        }
-
-        .header-content {
-            flex: 1;
-        }
-
-        .header-content h3 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin: 0;
-            letter-spacing: -0.01em;
-        }
-
-        .header-content p {
-            font-size: 0.9rem;
-            color: #64748b;
-            margin: 4px 0 0 0;
-        }
-
-        .header-badge {
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 6px 12px;
-            border-radius: 99px;
-            background: #f1f5f9;
-            color: #64748b;
         }
 
         /* Progress Card */
         .progress-card {
             background: #f4f9ff;
             border: 1px solid #d8e7f6;
-            border-radius: 16px;
+            border-radius: 8px;
             padding: 20px;
             margin-bottom: 24px;
         }
@@ -309,7 +237,7 @@ export default function BudgetPlanner({
             gap: 16px;
             background: rgba(255, 255, 255, 0.6);
             padding: 8px 16px;
-            border-radius: 12px;
+            border-radius: 7px;
             border: 1px solid rgba(226, 232, 240, 0.6);
         }
 
@@ -348,7 +276,7 @@ export default function BudgetPlanner({
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+            background: #2563eb;
             border-radius: 99px;
             transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
@@ -392,7 +320,7 @@ export default function BudgetPlanner({
             color: #0f172a;
             background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 12px;
+            border-radius: 7px;
             outline: none;
             transition: all 0.2s;
         }
@@ -480,7 +408,7 @@ export default function BudgetPlanner({
         .savings-card {
             background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 14px;
+            border-radius: 7px;
             padding: 16px 12px;
             display: flex;
             flex-direction: column;
@@ -490,23 +418,10 @@ export default function BudgetPlanner({
             transition: transform 0.2s;
         }
         
-        .savings-card:hover {
-            border-color: #cbd5e1;
-            transform: translateY(-2px);
-        }
-
         .savings-card.featured {
-            background: linear-gradient(180deg, #ffffff 0%, #eff6ff 100%);
+            background: #f3f8ff;
             border-color: #bfdbfe;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
-            position: relative;
-            z-index: 1;
-            transform: scale(1.05);
         }
-        
-         .savings-card.featured:hover {
-            transform: scale(1.05) translateY(-2px);
-         }
 
         .period {
             font-size: 0.75rem;
@@ -628,7 +543,7 @@ export default function BudgetPlanner({
         
         .active .banner-icon {
             background: #d1fae5;
-            color: #059669;
+            color: var(--color-accent);
         }
         
         .inactive .banner-icon {
@@ -664,7 +579,7 @@ export default function BudgetPlanner({
         
         .active .toggle-switch {
             background: white;
-            color: #059669;
+            color: var(--color-accent);
             border: 1px solid #d1fae5;
         }
         
@@ -683,7 +598,7 @@ export default function BudgetPlanner({
             gap: 12px;
             min-height: 200px;
             background: #f8fafc;
-            border-radius: 16px;
+            border-radius: 8px;
             border: 2px dashed #e2e8f0;
         }
 
@@ -694,12 +609,7 @@ export default function BudgetPlanner({
 
         @media (max-width: 768px) {
             .budget-planner {
-                padding: 16px;
-                border-radius: 16px;
-            }
-
-            .header-content h3 {
-                font-size: 1.1rem;
+                padding: 0;
             }
 
             .planner-grid {
@@ -713,6 +623,54 @@ export default function BudgetPlanner({
             .budget-values {
                 width: 100%;
                 justify-content: space-between;
+                box-sizing: border-box;
+                padding: 8px 10px;
+            }
+
+            .progress-card {
+                margin-bottom: 14px;
+                padding: 16px;
+            }
+
+            .planner-grid {
+                gap: 14px;
+            }
+
+            .planner-col {
+                padding: 16px;
+                border: 1px solid #d8e0eb;
+                border-radius: 8px;
+                background: #fff;
+            }
+
+            .savings-cards {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+                margin: 0;
+                border: 1px solid #d8e0eb;
+                border-radius: 7px;
+                overflow: hidden;
+            }
+
+            .savings-card,
+            .savings-card.featured {
+                min-height: 48px;
+                flex-direction: row;
+                justify-content: space-between;
+                padding: 10px 12px;
+                border: 0;
+                border-bottom: 1px solid #e6ebf2;
+                border-radius: 0;
+                text-align: left;
+            }
+
+            .savings-card:last-child {
+                border-bottom: 0;
+            }
+
+            .empty-state {
+                min-height: 132px;
             }
         }
 

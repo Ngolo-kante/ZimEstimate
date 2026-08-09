@@ -1,5 +1,8 @@
 # Next session plan
 
+> Historical plan from 2026-07-30. Several items and assumptions have changed.
+> Start with `docs/ARCHITECTURE.md` for the current implemented system.
+
 Handoff from the session ending 2026-07-30. Production is healthy, everything
 committed is deployed, nothing is half-finished.
 

@@ -1,0 +1,164 @@
+.workspace {
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #d8e0eb;
+}
+
+.header > div {
+  max-width: 660px;
+}
+
+.header > div > span {
+  color: #1d5fbf;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.header h2 {
+  margin: 7px 0 0;
+  color: #0f172a;
+  font-family: var(--font-heading);
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.header p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.tabs {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+  padding: 4px;
+  background: #eef2f7;
+  border-radius: 7px;
+}
+
+.tabs button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  color: #64748b;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tabs button[aria-pressed='true'] {
+  color: white;
+  background: #0b1f3b;
+  box-shadow: 0 2px 5px rgba(11, 31, 59, 0.16);
+}
+
+.content {
+  min-width: 0;
+}
+
+.secondaryPanel {
+  display: grid;
+  gap: 14px;
+}
+
+.documents {
+  min-height: 230px;
+  padding: 24px;
+  background: white;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+}
+
+.documents h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.documents p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.documents > label {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 9px 13px;
+  color: #0b1f3b;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.documentRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: #eef4ff;
+  border: 1px solid #bfd3ef;
+  border-radius: 6px;
+  font-size: 0.76rem;
+}
+
+.documentRow button {
+  display: flex;
+  padding: 5px;
+  color: #b42318;
+  background: white;
+  border: 1px solid #d8e0eb;
+  border-radius: 5px;
+}
+
+@media (max-width: 760px) {
+  .header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .tabs {
+    width: 100%;
+    padding: 3px;
+    overflow-x: auto;
+  }
+
+  .tabs button {
+    flex: 1 1 0;
+    justify-content: center;
+    gap: 3px;
+    padding-inline: 4px;
+    font-size: 0.62rem;
+    white-space: nowrap;
+  }
+
+  .tabs button svg {
+    width: 14px;
+    height: 14px;
+  }
+}

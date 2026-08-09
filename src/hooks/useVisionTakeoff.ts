@@ -1,5 +1,6 @@
 // Vision Takeoff Wizard State Management Hook
 import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   VisionTakeoffState,
   INITIAL_STATE,
@@ -85,6 +86,7 @@ function addTemporaryEnablementItems(items: GeneratedBOQItem[], config: VisionCo
 }
 
 export function useVisionTakeoff() {
+  const router = useRouter();
   const [state, setState] = useState<VisionTakeoffState>(INITIAL_STATE);
 
   // ============================================
@@ -165,9 +167,8 @@ export function useVisionTakeoff() {
   }, []);
 
   const goToManualEntry = useCallback(() => {
-    // Redirect to manual BOQ builder
-    window.location.href = '/boq/new';
-  }, []);
+    router.push('/boq/new');
+  }, [router]);
 
   // ============================================
   // ROOM & WALL EDITING

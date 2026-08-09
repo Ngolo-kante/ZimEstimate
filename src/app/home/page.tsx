@@ -1,236 +1,178 @@
-'use client';
-
-import { useReveal } from '@/hooks/useReveal';
-import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import MainLayout from '@/components/layout/MainLayout';
-import Button from '@/components/ui/Button';
-import { useAuth } from '@/components/providers/AuthProvider';
-import { AnimatedHero } from '@/components/ui/AnimatedHero';
-import { BentoGrid, BentoGridItem } from '@/components/ui/BentoGrid';
-import { Timeline } from '@/components/ui/Timeline';
-import HeroBudgetWidget from '@/components/home/HeroBudgetWidget';
+import Link from 'next/link';
 import {
-  Scan,
-  Camera,
-  NotePencil,
   ArrowRight,
-  ChartLine,
-  Package,
-  CurrencyDollar,
-  Wallet,
-  ChartLineUp,
-  Stack,
-  CheckCircle,
-  Storefront,
   Briefcase,
-  DownloadSimple,
-  ShieldCheck,
+  Calculator,
+  ChartLineUp,
+  CheckCircle,
   FileText,
-} from '@phosphor-icons/react';
+  Lightning,
+  Package,
+  PencilLine,
+  ShieldCheck,
+  UploadSimple,
+  UserPlus,
+} from '@phosphor-icons/react/dist/ssr';
+import MainLayout from '@/components/layout/MainLayout';
+import HeroBudgetWidget from '@/components/home/HeroBudgetWidget';
+import styles from './home.module.css';
 
-type IconType = typeof Scan;
+const estimateBenefits = [
+  'Stage-by-stage quantities and costs',
+  'Zimbabwe-focused materials and pricing',
+  'Save, share, and export when you are ready',
+];
 
-const workflows: Array<{
-  id: string;
-  icon: IconType;
-  title: string;
-  label: string;
-  href: string;
-}> = [
-    // Ordered by how many people can actually start here. Manual Builder needs
-    // nothing but the figures in your head; the AI routes need a drawing or a
-    // quote to photograph, so leading with them asked for an upload before the
-    // product had shown anything.
-    {
-      id: 'manual',
-      icon: NotePencil,
-      title: 'Manual Builder',
-      label: 'PRO CONTROL',
-      href: '/boq/new?method=manual',
-    },
-    {
-      id: 'quick-projects',
-      icon: CheckCircle,
-      title: 'Quick Projects',
-      label: 'UTILITIES & ADD-ONS',
-      href: '/quick-projects',
-    },
-    {
-      id: 'scanner',
-      icon: Camera,
-      title: 'From Paper',
-      label: 'FIELD READY',
-      href: '/ai/quote-scanner',
-    },
-    {
-      id: 'vision',
-      icon: Scan,
-      title: 'Vision AI Takeoff',
-      label: 'HIGH PRECISION',
-      href: '/ai/vision-takeoff',
-    },
-  ];
+const estimateStarts = [
+  {
+    title: 'Create Your BOQ',
+    description: 'Answer guided questions and create a complete construction BOQ.',
+    detail: 'Best for a full house or detailed build',
+    href: '/boq/new?method=manual&fresh=1',
+    action: 'Open BOQ builder',
+    icon: PencilLine,
+    recommended: true,
+  },
+  {
+    title: 'Plan to BOQ',
+    description: 'Let AI read room sizes, doors, and windows, then generate the quantities.',
+    detail: 'PDF, PNG, JPG or WEBP',
+    href: '/ai/vision-takeoff',
+    action: 'Upload your plan',
+    icon: UploadSimple,
+  },
+  {
+    title: 'Quote to Project',
+    description: 'Turn a photographed supplier quote or BOQ into a project you can manage.',
+    detail: 'Figures are read from the document',
+    href: '/ai/boq-scanner',
+    action: 'Scan your document',
+    icon: FileText,
+  },
+  {
+    title: 'Quick Project',
+    description: 'Generate a focused BOQ for solar, water, boreholes, septic, fencing, or paving.',
+    detail: 'Typically takes 4-7 minutes',
+    href: '/quick-projects',
+    action: 'Choose a quick project',
+    icon: Lightning,
+  },
+];
 
-const signals: Array<{
-  icon: IconType;
-  label: string;
-  value: string;
-  subtext: string;
-}> = [
-    {
-      icon: ChartLine,
-      label: 'MARKET ACCURACY',
-      value: '98.2%',
-      subtext: 'Weekly material price verification',
-    },
-    {
-      icon: Package,
-      label: 'MATERIAL COVERAGE',
-      value: '2.8k+',
-      subtext: 'Tracked products and vendor references',
-    },
-    {
-      icon: CurrencyDollar,
-      label: 'USD PRICING',
-      value: 'Market rates',
-      subtext: 'Zimbabwe supplier prices across all project views',
-    },
-  ];
-
-// Platform capabilities for the offers section
-const offerings: Array<{
-  icon: IconType;
-  title: string;
-  description: string;
-  href: string;
-}> = [
-    {
-      icon: Wallet,
-      title: 'Budget Planner',
-      description: 'Set savings targets and forecast required daily or weekly contributions.',
-      href: '/projects',
-    },
-    {
-      icon: ChartLineUp,
-      title: 'Budget vs Actual',
-      description: 'Track variance by quantity and unit price in real-time.',
-      href: '/projects',
-    },
-    {
-      icon: Stack,
-      title: 'Stage-Based BOQ',
-      description: 'Organize costs by substructure, superstructure, roofing, and finishing.',
-      href: '/boq/new?method=manual',
-    },
-    {
-      icon: CheckCircle,
-      title: 'Usage Tracking',
-      description: 'Record consumption against BOQ quantities and trigger low-stock actions.',
-      href: '/projects',
-    },
-    {
-      icon: Storefront,
-      title: 'Procurement Hub',
-      description: 'Create RFQs, compare supplier responses, and log purchases.',
-      href: '/projects',
-    },
-    {
-      icon: DownloadSimple,
-      title: 'PDF/Excel Exports',
-      description: 'Generate share-ready reports for clients, QS, and site teams.',
-      href: '/export',
-    },
-  ];
-
-const workflowLine = [
-  { step: '01', title: 'Estimate', content: <p className="text-slate-600">Generate BOQ quickly from drawings, scans, or manual input.</p> },
-  { step: '02', title: 'Price', content: <p className="text-slate-600">Pull current market pricing and compare budget scenarios.</p> },
-  { step: '03', title: 'Procure', content: <p className="text-slate-600">Run RFQ cycles and record purchases from selected suppliers.</p> },
-  { step: '04', title: 'Track', content: <p className="text-slate-600">Monitor usage, variance, and progress by construction stage.</p> },
+const workflow = [
+  {
+    number: '01',
+    title: 'Estimate',
+    description: 'Build a BOQ manually, from a plan, or from a supplier quote.',
+    icon: Calculator,
+  },
+  {
+    number: '02',
+    title: 'Compare',
+    description: 'Review material prices and send selected items for quotation.',
+    icon: ChartLineUp,
+  },
+  {
+    number: '03',
+    title: 'Build',
+    description: 'Track purchases, usage, documents, and progress by stage.',
+    icon: Package,
+  },
 ];
 
 export default function HomePage() {
-  const router = useRouter();
-  const { profile } = useAuth();
-
-  const isAdmin =
-    profile?.tier === 'admin' ||
-    (profile?.email?.toLowerCase() === 'demo@zimestimate.com');
-
-  useReveal({ selector: '.reveal-item', threshold: 0.16, once: true });
-
-  const heroActions = (
-    <>
-      <Button
-        onClick={() => router.push('/boq/new?method=manual')}
-        icon={<ArrowRight size={18} />}
-        iconPosition="right"
-        size="lg"
-        className="hero-primary shadow-blue-500/25 shadow-lg"
-      >
-        Create Estimate Now
-      </Button>
-      <Link href="/market-insights" className="hero-link font-medium text-slate-600 hover:text-blue-600 transition-colors">
-        Check Live Material Prices
-      </Link>
-      {isAdmin && (
-        <Link href="/admin/suppliers" className="hero-link-admin flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100/50 hover:bg-slate-100 rounded-full border border-slate-200 transition-colors">
-          <ShieldCheck size={16} weight="bold" className="text-emerald-600" />
-          Open Admin Portal
-        </Link>
-      )}
-    </>
-  );
-
   return (
     <MainLayout fullWidth>
-      <div className="flex flex-col gap-24 pb-24 home-page-reset overflow-x-hidden">
-        <section className="px-4 mt-8 md:px-8 max-w-[1400px] mx-auto w-full reveal-item" data-delay="1">
-          <AnimatedHero
-            title={
-              <>
-                <span className="text-xs tracking-[0.2em] font-bold text-blue-600 uppercase mb-2 block">
-                  ESTIMATE. PROCURE. TRACK.
-                </span>
-                <h1 className="text-4xl md:text-5xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.1]">
-                  One operating screen for <br className="hidden md:block" />Zimbabwe construction projects.
-                </h1>
-              </>
-            }
-            subtitle="ZimEstimate connects BOQ generation, live pricing, procurement, and usage tracking so your team can move from estimate to execution without context switching."
-            actions={heroActions}
-          >
-            {/* Live budget-reach calculator — replaces a static dashboard mock
-                with the product's actual value demo, and gives /quick-budget a
-                visible entry point. */}
-            <HeroBudgetWidget />
-          </AnimatedHero>
+      <div className={styles.page}>
+        <section className={styles.hero} aria-labelledby="home-heading">
+          <Image
+            src="/blueprint.webp"
+            alt="House plan, calculator, measuring tape, brick, and hard hat on a builder's workbench"
+            fill
+            priority
+            sizes="100vw"
+            className={styles.heroImage}
+          />
+          <div className={styles.heroOverlay} aria-hidden="true" />
+
+          <div className={styles.heroInner}>
+            <div className={styles.heroCopy}>
+              <span className={styles.eyebrow}>ZimEstimate</span>
+              <h1 id="home-heading">Construction estimates built for Zimbabwe.</h1>
+              <p>
+                Build a practical BOQ, test your budget, and find contractors
+                from one connected workspace.
+              </p>
+
+              <div className={styles.heroActions}>
+                <Link href="/boq/new?method=manual&fresh=1" className={styles.primaryButton}>
+                  <Calculator size={20} weight="bold" aria-hidden="true" />
+                  Start your estimate
+                  <ArrowRight size={18} weight="bold" aria-hidden="true" />
+                </Link>
+                <Link href="/contractors" className={styles.secondaryButton}>
+                  <Briefcase size={19} weight="bold" aria-hidden="true" />
+                  Find a contractor
+                </Link>
+                <Link href="/quick-projects" className={styles.secondaryButton}>
+                  <Lightning size={18} weight="bold" aria-hidden="true" />
+                  Quick Projects
+                </Link>
+                <Link href="/contractor/register" className={styles.secondaryButton}>
+                  <UserPlus size={18} weight="bold" aria-hidden="true" />
+                  Register as a Contractor
+                </Link>
+              </div>
+
+              <div className={styles.heroAssurances} aria-label="Estimate benefits">
+                <span><CheckCircle size={17} weight="fill" /> Start without an account</span>
+                <span><ShieldCheck size={17} weight="fill" /> Your project stays private</span>
+              </div>
+            </div>
+            <div className={styles.heroBudget}>
+              <HeroBudgetWidget />
+            </div>
+          </div>
         </section>
 
-        <section className="px-4 md:px-8 max-w-7xl mx-auto w-full reveal-item" data-delay="2">
-          <div className="bg-white border text-center border-slate-200/60 rounded-[2rem] p-8 md:p-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-            <span className="text-blue-600 text-sm font-bold tracking-wider uppercase">QUICK START</span>
-            <h2 className="text-3xl font-bold text-slate-900 mt-2 mb-8">Smart BOQ Builder</h2>
+        <section className={styles.startSection} aria-labelledby="start-heading">
+          <div className={styles.sectionInner}>
+            <div className={styles.startHeader}>
+              <div>
+                <span className={styles.sectionIndex}>Start from what you have</span>
+                <h2 id="start-heading">Four ways to create your BOQ.</h2>
+              </div>
+              <p>Choose a guided build, bring an existing plan or document, or price a smaller project in minutes.</p>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
-              {workflows.map((workflow) => {
-                const Icon = workflow.icon;
+            <div className={styles.startGrid}>
+              {estimateStarts.map((item) => {
+                const Icon = item.icon;
                 return (
                   <Link
-                    key={workflow.id}
-                    href={workflow.href}
-                    className="group relative flex flex-col items-start p-6 rounded-2xl bg-slate-50 border border-transparent hover:border-blue-100 hover:bg-white hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                    key={item.href}
+                    href={item.href}
+                    className={styles.startCard}
                   >
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-emerald-400 transform scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-300" />
-                    <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-slate-800 group-hover:bg-blue-100 group-hover:text-blue-600 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300 mb-4">
-                      <Icon size={24} weight="bold" />
+                    <div className={styles.startCardTopline}>
+                      <div className={styles.startCardIcon}>
+                        <Icon size={24} weight="duotone" aria-hidden="true" />
+                      </div>
+                      {item.recommended && (
+                        <span className={styles.startCardBadge}>Best for full builds</span>
+                      )}
                     </div>
-                    <h3 className="text-lg font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{workflow.title}</h3>
-                    <span className="text-[10px] font-bold tracking-wider text-slate-500 uppercase mt-1 group-hover:text-blue-500 transition-colors">{workflow.label}</span>
-                    <div className="mt-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all">
-                      <ArrowRight size={20} />
+                    <div className={styles.startCardCopy}>
+                      <h3>{item.title}</h3>
+                      <p>{item.description}</p>
+                    </div>
+                    <div className={styles.startCardFooter}>
+                      <span>{item.detail}</span>
+                      <strong>
+                        {item.action}
+                        <ArrowRight size={16} weight="bold" aria-hidden="true" />
+                      </strong>
                     </div>
                   </Link>
                 );
@@ -239,164 +181,152 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="px-4 md:px-8 w-full reveal-item" data-delay="5">
-          <div className="text-center mb-12">
-            <span className="text-blue-600 text-sm font-bold tracking-wider uppercase block mb-2">PLATFORM CAPABILITIES</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Everything after the estimate is already connected.</h2>
-            <p className="text-slate-600">Core capabilities designed to reduce rework and improve cost control.</p>
-          </div>
-
-          <BentoGrid>
-            {offerings.map((offer, i) => (
-              <BentoGridItem
-                key={offer.title}
-                title={offer.title}
-                description={offer.description}
-                header={
-                  <div className="flex flex-1 w-full h-full min-h-[6rem] rounded-xl border border-slate-200 relative overflow-hidden group bg-slate-900">
-                    <Image
-                      src={`/${['substructure', 'superstructure', 'roofing', 'blueprint'][i % 4]}.webp`}
-                      alt=""
-                      aria-hidden="true"
-                      fill
-                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                      className="object-cover opacity-55 group-hover:opacity-80 group-hover:scale-105 transition-all duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-slate-900/30 to-transparent" aria-hidden="true" />
-                  </div>
-                }
-                icon={<div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100"><offer.icon className="h-4 w-4" weight="bold" /></div>}
-                className={i === 0 || i === 3 ? "md:col-span-2" : ""}
-              />
-            ))}
-          </BentoGrid>
-        </section>
-
-        {/* Registration routes for the two business audiences. The supplier
-            call to action used to be the last thing on the page, below the
-            trust proof and the closing banner, where nobody reached it. */}
-        <section className="px-4 md:px-8 max-w-7xl mx-auto w-full reveal-item" data-delay="4">
-          <div className="mb-8 text-center">
-            <span className="mb-2 block text-sm font-bold uppercase tracking-wider text-blue-600">
-              Work with ZimEstimate
-            </span>
-            <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">
-              Selling materials or building for clients?
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            <div className="flex flex-col rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary-bg)] text-[var(--color-primary)]">
-                <Storefront size={24} weight="duotone" />
-              </div>
-              <h3 className="mt-4 text-xl font-bold text-slate-900">Sell building materials?</h3>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">
-                List your business, receive quote requests from builders costing real
-                projects, and manage orders and listings from your supplier dashboard.
-              </p>
-              <Link
-                href="/supplier/register"
-                className="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
-              >
-                Register as a supplier
-                <ArrowRight size={16} weight="bold" />
-              </Link>
+        <section className={styles.pathways} aria-labelledby="pathways-heading">
+          <div className={styles.sectionInner}>
+            <div className={styles.sectionHeading}>
+              <span className={styles.sectionIndex}>Choose your next move</span>
+              <h2 id="pathways-heading">Begin with a number. Move toward a real build.</h2>
+              <p>Estimating comes first, with people and prices ready when you need them.</p>
             </div>
 
-            <div className="flex flex-col rounded-3xl border border-slate-200 bg-white p-6 md:p-8">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary-bg)] text-[var(--color-primary)]">
-                <Briefcase size={24} weight="duotone" />
-              </div>
-              <h3 className="mt-4 text-xl font-bold text-slate-900">Build for clients?</h3>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">
-                Put your margin on an estimate, share a client view that hides it, and list
-                your company in the contractor directory so homeowners can find you.
-              </p>
-              <Link
-                href="/contractor/register"
-                className="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
-              >
-                Register as a contractor
-                <ArrowRight size={16} weight="bold" />
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        <section className="px-4 md:px-8 w-full reveal-item" data-delay="6">
-          <Timeline
-            title="One pipeline from planning to site execution."
-            description="Follow our seamless workflow to take control of your construction projects from start to finish."
-            data={workflowLine}
-          />
-        </section>
-
-        <section className="px-4 md:px-8 max-w-7xl mx-auto w-full reveal-item" data-delay="4">
-          <div className="mb-10 text-center">
-            <span className="text-blue-600 text-sm font-bold tracking-wider uppercase block mb-2">TRUST PROOF</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Built for real pricing pressure.</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {signals.map((signal) => {
-              const Icon = signal.icon;
-              return (
-                <div key={signal.label} className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-blue-200 transition-all">
-                  <div className="flex items-center gap-2 text-slate-500 mb-4">
-                    <Icon size={18} weight="duotone" className="text-blue-500" />
-                    <span className="text-xs font-bold tracking-widest uppercase">{signal.label}</span>
-                  </div>
-                  <strong className="text-3xl font-extrabold text-slate-900 block mb-2">{signal.value}</strong>
-                  <p className="text-sm text-slate-600 line-clamp-2">{signal.subtext}</p>
+            <div className={styles.pathwayGrid}>
+              <article className={styles.estimatePath}>
+                <div className={styles.pathImage}>
+                  <Image
+                    src="/substructure.webp"
+                    alt="Foundation works underway on a construction site"
+                    fill
+                    sizes="(min-width: 900px) 48vw, 100vw"
+                    className={styles.coverImage}
+                  />
                 </div>
-              )
-            })}
+                <div className={styles.estimateContent}>
+                  <div className={styles.pathIconPrimary}>
+                    <Calculator size={24} weight="duotone" aria-hidden="true" />
+                  </div>
+                  <span className={styles.pathLabel}>Primary pathway</span>
+                  <h3>Build your construction estimate</h3>
+                  <p>
+                    Turn the project in your head into quantities, stage budgets,
+                    and a BOQ you can take to site.
+                  </p>
+                  <ul>
+                    {estimateBenefits.map((benefit) => (
+                      <li key={benefit}>
+                        <CheckCircle size={17} weight="fill" aria-hidden="true" />
+                        {benefit}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href="/boq/new?method=manual&fresh=1" className={styles.pathActionPrimary}>
+                    Start building your BOQ
+                    <ArrowRight size={17} weight="bold" aria-hidden="true" />
+                  </Link>
+                </div>
+              </article>
+
+              <div className={styles.secondaryPaths}>
+                <article className={styles.secondaryPath}>
+                  <div className={styles.secondaryPathImage}>
+                    <Image
+                      src="/superstructure.webp"
+                      alt="Brick house under construction"
+                      fill
+                      sizes="(min-width: 900px) 34vw, 100vw"
+                      className={styles.coverImage}
+                    />
+                  </div>
+                  <div className={styles.secondaryPathContent}>
+                    <Briefcase size={24} weight="duotone" aria-hidden="true" />
+                    <div>
+                      <span className={styles.pathLabel}>People</span>
+                      <h3>Find a contractor</h3>
+                      <p>Search listed builders by trade and service area.</p>
+                    </div>
+                    <Link href="/contractors" aria-label="Browse the contractor directory">
+                      Browse directory <ArrowRight size={16} weight="bold" />
+                    </Link>
+                  </div>
+                </article>
+
+                <article className={styles.secondaryPath}>
+                  <div className={styles.secondaryPathImage}>
+                    <Image
+                      src="/roofing.webp"
+                      alt="Roofing work representing a focused construction project"
+                      fill
+                      sizes="(min-width: 900px) 34vw, 100vw"
+                      className={styles.coverImage}
+                    />
+                  </div>
+                  <div className={styles.secondaryPathContent}>
+                    <Lightning size={24} weight="duotone" aria-hidden="true" />
+                    <div>
+                      <span className={styles.pathLabel}>Focused builds</span>
+                      <h3>Start a Quick Project</h3>
+                      <p>Create a focused BOQ for solar, water, boreholes, septic, fencing, or paving.</p>
+                    </div>
+                    <Link href="/quick-projects" aria-label="Choose a quick project">
+                      Choose a project <ArrowRight size={16} weight="bold" />
+                    </Link>
+                  </div>
+                </article>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="px-4 md:px-8 max-w-7xl mx-auto w-full reveal-item" data-delay="3">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-8 bg-gradient-to-r from-slate-900 to-slate-800 rounded-[2rem] p-8 md:p-12 border border-slate-700/50 shadow-2xl relative overflow-hidden">
-
-            {/* Decorative background elements */}
-            <div className="absolute top-0 lg:-top-20 left-0 lg:-left-20 w-64 h-64 bg-blue-500 rounded-full mix-blend-color-dodge filter blur-3xl opacity-20"></div>
-            <div className="absolute bottom-0 right-0 w-64 h-64 bg-emerald-500 rounded-full mix-blend-color-dodge filter blur-3xl opacity-20"></div>
-
-            <div className="flex gap-6 items-start relative z-10 w-full md:w-1/2">
-              <div className="w-12 h-12 shrink-0 rounded-full bg-white/10 flex items-center justify-center text-white border border-white/20">
-                <FileText size={24} weight="duotone" />
-              </div>
+        <section className={styles.workflowSection} aria-labelledby="workflow-heading">
+          <div className={styles.sectionInner}>
+            <div className={styles.workflowHeader}>
               <div>
-                <h3 className="text-2xl font-bold text-white leading-tight">Ready to move this from estimate to execution?</h3>
-                <p className="text-slate-400 mt-2 text-sm leading-relaxed">Create your account to save projects, run procurement, and export client-ready reports.</p>
+                <span className={styles.sectionIndex}>One working record</span>
+                <h2 id="workflow-heading">The estimate does not end at a PDF.</h2>
               </div>
+              <p>
+                Keep decisions, quotes, purchases, and site progress attached to
+                the project that created them.
+              </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 relative z-10 w-full md:w-auto shrink-0">
-              <Button
-                onClick={() => router.push('/auth/signup')}
-                icon={<ArrowRight size={16} />}
-                iconPosition="right"
-                size="lg"
-                className="bg-white text-slate-900 hover:bg-slate-50 border border-white"
-              >
-                Create Free Account
-              </Button>
-              <Button
-                onClick={() => router.push('/boq/new?method=manual')}
-                className="bg-slate-800 text-white border border-slate-700 hover:bg-slate-700"
-                size="lg"
-              >
-                Start BOQ First
-              </Button>
+            <div className={styles.workflowSteps}>
+              {workflow.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <article key={item.number} className={styles.workflowStep}>
+                    <div className={styles.stepTopline}>
+                      <span>{item.number}</span>
+                      <Icon size={23} weight="duotone" aria-hidden="true" />
+                    </div>
+                    <h3>{item.title}</h3>
+                    <p>{item.description}</p>
+                  </article>
+                );
+              })}
             </div>
           </div>
         </section>
 
-        {/* Suppliers are a separate audience with their own portal — leads,
-            listings, orders and analytics — but the only ways in were the signup
-            page and the marketplace, so the home page never spoke to them. */}
-
+        <section className={styles.closingSection} aria-labelledby="closing-heading">
+          <Image
+            src="/superstructure.webp"
+            alt="Brick structure taking shape on a Zimbabwean building site"
+            fill
+            sizes="100vw"
+            className={styles.closingImage}
+          />
+          <div className={styles.closingOverlay} aria-hidden="true" />
+          <div className={styles.closingInner}>
+            <span className={styles.eyebrow}>Your build starts with clarity</span>
+            <h2 id="closing-heading">Put the first reliable number on your project.</h2>
+            <p>Create the estimate first. Save it when you are ready.</p>
+            <Link href="/boq/new?method=manual&fresh=1" className={styles.closingButton}>
+              <Calculator size={20} weight="bold" aria-hidden="true" />
+              Start your estimate
+              <ArrowRight size={18} weight="bold" aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
       </div>
     </MainLayout>
   );

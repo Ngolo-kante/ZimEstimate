@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { ScraperConfig } from '@/lib/database.types';
 import Button from '@/components/ui/Button';
@@ -22,6 +23,7 @@ import {
 } from '@phosphor-icons/react';
 
 export default function ScraperPage() {
+    const router = useRouter();
     const { profile, isAuthenticated, isLoading: authLoading } = useAuth();
     const [configs, setConfigs] = useState<ScraperConfig[]>([]);
     const [loading, setLoading] = useState(true);
@@ -77,13 +79,13 @@ export default function ScraperPage() {
     useEffect(() => {
         if (authLoading) return;
         if (!isAuthenticated) {
-            window.location.href = '/auth/login?redirect=/scraper';
+            router.replace('/auth/login?redirect=/scraper');
             return;
         }
 
         const isAdmin = profile?.user_type === 'admin' || profile?.tier === 'admin';
         if (!isAdmin) {
-            window.location.href = '/home';
+            router.replace('/home');
             return;
         }
 
@@ -93,7 +95,7 @@ export default function ScraperPage() {
         };
 
         loadSession().then(fetchConfigs);
-    }, [authLoading, isAuthenticated, profile]);
+    }, [authLoading, isAuthenticated, profile, router]);
 
     const fetchWithAuth = async (input: RequestInfo | URL, init?: RequestInit) => {
         const token = accessToken || (await supabase.auth.getSession()).data.session?.access_token;

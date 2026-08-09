@@ -53,7 +53,7 @@ function MobileBottomNav() {
   };
 
   return (
-    <nav className="mobile-bottom-nav">
+    <nav className="mobile-bottom-nav" aria-label="Primary navigation">
       {navItems.map((item) => {
         const Icon = item.icon;
         const active = isActive(item.href);
@@ -79,13 +79,15 @@ function MobileBottomNav() {
           bottom: 0;
           left: 0;
           right: 0;
-          height: 72px;
-          background: white;
-          border-top: 1px solid var(--color-border-light);
+          height: 74px;
+          background: rgba(255, 255, 255, 0.96);
+          border-top: 1px solid #d8e0eb;
           /* 16px side padding cost 32px that five items cannot spare at 375px. */
-          padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+          padding: 7px 8px calc(6px + env(safe-area-inset-bottom, 0px));
           z-index: 100;
-          box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 -8px 24px rgba(11, 31, 59, 0.09);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
         }
 
         @media (max-width: 900px) {
@@ -110,11 +112,11 @@ function MobileBottomNav() {
           justify-content: center;
           gap: 3px;
           text-decoration: none;
-          color: var(--color-text-secondary);
+          color: #748196;
           /* Full-height target: the whole column is tappable, not just the icon. */
-          padding: 6px 2px;
+          padding: 4px 2px;
           min-width: 0;
-          border-radius: 14px;
+          border-radius: 8px;
           -webkit-tap-highlight-color: transparent;
         }
 
@@ -122,17 +124,18 @@ function MobileBottomNav() {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 46px;
-          height: 28px;
-          border-radius: 999px;
+          width: 42px;
+          height: 30px;
+          border-radius: 8px;
           background: transparent;
-          transition: background 0.18s ease, transform 0.18s ease;
+          border: 1px solid transparent;
+          transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
         }
 
         .nav-text {
           font-size: 0.68rem;
-          font-weight: 500;
-          letter-spacing: -0.01em;
+          font-weight: 600;
+          letter-spacing: 0;
           line-height: 1;
           white-space: nowrap;
         }
@@ -144,11 +147,14 @@ function MobileBottomNav() {
         }
 
         :global(.mobile-nav-item.active) .nav-pill {
-          background: rgba(11, 31, 59, 0.09);
+          color: white;
+          background: var(--color-primary);
+          border-color: var(--color-primary);
+          box-shadow: 0 3px 8px rgba(11, 31, 59, 0.18);
         }
 
         :global(.mobile-nav-item.active) .nav-text {
-          font-weight: 650;
+          font-weight: 750;
         }
 
         /* Press feedback. Touch has no hover, so without this a tap on a slow
@@ -177,7 +183,7 @@ function MobileBottomNav() {
             font-size: 0.62rem;
           }
           .nav-pill {
-            width: 40px;
+            width: 38px;
           }
         }
       `}</style>
@@ -211,7 +217,13 @@ export default function MainLayout({
           <div className="footer-container">
             <div className="footer-left">
               <div className="footer-logo">
-                <Image src="/logo.png" alt="ZimEstimate" width={24} height={24} style={{ objectFit: 'contain' }} />
+                <Image
+                  src="/logo.png"
+                  alt="ZimEstimate"
+                  width={353}
+                  height={314}
+                  style={{ width: '24px', height: 'auto', objectFit: 'contain' }}
+                />
                 <span>ZimEstimate © 2026</span>
               </div>
             </div>

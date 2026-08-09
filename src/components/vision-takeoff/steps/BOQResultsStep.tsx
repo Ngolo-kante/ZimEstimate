@@ -24,6 +24,8 @@ import {
 } from '@phosphor-icons/react';
 import { GeneratedBOQItem, ProjectInfo, VisionConfig, DetectedRoom, normalizeConfigToArrays } from '@/lib/vision/types';
 import { exportBOQToPDF } from '@/lib/pdf-export';
+import ReviewWorkspace from '@/components/boq/ReviewWorkspace';
+import { useBoqWizardStore } from '@/store/boqWizardStore';
 
 /**
  * Where an unsigned-in Save stashes its work across the trip to /auth/login.
@@ -54,7 +56,7 @@ interface BOQResultsStepProps {
 
 interface EditingState {
   itemId: string | null;
-  field: 'quantity' | 'unitPriceUsd' | null;
+  field: 'materialName' | 'quantity' | 'unit' | 'unitPriceUsd' | null;
   value: string;
 }
 
@@ -110,6 +112,8 @@ export default function BOQResultsStep({
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const { formatPrice } = useCurrency();
+  const geotechDocument = useBoqWizardStore((state) => state.geotechDocument);
+  const updateProjectDetails = useBoqWizardStore((state) => state.updateProjectDetails);
   const [editingState, setEditingState] = useState<EditingState>({ itemId: null, field: null, value: '' });
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showSavePrompt, setShowSavePrompt] = useState(false);
@@ -126,6 +130,17 @@ export default function BOQResultsStep({
     ].filter(Boolean);
     return parts.join(' | ');
   }, [projectInfo.siteSlope, projectInfo.soilType]);
+
+  useEffect(() => {
+    updateProjectDetails({
+      name: projectInfo.name,
+      locationType: projectInfo.locationType,
+      locationCity: projectInfo.location,
+      soilType: projectInfo.soilType === 'not_sure' ? '' : projectInfo.soilType,
+      siteSlope: projectInfo.siteSlope,
+      floorPlanSize: totalArea.toFixed(0),
+    });
+  }, [projectInfo, totalArea, updateProjectDetails]);
 
   // Group items by category
   const groupedItems = useMemo(() => {
@@ -158,7 +173,11 @@ export default function BOQResultsStep({
     });
   };
 
-  const startEditing = (itemId: string, field: 'quantity' | 'unitPriceUsd', currentValue: number) => {
+  const startEditing = (
+    itemId: string,
+    field: 'materialName' | 'quantity' | 'unit' | 'unitPriceUsd',
+    currentValue: string | number,
+  ) => {
     setEditingState({ itemId, field, value: currentValue.toString() });
   };
 
@@ -168,6 +187,13 @@ export default function BOQResultsStep({
 
   const saveEditing = () => {
     if (!editingState.itemId || !editingState.field) return;
+
+    if (editingState.field === 'materialName' || editingState.field === 'unit') {
+      const value = editingState.value.trim();
+      if (value) onItemUpdate(editingState.itemId, { [editingState.field]: value });
+      cancelEditing();
+      return;
+    }
 
     const numValue = parseFloat(editingState.value);
     if (isNaN(numValue) || numValue < 0) {
@@ -256,10 +282,10 @@ export default function BOQResultsStep({
           selected_stages: !hasFullHouse && selectedStages.length > 0 ? selectedStages : null,
           soil_type: projectInfo.soilType || null,
           site_slope: projectInfo.siteSlope || null,
-          geotech_report_uploaded: false,
-          geotech_report_uploaded_at: null,
-          geotech_report_document_id: null,
-          geotech_analysis_mode: 'manual',
+          geotech_report_uploaded: Boolean(geotechDocument?.id),
+          geotech_report_uploaded_at: geotechDocument?.createdAt || null,
+          geotech_report_document_id: geotechDocument?.id || null,
+          geotech_analysis_mode: geotechDocument?.id ? 'pro_available' : 'manual',
         });
 
         if (createError || !project) {
@@ -404,6 +430,12 @@ export default function BOQResultsStep({
         </div>
       )}
 
+      <ReviewWorkspace
+        sourceLabel="Generated from floor plan"
+        title="Review your BOQ and pricing"
+        description="Verify AI-derived quantities, edit prices or line items, and save when the estimate reflects the plan."
+        primary={(
+          <>
       {/* Totals Summary */}
       <Card className="totals-card">
         <div className="totals-grid">
@@ -465,7 +497,23 @@ export default function BOQResultsStep({
                       <tr key={item.id} className={`${item.isEdited ? 'edited' : ''} ${isEnablement ? 'enablement' : ''}`.trim()}>
                         <td>
                           <div className="material-cell">
-                            <span className="material-name">{item.materialName}</span>
+                            {editingState.itemId === item.id && editingState.field === 'materialName' ? (
+                              <div className="edit-cell wide">
+                                <input
+                                  type="text"
+                                  value={editingState.value}
+                                  onChange={(e) => setEditingState({ ...editingState, value: e.target.value })}
+                                  onKeyDown={handleKeyDown}
+                                  autoFocus
+                                />
+                                <button onClick={saveEditing} className="edit-action save" aria-label="Save material name"><Check size={14} weight="bold" /></button>
+                                <button onClick={cancelEditing} className="edit-action cancel" aria-label="Cancel editing"><X size={14} weight="bold" /></button>
+                              </div>
+                            ) : (
+                              <button className="editable material-name" onClick={() => startEditing(item.id, 'materialName', item.materialName)}>
+                                {item.materialName}<PencilSimple size={12} className="edit-icon" />
+                              </button>
+                            )}
                             {isEnablement && (
                               <span className="enablement-chip">Enablement Cost</span>
                             )}
@@ -501,7 +549,19 @@ export default function BOQResultsStep({
                             </span>
                           )}
                         </td>
-                        <td className="col-unit">{item.unit}</td>
+                        <td className="col-unit">
+                          {editingState.itemId === item.id && editingState.field === 'unit' ? (
+                            <div className="edit-cell">
+                              <input type="text" value={editingState.value} onChange={(e) => setEditingState({ ...editingState, value: e.target.value })} onKeyDown={handleKeyDown} autoFocus />
+                              <button onClick={saveEditing} className="edit-action save" aria-label="Save unit"><Check size={14} weight="bold" /></button>
+                              <button onClick={cancelEditing} className="edit-action cancel" aria-label="Cancel editing"><X size={14} weight="bold" /></button>
+                            </div>
+                          ) : (
+                            <button className="editable" onClick={() => startEditing(item.id, 'unit', item.unit)}>
+                              {item.unit}<PencilSimple size={12} className="edit-icon" />
+                            </button>
+                          )}
+                        </td>
                         <td className="col-price">
                           {editingState.itemId === item.id && editingState.field === 'unitPriceUsd' ? (
                             <div className="edit-cell">
@@ -551,6 +611,10 @@ export default function BOQResultsStep({
           ))}
         </div>
       </Card>
+
+          </>
+        )}
+      />
 
       {/* Footer Actions */}
       <div className="footer-actions">
@@ -877,6 +941,10 @@ export default function BOQResultsStep({
           padding: 2px 4px;
           margin: -2px -4px;
           border-radius: var(--radius-sm);
+          color: inherit;
+          background: transparent;
+          border: 0;
+          font: inherit;
         }
 
         .editable:hover {
@@ -905,6 +973,11 @@ export default function BOQResultsStep({
           border-radius: var(--radius-sm);
           font-size: 0.875rem;
           text-align: right;
+        }
+
+        .edit-cell.wide input {
+          width: min(240px, 42vw);
+          text-align: left;
         }
 
         .edit-action {

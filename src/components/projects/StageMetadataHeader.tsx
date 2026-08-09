@@ -154,7 +154,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     position: relative;
                     background: #ffffff;
                     border: 1px solid var(--color-border-light);
-                    border-radius: 20px;
+                    border-radius: 8px;
                     overflow: visible;
                     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 
                                 0 2px 4px -1px rgba(0, 0, 0, 0.01);
@@ -425,6 +425,40 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     .date-range {
                         width: 100%;
                         justify-content: space-between;
+                    }
+                }
+
+                @media (max-width: 480px) {
+                    .section-toggle {
+                        align-items: flex-start;
+                        gap: 10px;
+                        padding: 16px;
+                        text-align: left;
+                    }
+
+                    .stage-body {
+                        padding: 16px;
+                    }
+
+                    .date-range {
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
+                        gap: 12px;
+                        padding: 10px 12px;
+                    }
+
+                    .date-field {
+                        min-width: 0;
+                    }
+
+                    .date-field input[type="date"] {
+                        width: 100%;
+                        min-width: 0;
+                        font-size: 0.76rem;
+                    }
+
+                    .date-separator {
+                        display: none;
                     }
                 }
             `}</style>

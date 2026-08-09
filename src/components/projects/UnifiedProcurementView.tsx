@@ -63,31 +63,31 @@ const STAGE_CONFIG: Record<BOQStage, { label: string; icon: typeof Cube; color: 
   substructure: {
     label: 'Site Preparation & Foundation',
     icon: Cube,
-    color: '#8b5cf6',
+    color: '#2e6cf6',
     description: 'Foundation, DPC, floor slab'
   },
   superstructure: {
     label: 'Structural Walls & Frame',
     icon: Wall,
-    color: '#3b82f6',
+    color: '#2e6cf6',
     description: 'Walls, lintels, ring beam'
   },
   roofing: {
     label: 'Roofing',
     icon: House,
-    color: '#f59e0b',
+    color: '#0b1f3b',
     description: 'Timber, sheets, gutters'
   },
   finishing: {
     label: 'Interior & Finishing',
     icon: PaintBrush,
-    color: '#10b981',
+    color: '#2e6cf6',
     description: 'Plastering, painting, fittings'
   },
   exterior: {
     label: 'External Work',
     icon: Tree,
-    color: '#06b6d4',
+    color: '#1a3a5c',
     description: 'Boundary, gates, driveway'
   },
 };
@@ -656,7 +656,7 @@ export default function UnifiedProcurementView({
         className={`stage-tab-btn ${activeStage === 'boq' ? 'active' : ''}`}
       >
         <Package size={16} weight="duotone" />
-        <span>BOQ Items</span>
+        <span>Items</span>
         <span className="tab-count">{items.length}</span>
       </button>
       <button
@@ -664,7 +664,7 @@ export default function UnifiedProcurementView({
         className={`stage-tab-btn ${activeStage === 'rfq' ? 'active' : ''}`}
       >
         <FileText size={16} weight="duotone" />
-        <span>RFQs &amp; Quotes</span>
+        <span>Quotes</span>
         {stats.pendingRfqs > 0 && <span className="tab-count">{stats.pendingRfqs}</span>}
       </button>
       <button
@@ -672,7 +672,7 @@ export default function UnifiedProcurementView({
         className={`stage-tab-btn ${activeStage === 'history' ? 'active' : ''}`}
       >
         <Receipt size={16} weight="duotone" />
-        <span>Purchase Ledger</span>
+        <span>Purchases</span>
         {purchases.length > 0 && <span className="tab-count">{purchases.length}</span>}
       </button>
     </div>
@@ -1126,12 +1126,8 @@ export default function UnifiedProcurementView({
 
   return (
     <div className="procurement-view">
-      {/* Hero Section */}
+      {/* Spending status */}
       <div className="procurement-hero reveal">
-        <div className="hero-text">
-          <h2>Procurement Hub</h2>
-          <p>Track purchases, manage quantities, and monitor spending against your BOQ.</p>
-        </div>
         <div className="hero-spending">
           <div className="spending-labels">
             <span className="spending-spent">

@@ -1,0 +1,394 @@
+.page {
+  margin: -32px -24px 0;
+  min-height: 100vh;
+  color: #0f172a;
+  background: #f4f7fb;
+}
+
+.hero {
+  color: white;
+  background: #0b1f3b;
+  border-bottom: 5px solid #2563eb;
+}
+
+.heroInner,
+.content {
+  width: min(100%, 1280px);
+  margin: 0 auto;
+  padding-inline: 32px;
+}
+
+.heroInner {
+  min-height: 330px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(290px, 0.6fr);
+  align-items: center;
+  gap: 72px;
+  padding-block: 56px;
+}
+
+.heroCopy {
+  max-width: 760px;
+}
+
+.eyebrow {
+  display: block;
+  color: #9fc0f8;
+  font-size: 0.76rem;
+  font-weight: 750;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.hero h1 {
+  margin: 12px 0 0;
+  font-family: var(--font-heading);
+  font-size: 3.25rem;
+  font-weight: 800;
+  line-height: 1.06;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.heroCopy > p {
+  max-width: 650px;
+  margin: 20px 0 0;
+  color: #d6e2f1;
+  font-size: 1.03rem;
+  line-height: 1.65;
+}
+
+.disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 24px;
+  color: #b9cae1;
+  font-size: 0.77rem;
+  line-height: 1.5;
+}
+
+.disclaimer svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: #77d5a8;
+}
+
+.heroAction {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-left: 30px;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.heroAction svg {
+  color: #9fc0f8;
+}
+
+.heroAction strong {
+  margin-top: 15px;
+  font-size: 1.08rem;
+}
+
+.heroAction > span {
+  margin-top: 7px;
+  color: #b9cae1;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.heroAction a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 20px;
+  padding: 10px 14px;
+  color: #0b1f3b;
+  background: white;
+  border-radius: 6px;
+  font-size: 0.86rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.heroAction a svg {
+  color: currentColor;
+}
+
+.content {
+  padding-block: 34px 84px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 220px 220px auto;
+  align-items: end;
+  gap: 14px;
+  padding: 20px;
+  background: white;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(11, 31, 59, 0.06);
+}
+
+.filters label > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #475569;
+  font-size: 0.73rem;
+  font-weight: 750;
+}
+
+.filters input,
+.filters select {
+  width: 100%;
+  height: 46px;
+  color: #0f172a;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.88rem;
+  outline: none;
+}
+
+.filters input:focus,
+.filters select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.filters select {
+  padding-inline: 12px 30px;
+}
+
+.inputWrap {
+  position: relative;
+}
+
+.inputWrap svg {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  z-index: 1;
+  color: #748196;
+  transform: translateY(-50%);
+}
+
+.inputWrap input {
+  padding-inline: 42px 12px;
+}
+
+.clearButton {
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.resultsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 30px 0 16px;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.resultsHeader > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resultsHeader strong {
+  color: #0f172a;
+}
+
+.resultsHeader > span {
+  color: #748196;
+}
+
+.resultsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.statePanel {
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 24px;
+  padding: 36px;
+  color: #64748b;
+  text-align: center;
+  background: white;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+}
+
+.statePanel h2 {
+  margin: 15px 0 0;
+  color: #0f172a;
+  font-size: 1.15rem;
+}
+
+.statePanel p {
+  max-width: 470px;
+  margin: 8px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.statePanel button,
+.statePanel a,
+.loadMore button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 10px 17px;
+  color: white;
+  background: #0b1f3b;
+  border: 0;
+  border-radius: 6px;
+  font-size: 0.86rem;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.errorPanel {
+  color: #b42318;
+  border-color: #f0b4ad;
+  background: #fff7f6;
+}
+
+.loadMore {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.loadMore button {
+  margin-top: 0;
+}
+
+.loadMore button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+@media (max-width: 980px) {
+  .heroInner {
+    grid-template-columns: minmax(0, 1fr) 260px;
+    gap: 38px;
+  }
+
+  .hero h1 {
+    font-size: 2.7rem;
+  }
+
+  .filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .searchField {
+    grid-column: 1 / -1;
+  }
+
+  .resultsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    margin-top: -32px;
+  }
+
+  .heroInner,
+  .content {
+    padding-inline: 20px;
+  }
+
+  .heroInner {
+    min-height: auto;
+    grid-template-columns: 1fr;
+    gap: 30px;
+    padding-block: 44px;
+  }
+
+  .hero h1 {
+    font-size: 2.35rem;
+  }
+
+  .heroAction {
+    padding: 24px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-left: 0;
+  }
+
+  .heroAction > svg {
+    display: none;
+  }
+
+  .heroAction strong {
+    margin-top: 0;
+  }
+
+  .content {
+    padding-block: 22px 72px;
+  }
+
+  .filters {
+    grid-template-columns: 1fr;
+    gap: 13px;
+    padding: 16px;
+  }
+
+  .searchField {
+    grid-column: auto;
+  }
+
+  .clearButton {
+    width: 100%;
+  }
+
+  .resultsHeader {
+    align-items: flex-start;
+    margin-top: 24px;
+  }
+
+  .resultsHeader > span {
+    display: none;
+  }
+
+  .resultsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .statePanel {
+    min-height: 280px;
+    padding: 28px 20px;
+  }
+}

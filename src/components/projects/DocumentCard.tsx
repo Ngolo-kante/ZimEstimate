@@ -138,8 +138,8 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                 }
 
                 .file-icon.image {
-                    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-                    color: #059669;
+                    background: var(--color-accent-muted);
+                    color: var(--color-accent);
                 }
 
                 .file-icon.pdf {

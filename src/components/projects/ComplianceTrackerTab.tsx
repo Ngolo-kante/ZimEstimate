@@ -36,7 +36,6 @@ import {
   HourglassHigh,
   PaperPlaneTilt,
   Plus,
-  ShieldCheck,
   Trash,
   Warning,
   WhatsappLogo,
@@ -91,7 +90,9 @@ export default function ComplianceTrackerTab({
   const { success, error: showError } = useToast();
   const [newTaskByStage, setNewTaskByStage] = useState<Record<string, string>>({});
   const [isSavingTask, setIsSavingTask] = useState<Record<string, boolean>>({});
-  const [collapsedStages, setCollapsedStages] = useState<Set<string>>(new Set());
+  const [collapsedStages, setCollapsedStages] = useState<Set<string>>(
+    () => new Set(stages.filter((stage) => stage.is_applicable).slice(1).map((stage) => stage.id))
+  );
   const [reminderDates, setReminderDates] = useState<Record<string, string>>({});
 
   const applicableStages = useMemo(
@@ -286,17 +287,6 @@ export default function ComplianceTrackerTab({
 
   return (
     <div>
-      {/* Page Header */}
-      <div className="compliance-page-header">
-        <div className="header-icon">
-          <ShieldCheck size={26} weight="fill" />
-        </div>
-        <div>
-          <h2>Compliance Tracker</h2>
-          <p>Manage certificates, admin tasks, and compliance follow-ups for {projectName}.</p>
-        </div>
-      </div>
-
       {/* Summary Stats */}
       <div className="compliance-summary-bar">
         <div className="compliance-stat-card">

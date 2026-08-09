@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import {
@@ -74,6 +75,7 @@ interface BoreholeBudgetExplorerProps {
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Borehole Setup', isContractor = false, onSave }: BoreholeBudgetExplorerProps) {
+  const router = useRouter();
   const { isAuthenticated } = useAuth();
   // Budget
   // The field holds raw text and the number is derived from it. Clamping with
@@ -266,13 +268,17 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
     // Signed out, this used to call onSave anyway; createQuickBOQ returned
     // "Not authenticated" and nothing was shown. Pressing Save and getting
     // silence reads as a broken button, not as "you need an account".
-    if (gateSaveBehindSignIn({
+    const signInUrl = gateSaveBehindSignIn({
       isAuthenticated,
       projectType: 'borehole',
       answers: answers as unknown as Record<string, unknown>,
       boqItems: items,
       labor,
-    })) return;
+    });
+    if (signInUrl) {
+      router.push(signInUrl);
+      return;
+    }
 
     setIsSaving(true);
     try {

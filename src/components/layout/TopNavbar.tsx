@@ -16,12 +16,14 @@ import {
   Briefcase,
   ChartLineUp,
   ChatCircleText,
+  Folders,
 } from '@phosphor-icons/react';
 import { useAuth } from '@/components/providers/AuthProvider';
 
 interface NavItem {
   label: string;
   href: string;
+  description?: string;
   /** Highlight when the path starts with this instead of href — lets
       "My Projects" stay lit on /projects and /projects/[id], not only on
       its own landing URL. */
@@ -43,11 +45,21 @@ const navItems: NavItem[] = [
   { label: 'Contractors Directory', href: '/contractors' },
 ];
 
+const primaryNavItems = navItems.slice(0, 4);
+const exploreNavItems: NavItem[] = [
+  { label: 'Market Insights', href: '/market-insights', description: 'Track current material prices' },
+  { label: 'Templates', href: '/templates', description: 'Start from a proven build' },
+  { label: 'Marketplace', href: '/marketplace', description: 'Find materials and suppliers' },
+  { label: 'Contractors', href: '/contractors', description: 'Browse verified professionals' },
+];
+
 export default function TopNavbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [exploreMenuOpen, setExploreMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const exploreMenuRef = useRef<HTMLDivElement>(null);
   const { user, profile, signOut, isAuthenticated } = useAuth();
   const isAdmin = profile?.user_type === 'admin' || profile?.tier === 'admin';
 
@@ -77,10 +89,28 @@ export default function TopNavbar() {
       if (notificationMenuRef.current && !notificationMenuRef.current.contains(event.target as Node)) {
         setNotificationMenuOpen(false);
       }
+      if (exploreMenuRef.current && !exploreMenuRef.current.contains(event.target as Node)) {
+        setExploreMenuOpen(false);
+      }
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setProfileMenuOpen(false);
+        setNotificationMenuOpen(false);
+        setMobileMenuOpen(false);
+        setExploreMenuOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, []);
+
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Account';
+  const tierLabel = profile?.tier === 'pro' ? 'Pro plan' : profile?.tier === 'admin' ? 'Admin' : 'Free plan';
 
   const handleSignOut = async () => {
     await signOut();
@@ -93,14 +123,20 @@ export default function TopNavbar() {
         {/* Logo - PropTech Trend Concept */}
         <Link href="/home" className="logo">
           <div className="logo-icon">
-            <Image src="/logo.png" alt="ZimEstimate" width={36} height={36} />
+            <Image
+              src="/logo.png"
+              alt="ZimEstimate"
+              width={353}
+              height={314}
+              style={{ width: '36px', height: 'auto' }}
+            />
           </div>
           <span className="logo-text">ZimEstimate</span>
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="desktop-nav">
-          {navItems
+          {primaryNavItems
             .filter((item) => !item.adminOnly || isAdmin)
             .map((item) => (
             <Link
@@ -112,6 +148,37 @@ export default function TopNavbar() {
               {item.hasDropdown && <CaretDown size={14} weight="bold" className="dropdown-icon" />}
             </Link>
           ))}
+          <div className="nav-menu-container" ref={exploreMenuRef}>
+            <button
+              className={`nav-link nav-menu-trigger ${exploreNavItems.some(isActive) ? 'active' : ''}`}
+              onClick={() => {
+                setExploreMenuOpen(!exploreMenuOpen);
+                setProfileMenuOpen(false);
+                setNotificationMenuOpen(false);
+              }}
+              aria-expanded={exploreMenuOpen}
+              aria-controls="explore-menu"
+            >
+              Explore
+              <CaretDown size={14} weight="bold" aria-hidden="true" />
+            </button>
+            {exploreMenuOpen && (
+              <div className="nav-dropdown" id="explore-menu">
+                <span className="nav-dropdown-label">Discover ZimEstimate</span>
+                {exploreNavItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`nav-dropdown-link ${isActive(item) ? 'active' : ''}`}
+                    onClick={() => setExploreMenuOpen(false)}
+                  >
+                    <strong>{item.label}</strong>
+                    <small>{item.description}</small>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* Right Section */}
@@ -120,14 +187,21 @@ export default function TopNavbar() {
           <div className="menu-container" ref={notificationMenuRef}>
             <button
               className={`icon-btn notification-btn ${notificationMenuOpen ? 'active' : ''}`}
-              onClick={() => setNotificationMenuOpen(!notificationMenuOpen)}
+              onClick={() => {
+                setNotificationMenuOpen(!notificationMenuOpen);
+                setProfileMenuOpen(false);
+                setExploreMenuOpen(false);
+              }}
+              aria-label="Notifications"
+              aria-expanded={notificationMenuOpen}
+              aria-controls="notification-menu"
             >
               <Bell size={20} weight={notificationMenuOpen ? 'fill' : 'regular'} />
               {hasUnread && <span className="notification-dot" />}
             </button>
 
             {notificationMenuOpen && (
-              <div className="dropdown-menu notification-dropdown">
+              <div className="dropdown-menu notification-dropdown" id="notification-menu">
                 <div className="dropdown-header">
                   <h3>Notifications</h3>
                   {hasUnread && (
@@ -165,25 +239,44 @@ export default function TopNavbar() {
           <div className="menu-container" ref={profileMenuRef}>
             <button
               className={`user-btn ${profileMenuOpen ? 'active' : ''}`}
-              onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+              onClick={() => {
+                setProfileMenuOpen(!profileMenuOpen);
+                setNotificationMenuOpen(false);
+                setMobileMenuOpen(false);
+                setExploreMenuOpen(false);
+              }}
               aria-label="User menu"
+              aria-expanded={profileMenuOpen}
+              aria-controls="profile-menu"
             >
-              {profile?.avatar_url ? (
-                <Image
-                  src={profile.avatar_url}
-                  alt={profile.full_name ? `${profile.full_name} avatar` : 'User avatar'}
-                  width={40}
-                  height={40}
-                  className="user-avatar-img"
-                  unoptimized
-                />
-              ) : (
-                <User size={18} weight="bold" />
-              )}
+              <span className="trigger-avatar">
+                {profile?.avatar_url ? (
+                  <Image
+                    src={profile.avatar_url}
+                    alt={profile.full_name ? `${profile.full_name} avatar` : 'User avatar'}
+                    width={34}
+                    height={34}
+                    className="user-avatar-img"
+                    unoptimized
+                  />
+                ) : (
+                  <User size={17} weight="bold" />
+                )}
+              </span>
+              <span className="trigger-copy" aria-hidden="true">
+                <span className="trigger-name">{isAuthenticated ? displayName : 'Sign in'}</span>
+                <span className="trigger-meta">{isAuthenticated ? tierLabel : 'Your account'}</span>
+              </span>
+              <CaretDown
+                size={14}
+                weight="bold"
+                className={`profile-caret ${profileMenuOpen ? 'open' : ''}`}
+                aria-hidden="true"
+              />
             </button>
 
             {profileMenuOpen && (
-              <div className="dropdown-menu profile-dropdown">
+              <div className="dropdown-menu profile-dropdown" id="profile-menu">
                 {isAuthenticated ? (
                   <>
                     <div className="profile-header">
@@ -201,36 +294,58 @@ export default function TopNavbar() {
                         )}
                       </div>
                       <div className="profile-info">
-                        <span className="profile-name">{profile?.full_name || 'User'}</span>
+                        <span className="profile-name">{displayName}</span>
                         <span className="profile-email">{user?.email}</span>
-                          </div>
+                        <span className={`profile-tier ${profile?.tier || 'free'}`}>{tierLabel}</span>
+                      </div>
+                    </div>
+                    <div className="menu-section">
+                      <span className="menu-section-label">Workspace</span>
+                      <Link
+                        href="/projects"
+                        className="quick-link"
+                        onClick={() => setProfileMenuOpen(false)}
+                      >
+                        <span className="quick-link-icon"><Folders size={17} weight="duotone" /></span>
+                        <span className="quick-link-copy">
+                          <strong>My projects</strong>
+                          <small>Builds, estimates and activity</small>
+                        </span>
+                      </Link>
                     </div>
                     <div className="menu-divider" />
+                    <div className="menu-section compact">
+                      <span className="menu-section-label">Account</span>
                     <Link
                       href="/settings"
                       className="quick-link"
                       onClick={() => setProfileMenuOpen(false)}
                     >
-                      <Gear size={16} weight="duotone" />
-                      Settings
+                        <span className="quick-link-icon"><Gear size={17} weight="duotone" /></span>
+                        <span className="quick-link-copy"><strong>Account settings</strong></span>
                     </Link>
                     <Link
                       href="/support"
                       className="quick-link"
                       onClick={() => setProfileMenuOpen(false)}
                     >
-                      <ChatCircleText size={16} weight="duotone" />
-                      Help &amp; support
+                        <span className="quick-link-icon"><ChatCircleText size={17} weight="duotone" /></span>
+                        <span className="quick-link-copy"><strong>Help &amp; support</strong></span>
                     </Link>
+                    </div>
                     <div className="menu-divider" />
-                    <button className="menu-item logout" onClick={handleSignOut} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
+                    <button className="menu-item logout" onClick={handleSignOut}>
                       <SignOut size={18} weight="duotone" />
-                      Sign Out
+                      Sign out
                     </button>
                   </>
                 ) : (
                   <>
                     <div className="auth-prompt">
+                      <div className="auth-intro">
+                        <strong>Keep your estimates moving</strong>
+                        <span>Sign in to save projects, BOQs and supplier activity.</span>
+                      </div>
                       <Link
                         href="/auth/login"
                         className="auth-btn auth-btn-primary"
@@ -247,42 +362,45 @@ export default function TopNavbar() {
                       </Link>
                     </div>
                     <div className="menu-divider" />
-                    {/* Registration routes sit above the browse links: someone
-                        opening this menu signed out is more likely to be joining
-                        than shopping. */}
-                    <Link
-                      href="/supplier/register"
-                      className="quick-link"
-                      onClick={() => setProfileMenuOpen(false)}
-                    >
-                      <Storefront size={16} weight="duotone" />
-                      Register as a supplier
-                    </Link>
-                    <Link
-                      href="/contractor/register"
-                      className="quick-link"
-                      onClick={() => setProfileMenuOpen(false)}
-                    >
-                      <Briefcase size={16} weight="duotone" />
-                      Register as a contractor
-                    </Link>
+                    <div className="menu-section compact">
+                      <span className="menu-section-label">Join the directory</span>
+                      <Link
+                        href="/supplier/register"
+                        className="quick-link"
+                        onClick={() => setProfileMenuOpen(false)}
+                      >
+                        <span className="quick-link-icon"><Storefront size={17} weight="duotone" /></span>
+                        <span className="quick-link-copy"><strong>Register as a supplier</strong></span>
+                      </Link>
+                      <Link
+                        href="/contractor/register"
+                        className="quick-link"
+                        onClick={() => setProfileMenuOpen(false)}
+                      >
+                        <span className="quick-link-icon"><Briefcase size={17} weight="duotone" /></span>
+                        <span className="quick-link-copy"><strong>Register as a contractor</strong></span>
+                      </Link>
+                    </div>
                     <div className="menu-divider" />
-                    <Link
-                      href="/marketplace"
-                      className="quick-link"
-                      onClick={() => setProfileMenuOpen(false)}
-                    >
-                      <Storefront size={16} weight="duotone" />
-                      Browse Marketplace
-                    </Link>
-                    <Link
-                      href="/market-insights"
-                      className="quick-link"
-                      onClick={() => setProfileMenuOpen(false)}
-                    >
-                      <ChartLineUp size={16} weight="duotone" />
-                      Check Live Material Prices
-                    </Link>
+                    <div className="menu-section compact">
+                      <span className="menu-section-label">Explore</span>
+                      <Link
+                        href="/marketplace"
+                        className="quick-link"
+                        onClick={() => setProfileMenuOpen(false)}
+                      >
+                        <span className="quick-link-icon"><Storefront size={17} weight="duotone" /></span>
+                        <span className="quick-link-copy"><strong>Browse marketplace</strong></span>
+                      </Link>
+                      <Link
+                        href="/market-insights"
+                        className="quick-link"
+                        onClick={() => setProfileMenuOpen(false)}
+                      >
+                        <span className="quick-link-icon"><ChartLineUp size={17} weight="duotone" /></span>
+                        <span className="quick-link-copy"><strong>Live material prices</strong></span>
+                      </Link>
+                    </div>
                   </>
                 )}
               </div>
@@ -292,7 +410,15 @@ export default function TopNavbar() {
           {/* Mobile Menu Toggle */}
           <button
             className="mobile-toggle"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            onClick={() => {
+              setMobileMenuOpen(!mobileMenuOpen);
+              setProfileMenuOpen(false);
+              setNotificationMenuOpen(false);
+              setExploreMenuOpen(false);
+            }}
+            aria-label={mobileMenuOpen ? 'Close navigation' : 'Open navigation'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-navigation"
           >
             {mobileMenuOpen ? <X size={24} /> : <List size={24} />}
           </button>
@@ -301,7 +427,7 @@ export default function TopNavbar() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="mobile-menu">
+        <div className="mobile-menu" id="mobile-navigation">
           <nav className="mobile-nav">
             {navItems
               .filter((item) => !item.adminOnly || isAdmin)
@@ -374,6 +500,69 @@ export default function TopNavbar() {
           transition: all 0.2s ease;
         }
 
+        .nav-menu-container {
+          position: relative;
+        }
+
+        .nav-menu-trigger {
+          border: 0;
+          background: transparent;
+          cursor: pointer;
+          font-family: inherit;
+        }
+
+        .nav-dropdown {
+          position: absolute;
+          top: calc(100% + 8px);
+          right: -12px;
+          width: 276px;
+          padding: 8px;
+          background: #fff;
+          border: 1px solid #d8e0eb;
+          border-radius: 8px;
+          box-shadow: 0 18px 44px rgba(11, 31, 59, 0.16);
+          animation: slideUpFade 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .nav-dropdown-label {
+          display: block;
+          padding: 6px 8px 7px;
+          color: var(--color-text-muted);
+          font-size: 0.66rem;
+          font-weight: 750;
+          letter-spacing: 0;
+          text-transform: uppercase;
+        }
+
+        :global(.nav-dropdown-link) {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          padding: 10px 9px;
+          border-radius: 6px;
+          color: var(--color-text-secondary);
+          text-decoration: none;
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+
+        :global(.nav-dropdown-link:hover),
+        :global(.nav-dropdown-link.active) {
+          color: var(--color-primary);
+          background: #f2f6fa;
+        }
+
+        :global(.nav-dropdown-link strong) {
+          font-size: 0.82rem;
+          font-weight: 700;
+          line-height: 1.2;
+        }
+
+        :global(.nav-dropdown-link small) {
+          color: var(--color-text-muted);
+          font-size: 0.7rem;
+          line-height: 1.3;
+        }
+
         .nav-link::after {
           content: '';
           position: absolute;
@@ -418,11 +607,11 @@ export default function TopNavbar() {
           position: absolute;
           top: calc(100% + 12px);
           right: -8px;
-          width: 280px;
+          width: 300px;
           background: white;
-          border: 1px solid rgba(0,0,0,0.08); /* More subtle border */
-          border-radius: 16px;
-          box-shadow: 0 10px 40px -10px rgba(0,0,0,0.15); /* Sleek shadow */
+          border: 1px solid #d8e0eb;
+          border-radius: 8px;
+          box-shadow: 0 18px 44px rgba(11, 31, 59, 0.16);
           z-index: 200;
           overflow: hidden;
           animation: slideUpFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -475,24 +664,38 @@ export default function TopNavbar() {
 
         /* User Button */
         .user-btn {
-          width: 40px;
+          width: auto;
+          min-width: 40px;
           height: 40px;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: var(--color-surface);
+          background: #fff;
           border: 1px solid var(--color-border-light);
-          border-radius: 12px;
+          border-radius: 8px;
           color: var(--color-text);
           cursor: pointer;
           transition: all 0.2s ease;
-          padding: 0;
-          overflow: hidden;
+          padding: 3px 8px 3px 3px;
+          gap: 8px;
         }
 
         .user-btn:hover, .user-btn.active {
           border-color: var(--color-accent);
           box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .trigger-avatar {
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex: 0 0 auto;
+          overflow: hidden;
+          border-radius: 6px;
+          color: #fff;
+          background: var(--color-primary);
         }
 
         .user-btn .user-avatar-img {
@@ -501,13 +704,53 @@ export default function TopNavbar() {
           object-fit: cover;
         }
 
+        .trigger-copy {
+          width: 108px;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 1px;
+          text-align: left;
+        }
+
+        .trigger-name,
+        .trigger-meta {
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .trigger-name {
+          color: var(--color-text);
+          font-size: 0.78rem;
+          font-weight: 700;
+          line-height: 1.2;
+        }
+
+        .trigger-meta {
+          color: var(--color-text-muted);
+          font-size: 0.68rem;
+          line-height: 1.2;
+        }
+
+        .profile-caret {
+          color: var(--color-text-muted);
+          transition: transform 0.18s ease;
+        }
+
+        .profile-caret.open {
+          transform: rotate(180deg);
+        }
+
         /* Profile Menu Content */
         .profile-header {
           display: flex;
           align-items: center;
           gap: 12px;
           padding: 16px;
-          background: linear-gradient(to bottom, rgba(249, 250, 251, 1), rgba(255, 255, 255, 1));
+          background: #f7f9fc;
           border-bottom: 1px solid var(--color-border-light);
         }
 
@@ -562,8 +805,8 @@ export default function TopNavbar() {
             font-size: 0.65rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 2px 6px;
+            letter-spacing: 0;
+            padding: 3px 7px;
             border-radius: 4px;
             width: fit-content;
             margin-top: 2px;
@@ -579,6 +822,24 @@ export default function TopNavbar() {
           margin: 4px 0;
         }
 
+        .menu-section {
+          padding: 10px 8px;
+        }
+
+        .menu-section.compact {
+          padding-bottom: 8px;
+        }
+
+        .menu-section-label {
+          display: block;
+          padding: 0 8px 6px;
+          color: var(--color-text-muted);
+          font-size: 0.66rem;
+          font-weight: 750;
+          letter-spacing: 0;
+          text-transform: uppercase;
+        }
+
         /* Signed-out state — primary/secondary pill buttons, matching a
            two-tier sign-in/create-account hierarchy rather than one small
            text link. */
@@ -589,6 +850,26 @@ export default function TopNavbar() {
           gap: 10px;
         }
 
+        .auth-intro {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          margin-bottom: 3px;
+        }
+
+        .auth-intro strong {
+          color: var(--color-text);
+          font-size: 0.92rem;
+          font-weight: 750;
+          line-height: 1.25;
+        }
+
+        .auth-intro span {
+          color: var(--color-text-muted);
+          font-size: 0.74rem;
+          line-height: 1.4;
+        }
+
         /* Same styled-jsx + <Link> scoping limitation as .mobile-nav-link
            above — these render on Link, so they need :global() to match. */
         :global(.auth-btn) {
@@ -597,7 +878,7 @@ export default function TopNavbar() {
           justify-content: center;
           width: 100%;
           padding: 12px 16px;
-          border-radius: 999px;
+          border-radius: 7px;
           font-size: 0.9rem;
           font-weight: 600;
           text-decoration: none;
@@ -632,20 +913,53 @@ export default function TopNavbar() {
         :global(.quick-link) {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 11px;
           width: 100%;
-          padding: 10px 16px;
+          padding: 9px 8px;
           font-size: 0.8125rem;
           font-weight: 500;
           color: var(--color-text-secondary);
           text-decoration: none;
           box-sizing: border-box;
           transition: background 0.15s ease, color 0.15s ease;
+          border-radius: 6px;
         }
 
         :global(.quick-link:hover) {
-          background: #f9fafb;
-          color: var(--color-text);
+          background: #f2f6fa;
+          color: var(--color-primary);
+        }
+
+        .quick-link-icon {
+          width: 32px;
+          height: 32px;
+          flex: 0 0 auto;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 6px;
+          color: var(--color-primary);
+          background: #eaf0f7;
+        }
+
+        .quick-link-copy {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .quick-link-copy strong {
+          color: inherit;
+          font-size: 0.82rem;
+          font-weight: 650;
+          line-height: 1.2;
+        }
+
+        .quick-link-copy small {
+          color: var(--color-text-muted);
+          font-size: 0.7rem;
+          line-height: 1.25;
         }
 
         .menu-item {
@@ -653,7 +967,7 @@ export default function TopNavbar() {
           align-items: center;
           gap: 12px;
           width: 100%;
-          padding: 10px 16px;
+          padding: 11px 16px;
           font-size: 0.875rem;
           font-weight: 500;
           color: var(--color-text-secondary);
@@ -842,6 +1156,24 @@ export default function TopNavbar() {
           .navbar-container { padding: 0 12px; height: 56px; }
           .navbar-right { gap: 8px; }
           .logo-text { font-size: 1.05rem; }
+          .trigger-copy,
+          .profile-caret { display: none; }
+          .user-btn { width: 40px; padding: 3px; }
+          .profile-dropdown {
+            position: fixed;
+            top: 64px;
+            left: 12px;
+            right: 12px;
+            width: auto;
+            max-height: calc(100dvh - 148px);
+            overflow-y: auto;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .dropdown-menu,
+          .nav-dropdown { animation: none; }
+          .profile-caret { transition: none; }
         }
       `}</style>
     </header>

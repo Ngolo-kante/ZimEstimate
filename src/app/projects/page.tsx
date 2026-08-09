@@ -4,11 +4,12 @@ import { Suspense, useState, useEffect, useRef, useMemo, useCallback } from 'rea
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
+import ProjectsSubNav from '@/components/projects/ProjectsSubNav';
 import Card, { CardHeader, CardTitle, CardBadge } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { ProjectCardSkeleton, KpiSkeleton } from '@/components/ui/Skeleton';
+import { ProjectCardSkeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
@@ -26,7 +27,6 @@ import {
     MapPin,
     Calendar,
     FolderOpen,
-    Crown,
     PencilSimple,
     Trash,
     ShareNetwork,
@@ -39,90 +39,7 @@ import {
     Check,
     CaretRight,
     CaretDown,
-    TrendUp,
-    ChartBar,
-    Folders,
 } from '@phosphor-icons/react';
-
-// Sub-navigation for My Projects section
-function ProjectsSubNav({ active }: { active: 'dashboard' | 'all' | 'quick' }) {
-  return (
-    <div className="projects-subnav">
-      <nav className="subnav-tabs">
-        {/* My Work leads. Insights is analytics — with one draft estimate and no
-            purchases recorded it is a screen of $0.00 and 0%, which reads as
-            "this product has nothing for you" when the honest answer is "here
-            are your two estimates". */}
-        <Link
-          href="/projects"
-          className={`subnav-tab ${active === 'all' ? 'active' : ''}`}
-        >
-          <Folders size={18} />
-          My Work
-        </Link>
-        <Link
-          href="/projects/dashboard"
-          className={`subnav-tab ${active === 'dashboard' ? 'active' : ''}`}
-        >
-          <ChartBar size={18} />
-          Insights
-        </Link>
-      </nav>
-
-      <style jsx>{`
-        .projects-subnav {
-          margin-bottom: 24px;
-        }
-
-        .subnav-tabs {
-          display: flex;
-          gap: 8px;
-          background: var(--color-background);
-          padding: 4px;
-          border-radius: 12px;
-          width: fit-content;
-        }
-
-        .subnav-tab {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 10px 20px;
-          font-size: 0.9rem;
-          font-weight: 500;
-          color: var(--color-text-secondary);
-          text-decoration: none;
-          border-radius: 8px;
-          transition: all 0.2s;
-        }
-
-        .subnav-tab:hover {
-          color: var(--color-text);
-          background: rgba(255, 255, 255, 0.5);
-        }
-
-        .subnav-tab.active {
-          background: white;
-          color: var(--color-text);
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        @media (max-width: 480px) {
-          .subnav-tabs {
-            width: 100%;
-          }
-
-          .subnav-tab {
-            flex: 1;
-            justify-content: center;
-            padding: 10px 12px;
-            font-size: 0.85rem;
-          }
-        }
-      `}</style>
-    </div>
-  );
-}
 
 type SortOption = 'updated_desc' | 'updated_asc' | 'name_asc' | 'name_desc' | 'budget_desc' | 'budget_asc';
 
@@ -677,9 +594,32 @@ function ProjectsContent() {
     };
 
     return (
-        <MainLayout title="My Projects" fullWidth>
-            <ProjectsSubNav active="all" />
+        <MainLayout fullWidth>
             <div className="projects-page">
+                <header className="projects-header reveal">
+                    <div>
+                        <span className="projects-eyebrow">Project workspace</span>
+                        <h1>My Projects</h1>
+                        <p>Open a build, compare estimates, or continue where you left off.</p>
+                    </div>
+                    <div className="projects-header-actions">
+                        <Link href="/quick-projects" className="quick-project-action">
+                            Quick Estimate <CaretRight size={15} weight="bold" />
+                        </Link>
+                        <Link href="/boq/new">
+                            <Button
+                                icon={<Plus size={18} weight="bold" />}
+                                disabled={!canCreateProject()}
+                                title={!canCreateProject() ? 'Project limit reached. Upgrade to Pro.' : ''}
+                            >
+                                New Project
+                            </Button>
+                        </Link>
+                    </div>
+                </header>
+
+                <ProjectsSubNav active="all" />
+
                 {/* Confirmation that the save landed, and a way straight into the
                     thing that was saved. Landing on the list answers "did it
                     save?"; this answers "and where is it?" without making the
@@ -704,78 +644,37 @@ function ProjectsContent() {
                     </div>
                 )}
 
-                {/* Hero KPI Section */}
-                <div className="hero-kpi-section reveal" data-delay="1">
-                    <div className="kpi-card highlight">
-                        <div className="kpi-icon">
-                            <Crown size={24} weight="duotone" className="text-blue-600" />
-                        </div>
-                        {isLoading ? (
-                            <KpiSkeleton />
-                        ) : (
-                            <div className="kpi-content">
-                                <div className="kpi-label">Total Portfolio Spend</div>
-                                <div className="kpi-value">
-                                    <PriceDisplay priceUsd={projectStats.totalBudget} priceZwg={projectStats.totalBudget * 30} />
-                                </div>
-                                <div className="kpi-trend positive">
-                                    <TrendUp size={14} /> +12% vs last month
-                                </div>
-                            </div>
-                        )}
+                <section className="portfolio-strip reveal" data-delay="1" aria-label="Project portfolio summary">
+                    <div className="portfolio-value">
+                        <span>Portfolio value</span>
+                        <strong>
+                            {isLoading ? '—' : <PriceDisplay priceUsd={projectStats.totalBudget} priceZwg={projectStats.totalBudget * 30} />}
+                        </strong>
                     </div>
-
-                    <div className="kpi-card">
-                        {isLoading ? (
-                            <KpiSkeleton />
-                        ) : (
-                            <>
-                                <div className="kpi-label">Combined Budget vs Actual</div>
-                                <div className="kpi-value">$0.00 <span className="kpi-sub-value">/ <PriceDisplay priceUsd={projectStats.totalBudget} priceZwg={projectStats.totalBudget * 30} /></span></div>
-                                <div className="kpi-bar-container">
-                                    <div className="kpi-bar-bg">
-                                        <div className="kpi-bar-fill" style={{ width: '0%' }}></div>
-                                    </div>
-                                </div>
-                            </>
-                        )}
+                    <div>
+                        <span>Full builds</span>
+                        <strong>{isLoading ? '—' : projectStats.total}</strong>
                     </div>
-
-                    <div className="kpi-card">
-                        {isLoading ? (
-                            <KpiSkeleton />
-                        ) : (
-                            <>
-                                <div className="kpi-label">Avg. Price Variance</div>
-                                <div className="kpi-value under-budget">-2.4%</div>
-                                <div className="kpi-sub">Under Budget</div>
-                            </>
-                        )}
+                    <div>
+                        <span>Active</span>
+                        <strong>{isLoading ? '—' : projectStats.active}</strong>
                     </div>
-
-                    <div className="kpi-card actions-card">
-                        <Link href="/boq/new" className="w-full">
-                            <Button
-                                icon={<Plus size={18} weight="bold" />}
-                                disabled={!canCreateProject()}
-                                title={!canCreateProject() ? 'Project limit reached. Upgrade to Pro.' : ''}
-                                className="new-project-btn"
-                            >
-                                New Project
-                            </Button>
-                        </Link>
-                        <div className="tier-status">
-                            {profile?.tier === 'free' ? (
-                                <span className="text-xs text-secondary">Free Tier: {projectCount}/3 used</span>
-                            ) : (
-                                <span className="text-xs text-accent font-medium">Pro Plan Active</span>
-                            )}
-                        </div>
+                    <div>
+                        <span>Quick estimates</span>
+                        <strong>{isLoading ? '—' : quickItems.length}</strong>
                     </div>
-                </div>
+                    <div className="plan-usage">
+                        <span>{profile?.tier === 'free' ? 'Free plan usage' : 'Plan'}</span>
+                        <strong>{profile?.tier === 'free' ? `${projectCount}/3` : 'Pro'}</strong>
+                    </div>
+                </section>
 
                 <div className="page-header-row reveal" data-delay="2">
-                    <h2 className="section-title">All Projects</h2>
+                    <div>
+                        <span className="projects-eyebrow">Saved work</span>
+                        <h2 className="section-title">All projects and estimates</h2>
+                    </div>
+                    <span className="work-count">{projects.length + quickItems.length} total</span>
                 </div>
 
                 {/* Filters Bar */}
@@ -1150,11 +1049,138 @@ function ProjectsContent() {
 
             <style jsx>{`
                 .projects-page {
+                    width: min(100%, 1280px);
+                    margin: 0 auto;
                     display: flex;
                     flex-direction: column;
-                    gap: var(--space-6);
+                    gap: 20px;
                     padding: 0 0 var(--space-10);
                     font-family: var(--font-body);
+                }
+
+                .projects-header {
+                    display: flex;
+                    align-items: flex-end;
+                    justify-content: space-between;
+                    gap: 28px;
+                    padding-bottom: 20px;
+                    border-bottom: 1px solid #d8e0eb;
+                }
+
+                .projects-eyebrow {
+                    display: block;
+                    color: #1d5fbf;
+                    font-size: 0.7rem;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                }
+
+                .projects-header h1 {
+                    margin: 7px 0 0;
+                    color: #0f172a;
+                    font-family: var(--font-heading);
+                    font-size: 2rem;
+                    font-weight: 800;
+                    letter-spacing: 0;
+                }
+
+                .projects-header p {
+                    margin: 7px 0 0;
+                    color: #64748b;
+                    font-size: 0.84rem;
+                }
+
+                .projects-header-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .projects-header-actions :global(button) {
+                    white-space: nowrap;
+                }
+
+                :global(.quick-project-action) {
+                    min-height: 42px;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    padding: 9px 12px;
+                    color: #164b93;
+                    background: white;
+                    border: 1px solid #bfd3ef;
+                    border-radius: 6px;
+                    font-size: 0.78rem;
+                    font-weight: 750;
+                    text-decoration: none;
+                }
+
+                .portfolio-strip {
+                    display: grid;
+                    grid-template-columns: 1.35fr repeat(4, minmax(0, 0.8fr));
+                    overflow: hidden;
+                    background: white;
+                    border: 1px solid #d8e0eb;
+                    border-radius: 8px;
+                }
+
+                .portfolio-strip > div {
+                    min-width: 0;
+                    min-height: 82px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    gap: 5px;
+                    padding: 14px 18px;
+                    border-right: 1px solid #e3e8ef;
+                }
+
+                .portfolio-strip > div:last-child {
+                    border-right: 0;
+                }
+
+                .portfolio-strip span {
+                    color: #748196;
+                    font-size: 0.66rem;
+                    font-weight: 750;
+                    text-transform: uppercase;
+                }
+
+                .portfolio-strip strong {
+                    color: #0f172a;
+                    font-family: var(--font-heading);
+                    font-size: 1.2rem;
+                    font-weight: 800;
+                    letter-spacing: 0;
+                }
+
+                .portfolio-value {
+                    background: #eef4ff;
+                }
+
+                .portfolio-value strong {
+                    color: #164b93;
+                    font-size: 1.35rem;
+                }
+
+                .page-header-row {
+                    display: flex;
+                    align-items: end;
+                    justify-content: space-between;
+                    gap: 18px;
+                    margin-top: 6px;
+                }
+
+                .section-title {
+                    margin-top: 6px !important;
+                    font-size: 1.45rem !important;
+                    letter-spacing: 0 !important;
+                }
+
+                .work-count {
+                    color: #64748b;
+                    font-size: 0.72rem;
+                    font-weight: 700;
                 }
 
                 /* Hero KPI Section */
@@ -1518,7 +1544,7 @@ function ProjectsContent() {
                 /* Project Card Enhancements */
                 :global(.project-card) {
                     transition: transform var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out) !important;
-                    border-radius: var(--card-radius) !important;
+                    border-radius: 8px !important;
                     box-shadow: var(--shadow-card) !important;
                     background: var(--color-surface) !important;
                     border: 1px solid var(--color-border) !important;
@@ -1752,6 +1778,68 @@ function ProjectsContent() {
 
                 /* Mobile Styles */
                 @media (max-width: 768px) {
+                    .projects-page {
+                        gap: 16px;
+                    }
+
+                    .projects-header {
+                        align-items: flex-start;
+                        flex-direction: column;
+                        gap: 16px;
+                        padding-bottom: 16px;
+                    }
+
+                    .projects-header h1 {
+                        font-size: 1.7rem;
+                    }
+
+                    .projects-header-actions {
+                        width: 100%;
+                    }
+
+                    .projects-header-actions > :global(a) {
+                        flex: 1;
+                    }
+
+                    .projects-header-actions :global(button) {
+                        width: 100%;
+                        padding-inline: 10px;
+                        font-size: 0.78rem;
+                    }
+
+                    :global(.quick-project-action) {
+                        justify-content: center;
+                    }
+
+                    .portfolio-strip {
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
+                    }
+
+                    .portfolio-strip > div {
+                        min-height: 64px;
+                        padding: 11px 13px;
+                        border-right: 1px solid #e3e8ef;
+                        border-bottom: 1px solid #e3e8ef;
+                    }
+
+                    .portfolio-strip > div:nth-child(odd):not(:first-child),
+                    .portfolio-strip > div:last-child {
+                        border-right: 0;
+                    }
+
+                    .portfolio-strip > div:nth-last-child(-n + 2) {
+                        border-bottom: 0;
+                    }
+
+                    .portfolio-value {
+                        grid-column: 1 / -1;
+                    }
+
+                    .portfolio-strip strong,
+                    .portfolio-value strong {
+                        font-size: 1.05rem;
+                    }
+
                     .hero-kpi-section {
                         grid-template-columns: 1fr;
                         padding: var(--space-4);

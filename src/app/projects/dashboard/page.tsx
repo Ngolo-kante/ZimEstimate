@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
+import ProjectsSubNav from '@/components/projects/ProjectsSubNav';
 import Card, { CardHeader, CardTitle, CardBadge } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -26,9 +27,6 @@ import {
   Gauge,
   DownloadSimple,
   CaretRight,
-  Folders,
-  ChartBar,
-  HardHat,
   MapPin,
   Lightning,
 } from '@phosphor-icons/react';
@@ -47,85 +45,6 @@ const SLOPE_LABELS: Record<string, string> = {
   steep: 'Steep',
 };
 
-// Sub-navigation for My Projects section
-function ProjectsSubNav({ active }: { active: 'dashboard' | 'all' | 'quick' }) {
-  return (
-    <div className="projects-subnav">
-      <nav className="subnav-tabs">
-        {/* My Work leads. Insights is analytics — with one draft estimate and no
-            purchases recorded it is a screen of $0.00 and 0%, which reads as
-            "this product has nothing for you" when the honest answer is "here
-            are your two estimates". */}
-        <Link
-          href="/projects"
-          className={`subnav-tab ${active === 'all' ? 'active' : ''}`}
-        >
-          <Folders size={18} />
-          My Work
-        </Link>
-        <Link
-          href="/projects/dashboard"
-          className={`subnav-tab ${active === 'dashboard' ? 'active' : ''}`}
-        >
-          <ChartBar size={18} />
-          Insights
-        </Link>
-      </nav>
-
-      <style jsx>{`
-        .projects-subnav {
-          margin-bottom: 24px;
-        }
-
-        .subnav-tabs {
-          display: flex;
-          gap: 8px;
-          background: var(--color-background);
-          padding: 4px;
-          border-radius: 12px;
-          width: fit-content;
-        }
-
-        .subnav-tab {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 10px 20px;
-          font-size: 0.9rem;
-          font-weight: 500;
-          color: var(--color-text-secondary);
-          text-decoration: none;
-          border-radius: 8px;
-          transition: all 0.2s;
-        }
-
-        .subnav-tab:hover {
-          color: var(--color-text);
-          background: rgba(255, 255, 255, 0.5);
-        }
-
-        .subnav-tab.active {
-          background: white;
-          color: var(--color-text);
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        @media (max-width: 480px) {
-          .subnav-tabs {
-            width: 100%;
-          }
-
-          .subnav-tab {
-            flex: 1;
-            justify-content: center;
-            padding: 10px 12px;
-            font-size: 0.85rem;
-          }
-        }
-      `}</style>
-    </div>
-  );
-}
 
 function DashboardContent() {
   const { profile } = useAuth();
@@ -282,19 +201,14 @@ function DashboardContent() {
   ];
 
   return (
-    <MainLayout title="My Projects">
-      <ProjectsSubNav active="dashboard" />
-
+    <MainLayout fullWidth>
       <div className="dashboard-page">
-        {/* ── Slim Hero ── */}
         <section className="dash-hero reveal">
           <div className="hero-left">
-            <div className="hero-avatar">
-              <HardHat size={24} weight="fill" />
-            </div>
             <div>
-              <h1>Welcome back{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}</h1>
-              <p>Your construction portfolio at a glance</p>
+              <span className="dash-eyebrow">Portfolio performance</span>
+              <h1>Project Insights</h1>
+              <p>Welcome back{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}. Monitor budgets, progress, and purchasing across your builds.</p>
             </div>
           </div>
           <div className="hero-actions">
@@ -306,6 +220,8 @@ function DashboardContent() {
             </Button>
           </div>
         </section>
+
+        <ProjectsSubNav active="dashboard" />
 
         {/* ── KPI Strip ── */}
         <section className="kpi-strip reveal" data-delay="1">
@@ -549,54 +465,51 @@ function DashboardContent() {
 
       <style jsx>{`
         .dashboard-page {
+          width: min(100%, 1280px);
+          margin: 0 auto;
           display: flex;
           flex-direction: column;
           gap: 20px;
           padding-bottom: 48px;
         }
 
-        /* ── Hero ── */
         .dash-hero {
-          background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent-dark) 50%, var(--color-accent) 100%);
-          border-radius: 20px;
-          padding: 24px 28px;
+          padding: 0 0 20px;
           display: flex;
           justify-content: space-between;
-          align-items: center;
+          align-items: flex-end;
           gap: 20px;
           flex-wrap: wrap;
-          color: white;
+          border-bottom: 1px solid #d8e0eb;
         }
 
         .hero-left {
           display: flex;
-          align-items: center;
-          gap: 16px;
+          align-items: flex-end;
         }
 
-        .hero-avatar {
-          width: 48px;
-          height: 48px;
-          border-radius: 14px;
-          background: rgba(255,255,255,0.15);
-          backdrop-filter: blur(8px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
+        .dash-eyebrow {
+          display: block;
+          color: #1d5fbf;
+          font-size: 0.7rem;
+          font-weight: 800;
+          text-transform: uppercase;
         }
 
         .dash-hero h1 {
-          margin: 0;
-          font-size: 1.5rem;
-          font-weight: 700;
-          letter-spacing: -0.02em;
+          margin: 7px 0 0;
+          color: #0f172a;
+          font-family: var(--font-heading);
+          font-size: 2rem;
+          font-weight: 800;
+          letter-spacing: 0;
         }
 
         .dash-hero p {
-          margin: 4px 0 0;
-          font-size: 0.875rem;
-          opacity: 0.8;
+          max-width: 700px;
+          margin: 7px 0 0;
+          color: #64748b;
+          font-size: 0.84rem;
         }
 
         .hero-actions {
@@ -616,7 +529,7 @@ function DashboardContent() {
           background: white;
           border: 1px solid var(--color-border);
           border-left-width: 4px;
-          border-radius: 14px;
+          border-radius: 8px;
           padding: 18px 20px;
           box-shadow: 0 1px 4px rgba(0,0,0,0.03);
           transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -639,7 +552,7 @@ function DashboardContent() {
           font-weight: 600;
           color: var(--color-text-secondary);
           text-transform: uppercase;
-          letter-spacing: 0.04em;
+          letter-spacing: 0;
         }
 
         .kpi-icon {
@@ -655,7 +568,7 @@ function DashboardContent() {
           font-size: 1.35rem;
           font-weight: 800;
           color: var(--color-text);
-          letter-spacing: -0.01em;
+          letter-spacing: 0;
         }
 
         .kpi-sub {
@@ -668,7 +581,7 @@ function DashboardContent() {
         .projects-panel {
           background: white;
           border: 1px solid var(--color-border);
-          border-radius: 18px;
+          border-radius: 8px;
           overflow: hidden;
           box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
@@ -697,7 +610,7 @@ function DashboardContent() {
           color: var(--color-accent);
           text-decoration: none;
           padding: 6px 14px;
-          border-radius: 8px;
+          border-radius: 6px;
           background: #eff6ff;
           transition: all 0.2s;
         }
@@ -1138,14 +1051,14 @@ function DashboardContent() {
           }
 
           .dash-hero {
-            padding: 18px 20px;
-            border-radius: 16px;
+            padding: 0 0 16px;
+            border-radius: 0;
             flex-direction: column;
             align-items: stretch;
           }
 
           .dash-hero h1 {
-            font-size: 1.2rem;
+            font-size: 1.7rem;
           }
 
           .hero-actions {
@@ -1236,7 +1149,16 @@ function DashboardContent() {
 
         @media (max-width: 480px) {
           .kpi-strip {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .kpi-card {
+            min-width: 0;
+            padding: 13px;
+          }
+
+          .kpi-label {
+            font-size: 0.68rem;
           }
 
           .pt-progress-ring {

@@ -253,7 +253,7 @@ export const PENDING_QUICK_SAVE_KEY = 'zimestimate_quick_pending_save';
 /**
  * Gate a save behind sign-in, preserving the work.
  *
- * Returns true when it has taken over and redirected — the caller should stop.
+ * Returns the sign-in URL when the caller should navigate away, otherwise null.
  *
  * Every screen that can save had to grow its own copy of this, and the two
  * budget explorers never did: their Save Project buttons called onSave
@@ -271,8 +271,8 @@ export function gateSaveBehindSignIn(params: {
   currency?: 'USD' | 'ZWG';
   /** Where to come back to. Defaults to this project's wizard. */
   returnTo?: string;
-}): boolean {
-  if (params.isAuthenticated) return false;
+}): string | null {
+  if (params.isAuthenticated) return null;
 
   persistQuickBOQSession({
     projectType: params.projectType,
@@ -292,8 +292,7 @@ export function gateSaveBehindSignIn(params: {
   }
 
   const destination = params.returnTo ?? `/quick-projects/${params.projectType}`;
-  window.location.href = `/auth/login?redirect=${encodeURIComponent(destination)}`;
-  return true;
+  return `/auth/login?redirect=${encodeURIComponent(destination)}`;
 }
 
 /** Drop a restored session once its contents are held in component state. */

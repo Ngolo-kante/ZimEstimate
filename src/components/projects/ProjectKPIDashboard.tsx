@@ -32,7 +32,7 @@ interface KPICard {
   trend?: 'up' | 'down' | 'neutral';
   trendValue?: string;
   icon: React.ReactNode;
-  color: 'blue' | 'green' | 'orange' | 'red' | 'purple';
+  color: 'blue' | 'orange' | 'red';
   action?: { label: string; onClick: () => void };
 }
 
@@ -151,7 +151,7 @@ export default function ProjectKPIDashboard({
       trend: stats.budgetVariance > 0 ? 'up' : stats.budgetVariance < 0 ? 'down' : 'neutral',
       trendValue: `${stats.budgetVariance >= 0 ? '+' : ''}${stats.budgetVariancePercent.toFixed(1)}%`,
       icon: <Wallet size={22} weight="duotone" />,
-      color: stats.budgetVariance > 0 ? 'orange' : 'green',
+      color: stats.budgetVariance > 0 ? 'orange' : 'blue',
     },
     {
       label: 'Purchased Items',
@@ -168,14 +168,14 @@ export default function ProjectKPIDashboard({
       trend: stats.monthlyTrend > 0 ? 'up' : stats.monthlyTrend < 0 ? 'down' : 'neutral',
       trendValue: stats.lastMonthSpending > 0 ? `${stats.monthlyTrend >= 0 ? '+' : ''}${stats.monthlyTrend.toFixed(0)}%` : undefined,
       icon: <ChartLine size={22} weight="duotone" />,
-      color: 'purple',
+      color: 'blue',
     },
     {
       label: 'Remaining Budget',
       value: formatPrice(stats.remainingBudget, stats.remainingBudget * exchangeRate),
       subValue: `${stats.budgetUtilization.toFixed(0)}% utilized`,
       icon: <Cube size={22} weight="duotone" />,
-      color: stats.remainingBudget < 0 ? 'red' : 'green',
+      color: stats.remainingBudget < 0 ? 'red' : 'blue',
     },
   ];
 
@@ -229,7 +229,7 @@ export default function ProjectKPIDashboard({
 
         {/* Usage Summary */}
         <div className="stat-card">
-          <div className="stat-icon icon-teal">
+          <div className="stat-icon icon-blue">
             <Package size={18} weight="duotone" />
           </div>
           <div className="stat-content">
@@ -268,7 +268,7 @@ export default function ProjectKPIDashboard({
 
         {/* Completion Status */}
         <div className="stat-card">
-          <div className="stat-icon icon-emerald">
+          <div className="stat-icon icon-blue">
             <CheckCircle size={18} weight="duotone" />
           </div>
           <div className="stat-content">
@@ -325,14 +325,10 @@ export default function ProjectKPIDashboard({
           justify-content: center;
         }
 
-        .icon-blue { background: #eff6ff; color: #3b82f6; }
-        .icon-green { background: #f0fdf4; color: #22c55e; }
+        .icon-blue { background: var(--color-accent-muted); color: var(--color-accent); }
         .icon-orange { background: #fff7ed; color: #f97316; }
         .icon-red { background: #fef2f2; color: #ef4444; }
-        .icon-purple { background: #faf5ff; color: #a855f7; }
-        .icon-teal { background: #f0fdfa; color: #14b8a6; }
         .icon-amber { background: #fffbeb; color: #f59e0b; }
-        .icon-emerald { background: #ecfdf5; color: #10b981; }
 
         .kpi-trend {
           display: flex;
@@ -345,7 +341,7 @@ export default function ProjectKPIDashboard({
         }
 
         .trend-up { background: #fef2f2; color: #ef4444; }
-        .trend-down { background: #f0fdf4; color: #22c55e; }
+        .trend-down { background: var(--color-accent-muted); color: var(--color-accent-dark); }
         .trend-neutral { background: #f1f5f9; color: #64748b; }
 
         .kpi-content {
@@ -533,7 +529,7 @@ export default function ProjectKPIDashboard({
 
         .progress-fill {
           height: 100%;
-          background: linear-gradient(90deg, #10b981, #34d399);
+          background: var(--color-accent);
           border-radius: 99px;
           transition: width 0.3s ease;
         }

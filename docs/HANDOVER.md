@@ -1,5 +1,9 @@
 # Handover — ZimEstimate
 
+> Historical snapshot from 2026-07-31. Contractor registration and later
+> security work have since shipped. Start with `docs/ARCHITECTURE.md` for the
+> current implemented system.
+
 Written 31 July 2026, at the end of a long session. Branch `unified`, which is
 also the Vercel **production** branch — anything merged here deploys.
 

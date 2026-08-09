@@ -187,7 +187,7 @@ function SettingsContent() {
 
     if (authLoading) {
         return (
-            <MainLayout title="Settings">
+            <MainLayout fullWidth>
                 <div className="loading-state">
                     <div className="spinner"></div>
                     <p>Loading settings...</p>
@@ -197,20 +197,43 @@ function SettingsContent() {
     }
 
     return (
-        <MainLayout title="Settings">
+        <MainLayout fullWidth>
             <div className="settings-container">
-                <div className="settings-header">
+                <header className="settings-header">
                     <div>
-                        {/* No <h1> here: MainLayout already renders one from its
-                            title prop, so this page was shipping two competing
-                            top-level headings. */}
-                        <p>Manage your profile, preferences, and security settings.</p>
+                        <span className="settings-eyebrow">Account workspace</span>
+                        <h1>Settings</h1>
+                        <p>Manage your identity, project preferences, alerts and account security.</p>
                     </div>
-                </div>
+                    <div className="settings-status" aria-label="Current account plan">
+                        <span>Current plan</span>
+                        <strong>{profile?.tier === 'pro' ? 'Pro' : profile?.tier === 'admin' ? 'Admin' : 'Free'}</strong>
+                    </div>
+                </header>
 
-                <div className="settings-grid">
+                <div className="settings-layout">
+                    <aside className="settings-sidebar">
+                        <div className="account-summary">
+                            <div className="account-avatar" aria-hidden="true">
+                                <User size={23} weight="bold" />
+                            </div>
+                            <div>
+                                <strong>{profile?.full_name || user?.email?.split('@')[0] || 'Your account'}</strong>
+                                <span>{user?.email}</span>
+                            </div>
+                        </div>
+                        <nav className="settings-nav" aria-label="Settings sections">
+                            <a href="#profile"><User size={17} />Profile</a>
+                            <a href="#preferences"><CurrencyDollar size={17} />Preferences</a>
+                            <a href="#plan"><Crown size={17} />Plan</a>
+                            <a href="#notifications"><Bell size={17} />Notifications</a>
+                            <a href="#security"><Lock size={17} />Security</a>
+                        </nav>
+                    </aside>
+
+                    <div className="settings-grid">
                     {/* Profile Section */}
-                    <div className="settings-card">
+                    <section className="settings-card" id="profile">
                         <div className="card-header">
                             <div className="header-icon user">
                                 <User size={20} weight="bold" />
@@ -265,12 +288,12 @@ function SettingsContent() {
                                 </Button>
                             </div>
                         </div>
-                    </div>
+                    </section>
 
                     {/* Preferences & Security Grid */}
                     <div className="split-grid">
                         {/* Currency Preference */}
-                        <div className="settings-card">
+                        <section className="settings-card" id="preferences">
                             <div className="card-header">
                                 <div className="header-icon currency">
                                     <CurrencyDollar size={20} weight="bold" />
@@ -297,10 +320,10 @@ function SettingsContent() {
                                     </Button>
                                 </div>
                             </div>
-                        </div>
+                        </section>
 
                         {/* Subscription */}
-                        <div className="settings-card">
+                        <section className="settings-card" id="plan">
                             <div className="card-header">
                                 <div className="header-icon premium">
                                     <Crown size={20} weight="bold" />
@@ -330,12 +353,12 @@ function SettingsContent() {
                                     )}
                                 </div>
                             </div>
-                        </div>
+                        </section>
                     </div>
 
                     {/* Notification Preferences */}
                     <div className="split-grid">
-                        <div className="settings-card">
+                        <section className="settings-card" id="notifications">
                             <div className="card-header">
                                 <div className="header-icon notification">
                                     <Bell size={20} weight="bold" />
@@ -435,9 +458,9 @@ function SettingsContent() {
                                     </Button>
                                 </div>
                             </div>
-                        </div>
+                        </section>
 
-                        <div className="settings-card">
+                        <section className="settings-card">
                             <div className="card-header">
                                 <div className="header-icon activity">
                                     <DeviceMobile size={20} weight="bold" />
@@ -466,11 +489,11 @@ function SettingsContent() {
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </section>
                     </div>
 
                     {/* Password Section */}
-                    <div className="settings-card">
+                    <section className="settings-card" id="security">
                         <div className="card-header">
                             <div className="header-icon security">
                                 <Lock size={20} weight="bold" />
@@ -519,10 +542,10 @@ function SettingsContent() {
                                 </div>
                             </form>
                         </div>
-                    </div>
+                    </section>
 
                     {/* Danger Zone */}
-                    <div className="settings-card danger">
+                    <section className="settings-card danger">
                         <div className="card-header">
                             <div className="header-icon danger">
                                 <WarningCircle size={20} weight="bold" />
@@ -538,77 +561,206 @@ function SettingsContent() {
                                     <h4>Delete Account</h4>
                                     <p>Permanently delete your account and all data.</p>
                                 </div>
-                                <Button variant="ghost" className="delete-btn">
-                                    Delete Account
-                                </Button>
+                                <Link href="/support" className="request-delete-link">
+                                    Contact support
+                                    <CaretRight size={15} weight="bold" />
+                                </Link>
                             </div>
                         </div>
+                    </section>
                     </div>
                 </div>
             </div>
 
             <style jsx>{`
                 .settings-container {
-                    max-width: 900px;
+                    max-width: 1240px;
                     margin: 0 auto;
                     display: flex;
                     flex-direction: column;
-                    gap: 32px;
-                    padding-bottom: 64px;
+                    gap: 24px;
+                    padding: 28px 24px 72px;
+                }
+
+                .settings-header {
+                    display: flex;
+                    align-items: flex-end;
+                    justify-content: space-between;
+                    gap: 24px;
+                    padding-bottom: 22px;
+                    border-bottom: 1px solid #d8e0eb;
+                }
+
+                .settings-eyebrow {
+                    display: block;
+                    margin-bottom: 7px;
+                    color: #2563eb;
+                    font-size: 0.7rem;
+                    font-weight: 800;
+                    letter-spacing: 0;
+                    text-transform: uppercase;
                 }
 
                 .settings-header h1 {
-                    font-size: 1.8rem;
-                    font-weight: 700;
-                    color: #0f172a;
+                    font-size: 2rem;
+                    font-weight: 760;
+                    color: #0b1f3b;
                     margin: 0;
-                    letter-spacing: -0.02em;
+                    letter-spacing: 0;
                 }
 
                 .settings-header p {
                     color: #64748b;
-                    margin: 6px 0 0;
-                    font-size: 1.05rem;
+                    margin: 7px 0 0;
+                    max-width: 650px;
+                    font-size: 0.95rem;
+                    line-height: 1.55;
+                }
+
+                .settings-status {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 9px 11px;
+                    border: 1px solid #d8e0eb;
+                    border-radius: 7px;
+                    background: #fff;
+                    white-space: nowrap;
+                }
+
+                .settings-status span {
+                    color: #64748b;
+                    font-size: 0.75rem;
+                }
+
+                .settings-status strong {
+                    color: #0b1f3b;
+                    font-size: 0.78rem;
+                    text-transform: uppercase;
+                }
+
+                .settings-layout {
+                    display: grid;
+                    grid-template-columns: 218px minmax(0, 1fr);
+                    gap: 24px;
+                    align-items: start;
+                }
+
+                .settings-sidebar {
+                    position: sticky;
+                    top: 88px;
+                    min-width: 0;
+                    padding: 14px;
+                    border: 1px solid #d8e0eb;
+                    border-radius: 8px;
+                    background: #fff;
+                }
+
+                .account-summary {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    min-width: 0;
+                    padding: 2px 2px 14px;
+                    border-bottom: 1px solid #e6ebf2;
+                }
+
+                .account-avatar {
+                    width: 38px;
+                    height: 38px;
+                    flex: 0 0 auto;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 7px;
+                    color: #fff;
+                    background: #0b1f3b;
+                }
+
+                .account-summary > div:last-child {
+                    min-width: 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                }
+
+                .account-summary strong,
+                .account-summary span {
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .account-summary strong { color: #0f172a; font-size: 0.79rem; }
+                .account-summary span { color: #64748b; font-size: 0.68rem; }
+
+                .settings-nav {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 3px;
+                    margin-top: 10px;
+                }
+
+                .settings-nav a {
+                    display: flex;
+                    align-items: center;
+                    gap: 9px;
+                    min-height: 38px;
+                    padding: 8px 9px;
+                    border-radius: 6px;
+                    color: #526176;
+                    font-size: 0.78rem;
+                    font-weight: 620;
+                    text-decoration: none;
+                    transition: background 0.15s ease, color 0.15s ease;
+                }
+
+                .settings-nav a:hover,
+                .settings-nav a:focus-visible {
+                    color: #0b1f3b;
+                    background: #edf2f7;
+                }
+
+                .settings-nav a:focus-visible {
+                    outline: 2px solid #2563eb;
+                    outline-offset: 1px;
                 }
 
                 .settings-grid {
                     display: flex;
                     flex-direction: column;
-                    gap: 24px;
+                    gap: 18px;
+                    min-width: 0;
                 }
 
                 .split-grid {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
-                    gap: 24px;
+                    gap: 18px;
+                    align-items: stretch;
                 }
 
                 .settings-card {
                     background: #ffffff;
-                    border-radius: 20px;
-                    border: 1px solid rgba(226, 232, 240, 0.8);
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+                    border-radius: 8px;
+                    border: 1px solid #d8e0eb;
                     overflow: hidden;
-                    transition: border-color 0.2s, box-shadow 0.2s;
-                }
-
-                .settings-card:hover {
-                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.02), 0 4px 6px -2px rgba(0, 0, 0, 0.01);
-                    border-color: rgba(203, 213, 225, 0.8);
+                    scroll-margin-top: 88px;
                 }
 
                 .card-header {
-                    padding: 24px;
+                    padding: 18px 20px;
                     display: flex;
                     align-items: center;
                     gap: 16px;
-                    border-bottom: 1px solid #f8fafc;
+                    border-bottom: 1px solid #e6ebf2;
+                    background: #fbfcfe;
                 }
 
                 .header-icon {
                     width: 40px;
                     height: 40px;
-                    border-radius: 12px;
+                    border-radius: 7px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -625,19 +777,19 @@ function SettingsContent() {
 
                 .card-header h3 {
                     margin: 0;
-                    font-size: 1.1rem;
-                    font-weight: 600;
+                    font-size: 0.98rem;
+                    font-weight: 700;
                     color: #0f172a;
                 }
 
                 .card-header p {
                     margin: 2px 0 0;
-                    font-size: 0.9rem;
+                    font-size: 0.78rem;
                     color: #64748b;
                 }
 
                 .card-content {
-                    padding: 24px;
+                    padding: 20px;
                     display: flex;
                     flex-direction: column;
                     gap: 20px;
@@ -660,7 +812,7 @@ function SettingsContent() {
                     font-weight: 600;
                     color: #475569;
                     text-transform: uppercase;
-                    letter-spacing: 0.02em;
+                    letter-spacing: 0;
                 }
 
                 .input-box {
@@ -669,7 +821,7 @@ function SettingsContent() {
                     gap: 10px;
                     padding: 12px 14px;
                     border: 1px solid #e2e8f0;
-                    border-radius: 12px;
+                    border-radius: 7px;
                     background: #ffffff;
                     transition: all 0.2s;
                     position: relative;
@@ -724,7 +876,7 @@ function SettingsContent() {
                     color: #166534;
                     background: #dcfce7;
                     padding: 2px 8px;
-                    border-radius: 99px;
+                    border-radius: 4px;
                     text-transform: uppercase;
                     margin-left: auto;
                     flex-shrink: 0;
@@ -836,7 +988,7 @@ function SettingsContent() {
                     color: #475569;
                     font-size: 0.85rem;
                     padding: 6px 12px;
-                    border-radius: 999px;
+                    border-radius: 6px;
                     cursor: pointer;
                     transition: 0.2s;
                 }
@@ -852,7 +1004,7 @@ function SettingsContent() {
                     align-items: center;
                     gap: 8px;
                     padding: 10px 12px;
-                    border-radius: 12px;
+                    border-radius: 7px;
                     font-size: 0.85rem;
                 }
 
@@ -914,7 +1066,7 @@ function SettingsContent() {
                 /* Currency Selector */
                 .currency-selector {
                     display: grid;
-                    grid-template-columns: 1fr 1fr;
+                    grid-template-columns: 1fr;
                     gap: 12px;
                 }
 
@@ -924,7 +1076,7 @@ function SettingsContent() {
                     align-items: flex-start;
                     padding: 12px;
                     border: 1px solid #e2e8f0;
-                    border-radius: 12px;
+                    border-radius: 7px;
                     background: #ffffff;
                     cursor: pointer;
                     transition: all 0.2s;
@@ -980,7 +1132,7 @@ function SettingsContent() {
 
                 .plan-badge {
                     padding: 4px 10px;
-                    border-radius: 99px;
+                    border-radius: 4px;
                     font-size: 0.75rem;
                     font-weight: 700;
                     text-transform: uppercase;
@@ -1036,16 +1188,74 @@ function SettingsContent() {
                     color: #64748b;
                 }
 
-                :global(.delete-btn) {
-                    color: #ef4444 !important;
-                    background: #fef2f2 !important;
+                :global(.request-delete-link) {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 9px 11px;
+                    border: 1px solid #fecaca;
+                    border-radius: 6px;
+                    color: #b91c1c;
+                    background: #fff;
+                    font-size: 0.8rem;
+                    font-weight: 650;
+                    text-decoration: none;
                 }
-                
-                :global(.delete-btn:hover) {
-                    background: #fee2e2 !important;
+
+                :global(.request-delete-link:hover) {
+                    background: #fef2f2;
+                }
+
+                @media (max-width: 900px) {
+                    .settings-container {
+                        padding: 22px 16px 96px;
+                    }
+
+                    .settings-layout {
+                        grid-template-columns: 1fr;
+                        gap: 16px;
+                    }
+
+                    .settings-sidebar {
+                        position: static;
+                        padding: 10px;
+                    }
+
+                    .account-summary {
+                        display: none;
+                    }
+
+                    .settings-nav {
+                        flex-direction: row;
+                        gap: 5px;
+                        margin: 0;
+                        overflow-x: auto;
+                        scrollbar-width: none;
+                    }
+
+                    .settings-nav::-webkit-scrollbar {
+                        display: none;
+                    }
+
+                    .settings-nav a {
+                        flex: 0 0 auto;
+                        min-height: 36px;
+                    }
                 }
 
                 @media (max-width: 768px) {
+                    .settings-header {
+                        align-items: flex-start;
+                    }
+
+                    .settings-header h1 {
+                        font-size: 1.7rem;
+                    }
+
+                    .settings-status {
+                        padding: 7px 9px;
+                    }
+
                     .split-grid, .form-row {
                         grid-template-columns: 1fr;
                     }
@@ -1077,6 +1287,41 @@ function SettingsContent() {
                     
                     .danger-row button {
                         width: 100%;
+                    }
+
+                    :global(.request-delete-link) {
+                        justify-content: center;
+                        width: 100%;
+                    }
+                }
+
+                @media (max-width: 480px) {
+                    .settings-container {
+                        padding: 18px 12px 96px;
+                    }
+
+                    .settings-header {
+                        flex-direction: column;
+                        gap: 14px;
+                    }
+
+                    .settings-status {
+                        align-self: flex-start;
+                    }
+
+                    .card-header,
+                    .card-content {
+                        padding-left: 16px;
+                        padding-right: 16px;
+                    }
+
+                    .card-actions :global(button) {
+                        width: 100%;
+                    }
+
+                    .toggle-hint {
+                        display: block;
+                        max-width: 210px;
                     }
                 }
                 

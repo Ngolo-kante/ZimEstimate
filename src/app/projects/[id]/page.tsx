@@ -1163,11 +1163,10 @@ function ProjectDetailContent() {
     const completionRate = purchaseStats.totalItems > 0
         ? Math.round((purchaseStats.purchasedItems / purchaseStats.totalItems) * 100)
         : 0;
-    const pendingItemsCount = Math.max(items.length - purchaseStats.purchasedItems, 0);
     const viewDetails: Record<Exclude<ProjectView, 'overview'>, { title: string; description: string }> = {
         budget: {
-            title: 'Planner',
-            description: 'Shape your savings pace and stay aligned to your target purchase date.',
+            title: 'Budget',
+            description: 'See what is spent, what remains, and the savings pace needed for your target date.',
         },
         boq: {
             title: 'Bill of Quantities',
@@ -1195,9 +1194,26 @@ function ProjectDetailContent() {
         },
     };
     const activeViewDetails = activeView === 'overview' ? null : viewDetails[activeView];
+    const budgetRemaining = Math.max(purchaseStats.estimatedTotal - purchaseStats.actualSpent, 0);
+    const budgetUsedPercent = purchaseStats.estimatedTotal > 0
+        ? Math.round((purchaseStats.actualSpent / purchaseStats.estimatedTotal) * 100)
+        : 0;
+    const activeViewStats = activeView === 'budget' || activeView === 'procurement'
+        ? [
+            { label: 'Spent', value: formatPrice(purchaseStats.actualSpent, purchaseStats.actualSpent * exchangeRate) },
+            { label: 'Remaining', value: formatPrice(budgetRemaining, budgetRemaining * exchangeRate) },
+            { label: 'Budget used', value: `${budgetUsedPercent}%` },
+        ]
+        : activeView === 'boq'
+            ? [
+                { label: 'Materials', value: String(items.length) },
+                { label: 'Estimate', value: formatPrice(purchaseStats.estimatedTotal, purchaseStats.estimatedTotal * exchangeRate) },
+                { label: 'Purchased', value: `${purchaseStats.purchasedItems}/${purchaseStats.totalItems}` },
+            ]
+            : [];
 
     return (
-        <MainLayout title={project.name} fullWidth>
+        <MainLayout fullWidth hideBottomNav>
             <div className="project-shell project-dashboard-shell">
                 <SidebarSpine
                     project={project}
@@ -1213,9 +1229,7 @@ function ProjectDetailContent() {
                 />
 
                 <main className="project-main">
-                    {/* Mobile-only. The desktop sidebar stays the navigation
-                        above 768px; below it, this strip replaces a drawer the
-                        user could not open. */}
+                    {/* Mobile-only project dock. Desktop keeps the full sidebar. */}
                     <ProjectViewTabs
                         activeView={activeView}
                         onViewChange={(view) => {
@@ -1227,25 +1241,19 @@ function ProjectDetailContent() {
                     />
 
                     {activeViewDetails && (
-                        <section className="view-header reveal">
+                        <section className="view-header">
                             <div>
                                 <p className="view-eyebrow">{project.name}</p>
                                 <h1 className="view-title">{activeViewDetails.title}</h1>
                                 <p className="view-description">{activeViewDetails.description}</p>
                             </div>
                             <div className="view-stats">
-                                <div className="view-stat">
-                                    <span>Materials</span>
-                                    <strong>{items.length}</strong>
-                                </div>
-                                <div className="view-stat">
-                                    <span>Pending</span>
-                                    <strong>{pendingItemsCount}</strong>
-                                </div>
-                                <div className="view-stat">
-                                    <span>Completion</span>
-                                    <strong>{completionRate}%</strong>
-                                </div>
+                                {activeViewStats.map((stat) => (
+                                    <div className="view-stat" key={stat.label}>
+                                        <span>{stat.label}</span>
+                                        <strong>{stat.value}</strong>
+                                    </div>
+                                ))}
                             </div>
                         </section>
                     )}
@@ -1398,7 +1406,7 @@ function ProjectDetailContent() {
                                             ))}
                                             {items.filter(i => !i.is_purchased).length === 0 && (
                                                 <div className="text-center py-8 text-secondary">
-                                                    <CheckCircle size={32} className="mx-auto mb-2 text-green-500" />
+                                                    <CheckCircle size={32} className="mx-auto mb-2 text-blue-600" />
                                                     <p>All items purchased! Great job.</p>
                                                 </div>
                                             )}
@@ -1551,7 +1559,7 @@ function ProjectDetailContent() {
 
                     {/* BOQ View */}
                     {activeView === 'boq' && (
-                        <div className="view-panel space-y-6 max-w-full mx-auto reveal">
+                        <div className="view-panel space-y-6 max-w-full mx-auto">
                             {activeStageComplianceWarnings.length > 0 && !isComplianceBannerDismissed && (
                                 <div className="compliance-warning-banner" role="alert">
                                     <div className="compliance-warning-content">
@@ -1612,7 +1620,7 @@ function ProjectDetailContent() {
 
                     {/* COMPLIANCE View */}
                     {activeView === 'compliance' && (
-                        <div className="view-panel space-y-6 reveal">
+                        <div className="view-panel space-y-6">
                             <ComplianceTrackerTab
                                 projectId={projectId}
                                 projectName={project.name}
@@ -1629,7 +1637,7 @@ function ProjectDetailContent() {
 
                     {/* PROCUREMENT View */}
                     {activeView === 'procurement' && (
-                        <div className="view-panel reveal">
+                        <div className="view-panel">
                             <UnifiedProcurementView
                                 project={project}
                                 items={items}
@@ -1642,7 +1650,7 @@ function ProjectDetailContent() {
 
                     {/* USAGE View */}
                     {activeView === 'usage' && (
-                        <div className="view-panel space-y-6 reveal">
+                        <div className="view-panel space-y-6">
                             {project.usage_tracking_enabled ? (
                                 <ProjectUsageView
                                     project={project}
@@ -1675,14 +1683,14 @@ function ProjectDetailContent() {
 
                     {/* DOCUMENTS View */}
                     {activeView === 'documents' && (
-                        <div className="view-panel space-y-6 reveal">
+                        <div className="view-panel space-y-6">
                             <DocumentsTab projectId={projectId} />
                         </div>
                     )}
 
                     {/* BUDGET View */}
                     {activeView === 'budget' && (
-                        <div className="view-panel space-y-6 reveal">
+                        <div className="view-panel space-y-6">
                             <BudgetPlanner
                                 totalBudgetUsd={purchaseStats.estimatedTotal}
                                 amountSpentUsd={purchaseStats.actualSpent}
@@ -1694,7 +1702,7 @@ function ProjectDetailContent() {
 
                     {/* SETTINGS View */}
                     {activeView === 'settings' && (
-                        <div className="view-panel reveal">
+                        <div className="view-panel">
                             <ProjectSettings
                                 project={project}
                                 onUpdate={handleProjectUpdate}
@@ -1713,13 +1721,8 @@ function ProjectDetailContent() {
                 </main>
             </div>
 
-            {/* The mobile hamburger FAB was removed. It rendered at y732-788
-                while the global bottom navigation occupied y740-812 with the
-                same z-index, so a tap on its visible centre landed on the
-                bottom bar's "Home" link and left the project entirely — which
-                is why the page appeared not to load and why the views behind
-                the drawer were never reachable. ProjectViewTabs, rendered at
-                the top of <main>, replaces it. */}
+            {/* ProjectViewTabs replaces the global mobile bar inside a project,
+                keeping the money workflows reachable without competing docks. */}
 
             {/* Modals */}
             <PhoneNumberModal
@@ -1797,7 +1800,7 @@ function ProjectDetailContent() {
                 .project-dashboard-shell h2,
                 .project-dashboard-shell h3,
                 .project-dashboard-shell h4 {
-                    letter-spacing: -0.015em;
+                    letter-spacing: 0;
                     line-height: 1.18;
                 }
 
@@ -1831,15 +1834,14 @@ function ProjectDetailContent() {
             <style jsx>{`
                 .project-shell {
                     display: flex;
-                    background:
-                        radial-gradient(1200px 480px at 80% -140px, rgba(78, 154, 247, 0.18), transparent 62%),
-                        radial-gradient(900px 400px at -10% -120px, rgba(6, 20, 47, 0.07), transparent 55%),
-                        var(--color-background);
+                    min-width: 0;
+                    background: #f7f9fc;
                     min-height: calc(100vh - 64px);
                 }
 
                 .project-main {
                     flex: 1;
+                    min-width: 0;
                     overflow-y: auto;
                     height: calc(100vh - 64px);
                     padding: 24px 28px 48px;
@@ -1852,17 +1854,15 @@ function ProjectDetailContent() {
                     max-width: 1200px;
                     margin: 0 auto;
                     width: 100%;
-                    background: rgba(255, 255, 255, 0.76);
-                    border: 1px solid rgba(211, 211, 215, 0.8);
-                    border-radius: 24px;
-                    padding: 20px 24px;
+                    background: transparent;
+                    border: 0;
+                    border-radius: 0;
+                    padding: 4px 2px;
                     display: flex;
                     align-items: flex-end;
                     justify-content: space-between;
                     gap: 20px;
-                    backdrop-filter: blur(10px);
-                    -webkit-backdrop-filter: blur(10px);
-                    box-shadow: 0 16px 30px rgba(6, 20, 47, 0.05);
+                    box-shadow: none;
                     transition:
                         transform var(--dashboard-medium) var(--dashboard-ease),
                         box-shadow var(--dashboard-medium) var(--dashboard-ease);
@@ -1872,7 +1872,7 @@ function ProjectDetailContent() {
                     margin: 0 0 6px 0;
                     font-size: 0.72rem;
                     text-transform: uppercase;
-                    letter-spacing: 0.08em;
+                    letter-spacing: 0;
                     color: var(--color-text-secondary);
                     font-weight: 700;
                 }
@@ -1882,13 +1882,23 @@ function ProjectDetailContent() {
                     font-size: clamp(1.5rem, 2vw, 2rem);
                     line-height: 1.1;
                     color: var(--color-text);
-                    letter-spacing: -0.02em;
+                    letter-spacing: 0;
                 }
 
                 .view-description {
                     margin: 10px 0 0 0;
                     color: #5f6b7e;
                     max-width: 680px;
+                }
+
+                .view-header > div:first-child {
+                    min-width: 0;
+                }
+
+                .view-eyebrow,
+                .view-title,
+                .view-description {
+                    overflow-wrap: anywhere;
                 }
 
                 .view-stats {
@@ -1902,7 +1912,7 @@ function ProjectDetailContent() {
                     min-width: 108px;
                     background: #f3f8ff;
                     border: 1px solid #d6e8ff;
-                    border-radius: 14px;
+                    border-radius: 7px;
                     padding: 10px 12px;
                     display: flex;
                     flex-direction: column;
@@ -1913,7 +1923,7 @@ function ProjectDetailContent() {
                 .view-stat span {
                     font-size: 0.72rem;
                     text-transform: uppercase;
-                    letter-spacing: 0.05em;
+                    letter-spacing: 0;
                     color: #53739a;
                     font-weight: 700;
                 }
@@ -1921,17 +1931,18 @@ function ProjectDetailContent() {
                 .view-stat strong {
                     font-size: 1rem;
                     color: #16385d;
+                    overflow-wrap: anywhere;
                 }
 
                 .view-panel {
                     max-width: 1200px;
                     margin: 0 auto;
                     width: 100%;
-                    padding: 2px 2px 4px;
-                    border-radius: 26px;
-                    background: linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.4));
-                    border: 1px solid rgba(211, 211, 215, 0.55);
-                    box-shadow: 0 14px 28px rgba(6, 20, 47, 0.03);
+                    padding: 0;
+                    border-radius: 0;
+                    background: transparent;
+                    border: 0;
+                    box-shadow: none;
                     transition:
                         transform var(--dashboard-medium) var(--dashboard-ease),
                         box-shadow var(--dashboard-medium) var(--dashboard-ease);
@@ -1940,7 +1951,7 @@ function ProjectDetailContent() {
                 .compliance-warning-banner {
                     border: 1px solid #fcd34d;
                     background: #fffbeb;
-                    border-radius: 14px;
+                    border-radius: 8px;
                     padding: 14px 16px;
                     display: flex;
                     align-items: flex-start;
@@ -1995,6 +2006,9 @@ function ProjectDetailContent() {
 
                 .overview-view {
                     padding: 8px 2px;
+                    width: 100%;
+                    min-width: 0;
+                    max-width: 1152px;
                 }
 
                 .overview-header {
@@ -2080,8 +2094,6 @@ function ProjectDetailContent() {
                         border-color var(--dashboard-medium) var(--dashboard-ease);
                 }
 
-                .view-header:hover,
-                .view-panel:hover,
                 .overview-card:hover,
                 .price-update-alert:hover,
                 .pro-tip-card:hover {
@@ -2122,24 +2134,49 @@ function ProjectDetailContent() {
                 }
 
                 @media (max-width: 768px) {
+                    .project-shell {
+                        display: block;
+                        min-height: 0;
+                    }
+
                     .project-main {
-                        padding: 14px 12px 34px;
+                        height: auto;
+                        min-height: calc(100vh - 56px);
+                        overflow-y: visible;
+                        padding: 14px 12px 96px;
                         gap: 14px;
                     }
 
                     .view-header {
                         padding: 16px;
-                        border-radius: 18px;
+                        flex-direction: column;
+                        border-radius: 8px;
                         align-items: flex-start;
                     }
 
                     .view-stats {
                         width: 100%;
-                        justify-content: flex-start;
+                        display: grid;
+                        grid-template-columns: repeat(3, minmax(0, 1fr));
+                        gap: 7px;
+                    }
+
+                    .view-stat {
+                        min-width: 0;
+                        padding: 9px 8px;
+                        text-align: left;
+                    }
+
+                    .view-stat span {
+                        font-size: 0.61rem;
+                    }
+
+                    .view-stat strong {
+                        font-size: 0.82rem;
                     }
 
                     .view-panel {
-                        border-radius: 18px;
+                        border-radius: 8px;
                     }
 
                     .compliance-warning-banner {

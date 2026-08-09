@@ -1,6 +1,7 @@
 'use client';
 // v2 — combo packages + kVA guide
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
@@ -407,6 +408,7 @@ interface SolarBudgetExplorerProps {
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar Setup', isContractor = false, onSave }: SolarBudgetExplorerProps) {
+  const router = useRouter();
   // Budget — starts at 0 so user enters their amount
   const [budgetInput, setBudgetInput] = useState<string>('');
   const budget = Number(budgetInput.replace(/[^0-9]/g, '')) || 0;
@@ -620,13 +622,17 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
     // Same gap as the borehole explorer: Save called onSave with no auth check,
     // so a signed-out user pressed it and nothing happened at all.
-    if (gateSaveBehindSignIn({
+    const signInUrl = gateSaveBehindSignIn({
       isAuthenticated,
       projectType: 'solar',
       answers: answers as unknown as Record<string, unknown>,
       boqItems: items,
       labor,
-    })) return;
+    });
+    if (signInUrl) {
+      router.push(signInUrl);
+      return;
+    }
 
     setIsSaving(true);
     try {

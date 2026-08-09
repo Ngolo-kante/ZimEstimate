@@ -126,10 +126,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
         <>
             <div className="documents-tab">
                 <div className="tab-header">
-                    <div className="header-text">
-                        <h3>Project Documents</h3>
-                        <p>{filteredDocuments.length} files in this view</p>
-                    </div>
+                    <p className="file-count">{filteredDocuments.length} files</p>
                     <div className="filter-select">
                         <FunnelSimple size={16} />
                         <select
@@ -218,17 +215,16 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                     display: flex;
                     flex-direction: column;
                     gap: 18px;
-                    background: rgba(255, 255, 255, 0.52);
-                    border: 1px solid rgba(211, 211, 215, 0.7);
-                    border-radius: 22px;
-                    padding: 18px;
-                    box-shadow: 0 14px 24px rgba(6, 20, 47, 0.04);
-                    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+                    background: transparent;
+                    border: 0;
+                    border-radius: 0;
+                    padding: 0;
+                    box-shadow: none;
                 }
 
                 .documents-tab:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 18px 28px rgba(6, 20, 47, 0.08);
+                    transform: none;
+                    box-shadow: none;
                 }
 
                 .tab-header {
@@ -240,15 +236,8 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                     padding: 6px 2px 4px;
                 }
 
-                .tab-header h3 {
-                    font-size: 1.35rem;
-                    font-weight: 700;
-                    color: #0f294b;
+                .file-count {
                     margin: 0;
-                }
-
-                .header-text p {
-                    margin: 4px 0 0 0;
                     color: #68809f;
                     font-size: 0.86rem;
                 }
@@ -445,13 +434,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
 
                 @media (max-width: 768px) {
                     .documents-tab {
-                        padding: 14px;
-                        border-radius: 16px;
                         gap: 14px;
-                    }
-
-                    .tab-header h3 {
-                        font-size: 1.16rem;
                     }
 
                     .documents-grid {

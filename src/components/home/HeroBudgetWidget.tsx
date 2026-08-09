@@ -28,7 +28,7 @@ const STAGE_SHORT_LABELS: Record<string, string> = {
   exterior: 'External Works',
 };
 
-const DEFAULT_BUDGET = '15000';
+const DEFAULT_BUDGET = '';
 
 /** Ghost-to-solid: 0% funded stays a faint silhouette, 100% is fully built. */
 function stageOpacity(pct: number): number {
@@ -137,36 +137,15 @@ export default function HeroBudgetWidget() {
     : '';
 
   return (
-    <div className="hero-preview relative w-full lg:aspect-square rounded-2xl overflow-hidden border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      {/* Subtle grid pattern */}
-      <div
-        className="absolute inset-0 opacity-[0.35] pointer-events-none"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(15,41,75,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(15,41,75,0.06) 1px, transparent 1px)',
-          backgroundSize: '32px 32px',
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Glow accents */}
-      <div
-        className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-blue-400/20 blur-3xl pointer-events-none"
-        aria-hidden="true"
-      />
-      <div
-        className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-emerald-300/20 blur-3xl pointer-events-none"
-        aria-hidden="true"
-      />
-
-      <div className="relative h-full w-full p-5 md:p-6 flex flex-col gap-3">
+    <div className="hero-preview relative w-full overflow-hidden rounded-lg border border-slate-300 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.09)]">
+      <div className="relative h-full w-full p-3 sm:p-5 md:p-6 flex flex-col gap-2 sm:gap-3">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold tracking-[0.15em] text-blue-600 uppercase">
+          <span className="text-[10px] font-bold tracking-normal text-blue-600 uppercase">
             Budget reality check
           </span>
-          <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
+          <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" aria-hidden="true" />
             Live
           </span>
         </div>
@@ -183,42 +162,41 @@ export default function HeroBudgetWidget() {
         {/* Budget input */}
         <label className="block">
           <span className="sr-only">Your budget in US dollars</span>
-          <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm border border-slate-200/80 rounded-xl px-3.5 py-2.5 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20 transition">
+          <div className="flex items-center gap-1 bg-slate-50 border border-slate-300 rounded-md px-3.5 py-2.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-400/20 transition">
             <span className="text-lg md:text-xl font-extrabold text-slate-400">$</span>
             <input
               type="text"
               inputMode="numeric"
               value={displayValue}
               onChange={(e) => handleInput(e.target.value)}
-              placeholder="15,000"
+              placeholder="Enter amount"
               className="w-full bg-transparent text-lg md:text-xl font-extrabold text-slate-900 outline-none placeholder:text-slate-300 tabular-nums"
             />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex-shrink-0">USD</span>
+            <span className="text-[10px] font-bold uppercase tracking-normal text-slate-400 flex-shrink-0">USD</span>
           </div>
         </label>
 
         {/* The house that builds itself */}
-        <div className="flex-shrink-0">
+        <div className="hidden sm:block flex-shrink-0">
           <BuildingHouse coverage={coverage} />
         </div>
 
         {/* Stage coverage bars */}
-        <div className="flex-1 flex flex-col justify-center gap-1.5 min-h-0" aria-live="polite">
+        <div className="hidden sm:flex flex-1 flex-col justify-center gap-1.5 min-h-0" aria-live="polite">
           {(estimate?.rows ?? []).map((row) => {
             const pct = Math.round(row.coveragePercent);
-            const full = pct >= 100;
             return (
               <div key={row.id} className="flex items-center gap-2.5">
                 <span className="w-[92px] md:w-[104px] flex-shrink-0 text-[11px] font-semibold text-slate-600 truncate">
                   {STAGE_SHORT_LABELS[row.id]}
                 </span>
-                <div className="flex-1 h-1.5 rounded-full bg-slate-200/70 overflow-hidden">
+                <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 motion-reduce:transition-none ${full ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                    className="h-full rounded-full bg-blue-500 transition-all duration-500 motion-reduce:transition-none"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <span className={`w-9 flex-shrink-0 text-right text-[11px] font-bold tabular-nums ${full ? 'text-emerald-600' : pct > 0 ? 'text-slate-700' : 'text-slate-400'}`}>
+                <span className={`w-9 flex-shrink-0 text-right text-[11px] font-bold tabular-nums ${pct > 0 ? 'text-slate-700' : 'text-slate-400'}`}>
                   {pct}%
                 </span>
               </div>
@@ -233,10 +211,10 @@ export default function HeroBudgetWidget() {
         </div>
 
         {/* Verdict + CTA */}
-        <div className="bg-white/80 backdrop-blur-sm border border-slate-200/70 rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-3">
+        <div className="bg-slate-50 border border-slate-200 rounded-md px-3.5 py-2.5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             {fullyFunded && (
-              <CheckCircle size={16} weight="fill" className="text-emerald-500 flex-shrink-0" aria-hidden="true" />
+              <CheckCircle size={16} weight="fill" className="text-blue-600 flex-shrink-0" aria-hidden="true" />
             )}
             <p className="text-[11px] md:text-[12px] font-semibold text-slate-700 leading-snug">
               {verdict}
@@ -250,7 +228,7 @@ export default function HeroBudgetWidget() {
           </Link>
         </div>
 
-        <p className="text-[9.5px] text-slate-400 leading-snug">
+        <p className="hidden sm:block text-[9.5px] text-slate-400 leading-snug">
           Materials estimate for a 120m² 3-bed urban standard build. Adjust size, location and finish in the Budget Studio.
         </p>
       </div>

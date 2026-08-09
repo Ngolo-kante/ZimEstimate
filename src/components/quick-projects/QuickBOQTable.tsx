@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Download,
   FloppyDisk,
@@ -58,6 +59,7 @@ export default function QuickBOQTable({
   answers = {},
   returnTo,
 }: QuickBOQTableProps) {
+  const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [items, setItems] = useState<BOQItem[]>(initialItems);
   const [markupPct, setMarkupPct] = useState(0);
@@ -153,7 +155,7 @@ export default function QuickBOQTable({
       // signed in, landed on their restored BOQ, and had to find and press Save
       // a second time — having already pressed it once.
       if (action === 'save') sessionStorage.setItem(PENDING_QUICK_SAVE_KEY, projectType);
-      window.location.href = `/auth/login?redirect=${encodeURIComponent(destination)}`;
+      router.push(`/auth/login?redirect=${encodeURIComponent(destination)}`);
       return;
     }
     if (action === 'save' && onSave) onSave(items);

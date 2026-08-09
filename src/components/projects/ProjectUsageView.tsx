@@ -369,10 +369,6 @@ export default function ProjectUsageView({
   return (
     <div className="usage-page">
       <div className="usage-header">
-        <div>
-          <h2>Usage Tracking</h2>
-          <p>Log material usage and track remaining stock on site.</p>
-        </div>
         <div className="header-actions">
           <div className="view-toggle">
             <button
@@ -821,22 +817,21 @@ export default function ProjectUsageView({
           display: flex;
           flex-direction: column;
           gap: 20px;
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.8));
-          border: 1px solid rgba(226, 232, 240, 0.8);
-          border-radius: 20px;
-          padding: 24px;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
-          transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+          background: transparent;
+          border: 0;
+          border-radius: 0;
+          padding: 0;
+          box-shadow: none;
         }
 
         .usage-page:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+          transform: none;
+          box-shadow: none;
         }
 
         .usage-header {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: flex-start;
             gap: 20px;
             flex-wrap: wrap;
@@ -1846,16 +1841,53 @@ export default function ProjectUsageView({
         
         @media (max-width: 640px) {
             .usage-page {
-                padding: 14px;
-                border-radius: 16px;
                 gap: 14px;
             }
             .usage-header {
-                flex-direction: column;
-                align-items: flex-start;
+                order: 3;
+                align-items: stretch;
             }
-            .usage-header h2 {
-                font-size: 1.38rem;
+            .header-actions,
+            .view-toggle {
+                width: 100%;
+            }
+            .view-toggle button {
+                flex: 1;
+                min-height: 44px;
+            }
+            .usage-tabs {
+                order: 1;
+            }
+            .usage-log {
+                order: 2;
+            }
+            .usage-kpis {
+                order: 4;
+            }
+            .usage-reminder {
+                order: 5;
+            }
+            .usage-table-card,
+            .materials-tab,
+            .usage-history,
+            .ledger-tab {
+                order: 6;
+            }
+            .kpi-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+            .kpi-card {
+                padding: 12px;
+                border-radius: 8px;
+                box-shadow: none;
+                min-width: 0;
+            }
+            .kpi-card .value {
+                overflow-wrap: anywhere;
+            }
+            .donut-card {
+                display: none;
             }
             .reminder-left {
                 width: 100%;
@@ -1868,8 +1900,8 @@ export default function ProjectUsageView({
             .usage-log,
             .usage-reminder,
             .usage-history {
-                padding: 16px;
-                border-radius: 14px;
+                padding: 14px;
+                border-radius: 8px;
             }
         }
 

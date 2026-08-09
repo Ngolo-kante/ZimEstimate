@@ -42,7 +42,7 @@ const statusConfig: Record<StageStatus, { color: string; bg: string; label: stri
     pending_approval: { color: 'text-amber-600', bg: 'bg-amber-50', label: 'Pending' },
     in_progress: { color: 'text-blue-600', bg: 'bg-blue-50', label: 'In Progress' },
     on_hold: { color: 'text-orange-600', bg: 'bg-orange-50', label: 'On Hold' },
-    completed: { color: 'text-green-600', bg: 'bg-green-50', label: 'Complete' },
+    completed: { color: 'text-blue-700', bg: 'bg-blue-50', label: 'Complete' },
 };
 
 export function StageProgressCards({
@@ -89,7 +89,7 @@ export function StageProgressCards({
                             >
                                 <div className={`stage-icon-wrapper ${config.bg}`}>
                                     {isCompleted ? (
-                                        <CheckCircle size={28} weight="fill" className="text-green-500" />
+                                        <CheckCircle size={28} weight="fill" className="text-blue-600" />
                                     ) : isInProgress ? (
                                         <HourglassSimple size={28} weight="fill" className="text-blue-500" />
                                     ) : (
@@ -112,9 +112,7 @@ export function StageProgressCards({
                                         className="stage-progress-fill"
                                         style={{
                                             width: `${stats.completionPercent}%`,
-                                            background: isCompleted
-                                                ? 'linear-gradient(90deg, #22c55e, #16a34a)'
-                                                : 'linear-gradient(90deg, #3b82f6, #2563eb)'
+                                            background: '#2e6cf6'
                                         }}
                                     />
                                 </div>
@@ -251,7 +249,7 @@ export function StageProgressCards({
                 }
 
                 .stage-connector.completed .connector-line {
-                    background: #22c55e;
+                    background: #2e6cf6;
                 }
 
                 @media (max-width: 768px) {

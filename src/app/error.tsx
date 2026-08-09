@@ -3,6 +3,7 @@
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import { WarningCircle } from '@phosphor-icons/react';
+import { useRouter } from 'next/navigation';
 
 export default function Error({
   error,
@@ -11,6 +12,8 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const router = useRouter();
+
   return (
     <MainLayout title="Something went wrong">
       <div style={{ maxWidth: '640px', margin: '0 auto', padding: '2rem 1.5rem' }}>
@@ -25,7 +28,7 @@ export default function Error({
         </p>
         <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.75rem' }}>
           <Button onClick={reset}>Try again</Button>
-          <Button variant="secondary" onClick={() => window.location.href = '/'}>
+          <Button variant="secondary" onClick={() => router.push('/')}>
             Go home
           </Button>
         </div>

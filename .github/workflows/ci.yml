@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - unified
       - 'release/**'
 
 jobs:
@@ -37,7 +38,7 @@ jobs:
 
   smoke-e2e:
     needs: quality
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/unified' || startsWith(github.ref, 'refs/heads/release/')
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}

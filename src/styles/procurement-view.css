@@ -103,15 +103,15 @@
 }
 
 .summary-card {
-    background: linear-gradient(135deg, var(--color-surface), rgba(248, 250, 252, 0.8)) !important;
+    background: var(--color-surface) !important;
     border: 1px solid var(--color-border-light) !important;
-    border-radius: 16px !important;
+    border-radius: 8px !important;
     padding: var(--space-4) var(--space-5) !important;
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
     gap: var(--space-4) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+    box-shadow: none !important;
     transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
         box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1),
         border-color 0.2s cubic-bezier(0.22, 1, 0.36, 1) !important;
@@ -123,8 +123,8 @@
 }
 
 .summary-card.clickable:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04) !important;
+    transform: none;
+    box-shadow: none !important;
     border-color: rgba(59, 130, 246, 0.3) !important;
 }
 
@@ -140,22 +140,22 @@
 }
 
 .summary-icon-blue {
-    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    background: #eff6ff;
     color: #2563eb;
 }
 
 .summary-icon-green {
-    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-    color: #16a34a;
+    background: var(--color-accent-muted);
+    color: var(--color-accent);
 }
 
 .summary-icon-teal {
-    background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
-    color: #0891b2;
+    background: var(--color-accent-muted);
+    color: var(--color-accent);
 }
 
 .summary-icon-red {
-    background: linear-gradient(135deg, #fef2f2, #fecaca);
+    background: #fef2f2;
     color: #dc2626;
 }
 
@@ -1763,11 +1763,29 @@
     }
 
     .summary-grid {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
     }
 
     .summary-card {
-        padding: var(--space-3) !important;
+        padding: 10px !important;
+        gap: 8px !important;
+        min-width: 0;
+    }
+
+    .summary-card:nth-child(-n + 2) {
+        display: none !important;
+    }
+
+    .summary-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 7px;
+    }
+
+    .summary-value {
+        font-size: var(--text-sm);
+        overflow-wrap: anywhere;
     }
 
     .stage-tabs {
@@ -1781,7 +1799,8 @@
     }
 
     .stage-tab-btn span:not(.tab-count) {
-        display: none;
+        display: inline;
+        font-size: 12px;
     }
 
     .field-grid {
