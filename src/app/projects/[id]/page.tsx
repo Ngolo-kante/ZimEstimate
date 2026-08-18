@@ -1197,7 +1197,7 @@ function ProjectDetailContent() {
         },
         procurement: {
             title: 'Procurement Hub',
-            description: 'Track purchases, RFQs, and suppliers with real-time cost visibility.',
+            description: '',
         },
         usage: {
             title: 'Usage Tracking',
@@ -1213,17 +1213,7 @@ function ProjectDetailContent() {
         },
     };
     const activeViewDetails = activeView === 'overview' ? null : viewDetails[activeView];
-    const budgetRemaining = Math.max(purchaseStats.estimatedTotal - purchaseStats.actualSpent, 0);
-    const budgetUsedPercent = purchaseStats.estimatedTotal > 0
-        ? Math.round((purchaseStats.actualSpent / purchaseStats.estimatedTotal) * 100)
-        : 0;
-    const activeViewStats = activeView === 'procurement'
-        ? [
-            { label: 'Spent', value: formatPrice(purchaseStats.actualSpent, purchaseStats.actualSpent * exchangeRate) },
-            { label: 'Remaining', value: formatPrice(budgetRemaining, budgetRemaining * exchangeRate) },
-            { label: 'Budget used', value: `${budgetUsedPercent}%` },
-        ]
-        : activeView === 'boq'
+    const activeViewStats = activeView === 'boq'
             ? [
                 { label: 'Materials', value: String(items.length) },
                 { label: 'Estimate', value: formatPrice(purchaseStats.estimatedTotal, purchaseStats.estimatedTotal * exchangeRate) },

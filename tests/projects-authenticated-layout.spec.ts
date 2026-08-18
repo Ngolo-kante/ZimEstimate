@@ -50,6 +50,18 @@ test.describe('Authenticated project workspace', () => {
 
     await projectDock.getByRole('button', { name: 'Buy' }).click();
     await expect(page.getByRole('heading', { name: 'Procurement Hub' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Procurement overview' })).toBeVisible();
+    await expect(page.getByRole('progressbar', { name: 'Actual spend against BOQ estimate' })).toBeVisible();
+    const procurementSections = page.getByRole('navigation', { name: 'Procurement sections' });
+    await expect(procurementSections.getByRole('button', { name: /Items/ })).toHaveAttribute('aria-current', 'page');
+    await procurementSections.getByRole('button', { name: /Quotes/ }).click();
+    await expect(page.getByRole('heading', { name: 'Requests for quotation' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'New request' })).toBeVisible();
+    await procurementSections.getByRole('button', { name: /Items/ }).click();
+    await expect(page.getByRole('textbox', { name: 'Search procurement materials' })).toBeVisible();
+    await page.setViewportSize({ width: 320, height: 720 });
+    await expectNoDocumentOverflow(page);
+    await page.setViewportSize({ width: 390, height: 844 });
     await expectNoDocumentOverflow(page);
 
     for (const destination of ['Usage', 'Compliance', 'Documents', 'Settings']) {

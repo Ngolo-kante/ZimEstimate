@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import RfqPanel from './RfqPanel';
@@ -34,8 +33,7 @@ import {
   ShoppingCart,
   FileText,
   Storefront,
-  TrendUp,
-  Money,
+  ArrowClockwise,
   CaretDown,
   CaretUp,
   Check,
@@ -55,6 +53,7 @@ import {
 
 type ProcurementStage = 'boq' | 'rfq' | 'history';
 type ItemStatus = 'pending' | 'in_progress' | 'purchased' | 'over_purchased';
+type StatusFilter = ItemStatus | 'all' | 'outstanding' | 'fulfilled';
 type GroupByOption = 'stage' | 'category' | 'none';
 type BOQStage = 'substructure' | 'superstructure' | 'roofing' | 'finishing' | 'exterior';
 
@@ -63,31 +62,31 @@ const STAGE_CONFIG: Record<BOQStage, { label: string; icon: typeof Cube; color: 
   substructure: {
     label: 'Site Preparation & Foundation',
     icon: Cube,
-    color: '#2e6cf6',
+    color: 'var(--color-accent)',
     description: 'Foundation, DPC, floor slab'
   },
   superstructure: {
     label: 'Structural Walls & Frame',
     icon: Wall,
-    color: '#2e6cf6',
+    color: 'var(--color-accent)',
     description: 'Walls, lintels, ring beam'
   },
   roofing: {
     label: 'Roofing',
     icon: House,
-    color: '#0b1f3b',
+    color: 'var(--color-primary)',
     description: 'Timber, sheets, gutters'
   },
   finishing: {
     label: 'Interior & Finishing',
     icon: PaintBrush,
-    color: '#2e6cf6',
+    color: 'var(--color-accent)',
     description: 'Plastering, painting, fittings'
   },
   exterior: {
     label: 'External Work',
     icon: Tree,
-    color: '#1a3a5c',
+    color: 'var(--color-primary-light)',
     description: 'Boundary, gates, driveway'
   },
 };
@@ -135,9 +134,10 @@ export default function UnifiedProcurementView({
   // State
   const [activeStage, setActiveStage] = useState<ProcurementStage>('boq');
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ItemStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [groupBy, setGroupBy] = useState<GroupByOption>('stage');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
@@ -164,7 +164,7 @@ export default function UnifiedProcurementView({
     receiptFile: null as File | null,
   });
 
-  useReveal({ deps: [activeStage, purchases.length, items.length] });
+  useReveal({ deps: [activeStage, isLoading, purchases.length, items.length] });
 
   const receiptById = useMemo(() => {
     const map = new Map<string, ProjectDocument>();
@@ -226,7 +226,11 @@ export default function UnifiedProcurementView({
       );
     }
 
-    if (statusFilter !== 'all') {
+    if (statusFilter === 'outstanding') {
+      result = result.filter((item) => item.status === 'pending' || item.status === 'in_progress');
+    } else if (statusFilter === 'fulfilled') {
+      result = result.filter((item) => item.status === 'purchased' || item.status === 'over_purchased');
+    } else if (statusFilter !== 'all') {
       result = result.filter((item) => item.status === statusFilter);
     }
 
@@ -274,7 +278,11 @@ export default function UnifiedProcurementView({
   }, [filteredItems, groupBy]);
 
   const stats = useMemo(() => {
-    const totalBudget = project.total_usd || 0;
+    const boqEstimate = items.reduce(
+      (sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unit_price_usd) || 0),
+      0
+    );
+    const totalBudget = boqEstimate || project.total_usd || 0;
     const totalSpent = itemsWithPurchases.reduce((sum, item) => sum + item.totalSpent, 0);
     const pendingRfqs = rfqs.filter(r => r.status === 'open' || r.status === 'draft').length;
 
@@ -285,19 +293,27 @@ export default function UnifiedProcurementView({
       over_purchased: itemsWithPurchases.filter(i => i.status === 'over_purchased').length,
     };
 
+    const fulfilledItems = statusCounts.purchased + statusCounts.over_purchased;
+    const outstandingItems = statusCounts.pending + statusCounts.in_progress;
+
     return {
       totalBudget,
       totalSpent,
       remainingBudget: totalBudget - totalSpent,
+      variance: totalSpent - totalBudget,
       pendingRfqs,
       statusCounts,
       spendingProgress: totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0,
+      purchaseProgress: items.length > 0 ? (fulfilledItems / items.length) * 100 : 0,
+      fulfilledItems,
+      outstandingItems,
       totalItems: items.length,
     };
-  }, [project.total_usd, itemsWithPurchases, rfqs, items.length]);
+  }, [project.total_usd, items, itemsWithPurchases, rfqs]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const [purchasesData, rfqsData, suppliersData, receiptsData] = await Promise.all([
         getPurchaseRecords(project.id),
@@ -306,12 +322,16 @@ export default function UnifiedProcurementView({
         getProjectDocuments(project.id, 'receipt'),
       ]);
 
-      if (purchasesData.records) setPurchases(purchasesData.records);
-      if (rfqsData.rfqs) setRfqs(rfqsData.rfqs);
-      if (suppliersData.suppliers) setSuppliers(suppliersData.suppliers);
-      if (receiptsData.documents) setReceiptDocs(receiptsData.documents);
+      const requestError = purchasesData.error || rfqsData.error || suppliersData.error || receiptsData.error;
+      if (requestError) throw requestError;
+
+      setPurchases(purchasesData.records);
+      setRfqs(rfqsData.rfqs);
+      setSuppliers(suppliersData.suppliers);
+      setReceiptDocs(receiptsData.documents);
     } catch (err) {
       console.error('Failed to load procurement data:', err);
+      setLoadError('Procurement data could not be loaded. Check your connection and try again.');
       showError('Failed to load procurement data');
     } finally {
       setIsLoading(false);
@@ -650,101 +670,158 @@ export default function UnifiedProcurementView({
       : 'var(--color-accent)';
 
   const renderStageTabs = () => (
-    <div className="stage-tabs reveal" data-delay="1">
+    <nav className="stage-tabs reveal" data-delay="1" aria-label="Procurement sections">
       <button
+        type="button"
+        aria-current={activeStage === 'boq' ? 'page' : undefined}
         onClick={() => setActiveStage('boq')}
-        className={`stage-tab-btn ${activeStage === 'boq' ? 'active' : ''}`}
+        className={`stage-tab-btn min-h-11 ${activeStage === 'boq' ? 'active' : ''}`}
       >
         <Package size={16} weight="duotone" />
         <span>Items</span>
         <span className="tab-count">{items.length}</span>
       </button>
       <button
+        type="button"
+        aria-current={activeStage === 'rfq' ? 'page' : undefined}
         onClick={() => setActiveStage('rfq')}
-        className={`stage-tab-btn ${activeStage === 'rfq' ? 'active' : ''}`}
+        className={`stage-tab-btn min-h-11 ${activeStage === 'rfq' ? 'active' : ''}`}
       >
         <FileText size={16} weight="duotone" />
         <span>Quotes</span>
         {stats.pendingRfqs > 0 && <span className="tab-count">{stats.pendingRfqs}</span>}
       </button>
       <button
+        type="button"
+        aria-current={activeStage === 'history' ? 'page' : undefined}
         onClick={() => setActiveStage('history')}
-        className={`stage-tab-btn ${activeStage === 'history' ? 'active' : ''}`}
+        className={`stage-tab-btn min-h-11 ${activeStage === 'history' ? 'active' : ''}`}
       >
         <Receipt size={16} weight="duotone" />
         <span>Purchases</span>
         {purchases.length > 0 && <span className="tab-count">{purchases.length}</span>}
       </button>
-    </div>
+    </nav>
   );
 
   const renderSummaryCards = () => (
-    <div className="summary-grid reveal" data-delay="2">
-      <Card className="summary-card">
-        <div className="summary-icon summary-icon-blue">
-          <Money size={24} weight="duotone" />
-        </div>
-        <div className="summary-body">
-          <div className="summary-label">Total Spent</div>
-          <div className="summary-value">
-            {formatPrice(stats.totalSpent, stats.totalSpent * exchangeRate)}
+    <section
+      className="reveal overflow-hidden rounded-lg border border-[var(--color-border-light)] bg-[var(--color-surface)]"
+      data-delay="2"
+      aria-label="Procurement overview"
+    >
+      <div className="grid grid-cols-2 divide-x divide-[var(--color-border-light)] border-b border-[var(--color-border-light)] lg:grid-cols-4">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveStage('boq');
+            setStatusFilter(statusFilter === 'outstanding' ? 'all' : 'outstanding');
+          }}
+          aria-pressed={statusFilter === 'outstanding'}
+          className="min-h-24 p-3 text-left transition-colors hover:bg-[var(--color-mist)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-accent)] sm:p-4"
+        >
+          <span className="flex items-center gap-2 text-xs font-semibold text-[var(--color-text-secondary)]">
+            <Clock size={17} weight="bold" className="text-[var(--color-amber)]" /> Pending items
+          </span>
+          <strong className="mt-2 block text-2xl font-bold text-[var(--color-text)]">{stats.outstandingItems}</strong>
+          <span className="text-xs text-[var(--color-text-muted)]">still need purchasing</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveStage('boq');
+            setStatusFilter(statusFilter === 'fulfilled' ? 'all' : 'fulfilled');
+          }}
+          aria-pressed={statusFilter === 'fulfilled'}
+          className="min-h-24 p-3 text-left transition-colors hover:bg-[var(--color-mist)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-accent)] sm:p-4"
+        >
+          <span className="flex items-center gap-2 text-xs font-semibold text-[var(--color-text-secondary)]">
+            <Check size={17} weight="bold" className="text-[var(--color-success)]" /> Purchased
+          </span>
+          <strong className="mt-2 block text-2xl font-bold text-[var(--color-text)]">
+            {stats.fulfilledItems}<span className="text-sm font-medium text-[var(--color-text-muted)]">/{stats.totalItems}</span>
+          </strong>
+          <span className="text-xs text-[var(--color-text-muted)]">{stats.purchaseProgress.toFixed(0)}% fulfilled</span>
+        </button>
+
+        <div className="col-span-2 border-t border-[var(--color-border-light)] p-3 sm:p-4 lg:border-t-0">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0">
+              <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Actual spend</span>
+              <strong className="mt-1 block break-words text-lg font-bold text-[var(--color-text)] sm:text-xl">
+                {formatPrice(stats.totalSpent, stats.totalSpent * exchangeRate)}
+              </strong>
+            </div>
+            <div className="min-w-0 text-right">
+              <span className="text-xs font-semibold text-[var(--color-text-secondary)]">BOQ estimate</span>
+              <strong className="mt-1 block break-words text-sm font-bold text-[var(--color-text)] sm:text-base">
+                {formatPrice(stats.totalBudget, stats.totalBudget * exchangeRate)}
+              </strong>
+            </div>
+          </div>
+          <div
+            className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-mist)]"
+            role="progressbar"
+            aria-label="Actual spend against BOQ estimate"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.min(100, Math.round(stats.spendingProgress))}
+          >
+            <div
+              className="h-full rounded-full motion-safe:transition-[width] motion-safe:duration-300"
+              style={{ width: `${Math.min(stats.spendingProgress, 100)}%`, background: spendingBarColor }}
+            />
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-3 text-xs">
+            <span className="text-[var(--color-text-muted)]">{stats.spendingProgress.toFixed(0)}% used</span>
+            <span className={stats.variance > 0 ? 'font-semibold text-[var(--color-danger)]' : 'font-semibold text-[var(--color-success)]'}>
+              {stats.variance > 0 ? 'Over by ' : 'Available '}
+              {formatPrice(Math.abs(stats.remainingBudget), Math.abs(stats.remainingBudget) * exchangeRate)}
+            </span>
           </div>
         </div>
-      </Card>
+      </div>
 
-      <Card className="summary-card">
-        <div className="summary-icon summary-icon-green">
-          <TrendUp size={24} weight="duotone" />
-        </div>
-        <div className="summary-body">
-          <div className="summary-label">Remaining Budget</div>
-          <div className="summary-value">
-            {formatPrice(stats.remainingBudget, stats.remainingBudget * exchangeRate)}
-          </div>
-        </div>
-      </Card>
-
-      <Card className="summary-card clickable" onClick={() => setStatusFilter(statusFilter === 'purchased' ? 'all' : 'purchased')}>
-        <div className="summary-icon summary-icon-teal">
-          <Check size={24} weight="duotone" />
-        </div>
-        <div className="summary-body">
-          <div className="summary-label">Purchased</div>
-          <div className="summary-value">{stats.statusCounts.purchased} <span className="summary-sub">/ {stats.totalItems}</span></div>
-        </div>
-      </Card>
-
-      <Card className="summary-card clickable" onClick={() => setStatusFilter(statusFilter === 'over_purchased' ? 'all' : 'over_purchased')}>
-        <div className="summary-icon summary-icon-red">
-          <Warning size={24} weight="duotone" />
-        </div>
-        <div className="summary-body">
-          <div className="summary-label">Over Purchased</div>
-          <div className="summary-value">{stats.statusCounts.over_purchased}</div>
-        </div>
-      </Card>
-    </div>
+      <button
+        type="button"
+        onClick={() => setActiveStage('rfq')}
+        className="flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[var(--color-mist)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-accent)] sm:px-4"
+      >
+        <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
+          <FileText size={18} weight="duotone" className="shrink-0 text-[var(--color-accent)]" />
+          <span className="truncate">Request and compare supplier quotes</span>
+        </span>
+        <span className="shrink-0 text-xs font-semibold text-[var(--color-accent)]">
+          {stats.pendingRfqs > 0 ? `${stats.pendingRfqs} active` : 'Start RFQ'}
+        </span>
+      </button>
+    </section>
   );
 
   const renderToolbar = () => (
-    <div className="procurement-toolbar reveal" data-delay="3">
+    <div className="procurement-toolbar reveal !rounded-lg" data-delay="3">
       <div className="toolbar-left">
         <div className="search-box">
           <MagnifyingGlass className="search-icon" size={16} />
           <input
             type="text"
+            aria-label="Search procurement materials"
             placeholder="Search materials..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
+            className="search-input !h-11"
           />
         </div>
         <select
+          aria-label="Filter materials by purchase status"
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as ItemStatus | 'all')}
-          className="status-filter"
+          onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+          className="status-filter !h-11"
         >
           <option value="all">All Status</option>
+          <option value="outstanding">Needs Purchasing</option>
+          <option value="fulfilled">Fulfilled</option>
           <option value="pending">Pending</option>
           <option value="in_progress">In Progress</option>
           <option value="purchased">Purchased</option>
@@ -757,16 +834,17 @@ export default function UnifiedProcurementView({
           <Funnel size={14} />
           <span className="group-label">Group:</span>
           <select
+            aria-label="Group procurement materials"
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value as GroupByOption)}
-            className="group-select"
+            className="group-select !h-11"
           >
             <option value="stage">By Stage</option>
             <option value="category">By Category</option>
             <option value="none">No Grouping</option>
           </select>
         </div>
-        <Button variant="ghost" icon={<DownloadSimple size={16} />} onClick={handleExportCSV}>
+        <Button className="min-h-11" variant="ghost" icon={<DownloadSimple size={16} />} onClick={handleExportCSV} aria-label="Export purchases as CSV">
           <span className="btn-text-desktop">Export CSV</span>
         </Button>
       </div>
@@ -783,12 +861,20 @@ export default function UnifiedProcurementView({
       : 0;
 
     return (
-      <div key={item.id} className={`boq-item-card ${statusConfig.bgClass} ${isSaving ? 'is-saving' : ''}`}>
+      <div key={item.id} className={`boq-item-card !rounded-lg ${statusConfig.bgClass} ${isSaving ? 'is-saving' : ''}`}>
         <div
           className="item-main"
           onClick={() => item.purchaseRecords.length > 0 && toggleItemExpanded(item.id)}
+          onKeyDown={(event) => {
+            if (event.target === event.currentTarget && item.purchaseRecords.length > 0 && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault();
+              toggleItemExpanded(item.id);
+            }
+          }}
           role={item.purchaseRecords.length > 0 ? 'button' : undefined}
           tabIndex={item.purchaseRecords.length > 0 ? 0 : undefined}
+          aria-expanded={item.purchaseRecords.length > 0 ? isExpanded : undefined}
+          aria-label={item.purchaseRecords.length > 0 ? `${item.material_name}: ${isExpanded ? 'hide' : 'show'} purchase history` : undefined}
         >
           <div className="item-expand">
             {item.purchaseRecords.length > 0 ? (
@@ -827,7 +913,14 @@ export default function UnifiedProcurementView({
           </div>
 
           <div className="item-progress">
-            <div className="progress-bar">
+            <div
+              className="progress-bar"
+              role="progressbar"
+              aria-label={`${item.material_name} purchased`}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(progressPercent)}
+            >
               <div
                 className={`progress-fill ${statusConfig.bgClass}`}
                 style={{ width: `${progressPercent}%` }}
@@ -851,6 +944,7 @@ export default function UnifiedProcurementView({
           <div className="item-actions">
             <Button
               size="sm"
+              className="min-h-11"
               variant="primary"
               icon={<Plus size={14} />}
               onClick={(e) => {
@@ -904,13 +998,14 @@ export default function UnifiedProcurementView({
                         <td className="col-receipt">
                           {record.receipt_document_id ? (
                             <button
-                              className="receipt-link"
+                              className="receipt-link min-h-11 min-w-11"
+                              aria-label={`Open receipt from ${record.supplier_name}`}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleOpenReceipt(record.receipt_document_id);
                               }}
                             >
-                              <Paperclip size={12} />
+                              <Paperclip size={12} aria-hidden="true" />
                               View
                             </button>
                           ) : (
@@ -972,13 +1067,16 @@ export default function UnifiedProcurementView({
           return (
             <div key={groupKey} className="boq-group">
               {groupBy !== 'none' && (
-                <div
-                  className="group-header"
+                <button
+                  type="button"
+                  className="group-header !w-full !rounded-lg motion-reduce:transform-none motion-reduce:transition-none"
                   onClick={() => toggleGroupCollapsed(groupKey)}
-                  style={{ '--stage-color': stageConfig?.color || '#64748b' } as React.CSSProperties}
+                  aria-expanded={!isCollapsed}
+                  aria-label={`${stageConfig?.label || groupKey}: ${isCollapsed ? 'expand' : 'collapse'} ${stageStats.total} items`}
+                  style={{ '--stage-color': stageConfig?.color || 'var(--color-text-muted)' } as React.CSSProperties}
                 >
                   <div className="group-header-left">
-                    <div className="group-icon" style={{ background: `${stageConfig?.color || '#64748b'}15`, color: stageConfig?.color || '#64748b' }}>
+                    <div className="group-icon" style={{ background: 'var(--color-primary-bg)', color: stageConfig?.color || 'var(--color-text-muted)' }}>
                       <StageIcon size={18} weight="duotone" />
                     </div>
                     <div className="group-title">
@@ -996,7 +1094,7 @@ export default function UnifiedProcurementView({
                       {isCollapsed ? <CaretDown size={16} /> : <CaretUp size={16} />}
                     </div>
                   </div>
-                </div>
+                </button>
               )}
 
               {!isCollapsed && (
@@ -1090,10 +1188,11 @@ export default function UnifiedProcurementView({
                           <td className="col-receipt">
                             {record.receipt_document_id ? (
                               <button
-                                className="receipt-link"
+                                className="receipt-link min-h-11 min-w-11"
+                                aria-label={`Open receipt for ${item?.material_name || 'purchase'}`}
                                 onClick={() => handleOpenReceipt(record.receipt_document_id)}
                               >
-                                <Paperclip size={12} />
+                                <Paperclip size={12} aria-hidden="true" />
                               </button>
                             ) : (
                               <span className="no-receipt">—</span>
@@ -1126,50 +1225,53 @@ export default function UnifiedProcurementView({
 
   return (
     <div className="procurement-view">
-      {/* Spending status */}
-      <div className="procurement-hero reveal">
-        <div className="hero-spending">
-          <div className="spending-labels">
-            <span className="spending-spent">
-              {formatPrice(stats.totalSpent, stats.totalSpent * exchangeRate)} spent
-            </span>
-            <span className="spending-budget">
-              of {formatPrice(stats.totalBudget, stats.totalBudget * exchangeRate)}
-            </span>
-          </div>
-          <div className="spending-track">
-            <div
-              className="spending-fill"
-              style={{
-                width: `${Math.min(stats.spendingProgress, 100)}%`,
-                background: spendingBarColor,
-              }}
-            />
-          </div>
-          <span className="spending-percent">{stats.spendingProgress.toFixed(0)}% of budget used</span>
+      {isLoading ? (
+        <div className="space-y-3" role="status" aria-label="Loading procurement data">
+          <span className="sr-only">Loading procurement data</span>
+          <div className="h-36 animate-pulse rounded-lg bg-[var(--color-mist)] motion-reduce:animate-none" />
+          <div className="h-11 w-full animate-pulse rounded-lg bg-[var(--color-mist)] motion-reduce:animate-none sm:w-80" />
+          <div className="h-48 animate-pulse rounded-lg bg-[var(--color-mist)] motion-reduce:animate-none" />
         </div>
-      </div>
+      ) : loadError ? (
+        <div
+          role="alert"
+          className="flex min-h-48 flex-col items-start justify-center rounded-lg border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] p-5"
+        >
+          <Warning size={28} weight="duotone" className="text-[var(--color-danger-fg)]" />
+          <h3 className="mt-3 text-base font-bold text-[var(--color-text)]">Procurement data unavailable</h3>
+          <p className="mt-1 max-w-lg text-sm text-[var(--color-text-secondary)]">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => void loadData()}
+            className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-primary-light)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          >
+            <ArrowClockwise size={18} weight="bold" /> Try again
+          </button>
+        </div>
+      ) : (
+        <>
+          {renderSummaryCards()}
+          {renderStageTabs()}
 
-      {renderSummaryCards()}
-      {renderStageTabs()}
-
-      <div className="content-area">
-        {renderToolbar()}
-        {activeStage === 'boq' && renderBOQContent()}
-        {activeStage === 'history' && renderHistoryContent()}
-        {activeStage === 'rfq' && renderRFQContent()}
-      </div>
+          <div className="content-area">
+            {activeStage !== 'rfq' && renderToolbar()}
+            {activeStage === 'boq' && renderBOQContent()}
+            {activeStage === 'history' && renderHistoryContent()}
+            {activeStage === 'rfq' && renderRFQContent()}
+          </div>
+        </>
+      )}
 
       {/* Purchase Modal */}
       {showPurchaseModal && selectedItemForPurchase && (
         <div className="modal-overlay" onClick={() => { setShowPurchaseModal(false); resetPurchaseForm(); setSelectedItemForPurchase(null); }}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="purchase-modal-title" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-group">
-                <h3>Log Purchase</h3>
+                <h3 id="purchase-modal-title">Log Purchase</h3>
                 <p className="modal-item-name">{selectedItemForPurchase.material_name}</p>
               </div>
-              <button className="modal-close" onClick={() => { setShowPurchaseModal(false); resetPurchaseForm(); setSelectedItemForPurchase(null); }}>
+              <button type="button" className="modal-close !h-11 !w-11" aria-label="Close purchase form" onClick={() => { setShowPurchaseModal(false); resetPurchaseForm(); setSelectedItemForPurchase(null); }}>
                 <X size={20} />
               </button>
             </div>

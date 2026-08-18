@@ -242,7 +242,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
   // ── Sent confirmation ──────────────────────────────────────────────────────
   if (mode === 'sent') {
     return (
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-6 text-center">
         <CheckCircle size={40} weight="fill" className="mx-auto text-emerald-500" />
         <p className="mt-3 text-base font-bold text-slate-900">Request sent</p>
         <p className="mt-1 text-sm text-slate-600">
@@ -253,7 +253,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
         <button
           type="button"
           onClick={() => setMode('list')}
-          className="mt-4 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+          className="mt-4 min-h-11 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
         >
           View all requests
         </button>
@@ -281,7 +281,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
           />
         ) : (
           <>
-            <div className="rounded-xl border border-slate-200 bg-white">
+            <div className="rounded-lg border border-slate-200 bg-white">
               <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                 <div>
                   <p className="text-sm font-bold text-slate-900">Choose what to quote</p>
@@ -340,7 +340,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                 </label>
                 <input
                   id="rfq-address"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm"
+                  className="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm"
                   value={deliveryAddress}
                   onChange={(e) => { setDeliveryAddress(e.target.value); setMatches(null); }}
                   placeholder="Site address"
@@ -354,7 +354,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                 <input
                   id="rfq-date"
                   type="date"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm"
+                  className="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm"
                   value={requiredBy}
                   onChange={(e) => setRequiredBy(e.target.value)}
                 />
@@ -368,7 +368,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
               <textarea
                 id="rfq-notes"
                 rows={3}
-                className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm"
+                className="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Access, delivery times, anything they should know."
@@ -376,7 +376,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
             </div>
 
             {matches && (
-              <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="rounded-lg border border-slate-200 bg-white p-4">
                 <p className="text-sm font-bold text-slate-900">
                   {matches.length > 0
                     ? `This will reach ${matches.length} ${matches.length === 1 ? 'supplier' : 'suppliers'}`
@@ -406,7 +406,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                 type="button"
                 onClick={handlePreview}
                 disabled={isMatching || selectedItems.length === 0}
-                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                className="min-h-11 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
               >
                 {isMatching ? 'Checking…' : 'Who will get this?'}
               </button>
@@ -414,7 +414,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                 type="button"
                 onClick={handleSend}
                 disabled={isSending || selectedItems.length === 0}
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 <PaperPlaneTilt size={16} weight="fill" />
                 {isSending ? 'Sending…' : `Send request${selectedItems.length ? ` (${selectedItems.length})` : ''}`}
@@ -431,7 +431,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-bold text-slate-900">Requests for quotation</p>
+          <h2 className="text-sm font-bold text-slate-900">Requests for quotation</h2>
           <p className="text-xs text-slate-500 mt-0.5">
             Ask suppliers to price items straight from this BOQ.
           </p>
@@ -439,7 +439,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
         <button
           type="button"
           onClick={() => setMode('compose')}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
         >
           <PaperPlaneTilt size={16} weight="fill" /> New request
         </button>
@@ -457,7 +457,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
             const quotes = rfq.rfq_quotes ?? [];
             const isOpen = expandedRfq === rfq.id;
             return (
-              <div key={rfq.id} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+              <div key={rfq.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                 <button
                   type="button"
                   onClick={() => setExpandedRfq(isOpen ? null : rfq.id)}
