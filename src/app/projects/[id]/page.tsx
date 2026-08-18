@@ -1192,8 +1192,8 @@ function ProjectDetailContent() {
             description: '',
         },
         compliance: {
-            title: 'Compliance Tracker',
-            description: 'Track certificates, approvals, admin tasks, and set reminders by stage.',
+            title: 'Compliance',
+            description: '',
         },
         procurement: {
             title: 'Procurement Hub',

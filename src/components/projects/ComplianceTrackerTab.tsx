@@ -18,7 +18,6 @@ import {
 } from '@/lib/services/stages';
 import {
   buildComplianceCertificateMarker,
-  CERTIFICATE_STATUS_META,
   ComplianceCertificateStatus,
   getComplianceRequirementStatus,
   getStageRequirements,
@@ -33,9 +32,10 @@ import {
   CheckCircle,
   ClipboardText,
   Envelope,
-  HourglassHigh,
+  Info,
   PaperPlaneTilt,
   Plus,
+  ShieldCheck,
   Trash,
   Warning,
   WhatsappLogo,
@@ -94,6 +94,8 @@ export default function ComplianceTrackerTab({
     () => new Set(stages.filter((stage) => stage.is_applicable).slice(1).map((stage) => stage.id))
   );
   const [reminderDates, setReminderDates] = useState<Record<string, string>>({});
+  const [openReminderKey, setOpenReminderKey] = useState<string | null>(null);
+  const [addingTaskStageId, setAddingTaskStageId] = useState<string | null>(null);
 
   const applicableStages = useMemo(
     () => stages.filter((stage) => stage.is_applicable),
@@ -284,70 +286,126 @@ export default function ComplianceTrackerTab({
 
   /* ---- Render ---- */
   const channelInfo = CHANNEL_CONFIG[preferredChannel];
+  const globalProgressPct = globalStats.total > 0
+    ? Math.round((globalStats.done / globalStats.total) * 100)
+    : 0;
+
+  const nextAction = applicableStages.flatMap((stage) => {
+    const certificate = getStageRequirements(stage.boq_category).find(
+      (requirement) => getComplianceRequirementStatus(stage.tasks, requirement.id) !== 'done'
+    );
+    if (certificate) {
+      return [{
+        stage,
+        label: certificate.label,
+        type: 'Certificate',
+        targetId: `compliance-cert-${stage.id}-${certificate.id}`,
+      }];
+    }
+
+    const task = stage.tasks.find(
+      (entry) => !isComplianceCertificateTask(entry) && !entry.is_completed
+    );
+    return task ? [{
+      stage,
+      label: task.title,
+      type: 'Admin task',
+      targetId: `compliance-task-${task.id}`,
+    }] : [];
+  })[0];
+
+  const openStage = (stageId: string, targetId?: string) => {
+    setCollapsedStages((previous) => {
+      const next = new Set(previous);
+      next.delete(stageId);
+      return next;
+    });
+
+    if (targetId) {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          const target = document.getElementById(targetId);
+          target?.focus({ preventScroll: true });
+          target?.scrollIntoView({
+            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+            block: 'center',
+          });
+        });
+      });
+    }
+  };
 
   return (
-    <div>
-      {/* Summary Stats */}
-      <div className="compliance-summary-bar">
-        <div className="compliance-stat-card">
-          <div className="stat-icon certificates">
-            <Certificate size={22} weight="duotone" />
-          </div>
-          <div className="stat-text">
-            <div className="stat-value">{globalStats.doneCerts}/{globalStats.totalCerts}</div>
-            <div className="stat-label">Certificates</div>
-          </div>
-        </div>
-        <div className="compliance-stat-card">
-          <div className="stat-icon tasks">
-            <ClipboardText size={22} weight="duotone" />
-          </div>
-          <div className="stat-text">
-            <div className="stat-value">{globalStats.doneTasks}/{globalStats.totalTasks}</div>
-            <div className="stat-label">Admin Tasks</div>
-          </div>
-        </div>
-        <div className="compliance-stat-card">
-          <div className="stat-icon completed">
-            <CheckCircle size={22} weight="duotone" />
-          </div>
-          <div className="stat-text">
-            <div className="stat-value">{globalStats.done}</div>
-            <div className="stat-label">Completed</div>
+    <div className="compliance-tracker">
+      <section className="compliance-overview" aria-labelledby="compliance-readiness-title">
+        <div className="compliance-overview-main">
+          <span className="compliance-overview-icon" aria-hidden="true">
+            <ShieldCheck size={24} weight="duotone" />
+          </span>
+          <div className="compliance-overview-copy">
+            <span className="compliance-eyebrow">Project readiness</span>
+            <div className="compliance-overview-title-row">
+              <h2 id="compliance-readiness-title">
+                {globalStats.done} of {globalStats.total} items complete
+              </h2>
+              <strong>{globalProgressPct}%</strong>
+            </div>
+            <div
+              className="compliance-overview-progress"
+              role="progressbar"
+              aria-label="Overall compliance progress"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={globalProgressPct}
+            >
+              <span style={{ width: `${globalProgressPct}%` }} />
+            </div>
           </div>
         </div>
-        <div className="compliance-stat-card">
-          <div className="stat-icon pending">
-            <HourglassHigh size={22} weight="duotone" />
-          </div>
-          <div className="stat-text">
-            <div className="stat-value">{globalStats.pending}</div>
-            <div className="stat-label">Pending</div>
-          </div>
-        </div>
-      </div>
 
-      {/* Notification Channel Indicator */}
-      <div className="compliance-channel-indicator">
-        <span className="channel-icon">{channelInfo.icon}</span>
-        <span className="channel-text">
-          Reminders via <strong>{channelInfo.label}</strong>
-        </span>
-        {onNavigateToSettings ? (
+        <dl className="compliance-overview-counts">
+          <div>
+            <dt>Certificates</dt>
+            <dd>{globalStats.doneCerts}/{globalStats.totalCerts}</dd>
+          </div>
+          <div>
+            <dt>Admin tasks</dt>
+            <dd>{globalStats.doneTasks}/{globalStats.totalTasks}</dd>
+          </div>
+          <div>
+            <dt>Remaining</dt>
+            <dd>{globalStats.pending}</dd>
+          </div>
+        </dl>
+
+        {nextAction && (
           <button
             type="button"
-            className="channel-hint-link"
-            onClick={onNavigateToSettings}
+            className="compliance-next-action"
+            onClick={() => openStage(nextAction.stage.id, nextAction.targetId)}
           >
-            Change in Settings
+            <span>
+              <small>Next {nextAction.type.toLowerCase()}</small>
+              <strong>{nextAction.label}</strong>
+            </span>
+            <span className="compliance-next-stage">
+              {STAGE_LABELS[nextAction.stage.boq_category]}
+              <CaretDown size={16} />
+            </span>
           </button>
-        ) : (
-          <span className="channel-hint">Change in Settings</span>
+        )}
+      </section>
+
+      <div className="compliance-channel-row">
+        <span className="channel-icon" aria-hidden="true">{channelInfo.icon}</span>
+        <span>Reminders: <strong>{channelInfo.label}</strong></span>
+        {onNavigateToSettings && (
+          <button type="button" onClick={onNavigateToSettings}>Change</button>
         )}
       </div>
 
       {/* Stage Sections */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div className="compliance-stage-list">
         {applicableStages.map((stage) => {
           const requirements = getStageRequirements(stage.boq_category);
           const adminTasks = stage.tasks.filter((task) => !isComplianceCertificateTask(task));
@@ -363,20 +421,26 @@ export default function ComplianceTrackerTab({
           const isCollapsed = collapsedStages.has(stage.id);
 
           return (
-            <section key={stage.id} className="compliance-stage-section">
+            <section key={stage.id} className={`compliance-stage-section ${checklistProgressPct === 100 ? 'is-complete' : ''}`}>
               {/* Clickable Stage Header */}
               <button
                 type="button"
                 className="compliance-stage-header"
                 onClick={() => toggleCollapse(stage.id)}
                 aria-expanded={!isCollapsed}
+                aria-controls={isCollapsed ? undefined : `compliance-stage-${stage.id}`}
               >
-                <div>
-                  <h3 className="stage-title">{STAGE_LABELS[stage.boq_category]}</h3>
+                <div className="stage-heading">
+                  <span className="stage-state" aria-hidden="true">
+                    {checklistProgressPct === 100 ? <CheckCircle size={18} weight="fill" /> : <Certificate size={18} />}
+                  </span>
+                  <div>
+                    <h3 className="stage-title">{STAGE_LABELS[stage.boq_category]}</h3>
                   <p className="stage-sub">
                     {requirements.length} certificate{requirements.length !== 1 ? 's' : ''} &middot;{' '}
                     {adminTasks.length} task{adminTasks.length !== 1 ? 's' : ''}
                   </p>
+                  </div>
                 </div>
                 <div className="stage-progress-area">
                   <div className="stage-progress">
@@ -398,23 +462,25 @@ export default function ComplianceTrackerTab({
 
               {/* Collapsible Body */}
               {!isCollapsed && (
-                <div className="compliance-stage-body">
+                <div className="compliance-stage-body" id={`compliance-stage-${stage.id}`}>
                   {/* Certificates */}
                   {requirements.length > 0 && (
-                    <div style={{ marginBottom: '24px' }}>
+                    <div className="compliance-certificate-list">
                       <div className="compliance-section-label">
                         <Certificate size={14} weight="bold" />
                         Certificates
                       </div>
                       {requirements.map((requirement) => {
                         const status = getComplianceRequirementStatus(stage.tasks, requirement.id);
-                        const statusMeta = CERTIFICATE_STATUS_META[status];
                         const draftKey = `cert-${stage.id}-${requirement.id}`;
                         const isDone = status === 'done';
+                        const reminderOpen = openReminderKey === draftKey;
 
                         return (
                           <div
                             key={requirement.id}
+                            id={`compliance-cert-${stage.id}-${requirement.id}`}
+                            tabIndex={-1}
                             className={`compliance-cert-row ${isDone ? 'is-done' : ''}`}
                           >
                             <div className="cert-main">
@@ -422,21 +488,19 @@ export default function ComplianceTrackerTab({
                                 <span className="cert-check">
                                   <CheckCircle size={14} weight="fill" />
                                 </span>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div className="cert-label">{requirement.label}</div>
+                                <div className="cert-copy">
+                                  <div className="cert-label">
+                                    {requirement.label}
+                                    {requirement.required && <span className="cert-required">Required</span>}
+                                  </div>
                                   <p className="cert-desc">{requirement.description}</p>
                                 </div>
-                                {requirement.required && (
-                                  <span className="cert-required-badge">Required</span>
-                                )}
                               </div>
                               <div className="cert-actions">
-                                <span className={`compliance-status-badge ${status}`}>
-                                  {statusMeta.label}
-                                </span>
                                 <select
-                                  className="compliance-status-select"
+                                  className={`compliance-status-select ${status}`}
                                   value={status}
+                                  aria-label={`Status for ${requirement.label}`}
                                   onChange={(event) =>
                                     handleCertificateStatusChange(
                                       stage,
@@ -449,25 +513,37 @@ export default function ComplianceTrackerTab({
                                   <option value="in_progress">In Progress</option>
                                   <option value="done">Done</option>
                                 </select>
+                                <button
+                                  type="button"
+                                  className={`compliance-icon-button ${reminderOpen ? 'is-active' : ''}`}
+                                  aria-label={`Set reminder for ${requirement.label}`}
+                                  aria-expanded={reminderOpen}
+                                  onClick={() => setOpenReminderKey(reminderOpen ? null : draftKey)}
+                                >
+                                  <Bell size={17} />
+                                </button>
                               </div>
                             </div>
 
-                            {/* Reminder row — just date + bell, channel is shown in top banner */}
-                            <div className="compliance-reminder-row">
-                              <input
-                                type="date"
-                                value={getReminderDate(draftKey)}
-                                onChange={(e) => setReminderDate(draftKey, e.target.value)}
-                              />
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                icon={<Bell size={14} />}
-                                onClick={() => saveReminder(requirement.label, draftKey)}
-                              >
-                                Remind Me
-                              </Button>
-                            </div>
+                            {reminderOpen && (
+                              <div className="compliance-reminder-panel">
+                                <label htmlFor={`${draftKey}-date`}>Reminder date</label>
+                                <input
+                                  id={`${draftKey}-date`}
+                                  type="date"
+                                  value={getReminderDate(draftKey)}
+                                  onChange={(event) => setReminderDate(draftKey, event.target.value)}
+                                />
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  icon={<Bell size={14} />}
+                                  onClick={() => saveReminder(requirement.label, draftKey)}
+                                >
+                                  Schedule
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -483,13 +559,20 @@ export default function ComplianceTrackerTab({
 
                     {adminTasks.map((task) => {
                       const draftKey = `task-${task.id}`;
+                      const reminderOpen = openReminderKey === draftKey;
                       return (
-                        <div key={task.id} className={`compliance-task-row ${task.is_completed ? 'is-done' : ''}`}>
+                        <div
+                          key={task.id}
+                          id={`compliance-task-${task.id}`}
+                          tabIndex={-1}
+                          className={`compliance-task-row ${task.is_completed ? 'is-done' : ''}`}
+                        >
                           <div className="task-main-row">
                             <button
                               type="button"
                               className="compliance-task-toggle"
                               onClick={() => handleToggleTask(stage, task)}
+                              aria-pressed={task.is_completed}
                             >
                               <span className="task-check">
                                 <CheckCircle size={12} weight="fill" />
@@ -497,23 +580,17 @@ export default function ComplianceTrackerTab({
                               <span className="task-title">{task.title}</span>
                             </button>
                             <div className="task-actions-row">
-                              <div className="compliance-reminder-inline">
-                                <input
-                                  type="date"
-                                  className="reminder-date-sm"
-                                  value={getReminderDate(draftKey)}
-                                  onChange={(e) => setReminderDate(draftKey, e.target.value)}
-                                />
-                                <button
-                                  type="button"
-                                  className="reminder-bell-btn"
-                                  title="Set reminder"
-                                  onClick={() => saveReminder(task.title, draftKey, task.id)}
-                                >
-                                  <Bell size={14} />
-                                </button>
-                              </div>
                               <button
+                                type="button"
+                                className={`compliance-icon-button ${reminderOpen ? 'is-active' : ''}`}
+                                aria-label={`Set reminder for ${task.title}`}
+                                aria-expanded={reminderOpen}
+                                onClick={() => setOpenReminderKey(reminderOpen ? null : draftKey)}
+                              >
+                                <Bell size={16} />
+                              </button>
+                              <button
+                                type="button"
                                 className="compliance-task-delete"
                                 onClick={() => handleDeleteTask(stage, task.id)}
                                 aria-label="Delete task"
@@ -522,6 +599,25 @@ export default function ComplianceTrackerTab({
                               </button>
                             </div>
                           </div>
+                          {reminderOpen && (
+                            <div className="compliance-reminder-panel">
+                              <label htmlFor={`${draftKey}-date`}>Reminder date</label>
+                              <input
+                                id={`${draftKey}-date`}
+                                type="date"
+                                value={getReminderDate(draftKey)}
+                                onChange={(event) => setReminderDate(draftKey, event.target.value)}
+                              />
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                icon={<Bell size={14} />}
+                                onClick={() => saveReminder(task.title, draftKey, task.id)}
+                              >
+                                Schedule
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -530,31 +626,46 @@ export default function ComplianceTrackerTab({
                       <p className="compliance-empty">No admin tasks yet for this stage.</p>
                     )}
 
-                    {/* Add task form */}
-                    <div className="compliance-add-task-row">
-                      <input
-                        placeholder="Add admin/compliance task..."
-                        value={newTaskByStage[stage.id] || ''}
-                        onChange={(event) =>
-                          setNewTaskByStage((prev) => ({ ...prev, [stage.id]: event.target.value }))
-                        }
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') {
-                            event.preventDefault();
-                            handleAddTask(stage);
+                    {addingTaskStageId === stage.id ? (
+                      <div className="compliance-add-task-row">
+                        <label htmlFor={`add-task-${stage.id}`} className="sr-only">Task name</label>
+                        <input
+                          id={`add-task-${stage.id}`}
+                          autoFocus
+                          placeholder="Task name"
+                          value={newTaskByStage[stage.id] || ''}
+                          onChange={(event) =>
+                            setNewTaskByStage((prev) => ({ ...prev, [stage.id]: event.target.value }))
                           }
-                        }}
-                      />
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        icon={<Plus size={14} />}
-                        loading={Boolean(isSavingTask[stage.id])}
-                        onClick={() => handleAddTask(stage)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              event.preventDefault();
+                              handleAddTask(stage);
+                            }
+                            if (event.key === 'Escape') setAddingTaskStageId(null);
+                          }}
+                        />
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          loading={Boolean(isSavingTask[stage.id])}
+                          onClick={() => handleAddTask(stage)}
+                        >
+                          Add task
+                        </Button>
+                        <button type="button" className="compliance-cancel-button" onClick={() => setAddingTaskStageId(null)}>
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="compliance-add-task-trigger"
+                        onClick={() => setAddingTaskStageId(stage.id)}
                       >
-                        Add
-                      </Button>
-                    </div>
+                        <Plus size={16} /> Add task
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -564,14 +675,19 @@ export default function ComplianceTrackerTab({
       </div>
 
       {applicableStages.length === 0 && (
-        <div className="compliance-stage-section" style={{ padding: '40px', textAlign: 'center' }}>
-          <Warning size={32} style={{ color: 'var(--color-text-muted)', marginBottom: '12px' }} />
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>
+        <div className="compliance-empty-state">
+          <Warning size={28} />
+          <p>
             No applicable stages found. Configure your project stages in{' '}
             <strong>Configurations</strong> first.
           </p>
         </div>
       )}
+
+      <aside className="compliance-guidance-note">
+        <Info size={17} aria-hidden="true" />
+        <p>This checklist is a project aid. Confirm required approvals with your local authority and appointed professionals.</p>
+      </aside>
     </div>
   );
 }
