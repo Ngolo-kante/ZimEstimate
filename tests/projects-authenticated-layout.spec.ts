@@ -29,6 +29,12 @@ test.describe('Authenticated project workspace', () => {
     await expect(projectDock.getByRole('button', { name: 'Overview' })).toBeVisible({ timeout: 10_000 });
     await projectDock.getByRole('button', { name: 'BOQ' }).click();
     await expect(page.getByRole('heading', { name: 'Bill of Quantities' })).toBeVisible();
+    const stageSwitcher = page.getByRole('navigation', { name: 'Construction stages' });
+    await expect(stageSwitcher).toBeVisible();
+    const structureStage = stageSwitcher.getByRole('button', { name: /^Structure,/ });
+    await structureStage.click();
+    await expect(structureStage).toHaveAttribute('aria-current', 'step');
+    await expect(page.getByRole('button', { name: /Stage schedule Structural Walls & Frame/ })).toBeVisible();
     await expectNoDocumentOverflow(page);
 
     await projectDock.getByRole('button', { name: 'Budget' }).click();

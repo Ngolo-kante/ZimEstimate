@@ -85,6 +85,14 @@ const categoryLabels: Record<BOQCategory, string> = {
     exterior: 'External Work',
 };
 
+const categoryShortLabels: Record<BOQCategory, string> = {
+    substructure: 'Foundation',
+    superstructure: 'Structure',
+    roofing: 'Roof',
+    finishing: 'Finishes',
+    exterior: 'External',
+};
+
 const CHECKLIST_TASK_PREFIX = 'boq_checklist:';
 const GEOTECH_DOC_TAG = 'geotech_report';
 
@@ -174,6 +182,7 @@ function ProjectDetailContent() {
     const projectRealtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const stagesRealtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const materialRealtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const stageSwitcherRef = useRef<HTMLElement | null>(null);
     const [showCelebration, setShowCelebration] = useState(false);
     const [celebrationData, setCelebrationData] = useState<{
         title: string;
@@ -1085,6 +1094,16 @@ function ProjectDetailContent() {
         setIsComplianceBannerDismissed(false);
     }, [activeTab, activeStageComplianceWarnings.length]);
 
+    useEffect(() => {
+        if (activeView !== 'boq') return;
+        const frame = window.requestAnimationFrame(() => {
+            stageSwitcherRef.current
+                ?.querySelector('[aria-current="step"]')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        });
+        return () => window.cancelAnimationFrame(frame);
+    }, [activeTab, activeView]);
+
     // Loading state - skeleton layout
     if (isLoading) {
         return (
@@ -1170,7 +1189,7 @@ function ProjectDetailContent() {
         },
         boq: {
             title: 'Bill of Quantities',
-            description: 'Manage stage timelines, tasks, and material line items in one place.',
+            description: '',
         },
         compliance: {
             title: 'Compliance Tracker',
@@ -1245,7 +1264,9 @@ function ProjectDetailContent() {
                             <div>
                                 <p className="view-eyebrow">{project.name}</p>
                                 <h1 className="view-title">{activeViewDetails.title}</h1>
-                                <p className="view-description">{activeViewDetails.description}</p>
+                                {activeViewDetails.description && (
+                                    <p className="view-description">{activeViewDetails.description}</p>
+                                )}
                             </div>
                             <div className="view-stats">
                                 {activeViewStats.map((stat) => (
@@ -1560,6 +1581,31 @@ function ProjectDetailContent() {
                     {/* BOQ View */}
                     {activeView === 'boq' && (
                         <div className="view-panel space-y-6 max-w-full mx-auto">
+                            <nav ref={stageSwitcherRef} className="stage-switcher" aria-label="Construction stages">
+                                {STAGE_CATEGORIES.map((category, index) => {
+                                    const stage = stages.find((candidate) => candidate.boq_category === category);
+                                    if (!stage) return null;
+                                    const stageItemCount = items.filter((item) => item.category === category).length;
+                                    const isActive = activeTab === category;
+                                    return (
+                                        <button
+                                            key={stage.id}
+                                            type="button"
+                                            className={`stage-switcher-item${isActive ? ' active' : ''}${!stage.is_applicable ? ' unavailable' : ''}`}
+                                            aria-current={isActive ? 'step' : undefined}
+                                            aria-label={`${categoryShortLabels[category]}, ${stageItemCount} ${stageItemCount === 1 ? 'item' : 'items'}`}
+                                            onClick={() => setActiveTab(category)}
+                                        >
+                                            <span className="stage-number">{index + 1}</span>
+                                            <span className="stage-switcher-copy">
+                                                <strong>{categoryShortLabels[category]}</strong>
+                                                <small>{stage.is_applicable ? `${stageItemCount} ${stageItemCount === 1 ? 'item' : 'items'}` : 'Not included'}</small>
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </nav>
+
                             {activeStageComplianceWarnings.length > 0 && !isComplianceBannerDismissed && (
                                 <div className="compliance-warning-banner" role="alert">
                                     <div className="compliance-warning-content">
@@ -1567,15 +1613,18 @@ function ProjectDetailContent() {
                                             <WarningCircle size={18} weight="fill" />
                                         </span>
                                         <div>
-                                            <h4 className="text-sm font-semibold text-amber-900">Missing stage approvals</h4>
-                                            <p className="text-xs text-amber-800 mt-1">
-                                                You can continue building, but these approvals are still pending.
-                                            </p>
-                                            <ul className="mt-2 list-disc pl-5 text-xs text-amber-800 space-y-1">
-                                                {activeStageComplianceWarnings.slice(0, 6).map((issue) => (
-                                                    <li key={issue}>{issue}</li>
-                                                ))}
-                                            </ul>
+                                            <h4 className="text-sm font-semibold text-amber-900">
+                                                {activeStageComplianceWarnings.length} pending {activeStageComplianceWarnings.length === 1 ? 'approval' : 'approvals'}
+                                            </h4>
+                                            <p className="text-xs text-amber-800 mt-1">Review these before starting this stage.</p>
+                                            <details className="compliance-warning-details">
+                                                <summary>View pending approvals</summary>
+                                                <ul className="mt-2 list-disc pl-5 text-xs text-amber-800 space-y-1">
+                                                    {activeStageComplianceWarnings.slice(0, 6).map((issue) => (
+                                                        <li key={issue}>{issue}</li>
+                                                    ))}
+                                                </ul>
+                                            </details>
                                         </div>
                                     </div>
                                     <div className="compliance-warning-actions">
@@ -1948,6 +1997,93 @@ function ProjectDetailContent() {
                         box-shadow var(--dashboard-medium) var(--dashboard-ease);
                 }
 
+                .stage-switcher {
+                    display: grid;
+                    grid-template-columns: repeat(5, minmax(0, 1fr));
+                    gap: 8px;
+                    margin-bottom: 18px;
+                }
+
+                .stage-switcher-item {
+                    min-width: 0;
+                    min-height: 58px;
+                    padding: 8px 10px;
+                    display: flex;
+                    align-items: center;
+                    gap: 9px;
+                    border: 1px solid #d8e0eb;
+                    border-radius: 7px;
+                    background: #fff;
+                    color: #526176;
+                    text-align: left;
+                    cursor: pointer;
+                }
+
+                .stage-switcher-item:hover {
+                    border-color: #9fb6d0;
+                    background: #f8fafc;
+                }
+
+                .stage-switcher-item.active {
+                    border-color: #0b1f3b;
+                    background: #0b1f3b;
+                    color: #fff;
+                    box-shadow: 0 5px 12px rgba(11, 31, 59, 0.14);
+                }
+
+                .stage-switcher-item.unavailable:not(.active) {
+                    color: #8b96a7;
+                    background: #f8fafc;
+                }
+
+                .stage-number {
+                    width: 25px;
+                    height: 25px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                    border: 1px solid #d8e0eb;
+                    border-radius: 6px;
+                    background: #f2f6fa;
+                    color: #0b1f3b;
+                    font-size: 0.72rem;
+                    font-weight: 750;
+                }
+
+                .stage-switcher-item.active .stage-number {
+                    border-color: rgba(255, 255, 255, 0.35);
+                    background: rgba(255, 255, 255, 0.12);
+                    color: #fff;
+                }
+
+                .stage-switcher-copy {
+                    min-width: 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                }
+
+                .stage-switcher-copy strong,
+                .stage-switcher-copy small {
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .stage-switcher-copy strong {
+                    font-size: 0.78rem;
+                }
+
+                .stage-switcher-copy small {
+                    color: #748196;
+                    font-size: 0.67rem;
+                }
+
+                .stage-switcher-item.active .stage-switcher-copy small {
+                    color: #c9d5e4;
+                }
+
                 .compliance-warning-banner {
                     border: 1px solid #fcd34d;
                     background: #fffbeb;
@@ -2002,6 +2138,20 @@ function ProjectDetailContent() {
 
                 .compliance-warning-dismiss:hover {
                     background: #fef3c7;
+                }
+
+                .compliance-warning-details {
+                    margin-top: 7px;
+                }
+
+                .compliance-warning-details summary {
+                    width: fit-content;
+                    color: #92400e;
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    text-decoration: underline;
+                    text-underline-offset: 2px;
+                    cursor: pointer;
                 }
 
                 .overview-view {
@@ -2143,12 +2293,12 @@ function ProjectDetailContent() {
                         height: auto;
                         min-height: calc(100vh - 56px);
                         overflow-y: visible;
-                        padding: 14px 12px 96px;
+                        padding: 14px 12px calc(108px + env(safe-area-inset-bottom, 0px));
                         gap: 14px;
                     }
 
                     .view-header {
-                        padding: 16px;
+                        padding: 8px 4px 2px;
                         flex-direction: column;
                         border-radius: 8px;
                         align-items: flex-start;
@@ -2177,6 +2327,26 @@ function ProjectDetailContent() {
 
                     .view-panel {
                         border-radius: 8px;
+                    }
+
+                    .stage-switcher {
+                        display: flex;
+                        gap: 7px;
+                        margin: 0 -12px 14px;
+                        padding: 0 12px 4px;
+                        overflow-x: auto;
+                        scroll-snap-type: x proximity;
+                        scrollbar-width: none;
+                    }
+
+                    .stage-switcher::-webkit-scrollbar {
+                        display: none;
+                    }
+
+                    .stage-switcher-item {
+                        min-width: 116px;
+                        min-height: 54px;
+                        scroll-snap-align: start;
                     }
 
                     .compliance-warning-banner {

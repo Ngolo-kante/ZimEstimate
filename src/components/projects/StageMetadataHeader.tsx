@@ -21,7 +21,7 @@ const statusOptions: { value: StageStatus; label: string; icon: React.ReactNode;
 export default function StageMetadataHeader({ stage, onUpdate, customTitle }: StageMetadataHeaderProps) {
     const [isStatusOpen, setIsStatusOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [isTimelineOpen, setIsTimelineOpen] = useState(true);
+    const [isTimelineOpen, setIsTimelineOpen] = useState(false);
 
     const currentStatus = statusOptions.find(s => s.value === stage.status) || statusOptions[0];
 
@@ -63,7 +63,10 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     className="section-toggle"
                     onClick={() => setIsTimelineOpen(prev => !prev)}
                 >
-                    <span>Timelines - {customTitle || stage.name} Phase</span>
+                    <span className="toggle-copy">
+                        <small>Stage schedule</small>
+                        <strong>{customTitle || stage.name}</strong>
+                    </span>
                     {isTimelineOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
                 </button>
 
@@ -189,6 +192,26 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
 
                 .section-toggle:hover {
                     background: #fafafa;
+                }
+
+                .toggle-copy {
+                    min-width: 0;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 3px;
+                }
+
+                .toggle-copy small {
+                    color: #64748b;
+                    font-size: 0.68rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                }
+
+                .toggle-copy strong {
+                    overflow-wrap: anywhere;
+                    font-size: 1rem;
                 }
                 
                 .stage-header:has(.stage-body) .section-toggle {
