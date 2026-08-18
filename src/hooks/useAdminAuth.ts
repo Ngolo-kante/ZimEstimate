@@ -19,12 +19,13 @@ export function useAdminAuth() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('tier')
+        .select('user_type, tier')
         .eq('id', user.id)
         .single();
 
-      const p = profile as { tier: string } | null;
-      if (!p || p.tier !== 'admin') {
+      const p = profile as { user_type: string; tier: string } | null;
+      const isAdmin = p?.user_type === 'admin' || p?.tier === 'admin';
+      if (!isAdmin) {
         router.push('/');
         return;
       }

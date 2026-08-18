@@ -54,16 +54,15 @@ export default function InstallPromptBanner() {
         <Button icon={<DownloadSimple size={16} />} onClick={handleInstall}>
           Install
         </Button>
-        <button className="dismiss" onClick={() => setVisible(false)} aria-label="Dismiss">
+        <button type="button" className="dismiss" onClick={() => setVisible(false)} aria-label="Dismiss install prompt">
           <X size={16} />
         </button>
       </div>
 
       <style jsx>{`
         .install-banner {
-          position: sticky;
-          bottom: 0;
-          margin: 0 auto 24px;
+          position: relative;
+          margin: 12px auto 0;
           max-width: 960px;
           background: #0f172a;
           color: white;
@@ -107,8 +106,21 @@ export default function InstallPromptBanner() {
 
         @media (max-width: 768px) {
           .install-banner {
-            flex-direction: column;
-            align-items: flex-start;
+            max-width: none;
+            margin: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            flex-direction: row;
+            align-items: center;
+          }
+
+          .install-subtitle {
+            display: none;
+          }
+
+          .install-actions {
+            margin-left: auto;
+            gap: 8px;
           }
         }
       `}</style>

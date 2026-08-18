@@ -56,9 +56,10 @@ function BuildingHouse({ coverage }: { coverage: Record<string, number> }) {
   return (
     <svg
       viewBox="0 0 220 132"
+      preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-label="Illustration of a house building up stage by stage as the budget increases"
-      className="w-full h-20 sm:h-28 md:h-32 lg:h-36"
+      className="block h-[116px] w-full sm:h-28 md:h-32 lg:h-36"
     >
       {/* Ground */}
       <line x1="10" y1="126" x2="210" y2="126" stroke="#CBD5E1" strokeWidth="2" strokeLinecap="round" />
@@ -187,30 +188,32 @@ export default function HeroBudgetWidget() {
           </div>
         </div>
 
-        {/* Budget input */}
-        <label className="block">
-          <span className="sr-only">Your budget in US dollars</span>
-          <div className="flex items-center gap-1 bg-slate-50 border border-slate-300 rounded-md px-3.5 py-2.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-400/20 transition">
-            <span className="text-lg md:text-xl font-extrabold text-slate-400">$</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={displayValue}
-              onChange={(e) => handleInput(e.target.value)}
-              placeholder="Enter amount"
-              className="w-full bg-transparent text-lg md:text-xl font-extrabold text-slate-900 outline-none placeholder:text-slate-300 tabular-nums"
-            />
-            <span className="text-[10px] font-bold uppercase tracking-normal text-slate-400 flex-shrink-0">USD</span>
+        {/* Keep the preview before the input visually and in the accessibility
+            tree, so it remains visible when the mobile keyboard opens. */}
+        <div className="flex flex-col gap-2 sm:gap-3">
+          <div className="flex min-h-[116px] flex-shrink-0 items-center justify-center overflow-visible sm:min-h-28">
+            <BuildingHouse coverage={coverage} />
           </div>
-        </label>
 
-        {/* The house that builds itself */}
-        <div className="block flex-shrink-0">
-          <BuildingHouse coverage={coverage} />
+          <label className="block">
+            <span className="sr-only">Your budget in US dollars</span>
+            <div className="flex items-center gap-1 bg-slate-50 border border-slate-300 rounded-md px-3.5 py-2.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-400/20 transition">
+              <span className="text-lg md:text-xl font-extrabold text-slate-400">$</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={displayValue}
+                onChange={(e) => handleInput(e.target.value)}
+                placeholder="Enter amount"
+                className="w-full bg-transparent text-lg md:text-xl font-extrabold text-slate-900 outline-none placeholder:text-slate-300 tabular-nums"
+              />
+              <span className="text-[10px] font-bold uppercase tracking-normal text-slate-400 flex-shrink-0">USD</span>
+            </div>
+          </label>
         </div>
 
         {/* Stage coverage bars */}
-        <div className="hidden sm:flex flex-1 flex-col justify-center gap-1.5 min-h-0" aria-live="polite">
+        <div className="hidden sm:flex flex-1 flex-col justify-center gap-1.5 min-h-0">
           {(estimate?.rows ?? []).map((row) => {
             const pct = Math.round(row.coveragePercent);
             return (
@@ -244,7 +247,11 @@ export default function HeroBudgetWidget() {
             {fullyFunded && (
               <CheckCircle size={16} weight="fill" className="text-[var(--color-success)] flex-shrink-0" aria-hidden="true" />
             )}
-            <p className="text-[11px] md:text-[12px] font-semibold text-slate-700 leading-snug">
+            <p
+              className="text-[11px] md:text-[12px] font-semibold text-slate-700 leading-snug"
+              aria-live="polite"
+              aria-atomic="true"
+            >
               {verdict}
             </p>
           </div>

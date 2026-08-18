@@ -17,6 +17,7 @@ import {
   ChartLineUp,
   ChatCircleText,
   Folders,
+  Gauge,
 } from '@phosphor-icons/react';
 import { useAuth } from '@/components/providers/AuthProvider';
 
@@ -110,7 +111,7 @@ export default function TopNavbar() {
   }, []);
 
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Account';
-  const tierLabel = profile?.tier === 'pro' ? 'Pro plan' : profile?.tier === 'admin' ? 'Admin' : 'Free plan';
+  const tierLabel = isAdmin ? 'Administrator' : profile?.tier === 'pro' ? 'Pro plan' : 'Free plan';
 
   const handleSignOut = async () => {
     await signOut();
@@ -183,6 +184,17 @@ export default function TopNavbar() {
 
         {/* Right Section */}
         <div className="navbar-right">
+          {isAdmin && (
+            <Link
+              href="/admin/revenue"
+              className={`admin-panel-link ${pathname.startsWith('/admin') ? 'active' : ''}`}
+              aria-label="Open administrator panel"
+            >
+              <Gauge size={18} weight="duotone" aria-hidden="true" />
+              <span>Admin Panel</span>
+            </Link>
+          )}
+
           {/* Notification Menu */}
           <div className="menu-container" ref={notificationMenuRef}>
             <button
@@ -296,11 +308,24 @@ export default function TopNavbar() {
                       <div className="profile-info">
                         <span className="profile-name">{displayName}</span>
                         <span className="profile-email">{user?.email}</span>
-                        <span className={`profile-tier ${profile?.tier || 'free'}`}>{tierLabel}</span>
+                        <span className={`profile-tier ${isAdmin ? 'admin' : profile?.tier || 'free'}`}>{tierLabel}</span>
                       </div>
                     </div>
                     <div className="menu-section">
                       <span className="menu-section-label">Workspace</span>
+                      {isAdmin && (
+                        <Link
+                          href="/admin/revenue"
+                          className="quick-link admin-quick-link"
+                          onClick={() => setProfileMenuOpen(false)}
+                        >
+                          <span className="quick-link-icon"><Gauge size={17} weight="duotone" /></span>
+                          <span className="quick-link-copy">
+                            <strong>Admin panel</strong>
+                            <small>Revenue, users and operations</small>
+                          </span>
+                        </Link>
+                      )}
                       <Link
                         href="/projects"
                         className="quick-link"
@@ -429,6 +454,16 @@ export default function TopNavbar() {
       {mobileMenuOpen && (
         <div className="mobile-menu" id="mobile-navigation">
           <nav className="mobile-nav">
+            {isAdmin && (
+              <Link
+                href="/admin/revenue"
+                className={`mobile-nav-link admin ${pathname.startsWith('/admin') ? 'active' : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Gauge size={18} weight="duotone" aria-hidden="true" />
+                Admin Panel
+              </Link>
+            )}
             {navItems
               .filter((item) => !item.adminOnly || isAdmin)
               .map((item) => (
@@ -595,6 +630,29 @@ export default function TopNavbar() {
           display: flex;
           align-items: center;
           gap: 12px;
+        }
+
+        :global(.admin-panel-link) {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          min-height: 40px;
+          padding: 0 12px;
+          border: 1px solid var(--color-border);
+          border-radius: 7px;
+          color: var(--color-primary);
+          background: #fff;
+          font-size: 0.78rem;
+          font-weight: 700;
+          text-decoration: none;
+          white-space: nowrap;
+          transition: border-color 0.15s ease, background 0.15s ease;
+        }
+
+        :global(.admin-panel-link:hover),
+        :global(.admin-panel-link.active) {
+          border-color: var(--color-accent);
+          background: var(--color-accent-muted);
         }
 
         /* Generic Menu Container */
@@ -938,6 +996,11 @@ export default function TopNavbar() {
           color: var(--color-primary);
         }
 
+        :global(.admin-quick-link) {
+          color: var(--color-primary);
+          background: #f2f6fa;
+        }
+
         .quick-link-icon {
           width: 32px;
           height: 32px;
@@ -1149,6 +1212,16 @@ export default function TopNavbar() {
           color: var(--color-primary);
           font-weight: 600;
         }
+
+        :global(.mobile-nav-link.admin) {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          margin-bottom: 6px;
+          border: 1px solid var(--color-border);
+          color: var(--color-primary);
+          font-weight: 700;
+        }
         
         /* Typography - Concept */
         .logo-text { font-size: 1.25rem; font-weight: 800; color: #0f172a; letter-spacing: -0.03em; }
@@ -1167,6 +1240,8 @@ export default function TopNavbar() {
           .trigger-copy,
           .profile-caret { display: none; }
           .user-btn { width: 40px; padding: 0; gap: 0; }
+          :global(.admin-panel-link) { width: 40px; padding: 0; justify-content: center; }
+          :global(.admin-panel-link span) { display: none; }
           .trigger-avatar { border-radius: 7px; }
           .profile-dropdown {
             position: fixed;

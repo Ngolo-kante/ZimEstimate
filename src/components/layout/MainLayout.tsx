@@ -201,6 +201,7 @@ export default function MainLayout({
     <CurrencyProvider>
       <div className="app-layout">
         <TopNavbar />
+        <InstallPromptBanner />
         <main className="main-content">
           {/* Page Content */}
           <div className={`page-content ${fullWidth ? 'full-width' : ''}`}>
@@ -209,7 +210,6 @@ export default function MainLayout({
           </div>
         </main>
 
-        <InstallPromptBanner />
         {!hideBottomNav && <MobileBottomNav />}
 
         {/* Footer */}
