@@ -38,7 +38,14 @@ test.describe('Authenticated project workspace', () => {
     await expectNoDocumentOverflow(page);
 
     await projectDock.getByRole('button', { name: 'Budget' }).click();
-    await expect(page.getByRole('heading', { name: 'Budget' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Budget', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Budget position' })).toBeVisible();
+    await expect(page.getByRole('progressbar', { name: 'Budget spent' })).toBeVisible();
+    await expect(page.getByText('Add BOQ items to calculate a plan')).toBeVisible();
+    await page.getByRole('button', { name: 'Custom' }).click();
+    await page.getByLabel('Target amount').fill('15000');
+    await expect(page.getByText('Amounts to set aside')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Set delivery reminders' })).toBeVisible();
     await expectNoDocumentOverflow(page);
 
     await projectDock.getByRole('button', { name: 'Buy' }).click();

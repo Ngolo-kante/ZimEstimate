@@ -1185,7 +1185,7 @@ function ProjectDetailContent() {
     const viewDetails: Record<Exclude<ProjectView, 'overview'>, { title: string; description: string }> = {
         budget: {
             title: 'Budget',
-            description: 'See what is spent, what remains, and the savings pace needed for your target date.',
+            description: '',
         },
         boq: {
             title: 'Bill of Quantities',
@@ -1217,7 +1217,7 @@ function ProjectDetailContent() {
     const budgetUsedPercent = purchaseStats.estimatedTotal > 0
         ? Math.round((purchaseStats.actualSpent / purchaseStats.estimatedTotal) * 100)
         : 0;
-    const activeViewStats = activeView === 'budget' || activeView === 'procurement'
+    const activeViewStats = activeView === 'procurement'
         ? [
             { label: 'Spent', value: formatPrice(purchaseStats.actualSpent, purchaseStats.actualSpent * exchangeRate) },
             { label: 'Remaining', value: formatPrice(budgetRemaining, budgetRemaining * exchangeRate) },
@@ -1745,6 +1745,7 @@ function ProjectDetailContent() {
                                 amountSpentUsd={purchaseStats.actualSpent}
                                 targetDate={project.target_purchase_date}
                                 onTargetDateChange={handleSavingsTargetDateChange}
+                                onOpenSettings={() => setActiveView('settings')}
                             />
                         </div>
                     )}
