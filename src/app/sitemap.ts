@@ -6,6 +6,7 @@ const siteUrl = getSiteUrl();
 const publicRoutes = [
   '/',
   '/home',
+  '/cost-to-build-a-house-in-zimbabwe',
   '/marketplace',
   '/marketplace/suppliers',
   '/market-insights',
@@ -20,7 +21,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return publicRoutes.map((route) => ({
     url: `${siteUrl}${route === '/' ? '' : route}`,
     lastModified: now,
-    changeFrequency: route === '/home' || route === '/marketplace' || route === '/market-insights' ? 'weekly' : 'monthly',
-    priority: route === '/' || route === '/home' ? 1 : 0.7,
+    changeFrequency: route === '/home' || route === '/marketplace' || route === '/market-insights' || route === '/cost-to-build-a-house-in-zimbabwe' ? 'weekly' : 'monthly',
+    priority: route === '/' || route === '/home' ? 1 : route === '/cost-to-build-a-house-in-zimbabwe' ? 0.9 : 0.7,
   }));
 }

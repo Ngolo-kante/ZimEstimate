@@ -11,6 +11,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: [
           '/',
           '/home',
+          '/cost-to-build-a-house-in-zimbabwe',
           '/marketplace',
           '/market-insights',
           '/quick-projects',
