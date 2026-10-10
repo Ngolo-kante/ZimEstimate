@@ -54,6 +54,10 @@ const optionalReminderEnv = [
   'TELEGRAM_BOT_TOKEN',
 ];
 
+const optionalAnalyticsEnv = [
+  'NEXT_PUBLIC_POSTHOG_KEY',
+];
+
 const missing = requiredEnv.filter((key) => !process.env[key]);
 
 if (missing.length > 0) {
@@ -63,9 +67,14 @@ if (missing.length > 0) {
 }
 
 const missingOptional = optionalReminderEnv.filter((key) => !process.env[key]);
+const missingAnalytics = optionalAnalyticsEnv.filter((key) => !process.env[key]);
 
 console.log('All required environment variables are set.');
 if (missingOptional.length > 0) {
   console.warn('Optional reminder provider variables not set (only needed for those channels):');
   missingOptional.forEach((key) => console.warn(`- ${key}`));
+}
+if (missingAnalytics.length > 0) {
+  console.warn('Optional PostHog analytics variables not set (analytics and the consent banner stay disabled):');
+  missingAnalytics.forEach((key) => console.warn(`- ${key}`));
 }

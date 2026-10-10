@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, CheckCircle } from '@phosphor-icons/react';
 import { estimateStageReach } from '@/lib/estimators/stageBudgetEstimator';
+import { captureProductEvent, getBudgetBand } from '@/lib/productAnalytics';
 
 /**
  * Live budget-reach calculator for the home hero.
@@ -204,6 +205,15 @@ export default function HeroBudgetWidget() {
                 inputMode="numeric"
                 value={displayValue}
                 onChange={(e) => handleInput(e.target.value)}
+                onBlur={() => {
+                  if (!hasValidBudget) return;
+                  captureProductEvent('budget_entered', {
+                    source: 'home_budget_widget',
+                    budget_band: getBudgetBand(parsedBudget),
+                    floor_area_m2: PLAN_AREA_M2,
+                    location_category: PLAN_LOCATION,
+                  });
+                }}
                 placeholder="Enter amount"
                 className="w-full bg-transparent text-lg md:text-xl font-extrabold text-slate-900 outline-none placeholder:text-slate-300 tabular-nums"
               />
@@ -257,6 +267,12 @@ export default function HeroBudgetWidget() {
           </div>
           <Link
             href={hasValidBudget ? `/quick-budget?budget=${parsedBudget}` : '/quick-budget'}
+            onClick={() => captureProductEvent('calculator_customized', {
+              source: 'home_budget_widget',
+              budget_band: hasValidBudget ? getBudgetBand(parsedBudget) : 'not_entered',
+              floor_area_m2: PLAN_AREA_M2,
+              location_category: PLAN_LOCATION,
+            })}
             className="flex-shrink-0 inline-flex items-center gap-1 text-[11px] md:text-[12px] font-bold text-blue-600 hover:text-blue-700 transition-colors whitespace-nowrap"
           >
             Customize <ArrowRight size={12} weight="bold" />

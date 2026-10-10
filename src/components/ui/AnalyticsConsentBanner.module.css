@@ -1,0 +1,159 @@
+.banner {
+  position: fixed;
+  z-index: 250;
+  right: 22px;
+  bottom: 22px;
+  width: min(680px, calc(100vw - 44px));
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px 16px 14px;
+  color: #eaf0f8;
+  background: #0b1f3b;
+  border: 1px solid #294664;
+  border-radius: 8px;
+  box-shadow: 0 22px 60px rgba(4, 14, 28, 0.3);
+}
+
+.marker {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  padding-inline: 7px;
+  color: #7d94ad;
+  border-right: 1px solid #294664;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #e6b84c;
+  background: rgba(230, 184, 76, 0.1);
+  border: 1px solid rgba(230, 184, 76, 0.34);
+  border-radius: 5px;
+}
+
+.copy strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #fff;
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+}
+
+.copy p {
+  margin: 0;
+  color: #bdcad9;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.copy a {
+  color: #fff;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.actions button,
+.close {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.actions button {
+  min-height: 40px;
+  padding: 9px 13px;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.decline {
+  color: #dbe5f0;
+  background: transparent;
+  border: 1px solid #50667e !important;
+}
+
+.accept {
+  color: #0b1f3b;
+  background: #fff;
+}
+
+.actions button:focus-visible,
+.close:focus-visible {
+  outline: 3px solid var(--color-focus-ring-inverse);
+  outline-offset: 2px;
+}
+
+.close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  color: #b9c8d9;
+  background: transparent;
+  border-radius: 4px;
+}
+
+@media (max-width: 760px) {
+  .banner {
+    right: 12px;
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    width: calc(100vw - 24px);
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .marker {
+    display: none;
+  }
+
+  .icon {
+    align-self: start;
+  }
+
+  .copy {
+    padding-right: 20px;
+  }
+
+  .actions {
+    grid-column: 1 / -1;
+  }
+
+  .actions button {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .banner {
+    animation: consentEnter 240ms ease-out both;
+  }
+
+  @keyframes consentEnter {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+

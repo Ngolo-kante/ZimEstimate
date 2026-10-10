@@ -5,6 +5,7 @@ import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { Profile, TIER_LIMITS } from '@/lib/database.types';
 import { getBrowserSiteUrl } from '@/lib/siteUrl';
+import { resetAnalyticsIdentity } from '@/lib/productAnalytics';
 
 interface AuthState {
     user: User | null;
@@ -121,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, newSession) => {
+                if (event === 'SIGNED_OUT') resetAnalyticsIdentity();
                 setSession(newSession);
                 setUser(newSession?.user ?? null);
 

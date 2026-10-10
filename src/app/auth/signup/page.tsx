@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { sanitizeAuthRedirect } from '@/lib/authRedirect';
+import { captureProductEvent, identifyAnalyticsUser } from '@/lib/productAnalytics';
 
 function SignupForm() {
     const searchParams = useSearchParams();
@@ -40,6 +41,10 @@ function SignupForm() {
         }
 
         setIsSubmitting(true);
+        captureProductEvent('signup_started', {
+            method: 'email',
+            redirect_present: Boolean(redirect),
+        });
 
         // Store redirect URL so the email confirmation callback can use it
         if (redirect) {
@@ -69,6 +74,14 @@ function SignupForm() {
                 setError('An account with this email already exists. Please sign in or check your email for a confirmation link.');
                 setIsSubmitting(false);
                 return;
+            }
+
+            if (data?.user) {
+                identifyAnalyticsUser(data.user.id, { signup_method: 'email' });
+                captureProductEvent('signup_completed', {
+                    method: 'email',
+                    confirmation_required: !data.session,
+                });
             }
 
             // If Supabase auto-confirms (e.g. email confirmation disabled),

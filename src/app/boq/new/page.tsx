@@ -27,6 +27,7 @@ import { inferProjectType } from './projectTypes';
 import { getTemplateById, resolveFinishLevel } from '@/lib/projectTemplates';
 import { useToast } from '@/components/ui/Toast';
 import type { BOQItem as DbBOQItem, Project } from '@/lib/database.types';
+import { captureProductEvent } from '@/lib/productAnalytics';
 import './wizard-design.css';
 
 function getLocationLabel(type: string, city: string, specific: string) {
@@ -157,6 +158,13 @@ const WIZARD_STEPS = [
 ];
 
 function BoqNewPageContent() {
+  const boqStartCapturedRef = useRef(false);
+
+  useEffect(() => {
+    if (boqStartCapturedRef.current) return;
+    boqStartCapturedRef.current = true;
+    captureProductEvent('boq_started', { source: 'boq_builder' });
+  }, []);
   const searchParams = useSearchParams();
   const router = useRouter();
   const { isAuthenticated, profile } = useAuth();

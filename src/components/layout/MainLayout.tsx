@@ -14,6 +14,7 @@ import {
   Lightning,
   Gear,
 } from '@phosphor-icons/react';
+import { isProductAnalyticsConfigured, openAnalyticsPreferences } from '@/lib/productAnalytics';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -228,8 +229,12 @@ export default function MainLayout({
               </div>
             </div>
             <div className="footer-right">
+              <Link href="/cost-to-build-a-house-in-zimbabwe">House Cost Guide</Link>
               <Link href="/market-insights">Market Reports</Link>
               <Link href="/privacy">Privacy Policy</Link>
+              {isProductAnalyticsConfigured() && (
+                <button type="button" onClick={openAnalyticsPreferences}>Privacy choices</button>
+              )}
               <Link href="/terms">Terms</Link>
               <Link href="/support">Contact support</Link>
             </div>
@@ -299,14 +304,21 @@ export default function MainLayout({
           gap: 24px;
         }
 
-        .footer-right a {
+        .footer-right :global(a),
+        .footer-right button {
           color: var(--color-text-secondary);
+          background: transparent;
+          border: 0;
+          padding: 0;
           text-decoration: none;
           font-size: 0.875rem;
+          font-family: inherit;
+          cursor: pointer;
           transition: color 0.2s ease;
         }
 
-        .footer-right a:hover {
+        .footer-right :global(a:hover),
+        .footer-right button:hover {
           color: var(--color-primary);
         }
 

@@ -9,6 +9,7 @@ import { ServiceWorkerProvider } from "@/components/providers/ServiceWorkerProvi
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { CurrencyProvider } from "@/components/ui/CurrencyToggle";
 import { ToastProvider } from "@/components/ui/Toast";
+import ProductAnalyticsProvider from "@/components/providers/ProductAnalyticsProvider";
 import { getSiteUrl } from "@/lib/siteUrl";
 import "./globals.css";
 
@@ -134,14 +135,16 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
-          <ServiceWorkerProvider>
-            <CurrencyProvider>
-              <ToastProvider>
-                {children}
-                <Analytics />
-              </ToastProvider>
-            </CurrencyProvider>
-          </ServiceWorkerProvider>
+          <ProductAnalyticsProvider>
+            <ServiceWorkerProvider>
+              <CurrencyProvider>
+                <ToastProvider>
+                  {children}
+                  <Analytics />
+                </ToastProvider>
+              </CurrencyProvider>
+            </ServiceWorkerProvider>
+          </ProductAnalyticsProvider>
         </AuthProvider>
       </body>
     </html>
