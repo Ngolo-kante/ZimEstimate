@@ -16,11 +16,15 @@ import { createQuickBOQ } from '@/lib/services/quickBoq';
 import FindContractorCTA from '@/components/contractors/FindContractorCTA';
 import type { BOQItem, LaborConfig } from '@/lib/quick-projects/engine/types';
 import SolarBudgetExplorer from '@/components/quick-projects/SolarBudgetExplorer';
+import BudgetFitExplorer from '@/components/quick-projects/BudgetFitExplorer';
+import { fencingBudgetFit, pavingBudgetFit } from '@/lib/quick-projects/budgetFitConfigs';
 import BoreholeBudgetExplorer from '@/components/quick-projects/BoreholeBudgetExplorer';
 import {
   House,
   SunHorizon,
   Drop,
+  Rows,
+  GridFour,
   ShareNetwork,
   FloppyDisk,
   FileText,
@@ -89,7 +93,7 @@ export default function QuickBudgetPage() {
   // Which budget the user is checking. The house estimator was the only one
   // reachable from here, while the solar and borehole explorers were buried
   // inside their quick-project wizards.
-  const [budgetMode, setBudgetMode] = useState<'house' | 'solar' | 'borehole'>('house');
+  const [budgetMode, setBudgetMode] = useState<'house' | 'solar' | 'borehole' | 'fencing' | 'paving'>('house');
 
   // Restore inputs from the query string. Serves two paths: the home hero
   // handing its typed budget over via ?budget=, and returning from sign-in
@@ -406,7 +410,7 @@ export default function QuickBudgetPage() {
   // have nothing to save to, and their Save button used to be hidden entirely on
   // this page — which is why the three tabs disagreed about their action row.
   const saveQuickBudget = async (
-    projectType: 'solar' | 'borehole',
+    projectType: 'solar' | 'borehole' | 'fencing' | 'paving',
     boqItems: BOQItem[],
     answers: Record<string, unknown>,
     labor: LaborConfig
@@ -450,11 +454,19 @@ export default function QuickBudgetPage() {
                 })
               }
             />
-          ) : (
+          ) : budgetMode === 'borehole' ? (
             <BoreholeBudgetExplorer
               onBack={() => setBudgetMode('house')}
               backLabel="Back to budget options"
               onSave={(items, answers, labor) => saveQuickBudget('borehole', items, answers, labor)}
+            />
+          ) : (
+            <BudgetFitExplorer
+              config={budgetMode === 'fencing' ? fencingBudgetFit : pavingBudgetFit}
+              initialBudget={budgetInput}
+              onBack={() => setBudgetMode('house')}
+              backLabel="Back to budget options"
+              onSave={(items, answers, labor) => saveQuickBudget(budgetMode, items, answers, labor)}
             />
           )}
         </div>
@@ -477,6 +489,14 @@ export default function QuickBudgetPage() {
               { id: 'house', icon: House, title: 'House build', hint: 'How far your budget carries a full build, stage by stage.' },
               { id: 'solar', icon: SunHorizon, title: 'Solar system', hint: 'What panel, battery and inverter setup your budget buys.' },
               { id: 'borehole', icon: Drop, title: 'Borehole', hint: 'Drilling, casing and pump against what you have to spend.' },
+              /* Fencing and paving answer the question from the other side —
+                 how much you can buy — because their size is a choice. Septic
+                 and water are deliberately absent: those are sized by what the
+                 household needs, and inviting someone to buy "as much septic
+                 tank as they can afford" would encourage under-sizing the one
+                 thing that fails slowly and expensively. */
+              { id: 'fencing', icon: Rows, title: 'Fencing', hint: 'How many metres of wall or fence your budget covers.' },
+              { id: 'paving', icon: GridFour, title: 'Paving', hint: 'How much driveway or yard you can pave for the money.' },
             ] as const).map((mode) => {
               const Icon = mode.icon;
               const active = budgetMode === mode.id;
