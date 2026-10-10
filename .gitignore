@@ -34,12 +34,20 @@ yarn-error.log*
 /test-results
 /playwright-report
 .playwright-mcp/
+.firecrawl/
 /graphify-out/
 supabase/.temp/
 .claude/worktrees/
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.local.example
+
+# Generated locally: scraper dumps, dashboard screenshots, and the demo video
+# recordings. output/demo-raw and demo-work alone are ~14MB of intermediate
+# footage, and the finished cuts are regenerable from scripts/record-demo.mjs
+# and scripts/build-demo.mjs, so none of it belongs in history.
+/output
 
 # vercel
 .vercel
