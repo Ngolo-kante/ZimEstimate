@@ -68,7 +68,14 @@ export default function SiteConditionsSection() {
       <div className="space-y-4">
         <div>
           <h3 className="text-lg font-bold wiz-text-primary mb-1">What is the slope of the site?</h3>
-          <p className="text-sm wiz-text-muted">Slope affects earthworks, fill volumes, and substructure complexity.</p>
+          {/* Previously "Slope affects earthworks, fill volumes, and
+              substructure complexity" — true of building, but it reads as a
+              description of what this estimate does, and slope is recorded and
+              displayed without reaching a single calculation. */}
+          <p className="text-sm wiz-text-muted">
+            Recorded on your project for planning and for your contractor. It does not change the
+            estimate yet.
+          </p>
         </div>
 
         <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
@@ -166,8 +173,16 @@ export default function SiteConditionsSection() {
             >
               <Warning size={17} weight="fill" className="shrink-0 mt-0.5 text-amber-500" />
               <p>
-                <strong>High-risk soil.</strong> Clay / Black Cotton soil expands and can crack foundations. 
-                We recommend a geotechnical report before committing to a budget. Your estimate will include additional reinforcement allowances.
+                {/* This used to end "Your estimate will include additional
+                    reinforcement allowances." It does not: SOIL_RISK_PROFILES
+                    carries a 20% figure for clay but nothing in the costing
+                    reads it. Telling someone on black cotton soil that the
+                    allowance is handled, when it is not, is how a budget comes
+                    up short at the one stage that cannot be redone cheaply. */}
+                <strong>High-risk soil.</strong> Clay / Black Cotton soil expands and can crack foundations.
+                We recommend a geotechnical report before committing to a budget.{' '}
+                <strong>This estimate does not add an allowance for it</strong> — budget for deeper
+                foundations and extra reinforcement on top of the figure shown.
               </p>
             </motion.div>
           )}
