@@ -33,9 +33,18 @@ test.describe('Project creation smoke', () => {
     await page.getByPlaceholder('e.g., Harare, Zimbabwe').fill(location);
     await page.getByRole('button', { name: 'Continue' }).click();
 
-    await page.locator('.tile', { hasText: 'Upload Floor Plan' }).click();
-    await page.getByRole('button', { name: 'Create Project' }).click();
-
+    await page.route('**/api/vision/scan-boq', route => route.fulfill({ json: {
+      success: true,
+      data: { title: 'Supplier quotation', items: [{ description: 'Cement', quantity: 10, unit: 'bags', unitPriceUsd: 12, confidence: 95 }] },
+    } }));
+    await page.locator('.tile', { hasText: 'Photo Quote' }).click();
+    await page.getByRole('button', { name: 'Continue to estimate' }).click();
+    await page.waitForURL('**/ai/boq-scanner');
+    await page.locator('input[type=file]').first().setInputFiles({ name: 'quote.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 test fixture') });
+    await page.getByRole('button', { name: 'Scan document' }).click();
+    await expect(page.getByRole('textbox', { name: 'Project name' })).toHaveValue(projectName);
+    await expect(page.getByRole('textbox', { name: 'Project location' })).toHaveValue(location);
+    await page.getByRole('button', { name: 'Save as project' }).click();
     await page.waitForURL(/\/projects(\?|$)/, { timeout: 25_000 });
 
     // Immediate feedback check: at least one project card with the new name should appear quickly.

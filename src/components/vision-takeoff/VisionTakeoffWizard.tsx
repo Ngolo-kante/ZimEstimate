@@ -12,6 +12,7 @@ import ProjectInfoStep from './steps/ProjectInfoStep';
 import ConfigurationStep from './steps/ConfigurationStep';
 import CalculationAnimation from './steps/CalculationAnimation';
 import BOQResultsStep, { PENDING_VISION_SAVE_KEY } from './steps/BOQResultsStep';
+import { readEstimateHandoff } from '@/lib/estimateHandoff';
 import WorkflowProgress from '@/components/boq/WorkflowProgress';
 
 const VISION_STEPS = [
@@ -38,6 +39,14 @@ export default function VisionTakeoffWizard() {
   const { state } = wizard;
   const { isAuthenticated } = useAuth();
   const progressStep = VISION_STEP_INDEX[state.step];
+
+  const handoffRead = useRef(false);
+  useEffect(() => {
+    if (handoffRead.current) return;
+    handoffRead.current = true;
+    const details = readEstimateHandoff('upload');
+    if (details) wizard.updateProjectInfo({ name: details.name, location: details.location });
+  }, [wizard]);
 
   // True only for the render right after a save was resumed, so
   // BOQResultsStep knows to complete it automatically rather than wait for a

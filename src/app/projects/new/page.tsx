@@ -40,9 +40,8 @@ interface ProjectFormData {
 type ProjectWizardField = 'projectType' | 'priority' | 'name' | 'location' | 'boqMethod';
 type ProjectWizardErrors = Partial<Record<ProjectWizardField, string>>;
 
-import { createProject } from '@/lib/services/projects';
+import { storeEstimateHandoff } from '@/lib/estimateHandoff';
 import { useToast } from '@/components/ui/Toast';
-import { setCreatedProjectSnapshot, setOptimisticProjectCard } from '@/lib/projectCreationCache';
 
 export default function NewProject() {
     const router = useRouter();
@@ -159,39 +158,17 @@ export default function NewProject() {
                 return;
             }
 
-            // Upload / Photo methods: create project in DB (requires auth)
             setIsLoading(true);
             try {
-                const { project, error } = await createProject({
+                storeEstimateHandoff(formData.boqMethod, {
                     name: formData.name,
                     location: formData.location,
-                    description: `Type: ${formData.projectType}, Priority: ${formData.priority}`,
-                    scope: 'entire_house',
-                    labor_preference: 'materials_only',
+                    type: formData.projectType,
+                    priority: formData.priority,
                 });
-
-                if (error) {
-                    showError(error.message || 'Failed to create project');
-                    setIsLoading(false);
-                    return;
-                }
-
-                if (project) {
-                    setOptimisticProjectCard({
-                        id: project.id,
-                        name: formData.name,
-                        location: formData.location,
-                        type: formData.projectType ?? undefined,
-                    });
-                    setCreatedProjectSnapshot({
-                        project,
-                        items: [],
-                    });
-                    router.push(`/projects?saved=${project.id}`);
-                }
-            } catch (err) {
-                console.error('Error creating project:', err);
-                showError('An unexpected error occurred');
+                router.push(formData.boqMethod === 'upload' ? '/ai/vision-takeoff' : '/ai/boq-scanner');
+            } catch {
+                showError('Your browser could not carry your project details forward. Please allow browser storage and try again.');
                 setIsLoading(false);
             }
         }
@@ -487,7 +464,7 @@ export default function NewProject() {
                         loading={isLoading}
                     >
                         {step === 4
-                            ? (formData.boqMethod === 'budget-checker' ? 'Open Budget Checker' : 'Create Project')
+                            ? (formData.boqMethod === 'budget-checker' ? 'Open Budget Checker' : 'Continue to estimate')
                             : 'Continue'}
                     </Button>
                 </div>

@@ -431,6 +431,8 @@ export default function BOQResultsStep({
       )}
 
       <ReviewWorkspace
+        onSave={handleSave}
+        isSaving={isSaving}
         sourceLabel="Generated from floor plan"
         title="Review your BOQ and pricing"
         description="Verify AI-derived quantities, edit prices or line items, and save when the estimate reflects the plan."

@@ -224,6 +224,7 @@ export function useProjectAutoSave(
             console.error('Project save failed:', error.message);
             setError(humaniseSaveError(error.message));
             onSaveError?.(error);
+            if (!isAutoSave) throw error;
         } finally {
             if (isAutoSave) {
                 setIsAutoSaving(false);

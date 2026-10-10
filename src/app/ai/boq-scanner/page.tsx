@@ -21,6 +21,9 @@ import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { validateDocumentFile } from '@/lib/documentFiles';
+import WorkflowProgress from '@/components/boq/WorkflowProgress';
+import { readEstimateHandoff } from '@/lib/estimateHandoff';
 import { supabase } from '@/lib/supabase';
 import { createProject, saveProjectWithItems } from '@/lib/services/projects';
 import type { ScannedBoq, ScannedBoqItem } from '@/lib/vision/boq-scan';
@@ -52,6 +55,7 @@ function BoqScannerContent() {
   const { success, error: showError } = useToast();
   const { isAuthenticated } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   const [stage, setStage] = useState<Stage>('upload');
   const [file, setFile] = useState<File | null>(null);
@@ -59,6 +63,14 @@ function BoqScannerContent() {
   const [scan, setScan] = useState<ScannedBoq | null>(null);
   const [items, setItems] = useState<ScannedBoqItem[]>([]);
   const [projectName, setProjectName] = useState('');
+  const [projectLocation, setProjectLocation] = useState('');
+  const handoffRead = useRef(false);
+  useEffect(() => {
+    if (handoffRead.current) return;
+    handoffRead.current = true;
+    const details = readEstimateHandoff('photo');
+    if (details) { setProjectName(details.name); setProjectLocation(details.location); }
+  }, []);
   const [isSaving, setIsSaving] = useState(false);
 
   const total = useMemo(
@@ -71,14 +83,18 @@ function BoqScannerContent() {
   );
   const unpriced = useMemo(() => items.filter((i) => i.unitPriceUsd === null).length, [items]);
 
+  useEffect(() => {
+    if (!file) { setPreviewUrl(null); return; }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
   const chooseFile = useCallback((chosen: File) => {
+    const error = validateDocumentFile(chosen);
+    if (error) { showError(error); return; }
     setFile(chosen);
-    // Revoked on replacement rather than left to accumulate for the session.
-    setPreviewUrl((current) => {
-      if (current) URL.revokeObjectURL(current);
-      return chosen.type === 'application/pdf' ? null : URL.createObjectURL(chosen);
-    });
-  }, []);
+  }, [showError]);
 
   const runScan = useCallback(async () => {
     if (!file) return;
@@ -105,7 +121,7 @@ function BoqScannerContent() {
       const scanned = result.data as ScannedBoq;
       setScan(scanned);
       setItems(scanned.items);
-      setProjectName(scanned.title || scanned.supplierName || '');
+      setProjectName(current => current || scanned.title || scanned.supplierName || '');
 
       if (scanned.notABoq) {
         // Kept on the upload step with the file still selected, so retrying with
@@ -135,13 +151,13 @@ function BoqScannerContent() {
   // The actual save, factored out so both the button and the post-sign-in
   // resume below can call it with an explicit payload rather than reading
   // component state that may not have caught up yet after a restore.
-  const runSave = useCallback(async (name: string, saveItems: ScannedBoqItem[]) => {
+  const runSave = useCallback(async (name: string, saveItems: ScannedBoqItem[], location: string) => {
     if (saveItems.length === 0) return;
     setIsSaving(true);
     try {
       const { project, error: createError } = await createProject({
         name: name.trim() || 'Scanned BOQ',
-        location: '',
+        location,
         scope: 'entire_house',
         labor_preference: 'materials_only',
         selected_stages: null,
@@ -191,7 +207,7 @@ function BoqScannerContent() {
     // that photograph was a real, paid model call, not something to discard.
     if (!isAuthenticated) {
       try {
-        localStorage.setItem(PENDING_SCAN_SAVE_KEY, JSON.stringify({ projectName, items }));
+        localStorage.setItem(PENDING_SCAN_SAVE_KEY, JSON.stringify({ projectName, projectLocation, items }));
       } catch {
         // Private browsing, or storage disabled — the redirect still works,
         // the automatic resume on return just will not.
@@ -200,7 +216,7 @@ function BoqScannerContent() {
       return;
     }
 
-    void runSave(projectName, items);
+    void runSave(projectName, items, projectLocation);
   };
 
   // Completes a save that was interrupted by signing in. Guarded to fire once
@@ -222,11 +238,12 @@ function BoqScannerContent() {
     localStorage.removeItem(PENDING_SCAN_SAVE_KEY);
 
     try {
-      const restored = JSON.parse(stored) as { projectName: string; items: ScannedBoqItem[] };
+      const restored = JSON.parse(stored) as { projectName: string; projectLocation?: string; items: ScannedBoqItem[] };
       setProjectName(restored.projectName);
+      setProjectLocation(restored.projectLocation || '');
       setItems(restored.items);
       setStage('review');
-      void runSave(restored.projectName, restored.items);
+      void runSave(restored.projectName, restored.items, restored.projectLocation || '');
     } catch {
       showError('Could not restore your scanned estimate. Please scan the document again.');
     }
@@ -237,13 +254,19 @@ function BoqScannerContent() {
       <Link href="/ai" className="crumb"><ArrowLeft size={16} /> Start from what you have</Link>
 
       <header className="head">
-        <h1>From Paper</h1>
+        <h1>Scan an existing quote</h1>
         <p>
           Photograph a bill of quantities — handwritten on site or printed — and it becomes a
           project you can manage. Figures are read from the page, never estimated.
         </p>
       </header>
 
+      <WorkflowProgress
+        currentStep={isSaving ? 2 : stage === 'review' ? 1 : 0}
+        maxStepReached={stage === 'review' ? 1 : 0}
+        steps={[{ id: 'upload', label: 'Choose file' }, { id: 'review', label: 'Review figures' }, { id: 'save', label: 'Save project' }]}
+      />
+      {projectName && stage !== 'review' && <p className="notice">For {projectName}{projectLocation ? ` · ${projectLocation}` : ''}</p>}
       {stage !== 'review' && (
         <section className="upload-card">
           <input
@@ -255,6 +278,7 @@ function BoqScannerContent() {
           />
 
           {previewUrl ? (
+            file?.type === 'application/pdf' ? <iframe src={previewUrl} title="PDF to scan" className="pdf-preview" /> :
             /* eslint-disable-next-line @next/next/no-img-element */
             <img src={previewUrl} alt="The document to scan" className="preview" />
           ) : file ? (
@@ -267,9 +291,11 @@ function BoqScannerContent() {
             </div>
           )}
 
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={e => { const f = e.target.files?.[0]; if (f) chooseFile(f); e.target.value = ''; }} />
           <div className="upload-actions">
+            <button type="button" onClick={() => cameraRef.current?.click()} disabled={stage === 'scanning'}><Camera size={16} /> Take photo</button>
             <button type="button" onClick={() => fileRef.current?.click()} disabled={stage === 'scanning'}>
-              <Camera size={16} weight="bold" /> {file ? 'Choose another' : 'Choose file'}
+              <UploadSimple size={16} weight="bold" /> {file ? 'Choose another' : 'Choose file'}
             </button>
             <button
               type="button"
@@ -294,6 +320,7 @@ function BoqScannerContent() {
 
       {stage === 'review' && scan && (
         <>
+          <label className="name-field location-field"><span>Project location</span><input value={projectLocation} onChange={e => setProjectLocation(e.target.value)} placeholder="e.g. Harare" /></label>
           <div className="summary">
             <label className="name-field">
               <span>Project name</span>
@@ -324,7 +351,7 @@ function BoqScannerContent() {
             {/* The source stays on screen. Checking a flagged line against the
                 paper is the whole review, and hiding the image would mean
                 trusting the transcription blind. */}
-            {previewUrl && (
+            {previewUrl && (file?.type === 'application/pdf' ? <iframe src={previewUrl} title="Scanned PDF reference" className="pdf-preview" /> :
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={previewUrl} alt="The scanned document" className="source" />
             )}
@@ -394,6 +421,8 @@ function BoqScannerContent() {
       )}
 
       <style jsx>{`
+        .pdf-preview { width: 100%; min-height: 400px; border: 1px solid #cbd5e1; border-radius: 8px; }
+        .location-field { margin: 18px 0; }
         .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
         .crumb {
           display: inline-flex; align-items: center; gap: 6px; margin-bottom: 20px;
