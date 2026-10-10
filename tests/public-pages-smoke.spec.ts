@@ -14,29 +14,27 @@ test.describe('Public launch surfaces', () => {
       .toHaveAttribute('href', '/boq/new?method=manual&fresh=1');
     await expect(page.getByRole('link', { name: 'Find a contractor', exact: true }))
       .toHaveAttribute('href', '/contractors');
-    await expect(hero.getByRole('link', { name: 'Quick Projects', exact: true }))
-      .toHaveAttribute('href', '/quick-projects');
-    await expect(hero.getByRole('link', { name: 'Register as a Contractor', exact: true }))
+    await expect(page.getByRole('region', { name: 'Help turn plans into finished projects.' }).getByRole('link', { name: 'Register as a contractor', exact: true }))
       .toHaveAttribute('href', '/contractor/register');
     const manualMethod = page
       .getByRole('link')
-      .filter({ has: page.getByRole('heading', { name: 'Create Your BOQ' }) });
+      .filter({ has: page.getByRole('heading', { name: 'Answer guided questions' }) });
     await manualMethod.hover();
     await expect.poll(() => manualMethod.evaluate((element) => getComputedStyle(element).transform))
       .not.toBe('none');
 
     const planMethod = page
       .getByRole('link')
-      .filter({ has: page.getByRole('heading', { name: 'Plan to BOQ', exact: true }) });
+      .filter({ has: page.getByRole('heading', { name: 'Upload a floor plan', exact: true }) });
     await expect(planMethod).toHaveAttribute('href', '/ai/vision-takeoff');
     const quoteMethod = page
       .getByRole('link')
-      .filter({ has: page.getByRole('heading', { name: 'Quote to Project', exact: true }) });
+      .filter({ has: page.getByRole('heading', { name: 'Scan an existing quote', exact: true }) });
     await expect(quoteMethod).toHaveAttribute('href', '/ai/boq-scanner');
-    const methods = page.getByRole('region', { name: 'Four ways to create your BOQ.' });
+    const methods = page.getByRole('region', { name: 'What are you starting with?' });
     const quickMethod = methods
       .getByRole('link')
-      .filter({ has: page.getByRole('heading', { name: 'Quick Project', exact: true }) });
+      .filter({ has: page.getByRole('heading', { name: 'Estimate a smaller project', exact: true }) });
     await expect(quickMethod).toHaveAttribute('href', '/quick-projects');
 
     const budgetInput = page.getByRole('textbox', { name: /Your budget in US dollars/ });

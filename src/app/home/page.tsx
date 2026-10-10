@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -18,15 +17,9 @@ import MainLayout from '@/components/layout/MainLayout';
 import HeroBudgetWidget from '@/components/home/HeroBudgetWidget';
 import styles from './home.module.css';
 
-const estimateBenefits = [
-  'Stage-by-stage quantities and costs',
-  'Zimbabwe-focused materials and pricing',
-  'Save, share, and export when you are ready',
-];
-
 const estimateStarts = [
   {
-    title: 'Create Your BOQ',
+    title: 'Answer guided questions',
     category: 'Guided build',
     description: 'Answer guided questions and create a complete construction BOQ.',
     detail: 'Best for a full house or detailed build',
@@ -35,7 +28,7 @@ const estimateStarts = [
     recommended: true,
   },
   {
-    title: 'Plan to BOQ',
+    title: 'Upload a floor plan',
     category: 'Floor plan',
     description: 'Let AI read room sizes, doors, and windows, then generate the quantities.',
     detail: 'PDF, PNG, JPG or WEBP',
@@ -43,7 +36,7 @@ const estimateStarts = [
     icon: UploadSimple,
   },
   {
-    title: 'Quote to Project',
+    title: 'Scan an existing quote',
     category: 'Document scan',
     description: 'Turn a photographed supplier quote or BOQ into a project you can manage.',
     detail: 'Figures are read from the document',
@@ -51,7 +44,7 @@ const estimateStarts = [
     icon: FileText,
   },
   {
-    title: 'Quick Project',
+    title: 'Estimate a smaller project',
     category: 'Focused build',
     description: 'Generate a focused BOQ for solar, water, boreholes, septic, fencing, or paving.',
     detail: 'Typically takes 4-7 minutes',
@@ -91,8 +84,8 @@ export default function HomePage() {
               <span className={styles.eyebrow}>ZimEstimate</span>
               <h1 id="home-heading">Construction estimates built for Zimbabwe.</h1>
               <p>
-                Build a practical BOQ, test your budget, and find contractors
-                from one connected workspace.
+                Know what your build needs and what it could cost. Create an itemised
+                estimate, compare prices, and keep your project on track.
               </p>
 
               <div className={styles.heroActions}>
@@ -106,16 +99,7 @@ export default function HomePage() {
                   Find a contractor
                   <ArrowRight size={16} weight="bold" className={styles.secondaryArrow} aria-hidden="true" />
                 </Link>
-                <Link href="/quick-projects" className={styles.secondaryButton}>
-                  <Lightning size={18} weight="bold" aria-hidden="true" />
-                  Quick Projects
-                  <ArrowRight size={16} weight="bold" className={styles.secondaryArrow} aria-hidden="true" />
-                </Link>
-                <Link href="/contractor/register" className={styles.secondaryButton}>
-                  <UserPlus size={18} weight="bold" aria-hidden="true" />
-                  Register as a Contractor
-                  <ArrowRight size={16} weight="bold" className={styles.secondaryArrow} aria-hidden="true" />
-                </Link>
+
               </div>
 
               <div className={styles.heroAssurances} aria-label="Estimate benefits">
@@ -134,7 +118,7 @@ export default function HomePage() {
             <div className={styles.startHeader}>
               <div>
                 <span className={styles.sectionIndex}>Start from what you have</span>
-                <h2 id="start-heading">Four ways to create your BOQ.</h2>
+                <h2 id="start-heading">What are you starting with?</h2>
               </div>
               <p>Choose a guided build, bring an existing plan or document, or price a smaller project in minutes.</p>
             </div>
@@ -177,100 +161,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className={styles.pathways} aria-labelledby="pathways-heading">
-          <div className={styles.sectionInner}>
-            <div className={styles.sectionHeading}>
-              <span className={styles.sectionIndex}>Choose your next move</span>
-              <h2 id="pathways-heading">Begin with a number. Move toward a real build.</h2>
-            </div>
-
-            <div className={styles.pathwayGrid}>
-              <article className={styles.estimatePath}>
-                <div className={styles.pathImage}>
-                  <Image
-                    src="/substructure.webp"
-                    alt="Foundation works underway on a construction site"
-                    fill
-                    sizes="(min-width: 900px) 48vw, 100vw"
-                    className={styles.coverImage}
-                  />
-                </div>
-                <div className={styles.estimateContent}>
-                  <div className={styles.pathIconPrimary}>
-                    <Calculator size={24} weight="duotone" aria-hidden="true" />
-                  </div>
-                  <span className={styles.pathLabel}>Primary pathway</span>
-                  <h3>Build your construction estimate</h3>
-                  <p>
-                    Turn the project in your head into quantities, stage budgets,
-                    and a BOQ you can take to site.
-                  </p>
-                  <ul>
-                    {estimateBenefits.map((benefit) => (
-                      <li key={benefit}>
-                        <CheckCircle size={17} weight="fill" aria-hidden="true" />
-                        {benefit}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/boq/new?method=manual&fresh=1" className={styles.pathActionPrimary}>
-                    Start building your BOQ
-                    <ArrowRight size={17} weight="bold" aria-hidden="true" />
-                  </Link>
-                </div>
-              </article>
-
-              <div className={styles.secondaryPaths}>
-                <article className={styles.secondaryPath}>
-                  <div className={styles.secondaryPathImage}>
-                    <Image
-                      src="/superstructure.webp"
-                      alt="Brick house under construction"
-                      fill
-                      sizes="(min-width: 900px) 34vw, 100vw"
-                      className={styles.coverImage}
-                    />
-                  </div>
-                  <div className={styles.secondaryPathContent}>
-                    <Briefcase size={24} weight="duotone" aria-hidden="true" />
-                    <div>
-                      <span className={styles.pathLabel}>People</span>
-                      <h3>Find a contractor</h3>
-                      <p>Search listed builders by trade and service area.</p>
-                    </div>
-                    <Link href="/contractors" aria-label="Browse the contractor directory">
-                      Browse directory <ArrowRight size={16} weight="bold" />
-                    </Link>
-                  </div>
-                </article>
-
-                <article className={styles.secondaryPath}>
-                  <div className={styles.secondaryPathImage}>
-                    <Image
-                      src="/roofing.webp"
-                      alt="Roofing work representing a focused construction project"
-                      fill
-                      sizes="(min-width: 900px) 34vw, 100vw"
-                      className={styles.coverImage}
-                    />
-                  </div>
-                  <div className={styles.secondaryPathContent}>
-                    <Lightning size={24} weight="duotone" aria-hidden="true" />
-                    <div>
-                      <span className={styles.pathLabel}>Focused builds</span>
-                      <h3>Start a Quick Project</h3>
-                      <p>Create a focused BOQ for solar, water, boreholes, septic, fencing, or paving.</p>
-                    </div>
-                    <Link href="/quick-projects" aria-label="Choose a quick project">
-                      Choose a project <ArrowRight size={16} weight="bold" />
-                    </Link>
-                  </div>
-                </article>
-              </div>
-            </div>
-          </div>
-        </section>
-
         <section className={styles.workflowSection} aria-labelledby="workflow-heading">
           <div className={styles.sectionInner}>
             <div className={styles.workflowHeader}>
@@ -299,6 +189,19 @@ export default function HomePage() {
                 );
               })}
             </div>
+          </div>
+        </section>
+
+        <section className={styles.contractorSection} aria-labelledby="contractor-heading">
+          <div className={styles.contractorInner}>
+            <div>
+              <span className={styles.sectionIndex}>For contractors</span>
+              <h2 id="contractor-heading">Help turn plans into finished projects.</h2>
+              <p>Create your profile so homeowners can find your trade and service area.</p>
+            </div>
+            <Link href="/contractor/register" className={styles.contractorAction}>
+              <UserPlus size={20} aria-hidden="true" /> Register as a contractor <ArrowRight size={18} aria-hidden="true" />
+            </Link>
           </div>
         </section>
 

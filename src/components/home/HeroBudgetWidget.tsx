@@ -155,12 +155,12 @@ export default function HeroBudgetWidget() {
       <div className="relative h-full w-full p-3 sm:p-5 md:p-6 flex flex-col gap-2 sm:gap-3">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold tracking-normal text-blue-600 uppercase">
+          <span className="text-xs font-bold tracking-normal text-blue-600 uppercase">
             Budget reality check
           </span>
-          <span className="text-[10px] font-semibold text-[var(--color-success-fg)] bg-[var(--color-success-bg)] border border-[var(--color-success-border)] rounded-full px-2 py-0.5 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] animate-pulse" aria-hidden="true" />
-            Live
+          <span className="text-xs font-semibold text-[var(--color-success-fg)] bg-[var(--color-success-bg)] border border-[var(--color-success-border)] rounded-full px-2 py-0.5 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)]" aria-hidden="true" />
+            Interactive estimate
           </span>
         </div>
 
@@ -168,7 +168,7 @@ export default function HeroBudgetWidget() {
           <h3 className="text-sm md:text-base font-bold text-slate-900 leading-tight">
             How far will your money go?
           </h3>
-          <p className="text-[11px] text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-500 mt-0.5">
             Type an amount — watch the house build itself.
           </p>
 
@@ -177,13 +177,13 @@ export default function HeroBudgetWidget() {
               assumption behind every number above it, so it reads as a spec
               here instead of a disclaimer down there. */}
           <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-bold text-[var(--color-info-fg)] bg-[var(--color-info-bg)] border border-[var(--color-info-border)] rounded px-1.5 py-0.5 tabular-nums">
+            <span className="text-xs font-bold text-[var(--color-info-fg)] bg-[var(--color-info-bg)] border border-[var(--color-info-border)] rounded px-1.5 py-0.5 tabular-nums">
               {PLAN_AREA_M2}m²
             </span>
-            <span className="text-[11px] font-semibold text-[var(--color-info-fg)] bg-[var(--color-info-bg)] border border-[var(--color-info-border)] rounded px-1.5 py-0.5">
+            <span className="text-xs font-semibold text-[var(--color-info-fg)] bg-[var(--color-info-bg)] border border-[var(--color-info-border)] rounded px-1.5 py-0.5">
               {PLAN_BEDROOMS}-bed
             </span>
-            <span className="text-[11px] font-semibold text-[var(--color-info-fg)] bg-[var(--color-info-bg)] border border-[var(--color-info-border)] rounded px-1.5 py-0.5 capitalize">
+            <span className="text-xs font-semibold text-[var(--color-info-fg)] bg-[var(--color-info-bg)] border border-[var(--color-info-border)] rounded px-1.5 py-0.5 capitalize">
               {PLAN_LOCATION}
             </span>
           </div>
@@ -217,7 +217,7 @@ export default function HeroBudgetWidget() {
                 placeholder="Enter amount"
                 className="w-full bg-transparent text-lg md:text-xl font-extrabold text-slate-900 outline-none placeholder:text-slate-300 tabular-nums"
               />
-              <span className="text-[10px] font-bold uppercase tracking-normal text-slate-400 flex-shrink-0">USD</span>
+              <span className="text-xs font-bold uppercase tracking-normal text-slate-400 flex-shrink-0">USD</span>
             </div>
           </label>
         </div>
@@ -228,7 +228,7 @@ export default function HeroBudgetWidget() {
             const pct = Math.round(row.coveragePercent);
             return (
               <div key={row.id} className="flex items-center gap-2.5">
-                <span className="w-[92px] md:w-[104px] flex-shrink-0 text-[11px] font-semibold text-slate-600 truncate">
+                <span className="w-[92px] md:w-[104px] flex-shrink-0 text-xs font-semibold text-slate-600 truncate">
                   {STAGE_SHORT_LABELS[row.id]}
                 </span>
                 <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
@@ -237,7 +237,7 @@ export default function HeroBudgetWidget() {
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <span className={`w-9 flex-shrink-0 text-right text-[11px] font-bold tabular-nums ${pct > 0 ? 'text-slate-700' : 'text-slate-400'}`}>
+                <span className={`w-9 flex-shrink-0 text-right text-xs font-bold tabular-nums ${pct > 0 ? 'text-slate-700' : 'text-slate-400'}`}>
                   {pct}%
                 </span>
               </div>
@@ -258,7 +258,7 @@ export default function HeroBudgetWidget() {
               <CheckCircle size={16} weight="fill" className="text-[var(--color-success)] flex-shrink-0" aria-hidden="true" />
             )}
             <p
-              className="text-[11px] md:text-[12px] font-semibold text-slate-700 leading-snug"
+              className="text-sm font-semibold text-slate-800 leading-snug"
               aria-live="polite"
               aria-atomic="true"
             >
@@ -273,7 +273,7 @@ export default function HeroBudgetWidget() {
               floor_area_m2: PLAN_AREA_M2,
               location_category: PLAN_LOCATION,
             })}
-            className="flex-shrink-0 inline-flex items-center gap-1 text-[11px] md:text-[12px] font-bold text-blue-600 hover:text-blue-700 transition-colors whitespace-nowrap"
+            className="flex-shrink-0 inline-flex items-center gap-1 text-xs md:text-[12px] font-bold text-blue-600 hover:text-blue-700 transition-colors whitespace-nowrap"
           >
             Customize <ArrowRight size={12} weight="bold" />
           </Link>
@@ -281,7 +281,7 @@ export default function HeroBudgetWidget() {
 
         {/* The spec itself now sits under the heading, so this is only the
             caveat and the way out of it. */}
-        <p className="hidden sm:block text-[9.5px] text-slate-400 leading-snug">
+        <p className="hidden sm:block text-xs text-slate-400 leading-snug">
           Materials only, standard finish. Adjust size, location and finish in the Budget Studio.
         </p>
       </div>
