@@ -35,7 +35,11 @@ const SOLAR_PRICES: Record<string, number> = {
 
   // ── Installation ──────────────────────────────────────────────────────────
   transport:              80.00,   // trip
-  install_labor_pct:        0.20,  // 20% of hardware cost (was 25%)
+  // Share of hardware cost charged for installation labour. Was 0.25, then
+  // 0.20; 0.15 is the Zimbabwe mid-market norm for a domestic solar install,
+  // and 20% was pushing small budgets past what they could buy. Callers may
+  // override it per estimate via answers.install_labor_pct.
+  install_labor_pct:        0.15,
 };
 
 /**
@@ -132,6 +136,8 @@ export function solarSizingToBOQ(
     /** Defaults to true — a system without protection is not one anyone should quote. */
     include_protection?: boolean;
     include_contingency?: boolean;
+    /** Labour as a share of hardware, e.g. 0.15. Defaults to the catalog rate. */
+    install_labor_pct?: number;
   }
 ): BOQItem[] {
   const pBrand = answers.panel_brand ?? 'ja_solar';
@@ -227,8 +233,15 @@ export function solarSizingToBOQ(
   // ── Installation ──────────────────────────────────────────────────────
   if (answers.include_install) {
     const hardware = items.filter((i) => !i.owned).reduce((s, i) => s + i.totalCostUsd, 0);
-    const installCost = +(hardware * SOLAR_PRICES.install_labor_pct).toFixed(2);
-    items.push(makeItem('sol_install', 'Labor', 'Installation labor (20% of hardware)', 1, 'lump sum', installCost, {
+    /* Honours a rate the user chose (the budget explorer lets them set one), so
+       the saved BOQ charges the labour they were shown rather than the default.
+       Clamped: a rate outside this range is a bad input, not a cheap installer. */
+    const pct =
+      typeof answers.install_labor_pct === 'number' && Number.isFinite(answers.install_labor_pct)
+        ? Math.min(0.4, Math.max(0.05, answers.install_labor_pct))
+        : SOLAR_PRICES.install_labor_pct;
+    const installCost = +(hardware * pct).toFixed(2);
+    items.push(makeItem('sol_install', 'Labor', `Installation labor (${Math.round(pct * 100)}% of hardware)`, 1, 'lump sum', installCost, {
       optional: true,
       notes: `Requires ZERA ${getRequiredZeraTier(systemWatts)} licensed technician for this ${(systemWatts / 1000).toFixed(1)}kW system`,
     }));

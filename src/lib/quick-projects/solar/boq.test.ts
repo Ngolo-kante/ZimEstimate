@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { solarSizingToBOQ } from './boq';
+import { solarSizingToBOQ, SOLAR_INSTALL_LABOR_PCT } from './boq';
 import type { SolarSizingResult, SolarWizardAnswers } from './types';
 
 const baseResult: SolarSizingResult = {
@@ -65,6 +65,45 @@ describe('solarSizingToBOQ', () => {
     expect(items.find((item) => item.id === 'sol_batteries')?.description).toContain('Pylontech');
     expect(items.find((item) => item.id === 'sol_transport')?.optional).toBe(true);
     expect(items.find((item) => item.id === 'sol_install')?.notes).toContain('ZERA');
+  });
+
+  /* The budget explorer lets the user set the labour rate, and labour is
+     negotiated in this market. If the BOQ ignored the rate it was shown, the
+     saved estimate would quietly charge a different number than the page. */
+  describe('installation labour rate', () => {
+    const installFor = (install_labor_pct?: number) => {
+      const items = solarSizingToBOQ(baseResult, {
+        ...baseAnswers,
+        include_install: true,
+        ...(install_labor_pct === undefined ? {} : { install_labor_pct }),
+      });
+      const hardware = items
+        .filter((i) => i.id !== 'sol_install' && !i.owned && i.included !== false)
+        .reduce((sum, i) => sum + i.totalCostUsd, 0);
+      const install = items.find((i) => i.id === 'sol_install');
+      return { hardware, install };
+    };
+
+    it('charges the rate the caller asked for', () => {
+      const { hardware, install } = installFor(0.1);
+      expect(install?.totalCostUsd).toBeCloseTo(hardware * 0.1, 2);
+      // The line has to say which rate it used, or the BOQ cannot be checked.
+      expect(install?.description).toContain('10%');
+    });
+
+    it('falls back to the catalog rate when none is given', () => {
+      const { hardware, install } = installFor();
+      expect(install?.totalCostUsd).toBeCloseTo(hardware * SOLAR_INSTALL_LABOR_PCT, 2);
+    });
+
+    it('clamps a nonsense rate instead of quoting it', () => {
+      const { hardware, install } = installFor(5);
+      expect(install?.totalCostUsd).toBeCloseTo(hardware * 0.4, 2);
+      expect(installFor(0).install?.totalCostUsd).toBeCloseTo(
+        installFor(0).hardware * 0.05,
+        2,
+      );
+    });
   });
 
   it('marks already-owned major components as excluded from the material total', () => {
