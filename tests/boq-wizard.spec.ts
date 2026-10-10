@@ -83,7 +83,7 @@ test.describe('BOQ Live Estimator', () => {
     await expect(page.getByText('Pre-Construction Checklist')).toBeVisible();
 
     await page.getByRole('button', { name: 'Documents' }).click();
-    await expect(page.getByRole('heading', { name: 'Project documents' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Save your project to add documents' })).toBeVisible();
   });
 
   test('review workspace has no horizontal overflow on mobile', async ({ page }) => {

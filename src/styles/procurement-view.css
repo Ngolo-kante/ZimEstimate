@@ -1933,3 +1933,28 @@
         transition: none;
     }
 }
+
+/* Purchase entry stays usable above the mobile keyboard. */
+.purchase-dialog { margin: 0; width: 100%; height: 100%; max-width: none; max-height: none; border: 0; color: inherit; }
+.purchase-dialog::backdrop { background: rgba(15, 23, 42, .45); }
+.purchase-dialog .modal-card { display: flex; flex-direction: column; max-height: 90dvh; overflow: hidden; }
+.purchase-dialog .modal-header, .purchase-footer { flex-shrink: 0; }
+.purchase-fields { margin: 0; border: 0; min-width: 0; overflow-y: auto; overscroll-behavior: contain; }
+.purchase-footer { align-items: center; flex-wrap: wrap; }
+.purchase-total { margin-right: auto; display: grid; gap: 2px; }
+.purchase-total span { font-size: .75rem; color: #475569; }
+.purchase-total strong { font-size: 1.15rem; color: #0b1f3b; font-variant-numeric: tabular-nums; }
+.quantity-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.quantity-actions button, .receipt-camera { display: inline-flex; justify-content: center; align-items: center; gap: 6px; min-height: 44px; min-width: 44px; padding: 8px; border: 1px solid #aebed0; border-radius: 6px; background: white; color: #0b1f3b; cursor: pointer; font-size: .8rem; }
+.receipt-camera { margin-bottom: 8px; }
+.purchase-status:empty { display: none; }
+.purchase-status { color: #334155; font-size: .9rem; }
+.purchase-dialog :is(input, button):focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
+@media(max-width: 640px) {
+  .purchase-dialog { padding: 8px; align-items: center; }
+  .purchase-dialog .modal-card { max-height: calc(100dvh - 16px); border-radius: 12px; }
+  .purchase-dialog .form-row.three-col { grid-template-columns: 1fr 1fr; }
+  .purchase-dialog .form-row.three-col > :last-child { grid-column: 1 / -1; }
+  .purchase-dialog .form-field input { font-size: 16px; min-height: 48px; }
+  .purchase-footer { padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); gap: 8px; }
+}

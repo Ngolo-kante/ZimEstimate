@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { DOCUMENT_ACCEPT, validateDocumentFile } from '@/lib/documentFiles';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import RfqPanel from './RfqPanel';
@@ -44,6 +45,8 @@ import {
   X,
   Funnel,
   Paperclip,
+  Camera,
+  Minus,
   Cube,
   Wall,
   House,
@@ -151,8 +154,16 @@ export default function UnifiedProcurementView({
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [selectedItemForPurchase, setSelectedItemForPurchase] = useState<BOQItem | null>(null);
   const [isSavingPurchase, setIsSavingPurchase] = useState(false);
+  const [purchaseError, setPurchaseError] = useState<string | null>(null);
+  const [purchaseStatus, setPurchaseStatus] = useState('');
+  const purchaseBusy = useRef(false);
+  const purchaseDialog = useRef<HTMLDialogElement>(null);
+  const uploadedReceipt = useRef<{ file: File; id: string } | null>(null);
+  const cameraInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (showPurchaseModal) purchaseDialog.current?.showModal();
+  }, [showPurchaseModal]);
   const [savingItemId, setSavingItemId] = useState<string | null>(null);
-  const [optimisticPurchase, setOptimisticPurchase] = useState<PurchaseRecord | null>(null);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const realtimeRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [purchaseForm, setPurchaseForm] = useState({
@@ -183,12 +194,7 @@ export default function UnifiedProcurementView({
   const itemsWithPurchases: ItemWithPurchases[] = useMemo(() => {
     const purchasesByItem = new Map<string, PurchaseRecord[]>();
 
-    // Include optimistic purchase if present
-    const allPurchases = optimisticPurchase
-      ? [...purchases, optimisticPurchase]
-      : purchases;
-
-    allPurchases.forEach((p) => {
+    purchases.forEach((p) => {
       const list = purchasesByItem.get(p.boq_item_id) || [];
       list.push(p);
       purchasesByItem.set(p.boq_item_id, list);
@@ -213,7 +219,7 @@ export default function UnifiedProcurementView({
         remainingQty,
       };
     });
-  }, [items, purchases, optimisticPurchase]);
+  }, [items, purchases]);
 
   const filteredItems = useMemo(() => {
     let result = itemsWithPurchases;
@@ -395,6 +401,9 @@ export default function UnifiedProcurementView({
   }, [loadData, project.id, onItemsRefresh]);
 
   const resetPurchaseForm = () => {
+    uploadedReceipt.current = null;
+    setPurchaseError(null);
+    setPurchaseStatus('');
     setPurchaseForm({
       supplierName: '',
       quantity: '',
@@ -407,6 +416,10 @@ export default function UnifiedProcurementView({
   };
 
   const openPurchaseModal = (item: BOQItem) => {
+    if (purchaseBusy.current) return;
+    uploadedReceipt.current = null;
+    setPurchaseError(null);
+    setPurchaseStatus('');
     setSelectedItemForPurchase(item);
     setPurchaseForm({
       supplierName: '',
@@ -445,124 +458,80 @@ export default function UnifiedProcurementView({
     return Object.keys(errors).length === 0;
   };
 
+  const closePurchase = () => {
+    if (purchaseBusy.current) return;
+    setShowPurchaseModal(false);
+    resetPurchaseForm();
+    setSelectedItemForPurchase(null);
+  };
+
+  const selectReceipt = (file?: File) => {
+    if (!file) return;
+    const error = validateDocumentFile(file);
+    setPurchaseError(error);
+    if (!error) {
+      uploadedReceipt.current = null;
+      setPurchaseForm(current => ({ ...current, receiptFile: file }));
+    }
+  };
+
   const handleSavePurchase = async () => {
-    if (!selectedItemForPurchase) {
-      showError('No item selected.');
-      return;
-    }
-
-    if (!validateForm()) {
-      return;
-    }
-
+    if (purchaseBusy.current || !selectedItemForPurchase || !validateForm()) return;
+    purchaseBusy.current = true;
+    setIsSavingPurchase(true);
+    setPurchaseError(null);
     const supplierName = purchaseForm.supplierName.trim();
     const quantity = Number(purchaseForm.quantity);
     const unitPrice = Number(purchaseForm.unitPrice);
     const itemId = selectedItemForPurchase.id;
-
-    const matchedSupplier = suppliers.find(
-      (supplier) => supplier.name.toLowerCase() === supplierName.toLowerCase()
-    );
-
-    // Create optimistic purchase record for instant UI feedback
-    const optimisticRecord: PurchaseRecord = {
-      id: `optimistic-${Date.now()}`,
-      project_id: project.id,
-      boq_item_id: itemId,
-      supplier_id: matchedSupplier?.id || null,
-      supplier_name: supplierName,
-      quantity,
-      unit_price_usd: unitPrice,
-      purchased_at: toIsoMidday(purchaseForm.purchasedAt),
-      notes: purchaseForm.notes || null,
-      receipt_document_id: null,
-      created_by: 'optimistic', // Placeholder for optimistic UI update
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    // Apply optimistic update immediately
-    setOptimisticPurchase(optimisticRecord);
+    const matchedSupplier = suppliers.find(supplier => supplier.name.toLowerCase() === supplierName.toLowerCase());
     setSavingItemId(itemId);
-    setExpandedItems((prev) => new Set(prev).add(itemId)); // Auto-expand to show new purchase
-    setShowPurchaseModal(false);
-    setIsSavingPurchase(true);
-
-    let receiptDocumentId: string | null = null;
-
-    if (purchaseForm.receiptFile) {
-      const { document, error } = await uploadDocument(
-        project.id,
-        purchaseForm.receiptFile,
-        'receipt',
-        `Receipt for ${selectedItemForPurchase.material_name}`
-      );
-      if (error) {
-        showError(error.message || 'Failed to upload receipt');
-        // Rollback optimistic update
-        setOptimisticPurchase(null);
-        setSavingItemId(null);
-        setIsSavingPurchase(false);
-        setShowPurchaseModal(true);
-        return;
-      }
-      if (document) {
+    try {
+      let receiptDocumentId = uploadedReceipt.current?.file === purchaseForm.receiptFile ? uploadedReceipt.current.id : null;
+      if (purchaseForm.receiptFile && !receiptDocumentId) {
+        setPurchaseStatus('Uploading receipt…');
+        const { document, error } = await uploadDocument(project.id, purchaseForm.receiptFile, 'receipt', `Receipt for ${selectedItemForPurchase.material_name}`);
+        if (error || !document) throw error || new Error('Receipt upload did not complete.');
         receiptDocumentId = document.id;
-        setReceiptDocs((prev) => [document, ...prev]);
+        uploadedReceipt.current = { file: purchaseForm.receiptFile, id: document.id };
+        setReceiptDocs(prev => [document, ...prev.filter(d => d.id !== document.id)]);
       }
-    }
-
-    const purchasePayload: Record<string, unknown> = {
-      project_id: project.id,
-      boq_item_id: itemId,
-      supplier_name: supplierName,
-      supplier_id: matchedSupplier?.id || null,
-      quantity,
-      unit_price_usd: unitPrice,
-      purchased_at: toIsoMidday(purchaseForm.purchasedAt),
-      notes: purchaseForm.notes || null,
-    };
-    if (receiptDocumentId) {
-      purchasePayload.receipt_document_id = receiptDocumentId;
-    }
-
-    const { record, error } = await createPurchaseRecord(purchasePayload as Parameters<typeof createPurchaseRecord>[0]);
-
-    if (error) {
-      showError(error.message || 'Failed to record purchase');
-      // Rollback optimistic update
-      setOptimisticPurchase(null);
-      setSavingItemId(null);
-    } else {
+      setPurchaseStatus('Saving purchase…');
+      const { record, error } = await createPurchaseRecord({
+        project_id: project.id, boq_item_id: itemId, supplier_name: supplierName,
+        supplier_id: matchedSupplier?.id || null, quantity, unit_price_usd: unitPrice,
+        purchased_at: toIsoMidday(purchaseForm.purchasedAt), notes: purchaseForm.notes || null,
+        receipt_document_id: receiptDocumentId,
+      });
+      if (error || !record) throw error || new Error('Purchase could not be saved.');
+      setPurchases(prev => [record, ...prev.filter(p => p.id !== record.id)]);
+      setExpandedItems(prev => new Set(prev).add(itemId));
+      // Once the purchase exists, a refresh failure must not invite a duplicate retry.
+      setShowPurchaseModal(false);
       const currentItem = itemsWithPurchases.find(i => i.id === itemId);
       const newTotalPurchased = (currentItem?.totalPurchased || 0) + quantity;
-      const estimatedQty = Number(selectedItemForPurchase.quantity) || 0;
-
-      const { error: boqUpdateError } = await updateBOQItem(itemId, {
-        actual_quantity: newTotalPurchased,
-        actual_price_usd: unitPrice,
-        is_purchased: newTotalPurchased >= estimatedQty,
-        purchased_date: new Date().toISOString(),
-      });
-
-      if (boqUpdateError) {
-        showError(boqUpdateError.message || 'Purchase was saved, but BOQ item sync failed');
+      try {
+        const { error: syncError } = await updateBOQItem(itemId, {
+          actual_quantity: newTotalPurchased, actual_price_usd: unitPrice,
+          is_purchased: newTotalPurchased >= Number(selectedItemForPurchase.quantity),
+          purchased_date: new Date().toISOString(),
+        });
+        if (syncError) throw syncError;
+        await onItemsRefresh();
+        success('Purchase saved');
+      } catch {
+        showError('Purchase saved. Refresh the project to update the totals.');
       }
-
-      // Replace optimistic record with real record
-      if (record) {
-        setPurchases((prev) => [record, ...prev]);
-      }
-      setOptimisticPurchase(null);
-      setSavingItemId(null);
-
-      await onItemsRefresh();
-      success('Purchase recorded successfully');
       setSelectedItemForPurchase(null);
       resetPurchaseForm();
+    } catch (err) {
+      setPurchaseError(`${err instanceof Error ? err.message : 'Could not save purchase.'} Your details are kept here. Please retry.`);
+      setPurchaseStatus('');
+    } finally {
+      purchaseBusy.current = false;
+      setIsSavingPurchase(false);
+      setSavingItemId(null);
     }
-
-    setIsSavingPurchase(false);
   };
 
   const handleOpenReceipt = async (documentId: string | null) => {
@@ -1264,18 +1233,20 @@ export default function UnifiedProcurementView({
 
       {/* Purchase Modal */}
       {showPurchaseModal && selectedItemForPurchase && (
-        <div className="modal-overlay" onClick={() => { setShowPurchaseModal(false); resetPurchaseForm(); setSelectedItemForPurchase(null); }}>
-          <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="purchase-modal-title" onClick={(e) => e.stopPropagation()}>
+        <dialog ref={purchaseDialog} className="modal-overlay purchase-dialog" aria-labelledby="purchase-modal-title"
+          onCancel={e => { e.preventDefault(); closePurchase(); }}
+          onClick={e => { if (e.target === e.currentTarget) closePurchase(); }}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-group">
-                <h3 id="purchase-modal-title">Log Purchase</h3>
+                <h3 id="purchase-modal-title">Record purchase</h3>
                 <p className="modal-item-name">{selectedItemForPurchase.material_name}</p>
               </div>
-              <button type="button" className="modal-close !h-11 !w-11" aria-label="Close purchase form" onClick={() => { setShowPurchaseModal(false); resetPurchaseForm(); setSelectedItemForPurchase(null); }}>
+              <button type="button" className="modal-close !h-11 !w-11" aria-label="Close purchase form" disabled={isSavingPurchase} onClick={closePurchase}>
                 <X size={20} />
               </button>
             </div>
-            <div className="modal-body">
+            <fieldset className="modal-body purchase-fields" disabled={isSavingPurchase}>
               <div className="modal-item-info">
                 <div className="info-cell">
                   <span className="info-label">BOQ Qty</span>
@@ -1335,6 +1306,11 @@ export default function UnifiedProcurementView({
                       placeholder="0.00"
                       className={formErrors.quantity ? 'error' : ''}
                     />
+                    <div className="quantity-actions">
+                      <button type="button" aria-label="Decrease quantity by one" onClick={() => setPurchaseForm(f => ({ ...f, quantity: String(Math.max(0, Number(f.quantity) - 1)) }))}><Minus size={18} /></button>
+                      <button type="button" aria-label="Increase quantity by one" onClick={() => setPurchaseForm(f => ({ ...f, quantity: String((Number(f.quantity) || 0) + 1) }))}><Plus size={18} /></button>
+                      <button type="button" onClick={() => setPurchaseForm(f => ({ ...f, quantity: String(Math.max(0, itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id)?.remainingQty ?? Number(selectedItemForPurchase.quantity))) }))}>Use remaining</button>
+                    </div>
                     {formErrors.quantity && <span className="field-error">{formErrors.quantity}</span>}
                   </div>
                   <div className={`form-field ${formErrors.unitPrice ? 'has-error' : ''}`}>
@@ -1392,14 +1368,11 @@ export default function UnifiedProcurementView({
                     <input
                       type="file"
                       id="receipt-file-input"
-                      accept="image/*,application/pdf"
-                      onChange={(e) =>
-                        setPurchaseForm({
-                          ...purchaseForm,
-                          receiptFile: e.target.files?.[0] || null,
-                        })
-                      }
+                      accept={DOCUMENT_ACCEPT}
+                      onChange={e => { selectReceipt(e.target.files?.[0]); e.target.value = ''; }}
                     />
+                    <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={e => { selectReceipt(e.target.files?.[0]); e.target.value = ''; }} />
+                    <button type="button" className="receipt-camera" onClick={() => cameraInput.current?.click()}><Camera size={18} /> Take receipt photo</button>
                     <label htmlFor="receipt-file-input" className="file-upload-label">
                       <Paperclip size={18} />
                       {purchaseForm.receiptFile ? (
@@ -1410,18 +1383,21 @@ export default function UnifiedProcurementView({
                     </label>
                   </div>
                 </div>
+                <p role="status" className="purchase-status">{purchaseStatus}</p>
+                {purchaseError && <p role="alert" className="field-error">{purchaseError}</p>}
               </div>
-            </div>
-            <div className="modal-footer">
-              <Button variant="secondary" onClick={() => { setShowPurchaseModal(false); resetPurchaseForm(); setSelectedItemForPurchase(null); }}>
+            </fieldset>
+            <div className="modal-footer purchase-footer">
+              <div className="purchase-total"><span>Total (USD)</span><strong>${((Number(purchaseForm.quantity) || 0) * (Number(purchaseForm.unitPrice) || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+              <Button variant="secondary" disabled={isSavingPurchase} onClick={closePurchase}>
                 Cancel
               </Button>
               <Button onClick={handleSavePurchase} loading={isSavingPurchase}>
-                Save Purchase
+                {purchaseError ? 'Retry save' : 'Save purchase'}
               </Button>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
     </div>
   );

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { FileText, FolderSimple, ShieldCheck, Trash, UploadSimple } from '@phosphor-icons/react';
+import { FileText, FolderSimple, ShieldCheck } from '@phosphor-icons/react';
 import PreConstructionChecklist from '@/app/boq/new/components/PreConstructionChecklist';
 import CertificateTracker from '@/app/boq/new/components/CertificateTracker';
-import { useBoqWizardStore } from '@/store/boqWizardStore';
+import DocumentsTab from '@/components/projects/DocumentsTab';
+import Button from '@/components/ui/Button';
 import styles from './ReviewWorkspace.module.css';
 
 type ReviewTab = 'boq' | 'compliance' | 'documents';
@@ -14,11 +15,13 @@ interface ReviewWorkspaceProps {
   description: string;
   sourceLabel: string;
   primary: ReactNode;
+  projectId?: string;
+  onSave?: () => void;
+  isSaving?: boolean;
 }
 
-export default function ReviewWorkspace({ title, description, sourceLabel, primary }: ReviewWorkspaceProps) {
+export default function ReviewWorkspace({ title, description, sourceLabel, primary, projectId, onSave, isSaving }: ReviewWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<ReviewTab>('boq');
-  const { geotechDocument, setGeotechDocument } = useBoqWizardStore();
 
   return (
     <section className={styles.workspace}>
@@ -50,33 +53,14 @@ export default function ReviewWorkspace({ title, description, sourceLabel, prima
           </div>
         )}
         {activeTab === 'documents' && (
-          <section className={styles.documents}>
-            <div>
-              <h3>Project documents</h3>
-              <p>Keep geotechnical surveys and council approvals with the estimate.</p>
-            </div>
-            <label>
-              <UploadSimple size={17} />
-              Upload document
-              <input
-                type="file"
-                hidden
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (!file) return;
-                  setGeotechDocument({ id: `local-${Date.now()}`, fileName: file.name, createdAt: new Date().toISOString() });
-                }}
-              />
-            </label>
-            {geotechDocument && (
-              <div className={styles.documentRow}>
-                <span>{geotechDocument.fileName}</span>
-                <button type="button" onClick={() => setGeotechDocument(null)} aria-label="Remove uploaded document">
-                  <Trash size={15} />
-                </button>
-              </div>
-            )}
-          </section>
+          projectId ? <DocumentsTab projectId={projectId} /> : (
+            <section className={styles.documents}>
+              <FolderSimple size={32} weight="duotone" />
+              <h3>Save your project to add documents</h3>
+              <p>Your saved project keeps the actual plans, approvals and receipts, ready to open or download later.</p>
+              {onSave && <Button onClick={onSave} loading={isSaving}>Save project to add documents</Button>}
+            </section>
+          )
         )}
       </div>
     </section>

@@ -652,7 +652,7 @@ function BoqNewPageContent() {
    * did: the button span, stopped, and nothing was said. The estimate was not
    * on the dashboard afterwards because it had never been written.
    */
-  const runSave = async (): Promise<boolean> => {
+  const runSave = async (navigate = true): Promise<boolean> => {
     try {
       // createNewProject returns the new id; `project` state has not caught up
       // by the time this line runs, so the returned value is what the redirect
@@ -670,7 +670,7 @@ function BoqNewPageContent() {
       // To My Projects rather than staying on the BOQ. "Find it under My
       // Projects" asked the user to go and look; six builders each finished
       // somewhere different, and this was the only one that finished nowhere.
-      router.push(savedId ? `/projects?saved=${savedId}` : '/projects');
+      if (navigate) router.push(savedId ? `/projects?saved=${savedId}` : '/projects');
       return true;
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Could not save the estimate.');
@@ -859,7 +859,7 @@ function BoqNewPageContent() {
                     )}
 
                     {currentStep === 5 && (
-                      <ReviewTabs />
+                      <ReviewTabs projectId={project?.id} isSaving={isSaving} onSave={() => { if (!isAuthenticated) setShowSavePrompt(true); else void runSave(false); }} />
                     )}
                   </motion.div>
                 </AnimatePresence>
