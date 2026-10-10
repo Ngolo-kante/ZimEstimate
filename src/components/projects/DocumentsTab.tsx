@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import DocumentUploader from './DocumentUploader';
 import DocumentCard from './DocumentCard';
@@ -40,6 +40,8 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
     const [filter, setFilter] = useState<DocumentFilter>('all');
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [previewDoc, setPreviewDoc] = useState<ProjectDocument | null>(null);
+    const previewDialog = useRef<HTMLDialogElement>(null);
+    useEffect(() => { if (previewUrl) previewDialog.current?.showModal(); }, [previewUrl]);
     const [setupRequired, setSetupRequired] = useState(false);
 
     const loadDocuments = useCallback(async () => {
@@ -60,21 +62,19 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
     }, [projectId, showError]);
 
     useEffect(() => {
-        // eslint-disable-next-line
         loadDocuments();
     }, [loadDocuments]);
 
     const handleUpload = async (file: File, category: DocumentCategory, description?: string) => {
         setIsUploading(true);
-        const { document: newDoc, error } = await uploadDocument(projectId, file, category, description);
-
-        if (error) {
-            showError(error.message);
-        } else if (newDoc) {
+        try {
+            const { document: newDoc, error } = await uploadDocument(projectId, file, category, description);
+            if (error || !newDoc) throw error || new Error('Upload did not complete. Please try again.');
             setDocuments((prev) => [newDoc, ...prev]);
             success('Document uploaded successfully');
+        } finally {
+            setIsUploading(false);
         }
-        setIsUploading(false);
     };
 
     const handleDelete = async (documentId: string) => {
@@ -100,7 +100,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
     };
 
     const handleDownload = async (document: ProjectDocument) => {
-        const url = await getDocumentUrl(document.storage_path);
+        const url = await getDocumentUrl(document.storage_path, document.file_name);
         if (url) {
             const link = window.document.createElement('a');
             link.href = url;
@@ -130,6 +130,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                     <div className="filter-select">
                         <FunnelSimple size={16} />
                         <select
+                            aria-label="Filter documents"
                             value={filter}
                             onChange={(e) => setFilter(e.target.value as DocumentFilter)}
                         >
@@ -147,9 +148,8 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                 {setupRequired ? (
                     <div className="setup-state">
                         <Warning size={48} weight="light" />
-                        <h4>Database Setup Required</h4>
-                        <p>The documents feature requires running the database migration.</p>
-                        <code>supabase/migrations/004_project_enhancements.sql</code>
+                        <h4>Documents are temporarily unavailable</h4>
+                        <p>Please try again later or contact support.</p>
                     </div>
                 ) : isLoading ? (
                     <div className="loading-state">
@@ -179,11 +179,11 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
 
             {/* Preview Modal */}
             {previewUrl && previewDoc && (
-                <div className="preview-overlay" onClick={closePreview}>
+                <dialog ref={previewDialog} className="preview-overlay" aria-label={previewDoc.file_name} onCancel={closePreview} onClick={e => { if (e.target === e.currentTarget) closePreview(); }}>
                     <div className="preview-content" onClick={(e) => e.stopPropagation()}>
                         <div className="preview-header">
                             <h4>{previewDoc.file_name}</h4>
-                            <button onClick={closePreview}>&times;</button>
+                            <button aria-label="Close document preview" onClick={closePreview}>&times;</button>
                         </div>
                         <div className="preview-body">
                             {previewDoc.file_type.startsWith('image/') ? (
@@ -207,7 +207,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                             )}
                         </div>
                     </div>
-                </div>
+                </dialog>
             )}
 
             <style jsx>{`
@@ -341,6 +341,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
 
                 /* Preview Modal */
                 .preview-overlay {
+                    margin: 0; width: 100%; height: 100%; max-width: none; max-height: none; border: 0;
                     position: fixed;
                     top: 0;
                     left: 0;

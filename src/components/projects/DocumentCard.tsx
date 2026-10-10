@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     File,
     FilePdf,
@@ -8,8 +8,8 @@ import {
     Trash,
     DownloadSimple,
     Eye,
-    DotsThreeVertical,
 } from '@phosphor-icons/react';
+import { getDocumentUrl } from '@/lib/services/projects';
 import { ProjectDocument } from '@/lib/database.types';
 
 interface DocumentCardProps {
@@ -29,7 +29,14 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default function DocumentCard({ document, onDelete, onView, onDownload }: DocumentCardProps) {
-    const [showMenu, setShowMenu] = useState(false);
+    const [thumbnail, setThumbnail] = useState<string | null>(null);
+    useEffect(() => {
+        let active = true;
+        if (document.file_type.startsWith('image/')) {
+            void getDocumentUrl(document.storage_path).then(url => { if (active) setThumbnail(url); }).catch(() => {});
+        }
+        return () => { active = false; };
+    }, [document.storage_path, document.file_type]);
 
     const isImage = document.file_type.startsWith('image/');
     const isPdf = document.file_type === 'application/pdf';
@@ -61,31 +68,14 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     <div className={`file-icon ${isImage ? 'image' : isPdf ? 'pdf' : 'default'}`}>
                         {getIcon()}
                     </div>
-                    <div className="menu-container">
-                        <button
-                            className="menu-btn"
-                            onClick={() => setShowMenu(!showMenu)}
-                            onBlur={() => setTimeout(() => setShowMenu(false), 150)}
-                        >
-                            <DotsThreeVertical size={20} weight="bold" />
-                        </button>
-                        {showMenu && (
-                            <div className="menu-dropdown">
-                                <button onClick={() => onView(document)}>
-                                    <Eye size={16} /> View
-                                </button>
-                                <button onClick={() => onDownload(document)}>
-                                    <DownloadSimple size={16} /> Download
-                                </button>
-                                <button className="danger" onClick={() => onDelete(document.id)}>
-                                    <Trash size={16} /> Delete
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    <span className="saved-label">Saved</span>
                 </div>
 
-                <div className="card-body" onClick={() => onView(document)}>
+                {thumbnail && <button type="button" className="thumbnail" onClick={() => onView(document)} aria-label={`Preview ${document.file_name}`}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={thumbnail} alt="" loading="lazy" />
+                </button>}
+                <div className="card-body">
                     <h4 className="file-name" title={document.file_name}>
                         {document.file_name}
                     </h4>
@@ -94,6 +84,11 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     )}
                 </div>
 
+                <div className="document-actions">
+                    <button type="button" onClick={() => onView(document)}><Eye size={16} /> Open</button>
+                    <button type="button" onClick={() => onDownload(document)}><DownloadSimple size={16} /> Download</button>
+                    <button type="button" className="danger" onClick={() => onDelete(document.id)}><Trash size={16} /> Remove</button>
+                </div>
                 <div className="card-footer">
                     <span className="category-badge">{CATEGORY_LABELS[document.category] || document.category}</span>
                     <span className="file-meta">
@@ -152,67 +147,13 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     color: #64748b;
                 }
 
-                .menu-container {
-                    position: relative;
-                }
-
-                .menu-btn {
-                    background: none;
-                    border: none;
-                    padding: 6px;
-                    cursor: pointer;
-                    color: #94a3b8;
-                    border-radius: 6px;
-                    transition: all 0.2s;
-                }
-
-                .menu-btn:hover {
-                    background: #f1f5f9;
-                    color: #475569;
-                }
-
-                .menu-dropdown {
-                    position: absolute;
-                    top: 100%;
-                    right: 0;
-                    margin-top: 8px;
-                    background: #ffffff;
-                    border: 1px solid #d3e3f3;
-                    border-radius: 10px;
-                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-                    min-width: 140px;
-                    z-index: 20;
-                    overflow: hidden;
-                    padding: 4px;
-                }
-
-                .menu-dropdown button {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    width: 100%;
-                    padding: 8px 12px;
-                    background: none;
-                    border: none;
-                    font-size: 0.85rem;
-                    color: #334155;
-                    cursor: pointer;
-                    text-align: left;
-                    border-radius: 6px;
-                }
-
-                .menu-dropdown button:hover {
-                    background: #f1f5f9;
-                }
-
-                .menu-dropdown button.danger {
-                    color: #ef4444;
-                }
-
-                .menu-dropdown button.danger:hover {
-                    background: #fef2f2;
-                }
-
+                .saved-label { font-size: .8rem; color: #166534; background: #f0fdf4; padding: 4px 8px; border-radius: 4px; }
+                .thumbnail { padding: 0; border: 0; background: #f1f5f9; border-radius: 6px; cursor: pointer; overflow: hidden; }
+                .thumbnail img { display: block; width: 100%; height: 120px; object-fit: cover; }
+                .document-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+                .document-actions button { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; color: #0b1f3b; font-size: .8rem; cursor: pointer; }
+                .document-actions .danger { color: #b91c1c; }
+                button:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
                 .card-body {
                     cursor: pointer;
                     flex: 1;
@@ -242,6 +183,8 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
+                    flex-wrap: wrap;
+                    gap: 8px;
                     padding-top: 16px;
                     border-top: 1px solid #f1f5f9;
                 }
@@ -258,8 +201,8 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                 }
 
                 .file-meta {
-                    font-size: 0.7rem;
-                    color: #94a3b8;
+                    font-size: 0.8rem;
+                    color: #475569;
                     font-weight: 500;
                 }
             `}</style>

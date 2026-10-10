@@ -1,404 +1,119 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import Button from '@/components/ui/Button';
-import { Camera, CloudArrowUp, File, X, CircleNotch } from '@phosphor-icons/react';
-import { DocumentCategory } from '@/lib/database.types';
+import { Camera, CloudArrowUp, File, X } from '@phosphor-icons/react';
+import type { DocumentCategory } from '@/lib/database.types';
+import { DOCUMENT_ACCEPT, validateDocumentFile } from '@/lib/documentFiles';
 
 interface DocumentUploaderProps {
     onUpload: (file: File, category: DocumentCategory, description?: string) => Promise<void>;
     isUploading?: boolean;
 }
-
-const ALLOWED_TYPES = [
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/webp',
-    'application/pdf',
-];
-
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-
 const CATEGORIES: { value: DocumentCategory; label: string }[] = [
-    { value: 'plan', label: 'Plans & Drawings' },
-    { value: 'permit', label: 'Permits & Approvals' },
-    { value: 'receipt', label: 'Receipts' },
-    { value: 'contract', label: 'Contracts' },
-    { value: 'photo', label: 'Site Photos' },
-    { value: 'general', label: 'General' },
+    { value: 'plan', label: 'Plans & Drawings' }, { value: 'permit', label: 'Permits & Approvals' },
+    { value: 'receipt', label: 'Receipts' }, { value: 'contract', label: 'Contracts' },
+    { value: 'photo', label: 'Site Photos' }, { value: 'general', label: 'General' },
 ];
 
 export default function DocumentUploader({ onUpload, isUploading }: DocumentUploaderProps) {
-    const [isDragging, setIsDragging] = useState(false);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const id = useId();
+    const fileInput = useRef<HTMLInputElement>(null);
+    const cameraInput = useRef<HTMLInputElement>(null);
+    const busy = useRef(false);
+    const [file, setFile] = useState<File | null>(null);
+    const [preview, setPreview] = useState<string | null>(null);
     const [category, setCategory] = useState<DocumentCategory>('general');
     const [description, setDescription] = useState('');
     const [error, setError] = useState<string | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [status, setStatus] = useState('');
+    const [uploading, setUploading] = useState(false);
+    const [dragging, setDragging] = useState(false);
+    const disabled = uploading || isUploading;
 
-    const validateFile = (file: File): string | null => {
-        if (!ALLOWED_TYPES.includes(file.type)) {
-            return 'Invalid file type. Please upload an image or PDF.';
-        }
-        if (file.size > MAX_SIZE) {
-            return 'File too large. Maximum size is 10MB.';
-        }
-        return null;
+    useEffect(() => {
+        if (!file || !file.type.startsWith('image/')) { setPreview(null); return; }
+        const url = URL.createObjectURL(file);
+        setPreview(url);
+        return () => URL.revokeObjectURL(url);
+    }, [file]);
+
+    const chooseFile = (chosen?: File) => {
+        if (!chosen || busy.current || isUploading) return;
+        const message = validateDocumentFile(chosen);
+        setError(message);
+        setStatus('');
+        if (!message) setFile(chosen);
     };
-
-    const handleDragOver = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(true);
-    }, []);
-
-    const handleDragLeave = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-    }, []);
-
-    const handleDrop = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
+    const upload = async () => {
+        if (!file || busy.current || isUploading) return;
+        busy.current = true;
+        setUploading(true);
         setError(null);
-
-        const file = e.dataTransfer.files[0];
-        if (file) {
-            const validationError = validateFile(file);
-            if (validationError) {
-                setError(validationError);
-            } else {
-                setSelectedFile(file);
-            }
-        }
-    }, []);
-
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setError(null);
-        const file = e.target.files?.[0];
-        if (file) {
-            const validationError = validateFile(file);
-            if (validationError) {
-                setError(validationError);
-            } else {
-                setSelectedFile(file);
-            }
+        setStatus('Uploading your document…');
+        try {
+            await onUpload(file, category, description.trim() || undefined);
+            setStatus(`${file.name} saved to this project.`);
+            setFile(null);
+            setDescription('');
+            setCategory('general');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Upload failed. Your file is still selected—try again.');
+            setStatus('');
+        } finally {
+            busy.current = false;
+            setUploading(false);
         }
     };
-
-    const handleUpload = async () => {
-        if (!selectedFile) return;
-
-        await onUpload(selectedFile, category, description || undefined);
-        setSelectedFile(null);
-        setDescription('');
-        setCategory('general');
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
-
-    const handleCancel = () => {
-        setSelectedFile(null);
-        setDescription('');
-        setCategory('general');
-        setError(null);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
-
-    const formatFileSize = (bytes: number): string => {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-    };
-
     return (
-        <>
-            <div className="document-uploader">
-                {!selectedFile ? (
-                    <div
-                        className={`drop-zone ${isDragging ? 'dragging' : ''}`}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        onClick={() => fileInputRef.current?.click()}
-                    >
-                        <CloudArrowUp size={40} weight="light" className="upload-icon" />
-                        <Camera size={24} weight="duotone" className="camera-icon" />
-                        <p className="drop-text">
-                            <span className="desktop-upload-copy">Drag &amp; drop a file here, or </span><span className="browse-link">Choose file</span>
-                        </p>
-                        <p className="drop-hint">Images (PNG, JPEG) or PDF up to 10MB</p>
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept={ALLOWED_TYPES.join(',')}
-                            onChange={handleFileSelect}
-                            className="file-input"
-                        />
-                    </div>
-                ) : (
-                    <div className="file-preview">
-                        <div className="file-info">
-                            <div className="file-icon">
-                                <File size={24} weight="light" />
-                            </div>
-                            <div className="file-details">
-                                <span className="file-name">{selectedFile.name}</span>
-                                <span className="file-size">{formatFileSize(selectedFile.size)}</span>
-                            </div>
-                            <button className="remove-btn" onClick={handleCancel}>
-                                <X size={18} />
-                            </button>
-                        </div>
-
-                        <div className="upload-options">
-                            <div className="form-group">
-                                <label>Category</label>
-                                <select
-                                    value={category}
-                                    onChange={(e) => setCategory(e.target.value as DocumentCategory)}
-                                    className="category-select"
-                                >
-                                    {CATEGORIES.map((cat) => (
-                                        <option key={cat.value} value={cat.value}>
-                                            {cat.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="form-group">
-                                <label>Description (optional)</label>
-                                <input
-                                    type="text"
-                                    value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
-                                    placeholder="Add a description..."
-                                    className="description-input"
-                                />
-                            </div>
-
-                            <div className="upload-actions">
-                                <Button variant="secondary" onClick={handleCancel} disabled={isUploading}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    variant="primary"
-                                    onClick={handleUpload}
-                                    loading={isUploading}
-                                    icon={isUploading ? <CircleNotch size={18} className="spinner" /> : <CloudArrowUp size={18} />}
-                                >
-                                    {isUploading ? 'Uploading...' : 'Upload'}
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {error && <div className="upload-error">{error}</div>}
-            </div>
-
+        <section className={`uploader ${dragging ? 'dragging' : ''}`} aria-label="Upload project document" aria-busy={disabled}
+            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={e => { e.preventDefault(); setDragging(false); chooseFile(e.dataTransfer.files[0]); }}>
+            <input ref={fileInput} type="file" accept={DOCUMENT_ACCEPT} hidden onChange={e => { chooseFile(e.target.files?.[0]); e.target.value = ''; }} />
+            <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={e => { chooseFile(e.target.files?.[0]); e.target.value = ''; }} />
+            {file ? <>
+                <div className="selected-file">
+                    {preview ? /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={preview} alt="Selected document preview" /> : <File size={36} />}
+                    <div><strong>{file.name}</strong><span>{(file.size / 1024 / 1024).toFixed(2)} MB · Ready to upload</span></div>
+                    <button type="button" disabled={disabled} aria-label="Remove selected file" onClick={() => { setFile(null); setError(null); setStatus(''); }}><X size={20} /></button>
+                </div>
+                <div className="fields">
+                    <label htmlFor={`${id}-category`}>Category<select id={`${id}-category`} value={category} disabled={disabled} onChange={e => setCategory(e.target.value as DocumentCategory)}>{CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></label>
+                    <label htmlFor={`${id}-description`}>Description (optional)<input id={`${id}-description`} value={description} disabled={disabled} onChange={e => setDescription(e.target.value)} placeholder="e.g. Foundation delivery receipt" /></label>
+                </div>
+                <div className="actions"><Button variant="secondary" disabled={disabled} onClick={() => fileInput.current?.click()}>Choose another</Button><Button onClick={upload} loading={disabled} icon={<CloudArrowUp size={18} />}>{error ? 'Retry upload' : 'Upload document'}</Button></div>
+            </> : <>
+                <CloudArrowUp size={32} weight="duotone" />
+                <h3>Keep your project paperwork together</h3>
+                <p>Drop a file here, choose a document, or take a photo.</p>
+                <div className="actions"><Button disabled={disabled} onClick={() => fileInput.current?.click()}>Choose file</Button><Button variant="secondary" disabled={disabled} icon={<Camera size={18} />} onClick={() => cameraInput.current?.click()}>Take photo</Button></div>
+                <small>Images or PDFs · Up to 10 MB per file</small>
+            </>}
+            <p role="status" className="status">{status}</p>
+            {error && <p role="alert" className="error">{error}</p>}
             <style jsx>{`
-                .document-uploader {
-                    width: 100%;
-                }
-
-                .drop-zone {
-                    border: 2px dashed #c9ddf1;
-                    border-radius: 14px;
-                    padding: var(--spacing-2xl);
-                    text-align: center;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                    background: rgba(248, 252, 255, 0.9);
-                }
-
-                .drop-zone:hover,
-                .drop-zone.dragging {
-                    border-color: #7eafe3;
-                    background: rgba(78, 154, 247, 0.08);
-                }
-
-                .drop-zone :global(.upload-icon) {
-                    color: var(--color-text-muted);
-                    margin-bottom: var(--spacing-md);
-                }
-
-                .drop-zone :global(.camera-icon) {
-                    display: none;
-                    color: var(--color-primary);
-                    margin-bottom: 8px;
-                }
-
-                .drop-text {
-                    color: var(--color-text-secondary);
-                    margin: 0 0 var(--spacing-xs) 0;
-                }
-
-                .browse-link {
-                    color: var(--color-primary);
-                    text-decoration: underline;
-                }
-
-                .drop-hint {
-                    font-size: 0.75rem;
-                    color: var(--color-text-muted);
-                    margin: 0;
-                }
-
-                .file-input {
-                    display: none;
-                }
-
-                .file-preview {
-                    border: 1px solid #d3e4f4;
-                    border-radius: 14px;
-                    padding: var(--spacing-lg);
-                    background: var(--color-surface);
-                }
-
-                .file-info {
-                    display: flex;
-                    align-items: center;
-                    gap: var(--spacing-md);
-                    padding-bottom: var(--spacing-md);
-                    border-bottom: 1px solid var(--color-border-light);
-                    margin-bottom: var(--spacing-md);
-                }
-
-                .file-icon {
-                    width: 44px;
-                    height: 44px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    background: var(--color-primary-bg);
-                    color: var(--color-primary);
-                    border-radius: var(--radius-md);
-                }
-
-                .file-details {
-                    flex: 1;
-                    display: flex;
-                    flex-direction: column;
-                }
-
-                .file-name {
-                    font-weight: 500;
-                    color: var(--color-text);
-                    word-break: break-all;
-                }
-
-                .file-size {
-                    font-size: 0.75rem;
-                    color: var(--color-text-muted);
-                }
-
-                .remove-btn {
-                    background: none;
-                    border: none;
-                    padding: var(--spacing-xs);
-                    cursor: pointer;
-                    color: var(--color-text-muted);
-                    border-radius: var(--radius-sm);
-                }
-
-                .remove-btn:hover {
-                    background: var(--color-error-bg);
-                    color: var(--color-error);
-                }
-
-                .upload-options {
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--spacing-md);
-                }
-
-                .form-group {
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--spacing-xs);
-                }
-
-                .form-group label {
-                    font-size: 0.875rem;
-                    font-weight: 500;
-                    color: var(--color-text-secondary);
-                }
-
-                .category-select,
-                .description-input {
-                    padding: var(--spacing-sm) var(--spacing-md);
-                    border: 1px solid #d3e4f4;
-                    border-radius: var(--radius-md);
-                    font-size: 0.875rem;
-                    background: var(--color-surface);
-                    color: var(--color-text);
-                }
-
-                .category-select:focus,
-                .description-input:focus {
-                    outline: none;
-                    border-color: #7fb3ea;
-                    box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.12);
-                }
-
-                .upload-actions {
-                    display: flex;
-                    justify-content: flex-end;
-                    gap: var(--spacing-sm);
-                    margin-top: var(--spacing-sm);
-                }
-
-                .upload-error {
-                    margin-top: var(--spacing-sm);
-                    padding: var(--spacing-sm) var(--spacing-md);
-                    background: var(--color-error-bg);
-                    color: var(--color-error);
-                    border-radius: var(--radius-md);
-                    font-size: 0.875rem;
-                }
-
-                :global(.spinner) {
-                    animation: spin 1s linear infinite;
-                }
-
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
-
-                @media (max-width: 640px) {
-                    .drop-zone {
-                        padding: 18px 14px;
-                        border-radius: 8px;
-                    }
-
-                    .drop-zone :global(.upload-icon),
-                    .desktop-upload-copy {
-                        display: none;
-                    }
-
-                    .drop-zone :global(.camera-icon) {
-                        display: inline-block;
-                    }
-
-                    .browse-link {
-                        display: inline-flex;
-                        min-height: 44px;
-                        align-items: center;
-                        text-decoration: none;
-                        font-weight: 700;
-                    }
-
-                    .drop-hint::before {
-                        content: 'Take a photo or select an image/PDF. ';
-                    }
-                }
+                .uploader { padding: 24px; border: 1px dashed #aebed0; border-radius: 12px; background: #f8fafc; text-align: center; color: #334155; }
+                .dragging { border-color: #2563eb; background: #eff6ff; }
+                h3 { font-size: 1rem; margin: 10px 0 6px; color: #0b1f3b; }
+                p { margin: 6px 0 16px; font-size: .9rem; }
+                small { display: block; font-size: .8rem; margin-top: 14px; }
+                .actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+                .selected-file { display: flex; align-items: center; gap: 14px; text-align: left; }
+                .selected-file img { width: 64px; height: 72px; object-fit: cover; border-radius: 6px; }
+                .selected-file div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+                .selected-file span { display: block; font-size: .8rem; margin-top: 4px; }
+                .selected-file button { min-width: 44px; min-height: 44px; display: grid; place-items: center; border: 1px solid #cbd5e1; border-radius: 6px; background: white; cursor: pointer; }
+                .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 20px 0; text-align: left; }
+                label { display: grid; gap: 6px; font-size: .875rem; font-weight: 600; }
+                input, select { width: 100%; min-width: 0; min-height: 46px; padding: 10px; border: 1px solid #b8c7d8; border-radius: 6px; background: white; font: inherit; }
+                :is(input, select, button):focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
+                .error { color: #b91c1c; margin: 14px 0 0; }
+                .status { color: #166534; margin: 12px 0 0; }
+                .status:empty { display: none; }
+                @media(max-width: 600px) { .uploader { padding: 18px 14px; } .fields { grid-template-columns: 1fr; } input, select { font-size: 16px; } }
             `}</style>
-        </>
+        </section>
     );
 }
