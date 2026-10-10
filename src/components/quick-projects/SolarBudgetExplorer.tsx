@@ -60,6 +60,15 @@ const TRANSPORT_COST = SOLAR_TRANSPORT_COST;
 // computed per system by solarBalanceOfSystemCost.
 const PROTECTION_FIXED = Math.round(solarBalanceOfSystemCost(4, true));
 
+/* Installation labour is negotiated in this market, so the page offers the
+   range people actually pay rather than one house figure. The catalog default
+   sits in the middle of it. */
+const LABOR_RATE_OPTIONS = [
+  { pct: 0.10, note: 'Own contact / DIY help' },
+  { pct: 0.15, note: 'Typical local installer' },
+  { pct: 0.20, note: 'Registered company' },
+] as const;
+
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
 type Objective = 'economy' | 'balanced' | 'quality';
@@ -68,7 +77,8 @@ interface BudgetAllocation {
   panels: { count: number; brand: PanelOption; cost: number };
   inverter: { kva: number; brand: InverterOption; cost: number };
   battery: { units: number; brand: BatteryOption; cost: number };
-  protection: { cost: number };
+  /** droppedForBudget: switched on, but the money did not reach it. */
+  protection: { cost: number; droppedForBudget: boolean };
   installation: { cost: number; pct: number; isCustom: boolean };
   transport: { cost: number };
   // Advisor: cheapest battery brand that fits budget when selected brand is too expensive
@@ -96,6 +106,8 @@ function allocateBudget(
   enabledCards: Record<string, boolean>,
   objective: Objective,
   installCustom: number | null,
+  /** Labour as a share of hardware, e.g. 0.15. The user picks this. */
+  laborPct: number,
   redistribute: boolean,
 ): BudgetAllocation {
   // Proportional splits — all three core components get budget simultaneously
@@ -106,17 +118,20 @@ function allocateBudget(
   }[objective];
 
   const transportCost = enabledCards.transport ? TRANSPORT_COST : 0;
-  // Reserved with no panels yet, because cable and trunking scale with the
-  // array. The exact figure is recomputed once the panel count is known and
-  // the whole allocation is trimmed to fit below.
-  const protectionReserve = enabledCards.protection ? solarBalanceOfSystemCost(0, true) : 0;
 
-  // Reserve installation cost upfront so core components get a clean budget
-  let coreBudget = totalBudget - transportCost - protectionReserve;
+  /* Protection is deliberately NOT reserved ahead of the system.
+     It used to be, and on a $1,000 budget a $511 balance-of-system kit took
+     over half the money before a single panel was costed — so the page
+     answered "what does $1,000 buy?" with a surge arrestor and no battery.
+     That is not how this market buys solar. Panels, inverter and battery are
+     what the money is for; protection is priced after them and is the first
+     thing to give way when the total will not fit. The cost is still shown in
+     full, and said plainly when the budget does not reach it. */
+  let coreBudget = totalBudget - transportCost;
   if (enabledCards.installation) {
     coreBudget = installCustom !== null
       ? Math.max(0, coreBudget - installCustom)
-      : Math.max(0, coreBudget / 1.20); // hardware = total / 1.20 when install = 20%
+      : Math.max(0, coreBudget / (1 + laborPct)); // hardware = total / (1 + pct)
   }
 
   // ── Step 1: Select inverter ─────────────────────────────────────────────────
@@ -158,29 +173,30 @@ function allocateBudget(
     }
   }
 
-  // ── Step 3: Panels from remaining ──────────────────────────────────────────
+  // ── Step 3: Panels from their share ────────────────────────────────────────
+  //
+  // Their *share*, not everything left over. Panels used to take the whole
+  // remainder, which is how a $2,500 budget ended up with a 10 kW array on an
+  // 8 kVA inverter and a single 2.6 kWh battery — three components that are
+  // meant to be proportional, with one of them eating the other two's
+  // headroom. Panels are the cheapest unit here, so any rounding error lands
+  // on them and the imbalance compounds.
   const afterBattery = afterInverter - batteryCost;
-  let panelCount = enabledCards.panels && afterBattery >= panelBrand.pricePerPanel
-    ? Math.floor((afterBattery * 0.80) / panelBrand.pricePerPanel) // leave 20% headroom
+  const panelBudget = Math.min(coreBudget * ratios.panels, afterBattery);
+
+  /* An array the inverter cannot take is not a bigger system, it is wasted
+     money. Leftover budget used to pile onto panels with no ceiling, which
+     produced an 18.9 kW array on a 12 kVA inverter. 1.3x the inverter rating
+     is the usual limit for DC oversizing on a hybrid unit. */
+  const maxPanelsForInverter = Math.max(
+    1,
+    Math.floor((inv.kva * 1.3 * 1000) / (panelBrand.watt || 440)),
+  );
+
+  let panelCount = enabledCards.panels && panelBudget >= panelBrand.pricePerPanel
+    ? Math.min(maxPanelsForInverter, Math.floor(panelBudget / panelBrand.pricePerPanel))
     : 0;
   let panelCost = panelCount * panelBrand.pricePerPanel;
-
-  // ── Step 4: Redistribute leftover into panels (and battery if enough) ──────
-  if (redistribute) {
-    let leftover = coreBudget - inverterCost - batteryCost - panelCost;
-    if (enabledCards.panels && panelBrand.pricePerPanel > 0 && leftover >= panelBrand.pricePerPanel) {
-      const extra = Math.floor(leftover / panelBrand.pricePerPanel);
-      panelCount += extra;
-      panelCost += extra * panelBrand.pricePerPanel;
-      leftover -= extra * panelBrand.pricePerPanel;
-    }
-    // Try adding another battery unit of the active brand
-    const activeBatBrand = fallbackBattery ?? batteryBrand;
-    if (enabledCards.battery && leftover >= activeBatBrand.unitPrice) {
-      batteryUnits += 1;
-      batteryCost += activeBatBrand.unitPrice;
-    }
-  }
 
   // ── Step 5: Price it the way the BOQ will, then make it fit ────────────────
   //
@@ -189,27 +205,42 @@ function allocateBudget(
   // actually within budget. Without it the two disagreed badly: on a $1,000
   // budget the explorer reported $869 allocated and the BOQ came out at
   // $2,139 — the number the user had typed in meant nothing.
+  let protectionFunded = enabledCards.protection;
+
   const priceAll = (panels: number, batteries: number) => {
     const activeBattery = fallbackBattery ?? batteryBrand;
     const panelsCost = panels * panelBrand.pricePerPanel;
     const batteriesCost = batteries * activeBattery.unitPrice;
-    const protection = enabledCards.protection
+    const protection = protectionFunded
       ? solarBalanceOfSystemCost(panels, batteries > 0)
       : 0;
     const hardware = inverterCost + batteriesCost + panelsCost + protection;
     const install = enabledCards.installation
       ? installCustom !== null && installCustom > 0
         ? installCustom
-        : Math.round(hardware * SOLAR_INSTALL_LABOR_PCT)
+        : Math.round(hardware * laborPct)
       : 0;
     return { panelsCost, batteriesCost, protection, hardware, install, total: hardware + install + transportCost };
   };
 
   let priced = priceAll(panelCount, batteryUnits);
 
-  // Drop panels first — they are the divisible part of the system. A battery or
-  // an inverter cannot be bought in fractions, and removing either changes what
-  // the system can do rather than just how much of it there is.
+  // ── What gives way, in the order this market actually gives it up ──────────
+  //
+  // Protection goes first. It used to be the one thing held back while panels
+  // and then the battery were stripped out, which produced the absurd result
+  // of a budget buying surge arrestors and no solar. Panels, inverter and
+  // battery are the system; the rest is what an installer adds on top.
+  let protectionDroppedForBudget = false;
+  if (priced.total > totalBudget && protectionFunded) {
+    protectionFunded = false;
+    protectionDroppedForBudget = true;
+    priced = priceAll(panelCount, batteryUnits);
+  }
+
+  // Then panels — the divisible part. A battery or an inverter cannot be
+  // bought in fractions, and dropping either changes what the system can do
+  // rather than just how much of it there is.
   while (priced.total > totalBudget && panelCount > 0) {
     panelCount -= 1;
     priced = priceAll(panelCount, batteryUnits);
@@ -221,6 +252,73 @@ function allocateBudget(
     priced = priceAll(panelCount, batteryUnits);
   }
 
+  /* Buy protection back if it can be afforded without gutting the system.
+     Deprioritising it must not mean leaving money unspent next to a row that
+     says "not funded" — at $2,500 that produced an 18-panel array, no wiring
+     and $346 idle. Panels are the only thing it may take from, and never more
+     than the marginal 30% of them: the inverter and battery are untouchable,
+     and so is the bulk of the array. If it still will not fit, it stays
+     unfunded and the page says so. */
+  if (protectionDroppedForBudget) {
+    const panelFloor = Math.max(1, Math.ceil(panelCount * 0.7));
+    protectionFunded = true;
+    let trialPanels = panelCount;
+    let trial = priceAll(trialPanels, batteryUnits);
+    while (trial.total > totalBudget && trialPanels > panelFloor) {
+      trialPanels -= 1;
+      trial = priceAll(trialPanels, batteryUnits);
+    }
+
+    if (trial.total <= totalBudget) {
+      panelCount = trialPanels;
+      protectionDroppedForBudget = false;
+      priced = trial;
+    } else {
+      protectionFunded = false;
+      priced = priceAll(panelCount, batteryUnits);
+    }
+  }
+
+  /* ── Spend what is genuinely left ──────────────────────────────────────────
+     This used to run before anything was properly costed, against a rough
+     core budget, so it emptied the leftover into panels while protection went
+     unfunded — a 43-panel array and no wiring on $5,000. It runs last now,
+     against the real priced total, and every step re-prices: adding a panel
+     also adds cable, trunking and labour, so spending "what is left" without
+     repricing overshoots the budget.
+
+     Order: storage first, because it is what people buy solar for here and
+     chunky unit sizes leave it furthest short; then protection, which by now
+     is affordable if it is ever going to be; then panels. */
+  if (redistribute) {
+    const activeBatBrand = fallbackBattery ?? batteryBrand;
+
+    while (enabledCards.battery && activeBatBrand.unitPrice > 0) {
+      const trial = priceAll(panelCount, batteryUnits + 1);
+      if (trial.total > totalBudget) break;
+      batteryUnits += 1;
+      priced = trial;
+    }
+
+    if (protectionDroppedForBudget) {
+      protectionFunded = true;
+      const trial = priceAll(panelCount, batteryUnits);
+      if (trial.total <= totalBudget) {
+        protectionDroppedForBudget = false;
+        priced = trial;
+      } else {
+        protectionFunded = false;
+      }
+    }
+
+    while (enabledCards.panels && panelBrand.pricePerPanel > 0 && panelCount < maxPanelsForInverter) {
+      const trial = priceAll(panelCount + 1, batteryUnits);
+      if (trial.total > totalBudget) break;
+      panelCount += 1;
+      priced = trial;
+    }
+  }
+
   panelCost = priced.panelsCost;
   batteryCost = priced.batteriesCost;
   const protectionCost = priced.protection;
@@ -228,14 +326,14 @@ function allocateBudget(
   const installPct =
     installCustom !== null && installCustom > 0 && priced.hardware > 0
       ? Math.round((installCustom / priced.hardware) * 100)
-      : Math.round(SOLAR_INSTALL_LABOR_PCT * 100);
+      : Math.round(laborPct * 100);
   const isCustom = installCustom !== null && installCustom > 0;
 
   return {
     panels: { count: panelCount, brand: panelBrand, cost: panelCost },
     inverter: { kva: inv.kva, brand: inverterBrand, cost: inverterCost },
     battery: { units: batteryUnits, brand: fallbackBattery ?? batteryBrand, cost: batteryCost },
-    protection: { cost: protectionCost },
+    protection: { cost: protectionCost, droppedForBudget: protectionDroppedForBudget },
     installation: { cost: Math.round(installCost), pct: installPct, isCustom },
     transport: { cost: transportCost },
     fallbackBattery,
@@ -437,8 +535,15 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
   // Objective
   const [objective, setObjective] = useState<Objective>('balanced');
 
-  // Custom install amount (null = use 20% auto)
+  // Custom install amount in dollars (null = use the percentage below)
   const [installCustom, setInstallCustom] = useState<number | null>(null);
+
+  /* Installation labour as a share of hardware. A single hardcoded 20% was too
+     high for this market and the user had no way to change it without typing a
+     dollar figure, which most people cannot guess. Now it is a choice, and the
+     percentage travels into the saved BOQ so the estimate matches what was
+     shown here. */
+  const [laborPct, setLaborPct] = useState<number>(SOLAR_INSTALL_LABOR_PCT);
 
   // Enabled cards — protection OFF (user can add), transport OFF (usually bundled)
   const [enabledCards, setEnabledCards] = useState<Record<string, boolean>>({
@@ -452,12 +557,22 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
     // added the missing parts anyway. On by default; the toggle still lets
     // someone price the difference deliberately.
     protection: true,
+    /* On by default: labour is a real cost, and a budget that quietly omits it
+       flatters itself. The rate is the part people argue about, not whether
+       they pay at all — so it is included, and the card lets them set it from
+       10% to 20% or paste their installer's own quote. */
     installation: true,
     transport: false,  // OFF by default — typically bundled in ZW urban quotes
   });
 
-  // Redistribute leftover budget into panels/battery when true
-  const [redistribute, setRedistribute] = useState(false);
+  /* Spend the whole budget by default.
+     This was opt-in, behind an "Optimise" button, back when panels soaked up
+     every leftover dollar on their own. Now that each component is held to its
+     share, the integer unit sizes leave real money behind — $441 of $2,500 —
+     and a page titled "what can your budget buy?" should not answer it with a
+     fifth of the budget sitting idle. The button still turns it off for
+     anyone who wants to see the plain proportional split. */
+  const [redistribute, setRedistribute] = useState(true);
 
   // Brand selections (objective hints default brands)
   const [panelBrand, setPanelBrand] = useState<string>('ja_solar');
@@ -480,8 +595,8 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
   // Compute allocation
   const allocation = useMemo(
-    () => allocateBudget(budget, pBrand, iBrand, bBrand, enabledCards, objective, installCustom, redistribute),
-    [budget, pBrand, iBrand, bBrand, enabledCards, objective, installCustom, redistribute],
+    () => allocateBudget(budget, pBrand, iBrand, bBrand, enabledCards, objective, installCustom, laborPct, redistribute),
+    [budget, pBrand, iBrand, bBrand, enabledCards, objective, installCustom, laborPct, redistribute],
   );
 
   const totalAllocated =
@@ -493,7 +608,11 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
     allocation.transport.cost;
 
   const remaining = budget - totalAllocated;
-  const budgetPct = budget > 0 ? Math.min(100, Math.round((totalAllocated / budget) * 100)) : 0;
+  /* Every dollar figure on this page is rounded before it is shown. The
+     allocator divides by ratio, so it produces values like $511.1 and $988.1,
+     and a tenth of a cent of false precision next to whole-dollar supplier
+     prices makes the whole estimate look machine-generated. */
+  const usd = (value: number) => `$${Math.round(value).toLocaleString()}`;
 
   // Freed budget suggestions — shown when significant unallocated budget exists
   const hasFreedBudget = budget > 0 && remaining > 120;
@@ -519,7 +638,6 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
   const zeraTier = getRequiredZeraTier(allocation.panels.count * pBrand.watt);
 
   const toggleCard = useCallback((id: string) => {
-    setRedistribute(false); // reset when user changes cards
     setEnabledCards((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
@@ -548,7 +666,6 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
     if (pkg.inverterBrandKey) setInverterBrand(pkg.inverterBrandKey);
     if (pkg.panelBrandKey) setPanelBrand(pkg.panelBrandKey);
     if (pkg.batteryBrandKey) setBatteryBrand(pkg.batteryBrandKey);
-    setRedistribute(false);
     setComboLoaded(pkg.id);
     budgetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
@@ -602,8 +719,11 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       include_install: enabledCards.installation,
       // Was never passed, so the BOQ always charged for protection regardless
       // of the toggle the user had just set.
-      include_protection: enabledCards.protection,
+      include_protection: enabledCards.protection && allocation.protection.cost > 0,
       include_contingency: false,
+      /* The rate the user picked, so the saved BOQ charges the labour this page
+         quoted rather than the catalog default. */
+      install_labor_pct: allocation.installation.isCustom ? undefined : laborPct,
     };
 
     return solarSizingToBOQ(sizingResult, augAnswers as Parameters<typeof solarSizingToBOQ>[1]);
@@ -696,6 +816,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
   const cards = [
     {
       id: 'panels',
+      band: 'system' as const,
       label: 'Solar Panels',
       icon: <SolarPanel size={22} weight="duotone" />,
       enabled: enabledCards.panels,
@@ -708,6 +829,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
     },
     {
       id: 'inverter',
+      band: 'system' as const,
       label: 'Inverter',
       icon: <Lightning size={22} weight="duotone" />,
       enabled: enabledCards.inverter,
@@ -718,6 +840,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
     },
     {
       id: 'battery',
+      band: 'system' as const,
       label: 'Battery Storage',
       icon: <BatteryCharging size={22} weight="duotone" />,
       enabled: enabledCards.battery,
@@ -730,28 +853,36 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
     },
     {
       id: 'protection',
-      label: 'Protection & BOS',
+      band: 'required' as const,
+      /* Was "Protection & BOS", which read like an insurance add-on for when
+         something breaks. These are the parts that connect the system to the
+         house — without them the panels and inverter are a pile of boxes. */
+      label: 'Wiring & Essentials',
       icon: <ShieldCheck size={22} weight="duotone" />,
       enabled: enabledCards.protection,
       cost: allocation.protection.cost,
-      description: 'AVS, breakers, changeover switch, DB, earthing, surge protection, mounting',
+      description: 'Cables, breakers, changeover switch, DB board, earthing, AVS, roof mounting',
       hasBrandPicker: false,
       hasCustomInput: false,
     },
     {
       id: 'installation',
+      band: 'required' as const,
       label: 'Installation',
       icon: <Wrench size={22} weight="duotone" />,
       enabled: enabledCards.installation,
       cost: allocation.installation.cost,
-      description: allocation.installation.isCustom
-        ? `Custom amount: $${installCustom?.toLocaleString()}`
-        : `Labor — ${allocation.installation.pct}% of hardware cost`,
+      description: !enabledCards.installation
+        ? 'Switch on if you are paying an installer, then set their rate'
+        : allocation.installation.isCustom
+          ? `Your installer's quote: $${installCustom?.toLocaleString()}`
+          : `${allocation.installation.pct}% of hardware — tap to change the rate`,
       hasBrandPicker: false,
       hasCustomInput: true,
     },
     {
       id: 'transport',
+      band: 'optional' as const,
       label: 'Transport / Delivery',
       icon: <Truck size={22} weight="duotone" />,
       enabled: enabledCards.transport,
@@ -761,6 +892,73 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       hasCustomInput: false,
     },
   ];
+
+  /* ── Reading the allocation back to the user ────────────────────────────
+     This section is not a shopping list, though it was laid out like one:
+     allocateBudget divides the budget by ratio across inverter, battery and
+     panels, then prices protection and installation on top. So a row can be
+     switched on and still cost nothing — the money ran out before it. That
+     showed as a bare "—", which reads as free, or broken, rather than as the
+     most useful sentence on the page: how much more you would need.
+
+     The gap is quoted against what the row actually describes — the brand the
+     user has selected — not against the cheapest thing on the market. Quoting
+     the market minimum next to "Dyness · $790/5.12kWh" read as a contradiction.
+     The cheaper alternative is offered separately, as a way out. */
+  const shortfallFor = (cardId: string): number | null => {
+    if (cardId === 'battery') return bBrand?.unitPrice ?? null;
+    if (cardId === 'panels') return pBrand?.pricePerPanel ?? null;
+    /* The unfunded inverter row names no kVA, so the gap is the brand's
+       smallest size — the least it costs to own one at all. */
+    if (cardId === 'inverter') return Math.min(...Object.values(iBrand.prices));
+    /* Protection is now the first thing dropped when the total will not fit, so
+       it needs a gap figure too — the real cost of the kit for the system that
+       was actually bought. */
+    if (cardId === 'protection' && allocation.protection.droppedForBudget) {
+      return solarBalanceOfSystemCost(allocation.panels.count, allocation.battery.units > 0);
+    }
+    return null;
+  };
+
+  /* Only offered when it is genuinely cheaper than the current selection. */
+  const cheaperAlternativeFor = (cardId: string): { label: string; price: number } | null => {
+    if (cardId !== 'battery') return null;
+    const cheapest = [...BATTERY_BRANDS].sort((a, b) => a.unitPrice - b.unitPrice)[0];
+    if (!cheapest || !bBrand || cheapest.unitPrice >= bBrand.unitPrice) return null;
+    return { label: cheapest.label, price: cheapest.unitPrice };
+  };
+
+  const fundedCards = cards.filter((card) => card.enabled && card.cost > 0);
+  const allocatedUsd = fundedCards.reduce((sum, card) => sum + card.cost, 0);
+  const remainingUsd = budget - allocatedUsd;
+
+  /* Panels, inverter and battery are the three things people are buying, so
+     they are the first band and the money goes to them first. Everything else
+     is what an installer adds on top of the kit — real cost, but not what the
+     budget is for, and not something to list ahead of the system. */
+  const BAND_LABELS: Record<string, { title: string; note: string }> = {
+    system: {
+      title: 'Your system',
+      note: 'Panels, inverter and battery — what your money buys, split by your priority.',
+    },
+    required: {
+      title: 'What the installer adds on top',
+      note: 'Priced after the system. Switch these on or off depending on what you are arranging yourself.',
+    },
+    optional: { title: 'Optional', note: 'Switch on if you are charged for these separately.' },
+  };
+  const BAND_ORDER = ['system', 'required', 'optional'] as const;
+
+  /* Colours for the allocation bar, keyed by card so the bar and the rows
+     below it can never fall out of step. */
+  const BAND_BAR_COLOUR: Record<string, string> = {
+    panels: 'bg-amber-400',
+    inverter: 'bg-blue-500',
+    battery: 'bg-emerald-500',
+    protection: 'bg-slate-400',
+    installation: 'bg-slate-300',
+    transport: 'bg-slate-200',
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto pb-24">
@@ -835,7 +1033,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
               step={100}
               placeholder="0"
               value={budgetInput}
-              onChange={(e) => { setRedistribute(false); setBudgetInput(e.target.value.replace(/[^0-9]/g, '')); }}
+              onChange={(e) => setBudgetInput(e.target.value.replace(/[^0-9]/g, ''))}
               aria-describedby="solar-budget-notice"
               className="budget-instrument__input"
               style={{ MozAppearance: 'textfield' } as CSSProperties}
@@ -855,10 +1053,10 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
           {budget > 0 && (
             <div className="budget-instrument__readout">
               <span>
-                <strong>${totalAllocated.toLocaleString()}</strong> allocated
+                <strong>{usd(totalAllocated)}</strong> allocated
               </span>
               <span className={remaining >= 0 ? 'is-good' : 'is-over'}>
-                <strong>${Math.abs(remaining).toLocaleString()}</strong>{' '}
+                <strong>{usd(Math.abs(remaining))}</strong>{' '}
                 {remaining >= 0 ? 'left' : 'over'}
               </span>
             </div>
@@ -878,7 +1076,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
               <button
                 key={amt}
                 type="button"
-                onClick={() => { setRedistribute(false); setBudget(amt); }}
+                onClick={() => setBudget(amt)}
                 className={`budget-chip${budget === amt ? ' is-active' : ''}`}
               >
                 ${amt.toLocaleString()}
@@ -921,31 +1119,11 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
       {budget > 0 && (
         <>
-          {/* ── Budget Progress Bar ────────────────────────────────────────────── */}
-          <div className="mb-6">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="font-semibold text-slate-700">
-                ${totalAllocated.toLocaleString()} allocated
-              </span>
-              <span className={`font-semibold ${remaining >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                {remaining >= 0
-                  ? `$${remaining.toLocaleString()} remaining`
-                  : `$${Math.abs(remaining).toLocaleString()} over budget`}
-              </span>
-            </div>
-            <div className="h-3 w-full bg-[var(--color-border-light)] rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ease-out ${
-                  budgetPct > 100 ? 'bg-red-500' : budgetPct > 90 ? 'bg-amber-500' : 'bg-gradient-to-r from-[var(--color-accent)] to-emerald-400'
-                }`}
-                style={{ width: `${Math.min(budgetPct, 100)}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-xs text-[var(--color-text-muted)] mt-1">
-              <span>$0</span>
-              <span>${budget.toLocaleString()}</span>
-            </div>
-          </div>
+          {/* The plain allocated/remaining progress bar that used to sit here is
+              gone: the readout under the budget input already says how much is
+              left, and the stacked bar further down says the more useful thing
+              — which component took which share. Three bars for one number was
+              most of why this page read as noisy. */}
 
           {/* ── Freed budget / reallocate ─────────────────────────────────────── */}
           {hasFreedBudget && !redistribute && (
@@ -953,7 +1131,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
               <div className="flex items-start gap-3">
                 <ArrowsClockwise size={18} className="flex-shrink-0 mt-0.5 text-emerald-600" />
                 <p className="text-sm text-emerald-800">
-                  <strong>${remaining.toLocaleString()} unallocated.</strong> Reallocate into more panels &amp; battery?
+                  <strong>{usd(remaining)} unallocated.</strong> Reallocate into more panels &amp; battery?
                 </p>
               </div>
               <button
@@ -966,19 +1144,10 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
               </button>
             </div>
           )}
-          {redistribute && remaining >= 0 && remaining < 120 && (
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-200 mb-5">
-              <CheckCircle size={16} weight="fill" className="text-emerald-600 flex-shrink-0" />
-              <p className="text-sm text-emerald-800 flex-1">Budget fully optimised — all funds allocated.</p>
-              <button
-                type="button"
-                onClick={() => setRedistribute(false)}
-                className="text-xs text-emerald-700 underline hover:no-underline"
-              >
-                Reset
-              </button>
-            </div>
-          )}
+          {/* The "budget fully optimised" banner that used to sit here is gone.
+              Spending the whole budget is the default now, so the banner fired
+              on first load and congratulated the user for doing nothing. The
+              off switch lives in the allocation bar below instead. */}
 
           {/* ── Fallback Battery Banner ──────────────────────────────────────── */}
           {allocation.fallbackBattery && enabledCards.battery && (
@@ -1026,173 +1195,312 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
             </div>
           )}
 
-          {/* ── Component Cards ────────────────────────────────────────────────── */}
-          <div className="space-y-3 mb-8">
-            {cards.map((card) => {
-              const isExpanded = expandedCard === card.id;
+          {/* ── Where the money went ───────────────────────────────────────────
+              A stacked bar before the rows, because the proportions are the
+              finding. At a small budget, protection and installation take most
+              of it before any solar is bought — that reads as a mistake in a
+              plain list and as the point here. */}
+          {allocatedUsd > 0 && (
+            <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="text-sm font-bold text-[var(--color-text)]">
+                  How your {usd(budget)} is split
+                </span>
+                <span className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+                  <span className="tabular-nums">
+                    {usd(allocatedUsd)} allocated
+                    {remainingUsd >= 1 && <> · {usd(remainingUsd)} unspent</>}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setRedistribute((prev) => !prev)}
+                    className="underline decoration-dotted underline-offset-2 hover:text-[var(--color-accent)]"
+                  >
+                    {redistribute ? 'show plain split' : 'spend it all'}
+                  </button>
+                </span>
+              </div>
 
+              <div className="mt-3 flex h-3 w-full overflow-hidden rounded-full bg-[var(--color-border-light)]">
+                {fundedCards.map((card) => (
+                  <div
+                    key={card.id}
+                    className={BAND_BAR_COLOUR[card.id] ?? 'bg-slate-400'}
+                    style={{ width: `${(card.cost / allocatedUsd) * 100}%` }}
+                    title={`${card.label}: $${Math.round(card.cost).toLocaleString()}`}
+                  />
+                ))}
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+                {fundedCards.map((card) => (
+                  <span key={card.id} className="inline-flex items-center gap-1.5 text-[11px] text-[var(--color-text-secondary)]">
+                    <span className={`h-2 w-2 rounded-full ${BAND_BAR_COLOUR[card.id] ?? 'bg-slate-400'}`} />
+                    {card.label}
+                    <span className="font-bold tabular-nums text-[var(--color-text)]">
+                      {Math.round((card.cost / allocatedUsd) * 100)}%
+                    </span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* The amber "what your budget did not reach" banner that used to sit
+              here is gone. It restated, in four lines of prose, what the row
+              itself already says in one — and it was almost always about the
+              same single row. */}
+
+          {/* ── Component Cards, grouped by what they are ──────────────────── */}
+          <div className="space-y-6 mb-8">
+            {BAND_ORDER.map((band) => {
+              const bandCards = cards.filter((card) => card.band === band);
+              if (bandCards.length === 0) return null;
               return (
-                <div
-                  key={card.id}
-                  className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
-                    card.enabled
-                      ? 'border-blue-200 bg-[var(--color-surface)] shadow-sm'
-                      : 'border-[var(--color-border)] bg-slate-50/50 opacity-60'
-                  }`}
-                >
-                  {/* Card header */}
-                  <div className="flex items-center gap-3 p-4">
-                    {/* Toggle switch */}
-                    <button
-                      onClick={() => toggleCard(card.id)}
-                      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
-                        card.enabled ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border-dark)]'
-                      }`}
-                    >
-                      <div
-                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-[var(--color-surface)] shadow transition-transform ${
-                          card.enabled ? 'translate-x-[22px]' : 'translate-x-0.5'
-                        }`}
-                      />
-                    </button>
-
-                    {/* Icon + label */}
-                    <div className={`flex-shrink-0 ${card.enabled ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}`}>
-                      {card.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className={`font-semibold text-sm ${card.enabled ? 'text-[var(--color-text)]' : 'text-[var(--color-text-secondary)]'}`}>
-                          {card.label}
-                        </span>
-                        <span className={`text-lg font-bold tabular-nums ${card.enabled ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`}>
-                          {card.enabled && card.cost > 0 ? `$${card.cost.toLocaleString()}` : card.enabled ? '—' : '$0'}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 truncate">{card.description}</p>
-                    </div>
-
-                    {/* Expand button */}
-                    {card.enabled && (card.hasBrandPicker || card.hasCustomInput) && (
-                      <button
-                        onClick={() => toggleExpand(card.id)}
-                        className="p-1.5 rounded-lg hover:bg-[var(--color-border-light)] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors flex-shrink-0"
-                      >
-                        {isExpanded ? <CaretUp size={16} /> : <CaretDown size={16} />}
-                      </button>
-                    )}
+                <div key={band}>
+                  <div className="mb-2 px-1">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+                      {BAND_LABELS[band].title}
+                    </p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{BAND_LABELS[band].note}</p>
                   </div>
+                  <div className="space-y-3">
+                    {bandCards.map((card) => {
+                      const isExpanded = expandedCard === card.id;
+                      const shortfall = card.enabled && card.cost <= 0 ? shortfallFor(card.id) : null;
+                      const cheaper = shortfall !== null ? cheaperAlternativeFor(card.id) : null;
 
-                  {/* Expanded section */}
-                  <AnimatePresence>
-                    {isExpanded && card.enabled && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
+                    return (
+                      <div
+                        key={card.id}
+                        className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                          shortfall !== null
+                            ? 'border-amber-300 bg-amber-50/60'
+                            : card.enabled
+                              ? 'border-blue-200 bg-[var(--color-surface)] shadow-sm'
+                              : 'border-[var(--color-border)] bg-slate-50/50 opacity-60'
+                        }`}
                       >
-                        <div className="px-4 pb-4 pt-1 border-t border-[var(--color-border-light)]">
+                        {/* Card header */}
+                        <div className="flex items-center gap-3 p-4">
+                          {/* Toggle switch */}
+                          <button
+                            onClick={() => toggleCard(card.id)}
+                            className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
+                              card.enabled ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border-dark)]'
+                            }`}
+                          >
+                            <div
+                              className={`absolute top-0.5 w-5 h-5 rounded-full bg-[var(--color-surface)] shadow transition-transform ${
+                                card.enabled ? 'translate-x-[22px]' : 'translate-x-0.5'
+                              }`}
+                            />
+                          </button>
 
-                          {/* Panel brand picker */}
-                          {card.id === 'panels' && (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                              {PANEL_BRANDS.map((b) => (
-                                <button key={b.brand} type="button" onClick={() => setPanelBrand(b.brand)}
-                                  className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
-                                    panelBrand === b.brand ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
-                                  }`}
-                                >
-                                  <span className="font-semibold text-[var(--color-text)]">{b.label}</span>
-                                  <span className="text-xs text-[var(--color-text-secondary)]">{b.watt}W · ${b.pricePerPanel}/panel</span>
-                                </button>
-                              ))}
+                          {/* Icon + label */}
+                          <div className={`flex-shrink-0 ${card.enabled ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}`}>
+                            {card.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className={`font-semibold text-sm ${card.enabled ? 'text-[var(--color-text)]' : 'text-[var(--color-text-secondary)]'}`}>
+                                {card.label}
+                              </span>
+                              {/* Rounded: the allocator produces fractions like
+                                  $511.1, which read as false precision next to
+                                  whole-dollar supplier prices. */}
+                              <span
+                                className={`text-lg font-bold tabular-nums ${
+                                  shortfall !== null
+                                    ? 'text-amber-700'
+                                    : card.enabled
+                                      ? 'text-[var(--color-text)]'
+                                      : 'text-[var(--color-text-muted)]'
+                                }`}
+                              >
+                                {card.enabled && card.cost > 0
+                                  ? usd(card.cost)
+                                  : shortfall !== null
+                                    ? 'Not funded'
+                                    : '$0'}
+                              </span>
                             </div>
-                          )}
-
-                          {/* Inverter brand picker */}
-                          {card.id === 'inverter' && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {INVERTER_BRANDS.map((b) => {
-                                const price5kva = b.prices[5] ?? Object.values(b.prices)[0];
-                                return (
-                                  <button key={b.brand} type="button" onClick={() => setInverterBrand(b.brand)}
-                                    className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
-                                      inverterBrand === b.brand ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
-                                    }`}
-                                  >
-                                    <div className="flex w-full items-center justify-between">
-                                      <span className="font-semibold text-[var(--color-text)]">{b.label}</span>
-                                      <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                                        b.tier === 'budget' ? 'bg-green-100 text-green-700' : b.tier === 'premium' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-[var(--color-accent-dark)]'
-                                      }`}>{b.tier}</span>
-                                    </div>
-                                    <span className="text-xs text-[var(--color-text-secondary)] mt-1">{b.description}</span>
-                                    <span className="text-xs font-medium text-[var(--color-text-secondary)] mt-1">~${price5kva} for 5kVA</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-
-                          {/* Battery brand picker */}
-                          {card.id === 'battery' && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {BATTERY_BRANDS.map((b) => (
-                                <button key={b.brand} type="button" onClick={() => setBatteryBrand(b.brand)}
-                                  className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
-                                    batteryBrand === b.brand ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
-                                  }`}
-                                >
-                                  <div className="flex w-full items-center justify-between">
-                                    <span className="font-semibold text-[var(--color-text)]">{b.label}</span>
-                                    <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                                      b.tier === 'budget' ? 'bg-green-100 text-green-700' : b.tier === 'premium' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-[var(--color-accent-dark)]'
-                                    }`}>{b.tier}</span>
-                                  </div>
-                                  <span className="text-xs text-[var(--color-text-secondary)] mt-1">{b.description}</span>
-                                  <span className="text-xs font-medium text-[var(--color-text-secondary)] mt-1">
-                                    ${b.unitPrice} per {b.unitKwh}kWh · ${b.pricePerKwh}/kWh
-                                  </span>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Installation custom amount */}
-                          {card.id === 'installation' && (
-                            <div className="space-y-3">
-                              <p className="text-xs text-[var(--color-text-secondary)] mb-2">
-                                Leave blank to use <strong>20% of hardware cost</strong> (Zimbabwe standard). Or enter the amount your installer quoted.
-                              </p>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[var(--color-text-muted)] font-semibold">$</span>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step={50}
-                                  placeholder={`${Math.round((allocation.panels.cost + allocation.inverter.cost + allocation.battery.cost + allocation.protection.cost) * 0.20)} (auto)`}
-                                  value={installCustom ?? ''}
-                                  onChange={(e) => setInstallCustom(e.target.value === '' ? null : Math.max(0, Number(e.target.value)))}
-                                  className="flex-1 rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-blue-400"
-                                />
-                                {installCustom !== null && (
-                                  <button
-                                    onClick={() => setInstallCustom(null)}
-                                    className="text-xs text-[var(--color-accent)] hover:underline whitespace-nowrap"
-                                  >
-                                    Reset to auto
-                                  </button>
+                            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 truncate">{card.description}</p>
+                            {shortfall !== null && (
+                              /* The actionable half of the message. Someone at this
+                                 budget wants to know the gap, not that a dash
+                                 appeared where a price should be. */
+                              <p className="mt-1 text-xs font-semibold text-amber-800">
+                                The budget ran out before this one — it needs {usd(shortfall)}.
+                                {cheaper && (
+                                  <> A {cheaper.label} is {usd(cheaper.price)}.</>
                                 )}
-                              </div>
-                            </div>
-                          )}
+                              </p>
+                            )}
+                          </div>
 
+                          {/* Expand button */}
+                          {card.enabled && (card.hasBrandPicker || card.hasCustomInput) && (
+                            <button
+                              onClick={() => toggleExpand(card.id)}
+                              className="p-1.5 rounded-lg hover:bg-[var(--color-border-light)] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors flex-shrink-0"
+                            >
+                              {isExpanded ? <CaretUp size={16} /> : <CaretDown size={16} />}
+                            </button>
+                          )}
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+
+                        {/* Expanded section */}
+                        <AnimatePresence>
+                          {isExpanded && card.enabled && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="px-4 pb-4 pt-1 border-t border-[var(--color-border-light)]">
+
+                                {/* Panel brand picker */}
+                                {card.id === 'panels' && (
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {PANEL_BRANDS.map((b) => (
+                                      <button key={b.brand} type="button" onClick={() => setPanelBrand(b.brand)}
+                                        className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
+                                          panelBrand === b.brand ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
+                                        }`}
+                                      >
+                                        <span className="font-semibold text-[var(--color-text)]">{b.label}</span>
+                                        <span className="text-xs text-[var(--color-text-secondary)]">{b.watt}W · ${b.pricePerPanel}/panel</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Inverter brand picker */}
+                                {card.id === 'inverter' && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {INVERTER_BRANDS.map((b) => {
+                                      const price5kva = b.prices[5] ?? Object.values(b.prices)[0];
+                                      return (
+                                        <button key={b.brand} type="button" onClick={() => setInverterBrand(b.brand)}
+                                          className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
+                                            inverterBrand === b.brand ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
+                                          }`}
+                                        >
+                                          <div className="flex w-full items-center justify-between">
+                                            <span className="font-semibold text-[var(--color-text)]">{b.label}</span>
+                                            <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                                              b.tier === 'budget' ? 'bg-green-100 text-green-700' : b.tier === 'premium' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-[var(--color-accent-dark)]'
+                                            }`}>{b.tier}</span>
+                                          </div>
+                                          <span className="text-xs text-[var(--color-text-secondary)] mt-1">{b.description}</span>
+                                          <span className="text-xs font-medium text-[var(--color-text-secondary)] mt-1">~${price5kva} for 5kVA</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+
+                                {/* Battery brand picker */}
+                                {card.id === 'battery' && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {BATTERY_BRANDS.map((b) => (
+                                      <button key={b.brand} type="button" onClick={() => setBatteryBrand(b.brand)}
+                                        className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
+                                          batteryBrand === b.brand ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
+                                        }`}
+                                      >
+                                        <div className="flex w-full items-center justify-between">
+                                          <span className="font-semibold text-[var(--color-text)]">{b.label}</span>
+                                          <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                                            b.tier === 'budget' ? 'bg-green-100 text-green-700' : b.tier === 'premium' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-[var(--color-accent-dark)]'
+                                          }`}>{b.tier}</span>
+                                        </div>
+                                        <span className="text-xs text-[var(--color-text-secondary)] mt-1">{b.description}</span>
+                                        <span className="text-xs font-medium text-[var(--color-text-secondary)] mt-1">
+                                          ${b.unitPrice} per {b.unitKwh}kWh · ${b.pricePerKwh}/kWh
+                                        </span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Installation labour — a rate, or a quoted amount.
+                                    Labour is negotiated here, so a fixed
+                                    percentage was both too high and unarguable. */}
+                                {card.id === 'installation' && (
+                                  <div className="space-y-4">
+                                    <div>
+                                      <p className="text-xs font-bold text-[var(--color-text)] mb-2">
+                                        What share of hardware is your installer charging?
+                                      </p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {LABOR_RATE_OPTIONS.map((option) => {
+                                          const active = installCustom === null && laborPct === option.pct;
+                                          return (
+                                            <button
+                                              key={option.pct}
+                                              type="button"
+                                              aria-pressed={active}
+                                              onClick={() => { setInstallCustom(null); setLaborPct(option.pct); }}
+                                              className={`rounded-xl border px-3 py-2 text-left transition ${
+                                                active
+                                                  ? 'border-blue-500 bg-[var(--color-accent-muted)] ring-1 ring-blue-500'
+                                                  : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-dark)]'
+                                              }`}
+                                            >
+                                              <span className="block text-sm font-bold text-[var(--color-text)]">
+                                                {Math.round(option.pct * 100)}%
+                                              </span>
+                                              <span className="block text-[11px] text-[var(--color-text-secondary)]">
+                                                {option.note}
+                                              </span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <p className="text-xs text-[var(--color-text-secondary)] mb-2">
+                                        Already have a quote? Enter the amount and it overrides the rate.
+                                      </p>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[var(--color-text-muted)] font-semibold">$</span>
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          step={50}
+                                          placeholder={`${Math.round(
+                                            (allocation.panels.cost + allocation.inverter.cost + allocation.battery.cost + allocation.protection.cost) * laborPct,
+                                          )} (${Math.round(laborPct * 100)}%)`}
+                                          value={installCustom ?? ''}
+                                          onChange={(e) => setInstallCustom(e.target.value === '' ? null : Math.max(0, Number(e.target.value)))}
+                                          className="flex-1 rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-blue-400"
+                                        />
+                                        {installCustom !== null && (
+                                          <button
+                                            onClick={() => setInstallCustom(null)}
+                                            className="text-xs text-[var(--color-accent)] hover:underline whitespace-nowrap"
+                                          >
+                                            Use the rate
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                  </div>
                 </div>
               );
             })}
@@ -1211,7 +1519,17 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                   { label: 'Panels', value: `${allocation.panels.count}x ${pBrand.watt}W`, show: enabledCards.panels && allocation.panels.count > 0 },
                   { label: 'Inverter', value: `${allocation.inverter.kva} kVA`, show: enabledCards.inverter },
                   { label: 'Battery', value: `${storageKwh} kWh`, show: enabledCards.battery && allocation.battery.units > 0 },
-                  { label: 'Protection', value: enabledCards.protection ? 'Included' : 'Not included', show: true },
+                  {
+                    label: 'Wiring & essentials',
+                    /* "Included" was shown whenever the toggle was on, even when
+                       the budget never reached it. */
+                    value: allocation.protection.cost > 0
+                      ? 'Included'
+                      : allocation.protection.droppedForBudget
+                        ? 'Over budget'
+                        : 'Not included',
+                    show: true,
+                  },
                   { label: 'ZERA Tier', value: zeraTier, show: enabledCards.panels && allocation.panels.count > 0 },
                 ]
                   .filter((r) => r.show)
@@ -1228,14 +1546,19 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                 <ul className="text-xs text-[var(--color-accent-dark)] space-y-0.5">
                   <li>Prices: Zimbabwe Q1 2026 mid-range market rates</li>
                   <li>Sun hours: 5.5h/day average (Zimbabwe)</li>
-                  <li>Installation: {allocation.installation.isCustom ? 'custom amount' : '20% of hardware cost'}</li>
+                  <li>
+                    Installation:{' '}
+                    {allocation.installation.isCustom
+                      ? "your installer's quoted amount"
+                      : `${allocation.installation.pct}% of hardware cost`}
+                  </li>
                   <li>Battery: LiFePO4 with 90-95% depth of discharge</li>
                   {!enabledCards.transport && (
                     <li className="text-[var(--color-text-secondary)]">Transport not included — enable if your supplier charges separately</li>
                   )}
                   {!enabledCards.protection && (
                     <li className="text-amber-700 font-semibold">
-                      Protection & BOS disabled — not recommended
+                      Wiring &amp; essentials switched off — not recommended
                     </li>
                   )}
                 </ul>
@@ -1361,7 +1684,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
             <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 mb-6">
               <Warning size={18} className="flex-shrink-0 mt-0.5 text-amber-600" />
               <div className="text-sm text-amber-800">
-                <strong>Protection & BOS disabled.</strong> Wiring, breakers, AVS, and surge protection are essential — every professional Zimbabwe installation includes them. Disabling removes ~${PROTECTION_FIXED} but significantly increases failure risk.
+                <strong>Wiring &amp; essentials switched off.</strong> Cables, breakers, earthing and the changeover switch are what connect the system to your house — no installer will sign off without them. This takes ~${PROTECTION_FIXED} off the estimate, not off the job.
               </div>
             </div>
           )}
