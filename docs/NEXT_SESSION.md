@@ -1,5 +1,7 @@
 # Next session plan
 
+> Resume check completed 4 October 2026. Read [RESUME_CHECK_2026-10-04.md](RESUME_CHECK_2026-10-04.md) first for current local changes, checks, and remaining work.
+
 > Historical plan from 2026-07-30. Several items and assumptions have changed.
 > Start with `docs/ARCHITECTURE.md` for the current implemented system.
 
