@@ -55,3 +55,7 @@ supabase/.temp/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Playwright writes this on every run; a stale "failed" in it reads as a
+# real failure to the next person who opens the repo.
+/test-results
