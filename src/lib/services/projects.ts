@@ -1,3 +1,4 @@
+import { validateDocumentFile } from '@/lib/documentFiles';
 import { supabase } from '@/lib/supabase';
 import {
     Project,
@@ -595,7 +596,10 @@ export async function createReminder(data: {
     message: string;
     scheduled_date: string;
     phone_number: string;
-}): Promise<{ reminder: { id: string } | null; error: Error | null }> {
+    /* alreadyScheduled distinguishes "this exact reminder is already queued"
+       from a genuine failure, so the caller can say so plainly instead of
+       dressing it up as an error. */
+}): Promise<{ reminder: { id: string } | null; error: Error | null; alreadyScheduled?: boolean }> {
     const { data: { user } } = await db.auth.getUser();
 
     if (!user) {
@@ -618,6 +622,17 @@ export async function createReminder(data: {
         .single();
 
     if (error) {
+        // reminders_no_duplicate_pending (migration 050) rejects a reminder that
+        // is already queued for the same project, message and time. From the
+        // user's side that is not a failure — they asked for something that is
+        // already true — so it gets a sentence rather than a constraint violation.
+        if (error.code === '23505') {
+            return {
+                reminder: null,
+                error: new Error('That reminder is already scheduled.'),
+                alreadyScheduled: true,
+            };
+        }
         return { reminder: null, error: new Error(error.message) };
     }
 
@@ -1215,6 +1230,9 @@ export async function uploadDocument(
     category: DocumentCategory = 'general',
     description?: string
 ): Promise<{ document: ProjectDocument | null; error: Error | null }> {
+    const validationError = validateDocumentFile(file);
+    if (validationError) return { document: null, error: new Error(validationError) };
+
     const { data: { user } } = await db.auth.getUser();
 
     if (!user) {
@@ -1318,10 +1336,10 @@ export async function deleteDocument(documentId: string): Promise<{ error: Error
 }
 
 /** Create a signed URL for a stored document. */
-export async function getDocumentUrl(storagePath: string): Promise<string | null> {
+export async function getDocumentUrl(storagePath: string, downloadName?: string): Promise<string | null> {
     const { data } = await db.storage
         .from('project-documents')
-        .createSignedUrl(storagePath, 3600); // 1 hour expiry
+        .createSignedUrl(storagePath, 3600, downloadName ? { download: downloadName } : undefined); // 1 hour expiry
 
     return data?.signedUrl || null;
 }

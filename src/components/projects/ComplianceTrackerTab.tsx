@@ -95,6 +95,12 @@ export default function ComplianceTrackerTab({
   );
   const [reminderDates, setReminderDates] = useState<Record<string, string>>({});
   const [openReminderKey, setOpenReminderKey] = useState<string | null>(null);
+  /* Which reminder is mid-save. The Schedule button used to stay live for the
+     whole round trip, so a burst of clicks wrote one row per click — three
+     identical compliance reminders 19ms apart is how this was found. The
+     database now refuses the duplicate outright (migration 050); this stops the
+     user generating it in the first place and gives them feedback meanwhile. */
+  const [savingReminderKey, setSavingReminderKey] = useState<string | null>(null);
   const [addingTaskStageId, setAddingTaskStageId] = useState<string | null>(null);
 
   const applicableStages = useMemo(
@@ -144,6 +150,9 @@ export default function ComplianceTrackerTab({
   };
 
   const saveReminder = async (label: string, draftKey: string, itemId?: string) => {
+    // Re-entrancy guard as well as a disabled button: the button covers the
+    // pointer, this covers a handler that fires twice for one gesture.
+    if (savingReminderKey) return;
     const channel = preferredChannel;
     const requiresPhone = channel === 'sms' || channel === 'whatsapp';
     if (requiresPhone && !phoneNumber) {
@@ -159,14 +168,29 @@ export default function ComplianceTrackerTab({
     const message = `[${channel.toUpperCase()}] Compliance reminder for ${projectName}: ${label}`;
     const scheduledAt = new Date(`${getReminderDate(draftKey)}T09:00:00`);
 
-    const { error } = await createReminder({
-      project_id: projectId,
-      item_id: itemId,
-      reminder_type: 'deadline',
-      message,
-      scheduled_date: scheduledAt.toISOString(),
-      phone_number: phoneNumber || '0000000000',
-    });
+    setSavingReminderKey(draftKey);
+    let error: Error | null = null;
+    let alreadyScheduled = false;
+    try {
+      ({ error, alreadyScheduled = false } = await createReminder({
+        project_id: projectId,
+        item_id: itemId,
+        reminder_type: 'deadline',
+        message,
+        scheduled_date: scheduledAt.toISOString(),
+        phone_number: phoneNumber || '0000000000',
+      }));
+    } finally {
+      // Cleared in finally so a thrown request cannot leave the button stuck.
+      setSavingReminderKey(null);
+    }
+
+    if (alreadyScheduled) {
+      // Not a failure: what they asked for is already true. Saying "failed"
+      // here would send someone hunting for a problem that does not exist.
+      showError('That reminder is already scheduled.');
+      return;
+    }
 
     if (error) {
       showError(`Failed to schedule reminder: ${error.message}`);
@@ -538,9 +562,10 @@ export default function ComplianceTrackerTab({
                                   variant="secondary"
                                   size="sm"
                                   icon={<Bell size={14} />}
+                                  disabled={savingReminderKey === draftKey}
                                   onClick={() => saveReminder(requirement.label, draftKey)}
                                 >
-                                  Schedule
+                                  {savingReminderKey === draftKey ? 'Scheduling…' : 'Schedule'}
                                 </Button>
                               </div>
                             )}
@@ -612,9 +637,10 @@ export default function ComplianceTrackerTab({
                                 variant="secondary"
                                 size="sm"
                                 icon={<Bell size={14} />}
+                                disabled={savingReminderKey === draftKey}
                                 onClick={() => saveReminder(task.title, draftKey, task.id)}
                               >
-                                Schedule
+                                {savingReminderKey === draftKey ? 'Scheduling…' : 'Schedule'}
                               </Button>
                             </div>
                           )}
