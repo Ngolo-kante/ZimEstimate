@@ -1,13 +1,19 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   PencilRuler, Ruler, HouseLine, Buildings, FileArrowUp,
   Plus, Minus, Trash, PlusCircle, CheckCircle, ArrowsOut,
-  ListNumbers, Lightbulb, Info
+  ListNumbers, Lightbulb, Info, SpinnerGap, Warning
 } from '@phosphor-icons/react';
 import { useBoqWizardStore, type RoomInputKey } from '@/store/boqWizardStore';
+import { planToWizardRooms } from '@/lib/vision/planToWizardRooms';
+import type { VisionAnalysisResult } from '@/lib/vision/types';
+
+/** Matches what /api/vision/analyze will accept. */
+const PLAN_ACCEPT = 'image/png,image/jpeg,image/jpg,image/webp,application/pdf';
+const PLAN_MAX_BYTES = 10 * 1024 * 1024;
 
 interface BuildingDesignSectionProps {
   onLaunchRoomBuilder: () => void;
@@ -64,12 +70,12 @@ const PLAN_MODES = [
     label: 'Upload Floor Plan',
     description: 'Upload your architectural drawings — we extract dimensions automatically.',
     icon: FileArrowUp,
-    iconBg: 'bg-slate-50',
-    iconColor: 'text-slate-400',
-    tip: null as string | null,
-    tipColor: '',
-    badge: 'Coming Soon' as string | null,
-    badgeColor: 'text-slate-500 bg-slate-100 border-slate-200',
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-blue-600',
+    tip: 'Fastest if you have drawings',
+    tipColor: 'text-blue-700 bg-blue-50 border-blue-200',
+    badge: null as string | null,
+    badgeColor: '',
   },
 ] as const;
 
@@ -149,11 +155,117 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
     geometryMode,
     setGeometryMode,
     detailedRooms,
+    setDetailedRooms,
     totalWindows,
     setTotalWindows,
     totalDoors,
     setTotalDoors,
   } = useBoqWizardStore();
+
+  /* ---- Uploaded plan ---- */
+  const planInputRef = useRef<HTMLInputElement>(null);
+  const [planStatus, setPlanStatus] = useState<'idle' | 'reading'>('idle');
+  const [planError, setPlanError] = useState<string | null>(null);
+  const [planSummary, setPlanSummary] = useState<
+    { fileName: string; rooms: number; area: number; confidence: number } | null
+  >(null);
+
+  /* The read is a real model call on a real drawing and takes anywhere from
+     20 seconds to about two minutes. A bare spinner for that long reads as a
+     hang, and a progress bar would have to invent a percentage nobody can
+     know — so this names the stage it is plausibly on and counts the seconds,
+     which is honest and still feels like movement. */
+  const PLAN_STAGES = [
+    'Reading the drawing',
+    'Finding the rooms',
+    'Measuring dimensions',
+    'Checking the structure',
+  ];
+  const [planStage, setPlanStage] = useState(0);
+  const [planElapsed, setPlanElapsed] = useState(0);
+
+  useEffect(() => {
+    if (planStatus !== 'reading') return;
+    const started = Date.now();
+    const tick = setInterval(() => {
+      const seconds = Math.floor((Date.now() - started) / 1000);
+      setPlanElapsed(seconds);
+      // Holds on the last stage rather than looping, so it never claims to
+      // start over on a slow read.
+      setPlanStage(Math.min(Math.floor(seconds / 8), PLAN_STAGES.length - 1));
+    }, 1000);
+    return () => clearInterval(tick);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planStatus]);
+
+  /* planSummary only lives for this mount, so after a reload the panel showed
+     "Select file" again even though the plan's rooms were still loaded and
+     still being costed. Falling back to the store means the panel reflects
+     what the estimate is actually using, not what happened to be uploaded
+     during this visit. The file name and confidence are genuinely unknown in
+     that case, so they are left out rather than guessed at. */
+  const planView = planSummary ?? (detailedRooms.length > 0 && Number(projectDetails.floorPlanSize) > 0
+    ? {
+        fileName: null as string | null,
+        rooms: detailedRooms.length,
+        area: Number(projectDetails.floorPlanSize),
+        confidence: null as number | null,
+      }
+    : null);
+
+  const readPlan = async (file: File) => {
+    setPlanError(null);
+    setPlanStage(0);
+    setPlanElapsed(0);
+
+    if (!PLAN_ACCEPT.split(',').includes(file.type)) {
+      setPlanError('Choose a PDF, PNG, JPG or WEBP drawing.');
+      return;
+    }
+    if (file.size > PLAN_MAX_BYTES) {
+      setPlanError('That file is over 10 MB. Try exporting the plan at a smaller size.');
+      return;
+    }
+
+    setPlanStatus('reading');
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const response = await fetch('/api/vision/analyze', { method: 'POST', body });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !payload?.success) {
+        setPlanError(payload?.error || 'We could not read that plan. Try a clearer copy, or use the room builder.');
+        return;
+      }
+
+      const mapped = planToWizardRooms(payload.data as VisionAnalysisResult);
+
+      if (mapped.rooms.length === 0 || mapped.totalArea <= 0) {
+        setPlanError('No rooms could be measured on that drawing. Try a clearer copy, or use the room builder.');
+        return;
+      }
+
+      /* Writes exactly what the room builder writes: the rooms, and the one
+         area field the estimate is actually costed from. Nothing downstream
+         needs to know the numbers arrived from a drawing. */
+      setDetailedRooms(mapped.rooms);
+      updateProjectDetails({ floorPlanSize: String(mapped.totalArea) });
+      if (mapped.doors > 0) setTotalDoors(mapped.doors);
+      if (mapped.windows > 0) setTotalWindows(mapped.windows);
+
+      setPlanSummary({
+        fileName: file.name,
+        rooms: mapped.rooms.length,
+        area: mapped.totalArea,
+        confidence: mapped.confidence,
+      });
+    } catch {
+      setPlanError('That upload did not complete. Check your connection and try again.');
+    } finally {
+      setPlanStatus('idle');
+    }
+  };
 
   const [activeRoomKeys, setActiveRoomKeys] = useState<RoomInputKey[]>(() => {
     return Object.entries(projectDetails.roomInputs)
@@ -324,6 +436,18 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
                 whileTap={{ scale: 0.97 }}
                 onClick={() => {
                   setGeometryMode(mode.key);
+
+                  // Choosing "Detailed Room Plan" is already the decision to
+                  // draw the plan, so open the editor rather than revealing a
+                  // panel whose only content is a button that opens it. The
+                  // exception is coming back to a plan already drawn — then
+                  // the panel's summary is what you want, not the editor
+                  // reopening over it.
+                  if (mode.key === 'detailed' && detailedRooms.length === 0) {
+                    onLaunchRoomBuilder();
+                    return;
+                  }
+
                   // The panel this reveals sits below the fold, so selecting a
                   // mode looked like nothing happened and users did not find
                   // the room inputs they were being asked for.
@@ -547,17 +671,127 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
               <FileArrowUp size={26} weight="regular" className="text-slate-400" />
             </div>
             <h3 className="text-base font-bold text-slate-800 mb-1.5">Upload Floor Plan</h3>
-            <p className="text-sm wiz-text-muted mb-5 max-w-xs mx-auto leading-relaxed">
-              Drag and drop your architectural drawings (PDF, PNG, JPG). We extract dimensions automatically.
+            <p className="text-sm wiz-text-muted mb-5 max-w-sm mx-auto leading-relaxed">
+              Upload your architectural drawing (PDF, PNG, JPG or WEBP) and we read
+              the room sizes off it. You can correct anything before costing.
             </p>
-            <button type="button" className="rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
-              Select File
+
+            <input
+              ref={planInputRef}
+              type="file"
+              accept={PLAN_ACCEPT}
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                // Reset first, so re-picking the same file still fires a change.
+                event.target.value = '';
+                if (file) void readPlan(file);
+              }}
+            />
+
+            <button
+              type="button"
+              disabled={planStatus === 'reading'}
+              onClick={() => planInputRef.current?.click()}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-default disabled:opacity-60"
+            >
+              {planStatus === 'reading' ? (
+                <>
+                  <SpinnerGap size={16} className="animate-spin" />
+                  Reading your plan…
+                </>
+              ) : (
+                <>
+                  <FileArrowUp size={16} />
+                  {planSummary ? 'Upload a different plan' : 'Select file'}
+                </>
+              )}
             </button>
-            <div className="mt-5">
-              <span className="inline-block rounded-full border border-slate-300 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                Coming Soon
-              </span>
-            </div>
+
+            {planStatus === 'reading' && (
+              <div className="mx-auto mt-5 max-w-sm" aria-live="polite">
+                <div className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-700">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75 motion-reduce:animate-none" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-600" />
+                  </span>
+                  {PLAN_STAGES[planStage]}…
+                </div>
+                <div className="mt-3 flex flex-col gap-1">
+                  {PLAN_STAGES.map((stage, index) => (
+                    <div key={stage} className="flex items-center gap-2 text-left">
+                      <span
+                        className={`h-1 flex-1 rounded-full transition-colors duration-500 ${
+                          index <= planStage ? 'bg-blue-500' : 'bg-slate-200'
+                        }`}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-xs wiz-text-muted tabular-nums">
+                  {planElapsed}s elapsed — a detailed PDF can take up to two minutes.
+                </p>
+              </div>
+            )}
+
+            {planError && (
+              <div
+                role="alert"
+                className="mx-auto mt-5 flex max-w-sm items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-left"
+              >
+                <Warning size={16} className="mt-0.5 shrink-0 text-amber-600" />
+                <p className="text-xs leading-relaxed text-amber-900">{planError}</p>
+              </div>
+            )}
+
+            {planView && !planError && planStatus !== 'reading' && (
+              <div className="mx-auto mt-5 max-w-sm rounded-xl border border-slate-200 bg-white p-4 text-left">
+                <div className="flex items-center gap-2">
+                  <CheckCircle size={16} weight="fill" className="shrink-0 text-emerald-600" />
+                  <span className="truncate text-sm font-bold text-slate-800">
+                    {planView.fileName ?? 'Plan read'}
+                  </span>
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-y-1 text-xs">
+                  <dt className="wiz-text-muted">Rooms found</dt>
+                  <dd className="text-right font-bold text-slate-800">{planView.rooms}</dd>
+                  <dt className="wiz-text-muted">Floor area</dt>
+                  <dd className="text-right font-bold tabular-nums text-slate-800">
+                    {planView.area.toFixed(1)} m²
+                  </dd>
+                  {totalDoors > 0 && (
+                    <>
+                      <dt className="wiz-text-muted">Doors</dt>
+                      <dd className="text-right font-bold tabular-nums text-slate-800">{totalDoors}</dd>
+                    </>
+                  )}
+                  {totalWindows > 0 && (
+                    <>
+                      <dt className="wiz-text-muted">Windows</dt>
+                      <dd className="text-right font-bold tabular-nums text-slate-800">{totalWindows}</dd>
+                    </>
+                  )}
+                </dl>
+                {/* Said plainly rather than hidden: the figures came off a
+                    drawing, and the person checking them is the one who knows
+                    what the building actually is. */}
+                <p className="mt-3 text-xs leading-relaxed wiz-text-muted">
+                  {planView.confidence === null
+                    ? 'These rooms are loaded. Open the room builder to check or adjust any of them.'
+                    : planView.confidence >= 80
+                      ? 'Read with high confidence. Open the room builder to check or adjust any room.'
+                      : `Read with ${Math.round(planView.confidence)}% confidence, so it is worth checking. Open the room builder to correct any room.`}
+                </p>
+                <button
+                  type="button"
+                  onClick={onLaunchRoomBuilder}
+                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 hover:text-blue-800"
+                >
+                  <ArrowsOut size={14} />
+                  Open room builder to edit
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

@@ -960,6 +960,12 @@ function BoqNewPageContent() {
             <div className="relative z-[205] flex-1 overflow-hidden bg-slate-100">
               <InteractiveRoomBuilder
                 roomCounts={{}}
+                /* Rooms read off an uploaded plan, or drawn here before. The
+                   builder used to be mounted with no way to receive them, so
+                   it always opened empty — an uploaded plan showed 21 rooms in
+                   the summary and nothing on the canvas, and reopening the
+                   builder lost a drawing you had already made. */
+                initialRooms={detailedRooms}
                 targetFloorArea={Number(projectDetails.floorPlanSize) || 0}
                 onContinue={handleInteractiveBuilderContinue}
                 onBack={() => setShowInteractiveBuilder(false)}

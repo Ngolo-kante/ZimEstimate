@@ -33,7 +33,7 @@ const KonvaCanvas = dynamic(() => import('./KonvaCanvas'), {
     ),
 });
 
-export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue, onBack }: InteractiveRoomBuilderProps) {
+export function InteractiveRoomBuilder({ roomCounts, initialRooms, targetFloorArea, onContinue, onBack }: InteractiveRoomBuilderProps) {
     const [isMobile, setIsMobile] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [showRoomPicker, setShowRoomPicker] = useState(false);
@@ -51,7 +51,7 @@ export function InteractiveRoomBuilder({ roomCounts, targetFloorArea, onContinue
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    const roomState = useRoomState({ roomCounts, targetFloorArea, isMobile });
+    const roomState = useRoomState({ roomCounts, initialRooms, targetFloorArea, isMobile });
     const canvas = useCanvasInteraction();
 
     const {

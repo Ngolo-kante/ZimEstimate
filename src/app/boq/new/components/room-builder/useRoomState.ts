@@ -13,11 +13,12 @@ import {
 
 interface UseRoomStateOptions {
     roomCounts: { [key: string]: number };
+    initialRooms?: RoomInstance[];
     targetFloorArea: number;
     isMobile: boolean;
 }
 
-export function useRoomState({ roomCounts, targetFloorArea, isMobile }: UseRoomStateOptions) {
+export function useRoomState({ roomCounts, initialRooms, targetFloorArea, isMobile }: UseRoomStateOptions) {
     const [rooms, setRooms] = useState<RoomInstance[]>([]);
     const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
     const [loadedFromStorage, setLoadedFromStorage] = useState(false);
@@ -313,9 +314,20 @@ export function useRoomState({ roomCounts, targetFloorArea, isMobile }: UseRoomS
             }
         } catch {}
 
+        /* Rooms that already exist win over roomCounts. An uploaded plan
+           arrives with measured dimensions and real labels; regenerating from
+           counts would replace those with type defaults and quietly change the
+           estimate. This is also what makes reopening the builder show the
+           plan you already drew instead of an empty canvas. */
+        if (rooms.length === 0 && initialRooms && initialRooms.length > 0) {
+            setRooms(initialRooms);
+            setSelectedRoomId(initialRooms[0].id);
+            return;
+        }
+
         // Initialize from roomCounts
         if (rooms.length === 0) {
-            const initialRooms: RoomInstance[] = [];
+            const generatedRooms: RoomInstance[] = [];
             let currentX = 20;
             let currentY = 20;
             const GRID_SIZE = 160;
@@ -325,7 +337,7 @@ export function useRoomState({ roomCounts, targetFloorArea, isMobile }: UseRoomS
                 const typeDef = ROOM_TYPES.find(r => r.key === key);
                 if (typeDef && count > 0) {
                     for (let i = 0; i < count; i++) {
-                        initialRooms.push({
+                        generatedRooms.push({
                             id: `${key}-${i}-${Date.now()}`,
                             type: key,
                             label: count > 1 ? `${typeDef.label} ${i + 1}` : typeDef.label,
@@ -345,11 +357,11 @@ export function useRoomState({ roomCounts, targetFloorArea, isMobile }: UseRoomS
                     }
                 }
             });
-            setRooms(initialRooms);
-            if (initialRooms.length > 0) setSelectedRoomId(initialRooms[0].id);
+            setRooms(generatedRooms);
+            if (generatedRooms.length > 0) setSelectedRoomId(generatedRooms[0].id);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [roomCounts, isMobile]);
+    }, [roomCounts, initialRooms, isMobile]);
 
     const clearSavedData = useCallback(() => {
         try {

@@ -96,7 +96,14 @@ export function validateBOQWizardStep(state: BOQWizardValidationState): BOQWizar
         errors.brickTypes = 'Please select a brick or block type.';
       }
       if (geometryMode === 'upload') {
-        // Stub validation for upload mode (pass through for now)
+        // Previously a pass-through stub, which let someone choose Upload,
+        // continue without uploading anything, and reach a BOQ costed on no
+        // floor area at all. A read plan writes its area into floorPlanSize,
+        // so requiring that is the same as requiring a successful read.
+        const uploadedArea = Number(projectDetails.floorPlanSize);
+        if (!projectDetails.floorPlanSize || !Number.isFinite(uploadedArea) || uploadedArea <= 0) {
+          errors.floorPlanSize = 'Upload a floor plan we can read, or switch to another method.';
+        }
       }
 
       if (errors.floorPlanSize || errors.buildingType || errors.brickTypes) {

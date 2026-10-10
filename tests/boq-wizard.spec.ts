@@ -31,7 +31,7 @@ test.describe('BOQ Live Estimator', () => {
     await expect(page.getByText(/Step 2 of/i)).toBeVisible();
   });
 
-  test('opens floor plan editor modal from Building Design step', async ({ page }) => {
+  test('choosing Detailed Room Plan opens the floor plan editor directly', async ({ page }) => {
     await page.goto('/boq/new?method=manual');
     await page.waitForLoadState('networkidle');
     await expect(page.getByText('BOQ MANUAL BUILDER')).toBeVisible({ timeout: 10000 });
@@ -47,12 +47,12 @@ test.describe('BOQ Live Estimator', () => {
     await page.locator('button', { hasText: /^Urban/ }).click();
     await page.getByRole('button', { name: /Continue/i }).click();
 
-    // Step 3: Building Design — switch to Detailed Room Plan mode to access floor plan editor
+    // Step 3: Building Design. Choosing Detailed Room Plan is already the
+    // decision to draw the plan, so the editor opens on that click — it used
+    // to reveal a panel whose only content was a button that opened it.
     await expect(page.getByRole('heading', { name: /Floor plan/i })).toBeVisible({ timeout: 5000 });
     await page.locator('button', { hasText: /^Detailed Room Plan/ }).click();
 
-    // Launch and close floor plan editor
-    await page.getByTestId('launch-floor-plan-editor').click();
     await expect(page.getByTestId('room-builder-modal')).toBeVisible();
     await page.getByRole('button', { name: /Close floor plan/i }).click();
     await expect(page.getByTestId('room-builder-modal')).toBeHidden();

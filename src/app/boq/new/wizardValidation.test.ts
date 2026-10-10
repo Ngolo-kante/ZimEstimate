@@ -114,6 +114,35 @@ describe('validateBOQWizardStep', () => {
     expect(result.errors.floorPlanSize).toBeUndefined();
   });
 
+  /**
+   * Upload mode used to be a pass-through stub, so you could choose "Upload
+   * Floor Plan", upload nothing, and continue to a BOQ costed on no floor area
+   * at all. A successfully read plan writes its area into floorPlanSize, so
+   * requiring that amounts to requiring a plan that actually read.
+   */
+  it('will not continue past upload mode until a plan has been read', () => {
+    const result = validateBOQWizardStep({
+      ...baseState,
+      currentSection: 'geometry',
+      geometryMode: 'upload',
+      projectDetails: { ...baseState.projectDetails, floorPlanSize: '' },
+    });
+
+    expect(result.errors.floorPlanSize).toMatch(/upload a floor plan/i);
+    expect(result.message).toBeTruthy();
+  });
+
+  it('continues past upload mode once a plan has produced an area', () => {
+    const result = validateBOQWizardStep({
+      ...baseState,
+      currentSection: 'geometry',
+      geometryMode: 'upload',
+      projectDetails: { ...baseState.projectDetails, floorPlanSize: '94.5' },
+    });
+
+    expect(result.errors.floorPlanSize).toBeUndefined();
+  });
+
   it('skips geometry validation for non-geometry project types', () => {
     const result = validateBOQWizardStep({
       ...baseState,

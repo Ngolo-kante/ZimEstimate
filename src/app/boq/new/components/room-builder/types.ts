@@ -53,6 +53,13 @@ export interface RoomInstance {
 
 export interface InteractiveRoomBuilderProps {
     roomCounts: { [key: string]: number };
+    /**
+     * Rooms that already exist — read off an uploaded floor plan, or drawn
+     * here earlier. When supplied these are shown as they are; roomCounts only
+     * applies when there is nothing to show, because it generates fresh rooms
+     * at default sizes and would overwrite real measured dimensions.
+     */
+    initialRooms?: RoomInstance[];
     targetFloorArea: number;
     onContinue: (rooms: RoomInstance[], totals: { area: number; walls: number; bricks: number }) => void;
     onBack: () => void;
