@@ -7,6 +7,7 @@ import { dispatchQueuedNotifications } from '@/lib/server/notificationDispatch';
 import { prunePlanSamples } from '@/lib/server/planSamples';
 import { sendEmail, escapeHtml } from '@/lib/server/email';
 import { getSiteUrl } from '@/lib/siteUrl';
+import { sendSms, sendTelegram, sendWhatsApp } from '@/lib/server/messaging';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -56,14 +57,6 @@ function parseReminderMessage(message: string): { channel: DeliveryChannel; body
   };
 }
 
-function normalizePhone(rawPhone: string): string {
-  const cleaned = rawPhone.replace(/[^\d+]/g, '');
-  if (!cleaned) return '';
-  if (cleaned.startsWith('00')) return `+${cleaned.slice(2)}`;
-  if (cleaned.startsWith('+')) return cleaned;
-  return `+${cleaned}`;
-}
-
 /**
  * Through the same verified sender as every other email
  * (src/lib/server/email.ts). Reminders used their own REMINDER_EMAIL_FROM,
@@ -85,110 +78,15 @@ async function sendEmailReminder(to: string, subject: string, message: string, p
   }
 }
 
-async function sendTwilioMessage(to: string, from: string, body: string) {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-
-  if (!accountSid || !authToken) {
-    throw new Error('Twilio not configured (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN).');
-  }
-
-  const auth = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
-  const endpoint = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-  const bodyParams = new URLSearchParams({
-    To: to,
-    From: from,
-    Body: body,
-  });
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${auth}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: bodyParams.toString(),
-  });
-
-  if (!response.ok) {
-    const details = await response.text();
-    throw new Error(details || 'Twilio delivery failed.');
-  }
-}
-
-async function sendSmsReminder(phone: string, message: string) {
-  const smsFrom = process.env.TWILIO_SMS_FROM;
-  if (!smsFrom) {
-    throw new Error('SMS sender not configured (TWILIO_SMS_FROM).');
-  }
-
-  await sendTwilioMessage(phone, smsFrom, message);
-}
-
-async function sendMetaWhatsApp(phone: string, message: string) {
-  const apiUrl = process.env.WHATSAPP_API_URL;
-  const phoneId = process.env.WHATSAPP_PHONE_ID;
-  const token = process.env.WHATSAPP_TOKEN;
-
-  if (!apiUrl || !phoneId || !token) {
-    throw new Error('WhatsApp API not configured.');
-  }
-
-  const response = await fetch(`${apiUrl}/${phoneId}/messages`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      messaging_product: 'whatsapp',
-      to: phone.replace(/\D/g, ''),
-      type: 'text',
-      text: { body: message },
-    }),
-  });
-
-  if (!response.ok) {
-    const details = await response.text();
-    throw new Error(details || 'WhatsApp delivery failed.');
-  }
-}
-
-async function sendWhatsAppReminder(phone: string, message: string) {
-  const twilioFrom = process.env.TWILIO_WHATSAPP_FROM;
-  const hasTwilio = Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && twilioFrom);
-
-  if (hasTwilio && twilioFrom) {
-    const to = phone.startsWith('whatsapp:') ? phone : `whatsapp:${phone}`;
-    const from = twilioFrom.startsWith('whatsapp:') ? twilioFrom : `whatsapp:${twilioFrom}`;
-    await sendTwilioMessage(to, from, message);
-    return;
-  }
-
-  await sendMetaWhatsApp(phone, message);
-}
-
-async function sendTelegramReminder(chatId: string, message: string) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!token) {
-    throw new Error('Telegram bot not configured (TELEGRAM_BOT_TOKEN).');
-  }
-
-  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: message,
-    }),
-  });
-
-  if (!response.ok) {
-    const details = await response.text();
-    throw new Error(details || 'Telegram delivery failed.');
-  }
+/**
+ * The number to text. Reminder rows carry a phone only because the column
+ * is NOT NULL, and the app fills it with "0000000000" when there is none —
+ * which this used to prefer over the person's real number.
+ */
+function reminderPhone(reminderPhoneNumber: string | null, profilePhone: string | null): string {
+  const own = (reminderPhoneNumber || '').replace(/\D/g, '');
+  if (own && !/^0+$/.test(own)) return reminderPhoneNumber as string;
+  return profilePhone || '';
 }
 
 async function markReminderSent(supabase: SupabaseClient<Database>, reminderId: string) {
@@ -401,21 +299,15 @@ export async function POST(request: Request) {
       }
 
       if (channel === 'sms') {
-        const phone = normalizePhone(reminder.phone_number || profile.phone_number || '');
-        if (!phone) throw new Error('No phone number configured for SMS.');
-        await sendSmsReminder(phone, body);
+        await sendSms(reminderPhone(reminder.phone_number, profile.phone_number), `${subject}\n${body}`);
       }
 
       if (channel === 'whatsapp') {
-        const phone = normalizePhone(reminder.phone_number || profile.phone_number || '');
-        if (!phone) throw new Error('No phone number configured for WhatsApp.');
-        await sendWhatsAppReminder(phone, body);
+        await sendWhatsApp(reminderPhone(reminder.phone_number, profile.phone_number), { title: subject, body });
       }
 
       if (channel === 'telegram') {
-        const chatId = (profile.telegram_chat_id || '').trim();
-        if (!chatId) throw new Error('No Telegram chat ID configured.');
-        await sendTelegramReminder(chatId, body);
+        await sendTelegram(profile.telegram_chat_id || '', `${subject}\n\n${body}`);
       }
 
       await markReminderSent(supabase, reminder.id);

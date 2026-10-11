@@ -953,7 +953,7 @@ function ProjectDetailContent() {
             return;
         }
         if (channel === 'telegram' && !profile?.telegram_chat_id) {
-            showError('Add your Telegram chat ID in Account Settings to schedule Telegram reminders.');
+            showError('Connect Telegram in Settings (Notifications → Connect) to get reminders there.');
             return;
         }
 

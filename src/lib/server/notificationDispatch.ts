@@ -15,10 +15,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { NotificationDelivery } from '@/lib/database.types';
 import { sendEmail, escapeHtml } from '@/lib/server/email';
 import { getSiteUrl } from '@/lib/siteUrl';
-
-const whatsappApiUrl = process.env.WHATSAPP_API_URL;
-const whatsappPhoneId = process.env.WHATSAPP_PHONE_ID;
-const whatsappToken = process.env.WHATSAPP_TOKEN;
+import { sendWhatsApp } from '@/lib/server/messaging';
 
 export interface NotificationDispatchResult {
   processed: number;
@@ -27,35 +24,25 @@ export interface NotificationDispatchResult {
   results: Array<{ id: string; status: 'sent' | 'failed'; error?: string }>;
 }
 
-async function sendWhatsAppMessage(payload: Record<string, unknown>) {
-  if (!whatsappApiUrl || !whatsappPhoneId || !whatsappToken) {
-    throw new Error('WhatsApp API not configured');
-  }
-
-  const to = (payload.contact_phone || payload.to) as string | undefined;
-  const body = (payload.body || payload.message) as string | undefined;
-  if (!to || !body) {
-    throw new Error('Missing WhatsApp destination or message');
-  }
-
-  const response = await fetch(`${whatsappApiUrl}/${whatsappPhoneId}/messages`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${whatsappToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      messaging_product: 'whatsapp',
-      to,
-      type: 'text',
-      text: { body },
-    }),
+/**
+ * WhatsApp to the number on the recipient's profile. A supplier told about a
+ * quote request may have only the business number from their listing, which
+ * the RFQ flow puts in the payload; that is used when the profile has none.
+ */
+async function sendWhatsAppDelivery(supabase: SupabaseClient, delivery: NotificationDelivery): Promise<void> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('phone_number')
+    .eq('id', delivery.user_id)
+    .single();
+  const payload = (delivery.payload || {}) as Record<string, unknown>;
+  const phone = (profile as { phone_number?: string | null } | null)?.phone_number
+    || (typeof payload.contact_phone === 'string' ? payload.contact_phone : '');
+  if (!phone) throw new Error('No phone number on file for this user');
+  await sendWhatsApp(phone, {
+    title: typeof payload.title === 'string' ? payload.title : 'ZimEstimate',
+    body: typeof payload.body === 'string' ? payload.body : String(payload.message ?? ''),
   });
-
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || 'WhatsApp API error');
-  }
 }
 
 /**
@@ -150,7 +137,7 @@ export async function dispatchQueuedNotifications(
         // Deliberately still writes the status through, so a dry run proves the
         // whole path including the write-back rather than just the send.
       } else if (delivery.channel === 'whatsapp') {
-        await sendWhatsAppMessage((delivery.payload || {}) as Record<string, unknown>);
+        await sendWhatsAppDelivery(supabase, delivery);
       } else if (delivery.channel === 'email') {
         await sendEmailDelivery(supabase, delivery);
       } else {

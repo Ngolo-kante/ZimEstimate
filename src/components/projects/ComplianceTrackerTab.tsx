@@ -160,7 +160,7 @@ export default function ComplianceTrackerTab({
       return;
     }
     if (channel === 'telegram' && !telegramChatId) {
-      showError('Add your Telegram chat ID in Account Settings before scheduling Telegram reminders.');
+      showError('Connect Telegram in Settings (Notifications → Connect) to get reminders there.');
       onNavigateToSettings?.();
       return;
     }

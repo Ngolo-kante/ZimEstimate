@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import ReminderChannels from '@/components/settings/ReminderChannels';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -444,6 +445,8 @@ function SettingsContent() {
                                         </button>
                                     </div>
                                 </div>
+
+                                <ReminderChannels phoneNumber={profile?.phone_number || ''} />
 
                                 {notifyWhatsapp && !phoneNumber && (
                                     <div className="notice warning">
