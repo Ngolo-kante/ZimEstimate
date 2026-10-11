@@ -131,7 +131,9 @@ export default function QuickBudgetPage() {
     // Solar and borehole send the user through sign-in with ?mode=, so Save
     // returns them to the tab they pressed it on rather than the house tab.
     const mode = params.get('mode');
-    if (mode === 'solar' || mode === 'borehole') setBudgetMode(mode);
+    // Every tab can be linked to — the "Start an estimate" page links straight
+    // to each budget check, and fencing and paving used to fall back to house.
+    if (mode === 'solar' || mode === 'borehole' || mode === 'fencing' || mode === 'paving') setBudgetMode(mode);
 
     // Someone opened a shared estimate. Held until they answer the consent
     // banner — see recordSharedLinkArrival.

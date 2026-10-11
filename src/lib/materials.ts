@@ -2,6 +2,11 @@
 // Zimbabwe-specific construction materials with local pricing
 
 import { getCsvDerivedPrice } from '@/lib/boq/csvPricing';
+import {
+    getVerifiedPrice,
+    VERIFIED_PRICES_CHECKED_ON,
+    VERIFIED_SUPPLIER_ID,
+} from '@/lib/pricing/verifiedPrices';
 
 export interface Material {
     id: string;
@@ -195,6 +200,18 @@ export const materials: Material[] = [
 // Supplier database
 export const suppliers: Supplier[] = [
     {
+        // Prices read from live supplier stores (ZBMS, Union Hardware,
+        // Halsteds) — see src/lib/pricing/verifiedPrices.ts for each source.
+        id: VERIFIED_SUPPLIER_ID,
+        name: `Market check ${VERIFIED_PRICES_CHECKED_ON} (ZBMS, Union Hardware, Halsteds)`,
+        location: 'Harare',
+        phone: '',
+        isTrusted: true,
+        rating: 4.5,
+        deliveryAreas: ['Harare'],
+        specialties: ['bricks', 'cement', 'steel', 'roofing', 'timber', 'electrical', 'plumbing', 'finishes', 'hardware'],
+    },
+    {
         id: 'sup-csv-baseline',
         name: 'CSV Baseline Market Rates',
         location: 'Zimbabwe',
@@ -386,7 +403,8 @@ export function getSupplierById(id: string): Supplier | undefined {
 }
 
 export function getPricesForMaterial(materialId: string): (MaterialPrice & { supplier: Supplier })[] {
-    return materialPrices
+    const verified = getVerifiedPrice(materialId);
+    return [...(verified ? [verified] : []), ...materialPrices]
         .filter((p) => p.materialId === materialId)
         .map((p) => ({
             ...p,
@@ -397,6 +415,11 @@ export function getPricesForMaterial(materialId: string): (MaterialPrice & { sup
 }
 
 export function getBestPrice(materialId: string): MaterialPrice | undefined {
+    // A price checked against live supplier stores wins over the older
+    // baseline tables, which were dated January–February 2026.
+    const verified = getVerifiedPrice(materialId);
+    if (verified) return verified;
+
     const csvPrice = getCsvDerivedPrice(materialId);
     if (csvPrice) {
         return csvPrice;

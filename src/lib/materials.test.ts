@@ -2,16 +2,24 @@ import { describe, expect, it } from 'vitest';
 import { getBestPrice } from './materials';
 
 describe('materials pricing', () => {
-  it('uses CSV baseline prices for BOQ material IDs that are mapped', () => {
+  // Order of precedence: a price checked against live supplier stores, then
+  // the February CSV baseline, then the older static table.
+  it('uses a market-checked price when there is one', () => {
     const price = getBestPrice('mesh-ref193');
-    expect(price).toBeDefined();
-    expect(price!.priceUsd).toBe(38);
+    expect(price!.priceUsd).toBe(39.21);
+    expect(price!.lastUpdated).toBe('2026-10-11');
   });
 
-  it('falls back to static material prices when no CSV mapping exists', () => {
-    const price = getBestPrice('brickforce');
+  it('uses the CSV baseline for mapped items not yet market-checked', () => {
+    const price = getBestPrice('sand-river');
     expect(price).toBeDefined();
-    expect(price!.priceUsd).toBe(3.5);
+    expect(price!.priceUsd).toBe(18);
+  });
+
+  it('falls back to static material prices when neither applies', () => {
+    const price = getBestPrice('brick-face-brown');
+    expect(price).toBeDefined();
+    expect(price!.priceUsd).toBe(0.45);
   });
 
   it('has priced temporary works items for one-click suggestions', () => {

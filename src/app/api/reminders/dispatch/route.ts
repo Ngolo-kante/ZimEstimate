@@ -4,6 +4,7 @@ import type { Database } from '@/lib/database.types';
 import { requireAdmin } from '@/lib/server/auth';
 import { enforceCsrf, enforceRateLimit, sanitizeNumber } from '@/lib/server/security';
 import { dispatchQueuedNotifications } from '@/lib/server/notificationDispatch';
+import { prunePlanSamples } from '@/lib/server/planSamples';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -263,7 +264,16 @@ export async function GET(request: Request) {
     notifications = { error: error instanceof Error ? error.message : 'Notification dispatch failed.' };
   }
 
-  return NextResponse.json({ reminders, notifications });
+  // Plan samples past their twelve months, as the privacy policy promises.
+  // Its own try, like the jobs above: one failing must not stop the others.
+  let planSamples: unknown;
+  try {
+    planSamples = await prunePlanSamples();
+  } catch (error) {
+    planSamples = { error: error instanceof Error ? error.message : 'Plan sample pruning failed.' };
+  }
+
+  return NextResponse.json({ reminders, notifications, planSamples });
 }
 
 export async function POST(request: Request) {

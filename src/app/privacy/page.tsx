@@ -56,6 +56,7 @@ export default function PrivacyPage() {
             <li><strong>KYC / verification documents:</strong> Certificate of Incorporation, director national IDs or passports, proof of business address. Collected for supplier verification and AML compliance.</li>
             <li><strong>Financial and transaction data:</strong> Subscription plan, billing history, payment method type (we do not store raw card numbers — card processing is handled by Stripe). Payment reference numbers for Paynow/EcoCash transactions.</li>
             <li><strong>Project and BOQ data:</strong> Estimates, bill-of-quantities records, site locations, materials lists, uploaded floor plans, and project documents you create on the Platform.</li>
+            <li><strong>Plans uploaded for reading:</strong> When you upload a floor plan to have its rooms read, we keep a copy of the file and what our reader extracted from it, to test and improve how plans are read. It is stored privately, is not linked to your account or IP address, and is deleted after 12 months. Avoid uploading plans that show details you would rather not share.</li>
             <li><strong>Usage and technical data:</strong> IP address, browser type, device identifiers, session logs, pages visited, features used, error reports.</li>
             <li><strong>Communications data:</strong> Email notification preferences, support tickets, and messages sent to our team.</li>
           </ul>
@@ -169,6 +170,11 @@ export default function PrivacyPage() {
                 <td style={tdStyle}>Marketing consent records</td>
                 <td style={tdStyle}>Duration of consent + 3 years</td>
                 <td style={tdStyle}>Evidential / CDPA best practice</td>
+              </tr>
+              <tr>
+                <td style={tdStyle}>Copies of floor plans uploaded for reading</td>
+                <td style={tdStyle}>12 months, then deleted automatically</td>
+                <td style={tdStyle}>Testing and improving the plan reader</td>
               </tr>
               <tr>
                 <td style={tdStyle}>Security &amp; audit logs</td>

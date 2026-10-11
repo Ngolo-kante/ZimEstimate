@@ -2,9 +2,10 @@
 // POST /api/vision/analyze
 // Accepts floor plan image and returns structured room data
 
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { analyzeFloorPlan } from '@/lib/vision/gemini-client';
 import { enforceCsrf, enforceRateLimit } from '@/lib/server/security';
+import { keepPlanSample } from '@/lib/server/planSamples';
 
 /* Room for the plan reader's two attempts (20 s, then 32 s) and the upload.
    Without this the platform default decided, and a user could wait on a
@@ -12,6 +13,10 @@ import { enforceCsrf, enforceRateLimit } from '@/lib/server/security';
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
+  // Held for keeping a copy of the plan once the response has gone — see
+  // planSamples.ts. Failed reads are kept too: they are the most useful.
+  let upload: { bytes: ArrayBuffer; mimeType: string } | null = null;
+
   try {
     // No requireAuth: reading a floor plan is free to try, same as the manual
     // builder and quick projects. Only saving the resulting project needs an
@@ -68,12 +73,21 @@ export async function POST(request: NextRequest) {
 
     // Convert file to base64
     const arrayBuffer = await file.arrayBuffer();
+    upload = { bytes: arrayBuffer, mimeType: file.type };
     const base64 = Buffer.from(arrayBuffer).toString('base64');
 
     // Analyze with Gemini
     const result = await analyzeFloorPlan(base64, file.type);
     const { rawResponse: _rawResponse, ...data } = result;
     void _rawResponse;
+
+    const kept = upload;
+    after(() => keepPlanSample(kept, {
+      outcome: 'read',
+      rooms: data.rooms.length,
+      totalArea: data.totalArea,
+      confidence: data.confidence,
+    }));
 
     return NextResponse.json({
       success: true,
@@ -82,6 +96,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Vision analysis error:', error);
     const message = error instanceof Error ? error.message : 'Analysis failed. Please try again.';
+    if (upload) {
+      const kept = upload;
+      after(() => keepPlanSample(kept, { outcome: 'failed', error: message }));
+    }
     return NextResponse.json(
       {
         success: false,

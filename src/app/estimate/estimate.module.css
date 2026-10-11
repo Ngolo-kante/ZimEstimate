@@ -38,12 +38,11 @@
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
   align-items: end;
-  gap: 72px;
-  padding-block: 74px 68px;
+  gap: 48px;
+  padding-block: 44px 40px;
 }
 
-.eyebrow,
-.directoryHeader span {
+.eyebrow {
   display: block;
   color: #efb760;
   font-family: var(--font-mono);
@@ -57,7 +56,7 @@
   max-width: 750px;
   margin: 14px 0 0;
   font-family: var(--font-heading);
-  font-size: clamp(2.7rem, 6vw, 5.4rem);
+  font-size: clamp(2.1rem, 4.4vw, 3.6rem);
   font-weight: 800;
   line-height: 0.98;
   letter-spacing: -0.04em;
@@ -66,7 +65,7 @@
 
 .heroCopy p {
   max-width: 680px;
-  margin: 26px 0 0;
+  margin: 14px 0 0;
   color: #d9e4f2;
   font-size: 1.05rem;
   line-height: 1.7;
@@ -106,270 +105,188 @@
 }
 
 .directory {
-  padding-block: 64px 88px;
-}
-
-.directoryHeader {
+  padding-block: 32px 88px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.55fr);
-  align-items: end;
-  gap: 48px;
-  margin-bottom: 30px;
+  gap: 30px;
 }
 
-.directoryHeader span {
-  color: #a45d0b;
+/* ── Groups of small tiles ───────────────────────────────────────────────
+   Small on purpose: there are about twenty ways in, and each group should
+   read at a glance rather than one large card per screen. */
+.group {
+  --tone: #1d5fbf;
+}
+.blue { --tone: #1d5fbf; }
+.amber { --tone: #c47a12; }
+.green { --tone: #1b8a5a; }
+.slate { --tone: #4a5b72; }
+
+.groupHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  margin-bottom: 12px;
+  padding-left: 10px;
+  border-left: 4px solid var(--tone);
 }
 
-.directoryHeader h2 {
-  margin: 8px 0 0;
-  font-family: var(--font-heading);
-  font-size: clamp(2rem, 4vw, 3.25rem);
-  line-height: 1.05;
-  letter-spacing: -0.025em;
-}
-
-.directoryHeader p {
+.groupHeader h2 {
   margin: 0;
-  color: #526174;
-  line-height: 1.65;
-}
-
-.optionGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.optionCard {
-  --card-accent: #1d5fbf;
-  position: relative;
-  min-height: 310px;
-  display: flex;
-  flex-direction: column;
-  padding: 22px;
-  color: #10213b;
-  background: #fffefb;
-  border: 1px solid #cfd5dc;
-  border-top: 4px solid var(--card-accent);
-  border-radius: 5px;
-  text-decoration: none;
-  box-shadow: 0 8px 0 rgba(11, 31, 59, 0.06);
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
-}
-
-.optionCard:hover {
-  transform: translateY(-5px);
-  border-color: var(--card-accent);
-  box-shadow: 0 14px 0 rgba(11, 31, 59, 0.11);
-}
-
-.optionCard:focus-visible {
-  outline: 3px solid #e39b32;
-  outline-offset: 4px;
-}
-
-.featuredCard {
-  --card-accent: #d47a12;
-  grid-column: span 1;
-  background: #fffaf0;
-}
-
-.cardTopline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 22px;
-  color: #69778b;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.cardTopline em {
-  padding: 4px 7px;
-  color: #784209;
-  background: #f8ddb0;
-  border-radius: 3px;
-  font-family: var(--font-body);
-  font-size: 0.63rem;
-  font-style: normal;
-  text-transform: uppercase;
-}
-
-.iconBox {
-  width: 54px;
-  height: 54px;
-  display: grid;
-  place-items: center;
-  margin-top: 26px;
-  color: var(--card-accent);
-  background: color-mix(in srgb, var(--card-accent) 10%, white);
-  border: 1px solid color-mix(in srgb, var(--card-accent) 22%, white);
-  border-radius: 4px;
-  transition: transform 180ms ease;
-}
-
-.optionCard:hover .iconBox {
-  transform: rotate(-3deg) scale(1.06);
-}
-
-.optionCard h3 {
-  margin: 20px 0 0;
   font-family: var(--font-heading);
   font-size: 1.25rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.groupHeader p {
+  margin: 0;
+  color: #526174;
+  font-size: 0.85rem;
+}
+
+.tileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+  padding: 12px 14px;
+  color: #10213b;
+  background: #fffefb;
+  border: 1px solid #d9dde3;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.tile:hover {
+  border-color: var(--tone);
+  box-shadow: 0 4px 14px rgba(11, 31, 59, 0.08);
+  transform: translateY(-1px);
+}
+
+.tile:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--tone) 45%, white);
+  outline-offset: 2px;
+}
+
+.tileIcon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 10%, white);
+  border-radius: 8px;
+}
+
+.tileText {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tileText strong {
+  display: block;
+  font-size: 0.92rem;
   line-height: 1.25;
 }
 
-.optionCard p {
-  margin: 9px 0 0;
-  color: #59687a;
-  font-size: 0.84rem;
-  line-height: 1.6;
+.tileText span {
+  display: block;
+  margin-top: 2px;
+  color: #5b6a7d;
+  font-size: 0.76rem;
+  line-height: 1.35;
 }
 
-.cardFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: auto;
-  padding-top: 20px;
-  color: #33445b;
-  border-top: 1px dashed #ccd3dc;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.cardFooter svg {
+.tileArrow {
   flex: 0 0 auto;
-  color: var(--card-accent);
-  transition: transform 180ms ease;
+  color: #9aa6b4;
+  transition: color 150ms ease, transform 150ms ease;
 }
 
-.optionCard:hover .cardFooter svg {
-  transform: translateX(4px);
+.tile:hover .tileArrow {
+  color: var(--tone);
+  transform: translateX(2px);
 }
 
 @media (max-width: 900px) {
   .heroInner {
     grid-template-columns: 1fr;
-    align-items: start;
-    gap: 32px;
-  }
-
-  .heroNote {
-    max-width: 390px;
-  }
-
-  .optionGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
   }
 }
 
 @media (max-width: 640px) {
   .heroInner,
   .directory {
-    padding-inline: 20px;
+    padding-inline: 16px;
   }
 
   .heroInner {
-    padding-block: 52px 48px;
+    gap: 14px;
+    padding-block: 24px 22px;
   }
 
   .hero h1 {
-    font-size: 2.75rem;
-  }
-
-  .directory {
-    padding-block: 46px 92px;
-  }
-
-  .directoryHeader,
-  .optionGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .directoryHeader {
-    gap: 16px;
-  }
-
-  /* Phones: the options are the point of this page, so they should start
-     on the first screen, and seven of them should not be a long scroll. The
-     header shrinks and each card becomes a row — icon beside the title — at
-     about a third of its desktop height. */
-  .heroInner {
-    gap: 18px;
-    padding-block: 28px 24px;
-  }
-
-  .hero h1 {
-    font-size: 2.1rem;
+    font-size: 1.85rem;
   }
 
   .heroCopy p {
-    margin-top: 10px;
-    font-size: 0.95rem;
+    margin-top: 8px;
+    font-size: 0.92rem;
   }
 
   .heroNote {
-    padding: 12px 14px;
+    padding: 10px 12px;
+    transform: none;
   }
 
   .directory {
-    padding-block: 28px 92px;
+    padding-block: 22px 92px;
+    gap: 24px;
   }
 
-  .directoryHeader p {
+  /* Two tiles per row on a phone, icon stacked over the text, so a whole
+     group fits on one screen. */
+  .tileGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .tile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .tileIcon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .tileArrow {
     display: none;
-  }
-
-  .optionCard {
-    min-height: 0;
-    display: grid;
-    grid-template-columns: 44px 1fr;
-    column-gap: 14px;
-    align-items: start;
-    padding: 14px 16px;
-  }
-
-  .cardTopline {
-    grid-column: 1 / -1;
-    min-height: 0;
-    margin-bottom: 8px;
-  }
-
-  .iconBox {
-    grid-column: 1;
-    grid-row: 2 / span 2;
-    width: 44px;
-    height: 44px;
-    margin-top: 0;
-  }
-
-  .optionCard h3 {
-    grid-column: 2;
-    margin-top: 0;
-    font-size: 1.08rem;
-  }
-
-  .optionCard p {
-    grid-column: 2;
-    margin-top: 4px;
-    font-size: 0.8rem;
-  }
-
-  .cardFooter {
-    grid-column: 1 / -1;
-    padding-top: 10px;
-    margin-top: 10px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .optionCard,
-  .iconBox,
-  .cardFooter svg {
+  .tile,
+  .tileArrow {
     transition: none;
+  }
+  .tile:hover {
+    transform: none;
   }
 }
