@@ -10,11 +10,14 @@ import {
   Package,
   PencilLine,
   ShieldCheck,
+  Scales,
   UploadSimple,
   UserPlus,
+  UsersThree,
 } from '@phosphor-icons/react/dist/ssr';
 import MainLayout from '@/components/layout/MainLayout';
 import HeroBudgetWidget from '@/components/home/HeroBudgetWidget';
+import DescribeProject from '@/components/estimate/DescribeProject';
 import styles from './home.module.css';
 
 const estimateStarts = [
@@ -71,6 +74,12 @@ const workflow = [
     title: 'Build',
     description: 'Track purchases, usage, documents, and progress by stage.',
     icon: Package,
+  },
+  {
+    number: '04',
+    title: 'Work with your builder',
+    description: 'Invite your builder to tick off tasks, log materials and send site photos. They never see your prices.',
+    icon: UsersThree,
   },
 ];
 
@@ -158,6 +167,17 @@ export default function HomePage() {
                 );
               })}
             </div>
+
+            {/* The quote checker is how people arrive with a number already in
+                hand; a slim strip rather than a fifth card in a four-column grid. */}
+            <Link href="/ai/quote-check" className={styles.quoteStrip}>
+              <Scales size={22} weight="duotone" aria-hidden="true" />
+              <span>
+                <strong>Got a quote from a builder or hardware?</strong>
+                <span>Check each price against what materials cost in Harare right now.</span>
+              </span>
+              <ArrowRight size={18} weight="bold" aria-hidden="true" className={styles.quoteStripArrow} />
+            </Link>
           </div>
         </section>
 
@@ -206,14 +226,27 @@ export default function HomePage() {
         </section>
 
         <section className={styles.closingSection} aria-labelledby="closing-heading">
-          <div className={styles.closingInner}>
-            <h2 id="closing-heading">Put the first reliable number on your project.</h2>
-            <p>No account needed to start. Sign in when you want to save it.</p>
-            <Link href="/estimate" className={styles.closingButton}>
-              <Calculator size={20} weight="bold" aria-hidden="true" />
-              Start your estimate
-              <ArrowRight size={18} weight="bold" aria-hidden="true" />
-            </Link>
+          <div className={`${styles.closingInner} ${styles.closingGrid}`}>
+            <div>
+              <h2 id="closing-heading">Put the first reliable number on your project.</h2>
+              <p>No account needed to start. Sign in when you want to save it.</p>
+              <Link href="/estimate" className={styles.closingButton}>
+                <Calculator size={20} weight="bold" aria-hidden="true" />
+                Start your estimate
+                <ArrowRight size={18} weight="bold" aria-hidden="true" />
+              </Link>
+            </div>
+
+            {/* The right half was empty navy. It now holds the fastest way in:
+                say what you're building and land on the right estimator. */}
+            <div className={styles.closingPanel}>
+              <span className={styles.closingPanelTitle}>Not sure where to begin?</span>
+              <DescribeProject label="Describe your project in a sentence" />
+              <div className={styles.closingLinks}>
+                <Link href="/ai/quote-check"><Scales size={16} aria-hidden="true" /> Check a quote you were given</Link>
+                <Link href="/projects"><UsersThree size={16} aria-hidden="true" /> Invite your builder to report progress</Link>
+              </div>
+            </div>
           </div>
         </section>
       </div>

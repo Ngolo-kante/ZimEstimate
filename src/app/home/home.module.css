@@ -634,7 +634,7 @@
 
 .workflowSteps {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: 44px;
   border-top: 2px solid var(--color-primary);
 }
@@ -705,6 +705,97 @@
   font-size: 1rem;
 }
 
+/* Two columns: the closing line on the left, and on the right — which was
+   empty navy — the quickest ways in. */
+.closingGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
+  align-items: center;
+  gap: 56px;
+}
+
+.closingPanel {
+  padding: 24px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.closingPanelTitle {
+  display: block;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.closingLinks {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.closingLinks a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #dbe6f5;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.closingLinks a:hover {
+  color: white;
+  text-decoration: underline;
+}
+
+.quoteStrip {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid #f3d9a8;
+  background: #fffaf0;
+  color: var(--color-text);
+  text-decoration: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.quoteStrip > svg:first-child {
+  flex-shrink: 0;
+  color: #b7791f;
+}
+
+.quoteStrip > span {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.quoteStrip strong {
+  font-size: 0.98rem;
+}
+
+.quoteStrip > span > span {
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+}
+
+.quoteStrip:hover {
+  border-color: #e3b45c;
+  box-shadow: 0 6px 18px rgba(183, 121, 31, 0.12);
+}
+
+.quoteStripArrow {
+  flex-shrink: 0;
+  color: #b7791f;
+}
+
 .closingButton {
   margin-top: 30px;
   padding: 13px 18px;
@@ -765,6 +856,22 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .workflowSteps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workflowStep:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .workflowStep:nth-child(2n + 1) {
+    padding-left: 0;
+  }
+
+  .workflowStep:nth-child(-n + 2) {
+    border-bottom: 1px solid #cbd5e1;
+  }
+
   .startCard {
     min-height: 280px;
   }
@@ -790,14 +897,22 @@
     padding-inline: 22px;
   }
 
+  .closingGrid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
   .heroInner {
     grid-template-columns: 1fr;
     gap: 34px;
   }
 
+  /* Centred and a little wider once it drops under the text: left-aligned at
+     520px it left the right half of the hero as empty navy on tablets. */
   .heroBudget {
-    max-width: 520px;
-    justify-self: start;
+    width: 100%;
+    max-width: 600px;
+    justify-self: center;
   }
 
   .hero h1 {
@@ -1027,3 +1142,12 @@
 .contractorAction { flex-shrink: 0; display: inline-flex; align-items: center; gap: 10px; border: 1px solid #aebed0; padding: 14px 18px; border-radius: 6px; color: #0b1f3b; background: #fff; text-decoration: none; font-weight: 650; }
 .page a:focus-visible { outline: 3px solid #3b82f6; outline-offset: 4px; }
 @media(max-width: 680px) { .contractorInner { flex-direction: column; align-items: start; padding: 32px 20px; } .contractorAction { flex-shrink: 1; font-size: .9rem; } }
+
+/* MainLayout leaves 100px under the page for the phone tab bar, but the
+   footer below already allows for it, so on the home page it showed as an
+   empty white strip between the closing band and the footer. */
+@media (max-width: 900px) {
+  .page {
+    margin-bottom: -100px;
+  }
+}

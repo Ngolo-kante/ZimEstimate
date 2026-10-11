@@ -190,7 +190,7 @@ export default function TopNavbar() {
     <header className="top-navbar">
       <div className="navbar-container">
         {/* Logo - PropTech Trend Concept */}
-        <Link href="/home" className="logo">
+        <Link href="/home" className="logo zim-navbar-logo">
           <div className="logo-icon">
             <Image
               src="/logo.png"
@@ -577,11 +577,15 @@ export default function TopNavbar() {
           justify-content: space-between;
         }
 
-        .logo {
+        /* :global because the class sits on a next/link <Link>, which
+           styled-jsx does not scope: written as .logo this matched nothing,
+           so the icon stacked above the name instead of beside it. */
+        :global(a.zim-navbar-logo) {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 10px;
           text-decoration: none;
+          flex-shrink: 0;
         }
 
         .logo-icon {
@@ -1313,6 +1317,7 @@ export default function TopNavbar() {
           .navbar-container { padding: 0 12px; height: 56px; }
           .navbar-right { gap: 8px; }
           .logo-text { font-size: 1.05rem; }
+          :global(a.zim-navbar-logo) { gap: 8px; }
           .trigger-copy,
           .profile-caret { display: none; }
           .user-btn { width: 40px; padding: 0; gap: 0; }
