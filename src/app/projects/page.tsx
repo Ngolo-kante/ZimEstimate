@@ -22,6 +22,7 @@ import { Project, ProjectStatus, ProjectScope } from '@/lib/database.types';
 import { useReveal } from '@/hooks/useReveal';
 import ProjectShareSheet from '@/components/projects/ProjectShareSheet';
 import InviteModal from '@/components/projects/InviteModal';
+import { getSiteProjects, type SiteProjectSummary } from '@/lib/services/site';
 import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 import {
     Plus,
@@ -283,6 +284,13 @@ function ProjectsContent() {
         setOpenMenuId(null);
         router.push(`/projects/${projectId}`);
     };
+
+    const [siteProjects, setSiteProjects] = useState<SiteProjectSummary[]>([]);
+    useEffect(() => {
+        let active = true;
+        void getSiteProjects().then((list) => { if (active) setSiteProjects(list); });
+        return () => { active = false; };
+    }, []);
 
     // Share sends a copy; Invite gives access. "Share" used to open the
     // project with ?share=true, which nothing read, so it did nothing.
@@ -823,6 +831,22 @@ function ProjectsContent() {
                             Retry
                         </Button>
                     </div>
+                )}
+
+                {/* Projects other people invited you to: the site view only. */}
+                {siteProjects.length > 0 && (
+                    <section className="shared-section">
+                        <h2>Shared with you</h2>
+                        <div className="shared-list">
+                            {siteProjects.map((sp) => (
+                                <Link key={sp.id} href={`/projects/${sp.id}`} className="shared-card">
+                                    <strong>{sp.name}</strong>
+                                    <span>{sp.location || 'No location'} · from {sp.owner_name}</span>
+                                    <span className="shared-access">{sp.access_level === 'edit' ? 'You report progress' : 'You follow progress'}</span>
+                                </Link>
+                            ))}
+                        </div>
+                    </section>
                 )}
 
                 {/* Empty State */}
@@ -1575,6 +1599,16 @@ function ProjectsContent() {
                     justify-content: center;
                     font-weight: bold;
                 }
+
+                .shared-section { margin-bottom: 24px; }
+                .shared-section h2 { margin: 0 0 10px; font-size: 1rem; font-weight: 700; color: var(--color-text); }
+                .shared-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+                .shared-list :global(.shared-card) {
+                    display: grid; gap: 3px; padding: 14px 16px; border-radius: 12px; text-decoration: none;
+                    border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text);
+                }
+                .shared-list :global(.shared-card span) { font-size: 0.82rem; color: var(--color-text-secondary); }
+                .shared-list :global(.shared-card .shared-access) { color: var(--color-accent); font-weight: 600; }
 
                 .projects-grid {
                     display: grid;

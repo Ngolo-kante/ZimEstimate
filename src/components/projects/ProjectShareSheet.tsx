@@ -43,27 +43,36 @@ export default function ProjectShareSheet({ isOpen, onClose, project, items: giv
     [items, project],
   );
 
-  // Sharing a file (straight into WhatsApp and the like) is a phone feature;
-  // offered only where the browser says it can.
+  // The phone's own share picker (WhatsApp, email, Bluetooth, Drive — the
+  // person chooses). With the PDF attached where the browser allows files,
+  // otherwise the summary text. Computers without it get the buttons below.
+  const [canNativeShare, setCanNativeShare] = useState(false);
   const [canShareFiles, setCanShareFiles] = useState(false);
+  const [preparedPdf, setPreparedPdf] = useState<File | null>(null);
   useEffect(() => {
     try {
       const probe = new File([''], 'x.pdf', { type: 'application/pdf' });
+      setCanNativeShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
       setCanShareFiles(typeof navigator !== 'undefined' && Boolean(navigator.canShare?.({ files: [probe] })));
     } catch {
       setCanShareFiles(false);
     }
   }, []);
 
+  // Made as soon as the BOQ is here, so pressing Share opens the picker at
+  // once: phones only allow it straight after the tap, not after a wait.
+  useEffect(() => {
+    if (!isOpen || !canShareFiles || !items || items.length === 0) return;
+    let active = true;
+    void loadPdfExport('projects_list').then((pdf) => {
+      if (active && pdf) setPreparedPdf(new File([pdf.getBOQPDFBlob(project, items)], fileName(project.name), { type: 'application/pdf' }));
+    });
+    return () => { active = false; };
+  }, [isOpen, canShareFiles, items, project]);
+
   if (!isOpen) return null;
 
   const hasItems = Boolean(items && items.length > 0);
-
-  const pdfFile = async (): Promise<File | null> => {
-    const pdf = await loadPdfExport('projects_list');
-    if (!pdf) { showError(PDF_LOAD_ERROR); return null; }
-    return new File([pdf.getBOQPDFBlob(project, items ?? [])], fileName(project.name), { type: 'application/pdf' });
-  };
 
   const downloadPdf = async () => {
     setBusy('pdf');
@@ -72,14 +81,14 @@ export default function ProjectShareSheet({ isOpen, onClose, project, items: giv
     setBusy(null);
   };
 
-  const sharePdf = async () => {
+  const openPicker = async () => {
     setBusy('share');
     try {
-      const file = await pdfFile();
-      if (file) await navigator.share({ files: [file], title: project.name, text: summary });
+      if (preparedPdf) await navigator.share({ files: [preparedPdf], title: project.name, text: summary });
+      else await navigator.share({ title: project.name, text: summary });
     } catch (error) {
-      // Closing the share sheet is not an error.
-      if (!(error instanceof DOMException && error.name === 'AbortError')) showError('Could not share the PDF. Try Download instead.');
+      // Closing the picker is not an error.
+      if (!(error instanceof DOMException && error.name === 'AbortError')) showError('Could not open sharing. Use the buttons below instead.');
     } finally {
       setBusy(null);
     }
@@ -114,12 +123,18 @@ export default function ProjectShareSheet({ isOpen, onClose, project, items: giv
           <>
             <pre className="preview">{summary}</pre>
             <div className="actions">
-              {canShareFiles && (
-                <button type="button" className="primary" onClick={() => void sharePdf()} disabled={!hasItems || busy !== null}>
-                  {busy === 'share' ? <CircleNotch size={18} className="spin" /> : <ShareNetwork size={18} />} Share PDF
+              {canNativeShare && (
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={() => void openPicker()}
+                  disabled={busy !== null || (canShareFiles && hasItems && !preparedPdf)}
+                >
+                  {busy === 'share' || (canShareFiles && hasItems && !preparedPdf) ? <CircleNotch size={18} className="spin" /> : <ShareNetwork size={18} />}
+                  {canShareFiles && hasItems ? 'Share PDF…' : 'Share…'}
                 </button>
               )}
-              <button type="button" className={canShareFiles ? '' : 'primary'} onClick={() => void downloadPdf()} disabled={!hasItems || busy !== null}>
+              <button type="button" className={canNativeShare ? '' : 'primary'} onClick={() => void downloadPdf()} disabled={!hasItems || busy !== null}>
                 {busy === 'pdf' ? <CircleNotch size={18} className="spin" /> : <FilePdf size={18} />} Download PDF
               </button>
               <a className="btn" href={`https://wa.me/?text=${encodeURIComponent(summary)}`} target="_blank" rel="noopener noreferrer">
@@ -133,6 +148,7 @@ export default function ProjectShareSheet({ isOpen, onClose, project, items: giv
               </button>
             </div>
             {!hasItems && <p className="note">Add BOQ items to share a PDF.</p>}
+            {canNativeShare && <p className="note">Share opens your phone&rsquo;s list of apps — pick WhatsApp, email or anything else.</p>}
             {!canShareFiles && hasItems && <p className="note">To send the PDF on WhatsApp from a computer, download it and attach it in the chat.</p>}
           </>
         )}

@@ -135,8 +135,12 @@ export default function InviteModal({ isOpen, onClose, projectName, projectId }:
           {/* Invite by Email */}
           <div className="invite-section">
             <p className="link-hint">
-              Invite your builder or site manager to log materials used and update progress on site.
-              You&rsquo;ll get a notification each time they do. Only you can delete the project or invite others.
+              Invite your builder or site manager to tick off tasks, log materials used and add site photos.
+              You&rsquo;ll be notified each time they do.
+            </p>
+            <p className="link-hint">
+              They only see this project&rsquo;s progress, photos and materials with quantities &mdash;
+              never your budget, prices, purchases, documents or other projects.
             </p>
             <label className="section-label">Their email</label>
             <div className="invite-row">
@@ -152,8 +156,8 @@ export default function InviteModal({ isOpen, onClose, projectName, projectId }:
                 onChange={(e) => setAccessLevel(e.target.value as AccessLevel)}
                 className="access-select"
               >
-                <option value="edit">Can update progress</option>
-                <option value="view">Can only view</option>
+                <option value="edit">Can report progress</option>
+                <option value="view">Can follow progress</option>
               </select>
               <Button
                 icon={isInviting ? <CircleNotch size={18} className="spin" /> : <UserPlus size={18} />}
@@ -185,7 +189,7 @@ export default function InviteModal({ isOpen, onClose, projectName, projectId }:
                     <div className="user-info">
                       <span className="user-email">{share.shared_with_email}</span>
                       <span className={`user-status ${share.shared_with_user_id ? 'accepted' : 'pending'}`}>
-                        {share.shared_with_user_id ? (share.access_level === 'edit' ? 'Can update progress' : 'Can view') : 'Waiting for them to sign up'}
+                        {share.shared_with_user_id ? (share.access_level === 'edit' ? 'Reports progress' : 'Follows progress') : 'Waiting for them to sign up'}
                       </span>
                     </div>
                     <select
@@ -193,8 +197,8 @@ export default function InviteModal({ isOpen, onClose, projectName, projectId }:
                       onChange={(e) => handleUpdateAccess(share.id, e.target.value as AccessLevel)}
                       className="access-select-sm"
                     >
-                      <option value="edit">Can update</option>
-                      <option value="view">Can view</option>
+                      <option value="edit">Reports progress</option>
+                      <option value="view">Follows progress</option>
                     </select>
                     <button className="remove-btn" onClick={() => handleRemoveShare(share.id)}>
                       <Trash size={16} />
@@ -226,7 +230,7 @@ export default function InviteModal({ isOpen, onClose, projectName, projectId }:
                 {copied ? 'Copied!' : 'Copy'}
               </Button>
             </div>
-            <p className="link-hint">Works only for people you have invited, once they sign in.</p>
+            <p className="link-hint">Opens the site view for people you have invited, once they sign in.</p>
           </div>
         </div>
       </div>

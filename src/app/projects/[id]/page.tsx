@@ -12,6 +12,8 @@ import DocumentsTab from '@/components/projects/DocumentsTab';
 import ProjectViewTabs from '@/components/projects/ProjectViewTabs';
 import ComplianceTrackerTab from '@/components/projects/ComplianceTrackerTab';
 import InviteModal from '@/components/projects/InviteModal';
+import SiteView from '@/components/projects/SiteView';
+import SitePhotosPanel from '@/components/projects/SitePhotosPanel';
 import ProjectShareSheet from '@/components/projects/ProjectShareSheet';
 import { RunningTotalBar } from '@/components/ui/RunningTotalBar';
 import { StageProgressCards } from '@/components/projects/StageProgressCards';
@@ -166,9 +168,6 @@ function ProjectDetailContent() {
 
     // Core state
     const [project, setProject] = useState<Project | null>(null);
-    // 'owner' | 'edit' | 'view' for whoever is looking. Writes are enforced by
-    // RLS (migration 055); this only decides which controls to offer.
-    const [sharedAccess, setSharedAccess] = useState<'edit' | 'view' | null>(null);
     const [items, setItems] = useState<BOQItem[]>([]);
     const [stages, setStages] = useState<ProjectStageWithTasks[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -797,26 +796,9 @@ function ProjectDetailContent() {
         priceNotificationSentRef.current = true;
     }, [priceUpdates, project, profile?.id]);
 
-    useEffect(() => {
-        if (!project?.id || !profile?.id || project.owner_id === profile.id) {
-            setSharedAccess(null);
-            return;
-        }
-        let cancelled = false;
-        void (async () => {
-            const { data } = await supabase
-                .from('project_shares')
-                .select('access_level')
-                .eq('project_id', project.id)
-                .eq('shared_with_user_id', profile.id)
-                .maybeSingle();
-            if (!cancelled) setSharedAccess((data as { access_level?: 'edit' | 'view' } | null)?.access_level ?? 'view');
-        })();
-        return () => { cancelled = true; };
-    }, [project?.id, project?.owner_id, profile?.id]);
-
     const isProjectOwner = Boolean(project && profile && project.owner_id === profile.id);
-    const canManageProject = isProjectOwner || sharedAccess === 'edit';
+    // Invitees never reach this page (ProjectAccessGate shows them SiteView).
+    const canManageProject = isProjectOwner;
 
     // Handlers
     const handleProjectUpdate = async (updates: Partial<Project>) => {
@@ -1356,13 +1338,7 @@ function ProjectDetailContent() {
                                 </div>
                             </div>
 
-                            {sharedAccess && (
-                                <p className="mt-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-secondary">
-                                    {sharedAccess === 'edit'
-                                        ? 'This project was shared with you. You can update its BOQ, stages, purchases and usage; only the owner can delete it or invite others.'
-                                        : 'This project was shared with you to view. Ask the owner for manage access if you need to make changes.'}
-                                </p>
-                            )}
+
 
                             {/* Price Update Alert */}
                             {priceUpdates.length > 0 && (
@@ -1412,6 +1388,7 @@ function ProjectDetailContent() {
                                         setActiveView('boq');
                                     }}
                                 />
+                                <SitePhotosPanel projectId={projectId} />
                             </section>
 
                             {/* KPI Dashboard */}
@@ -2438,10 +2415,37 @@ function ProjectDetailContent() {
     );
 }
 
+/**
+ * The owner gets the whole project. Anyone it was shared with gets the site
+ * view — progress, photos, materials without prices — because they have no
+ * access to the project tables themselves (migration 058).
+ */
+function ProjectAccessGate() {
+    const params = useParams();
+    const projectId = params.id as string;
+    const [access, setAccess] = useState<'owner' | 'edit' | 'view' | 'none' | null>(null);
+
+    useEffect(() => {
+        let active = true;
+        void supabase.rpc('site_access' as never, { p_project_id: projectId } as never).then(({ data }) => {
+            if (active) setAccess(((data as string | null) ?? 'none') as 'owner' | 'edit' | 'view' | 'none');
+        });
+        return () => { active = false; };
+    }, [projectId]);
+
+    if (access === null) {
+        return <MainLayout><div className="p-8 text-center text-secondary">Loading project…</div></MainLayout>;
+    }
+    if (access === 'edit' || access === 'view') {
+        return <MainLayout><SiteView projectId={projectId} /></MainLayout>;
+    }
+    return <ProjectDetailContent />;
+}
+
 export default function ProjectDetailPage() {
     return (
         <ProtectedRoute>
-            <ProjectDetailContent />
+            <ProjectAccessGate />
         </ProtectedRoute>
     );
 }

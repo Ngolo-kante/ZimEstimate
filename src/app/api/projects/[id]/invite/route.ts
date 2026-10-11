@@ -83,7 +83,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const inviter = ownerProfile?.full_name?.trim() || ownerProfile?.email || 'A ZimEstimate user';
-  const what = accessLevel === 'edit' ? 'view and help manage' : 'view';
+  const what = accessLevel === 'edit' ? 'report progress on' : 'follow progress on';
   const projectUrl = `${getSiteUrl()}/projects/${projectId}`;
   let emailed = false;
 
