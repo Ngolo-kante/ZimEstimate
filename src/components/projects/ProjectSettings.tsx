@@ -16,7 +16,6 @@ import {
     ChatCircleText,
     WhatsappLogo,
     EnvelopeSimple,
-    PaperPlaneTilt,
     Package,
     CurrencyDollar,
     TrendUp,
@@ -62,9 +61,8 @@ const STAGE_CATEGORIES: { id: BOQCategory; label: string; description: string }[
 
 const CHANNEL_OPTIONS: { id: NotificationChannel; label: string; icon: React.ReactNode }[] = [
     { id: 'email', label: 'Email', icon: <EnvelopeSimple size={16} weight="duotone" /> },
-    { id: 'sms', label: 'SMS', icon: <ChatCircleText size={16} weight="duotone" /> },
     { id: 'whatsapp', label: 'WhatsApp', icon: <WhatsappLogo size={16} weight="duotone" /> },
-    { id: 'telegram', label: 'Telegram', icon: <PaperPlaneTilt size={16} weight="duotone" /> },
+    { id: 'sms', label: 'SMS', icon: <ChatCircleText size={16} weight="duotone" /> },
 ];
 
 const FREQUENCY_OPTIONS: { id: ReminderFrequency; label: string }[] = [

@@ -20,7 +20,6 @@ import {
   EnvelopeSimple,
   ChatCircleText,
   WhatsappLogo,
-  PaperPlaneTilt,
   BellRinging,
   Gear,
   Package,
@@ -55,9 +54,8 @@ interface UsageFormState {
 
 const CHANNEL_INFO: Record<NotificationChannel, { icon: React.ReactNode; label: string }> = {
   email: { icon: <EnvelopeSimple size={15} weight="duotone" />, label: 'Email' },
-  sms: { icon: <ChatCircleText size={15} weight="duotone" />, label: 'SMS' },
   whatsapp: { icon: <WhatsappLogo size={15} weight="duotone" />, label: 'WhatsApp' },
-  telegram: { icon: <PaperPlaneTilt size={15} weight="duotone" />, label: 'Telegram' },
+  sms: { icon: <ChatCircleText size={15} weight="duotone" />, label: 'SMS' },
 };
 
 export default function ProjectUsageView({

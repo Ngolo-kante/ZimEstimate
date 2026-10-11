@@ -471,10 +471,7 @@ function ProjectDetailContent() {
     useEffect(() => {
         if (!profile) return;
         const phoneRequired = preferredReminderChannel === 'sms' || preferredReminderChannel === 'whatsapp';
-        const telegramRequired = preferredReminderChannel === 'telegram';
-        const missingContact =
-            (phoneRequired && !profile.phone_number)
-            || (telegramRequired && !profile.telegram_chat_id);
+        const missingContact = phoneRequired && !profile.phone_number;
 
         if (missingContact) {
             setPreferredReminderChannel('email');
@@ -950,10 +947,6 @@ function ProjectDetailContent() {
         const effectivePhone = phoneOverride || profile?.phone_number || '';
         if (isPhoneChannel && !effectivePhone) {
             showError('Add a phone number to schedule mobile reminders.');
-            return;
-        }
-        if (channel === 'telegram' && !profile?.telegram_chat_id) {
-            showError('Connect Telegram in Settings (Notifications → Connect) to get reminders there.');
             return;
         }
 
@@ -1702,7 +1695,6 @@ function ProjectDetailContent() {
                                 stages={stages}
                                 onStageUpdate={handleStageUpdate}
                                 phoneNumber={profile?.phone_number}
-                                telegramChatId={profile?.telegram_chat_id}
                                 onRequestPhone={(payload) => handleRequestPhone({ channel: payload?.channel })}
                                 preferredChannel={preferredReminderChannel}
                                 onNavigateToSettings={() => setActiveView('settings')}

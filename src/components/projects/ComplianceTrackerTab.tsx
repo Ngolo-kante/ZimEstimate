@@ -33,7 +33,6 @@ import {
   ClipboardText,
   Envelope,
   Info,
-  PaperPlaneTilt,
   Plus,
   ShieldCheck,
   Trash,
@@ -49,7 +48,6 @@ interface ComplianceTrackerTabProps {
   stages: ProjectStageWithTasks[];
   onStageUpdate: (updatedStage: ProjectStageWithTasks) => void;
   phoneNumber?: string | null;
-  telegramChatId?: string | null;
   onRequestPhone: (payload?: { channel?: NotificationChannel }) => void;
   preferredChannel?: NotificationChannel;
   onNavigateToSettings?: () => void;
@@ -65,9 +63,8 @@ const STAGE_LABELS: Record<BOQCategory, string> = {
 
 const CHANNEL_CONFIG: Record<NotificationChannel, { icon: React.ReactNode; label: string }> = {
   email: { icon: <Envelope size={16} weight="duotone" />, label: 'Email' },
-  sms: { icon: <ChatCircleText size={16} weight="duotone" />, label: 'SMS' },
   whatsapp: { icon: <WhatsappLogo size={16} weight="duotone" />, label: 'WhatsApp' },
-  telegram: { icon: <PaperPlaneTilt size={16} weight="duotone" />, label: 'Telegram' },
+  sms: { icon: <ChatCircleText size={16} weight="duotone" />, label: 'SMS' },
 };
 
 const tomorrowIsoDate = () => {
@@ -82,7 +79,6 @@ export default function ComplianceTrackerTab({
   stages,
   onStageUpdate,
   phoneNumber,
-  telegramChatId,
   onRequestPhone,
   preferredChannel = 'email',
   onNavigateToSettings,
@@ -157,11 +153,6 @@ export default function ComplianceTrackerTab({
     const requiresPhone = channel === 'sms' || channel === 'whatsapp';
     if (requiresPhone && !phoneNumber) {
       onRequestPhone({ channel });
-      return;
-    }
-    if (channel === 'telegram' && !telegramChatId) {
-      showError('Connect Telegram in Settings (Notifications → Connect) to get reminders there.');
-      onNavigateToSettings?.();
       return;
     }
 

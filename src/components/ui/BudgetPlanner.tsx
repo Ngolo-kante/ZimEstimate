@@ -14,7 +14,10 @@ import {
 } from '@phosphor-icons/react';
 import { useCurrency } from './CurrencyToggle';
 
-export type NotificationChannel = 'sms' | 'whatsapp' | 'telegram' | 'email';
+// Email and WhatsApp first: what people in Zimbabwe actually use. Telegram
+// was offered but is set aside for now (its bot routes in /api/telegram are
+// kept, unused, for if it returns).
+export type NotificationChannel = 'email' | 'whatsapp' | 'sms';
 
 interface BudgetPlannerProps {
   totalBudgetUsd: number;

@@ -1,7 +1,7 @@
 // ─── Send myself a test message ───────────────────────────────────────────────
-// POST /api/notifications/test { channel: 'email' | 'sms' | 'whatsapp' | 'telegram' }
-// Sends one short message to the signed-in person's own address, number or
-// Telegram chat, and reports exactly what the provider said if it fails —
+// POST /api/notifications/test { channel: 'email' | 'whatsapp' | 'sms' }
+// Sends one short message to the signed-in person's own address or number,
+// and reports exactly what the provider said if it fails —
 // the quickest way to know a channel works before relying on it for a
 // reminder. Each SMS and WhatsApp costs money, hence the tight limit.
 
@@ -10,7 +10,7 @@ import { requireAuth } from '@/lib/server/auth';
 import { enforceCsrf, enforceRateLimit } from '@/lib/server/security';
 import { createServiceRoleClient } from '@/lib/supabase';
 import { sendEmail } from '@/lib/server/email';
-import { sendSms, sendTelegram, sendWhatsApp } from '@/lib/server/messaging';
+import { sendSms, sendWhatsApp } from '@/lib/server/messaging';
 
 const TITLE = 'ZimEstimate test message';
 const BODY = 'This is a test. Your project reminders will arrive here.';
@@ -25,13 +25,13 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   const channel = body?.channel;
-  if (!['email', 'sms', 'whatsapp', 'telegram'].includes(channel)) {
-    return NextResponse.json({ error: 'Choose email, SMS, WhatsApp or Telegram.' }, { status: 400 });
+  if (!['email', 'whatsapp', 'sms'].includes(channel)) {
+    return NextResponse.json({ error: 'Choose email, WhatsApp or SMS.' }, { status: 400 });
   }
 
   const { data } = await createServiceRoleClient()
-    .from('profiles').select('email, phone_number, telegram_chat_id').eq('id', auth.userId).single();
-  const profile = data as { email: string | null; phone_number: string | null; telegram_chat_id: string | null } | null;
+    .from('profiles').select('email, phone_number').eq('id', auth.userId).single();
+  const profile = data as { email: string | null; phone_number: string | null } | null;
 
   try {
     if (channel === 'email') {
@@ -42,12 +42,9 @@ export async function POST(request: Request) {
     } else if (channel === 'sms') {
       if (!profile?.phone_number) throw new Error('Add your phone number first.');
       await sendSms(profile.phone_number, `${TITLE}: ${BODY}`);
-    } else if (channel === 'whatsapp') {
+    } else {
       if (!profile?.phone_number) throw new Error('Add your phone number first.');
       await sendWhatsApp(profile.phone_number, { title: TITLE, body: BODY });
-    } else {
-      if (!profile?.telegram_chat_id) throw new Error('Connect Telegram first.');
-      await sendTelegram(profile.telegram_chat_id, `${TITLE}\n\n${BODY}`);
     }
     return NextResponse.json({ sent: true });
   } catch (error) {
