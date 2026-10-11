@@ -20,6 +20,8 @@ import { clearOptimisticProjectCard, getOptimisticProjectCard } from '@/lib/proj
 import { supabase } from '@/lib/supabase';
 import { Project, ProjectStatus, ProjectScope } from '@/lib/database.types';
 import { useReveal } from '@/hooks/useReveal';
+import ProjectShareSheet from '@/components/projects/ProjectShareSheet';
+import InviteModal from '@/components/projects/InviteModal';
 import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 import {
     Plus,
@@ -30,6 +32,7 @@ import {
     PencilSimple,
     Trash,
     ShareNetwork,
+    UserPlus,
     FileArrowDown,
     Archive,
     MagnifyingGlass,
@@ -281,11 +284,21 @@ function ProjectsContent() {
         router.push(`/projects/${projectId}`);
     };
 
+    // Share sends a copy; Invite gives access. "Share" used to open the
+    // project with ?share=true, which nothing read, so it did nothing.
+    const [shareProjectId, setShareProjectId] = useState<string | null>(null);
+    const [inviteProjectId, setInviteProjectId] = useState<string | null>(null);
     const handleShare = (e: React.MouseEvent, projectId: string) => {
         e.preventDefault();
         e.stopPropagation();
         setOpenMenuId(null);
-        router.push(`/projects/${projectId}?share=true`);
+        setShareProjectId(projectId);
+    };
+    const handleInvite = (e: React.MouseEvent, projectId: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpenMenuId(null);
+        setInviteProjectId(projectId);
     };
 
     const handleArchive = async (e: React.MouseEvent, projectId: string) => {
@@ -938,10 +951,13 @@ function ProjectsContent() {
                                                     <button onClick={(e) => handleEdit(e, project.id)}>
                                                         <PencilSimple size={16} /> Edit
                                                     </button>
-                                                    {/* Sharing, archiving and deleting stay with the owner. */}
+                                                    <button onClick={(e) => handleShare(e, project.id)}>
+                                                        <ShareNetwork size={16} /> Share a copy
+                                                    </button>
+                                                    {/* Inviting, archiving and deleting stay with the owner. */}
                                                     {project.owner_id === profile?.id && (
-                                                        <button onClick={(e) => handleShare(e, project.id)}>
-                                                            <ShareNetwork size={16} /> Share
+                                                        <button onClick={(e) => handleInvite(e, project.id)}>
+                                                            <UserPlus size={16} /> Invite people
                                                         </button>
                                                     )}
                                                     <button onClick={(e) => { void handleDownloadPdf(e, project.id); }}>
@@ -1037,17 +1053,27 @@ function ProjectsContent() {
                                     <PencilSimple size={20} /> Edit
                                 </button>
                                 <button className="bottom-sheet-item" onClick={(e) => { handleShare(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
-                                    <ShareNetwork size={20} /> Share
+                                    <ShareNetwork size={20} /> Share a copy
                                 </button>
+                                {projects.find((p) => p.id === mobileMenuProjectId)?.owner_id === profile?.id && (
+                                    <button className="bottom-sheet-item" onClick={(e) => { handleInvite(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
+                                        <UserPlus size={20} /> Invite people
+                                    </button>
+                                )}
                                 <button className="bottom-sheet-item" onClick={(e) => { void handleDownloadPdf(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
                                     <FileArrowDown size={20} /> Download BOQ PDF
                                 </button>
-                                <button className="bottom-sheet-item" onClick={(e) => { handleArchive(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
-                                    <Archive size={20} /> Archive
-                                </button>
-                                <button className="bottom-sheet-item danger" onClick={(e) => { handleDelete(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
-                                    <Trash size={20} /> Delete
-                                </button>
+                                {/* Archiving and deleting stay with the owner. */}
+                                {projects.find((p) => p.id === mobileMenuProjectId)?.owner_id === profile?.id && (
+                                    <>
+                                        <button className="bottom-sheet-item" onClick={(e) => { handleArchive(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
+                                            <Archive size={20} /> Archive
+                                        </button>
+                                        <button className="bottom-sheet-item danger" onClick={(e) => { handleDelete(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
+                                            <Trash size={20} /> Delete
+                                        </button>
+                                    </>
+                                )}
                             </>
                         )}
                     </div>
@@ -1953,6 +1979,22 @@ function ProjectsContent() {
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
             `}</style>
+
+            {shareProjectId && projects.find((p) => p.id === shareProjectId) && (
+                <ProjectShareSheet
+                    isOpen
+                    onClose={() => setShareProjectId(null)}
+                    project={projects.find((p) => p.id === shareProjectId)!}
+                />
+            )}
+            {inviteProjectId && projects.find((p) => p.id === inviteProjectId) && (
+                <InviteModal
+                    isOpen
+                    onClose={() => setInviteProjectId(null)}
+                    projectId={inviteProjectId}
+                    projectName={projects.find((p) => p.id === inviteProjectId)!.name}
+                />
+            )}
         </MainLayout>
     );
 }

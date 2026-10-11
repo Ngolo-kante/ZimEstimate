@@ -11,7 +11,8 @@ import StageTab from '@/components/projects/StageTab';
 import DocumentsTab from '@/components/projects/DocumentsTab';
 import ProjectViewTabs from '@/components/projects/ProjectViewTabs';
 import ComplianceTrackerTab from '@/components/projects/ComplianceTrackerTab';
-import ShareModal from '@/components/projects/ShareModal';
+import InviteModal from '@/components/projects/InviteModal';
+import ProjectShareSheet from '@/components/projects/ProjectShareSheet';
 import { RunningTotalBar } from '@/components/ui/RunningTotalBar';
 import { StageProgressCards } from '@/components/projects/StageProgressCards';
 import { CelebrationModal } from '@/components/ui/CelebrationModal';
@@ -63,6 +64,7 @@ import {
 } from '@/lib/database.types';
 import {
     ShareNetwork,
+    UserPlus,
     ArrowLeft,
     MapPin,
     Warning,
@@ -171,7 +173,10 @@ function ProjectDetailContent() {
     const [stages, setStages] = useState<ProjectStageWithTasks[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [showShareModal, setShowShareModal] = useState(false);
+    // Share = send a copy (PDF/summary). Invite = give a builder access to
+    // update progress. Two different things, two buttons.
+    const [showShareSheet, setShowShareSheet] = useState(false);
+    const [showInviteModal, setShowInviteModal] = useState(false);
     const [usageByStage, setUsageByStage] = useState<Record<string, { items: BOQItem[]; usageByItem: Record<string, number> }>>({});
     const [projectPriceVersion, setProjectPriceVersion] = useState<string>(SYSTEM_PRICE_VERSION);
     const [priceVersionReady, setPriceVersionReady] = useState(false);
@@ -1321,14 +1326,22 @@ function ProjectDetailContent() {
                                     </div>
                                 </div>
                                 <div className="overview-actions">
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => setShowShareSheet(true)}
+                                        icon={<ShareNetwork size={16} />}
+                                    >
+                                        Share
+                                    </Button>
                                     {isProjectOwner && (
                                         <Button
                                             variant="secondary"
                                             size="sm"
-                                            onClick={() => setShowShareModal(true)}
-                                            icon={<ShareNetwork size={16} />}
+                                            onClick={() => setShowInviteModal(true)}
+                                            icon={<UserPlus size={16} />}
                                         >
-                                            Share
+                                            Invite
                                         </Button>
                                     )}
                                     {canManageProject && (
@@ -1809,9 +1822,16 @@ function ProjectDetailContent() {
                 initialValue={profile?.phone_number || ''}
             />
 
-            <ShareModal
-                isOpen={showShareModal}
-                onClose={() => setShowShareModal(false)}
+            <ProjectShareSheet
+                isOpen={showShareSheet}
+                onClose={() => setShowShareSheet(false)}
+                project={project}
+                items={items}
+            />
+
+            <InviteModal
+                isOpen={showInviteModal}
+                onClose={() => setShowInviteModal(false)}
                 projectId={projectId}
                 projectName={project.name}
             />

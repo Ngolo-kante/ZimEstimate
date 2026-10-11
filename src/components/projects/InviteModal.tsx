@@ -1,5 +1,10 @@
 'use client';
 
+// "Invite": give a builder, site manager or family member access to the
+// project itself, so they can log materials used and update progress while
+// the owner is told each time. Not the same as sending a copy — that is
+// Share (ProjectShareSheet), which gives no access at all.
+
 import { useState, useEffect, useCallback } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -22,17 +27,18 @@ import {
   Trash,
 } from '@phosphor-icons/react';
 
-interface ShareModalProps {
+interface InviteModalProps {
   isOpen: boolean;
   onClose: () => void;
   projectName: string;
   projectId: string;
 }
 
-export default function ShareModal({ isOpen, onClose, projectName, projectId }: ShareModalProps) {
+export default function InviteModal({ isOpen, onClose, projectName, projectId }: InviteModalProps) {
   const { success, error: showError } = useToast();
   const [email, setEmail] = useState('');
-  const [accessLevel, setAccessLevel] = useState<AccessLevel>('view');
+  // Updating progress is what people are usually invited for.
+  const [accessLevel, setAccessLevel] = useState<AccessLevel>('edit');
   const [copied, setCopied] = useState(false);
   const [shares, setShares] = useState<ProjectShare[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -104,10 +110,10 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
   const handleRemoveShare = async (shareId: string) => {
     const { error } = await removeShare(shareId);
     if (error) {
-      showError('Failed to remove share');
+      showError('Could not remove their access');
     } else {
       setShares(shares.filter((s) => s.id !== shareId));
-      success('Share removed');
+      success('Access removed');
     }
   };
 
@@ -117,7 +123,7 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
         <div className="modal-content" onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div className="modal-header">
-            <h2>Share Project</h2>
+            <h2>Invite people</h2>
             <button className="close-btn" onClick={onClose}>
               <X size={20} weight="bold" />
             </button>
@@ -128,8 +134,11 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
 
           {/* Invite by Email */}
           <div className="invite-section">
-            <label className="section-label">Invite someone by email</label>
-            <p className="link-hint">&ldquo;Can help manage&rdquo; lets them update the BOQ, stages, purchases and usage. Only you can delete the project or invite others.</p>
+            <p className="link-hint">
+              Invite your builder or site manager to log materials used and update progress on site.
+              You&rsquo;ll get a notification each time they do. Only you can delete the project or invite others.
+            </p>
+            <label className="section-label">Their email</label>
             <div className="invite-row">
               <Input
                 placeholder="Enter email address"
@@ -143,8 +152,8 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
                 onChange={(e) => setAccessLevel(e.target.value as AccessLevel)}
                 className="access-select"
               >
-                <option value="view">Can view</option>
-                <option value="edit">Can help manage</option>
+                <option value="edit">Can update progress</option>
+                <option value="view">Can only view</option>
               </select>
               <Button
                 icon={isInviting ? <CircleNotch size={18} className="spin" /> : <UserPlus size={18} />}
@@ -158,14 +167,14 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
 
           {/* Shared Users List */}
           <div className="shared-users">
-            <label className="section-label">People with Access</label>
+            <label className="section-label">People on this project</label>
             {isLoading ? (
               <div className="loading-state">
                 <CircleNotch size={20} className="spin" />
                 <span>Loading...</span>
               </div>
             ) : shares.length === 0 ? (
-              <p className="no-shares">No one has access yet. Invite someone above.</p>
+              <p className="no-shares">No one invited yet.</p>
             ) : (
               <ul className="users-list">
                 {shares.map((share) => (
@@ -176,7 +185,7 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
                     <div className="user-info">
                       <span className="user-email">{share.shared_with_email}</span>
                       <span className={`user-status ${share.shared_with_user_id ? 'accepted' : 'pending'}`}>
-                        {share.shared_with_user_id ? (share.access_level === 'edit' ? 'Can help manage' : 'Can view') : 'Waiting for them to sign up'}
+                        {share.shared_with_user_id ? (share.access_level === 'edit' ? 'Can update progress' : 'Can view') : 'Waiting for them to sign up'}
                       </span>
                     </div>
                     <select
@@ -184,8 +193,8 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
                       onChange={(e) => handleUpdateAccess(share.id, e.target.value as AccessLevel)}
                       className="access-select-sm"
                     >
+                      <option value="edit">Can update</option>
                       <option value="view">Can view</option>
-                      <option value="edit">Can manage</option>
                     </select>
                     <button className="remove-btn" onClick={() => handleRemoveShare(share.id)}>
                       <Trash size={16} />
@@ -200,7 +209,7 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
           <div className="link-section">
             <label className="section-label">
               <LinkIcon size={16} weight="light" />
-              Project link
+              Link to send them
             </label>
             <div className="link-row">
               <input
@@ -217,7 +226,7 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
                 {copied ? 'Copied!' : 'Copy'}
               </Button>
             </div>
-            <p className="link-hint">Opens only for people you have invited, once they are signed in.</p>
+            <p className="link-hint">Works only for people you have invited, once they sign in.</p>
           </div>
         </div>
       </div>
