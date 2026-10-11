@@ -71,6 +71,7 @@ function toQuickBOQ(row: DBQuickBOQ): QuickBOQ {
     targetDate: row.target_date ?? null,
     fundsSavedUsd: Number(row.funds_saved_usd) || 0,
     compliance: (row.compliance ?? {}) as Record<string, ComplianceStatus>,
+    shareToken: (row as { share_token?: string | null }).share_token ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -148,6 +149,50 @@ export async function listQuickBOQs(
   const { data, error } = await query;
   if (error) return { boqs: [], error: new Error(error.message) };
   return { boqs: (data as QuickBoqRow[]).map(toQuickBOQ), error: null };
+}
+
+// ─── Sharing by link ──────────────────────────────────────────────────────────
+//
+// See migration 053. A random token, created only when the owner shares and
+// cleared when they stop, is what goes in the link — never the row id.
+
+/** The link's token, creating it on first share. Owner only, by RLS. */
+export async function startSharingQuickBOQ(id: string): Promise<{ token: string | null; error: Error | null }> {
+  const { data: existing, error: readError } = await supabase
+    .from('quick_boqs')
+    .select('share_token')
+    .eq('id', id)
+    .single();
+  if (readError) return { token: null, error: new Error(readError.message) };
+  const current = (existing as { share_token?: string | null } | null)?.share_token;
+  if (current) return { token: current, error: null };
+
+  const token = crypto.randomUUID();
+  const { data, error } = await supabase
+    .from('quick_boqs')
+    .update({ share_token: token } as never)
+    .eq('id', id)
+    // Only if still unshared: two taps in quick succession must not mint two
+    // links, the first of which would then stop working.
+    .is('share_token', null)
+    .select('share_token')
+    .maybeSingle();
+  if (error) return { token: null, error: new Error(error.message) };
+  if (data) return { token: (data as { share_token: string }).share_token, error: null };
+
+  // Lost that race: another request shared it first. Use theirs.
+  const { data: after } = await supabase.from('quick_boqs').select('share_token').eq('id', id).single();
+  const winner = (after as { share_token?: string | null } | null)?.share_token ?? null;
+  return winner ? { token: winner, error: null } : { token: null, error: new Error('Could not create a share link.') };
+}
+
+/** Kills the link. The estimate itself is untouched. */
+export async function stopSharingQuickBOQ(id: string): Promise<{ error: Error | null }> {
+  const { error } = await supabase
+    .from('quick_boqs')
+    .update({ share_token: null } as never)
+    .eq('id', id);
+  return { error: error ? new Error(error.message) : null };
 }
 
 // ─── Update ───────────────────────────────────────────────────────────────────

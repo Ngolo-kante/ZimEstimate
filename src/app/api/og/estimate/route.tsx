@@ -1,5 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { summariseSharedEstimate } from '@/lib/og/sharedEstimate';
+import { fetchSharedQuickEstimate } from '@/lib/quick-projects/fetchSharedEstimate';
+import { summariseSavedEstimate } from '@/lib/quick-projects/savedEstimate';
 
 /**
  * The picture WhatsApp shows when a Budget Estimator link is shared.
@@ -20,7 +22,12 @@ const ACCENT = '#2E6CF6';
 
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
-  const summary = summariseSharedEstimate(params);
+
+  // A shared saved estimate (/estimate/<token>) is looked up by its token; a
+  // Budget Estimator link carries everything in the query string.
+  const savedToken = params.get('saved');
+  const saved = savedToken ? await fetchSharedQuickEstimate(savedToken) : null;
+  const summary = saved ? summariseSavedEstimate(saved) : savedToken ? null : summariseSharedEstimate(params);
 
   const kicker = summary?.kicker ?? 'BUDGET ESTIMATOR';
   const headline = summary?.headline ?? 'What can your budget build?';
@@ -80,7 +87,7 @@ export async function GET(request: Request) {
               padding: '14px 26px',
             }}
           >
-            Open and adjust →
+            {summary?.cta ?? 'Open and adjust'} →
           </div>
         </div>
       </div>
@@ -89,8 +96,11 @@ export async function GET(request: Request) {
       width: 1200,
       height: 630,
       headers: {
-        // Same link, same picture: let WhatsApp's fetcher and the CDN keep it.
-        'Cache-Control': 'public, max-age=86400, s-maxage=604800, immutable',
+        // A Budget Estimator link fully determines its picture, so it can be
+        // kept. A saved estimate can be edited or unshared, so only briefly.
+        'Cache-Control': savedToken
+          ? 'public, max-age=300, s-maxage=3600'
+          : 'public, max-age=86400, s-maxage=604800, immutable',
       },
     },
   );

@@ -20,6 +20,8 @@ import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import {
   getQuickBOQ,
+  startSharingQuickBOQ,
+  stopSharingQuickBOQ,
   updateQuickBOQ,
   persistQuickBOQSession,
 } from '@/lib/services/quickBoq';
@@ -34,16 +36,14 @@ import ComplianceCard from '@/components/quick-projects/ComplianceCard';
 import NextStepsCard from '@/components/quick-projects/NextStepsCard';
 import type { ComplianceStatus } from '@/lib/quick-projects/compliance';
 import { QUICK_TYPE_LABELS } from '@/lib/services/savedWork';
+import { estimateName as estimateNameFor, quickEstimateTotal } from '@/lib/quick-projects/savedEstimate';
 import type { BOQItem, LaborConfig, QuickBOQ } from '@/lib/quick-projects/engine/types';
 import { ArrowLeft, PencilSimple, ShareNetwork, Download, Warning } from '@phosphor-icons/react';
 import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 import { captureProductEvent } from '@/lib/productAnalytics';
 
-function estimateName(boq: QuickBOQ): string {
-  const named = boq.answers?.project_name;
-  if (typeof named === 'string' && named.trim()) return named.trim();
-  return `${QUICK_TYPE_LABELS[boq.projectType] ?? 'Quick'} estimate`;
-}
+// Shared with the public view of a shared estimate, so both name it the same.
+const estimateName = (boq: QuickBOQ) => estimateNameFor(boq.projectType, boq.answers);
 
 function SavedQuickEstimate() {
   const { id } = useParams<{ id: string }>();
@@ -94,9 +94,7 @@ function SavedQuickEstimate() {
 
   const total = useMemo(() => {
     if (!boq) return 0;
-    return boq.boqItems
-      .filter((i) => i.included !== false && !i.owned)
-      .reduce((sum, i) => sum + (Number(i.totalCostUsd) || 0), 0);
+    return quickEstimateTotal(boq.boqItems);
   }, [boq]);
 
   // Saving here means updating what is already stored, not creating a second
@@ -203,31 +201,47 @@ function SavedQuickEstimate() {
 
   const handleShare = useCallback(async () => {
     if (!boq) return;
-    /* Saved estimates are private to their owner, so this page's own address
-       showed "not found" to whoever it was shared with. Until there is a way
-       to make one viewable by link, Share sends the summary and an invitation
-       to price the same kind of job — a working link, not a dead one. */
-    const link = `${window.location.origin}/quick-projects/${boq.projectType}`;
+    /* Shares a link anyone can open (/estimate/<token>). The token is made
+       on the first share and kept until the owner stops sharing; it shows
+       the estimate only — not the savings, dates or compliance on this page.
+       Before this, saved estimates were owner-only and the link showed
+       "not found" to whoever received it. */
+    const { token, error } = await startSharingQuickBOQ(boq.id);
+    if (error || !token) {
+      showError('Could not create a share link — check your connection and try again.');
+      return;
+    }
+    if (boq.shareToken !== token) setBoq({ ...boq, shareToken: token });
+
+    const link = `${window.location.origin}/estimate/${token}`;
     const text = [
       `ZimEstimate — ${estimateName(boq)}`,
-      `Items: ${boq.boqItems.filter((i) => i.included !== false).length}`,
-      `Estimated total: $${Math.round(total).toLocaleString()}`,
-      '',
-      `Price your own on ZimEstimate:`,
+      `Materials: $${Math.round(total).toLocaleString()} · ${boq.boqItems.filter((i) => i.included !== false && !i.owned).length} items`,
     ].join('\n');
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'ZimEstimate estimate', text, url: link });
+        await navigator.share({ title: estimateName(boq), text, url: link });
         captureProductEvent('estimate_shared', { estimate: `saved_${boq.projectType}`, method: 'share_sheet' });
         return;
       }
-      await navigator.clipboard.writeText(`${text}\n${link}`);
-      success('Estimate summary copied to clipboard.');
+      await navigator.clipboard.writeText(`${text}\n\n${link}`);
+      success('Link copied — anyone with it can view this estimate.');
       captureProductEvent('estimate_shared', { estimate: `saved_${boq.projectType}`, method: 'clipboard' });
     } catch {
       /* dismissed by the user — nothing to report */
     }
-  }, [boq, total, success]);
+  }, [boq, total, success, showError]);
+
+  const handleStopSharing = useCallback(async () => {
+    if (!boq) return;
+    const { error } = await stopSharingQuickBOQ(boq.id);
+    if (error) {
+      showError('Could not stop sharing — check your connection and try again.');
+      return;
+    }
+    setBoq({ ...boq, shareToken: null });
+    success('Sharing stopped. The old link no longer opens this estimate.');
+  }, [boq, success, showError]);
 
   if (isLoading) {
     return (
@@ -284,6 +298,18 @@ function SavedQuickEstimate() {
             {' · '}
             ${Math.round(total).toLocaleString()}
           </p>
+          {boq.shareToken && (
+            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+              Shared — anyone with the link can view the estimate (not your savings, dates or checklist).{' '}
+              <button
+                type="button"
+                onClick={handleStopSharing}
+                className="font-semibold text-[var(--color-accent)] underline underline-offset-2"
+              >
+                Stop sharing
+              </button>
+            </p>
+          )}
         </div>
 
         {/* Icons carry these on a phone; the labels return once there is room. */}

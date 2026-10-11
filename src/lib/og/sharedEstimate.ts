@@ -35,6 +35,8 @@ export interface SharedEstimateSummary {
   lines: string[];
   /** One sentence for the preview's description text. */
   description: string;
+  /** The card's button. Defaults to "Open and adjust" — right for an explorer, not for a read-only estimate. */
+  cta?: string;
 }
 
 const usd = (value: number) => `$${Math.round(value).toLocaleString('en-US')}`;

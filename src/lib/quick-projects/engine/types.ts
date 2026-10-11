@@ -139,6 +139,8 @@ export interface QuickBOQ {
   fundsSavedUsd: number;
   /** Requirement id -> status. Catalogue lives in quick-projects/compliance.ts. */
   compliance: Record<string, ComplianceStatus>;
+  /** Set while the estimate is shared by link; null when it is private. */
+  shareToken?: string | null;
   createdAt: string;
   updatedAt: string;
 }

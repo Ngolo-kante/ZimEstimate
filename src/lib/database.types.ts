@@ -363,6 +363,7 @@ export interface Database {
                     // plans and complies like one.
                     target_date: string | null;
                     funds_saved_usd: number;
+                    share_token: string | null;
                     compliance: Json;
                     created_at: string;
                     updated_at: string;
@@ -383,6 +384,7 @@ export interface Database {
                     currency?: Currency;
                     target_date?: string | null;
                     funds_saved_usd?: number;
+                    share_token?: string | null;
                     compliance?: Json;
                     created_at?: string;
                     updated_at?: string;
@@ -403,6 +405,7 @@ export interface Database {
                     currency?: Currency;
                     target_date?: string | null;
                     funds_saved_usd?: number;
+                    share_token?: string | null;
                     compliance?: Json;
                     created_at?: string;
                     updated_at?: string;
