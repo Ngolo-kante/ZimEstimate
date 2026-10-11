@@ -21,6 +21,7 @@ import {
   Toilet,
 } from '@phosphor-icons/react/dist/ssr';
 import type { Icon } from '@phosphor-icons/react';
+import DescribeProject from '@/components/estimate/DescribeProject';
 import MainLayout from '@/components/layout/MainLayout';
 import styles from './estimate.module.css';
 
@@ -112,6 +113,7 @@ export default function EstimateServicesPage() {
               <span className={styles.eyebrow}>Start an estimate</span>
               <h1>What do you need to work out?</h1>
               <p>Pick the closest match. You can change quantities, prices and materials before saving.</p>
+              <DescribeProject />
             </div>
             <div className={styles.heroNote}>
               <ListChecks size={22} weight="duotone" aria-hidden="true" />

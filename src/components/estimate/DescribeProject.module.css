@@ -1,0 +1,141 @@
+.box {
+  max-width: 680px;
+  margin-top: 22px;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #efb760;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.row input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  color: #0b1f3b;
+  background: #fffefb;
+  /* iOS zooms the page when a focused input is under 16px. */
+  font-size: max(0.95rem, 16px);
+}
+
+.row input::placeholder {
+  color: #8a96a6;
+}
+
+.row button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 6px;
+  color: #0b1f3b;
+  background: #efb760;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.row button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.examples button {
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  color: #d9e4f2;
+  background: transparent;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.examples button:hover {
+  border-color: #efb760;
+  color: white;
+}
+
+.result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.chips {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chips li {
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: #0b1f3b;
+  background: #f4d8a8;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 6px;
+  color: #0b1f3b;
+  background: #efb760;
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.message {
+  margin: 12px 0 0;
+  color: #f4d8a8;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .go {
+    width: 100%;
+    justify-content: center;
+  }
+}
