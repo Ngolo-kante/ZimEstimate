@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { updateProject } from '@/lib/services/projects';
 import type { NotificationChannel } from '@/components/ui/BudgetPlanner';
+import { useReminderChannels } from '@/hooks/useReminderChannels';
 import {
     MapPin,
     HouseLine,
@@ -298,6 +299,10 @@ export default function ProjectSettings({
 
     // --- Notification Centre State ---
     const [selectedChannel, setSelectedChannel] = useState<NotificationChannel>(defaultReminderChannel);
+    // Only channels that can send right now; email until WhatsApp is set up.
+    const reminderChannels = useReminderChannels();
+    const channelOptions = CHANNEL_OPTIONS.filter((option) => reminderChannels.includes(option.id));
+    const effectiveChannel: NotificationChannel = reminderChannels.includes(selectedChannel) ? selectedChannel : 'email';
     const [openSections, setOpenSections] = useState<Set<string>>(new Set(['general']));
     const [expandedAlerts, setExpandedAlerts] = useState<Set<string>>(new Set(['low_stock', 'budget_reminder']));
     const [alertStates, setAlertStates] = useState<Record<string, AlertRowState>>(() => ({
@@ -425,13 +430,13 @@ export default function ProjectSettings({
             if (budgetState.enabled) {
                 const amount = Number(budgetState.amount);
                 if (Number.isFinite(amount) && amount > 0) {
-                    if (isMobileChannel(selectedChannel) && !canUseMobileReminders) {
+                    if (isMobileChannel(effectiveChannel) && !canUseMobileReminders) {
                         onRequestPhone?.({
-                            channel: selectedChannel,
+                            channel: effectiveChannel,
                             pendingReminder: { frequency: budgetState.frequency, amount },
                         });
                     } else {
-                        onSetReminder?.(budgetState.frequency, amount, selectedChannel);
+                        onSetReminder?.(budgetState.frequency, amount, effectiveChannel);
                     }
                 }
             } else if (reminderActive) {
@@ -562,22 +567,28 @@ export default function ProjectSettings({
                     {/* === Preferred Channel === */}
                     <div className="notif-channel-section">
                         <label className="form-label">Preferred Notification Method</label>
-                        <p className="notif-channel-desc">
-                            All alerts below will be sent through your selected channel.
-                        </p>
-                        <div className="channel-selector">
-                            {CHANNEL_OPTIONS.map((option) => (
-                                <button
-                                    key={option.id}
-                                    type="button"
-                                    className={`channel-option ${selectedChannel === option.id ? 'selected' : ''}`}
-                                    onClick={() => handleChannelSelect(option.id)}
-                                >
-                                    {option.icon}
-                                    {option.label}
-                                </button>
-                            ))}
-                        </div>
+                        {channelOptions.length > 1 ? (
+                            <>
+                                <p className="notif-channel-desc">
+                                    All alerts below will be sent through your selected channel.
+                                </p>
+                                <div className="channel-selector">
+                                    {channelOptions.map((option) => (
+                                        <button
+                                            key={option.id}
+                                            type="button"
+                                            className={`channel-option ${effectiveChannel === option.id ? 'selected' : ''}`}
+                                            onClick={() => handleChannelSelect(option.id)}
+                                        >
+                                            {option.icon}
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        ) : (
+                            <p className="notif-channel-desc">All alerts below are sent to you by email.</p>
+                        )}
                     </div>
 
                     {/* === Divider === */}

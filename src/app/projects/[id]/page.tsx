@@ -16,6 +16,7 @@ import { RunningTotalBar } from '@/components/ui/RunningTotalBar';
 import { StageProgressCards } from '@/components/projects/StageProgressCards';
 import { CelebrationModal } from '@/components/ui/CelebrationModal';
 import BudgetPlanner, { NotificationChannel } from '@/components/ui/BudgetPlanner';
+import { useReminderChannels } from '@/hooks/useReminderChannels';
 import PhoneNumberModal from '@/components/ui/PhoneNumberModal';
 import ProjectUsageView from '@/components/projects/ProjectUsageView';
 import UnifiedProcurementView from '@/components/projects/UnifiedProcurementView';
@@ -177,6 +178,10 @@ function ProjectDetailContent() {
     const [showPhoneModal, setShowPhoneModal] = useState(false);
     const [pendingReminder, setPendingReminder] = useState<{ frequency: 'daily' | 'weekly' | 'monthly'; amount: number; channel: NotificationChannel } | null>(null);
     const [preferredReminderChannel, setPreferredReminderChannel] = useState<NotificationChannel>('email');
+    // What reminders can actually be sent by right now (email until WhatsApp
+    // is set up); a saved preference for anything else falls back to email.
+    const reminderChannels = useReminderChannels();
+    const activeReminderChannel: NotificationChannel = reminderChannels.includes(preferredReminderChannel) ? preferredReminderChannel : 'email';
     const [requestedChannel, setRequestedChannel] = useState<NotificationChannel | null>(null);
     const [savingsReminder, setSavingsReminder] = useState<ProjectRecurringReminder | null>(null);
     const [priceUpdates, setPriceUpdates] = useState<PriceUpdate[]>([]);
@@ -1026,7 +1031,7 @@ function ProjectDetailContent() {
             setPendingReminder({
                 frequency: payload.pendingReminder.frequency,
                 amount: payload.pendingReminder.amount,
-                channel: payload.channel ?? preferredReminderChannel,
+                channel: payload.channel ?? activeReminderChannel,
             });
         }
         setShowPhoneModal(true);
@@ -1696,7 +1701,7 @@ function ProjectDetailContent() {
                                 onStageUpdate={handleStageUpdate}
                                 phoneNumber={profile?.phone_number}
                                 onRequestPhone={(payload) => handleRequestPhone({ channel: payload?.channel })}
-                                preferredChannel={preferredReminderChannel}
+                                preferredChannel={activeReminderChannel}
                                 onNavigateToSettings={() => setActiveView('settings')}
                             />
                         </div>
@@ -1728,7 +1733,7 @@ function ProjectDetailContent() {
                                     canUseMobileReminders={Boolean(profile?.phone_number)}
                                     selectedItemForUsage={selectedItemForUsage}
                                     onClearSelectedItem={() => setSelectedItemForUsage(null)}
-                                    preferredChannel={preferredReminderChannel}
+                                    preferredChannel={activeReminderChannel}
                                     onNavigateToSettings={() => setActiveView('settings')}
                                 />
                             ) : (
@@ -1776,7 +1781,7 @@ function ProjectDetailContent() {
                                 onUpdate={handleProjectUpdate}
                                 onSetReminder={handleSavingsReminder}
                                 canUseMobileReminders={Boolean(profile?.phone_number)}
-                                defaultReminderChannel={preferredReminderChannel}
+                                defaultReminderChannel={activeReminderChannel}
                                 onRequestPhone={handleRequestPhone}
                                 reminderActive={Boolean(savingsReminder?.is_active)}
                                 reminderFrequency={(savingsReminder?.frequency as 'daily' | 'weekly' | 'monthly' | null) ?? null}

@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import ReminderChannels from '@/components/settings/ReminderChannels';
+import { useReminderChannels } from '@/hooks/useReminderChannels';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Currency } from '@/lib/database.types';
-import { getNotificationDeliveries, subscribeToPushNotifications, unsubscribeFromPushNotifications } from '@/lib/services/notifications';
+import { getNotificationDeliveries } from '@/lib/services/notifications';
 import type { NotificationDelivery } from '@/lib/database.types';
 import {
     User,
@@ -29,6 +30,7 @@ import Link from 'next/link';
 function SettingsContent() {
     const { user, profile, updateProfile, isLoading: authLoading } = useAuth();
     const { success, error: showError } = useToast();
+    const whatsappAvailable = useReminderChannels().includes('whatsapp');
 
     // Profile form state
     const [fullName, setFullName] = useState('');
@@ -45,7 +47,6 @@ function SettingsContent() {
     const [notifyPriceAlerts, setNotifyPriceAlerts] = useState(true);
     const [notifyProjectReminders, setNotifyProjectReminders] = useState(true);
     const [isSavingNotifications, setIsSavingNotifications] = useState(false);
-    const [isPushBusy, setIsPushBusy] = useState(false);
     const [deliveryLogs, setDeliveryLogs] = useState<NotificationDelivery[]>([]);
 
     // Password form state
@@ -96,7 +97,7 @@ function SettingsContent() {
 
     const handleSaveNotifications = async () => {
         if (!user) return;
-        if (notifyWhatsapp && !phoneNumber) {
+        if (whatsappAvailable && notifyWhatsapp && !phoneNumber) {
             showError('Add a phone number to enable WhatsApp notifications.');
             return;
         }
@@ -118,26 +119,6 @@ function SettingsContent() {
             success('Notification preferences updated');
         }
         setIsSavingNotifications(false);
-    };
-
-    const handleTogglePush = async (enabled: boolean) => {
-        setIsPushBusy(true);
-        if (enabled) {
-            const { error } = await subscribeToPushNotifications();
-            if (error) {
-                showError(error.message);
-                setNotifyPush(false);
-            } else {
-                setNotifyPush(true);
-            }
-        } else {
-            const { error } = await unsubscribeFromPushNotifications();
-            if (error) {
-                showError(error.message);
-            }
-            setNotifyPush(false);
-        }
-        setIsPushBusy(false);
     };
 
     const formatDeliveryTime = (timestamp: string) => {
@@ -385,6 +366,11 @@ function SettingsContent() {
                                             <span className="toggle-slider" />
                                         </label>
                                     </div>
+                                    {/* Only once WhatsApp can actually send (its provider settings
+                                        are in place). Push notifications were listed here too, but
+                                        nothing sends them yet, so the switch is hidden until
+                                        something does. */}
+                                    {whatsappAvailable && (
                                     <div className="toggle-row">
                                         <div>
                                             <span className="toggle-label">WhatsApp</span>
@@ -399,21 +385,7 @@ function SettingsContent() {
                                             <span className="toggle-slider" />
                                         </label>
                                     </div>
-                                    <div className="toggle-row">
-                                        <div>
-                                            <span className="toggle-label">Push Notifications</span>
-                                            <span className="toggle-hint">Browser and device notifications</span>
-                                        </div>
-                                        <label className={`toggle ${isPushBusy ? 'disabled' : ''}`}>
-                                            <input
-                                                type="checkbox"
-                                                checked={notifyPush}
-                                                onChange={(e) => handleTogglePush(e.target.checked)}
-                                                disabled={isPushBusy}
-                                            />
-                                            <span className="toggle-slider" />
-                                        </label>
-                                    </div>
+                                    )}
                                 </div>
 
                                 <div className="notification-section">
@@ -448,7 +420,7 @@ function SettingsContent() {
 
                                 <ReminderChannels phoneNumber={profile?.phone_number || ''} />
 
-                                {notifyWhatsapp && !phoneNumber && (
+                                {whatsappAvailable && notifyWhatsapp && !phoneNumber && (
                                     <div className="notice warning">
                                         <WhatsappLogo size={16} weight="bold" />
                                         Add a phone number above to receive WhatsApp alerts.

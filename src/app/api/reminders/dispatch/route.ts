@@ -7,7 +7,7 @@ import { dispatchQueuedNotifications } from '@/lib/server/notificationDispatch';
 import { prunePlanSamples } from '@/lib/server/planSamples';
 import { sendEmail, escapeHtml } from '@/lib/server/email';
 import { getSiteUrl } from '@/lib/siteUrl';
-import { sendSms, sendTelegram, sendWhatsApp } from '@/lib/server/messaging';
+import { channelStatus, sendSms, sendTelegram, sendWhatsApp } from '@/lib/server/messaging';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -248,9 +248,16 @@ export async function POST(request: Request) {
 
   const results: Array<{ id: string; status: 'sent' | 'failed' | 'skipped'; channel?: DeliveryChannel; error?: string }> = [];
 
+  const sendable = channelStatus();
+
   for (const reminder of reminders) {
     const profile = profileById.get(reminder.user_id);
-    const { channel, body } = parseReminderMessage(reminder.message || '');
+    const parsed = parseReminderMessage(reminder.message || '');
+    const body = parsed.body;
+    // A channel this deployment cannot send on goes by email instead, so a
+    // reminder saved for WhatsApp or SMS before those are set up still
+    // arrives rather than failing every morning.
+    const channel: DeliveryChannel = parsed.channel !== 'email' && !sendable[parsed.channel] ? 'email' : parsed.channel;
 
     if (!profile) {
       results.push({ id: reminder.id, status: 'failed', channel, error: 'Profile not found.' });

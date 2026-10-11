@@ -8,7 +8,8 @@
 // deployment cannot send on yet are shown as such
 // rather than offered and silently failing.
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useReminderChannels } from '@/hooks/useReminderChannels';
 import { ChatCircleText, EnvelopeSimple, PaperPlaneTilt, WhatsappLogo, CircleNotch } from '@phosphor-icons/react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
@@ -27,12 +28,9 @@ async function authorisedFetch(path: string, init: RequestInit = {}) {
 export default function ReminderChannels({ phoneNumber }: { phoneNumber: string }) {
   const { profile } = useAuth();
   const { success, error: showError } = useToast();
-  const [available, setAvailable] = useState<Record<Channel, boolean> | null>(null);
+  // Only channels that can send now: email until WhatsApp is set up.
+  const available = useReminderChannels();
   const [testing, setTesting] = useState<Channel | null>(null);
-
-  useEffect(() => {
-    fetch('/api/notifications/channels').then((r) => r.json()).then(setAvailable).catch(() => setAvailable(null));
-  }, []);
 
   const sendTest = async (channel: Channel) => {
     setTesting(channel);
@@ -57,25 +55,26 @@ export default function ReminderChannels({ phoneNumber }: { phoneNumber: string 
   return (
     <div className="channels">
       <div className="title">Where reminders can reach you</div>
-      <p className="hint">Choose the channel when you set a reminder on a project. Send yourself a test first to be sure it arrives.</p>
+      <p className="hint">
+        {available.length > 1
+          ? 'Choose the channel when you set a reminder on a project. Send yourself a test first to be sure it arrives.'
+          : 'Project reminders are sent to your email. Send yourself a test to be sure they arrive (check spam the first time).'}
+      </p>
       <ul>
-        {rows.map((row) => {
-          const offered = available ? available[row.channel] !== false : true;
-          return (
+        {rows.filter((row) => available.includes(row.channel)).map((row) => (
             <li key={row.channel}>
               <span className="icon">{row.icon}</span>
               <span className="text">
                 <strong>{row.label}</strong>
-                <span>{offered ? row.detail : 'Not available yet'}</span>
+                <span>{row.detail}</span>
               </span>
-              {offered && row.ready && (
+              {row.ready && (
                 <button type="button" onClick={() => void sendTest(row.channel)} disabled={testing !== null} aria-label={`Send a test ${row.label} message`}>
                   {testing === row.channel ? <CircleNotch size={14} className="spin" /> : <PaperPlaneTilt size={14} />} Test
                 </button>
               )}
             </li>
-          );
-        })}
+        ))}
       </ul>
 
       <style jsx>{`
