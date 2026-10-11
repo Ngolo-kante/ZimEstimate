@@ -27,7 +27,6 @@ import {
 } from '@/lib/services/prices';
 import {
   MagnifyingGlass,
-  Star,
   ShieldCheck,
   MapPin,
   Storefront,
@@ -56,7 +55,6 @@ import {
 import {
   materials,
   getPricesForMaterial,
-  getTrustedSuppliers,
   categoryInfo,
   type Material,
   type MaterialCategory,
@@ -336,7 +334,7 @@ export default function MarketplacePage() {
               size="sm"
               onClick={() => setTrustedOnly(!trustedOnly)}
             >
-              Trusted Only
+              Checked prices only
             </Button>
             <Link href="/marketplace/suppliers" className="dir-link">
               <Button variant="secondary" size="sm" icon={<Storefront size={18} />}>
@@ -584,7 +582,7 @@ export default function MarketplacePage() {
 
                   <hr className="divider" />
 
-                  <h3 className="suppliers-title">All Supplier Prices</h3>
+                  <h3 className="suppliers-title">Prices we have</h3>
                   <div className="price-list">
                     {getPricesForMaterial(selectedMaterial.id)
                       .filter((p) => !trustedOnly || p.supplier.isTrusted)
@@ -602,20 +600,20 @@ export default function MarketplacePage() {
                             </div>
                             <div className="supplier-location">
                               <MapPin size={12} weight="light" />
-                              {priceInfo.supplier.location}
+                              {priceInfo.supplier.location} · as of {priceInfo.lastUpdated}
                             </div>
                           </div>
                           <div className="price-info">
                             <span className="supplier-price">
                               <PriceDisplay priceUsd={priceInfo.priceUsd} priceZwg={priceInfo.priceZwg} />
                             </span>
-                            {index === 0 && <span className="best-badge">Best Price</span>}
+                            {index === 0 && getPricesForMaterial(selectedMaterial.id).length > 1 && <span className="best-badge">Lowest</span>}
                           </div>
                         </div>
                       ))}
 
                     {getPricesForMaterial(selectedMaterial.id).filter((p) => !trustedOnly || p.supplier.isTrusted).length === 0 && (
-                      <p className="no-prices">No prices available from {trustedOnly ? 'trusted ' : ''}suppliers.</p>
+                      <p className="no-prices">{trustedOnly ? 'No checked market price for this item yet.' : 'No price for this item yet.'}</p>
                     )}
                   </div>
 
@@ -728,27 +726,15 @@ export default function MarketplacePage() {
               </Card>
             )}
 
-            {/* Trusted Suppliers */}
+            {/* Was "Trusted Suppliers": real business names with star ratings
+                nobody gave them. Real suppliers appear in the directory once
+                they register. */}
             <Card className="suppliers-card">
               <CardContent>
                 <h3 className="suppliers-header">
-                  <ShieldCheck size={20} weight="fill" />
-                  Trusted Suppliers
+                  <Storefront size={20} weight="fill" />
+                  Work with ZimEstimate
                 </h3>
-                <div className="supplier-list">
-                  {getTrustedSuppliers().slice(0, 4).map((supplier) => (
-                    <div key={supplier.id} className="supplier-row">
-                      <div>
-                        <span className="name">{supplier.name}</span>
-                        <span className="location">{supplier.location}</span>
-                      </div>
-                      <div className="rating">
-                        <Star size={14} weight="fill" />
-                        {supplier.rating}
-                      </div>
-                    </div>
-                  ))}
-                </div>
                 <Link href="/supplier/register" className="become-supplier">
                   <Storefront size={16} weight="fill" />
                   Sell on ZimEstimate — list your business
@@ -764,10 +750,11 @@ export default function MarketplacePage() {
 
         <div className="market-disclaimer reveal" data-delay="2">
           <p>
-            Prices reflect live market data from Zimbabwean suppliers. Live prices are updated regularly from verified sources.
+            Prices marked with a shield were read from Harare supplier listings on the date shown; the rest are
+            reference estimates. Prices change — confirm with the supplier before you buy.
           </p>
-          <Link href="/ai/quote-scanner" className="quote-link">
-            <Button variant="secondary" size="sm">Get a Quote</Button>
+          <Link href="/ai/quote-check" className="quote-link">
+            <Button variant="secondary" size="sm">Check a quote you have</Button>
           </Link>
         </div>
       </div>

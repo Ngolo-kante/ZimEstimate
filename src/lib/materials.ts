@@ -27,6 +27,8 @@ export interface MaterialPrice {
     inStock: boolean;
 }
 
+const REFERENCE_SUPPLIER_ID = 'sup-reference';
+
 export interface Supplier {
     id: string;
     name: string;
@@ -197,200 +199,120 @@ export const materials: Material[] = [
     { id: 'service-transport', name: 'Transport/Logistics', category: 'labor', subcategory: 'Services', unit: 'per trip', specifications: 'Material transport trip', milestones: ['substructure', 'superstructure'] },
 ];
 
-// Supplier database
+// Price sources. Not suppliers anyone can call: earlier versions listed real
+// businesses (Halsteds, Baines, PPC, Radar, ZimSteel) with phone numbers,
+// star ratings and prices none of them gave us, plus an invented hardware
+// store that "supplied" labour rates. Real suppliers come from the
+// suppliers table, once they register (src/app/supplier/register).
 export const suppliers: Supplier[] = [
     {
-        // Prices read from live supplier stores (ZBMS, Union Hardware,
-        // Halsteds) — see src/lib/pricing/verifiedPrices.ts for each source.
+        // Prices read from live supplier listings — see verifiedPrices.ts.
+        // Shown as a market check rather than under the shops' names.
         id: VERIFIED_SUPPLIER_ID,
-        name: `Market check ${VERIFIED_PRICES_CHECKED_ON} (ZBMS, Union Hardware, Halsteds)`,
+        name: `Harare market price · checked ${VERIFIED_PRICES_CHECKED_ON}`,
         location: 'Harare',
         phone: '',
         isTrusted: true,
-        rating: 4.5,
+        rating: 0,
         deliveryAreas: ['Harare'],
         specialties: ['bricks', 'cement', 'steel', 'roofing', 'timber', 'electrical', 'plumbing', 'finishes', 'hardware'],
     },
     {
         id: 'sup-csv-baseline',
-        name: 'CSV Baseline Market Rates',
+        name: 'Reference rate (2026 baseline)',
         location: 'Zimbabwe',
         phone: '',
-        isTrusted: true,
-        rating: 4.5,
+        isTrusted: false,
+        rating: 0,
         deliveryAreas: ['Nationwide'],
         specialties: ['bricks', 'cement', 'sand', 'aggregates', 'steel', 'roofing', 'timber'],
     },
     {
-        id: 'sup-1',
-        name: 'Halsteds Hardware',
-        location: 'Harare CBD',
-        phone: '+263 242 700 123',
-        email: 'sales@halsteds.co.zw',
-        website: 'https://halsteds.co.zw',
-        isTrusted: true,
-        rating: 4.8,
-        deliveryAreas: ['Harare', 'Chitungwiza', 'Norton'],
-        specialties: ['hardware', 'electrical', 'plumbing'],
-    },
-    {
-        id: 'sup-2',
-        name: 'Baines Building Supplies',
-        location: 'Graniteside, Harare',
-        phone: '+263 242 751 234',
-        email: 'info@baines.co.zw',
-        isTrusted: true,
-        rating: 4.6,
-        deliveryAreas: ['Harare', 'Chitungwiza'],
-        specialties: ['bricks', 'cement', 'sand', 'aggregates'],
-    },
-    {
-        id: 'sup-3',
-        name: 'PPC Zimbabwe',
-        location: 'Colleen Bawn',
-        phone: '+263 242 885 100',
-        website: 'https://ppc.co.zw',
-        isTrusted: true,
-        rating: 4.9,
-        deliveryAreas: ['Nationwide'],
-        specialties: ['cement'],
-    },
-    {
-        id: 'sup-7',
-        name: 'Khayah Cement',
+        // The older hand-entered estimates below, January–July 2026.
+        id: REFERENCE_SUPPLIER_ID,
+        name: 'Reference estimate (not a supplier quote)',
         location: 'Zimbabwe',
         phone: '',
         isTrusted: false,
         rating: 0,
         deliveryAreas: ['Nationwide'],
-        specialties: ['cement'],
-    },
-    {
-        id: 'sup-8',
-        name: 'Sino-Zimbabwe Cement',
-        location: 'Zimbabwe',
-        phone: '',
-        isTrusted: false,
-        rating: 0,
-        deliveryAreas: ['Nationwide'],
-        specialties: ['cement'],
-    },
-    {
-        id: 'sup-9',
-        name: 'Dangote Cement',
-        location: 'Zimbabwe',
-        phone: '',
-        isTrusted: false,
-        rating: 0,
-        deliveryAreas: ['Nationwide'],
-        specialties: ['cement'],
-    },
-    {
-        id: 'sup-4',
-        name: 'Radar Holdings',
-        location: 'Msasa, Harare',
-        phone: '+263 242 487 001',
-        isTrusted: true,
-        rating: 4.5,
-        deliveryAreas: ['Harare', 'Bulawayo', 'Gweru'],
-        specialties: ['steel', 'roofing'],
-    },
-    {
-        id: 'sup-5',
-        name: 'ZimSteel',
-        location: 'Kwekwe',
-        phone: '+263 55 23456',
-        isTrusted: true,
-        rating: 4.7,
-        deliveryAreas: ['Nationwide'],
-        specialties: ['steel'],
-    },
-    {
-        id: 'sup-6',
-        name: 'Mukuru Hardware',
-        location: 'Borrowdale, Harare',
-        phone: '+263 772 123 456',
-        isTrusted: false,
-        rating: 4.2,
-        deliveryAreas: ['Harare North'],
-        specialties: ['hardware', 'finishes'],
+        specialties: ['bricks', 'cement', 'sand', 'aggregates', 'steel', 'roofing', 'timber', 'electrical', 'plumbing', 'finishes', 'hardware', 'labor'],
     },
 ];
 
-// Current prices (sample data - would be fetched from DB in production)
+// Reference prices: hand-entered 2026 estimates, used where no checked
+// market price exists (see getBestPrice). Not quotes from any supplier.
 export const materialPrices: MaterialPrice[] = [
-    { materialId: 'brick-common', supplierId: 'sup-2', priceUsd: 0.085, priceZwg: 2.55, lastUpdated: '2026-07-27', inStock: true },
+    { materialId: 'brick-common', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 0.085, priceZwg: 2.55, lastUpdated: '2026-07-27', inStock: true },
     // $180/1000 quoted by the supplier, stored per brick to match the unit.
-    { materialId: 'brick-face-red', supplierId: 'sup-2', priceUsd: 0.18, priceZwg: 5.4, lastUpdated: '2026-01-30', inStock: true },
+    { materialId: 'brick-face-red', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 0.18, priceZwg: 5.4, lastUpdated: '2026-01-30', inStock: true },
     // Brown face brick had no price at all, so getBestPrice returned undefined
     // and every brown-brick line silently costed $0. $450/1000 (Botswana face
     // brick, Harare marketplace) expressed per brick.
-    { materialId: 'brick-face-brown', supplierId: 'sup-2', priceUsd: 0.45, priceZwg: 13.5, lastUpdated: '2026-01-30', inStock: true },
-    { materialId: 'cement-325', supplierId: 'sup-3', priceUsd: 10, priceZwg: 300, lastUpdated: '2026-01-31', inStock: true },
-    { materialId: 'cement-325', supplierId: 'sup-2', priceUsd: 10.50, priceZwg: 315, lastUpdated: '2026-01-30', inStock: true },
-    { materialId: 'cement-425', supplierId: 'sup-3', priceUsd: 12, priceZwg: 360, lastUpdated: '2026-01-31', inStock: true },
-    { materialId: 'sand-river', supplierId: 'sup-2', priceUsd: 45, priceZwg: 1350, lastUpdated: '2026-01-29', inStock: true },
-    { materialId: 'sand-pit', supplierId: 'sup-2', priceUsd: 35, priceZwg: 1050, lastUpdated: '2026-01-29', inStock: true },
-    { materialId: 'stone-19mm', supplierId: 'sup-2', priceUsd: 55, priceZwg: 1650, lastUpdated: '2026-01-28', inStock: true },
-    { materialId: 'rebar-12', supplierId: 'sup-4', priceUsd: 8, priceZwg: 240, lastUpdated: '2026-01-30', inStock: true },
-    { materialId: 'rebar-12', supplierId: 'sup-5', priceUsd: 7.80, priceZwg: 234, lastUpdated: '2026-01-31', inStock: true },
-    { materialId: 'ibr-04-3m', supplierId: 'sup-4', priceUsd: 18, priceZwg: 540, lastUpdated: '2026-01-30', inStock: true },
-    { materialId: 'ibr-05-3m', supplierId: 'sup-4', priceUsd: 22, priceZwg: 660, lastUpdated: '2026-01-30', inStock: true },
-    { materialId: 'cable-25', supplierId: 'sup-1', priceUsd: 85, priceZwg: 2550, lastUpdated: '2026-01-29', inStock: true },
-    { materialId: 'db-8way', supplierId: 'sup-1', priceUsd: 65, priceZwg: 1950, lastUpdated: '2026-01-29', inStock: true },
-    { materialId: 'paint-pva', supplierId: 'sup-1', priceUsd: 35, priceZwg: 1050, lastUpdated: '2026-01-28', inStock: true },
-    { materialId: 'tiles-floor-ceramic', supplierId: 'sup-1', priceUsd: 12, priceZwg: 360, lastUpdated: '2026-01-27', inStock: true },
-    { materialId: 'farm-brick', supplierId: 'sup-3', priceUsd: 0.045, priceZwg: 1.35, lastUpdated: '2026-07-27', inStock: true },
-    { materialId: 'window-sill-brick', supplierId: 'sup-1', priceUsd: 5.0, priceZwg: 150, lastUpdated: '2026-02-07', inStock: true },
+    { materialId: 'brick-face-brown', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 0.45, priceZwg: 13.5, lastUpdated: '2026-01-30', inStock: true },
+    { materialId: 'cement-325', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 10, priceZwg: 300, lastUpdated: '2026-01-31', inStock: true },
+    { materialId: 'cement-425', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 12, priceZwg: 360, lastUpdated: '2026-01-31', inStock: true },
+    { materialId: 'sand-river', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 45, priceZwg: 1350, lastUpdated: '2026-01-29', inStock: true },
+    { materialId: 'sand-pit', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 35, priceZwg: 1050, lastUpdated: '2026-01-29', inStock: true },
+    { materialId: 'stone-19mm', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 55, priceZwg: 1650, lastUpdated: '2026-01-28', inStock: true },
+    { materialId: 'rebar-12', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 7.80, priceZwg: 234, lastUpdated: '2026-01-31', inStock: true },
+    { materialId: 'ibr-04-3m', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 18, priceZwg: 540, lastUpdated: '2026-01-30', inStock: true },
+    { materialId: 'ibr-05-3m', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 22, priceZwg: 660, lastUpdated: '2026-01-30', inStock: true },
+    { materialId: 'cable-25', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 85, priceZwg: 2550, lastUpdated: '2026-01-29', inStock: true },
+    { materialId: 'db-8way', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 65, priceZwg: 1950, lastUpdated: '2026-01-29', inStock: true },
+    { materialId: 'paint-pva', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 35, priceZwg: 1050, lastUpdated: '2026-01-28', inStock: true },
+    { materialId: 'tiles-floor-ceramic', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 12, priceZwg: 360, lastUpdated: '2026-01-27', inStock: true },
+    { materialId: 'farm-brick', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 0.045, priceZwg: 1.35, lastUpdated: '2026-07-27', inStock: true },
+    { materialId: 'window-sill-brick', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 5.0, priceZwg: 150, lastUpdated: '2026-02-07', inStock: true },
     // NEW PRICES
-    { materialId: 'hardcore', supplierId: 'sup-2', priceUsd: 25, priceZwg: 750, lastUpdated: '2026-01-31', inStock: true },
-    { materialId: 'brickforce', supplierId: 'sup-4', priceUsd: 3.50, priceZwg: 105, lastUpdated: '2026-01-31', inStock: true },
-    { materialId: 'dpc', supplierId: 'sup-1', priceUsd: 5, priceZwg: 150, lastUpdated: '2026-01-31', inStock: true },
-    { materialId: 'dpm', supplierId: 'sup-1', priceUsd: 15, priceZwg: 450, lastUpdated: '2026-01-31', inStock: true },
-    { materialId: 'termite-poison', supplierId: 'sup-6', priceUsd: 12, priceZwg: 360, lastUpdated: '2026-01-31', inStock: true },
+    { materialId: 'hardcore', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 25, priceZwg: 750, lastUpdated: '2026-01-31', inStock: true },
+    { materialId: 'brickforce', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 3.50, priceZwg: 105, lastUpdated: '2026-01-31', inStock: true },
+    { materialId: 'dpc', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 5, priceZwg: 150, lastUpdated: '2026-01-31', inStock: true },
+    { materialId: 'dpm', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 15, priceZwg: 450, lastUpdated: '2026-01-31', inStock: true },
+    { materialId: 'termite-poison', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 12, priceZwg: 360, lastUpdated: '2026-01-31', inStock: true },
     { materialId: 'temp-cabin-6x3', supplierId: 'sup-csv-baseline', priceUsd: 350, priceZwg: 10500, lastUpdated: '2026-02-18', inStock: true },
     { materialId: 'temp-toilet', supplierId: 'sup-csv-baseline', priceUsd: 180, priceZwg: 5400, lastUpdated: '2026-02-18', inStock: true },
     { materialId: 'water-tank-50000l', supplierId: 'sup-csv-baseline', priceUsd: 550, priceZwg: 16500, lastUpdated: '2026-02-18', inStock: true },
     { materialId: 'site-clear-level', supplierId: 'sup-csv-baseline', priceUsd: 250, priceZwg: 7500, lastUpdated: '2026-02-18', inStock: true },
     // LABOR PRICES (Estimated averages)
-    { materialId: 'labor-builder', supplierId: 'sup-6', priceUsd: 25, priceZwg: 750, lastUpdated: '2026-01-31', inStock: true },
-    { materialId: 'labor-assistant', supplierId: 'sup-6', priceUsd: 10, priceZwg: 300, lastUpdated: '2026-01-31', inStock: true },
-    { materialId: 'labor-foreman', supplierId: 'sup-6', priceUsd: 40, priceZwg: 1200, lastUpdated: '2026-01-31', inStock: true },
-    { materialId: 'service-food', supplierId: 'sup-6', priceUsd: 5, priceZwg: 150, lastUpdated: '2026-01-31', inStock: true },
-    { materialId: 'service-transport', supplierId: 'sup-6', priceUsd: 50, priceZwg: 1500, lastUpdated: '2026-01-31', inStock: true },
+    { materialId: 'labor-builder', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 25, priceZwg: 750, lastUpdated: '2026-01-31', inStock: true },
+    { materialId: 'labor-assistant', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 10, priceZwg: 300, lastUpdated: '2026-01-31', inStock: true },
+    { materialId: 'labor-foreman', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 40, priceZwg: 1200, lastUpdated: '2026-01-31', inStock: true },
+    { materialId: 'service-food', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 5, priceZwg: 150, lastUpdated: '2026-01-31', inStock: true },
+    { materialId: 'service-transport', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 50, priceZwg: 1500, lastUpdated: '2026-01-31', inStock: true },
 
     // Roof screws are generated into every roofing BOQ but had no price in
     // either this list or the CSV-derived pricing map, so they costed at $0.
     // 2026 Zimbabwe market estimate; replace with scraped supplier data.
-    { materialId: 'screws-roof', supplierId: 'sup-4', priceUsd: 12, priceZwg: 360, lastUpdated: '2026-07-27', inStock: true },
+    { materialId: 'screws-roof', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 12, priceZwg: 360, lastUpdated: '2026-07-27', inStock: true },
 
     // Finishing materials. PVA/acrylic reflect Harare retail (20L PVA listed
     // around $38-42); the rest are 2026 market estimates pending scraped data.
-    { materialId: 'paint-acrylic', supplierId: 'sup-1', priceUsd: 55, priceZwg: 1650, lastUpdated: '2026-07-29', inStock: true },
-    { materialId: 'tiles-wall-ceramic', supplierId: 'sup-1', priceUsd: 11, priceZwg: 330, lastUpdated: '2026-07-29', inStock: true },
-    { materialId: 'tile-adhesive', supplierId: 'sup-1', priceUsd: 9, priceZwg: 270, lastUpdated: '2026-07-29', inStock: true },
-    { materialId: 'grout', supplierId: 'sup-1', priceUsd: 6, priceZwg: 180, lastUpdated: '2026-07-29', inStock: true },
-    { materialId: 'conduit-20', supplierId: 'sup-1', priceUsd: 2.50, priceZwg: 75, lastUpdated: '2026-07-29', inStock: true },
-    { materialId: 'pipe-40-pvc', supplierId: 'sup-1', priceUsd: 8, priceZwg: 240, lastUpdated: '2026-07-29', inStock: true },
-    { materialId: 'pipe-110-pvc', supplierId: 'sup-1', priceUsd: 16, priceZwg: 480, lastUpdated: '2026-07-29', inStock: true },
-    { materialId: 'pipe-15-copper', supplierId: 'sup-1', priceUsd: 22, priceZwg: 660, lastUpdated: '2026-07-29', inStock: true },
-    { materialId: 'geyser-150', supplierId: 'sup-1', priceUsd: 280, priceZwg: 8400, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'paint-acrylic', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 55, priceZwg: 1650, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'tiles-wall-ceramic', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 11, priceZwg: 330, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'tile-adhesive', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 9, priceZwg: 270, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'grout', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 6, priceZwg: 180, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'conduit-20', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 2.50, priceZwg: 75, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'pipe-40-pvc', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 8, priceZwg: 240, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'pipe-110-pvc', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 16, priceZwg: 480, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'pipe-15-copper', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 22, priceZwg: 660, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'geyser-150', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 280, priceZwg: 8400, lastUpdated: '2026-07-29', inStock: true },
     { materialId: 'door-interior', supplierId: 'sup-csv-baseline', priceUsd: 85, priceZwg: 2550, lastUpdated: '2026-07-29', inStock: true },
     { materialId: 'door-exterior', supplierId: 'sup-csv-baseline', priceUsd: 150, priceZwg: 4500, lastUpdated: '2026-07-29', inStock: true },
     { materialId: 'window-steel', supplierId: 'sup-csv-baseline', priceUsd: 60, priceZwg: 1800, lastUpdated: '2026-07-29', inStock: true },
     { materialId: 'ceiling-board', supplierId: 'sup-csv-baseline', priceUsd: 8, priceZwg: 240, lastUpdated: '2026-07-29', inStock: true },
     { materialId: 'cornice', supplierId: 'sup-csv-baseline', priceUsd: 4, priceZwg: 120, lastUpdated: '2026-07-29', inStock: true },
-    { materialId: 'hinges-door', supplierId: 'sup-4', priceUsd: 4, priceZwg: 120, lastUpdated: '2026-07-29', inStock: true },
-    { materialId: 'lock-mortice', supplierId: 'sup-4', priceUsd: 14, priceZwg: 420, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'hinges-door', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 4, priceZwg: 120, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'lock-mortice', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 14, priceZwg: 420, lastUpdated: '2026-07-29', inStock: true },
 
     // Exterior works. durawall-panel was in the catalogue from the start but had
     // no price in either this list or the CSV map. 2026 Zimbabwe market
     // estimates; replace with scraped supplier data.
-    { materialId: 'durawall-panel', supplierId: 'sup-2', priceUsd: 12, priceZwg: 360, lastUpdated: '2026-07-29', inStock: true },
-    { materialId: 'durawall-post', supplierId: 'sup-2', priceUsd: 14, priceZwg: 420, lastUpdated: '2026-07-29', inStock: true },
-    { materialId: 'gate-vehicle', supplierId: 'sup-4', priceUsd: 450, priceZwg: 13500, lastUpdated: '2026-07-29', inStock: true },
-    { materialId: 'gate-pedestrian', supplierId: 'sup-4', priceUsd: 120, priceZwg: 3600, lastUpdated: '2026-07-29', inStock: true },
-    { materialId: 'paving-brick', supplierId: 'sup-2', priceUsd: 14, priceZwg: 420, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'durawall-panel', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 12, priceZwg: 360, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'durawall-post', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 14, priceZwg: 420, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'gate-vehicle', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 450, priceZwg: 13500, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'gate-pedestrian', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 120, priceZwg: 3600, lastUpdated: '2026-07-29', inStock: true },
+    { materialId: 'paving-brick', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 14, priceZwg: 420, lastUpdated: '2026-07-29', inStock: true },
 ];
 
 // Helper functions
