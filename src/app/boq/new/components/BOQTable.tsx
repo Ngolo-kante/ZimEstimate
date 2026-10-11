@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { Fragment, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkle,
@@ -17,6 +17,7 @@ import {
   Minus,
 } from '@phosphor-icons/react';
 import { useBoqWizardStore, type BOQItem } from '@/store/boqWizardStore';
+import { LineWhyButton, LineWhyPanel } from './LineWhy';
 
 const MILESTONE_LABELS: Record<string, string> = {
   substructure: 'Substructure & Foundation',
@@ -50,6 +51,8 @@ export default function BOQTable() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterModifiedOnly, setFilterModifiedOnly] = useState(false);
   const [addingToMilestone, setAddingToMilestone] = useState<string | null>(null);
+  // One explanation open at a time, so the table stays scannable.
+  const [whyOpenId, setWhyOpenId] = useState<string | null>(null);
 
   // New Custom Item Form State
   const [newItemName, setNewItemName] = useState('');
@@ -368,8 +371,8 @@ export default function BOQTable() {
                                   (item.calculatedQuantity !== undefined && item.quantity !== item.calculatedQuantity);
 
                                 return (
+                                  <Fragment key={item.id}>
                                   <tr
-                                    key={item.id}
                                     className={`transition hover:bg-[var(--color-background)] ${
                                       isModified ? 'bg-[var(--color-accent-bg)]/30' : ''
                                     }`}
@@ -398,6 +401,11 @@ export default function BOQTable() {
                                           )}
                                         </div>
                                       )}
+                                      <LineWhyButton
+                                        open={whyOpenId === item.id}
+                                        onToggle={() => setWhyOpenId((id) => (id === item.id ? null : item.id))}
+                                        name={item.materialName}
+                                      />
                                     </td>
 
                                     {/* Inline Quantity Controls */}
@@ -506,6 +514,14 @@ export default function BOQTable() {
                                       </div>
                                     </td>
                                   </tr>
+                                  {whyOpenId === item.id && (
+                                    <tr>
+                                      <td colSpan={6} className="px-5 pb-3 pt-0">
+                                        <LineWhyPanel item={item} stage={milestone.id} />
+                                      </td>
+                                    </tr>
+                                  )}
+                                  </Fragment>
                                 );
                               })}
                             </tbody>
@@ -542,6 +558,11 @@ export default function BOQTable() {
                                         Edited {item.calculatedQuantity !== undefined && `(Calc: ${item.calculatedQuantity})`}
                                       </p>
                                     )}
+                                    <LineWhyButton
+                                      open={whyOpenId === item.id}
+                                      onToggle={() => setWhyOpenId((id) => (id === item.id ? null : item.id))}
+                                      name={item.materialName}
+                                    />
                                   </div>
 
                                   <div className="text-right">
@@ -619,6 +640,7 @@ export default function BOQTable() {
                                     </button>
                                   </div>
                                 </div>
+                                {whyOpenId === item.id && <LineWhyPanel item={item} stage={milestone.id} />}
                               </div>
                             );
                           })}
