@@ -15,38 +15,18 @@ const ANALYSIS_STEPS = [
   { id: 'structure', label: 'Analyzing building structure', icon: House },
 ];
 
-export default function AnalysisProgress() {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [progress, setProgress] = useState(0);
+export default function AnalysisProgress({ onCancel }: { onCancel: () => void }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  // Derived from the clock rather than set from inside the timer's state
+  // update, which React expects to be free of side effects.
+  const currentStep = Math.min(Math.floor(elapsed / 10), ANALYSIS_STEPS.length - 1);
+  const progress = Math.min(92, 12 + elapsed * 2);
 
   useEffect(() => {
-    // Simulate progress through steps
-    const stepDuration = 800; // ms per step
-    const progressInterval = 50; // ms per progress tick
-
-    const advanceProgress = () => {
-      setProgress((prev) => {
-        const target = ((currentStep + 1) / ANALYSIS_STEPS.length) * 100;
-        if (prev < target) {
-          return Math.min(prev + 2, target);
-        }
-        return prev;
-      });
-    };
-
-    const progressTimer = setInterval(advanceProgress, progressInterval);
-
-    const stepTimer = setTimeout(() => {
-      if (currentStep < ANALYSIS_STEPS.length - 1) {
-        setCurrentStep((prev) => prev + 1);
-      }
-    }, stepDuration);
-
-    return () => {
-      clearTimeout(stepTimer);
-      clearInterval(progressTimer);
-    };
-  }, [currentStep]);
+    const timer = window.setInterval(() => setElapsed((seconds) => seconds + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <div className="analysis-progress">
@@ -82,6 +62,7 @@ export default function AnalysisProgress() {
 
         <h2>Analyzing Floor Plan</h2>
         <p className="subtitle">Our AI is extracting room dimensions and building details</p>
+        <p className="time-note">{elapsed < 45 ? `Reading plan · ${elapsed}s elapsed` : 'Still working — complex PDFs can take longer'}</p>
 
         <div className="steps-list">
           {ANALYSIS_STEPS.map((step, index) => {
@@ -107,6 +88,8 @@ export default function AnalysisProgress() {
             );
           })}
         </div>
+
+        <button type="button" className="cancel-button" onClick={onCancel}>Cancel and choose another file</button>
       </Card>
 
       <style jsx>{`
@@ -167,7 +150,14 @@ export default function AnalysisProgress() {
         .subtitle {
           font-size: 0.875rem;
           color: var(--color-text-secondary);
-          margin: 0 0 var(--spacing-xl) 0;
+          margin: 0 0 var(--spacing-sm) 0;
+        }
+
+        .time-note {
+          margin: 0 0 var(--spacing-xl);
+          color: var(--color-text-muted);
+          font-family: var(--font-mono);
+          font-size: 0.72rem;
         }
 
         .steps-list {
@@ -245,6 +235,23 @@ export default function AnalysisProgress() {
         .step-dots span:nth-child(1) { animation-delay: 0s; }
         .step-dots span:nth-child(2) { animation-delay: 0.2s; }
         .step-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        .cancel-button {
+          margin-top: var(--spacing-lg);
+          padding: 9px 12px;
+          color: var(--color-text-secondary);
+          background: transparent;
+          border: 0;
+          border-bottom: 1px solid var(--color-border-light);
+          font-size: 0.75rem;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .cancel-button:hover {
+          color: var(--color-primary);
+          border-bottom-color: var(--color-primary);
+        }
 
         @keyframes pulse {
           0%, 80%, 100% { opacity: 0.3; }

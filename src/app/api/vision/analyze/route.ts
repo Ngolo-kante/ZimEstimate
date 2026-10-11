@@ -6,6 +6,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { analyzeFloorPlan } from '@/lib/vision/gemini-client';
 import { enforceCsrf, enforceRateLimit } from '@/lib/server/security';
 
+/* Room for the plan reader's two attempts (20 s, then 32 s) and the upload.
+   Without this the platform default decided, and a user could wait on a
+   request the reader had already abandoned. */
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   try {
     // No requireAuth: reading a floor plan is free to try, same as the manual
@@ -67,19 +72,24 @@ export async function POST(request: NextRequest) {
 
     // Analyze with Gemini
     const result = await analyzeFloorPlan(base64, file.type);
+    const { rawResponse: _rawResponse, ...data } = result;
+    void _rawResponse;
 
     return NextResponse.json({
       success: true,
-      data: result,
+      data,
     });
   } catch (error) {
     console.error('Vision analysis error:', error);
+    const message = error instanceof Error ? error.message : 'Analysis failed. Please try again.';
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Analysis failed. Please try again.',
+        error: message,
       },
-      { status: 500 }
+      // The reader's own messages: "took too long" is a timeout, "busy" or
+      // "limit" a temporary outage; everything else a plain failure.
+      { status: /took too long/i.test(message) ? 504 : /busy|limit/i.test(message) ? 503 : 500 }
     );
   }
 }

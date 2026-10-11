@@ -1,0 +1,49 @@
+import { describe, expect, it } from 'vitest';
+import { classifyGeminiError } from './gemini-client';
+
+/**
+ * The bug these guard: errors were classified by searching the message for
+ * "rate", and every error from this SDK names its endpoint, ":generateContent".
+ * So any failure looked like a rate limit — and a rate limit returned six
+ * invented rooms as if they had been read from the user's plan.
+ */
+
+const fetchError = (status: number, message = '[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent') =>
+  Object.assign(new Error(message), { status });
+
+describe('classifying plan reader errors', () => {
+  it('does not mistake "generateContent" for a rate limit', () => {
+    const error = classifyGeminiError(new Error('Error fetching from https://x/models/m:generateContent: something odd'));
+    expect(error.message).not.toMatch(/limit/i);
+  });
+
+  it('reads a real rate limit from its status, as retryable', () => {
+    const error = classifyGeminiError(fetchError(429));
+    expect(error.message).toMatch(/limit/i);
+    expect(error.retryable).toBe(true);
+  });
+
+  it('treats "high demand" as busy and worth trying the next model', () => {
+    const error = classifyGeminiError(fetchError(503));
+    expect(error.message).toMatch(/busy/i);
+    expect(error.retryable).toBe(true);
+  });
+
+  it('recognises a timeout', () => {
+    const error = classifyGeminiError(Object.assign(new Error('Request aborted when fetching'), { name: 'AbortError' }));
+    expect(error.message).toMatch(/took too long/i);
+    expect(error.retryable).toBe(true);
+  });
+
+  it('does not retry a configuration problem on the next model', () => {
+    for (const status of [400, 401, 403, 404]) {
+      expect(classifyGeminiError(fetchError(status)).retryable, String(status)).toBe(false);
+    }
+  });
+
+  it('names a safety block as such', () => {
+    const error = classifyGeminiError(fetchError(400, 'Candidate was blocked due to SAFETY'));
+    expect(error.message).toMatch(/safety/i);
+    expect(error.retryable).toBe(false);
+  });
+});

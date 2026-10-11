@@ -22,7 +22,7 @@ import SiteConditionsSection from './components/sections/SiteConditionsSection';
 import { InteractiveRoomBuilder, type RoomInstance } from './components/InteractiveRoomBuilder';
 import { buildLiveMilestones } from './utils/liveEstimator';
 import { validateBOQWizardStep, type BOQWizardValidationState } from './wizardValidation';
-import { inferProjectType } from './projectTypes';
+import { FULL_HOUSE_STAGES, inferProjectType } from './projectTypes';
 import { getTemplateById, resolveFinishLevel } from '@/lib/projectTemplates';
 import { useToast } from '@/components/ui/Toast';
 import type { BOQItem as DbBOQItem, Project } from '@/lib/database.types';
@@ -172,6 +172,7 @@ function BoqNewPageContent() {
   const templateIdFromUrl = searchParams.get('template');
   const finishFromUrl = searchParams.get('finish');
   const freshStartFromHome = searchParams.get('fresh') === '1';
+  const presetFromUrl = searchParams.get('preset');
 
   const [showInteractiveBuilder, setShowInteractiveBuilder] = useState(false);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
@@ -419,7 +420,17 @@ function BoqNewPageContent() {
       if (freshStartFromHome && !projectIdFromUrl && !templateIdFromUrl) {
         await useBoqWizardStore.persist.clearStorage();
         useBoqWizardStore.getState().resetWizard();
-        router.replace('/boq/new?method=manual');
+        const freshStore = useBoqWizardStore.getState();
+        if (presetFromUrl === 'full_house') {
+          freshStore.updateProjectDetails({ projectType: 'full_house' });
+          freshStore.setProjectScope('entire');
+          freshStore.setSelectedStages([...FULL_HOUSE_STAGES]);
+        } else if (presetFromUrl === 'building_in_stages') {
+          freshStore.updateProjectDetails({ projectType: 'building_in_stages' });
+          freshStore.setProjectScope('stage');
+          freshStore.setSelectedStages([]);
+        }
+        router.replace(`/boq/new?method=manual${presetFromUrl ? `&preset=${presetFromUrl}` : ''}`);
         return;
       }
 
@@ -427,7 +438,7 @@ function BoqNewPageContent() {
     };
 
     void prepareWizard();
-  }, [freshStartFromHome, projectIdFromUrl, router, templateIdFromUrl]);
+  }, [freshStartFromHome, presetFromUrl, projectIdFromUrl, router, templateIdFromUrl]);
 
   // A template link carried a ?template= parameter that nothing read, so picking
   // one opened an empty wizard. Apply its inputs and open the review step, which

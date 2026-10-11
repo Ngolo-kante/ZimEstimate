@@ -14,7 +14,6 @@ import {
   Lightning,
   Gear,
 } from '@phosphor-icons/react';
-import { isProductAnalyticsConfigured, openAnalyticsPreferences } from '@/lib/productAnalytics';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -232,9 +231,6 @@ export default function MainLayout({
               <Link href="/cost-to-build-a-house-in-zimbabwe">House Cost Guide</Link>
               <Link href="/market-insights">Market Reports</Link>
               <Link href="/privacy">Privacy Policy</Link>
-              {isProductAnalyticsConfigured() && (
-                <button type="button" onClick={openAnalyticsPreferences}>Privacy choices</button>
-              )}
               <Link href="/terms">Terms</Link>
               <Link href="/support">Contact support</Link>
             </div>

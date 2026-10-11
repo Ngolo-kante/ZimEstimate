@@ -112,7 +112,7 @@ export default function VisionTakeoffWizard() {
 
         {/* Analysis Progress */}
         {state.step === 'analyzing' && (
-          <AnalysisProgress />
+          <AnalysisProgress onCancel={wizard.cancelAnalysis} />
         )}
 
         {/* Low Confidence Warning */}

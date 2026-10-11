@@ -278,10 +278,10 @@ export default function PrivacyPage() {
           <ul style={listStyle}>
             <li><strong>Strictly necessary:</strong> Authentication session tokens and security cookies. These cannot be disabled.</li>
             <li><strong>Functional:</strong> User preferences (language, currency). These are set without separate consent as they are necessary for the service to work as intended.</li>
-            <li><strong>Analytics:</strong> Anonymised usage statistics (page views, feature engagement). We will request your consent before setting analytics cookies on your first visit.</li>
+            <li><strong>Analytics:</strong> Anonymous page views and feature-engagement events. Analytics runs without cookies or persistent browser storage and is not linked to your account identity.</li>
           </ul>
           <p style={{ ...bodyStyle, marginTop: '10px' }}>
-            We do not use third-party advertising or behavioural targeting cookies. You may manage cookie preferences in your browser settings at any time.
+            We do not use analytics cookies, third-party advertising, or behavioural targeting cookies. You may manage essential and functional storage in your browser settings at any time.
           </p>
         </section>
 

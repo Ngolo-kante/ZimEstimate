@@ -11,7 +11,7 @@ test.describe('Public launch surfaces', () => {
 
     const hero = page.getByRole('region', { name: 'Construction estimates built for Zimbabwe.' });
     await expect(hero.getByRole('link', { name: 'Start your estimate', exact: true }))
-      .toHaveAttribute('href', '/boq/new?method=manual&fresh=1');
+      .toHaveAttribute('href', '/estimate');
     await expect(page.getByRole('link', { name: 'Find a contractor', exact: true }))
       .toHaveAttribute('href', '/contractors');
     await expect(page.getByRole('region', { name: 'Help turn plans into finished projects.' }).getByRole('link', { name: 'Register as a contractor', exact: true }))
@@ -65,7 +65,27 @@ test.describe('Public launch surfaces', () => {
     expect(mobileWidth.content).toBeLessThanOrEqual(mobileWidth.viewport);
   });
 
-  test('homepage estimate CTA starts a fresh manual wizard', async ({ page }) => {
+  test('estimate directory connects each need to the right service', async ({ page }) => {
+    await page.goto('/estimate');
+    await expect(page.getByRole('heading', { name: 'What do you need to work out?' })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Full house estimate/ }))
+      .toHaveAttribute('href', '/boq/new?method=manual&fresh=1&preset=full_house');
+    await expect(page.getByRole('link', { name: /Estimate by stage/ }))
+      .toHaveAttribute('href', '/boq/new?method=manual&fresh=1&preset=building_in_stages');
+    await expect(page.getByRole('link', { name: /Check a solar budget/ }))
+      .toHaveAttribute('href', '/quick-budget?mode=solar');
+    await expect(page.getByRole('link', { name: /Read a floor plan/ }))
+      .toHaveAttribute('href', '/ai/vision-takeoff');
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const widths = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+    }));
+    expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+  });
+
+  test('service preset starts a fresh full-house wizard', async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('zimestimate-boq-wizard', JSON.stringify({
         state: {
@@ -77,9 +97,10 @@ test.describe('Public launch surfaces', () => {
       }));
     });
 
-    await page.goto('/boq/new?method=manual&fresh=1');
+    await page.goto('/boq/new?method=manual&fresh=1&preset=full_house');
     await expect(page.getByRole('heading', { name: 'What are we building?' })).toBeVisible();
-    await page.waitForURL('/boq/new?method=manual');
+    await page.waitForURL('/boq/new?method=manual&preset=full_house');
+    await expect(page.getByRole('button', { name: /Full House \/ Full Build/ })).toHaveClass(/border-blue-500/);
 
     const savedStep = await page.evaluate(() => {
       const raw = localStorage.getItem('zimestimate-boq-wizard');

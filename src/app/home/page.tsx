@@ -89,7 +89,7 @@ export default function HomePage() {
               </p>
 
               <div className={styles.heroActions}>
-                <Link href="/boq/new?method=manual&fresh=1" className={styles.primaryButton}>
+                <Link href="/estimate" className={styles.primaryButton}>
                   <Calculator size={20} weight="bold" aria-hidden="true" />
                   Start your estimate
                   <ArrowRight size={18} weight="bold" aria-hidden="true" />
@@ -209,7 +209,7 @@ export default function HomePage() {
           <div className={styles.closingInner}>
             <h2 id="closing-heading">Put the first reliable number on your project.</h2>
             <p>No account needed to start. Sign in when you want to save it.</p>
-            <Link href="/boq/new?method=manual&fresh=1" className={styles.closingButton}>
+            <Link href="/estimate" className={styles.closingButton}>
               <Calculator size={20} weight="bold" aria-hidden="true" />
               Start your estimate
               <ArrowRight size={18} weight="bold" aria-hidden="true" />

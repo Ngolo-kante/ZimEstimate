@@ -1,5 +1,5 @@
 // Vision Takeoff Wizard State Management Hook
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   VisionTakeoffState,
@@ -17,6 +17,7 @@ import { materials, getBestPrice } from '@/lib/materials';
 import { TEMPORARY_WORKS_SUGGESTIONS } from '@/lib/buildFlowRules';
 import { supabase } from '@/lib/supabase';
 import { captureProductEvent } from '@/lib/productAnalytics';
+import { analyzePlanFile } from '@/lib/vision/analyzePlan';
 
 const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
 
@@ -27,28 +28,10 @@ const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
 // against cost abuse is IP-based rate limiting (10/min), not auth, so nothing
 // is given up by letting an anonymous visitor try the tool before signing up
 // for it.
-async function analyzeFloorPlanAPI(file: File): Promise<VisionAnalysisResult> {
+async function analyzeFloorPlanAPI(file: File, signal: AbortSignal): Promise<VisionAnalysisResult> {
   const { data } = await supabase.auth.getSession();
   const accessToken = data.session?.access_token;
-
-  const formData = new FormData();
-  formData.append('file', file);
-
-  const response = await fetch('/api/vision/analyze', {
-    method: 'POST',
-    // Sent when a session already exists, purely so the request is
-    // attributable; the endpoint does not require it.
-    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-    body: formData,
-  });
-
-  const result = await response.json();
-
-  if (!result.success) {
-    throw new Error(result.error || 'Analysis failed');
-  }
-
-  return result.data;
+  return analyzePlanFile(file, { accessToken, signal });
 }
 
 function addTemporaryEnablementItems(items: GeneratedBOQItem[], config: VisionConfig): GeneratedBOQItem[] {
@@ -89,6 +72,9 @@ function addTemporaryEnablementItems(items: GeneratedBOQItem[], config: VisionCo
 export function useVisionTakeoff() {
   const router = useRouter();
   const [state, setState] = useState<VisionTakeoffState>(INITIAL_STATE);
+  const analysisControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => () => analysisControllerRef.current?.abort(), []);
 
   // ============================================
   // STEP NAVIGATION
@@ -107,6 +93,10 @@ export function useVisionTakeoff() {
   // ============================================
 
   const handleFileUpload = useCallback(async (file: File) => {
+    analysisControllerRef.current?.abort();
+    const controller = new AbortController();
+    analysisControllerRef.current = controller;
+
     // Create preview URL
     const previewUrl = URL.createObjectURL(file);
 
@@ -120,7 +110,7 @@ export function useVisionTakeoff() {
     }));
 
     try {
-      const result = await analyzeFloorPlanAPI(file);
+      const result = await analyzeFloorPlanAPI(file, controller.signal);
 
       // Determine next step based on confidence
       const nextStep: WizardStep = result.confidence < 90 ? 'warning' : 'editing';
@@ -142,7 +132,13 @@ export function useVisionTakeoff() {
         error: error instanceof Error ? error.message : 'Analysis failed. Please try again.',
         isProcessing: false,
       }));
+    } finally {
+      if (analysisControllerRef.current === controller) analysisControllerRef.current = null;
     }
+  }, []);
+
+  const cancelAnalysis = useCallback(() => {
+    analysisControllerRef.current?.abort();
   }, []);
 
   const clearFile = useCallback(() => {
@@ -361,6 +357,7 @@ export function useVisionTakeoff() {
 
     // Upload
     handleFileUpload,
+    cancelAnalysis,
     clearFile,
 
     // Warning handling

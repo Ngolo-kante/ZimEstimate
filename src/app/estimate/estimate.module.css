@@ -1,0 +1,375 @@
+.page {
+  width: 100vw;
+  margin: -32px calc(50% - 50vw) 0;
+  min-height: 100vh;
+  color: var(--color-text);
+  background: #f3f0e9;
+  overflow-x: hidden;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  color: white;
+  background: #0b1f3b;
+  border-bottom: 6px solid #e39b32;
+}
+
+.heroGrid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.16;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(90deg, black, transparent 78%);
+}
+
+.heroInner,
+.directory {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding-inline: 32px;
+}
+
+.heroInner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+  align-items: end;
+  gap: 72px;
+  padding-block: 74px 68px;
+}
+
+.eyebrow,
+.directoryHeader span {
+  display: block;
+  color: #efb760;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  max-width: 750px;
+  margin: 14px 0 0;
+  font-family: var(--font-heading);
+  font-size: clamp(2.7rem, 6vw, 5.4rem);
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.heroCopy p {
+  max-width: 680px;
+  margin: 26px 0 0;
+  color: #d9e4f2;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.heroNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px;
+  color: #0b1f3b;
+  background: #f4d8a8;
+  border: 1px solid #f7e2bc;
+  border-radius: 4px;
+  box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.16);
+  transform: rotate(1.2deg);
+}
+
+.heroNote svg {
+  flex: 0 0 auto;
+}
+
+.heroNote strong,
+.heroNote span {
+  display: block;
+}
+
+.heroNote strong {
+  font-size: 0.9rem;
+}
+
+.heroNote span {
+  margin-top: 4px;
+  color: #42516a;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.directory {
+  padding-block: 64px 88px;
+}
+
+.directoryHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.55fr);
+  align-items: end;
+  gap: 48px;
+  margin-bottom: 30px;
+}
+
+.directoryHeader span {
+  color: #a45d0b;
+}
+
+.directoryHeader h2 {
+  margin: 8px 0 0;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+.directoryHeader p {
+  margin: 0;
+  color: #526174;
+  line-height: 1.65;
+}
+
+.optionGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.optionCard {
+  --card-accent: #1d5fbf;
+  position: relative;
+  min-height: 310px;
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  color: #10213b;
+  background: #fffefb;
+  border: 1px solid #cfd5dc;
+  border-top: 4px solid var(--card-accent);
+  border-radius: 5px;
+  text-decoration: none;
+  box-shadow: 0 8px 0 rgba(11, 31, 59, 0.06);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.optionCard:hover {
+  transform: translateY(-5px);
+  border-color: var(--card-accent);
+  box-shadow: 0 14px 0 rgba(11, 31, 59, 0.11);
+}
+
+.optionCard:focus-visible {
+  outline: 3px solid #e39b32;
+  outline-offset: 4px;
+}
+
+.featuredCard {
+  --card-accent: #d47a12;
+  grid-column: span 1;
+  background: #fffaf0;
+}
+
+.cardTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 22px;
+  color: #69778b;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.cardTopline em {
+  padding: 4px 7px;
+  color: #784209;
+  background: #f8ddb0;
+  border-radius: 3px;
+  font-family: var(--font-body);
+  font-size: 0.63rem;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+.iconBox {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  margin-top: 26px;
+  color: var(--card-accent);
+  background: color-mix(in srgb, var(--card-accent) 10%, white);
+  border: 1px solid color-mix(in srgb, var(--card-accent) 22%, white);
+  border-radius: 4px;
+  transition: transform 180ms ease;
+}
+
+.optionCard:hover .iconBox {
+  transform: rotate(-3deg) scale(1.06);
+}
+
+.optionCard h3 {
+  margin: 20px 0 0;
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.optionCard p {
+  margin: 9px 0 0;
+  color: #59687a;
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: auto;
+  padding-top: 20px;
+  color: #33445b;
+  border-top: 1px dashed #ccd3dc;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.cardFooter svg {
+  flex: 0 0 auto;
+  color: var(--card-accent);
+  transition: transform 180ms ease;
+}
+
+.optionCard:hover .cardFooter svg {
+  transform: translateX(4px);
+}
+
+@media (max-width: 900px) {
+  .heroInner {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 32px;
+  }
+
+  .heroNote {
+    max-width: 390px;
+  }
+
+  .optionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .heroInner,
+  .directory {
+    padding-inline: 20px;
+  }
+
+  .heroInner {
+    padding-block: 52px 48px;
+  }
+
+  .hero h1 {
+    font-size: 2.75rem;
+  }
+
+  .directory {
+    padding-block: 46px 92px;
+  }
+
+  .directoryHeader,
+  .optionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .directoryHeader {
+    gap: 16px;
+  }
+
+  /* Phones: the options are the point of this page, so they should start
+     on the first screen, and seven of them should not be a long scroll. The
+     header shrinks and each card becomes a row — icon beside the title — at
+     about a third of its desktop height. */
+  .heroInner {
+    gap: 18px;
+    padding-block: 28px 24px;
+  }
+
+  .hero h1 {
+    font-size: 2.1rem;
+  }
+
+  .heroCopy p {
+    margin-top: 10px;
+    font-size: 0.95rem;
+  }
+
+  .heroNote {
+    padding: 12px 14px;
+  }
+
+  .directory {
+    padding-block: 28px 92px;
+  }
+
+  .directoryHeader p {
+    display: none;
+  }
+
+  .optionCard {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    column-gap: 14px;
+    align-items: start;
+    padding: 14px 16px;
+  }
+
+  .cardTopline {
+    grid-column: 1 / -1;
+    min-height: 0;
+    margin-bottom: 8px;
+  }
+
+  .iconBox {
+    grid-column: 1;
+    grid-row: 2 / span 2;
+    width: 44px;
+    height: 44px;
+    margin-top: 0;
+  }
+
+  .optionCard h3 {
+    grid-column: 2;
+    margin-top: 0;
+    font-size: 1.08rem;
+  }
+
+  .optionCard p {
+    grid-column: 2;
+    margin-top: 4px;
+    font-size: 0.8rem;
+  }
+
+  .cardFooter {
+    grid-column: 1 / -1;
+    padding-top: 10px;
+    margin-top: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .optionCard,
+  .iconBox,
+  .cardFooter svg {
+    transition: none;
+  }
+}

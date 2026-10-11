@@ -9,7 +9,7 @@ import {
 } from '@phosphor-icons/react';
 import { useBoqWizardStore, type RoomInputKey } from '@/store/boqWizardStore';
 import { planToWizardRooms } from '@/lib/vision/planToWizardRooms';
-import type { VisionAnalysisResult } from '@/lib/vision/types';
+import { analyzePlanFile } from '@/lib/vision/analyzePlan';
 import { prepareImageForUpload } from '@/lib/compressImage';
 import { captureProductEvent } from '@/lib/productAnalytics';
 
@@ -234,18 +234,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
 
     setPlanStatus('reading');
     try {
-      const body = new FormData();
-      body.append('file', file);
-      const response = await fetch('/api/vision/analyze', { method: 'POST', body });
-      const payload = await response.json().catch(() => null);
-
-      if (!response.ok || !payload?.success) {
-        setPlanError(payload?.error || 'We could not read that plan. Try a clearer copy, or use the room builder.');
-        captureProductEvent('ai_scan_used', { tool: 'plan_upload', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'failed' });
-        return;
-      }
-
-      const mapped = planToWizardRooms(payload.data as VisionAnalysisResult);
+      const mapped = planToWizardRooms(await analyzePlanFile(file));
 
       if (mapped.rooms.length === 0 || mapped.totalArea <= 0) {
         setPlanError('No rooms could be measured on that drawing. Try a clearer copy, or use the room builder.');
@@ -268,8 +257,11 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
         area: mapped.totalArea,
         confidence: mapped.confidence,
       });
-    } catch {
-      setPlanError('That upload did not complete. Check your connection and try again.');
+    } catch (error) {
+      setPlanError(error instanceof Error
+        ? error.message
+        : 'That upload did not complete. Check your connection and try again.');
+      captureProductEvent('ai_scan_used', { tool: 'plan_upload', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'failed' });
     } finally {
       setPlanStatus('idle');
     }
