@@ -6,7 +6,6 @@ import Card, { CardContent } from '@/components/ui/Card';
 import {
     Image,
     Camera,
-    ChartLine,
     ArrowRight,
     Sparkle,
     Lightning,
@@ -47,15 +46,6 @@ const aiFeatures = [
         href: '/ai/quote-check',
         badge: 'New',
         features: ['Reads the quote for you', 'Line-by-line comparison', 'How much is above market', 'Fix any misread line first'],
-    },
-    {
-        id: 'inflation-engine',
-        title: 'Price Outlook',
-        description: 'Not buying yet? See where material prices are heading so you can decide when to buy rather than guessing.',
-        icon: ChartLine,
-        href: '/ai/inflation-engine',
-        badge: null,
-        features: ['1–12 month outlook', 'Which prices move most', 'What is driving them', 'How sure we are'],
     },
 ];
 

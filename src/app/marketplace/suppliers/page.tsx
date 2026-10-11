@@ -223,7 +223,11 @@ export default function SupplierDirectoryPage() {
                     </div>
 
                     <div className="card-meta">
-                      <span className="rating"><Star size={14} weight="fill" color="var(--color-amber)" />{supplier.rating?.toFixed(1) || '—'}</span>
+                      {/* Only a rating someone gave; there is no review system yet, so a
+                          made-up or zero score is not shown. */}
+                      {supplier.rating > 0 && (
+                        <span className="rating"><Star size={14} weight="fill" color="var(--color-amber)" />{supplier.rating.toFixed(1)}</span>
+                      )}
                       <span className="products"><Package size={14} />{count} products</span>
                     </div>
 

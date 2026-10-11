@@ -181,10 +181,12 @@ export default function SupplierDetailPage() {
               )}
             </div>
           </div>
-          <div className="rating">
-            <Star size={16} weight="fill" />
-            {supplier.rating?.toFixed(1) || '—'}
-          </div>
+          {supplier.rating > 0 && (
+            <div className="rating">
+              <Star size={16} weight="fill" />
+              {supplier.rating.toFixed(1)}
+            </div>
+          )}
         </div>
 
         <div className="stats-row">

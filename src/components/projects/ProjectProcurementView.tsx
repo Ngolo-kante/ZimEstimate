@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { suppliers as staticSuppliers, Supplier as StaticSupplier } from '@/lib/materials';
 import {
   createProcurementRequest,
   createSupplier,
@@ -41,18 +40,6 @@ type SupplierOption = {
   source: 'db' | 'static';
 };
 
-const mapStaticSupplier = (supplier: StaticSupplier): SupplierOption => ({
-  id: supplier.id,
-  name: supplier.name,
-  location: supplier.location,
-  phone: supplier.phone || null,
-  email: supplier.email || null,
-  website: supplier.website || null,
-  isTrusted: supplier.isTrusted,
-  rating: supplier.rating,
-  source: 'static',
-});
-
 const mapDbSupplier = (supplier: DbSupplier): SupplierOption => ({
   id: supplier.id,
   name: supplier.name,
@@ -65,21 +52,10 @@ const mapDbSupplier = (supplier: DbSupplier): SupplierOption => ({
   source: 'db',
 });
 
-const mergeSuppliers = (primary: SupplierOption[], fallback: SupplierOption[]) => {
-  const seen = new Set(primary.map((supplier) => supplier.name.toLowerCase()));
-  const merged = [...primary];
-  fallback.forEach((supplier) => {
-    if (!seen.has(supplier.name.toLowerCase())) {
-      merged.push(supplier);
-    }
-  });
-  return merged;
-};
-
 export default function ProjectProcurementView({ project, items }: ProjectProcurementViewProps) {
   const { user } = useAuth();
   const { success, error: showError } = useToast();
-  const [supplierList, setSupplierList] = useState<SupplierOption[]>(() => staticSuppliers.map(mapStaticSupplier));
+  const [supplierList, setSupplierList] = useState<SupplierOption[]>([]);
   const [selectedSupplierId, setSelectedSupplierId] = useState('');
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
   const [notes, setNotes] = useState('');
@@ -114,9 +90,11 @@ export default function ProjectProcurementView({ project, items }: ProjectProcur
     let isMounted = true;
     const loadSuppliers = async () => {
       const { suppliers, error } = await getSuppliers();
-      if (!error && suppliers.length > 0 && isMounted) {
-        const dbSuppliers = suppliers.map(mapDbSupplier);
-        setSupplierList(mergeSuppliers(dbSuppliers, staticSuppliers.map(mapStaticSupplier)));
+      // Real suppliers only: registered ones and those the user added. A
+      // built-in list used to fill this with businesses and phone numbers
+      // nobody had checked, which then got saved into projects.
+      if (!error && isMounted) {
+        setSupplierList(suppliers.map(mapDbSupplier));
       }
     };
     loadSuppliers();
@@ -567,7 +545,7 @@ export default function ProjectProcurementView({ project, items }: ProjectProcur
           </label>
         </div>
         {filteredSuppliers.length === 0 ? (
-          <div className="empty">No suppliers yet.</div>
+          <div className="empty">No suppliers yet. Add the ones you use.</div>
         ) : (
           <div className="request-list">
             {filteredSuppliers.map((supplier) => (
@@ -576,7 +554,6 @@ export default function ProjectProcurementView({ project, items }: ProjectProcur
                   <h4>{supplier.name}</h4>
                   <p>
                     {supplier.location || 'No location'}
-                    {supplier.source === 'static' ? ' · Built-in' : ''}
                   </p>
                 </div>
                 <div className="status">
