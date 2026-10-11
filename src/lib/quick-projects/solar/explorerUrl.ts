@@ -1,6 +1,6 @@
 import { BATTERY_BRANDS, INVERTER_BRANDS, PANEL_BRANDS } from './catalog';
 import type { Objective } from './allocateBudget';
-import type { SolarWiringKit } from './boq';
+import { SOLAR_INSTALL_LABOR_PCT, type SolarWiringKit } from './boq';
 
 /**
  * The Solar Budget Explorer's choices, as a link.
@@ -34,6 +34,41 @@ export interface SolarExplorerState {
   redistribute: boolean;
   wiringKit: SolarWiringKit;
 }
+
+/**
+ * What the explorer starts with, before a link or the user changes anything.
+ *
+ * Lives here, not in the component, because the WhatsApp link preview has to
+ * fill in whatever a link leaves out exactly as the page would. Two copies of
+ * these would drift, and the preview card would then describe a different
+ * system from the page it links to.
+ */
+export const SOLAR_EXPLORER_DEFAULTS: Omit<SolarExplorerState, 'budget'> = {
+  objective: 'balanced',
+  panelBrand: 'ja_solar',
+  inverterBrand: 'must',
+  batteryBrand: 'dyness',
+  laborPct: SOLAR_INSTALL_LABOR_PCT,
+  installCustom: null,
+  enabledCards: {
+    panels: true,
+    inverter: true,
+    battery: true,
+    // On: a "what your budget buys" figure without isolators, earthing or an
+    // AVS describes a system no installer would quote, and the BOQ added the
+    // missing parts anyway.
+    protection: true,
+    // On: labour is a real cost. The rate is what people argue about, not
+    // whether they pay — so it is included and adjustable.
+    installation: true,
+    // Off: typically bundled in urban quotes here.
+    transport: false,
+  },
+  // Spend the whole budget; a page asking "what can your budget buy?" should
+  // not answer with a fifth of it idle.
+  redistribute: true,
+  wiringKit: 'full',
+};
 
 const OBJECTIVES: Objective[] = ['economy', 'balanced', 'quality'];
 

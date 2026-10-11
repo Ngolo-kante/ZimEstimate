@@ -9,8 +9,8 @@ import Button from '@/components/ui/Button';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { getProjectWithItems } from '@/lib/services/projects';
-import { downloadBOQPDF, printBOQPDF } from '@/lib/pdf-export';
 import { Project, BOQItem } from '@/lib/database.types';
+import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 import {
     FilePdf,
     FileXls,
@@ -67,7 +67,12 @@ function ExportContent() {
 
         setExporting(true);
         try {
-            downloadBOQPDF(project, items, { currency });
+            const pdf = await loadPdfExport('export_page');
+            if (!pdf) {
+                alert(PDF_LOAD_ERROR);
+                return;
+            }
+            pdf.downloadBOQPDF(project, items, { currency });
         } catch (error) {
             console.error('Export failed:', error);
             alert('Failed to export PDF. Please try again.');
@@ -76,11 +81,16 @@ function ExportContent() {
         }
     };
 
-    const handlePrint = () => {
+    const handlePrint = async () => {
         if (!project) return;
 
         try {
-            printBOQPDF(project, items, { currency });
+            const pdf = await loadPdfExport('export_page');
+            if (!pdf) {
+                alert(PDF_LOAD_ERROR);
+                return;
+            }
+            pdf.printBOQPDF(project, items, { currency });
         } catch (error) {
             console.error('Print failed:', error);
             alert('Failed to print. Please try again.');

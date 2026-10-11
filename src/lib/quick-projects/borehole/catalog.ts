@@ -123,3 +123,9 @@ export const LOCATION_DEFAULTS: Record<string, { depth: number; councilFee: numb
   marondera:   { depth: 50,  councilFee: 50 },
   other:       { depth: 60,  councilFee: 50 },
 };
+
+/* Which locations are priced as urban for survey and mobilisation. Shared by
+   the explorer and the link preview so the two price a site the same way. */
+const URBAN_BOREHOLE_LOCATIONS = ['harare', 'bulawayo', 'chitungwiza'];
+export const boreholeAreaType = (location: string): 'urban' | 'peri_urban' =>
+  URBAN_BOREHOLE_LOCATIONS.includes(location) ? 'urban' : 'peri_urban';

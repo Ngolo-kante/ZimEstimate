@@ -10,6 +10,8 @@ import {
 import { useBoqWizardStore, type RoomInputKey } from '@/store/boqWizardStore';
 import { planToWizardRooms } from '@/lib/vision/planToWizardRooms';
 import type { VisionAnalysisResult } from '@/lib/vision/types';
+import { prepareImageForUpload } from '@/lib/compressImage';
+import { captureProductEvent } from '@/lib/productAnalytics';
 
 /** Matches what /api/vision/analyze will accept. */
 const PLAN_ACCEPT = 'image/png,image/jpeg,image/jpg,image/webp,application/pdf';
@@ -213,15 +215,18 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
       }
     : null);
 
-  const readPlan = async (file: File) => {
+  const readPlan = async (chosen: File) => {
     setPlanError(null);
     setPlanStage(0);
     setPlanElapsed(0);
 
-    if (!PLAN_ACCEPT.split(',').includes(file.type)) {
+    if (!PLAN_ACCEPT.split(',').includes(chosen.type)) {
       setPlanError('Choose a PDF, PNG, JPG or WEBP drawing.');
       return;
     }
+    // Shrunk before the size check: a photographed plan is accepted instead of
+    // refused, and reaches the reader in a fraction of the time and data.
+    const file = await prepareImageForUpload(chosen, 'reading');
     if (file.size > PLAN_MAX_BYTES) {
       setPlanError('That file is over 10 MB. Try exporting the plan at a smaller size.');
       return;
@@ -236,6 +241,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
 
       if (!response.ok || !payload?.success) {
         setPlanError(payload?.error || 'We could not read that plan. Try a clearer copy, or use the room builder.');
+        captureProductEvent('ai_scan_used', { tool: 'plan_upload', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'failed' });
         return;
       }
 
@@ -243,6 +249,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
 
       if (mapped.rooms.length === 0 || mapped.totalArea <= 0) {
         setPlanError('No rooms could be measured on that drawing. Try a clearer copy, or use the room builder.');
+        captureProductEvent('ai_scan_used', { tool: 'plan_upload', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'nothing_found' });
         return;
       }
 
@@ -254,6 +261,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
       if (mapped.doors > 0) setTotalDoors(mapped.doors);
       if (mapped.windows > 0) setTotalWindows(mapped.windows);
 
+      captureProductEvent('ai_scan_used', { tool: 'plan_upload', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'success', rooms: mapped.rooms.length });
       setPlanSummary({
         fileName: file.name,
         rooms: mapped.rooms.length,

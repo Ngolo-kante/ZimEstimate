@@ -33,10 +33,11 @@ import BudgetPlanCard from '@/components/quick-projects/BudgetPlanCard';
 import ComplianceCard from '@/components/quick-projects/ComplianceCard';
 import NextStepsCard from '@/components/quick-projects/NextStepsCard';
 import type { ComplianceStatus } from '@/lib/quick-projects/compliance';
-import { downloadQuickEstimatePDF } from '@/lib/pdf-export';
 import { QUICK_TYPE_LABELS } from '@/lib/services/savedWork';
 import type { BOQItem, LaborConfig, QuickBOQ } from '@/lib/quick-projects/engine/types';
 import { ArrowLeft, PencilSimple, ShareNetwork, Download, Warning } from '@phosphor-icons/react';
+import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
+import { captureProductEvent } from '@/lib/productAnalytics';
 
 function estimateName(boq: QuickBOQ): string {
   const named = boq.answers?.project_name;
@@ -183,9 +184,14 @@ function SavedQuickEstimate() {
   // Shared with the card menu in My Work via downloadQuickEstimatePDF, so the
   // PDF from either place is generated the same way rather than two functions
   // quietly drifting apart.
-  const handleDownloadPdf = useCallback(() => {
+  const handleDownloadPdf = useCallback(async () => {
     if (!boq) return;
-    const { error } = downloadQuickEstimatePDF({
+    const pdf = await loadPdfExport('saved_estimate');
+    if (!pdf) {
+      showError(PDF_LOAD_ERROR);
+      return;
+    }
+    const { error } = pdf.downloadQuickEstimatePDF({
       name: estimateName(boq),
       typeLabel: QUICK_TYPE_LABELS[boq.projectType] ?? boq.projectType,
       location: (boq.answers?.project_location as string) || null,
@@ -197,18 +203,27 @@ function SavedQuickEstimate() {
 
   const handleShare = useCallback(async () => {
     if (!boq) return;
+    /* Saved estimates are private to their owner, so this page's own address
+       showed "not found" to whoever it was shared with. Until there is a way
+       to make one viewable by link, Share sends the summary and an invitation
+       to price the same kind of job — a working link, not a dead one. */
+    const link = `${window.location.origin}/quick-projects/${boq.projectType}`;
     const text = [
       `ZimEstimate — ${estimateName(boq)}`,
       `Items: ${boq.boqItems.filter((i) => i.included !== false).length}`,
       `Estimated total: $${Math.round(total).toLocaleString()}`,
+      '',
+      `Price your own on ZimEstimate:`,
     ].join('\n');
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'ZimEstimate estimate', text, url: window.location.href });
+        await navigator.share({ title: 'ZimEstimate estimate', text, url: link });
+        captureProductEvent('estimate_shared', { estimate: `saved_${boq.projectType}`, method: 'share_sheet' });
         return;
       }
-      await navigator.clipboard.writeText(`${text}\n\n${window.location.href}`);
+      await navigator.clipboard.writeText(`${text}\n${link}`);
       success('Estimate summary copied to clipboard.');
+      captureProductEvent('estimate_shared', { estimate: `saved_${boq.projectType}`, method: 'clipboard' });
     } catch {
       /* dismissed by the user — nothing to report */
     }

@@ -8,6 +8,7 @@ import {
   Warning,
   X,
 } from '@phosphor-icons/react';
+import { prepareImageForUpload } from '@/lib/compressImage';
 
 interface UploadStepProps {
   onFileSelect: (file: File) => void;
@@ -31,7 +32,10 @@ export default function UploadStep({ onFileSelect, error }: UploadStepProps) {
     return null;
   };
 
-  const handleFile = useCallback((file: File) => {
+  const handleFile = useCallback(async (chosen: File) => {
+    // Shrunk before the size check: a 12 MB phone photo of a plan is about
+    // 1 MB once scaled, and used to be turned away for no reason.
+    const file = await prepareImageForUpload(chosen, 'reading');
     const validationError = validateFile(file);
     if (validationError) {
       setLocalError(validationError);

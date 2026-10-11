@@ -42,7 +42,6 @@ import {
 import {
   solarSizingToBOQ,
   solarBalanceOfSystemCost,
-  SOLAR_INSTALL_LABOR_PCT,
   SOLAR_TRANSPORT_COST,
   type SolarWiringKit,
 } from '@/lib/quick-projects/solar/boq';
@@ -52,10 +51,12 @@ import {
   decodeSolarExplorerState,
   encodeSolarExplorerState,
   SOLAR_CARD_IDS,
+  SOLAR_EXPLORER_DEFAULTS,
 } from '@/lib/quick-projects/solar/explorerUrl';
 import type { BOQItem, LaborConfig } from '@/lib/quick-projects/engine/types';
 import type { SolarWizardOutput } from '@/lib/quick-projects/solar/types';
 import QuickBOQTable from './QuickBOQTable';
+import { captureProductEvent, getBudgetBand } from '@/lib/productAnalytics';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -267,41 +268,28 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
   })();
 
   // Objective
-  const [objective, setObjective] = useState<Objective>('balanced');
+  const [objective, setObjective] = useState<Objective>(SOLAR_EXPLORER_DEFAULTS.objective);
 
   // Custom install amount in dollars (null = use the percentage below)
-  const [installCustom, setInstallCustom] = useState<number | null>(null);
+  const [installCustom, setInstallCustom] = useState<number | null>(SOLAR_EXPLORER_DEFAULTS.installCustom);
 
   /* Installation labour as a share of hardware. A single hardcoded 20% was too
      high for this market and the user had no way to change it without typing a
      dollar figure, which most people cannot guess. Now it is a choice, and the
      percentage travels into the saved BOQ so the estimate matches what was
      shown here. */
-  const [laborPct, setLaborPct] = useState<number>(SOLAR_INSTALL_LABOR_PCT);
+  const [laborPct, setLaborPct] = useState<number>(SOLAR_EXPLORER_DEFAULTS.laborPct);
 
   /* Full kit by default, so the estimate a user saw before this option existed
      does not quietly change. The basic kit is offered on the wiring row — and
      named in its shortfall line when the full kit does not fit. */
-  const [wiringKit, setWiringKit] = useState<SolarWiringKit>('full');
+  const [wiringKit, setWiringKit] = useState<SolarWiringKit>(SOLAR_EXPLORER_DEFAULTS.wiringKit);
 
   // Enabled cards — protection OFF (user can add), transport OFF (usually bundled)
+  // Defaults, and why each is on or off, live in SOLAR_EXPLORER_DEFAULTS —
+  // shared with the link preview so the two cannot describe different systems.
   const [enabledCards, setEnabledCards] = useState<Record<string, boolean>>({
-    panels: true,
-    inverter: true,
-    battery: true,
-    // Was OFF by default. That made the headline "what your budget buys" figure
-    // describe a system with no isolators, surge protection, earthing or AVS —
-    // which this same component warns is unsafe and which no installer would
-    // quote. The budget looked further-stretching than it was, and the BOQ then
-    // added the missing parts anyway. On by default; the toggle still lets
-    // someone price the difference deliberately.
-    protection: true,
-    /* On by default: labour is a real cost, and a budget that quietly omits it
-       flatters itself. The rate is the part people argue about, not whether
-       they pay at all — so it is included, and the card lets them set it from
-       10% to 20% or paste their installer's own quote. */
-    installation: true,
-    transport: false,  // OFF by default — typically bundled in ZW urban quotes
+    ...SOLAR_EXPLORER_DEFAULTS.enabledCards,
   });
 
   /* Spend the whole budget by default.
@@ -311,12 +299,12 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
      and a page titled "what can your budget buy?" should not answer it with a
      fifth of the budget sitting idle. The button still turns it off for
      anyone who wants to see the plain proportional split. */
-  const [redistribute, setRedistribute] = useState(true);
+  const [redistribute, setRedistribute] = useState(SOLAR_EXPLORER_DEFAULTS.redistribute);
 
   // Brand selections (objective hints default brands)
-  const [panelBrand, setPanelBrand] = useState<string>('ja_solar');
-  const [inverterBrand, setInverterBrand] = useState<string>('must');
-  const [batteryBrand, setBatteryBrand] = useState<string>('dyness');
+  const [panelBrand, setPanelBrand] = useState<string>(SOLAR_EXPLORER_DEFAULTS.panelBrand);
+  const [inverterBrand, setInverterBrand] = useState<string>(SOLAR_EXPLORER_DEFAULTS.inverterBrand);
+  const [batteryBrand, setBatteryBrand] = useState<string>(SOLAR_EXPLORER_DEFAULTS.batteryBrand);
 
   /* Open on the estimate a shared link describes. Read from window.location
      after mount, like the page around it, rather than in the initial state:
@@ -554,7 +542,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       ) as Record<(typeof SOLAR_CARD_IDS)[number], boolean>,
       redistribute,
       wiringKit,
-    }).toString()}`;
+    }).toString()}&src=share`;
 
     const shareText = [
       `What ${usd(budget)} buys in solar — ZimEstimate`,
@@ -572,10 +560,12 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       if (navigator.share) {
         await navigator.share({ title: 'Solar Budget Estimate', text: shareText, url: link });
         showSuccess('Estimate shared.');
+        captureProductEvent('estimate_shared', { estimate: 'solar', method: 'share_sheet', budget_band: getBudgetBand(budget) });
         return;
       }
       await navigator.clipboard.writeText(`${shareText}\n\n${link}`);
       showSuccess('Estimate summary copied to clipboard.');
+      captureProductEvent('estimate_shared', { estimate: 'solar', method: 'clipboard', budget_band: getBudgetBand(budget) });
     } catch {
       showError('Sharing was cancelled or unavailable.');
     }
@@ -1602,7 +1592,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
           {/* ── Action Buttons ────────────────────────────────────────────────── */}
           {/* Same three actions, same order and labels as the house and borehole
-              budget tabs — see the note in quick-budget/page.tsx. */}
+              budget tabs — see the note in quick-budget/QuickBudgetClient.tsx. */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-6 border-t border-[var(--color-border)]">
             <Button
               variant="primary"

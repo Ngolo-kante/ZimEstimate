@@ -14,13 +14,13 @@ import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { getProjects, deleteProject, archiveProject, getBOQItems } from '@/lib/services/projects';
-import { downloadBOQPDF, downloadQuickEstimatePDF } from '@/lib/pdf-export';
 import { listSavedWork, QUICK_TYPE_LABELS, type SavedWorkItem, type SavedWorkKind } from '@/lib/services/savedWork';
 import { deleteQuickBOQ, getQuickBOQ } from '@/lib/services/quickBoq';
 import { clearOptimisticProjectCard, getOptimisticProjectCard } from '@/lib/projectCreationCache';
 import { supabase } from '@/lib/supabase';
 import { Project, ProjectStatus, ProjectScope } from '@/lib/database.types';
 import { useReveal } from '@/hooks/useReveal';
+import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 import {
     Plus,
     DotsThreeVertical,
@@ -340,7 +340,12 @@ function ProjectsContent() {
             showError(`"${project.name}" has no BOQ items to download yet.`);
             return;
         }
-        downloadBOQPDF(project, items);
+        const pdf = await loadPdfExport('projects_list');
+        if (!pdf) {
+            showError(PDF_LOAD_ERROR);
+            return;
+        }
+        pdf.downloadBOQPDF(project, items);
     };
 
     // ── Quick estimate card actions ──────────────────────────────────────────
@@ -374,7 +379,12 @@ function ProjectsContent() {
             return;
         }
 
-        const { error: pdfError } = downloadQuickEstimatePDF({
+        const pdf = await loadPdfExport('projects_list');
+        if (!pdf) {
+            showError(PDF_LOAD_ERROR);
+            return;
+        }
+        const { error: pdfError } = pdf.downloadQuickEstimatePDF({
             name: item.name,
             typeLabel: QUICK_TYPE_LABELS[boq.projectType] ?? item.typeLabel,
             location: (boq.answers?.project_location as string) || null,

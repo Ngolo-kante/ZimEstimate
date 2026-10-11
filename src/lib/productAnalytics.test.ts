@@ -153,4 +153,51 @@ describe('product analytics consent', () => {
     expect(() => analytics.captureProductEvent('calculator_started')).not.toThrow();
     expect(posthog.capture).not.toHaveBeenCalled();
   });
+
+  describe('shared-link arrivals', () => {
+    let session: Map<string, string>;
+
+    beforeEach(() => {
+      session = new Map();
+      Object.assign(browser, {
+        sessionStorage: {
+          getItem: vi.fn((key: string) => session.get(key) ?? null),
+          setItem: vi.fn((key: string, value: string) => { session.set(key, value); }),
+          removeItem: vi.fn((key: string) => { session.delete(key); }),
+        } as unknown as Storage,
+      });
+    });
+
+    const openedCalls = () => posthog.capture.mock.calls.filter(([event]) => event === 'shared_link_opened');
+
+    it('holds the arrival until the visitor accepts, then sends it once', () => {
+      // A recipient is nearly always new and has not answered the banner.
+      analytics.recordSharedLinkArrival('solar');
+      expect(posthog.capture).not.toHaveBeenCalled();
+      expect(posthog.init).not.toHaveBeenCalled();
+
+      analytics.setAnalyticsConsent('granted');
+      expect(openedCalls()).toEqual([['shared_link_opened', { estimate: 'solar' }]]);
+    });
+
+    it('never sends it when the visitor declines', () => {
+      analytics.recordSharedLinkArrival('house');
+      analytics.setAnalyticsConsent('denied');
+      analytics.setAnalyticsConsent('granted');
+      expect(openedCalls()).toHaveLength(0);
+    });
+
+    it('sends straight away for a visitor who has already accepted', () => {
+      storage.set(analytics.ANALYTICS_CONSENT_KEY, 'granted');
+      analytics.recordSharedLinkArrival('borehole');
+      expect(openedCalls()).toEqual([['shared_link_opened', { estimate: 'borehole' }]]);
+    });
+
+    it('does not count a reload of the same link as a second arrival', () => {
+      storage.set(analytics.ANALYTICS_CONSENT_KEY, 'granted');
+      analytics.recordSharedLinkArrival('solar');
+      analytics.recordSharedLinkArrival('solar');
+      expect(openedCalls()).toHaveLength(1);
+    });
+  });
 });

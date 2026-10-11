@@ -12,7 +12,6 @@ import ProjectPickerModal from '@/components/ui/ProjectPickerModal';
 import { ProgressBar, default as ProgressRing } from '@/components/ui/ProgressRing';
 import PriceSparkline from '@/components/ui/PriceSparkline';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
-import { downloadAnalyticsPDF } from '@/lib/pdf-export';
 import { getBuilderAnalytics, type BuilderAnalyticsData } from '@/lib/services/analytics';
 import type { Project } from '@/lib/database.types';
 import {
@@ -55,6 +54,7 @@ function MetricCard({
 }
 
 import { Suspense } from 'react';
+import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 
 function AnalyticsContent() {
   const router = useRouter();
@@ -154,7 +154,16 @@ function AnalyticsContent() {
 
     const toCurrency = (usd: number) => (currency === 'USD' ? usd : usd * exchangeRate);
 
-    downloadAnalyticsPDF({
+    const pdf = await loadPdfExport('analytics');
+    if (!pdf) {
+      // Not setError: that card is headed "Unable to load analytics", which
+      // is not what failed. And reset the button, which otherwise stayed on
+      // "Exporting…" for good.
+      alert(PDF_LOAD_ERROR);
+      setExporting(false);
+      return;
+    }
+    pdf.downloadAnalyticsPDF({
       projectName: project.name,
       generatedAt: new Date(),
       currency,

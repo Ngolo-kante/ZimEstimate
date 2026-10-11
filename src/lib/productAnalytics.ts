@@ -12,7 +12,14 @@ export type ProductAnalyticsEvent =
   | 'boq_cta_clicked'
   | 'boq_started'
   | 'signup_started'
-  | 'signup_completed';
+  | 'signup_completed'
+  // Whether WhatsApp sharing brings people in: a share sent, and a shared
+  // link opened by someone else.
+  | 'estimate_shared'
+  | 'shared_link_opened'
+  | 'estimate_saved'
+  | 'pdf_exported'
+  | 'ai_scan_used';
 
 type AnalyticsProperties = Record<
   string,
@@ -117,13 +124,59 @@ function syncAnalyticsConsent(): void {
       }
       registerAcquisitionContext();
     });
+    flushSharedLinkArrival();
   } else {
     if (initialized) safelyRunAnalytics(() => posthog.opt_out_capturing());
     try {
       window.localStorage.removeItem('zimestimate_first_landing_page');
+      // Declining discards a held shared-link arrival; it is never sent.
+      window.sessionStorage?.removeItem(SHARED_ARRIVAL_KEY);
     } catch {
       // Storage is optional; the consent guard still prevents event capture.
     }
+  }
+}
+
+/* ── Shared-link arrivals ─────────────────────────────────────────────────
+   Someone opening a shared estimate is nearly always a first-time visitor
+   who has not answered the consent banner yet — and before consent nothing
+   is captured. Recorded the ordinary way, that event would almost never
+   arrive, and the one number that says whether WhatsApp sharing works would
+   read as zero. So the arrival is held in this tab's session storage and
+   sent only if, and once, the visitor accepts. Nothing leaves the browser
+   without consent; declining discards it; closing the tab forgets it. */
+const SHARED_ARRIVAL_KEY = 'zimestimate_shared_arrival';
+const SHARED_ARRIVAL_COUNTED_KEY = 'zimestimate_shared_arrival_counted';
+
+export function recordSharedLinkArrival(estimate: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    // A reload of the same shared link is not a second arrival.
+    if (window.sessionStorage.getItem(SHARED_ARRIVAL_COUNTED_KEY)) return;
+    window.sessionStorage.setItem(SHARED_ARRIVAL_KEY, estimate);
+  } catch {
+    return;
+  }
+  flushSharedLinkArrival();
+}
+
+function flushSharedLinkArrival(): void {
+  if (typeof window === 'undefined' || getAnalyticsConsent() !== 'granted') return;
+  let estimate: string | null = null;
+  try {
+    estimate = window.sessionStorage.getItem(SHARED_ARRIVAL_KEY);
+  } catch {
+    return;
+  }
+  if (!estimate) return;
+
+  captureProductEvent('shared_link_opened', { estimate });
+  if (!initialized) return;
+  try {
+    window.sessionStorage.removeItem(SHARED_ARRIVAL_KEY);
+    window.sessionStorage.setItem(SHARED_ARRIVAL_COUNTED_KEY, '1');
+  } catch {
+    // Worst case a reload counts twice; the event itself was sent.
   }
 }
 

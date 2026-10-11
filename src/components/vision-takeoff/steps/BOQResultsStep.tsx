@@ -23,9 +23,9 @@ import {
   CircleNotch,
 } from '@phosphor-icons/react';
 import { GeneratedBOQItem, ProjectInfo, VisionConfig, DetectedRoom, normalizeConfigToArrays } from '@/lib/vision/types';
-import { exportBOQToPDF } from '@/lib/pdf-export';
 import ReviewWorkspace from '@/components/boq/ReviewWorkspace';
 import { useBoqWizardStore } from '@/store/boqWizardStore';
+import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 
 /**
  * Where an unsigned-in Save stashes its work across the trip to /auth/login.
@@ -219,7 +219,7 @@ export default function BOQResultsStep({
     if (e.key === 'Escape') cancelEditing();
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     const boqData = {
       projectName: projectInfo.name || 'Vision Takeoff Project',
       location: locationLabel,
@@ -236,7 +236,12 @@ export default function BOQResultsStep({
       config,
     };
 
-    exportBOQToPDF(boqData);
+    const pdf = await loadPdfExport('vision_takeoff');
+    if (!pdf) {
+      alert(PDF_LOAD_ERROR);
+      return;
+    }
+    pdf.exportBOQToPDF(boqData);
   };
 
   const handleWhatsAppShare = () => {

@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import { Camera, CloudArrowUp, File, X } from '@phosphor-icons/react';
 import type { DocumentCategory } from '@/lib/database.types';
 import { DOCUMENT_ACCEPT, validateDocumentFile } from '@/lib/documentFiles';
+import { prepareImageForUpload } from '@/lib/compressImage';
 
 interface DocumentUploaderProps {
     onUpload: (file: File, category: DocumentCategory, description?: string) => Promise<void>;
@@ -38,8 +39,11 @@ export default function DocumentUploader({ onUpload, isUploading }: DocumentUplo
         return () => URL.revokeObjectURL(url);
     }, [file]);
 
-    const chooseFile = (chosen?: File) => {
-        if (!chosen || busy.current || isUploading) return;
+    const chooseFile = async (picked?: File) => {
+        if (!picked || busy.current || isUploading) return;
+        // Shrunk before the size check, so a large phone photo is accepted and
+        // uploads in a fraction of the time and data. PDFs pass through as-is.
+        const chosen = await prepareImageForUpload(picked, 'record');
         const message = validateDocumentFile(chosen);
         setError(message);
         setStatus('');

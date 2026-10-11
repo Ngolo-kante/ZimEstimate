@@ -24,7 +24,7 @@ import {
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { gateSaveBehindSignIn } from '@/lib/services/quickBoq';
-import { BOREHOLE_PRICES as P, LOCATION_DEFAULTS } from '@/lib/quick-projects/borehole/catalog';
+import { BOREHOLE_PRICES as P, LOCATION_DEFAULTS, boreholeAreaType } from '@/lib/quick-projects/borehole/catalog';
 import { calculateBoreholeBOQ } from '@/lib/quick-projects/borehole/calculations';
 // Shared with calculations.ts. These used to be defined here as well, and the
 // two copies drifted — the explorer showed one casing grade and the BOQ quoted
@@ -42,7 +42,13 @@ import {
   type TankSize,
 } from '@/lib/quick-projects/borehole/pricing';
 import type { BOQItem, LaborConfig, Answers } from '@/lib/quick-projects/engine/types';
+import {
+  BOREHOLE_CARD_IDS,
+  decodeBoreholeExplorerState,
+  encodeBoreholeExplorerState,
+} from '@/lib/quick-projects/borehole/explorerUrl';
 import QuickBOQTable from './QuickBOQTable';
+import { captureProductEvent, getBudgetBand } from '@/lib/productAnalytics';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -148,10 +154,11 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
 
   const [isSaving, setIsSaving] = useState(false);
 
+
   const { success: showSuccess, error: showError } = useToast();
 
   const locMeta = LOCATION_DEFAULTS[location] || LOCATION_DEFAULTS.other;
-  const areaType = ['harare', 'bulawayo', 'chitungwiza'].includes(location) ? 'urban' : 'peri_urban';
+  const areaType = boreholeAreaType(location);
 
   // ── Fit the configuration to the budget ──────────────────────────────────
   // The heading asks "what can your budget buy?" and this is what makes that
@@ -173,6 +180,31 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
     setTankSize(fit.tankSize);
     setUseCombo(fit.useCombo);
   }, [fit, userPickedComponents, budget]);
+  /* Open on the borehole a shared link describes. Read after mount, from
+     window.location, like the page around it: this component is also
+     server-rendered, where there is no URL, and reading it into the initial
+     state would make the two renders disagree.
+
+     It must come after the budget re-fit effect above. Effects run in order,
+     and on mount the re-fit still sees userPickedComponents as false — so if
+     it ran second it overwrote the shared pump, casing and tank with the
+     budget's own picks. */
+  useEffect(() => {
+    const shared = decodeBoreholeExplorerState(new URLSearchParams(window.location.search));
+    if (shared.budget !== undefined) setBudgetInput(String(shared.budget));
+    if (shared.depth !== undefined) setDepth(shared.depth);
+    if (shared.purpose) setPurpose(shared.purpose);
+    if (shared.location) setLocation(shared.location);
+    if (shared.enabledCards) setEnabledCards(shared.enabledCards);
+    if (shared.userPickedComponents) {
+      // Set before the components, so the budget re-fit never overwrites them.
+      setUserPickedComponents(true);
+      if (shared.pumpType) setPumpType(shared.pumpType);
+      if (shared.casingGrade) setCasingGrade(shared.casingGrade);
+      if (shared.tankSize) setTankSize(shared.tankSize);
+      if (shared.useCombo !== undefined) setUseCombo(shared.useCombo);
+    }
+  }, []);
   const diameter = purpose === 'domestic' ? '140mm' as const : '180mm' as const;
 
   // ── Costs ─────────────────────────────────────────────────────────────────
@@ -297,14 +329,33 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
       `Allocated: $${Math.round(totalAllocated).toLocaleString()} (${budgetPct}% of budget)`,
     ].join('\n');
 
+    /* A link that rebuilds this borehole, rather than the page's bare address,
+       which opened an empty explorer for whoever received it. */
+    const link = `${window.location.origin}/quick-budget?${encodeBoreholeExplorerState({
+      budget,
+      depth,
+      purpose,
+      location,
+      enabledCards: Object.fromEntries(
+        BOREHOLE_CARD_IDS.map((id) => [id, Boolean(enabledCards[id])]),
+      ) as Record<(typeof BOREHOLE_CARD_IDS)[number], boolean>,
+      pumpType,
+      casingGrade,
+      tankSize,
+      useCombo,
+      userPickedComponents,
+    }).toString()}&src=share`;
+
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'Borehole Budget Estimate', text: shareText, url: window.location.href });
+        await navigator.share({ title: 'Borehole Budget Estimate', text: shareText, url: link });
         showSuccess('Estimate shared.');
+        captureProductEvent('estimate_shared', { estimate: 'borehole', method: 'share_sheet', budget_band: getBudgetBand(budget) });
         return;
       }
-      await navigator.clipboard.writeText(`${shareText}\n\n${window.location.href}`);
+      await navigator.clipboard.writeText(`${shareText}\n\n${link}`);
       showSuccess('Estimate summary copied to clipboard.');
+      captureProductEvent('estimate_shared', { estimate: 'borehole', method: 'clipboard', budget_band: getBudgetBand(budget) });
     } catch {
       showError('Sharing was cancelled or unavailable.');
     }
@@ -811,7 +862,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
 
       {/* ── Action Buttons ───────────────────────────────────────────────────── */}
       {/* Same three actions, same order and labels as the house and solar budget
-          tabs — see the note in quick-budget/page.tsx. */}
+          tabs — see the note in quick-budget/QuickBudgetClient.tsx. */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-6 border-t border-[var(--color-border)]">
         <Button
           variant="primary"

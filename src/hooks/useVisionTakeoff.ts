@@ -16,6 +16,7 @@ import { generateBOQ } from '@/lib/calculations';
 import { materials, getBestPrice } from '@/lib/materials';
 import { TEMPORARY_WORKS_SUGGESTIONS } from '@/lib/buildFlowRules';
 import { supabase } from '@/lib/supabase';
+import { captureProductEvent } from '@/lib/productAnalytics';
 
 const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
 
@@ -123,6 +124,7 @@ export function useVisionTakeoff() {
 
       // Determine next step based on confidence
       const nextStep: WizardStep = result.confidence < 90 ? 'warning' : 'editing';
+      captureProductEvent('ai_scan_used', { tool: 'vision_takeoff', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'success', rooms: result.rooms.length });
 
       setState((prev) => ({
         ...prev,
@@ -133,6 +135,7 @@ export function useVisionTakeoff() {
         isProcessing: false,
       }));
     } catch (error) {
+      captureProductEvent('ai_scan_used', { tool: 'vision_takeoff', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'failed' });
       setState((prev) => ({
         ...prev,
         step: 'upload',

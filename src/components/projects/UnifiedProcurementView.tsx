@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { DOCUMENT_ACCEPT, validateDocumentFile } from '@/lib/documentFiles';
+import { prepareImageForUpload } from '@/lib/compressImage';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import RfqPanel from './RfqPanel';
@@ -465,8 +466,11 @@ export default function UnifiedProcurementView({
     setSelectedItemForPurchase(null);
   };
 
-  const selectReceipt = (file?: File) => {
-    if (!file) return;
+  const selectReceipt = async (picked?: File) => {
+    if (!picked) return;
+    // A receipt photo only has to stay legible: shrunk before the size check,
+    // it is accepted at any phone resolution and uploads far faster.
+    const file = await prepareImageForUpload(picked, 'record');
     const error = validateDocumentFile(file);
     setPurchaseError(error);
     if (!error) {

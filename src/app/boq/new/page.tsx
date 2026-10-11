@@ -13,7 +13,6 @@ import { useBoqWizardStore, DEFAULT_ROOM_INPUTS, type BoqMilestoneId, type Miles
 import LiveEstimatorLayout from './components/LiveEstimatorLayout';
 import LiveEstimatePanel from './components/LiveEstimatePanel';
 import ReviewTabs from './components/ReviewTabs';
-import { exportBOQToPDF } from '@/lib/pdf-export';
 import ProjectTypeSection from './components/sections/ProjectTypeSection';
 import ProjectLocationSection from './components/sections/ProjectLocationSection';
 import BuildingDesignSection from './components/sections/BuildingDesignSection';
@@ -29,6 +28,7 @@ import { useToast } from '@/components/ui/Toast';
 import type { BOQItem as DbBOQItem, Project } from '@/lib/database.types';
 import { captureProductEvent } from '@/lib/productAnalytics';
 import './wizard-design.css';
+import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 
 function getLocationLabel(type: string, city: string, specific: string) {
   const parts = [];
@@ -276,12 +276,17 @@ function BoqNewPageContent() {
 
   // Free, and deliberately so: the PDF is the thing that gets forwarded to a
   // builder or a lender, and it carries our name with it.
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     if (reviewBoq.items.length === 0) {
       showError('Add some items to the estimate before downloading.');
       return;
     }
-    exportBOQToPDF(
+    const pdf = await loadPdfExport('boq_wizard');
+    if (!pdf) {
+      showError(PDF_LOAD_ERROR);
+      return;
+    }
+    pdf.exportBOQToPDF(
       {
         projectName: projectDetails.name || 'ZimEstimate BOQ',
         location: projectDetails.locationType || '',

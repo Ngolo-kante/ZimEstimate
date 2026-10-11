@@ -27,7 +27,9 @@ import { readEstimateHandoff } from '@/lib/estimateHandoff';
 import { supabase } from '@/lib/supabase';
 import { createProject, saveProjectWithItems } from '@/lib/services/projects';
 import PdfViewer from '@/components/ui/PdfViewer';
+import { prepareImageForUpload } from '@/lib/compressImage';
 import type { ScannedBoq, ScannedBoqItem } from '@/lib/vision/boq-scan';
+import { captureProductEvent } from '@/lib/productAnalytics';
 import {
   ArrowLeft, UploadSimple, Camera, Trash, Warning, CircleNotch, FloppyDisk,
 } from '@phosphor-icons/react';
@@ -91,10 +93,13 @@ function BoqScannerContent() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  const chooseFile = useCallback((chosen: File) => {
-    const error = validateDocumentFile(chosen);
+  const chooseFile = useCallback(async (chosen: File) => {
+    // Shrunk before the size check, so a large phone photo is accepted rather
+    // than refused; the AI still gets enough detail to read every line.
+    const file = await prepareImageForUpload(chosen, 'reading');
+    const error = validateDocumentFile(file);
     if (error) { showError(error); return; }
-    setFile(chosen);
+    setFile(file);
   }, [showError]);
 
   const runScan = useCallback(async () => {
@@ -128,12 +133,15 @@ function BoqScannerContent() {
         // Kept on the upload step with the file still selected, so retrying with
         // a better photo does not mean starting over.
         showError('We could not find a bill of quantities in that image. Try a clearer photo.');
+        captureProductEvent('ai_scan_used', { tool: 'boq_scanner', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'nothing_found' });
         setStage('upload');
         return;
       }
+      captureProductEvent('ai_scan_used', { tool: 'boq_scanner', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'success', lines: scanned.items.length });
       setStage('review');
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Could not read that document.');
+      captureProductEvent('ai_scan_used', { tool: 'boq_scanner', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'failed' });
       setStage('upload');
     }
   }, [file, showError]);
