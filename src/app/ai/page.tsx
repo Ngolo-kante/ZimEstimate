@@ -10,6 +10,7 @@ import {
     ArrowRight,
     Sparkle,
     Lightning,
+    Scales,
 } from '@phosphor-icons/react';
 
 const aiFeatures = [
@@ -37,6 +38,15 @@ const aiFeatures = [
         href: '/ai/boq-scanner',
         badge: 'New',
         features: ['Reads handwriting', 'Line-by-line confidence', 'Edit before saving', 'Becomes a project'],
+    },
+    {
+        id: 'quote-check',
+        title: 'Check a Quote',
+        description: 'Have a quote from a builder or hardware? Photograph it and see each price against what materials cost in Harare right now.',
+        icon: Scales,
+        href: '/ai/quote-check',
+        badge: 'New',
+        features: ['Reads the quote for you', 'Line-by-line comparison', 'How much is above market', 'Fix any misread line first'],
     },
     {
         id: 'inflation-engine',

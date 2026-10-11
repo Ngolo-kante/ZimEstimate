@@ -39,6 +39,12 @@ export interface VerifiedPrice {
   /** How priceUsd was reached from the sources. */
   method: string;
   sources: PriceSource[];
+  /**
+   * The listings are a different size from the catalogue unit (a 3.6 m sheet
+   * for a 3 m price, a 500 g pack for a per-kg price), so their prices cannot
+   * be compared with priceUsd directly — only the converted priceUsd can.
+   */
+  sourcesInOtherUnits?: true;
 }
 
 export const VERIFIED_PRICES: VerifiedPrice[] = [
@@ -106,7 +112,7 @@ export const VERIFIED_PRICES: VerifiedPrice[] = [
     { supplier: 'Union Hardware', listing: 'Reinforced mesh wire S193', priceUsd: 39.21 },
     { supplier: 'Halsteds', listing: 'Builders Mesh 2.4 x 6M BM193', priceUsd: 40.58 },
   ] },
-  { materialId: 'bindwire', priceUsd: 7.28, method: 'per kg, from a 500 g pack', sources: [
+  { materialId: 'bindwire', priceUsd: 7.28, method: 'per kg, from a 500 g pack', sourcesInOtherUnits: true, sources: [
     { supplier: 'Halsteds', listing: 'Starline galv binding wire 1.60mm x 500g', priceUsd: 3.64 },
   ] },
   { materialId: 'brickforce', priceUsd: 1.88, method: 'median, per 20 m roll', sources: [
@@ -117,7 +123,7 @@ export const VERIFIED_PRICES: VerifiedPrice[] = [
   ] },
 
   // ── Roofing ─────────────────────────────────────────────────────────────
-  { materialId: 'ibr-04-3m', priceUsd: 15.62, method: '3.6 m sheet scaled to 3 m', sources: [
+  { materialId: 'ibr-04-3m', priceUsd: 15.62, method: '3.6 m sheet scaled to 3 m', sourcesInOtherUnits: true, sources: [
     { supplier: 'Halsteds', listing: 'IBR Galvanised 0.40mm x 686mm x 3.6m', priceUsd: 18.75 },
   ] },
   { materialId: 'gutter-pvc', priceUsd: 18.95, method: 'single source (6 m half-round)', sources: [
@@ -169,7 +175,7 @@ export const VERIFIED_PRICES: VerifiedPrice[] = [
   { materialId: 'paint-acrylic', priceUsd: 99.0, method: 'single source (20 L)', sources: [
     { supplier: 'ZBMS', listing: '20l Astra Acrylic Paint', priceUsd: 99.0 },
   ] },
-  { materialId: 'tiles-floor-ceramic', priceUsd: 9.25, method: 'per m², from a 1.44 m² box', sources: [
+  { materialId: 'tiles-floor-ceramic', priceUsd: 9.25, method: 'per m², from a 1.44 m² box', sourcesInOtherUnits: true, sources: [
     { supplier: 'Halsteds', listing: 'Tile floor glazed 600x600 1.44m²', priceUsd: 13.32 },
   ] },
   { materialId: 'tile-adhesive', priceUsd: 4.51, method: 'median of four 20 kg ceramic adhesives', sources: [
@@ -187,10 +193,10 @@ export const VERIFIED_PRICES: VerifiedPrice[] = [
     { supplier: 'Halsteds', listing: 'Tylon tile grout dove grey 5kg', priceUsd: 7.72 },
     { supplier: 'Halsteds', listing: 'Tylon tile grout ivory 5kg', priceUsd: 9.04 },
   ] },
-  { materialId: 'ceiling-board', priceUsd: 7.06, method: 'per m², from a 3.6 m² board', sources: [
+  { materialId: 'ceiling-board', priceUsd: 7.06, method: 'per m², from a 3.6 m² board', sourcesInOtherUnits: true, sources: [
     { supplier: 'Halsteds', listing: 'Nutec ceiling tap board 1.2m x 3.0m x 4mm', priceUsd: 25.41 },
   ] },
-  { materialId: 'cornice', priceUsd: 6.25, method: 'mean, scaled to a 4 m length', sources: [
+  { materialId: 'cornice', priceUsd: 6.25, method: 'mean, scaled to a 4 m length', sourcesInOtherUnits: true, sources: [
     { supplier: 'Halsteds', listing: 'Cornice 76x19 3.0M', priceUsd: 4.09 },
     { supplier: 'Halsteds', listing: 'Rhino cornice 3.6M', priceUsd: 6.34 },
   ] },
@@ -200,7 +206,7 @@ export const VERIFIED_PRICES: VerifiedPrice[] = [
     { supplier: 'ZBMS', listing: 'DPC 115mm (4.5 inch)', priceUsd: 2.1 },
     { supplier: 'Union Hardware', listing: 'DPC blue 2-ply 115mm', priceUsd: 2.4 },
   ] },
-  { materialId: 'dpm', priceUsd: 37.56, method: 'mean, 250 micron scaled to a 30 m roll', sources: [
+  { materialId: 'dpm', priceUsd: 37.56, method: 'mean, 250 micron scaled to a 30 m roll', sourcesInOtherUnits: true, sources: [
     { supplier: 'ZBMS', listing: '250mic by 100m by 2.4m', priceUsd: 100 },
     { supplier: 'Halsteds', listing: 'Poly sheeting 250mc 2.4m x 100m', priceUsd: 150.38 },
   ] },

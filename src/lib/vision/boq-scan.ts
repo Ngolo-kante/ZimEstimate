@@ -16,7 +16,7 @@
 // rather than adding an OCR vendor.
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { VISION_MODEL } from './model';
+import { PLAN_MODELS } from './model';
 
 export interface ScannedBoqItem {
   /** Exactly as written on the page, before any catalogue matching. */
@@ -155,38 +155,44 @@ export function normaliseScannedBoq(raw: unknown): ScannedBoq {
 }
 
 /**
- * Retried on the two failures that mean "ask again", not "stop asking".
- *
- * 503 is the model being busy and 429 is a rate limit with a retry delay
- * attached; both cleared on a second attempt in testing. Everything else — a
- * bad key, a dead model name, an unreadable file — is permanent, and retrying
- * it just makes the user wait three times as long for the same error.
+ * Moves to the next model only on failures that mean "ask again" — busy,
+ * rate-limited or timed out. Everything else (a bad key, a dead model name,
+ * an unreadable file) is permanent, and retrying it just makes the user wait
+ * longer for the same error.
  */
 async function generateWithRetry(
   imageBase64: string,
   mimeType: string,
-  attempts = 3,
 ): Promise<string> {
+  /* Flash-Lite first, full Flash as the fallback — the same chain the plan
+     reader uses, for the same reason. On a printed nine-line quote, Lite read
+     every line, quantity and price correctly in 2.8 s while full Flash
+     answered 503 "high demand" (2026-10-11). Each attempt has its own limit;
+     a busy, rate-limited or timed-out model moves on to the next, while a
+     permanent error (bad key, unreadable file) stops at once. */
   const ai = getGenAI();
-  const model = ai.getGenerativeModel({ model: VISION_MODEL });
   let lastError: unknown;
 
-  for (let attempt = 0; attempt < attempts; attempt++) {
+  for (const attempt of PLAN_MODELS) {
     try {
-      const result = await model.generateContent([
-        BOQ_SCAN_PROMPT,
-        { inlineData: { mimeType, data: imageBase64 } },
-      ]);
+      const model = ai.getGenerativeModel({
+        model: attempt.model,
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.1, maxOutputTokens: 8192 },
+      });
+      const result = await model.generateContent(
+        [BOQ_SCAN_PROMPT, { inlineData: { mimeType, data: imageBase64 } }],
+        { timeout: attempt.timeoutMs },
+      );
       return result.response.text();
     } catch (error) {
       lastError = error;
+      const status = (error as { status?: number })?.status;
+      const name = error instanceof Error ? error.name : '';
       const message = error instanceof Error ? error.message : String(error);
-      const transient = message.includes('[503') || message.includes('[429');
-      if (!transient || attempt === attempts - 1) throw error;
-
-      // 1s, then 3s. Long enough for a demand spike to clear, short enough that
-      // someone holding their phone over a document does not give up.
-      await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 1000 : 3000));
+      const transient =
+        status === 429 || status === 500 || status === 502 || status === 503 || status === 504 ||
+        name === 'AbortError' || /\b(aborted|timed out|timeout)\b/i.test(message);
+      if (!transient) throw error;
     }
   }
 

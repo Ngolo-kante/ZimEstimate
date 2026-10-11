@@ -13,6 +13,9 @@ import { enforceCsrf, enforceRateLimit } from '@/lib/server/security';
 const VALID_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'application/pdf'];
 const MAX_BYTES = 10 * 1024 * 1024;
 
+/* Room for the reader's two attempts (20 s, then 32 s). */
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   try {
     // No requireAuth: scanning a document is free to try, matching Vision

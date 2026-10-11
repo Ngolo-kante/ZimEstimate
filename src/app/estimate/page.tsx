@@ -14,6 +14,7 @@ import {
   HouseLine,
   ListChecks,
   Rows,
+  Scales,
   SolarPanel,
   SquaresFour,
   Storefront,
@@ -90,7 +91,8 @@ const groups: Group[] = [
     note: 'Already have a quote, or ready to build.',
     tone: 'slate',
     tiles: [
-      { title: 'Scan a quote or BOQ', detail: 'Turn a photo into editable lines', href: '/ai/boq-scanner', icon: FileMagnifyingGlass },
+      { title: 'Check a builder\'s quote', detail: 'Each price against the market', href: '/ai/quote-check', icon: Scales },
+      { title: 'Scan a BOQ', detail: 'Turn a photo into a project', href: '/ai/boq-scanner', icon: FileMagnifyingGlass },
       { title: 'Find a builder', detail: 'Contractors and trades near you', href: '/contractors', icon: HardHat },
       { title: 'Buy materials', detail: 'Compare supplier prices', href: '/marketplace', icon: Storefront },
     ],
