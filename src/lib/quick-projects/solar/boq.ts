@@ -43,43 +43,80 @@ const SOLAR_PRICES: Record<string, number> = {
 };
 
 /**
- * Balance-of-system and protection cost for a given system size.
+ * Which wiring kit to price.
  *
- * The budget explorer used to carry its own constant for this — PROTECTION_FIXED,
- * a hardcoded $461 — while the BOQ priced the same parts per item, with cable
- * and trunking scaling by panel count. The two disagreed by over $100 on a
- * small system and by more as the array grew, so the figure shown while
- * choosing a budget was never the figure the BOQ produced.
- *
- * One function, used by both. Everything here mirrors the items
- * solarSizingToBOQ emits, so if you add a part there, add it here.
+ * "full" is what a registered installer fits. "basic" is what most budget
+ * installs here actually get: everything that connects the system safely —
+ * mounting, cable, isolators, AVS, battery breaker, changeover, DB board and
+ * earthing — without the extras: surge arrestors (the AVS and earthing
+ * already cover ZESA swings), a combiner box (a small array wires straight
+ * into the inverter), trunking (cable is clipped instead) and anti-theft
+ * bolts.
  */
-export function solarBalanceOfSystemCost(panelCount: number, hasBattery: boolean): number {
+export type SolarWiringKit = 'full' | 'basic';
+
+/**
+ * The wiring kit as BOQ lines.
+ *
+ * The single list both the BOQ and the budget explorer price from. It used to
+ * exist twice — the explorer summed a hardcoded list while the BOQ emitted its
+ * own, with a comment asking whoever added a part to one to add it to the
+ * other — and the two had already drifted apart by over $100 once. Now
+ * solarBalanceOfSystemCost is just the total of these lines.
+ */
+export function solarWiringKitItems(
+  panelCount: number,
+  hasBattery: boolean,
+  kit: SolarWiringKit = 'full',
+): BOQItem[] {
+  const full = kit === 'full';
   const dcCableM = panelCount * 4 + 5;
   const acCableM = 10;
 
-  const fixed =
-    SOLAR_PRICES.mounting_kit +
-    SOLAR_PRICES.antitheft_brackets +
-    SOLAR_PRICES.combiner_4str +
-    SOLAR_PRICES.dc_isolator +
-    SOLAR_PRICES.ac_isolator +
-    SOLAR_PRICES.surge_dc +
-    SOLAR_PRICES.surge_ac +
-    SOLAR_PRICES.avs +
-    SOLAR_PRICES.changeover_switch +
-    SOLAR_PRICES.distribution_board +
-    SOLAR_PRICES.earthing_kit;
+  return [
+    full
+      ? makeItem('sol_mount', 'Balance of System', 'Panel mounting kit (rails + hardware + anti-theft)', 1, 'set', SOLAR_PRICES.mounting_kit + SOLAR_PRICES.antitheft_brackets)
+      : makeItem('sol_mount', 'Balance of System', 'Panel mounting kit (rails + hardware)', 1, 'set', SOLAR_PRICES.mounting_kit),
+    makeItem('sol_dc_cable', 'Balance of System', 'DC cable 6mm² (UV-resistant)', dcCableM, 'm', SOLAR_PRICES.dc_cable_6mm),
+    makeItem('sol_ac_cable', 'Balance of System', 'AC cable 4mm²', acCableM, 'm', SOLAR_PRICES.ac_cable_4mm),
+    ...(full ? [makeItem('sol_combiner', 'Balance of System', '4-string combiner box', 1, 'each', SOLAR_PRICES.combiner_4str)] : []),
+    makeItem('sol_dc_iso', 'Protection', 'DC isolator', 1, 'each', SOLAR_PRICES.dc_isolator),
+    makeItem('sol_ac_iso', 'Protection', 'AC isolator', 1, 'each', SOLAR_PRICES.ac_isolator),
+    ...(full
+      ? [
+          makeItem('sol_surge_dc', 'Protection', 'DC surge protection device (SPD)', 1, 'each', SOLAR_PRICES.surge_dc,
+            { notes: 'Protects against lightning-induced surges on solar lines' }),
+          makeItem('sol_surge_ac', 'Protection', 'AC surge protection device (SPD)', 1, 'each', SOLAR_PRICES.surge_ac,
+            { notes: 'Shields inverter from grid-side surges' }),
+        ]
+      : []),
+    makeItem('sol_avs', 'Protection', 'Automatic Voltage Switcher (AVS)', 1, 'each', SOLAR_PRICES.avs,
+      { notes: 'Disconnects system during ZESA brownouts or over-voltage' }),
+    // Only meaningful when there is a battery to isolate.
+    ...(hasBattery
+      ? [makeItem('sol_bat_breaker', 'Protection', 'Battery DC breaker (125A)', 1, 'each', SOLAR_PRICES.battery_breaker)]
+      : []),
+    makeItem('sol_changeover', 'Protection', 'Changeover switch (Solar/ZESA/Generator)', 1, 'each', SOLAR_PRICES.changeover_switch),
+    makeItem('sol_db', 'Protection', 'Distribution board (8-way)', 1, 'each', SOLAR_PRICES.distribution_board),
+    makeItem('sol_earth', 'Protection', 'Earthing kit (solar + AC, <5Ω)', 1, 'set', SOLAR_PRICES.earthing_kit),
+    ...(full
+      ? [makeItem('sol_trunking', 'Balance of System', 'Cable trunking / conduit', dcCableM + acCableM, 'm', SOLAR_PRICES.cable_trunking_m)]
+      : []),
+  ];
+}
 
-  const cable =
-    dcCableM * SOLAR_PRICES.dc_cable_6mm +
-    acCableM * SOLAR_PRICES.ac_cable_4mm +
-    (dcCableM + acCableM) * SOLAR_PRICES.cable_trunking_m;
-
-  // Only meaningful when there is a battery to isolate.
-  const batteryProtection = hasBattery ? SOLAR_PRICES.battery_breaker : 0;
-
-  return +(fixed + cable + batteryProtection).toFixed(2);
+/**
+ * The wiring kit's total for a given system size — what the budget explorer
+ * reserves, and exactly what the BOQ will charge, because both come from
+ * solarWiringKitItems.
+ */
+export function solarBalanceOfSystemCost(
+  panelCount: number,
+  hasBattery: boolean,
+  kit: SolarWiringKit = 'full',
+): number {
+  const total = solarWiringKitItems(panelCount, hasBattery, kit).reduce((sum, item) => sum + item.totalCostUsd, 0);
+  return +total.toFixed(2);
 }
 
 /** The share of hardware cost the BOQ adds for installation labour. */
@@ -138,6 +175,8 @@ export function solarSizingToBOQ(
     include_contingency?: boolean;
     /** Labour as a share of hardware, e.g. 0.15. Defaults to the catalog rate. */
     install_labor_pct?: number;
+    /** Which wiring kit to emit. Defaults to the full kit. */
+    wiring_kit?: SolarWiringKit;
   }
 ): BOQItem[] {
   const pBrand = answers.panel_brand ?? 'ja_solar';
@@ -158,8 +197,6 @@ export function solarSizingToBOQ(
   // had just typed in. A system with no battery is a real configuration
   // (day-use / grid-tie); silently charging for one is not.
   const batteryUnits = Math.max(0, Math.ceil(result.batteryKwh / battery.kwh));
-  const dcCableM = result.panelCount * 4 + 5;
-  const acCableM = 10;
   const invPrice = inverterPrice(result.inverterKva, iBrand);
   const invLabel = inverterLabel(iBrand);
   const systemWatts = result.solarArrayKw * 1000;
@@ -202,27 +239,7 @@ export function solarSizingToBOQ(
   // was the single largest reason a $1,000 budget produced a $2,139 BOQ.
   const includeProtection = answers.include_protection !== false;
   if (includeProtection) {
-    items.push(
-    makeItem('sol_mount',       'Balance of System', 'Panel mounting kit (rails + hardware + anti-theft)',       1,         'set',  SOLAR_PRICES.mounting_kit + SOLAR_PRICES.antitheft_brackets),
-    makeItem('sol_dc_cable',    'Balance of System', 'DC cable 6mm² (UV-resistant)',                            dcCableM,  'm',    SOLAR_PRICES.dc_cable_6mm),
-    makeItem('sol_ac_cable',    'Balance of System', 'AC cable 4mm²',                                          acCableM,  'm',    SOLAR_PRICES.ac_cable_4mm),
-    makeItem('sol_combiner',    'Balance of System', '4-string combiner box',                                   1,         'each', SOLAR_PRICES.combiner_4str),
-    makeItem('sol_dc_iso',      'Protection',        'DC isolator',                                             1,         'each', SOLAR_PRICES.dc_isolator),
-    makeItem('sol_ac_iso',      'Protection',        'AC isolator',                                             1,         'each', SOLAR_PRICES.ac_isolator),
-    makeItem('sol_surge_dc',    'Protection',        'DC surge protection device (SPD)',                         1,         'each', SOLAR_PRICES.surge_dc,
-      { notes: 'Protects against lightning-induced surges on solar lines' }),
-    makeItem('sol_surge_ac',    'Protection',        'AC surge protection device (SPD)',                         1,         'each', SOLAR_PRICES.surge_ac,
-      { notes: 'Shields inverter from grid-side surges' }),
-    makeItem('sol_avs',         'Protection',        'Automatic Voltage Switcher (AVS)',                        1,         'each', SOLAR_PRICES.avs,
-      { notes: 'Disconnects system during ZESA brownouts or over-voltage' }),
-    ...(batteryUnits > 0
-      ? [makeItem('sol_bat_breaker', 'Protection', 'Battery DC breaker (125A)', 1, 'each', SOLAR_PRICES.battery_breaker)]
-      : []),
-    makeItem('sol_changeover',  'Protection',        'Changeover switch (Solar/ZESA/Generator)',                 1,         'each', SOLAR_PRICES.changeover_switch),
-    makeItem('sol_db',          'Protection',        'Distribution board (8-way)',                               1,         'each', SOLAR_PRICES.distribution_board),
-    makeItem('sol_earth',       'Protection',        'Earthing kit (solar + AC, <5Ω)',                          1,         'set',  SOLAR_PRICES.earthing_kit),
-    makeItem('sol_trunking',    'Balance of System', 'Cable trunking / conduit',                                dcCableM + acCableM, 'm', SOLAR_PRICES.cable_trunking_m),
-    );
+    items.push(...solarWiringKitItems(result.panelCount, batteryUnits > 0, answers.wiring_kit ?? 'full'));
   }
 
   // ── Transport ─────────────────────────────────────────────────────────

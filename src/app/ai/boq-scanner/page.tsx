@@ -26,6 +26,7 @@ import WorkflowProgress from '@/components/boq/WorkflowProgress';
 import { readEstimateHandoff } from '@/lib/estimateHandoff';
 import { supabase } from '@/lib/supabase';
 import { createProject, saveProjectWithItems } from '@/lib/services/projects';
+import PdfViewer from '@/components/ui/PdfViewer';
 import type { ScannedBoq, ScannedBoqItem } from '@/lib/vision/boq-scan';
 import {
   ArrowLeft, UploadSimple, Camera, Trash, Warning, CircleNotch, FloppyDisk,
@@ -278,7 +279,11 @@ function BoqScannerContent() {
           />
 
           {previewUrl ? (
-            file?.type === 'application/pdf' ? <iframe src={previewUrl} title="PDF to scan" className="pdf-preview" /> :
+            /* PdfViewer, not an <iframe>: Chrome on Android has no built-in PDF
+               viewer, so the iframe preview was blank on most phones. The file
+               is passed rather than its blob: URL, which production's CSP
+               would not let PDF.js fetch. */
+            file?.type === 'application/pdf' ? <PdfViewer source={file} title="PDF to scan" height="60vh" /> :
             /* eslint-disable-next-line @next/next/no-img-element */
             <img src={previewUrl} alt="The document to scan" className="preview" />
           ) : file ? (
@@ -351,7 +356,7 @@ function BoqScannerContent() {
             {/* The source stays on screen. Checking a flagged line against the
                 paper is the whole review, and hiding the image would mean
                 trusting the transcription blind. */}
-            {previewUrl && (file?.type === 'application/pdf' ? <iframe src={previewUrl} title="Scanned PDF reference" className="pdf-preview" /> :
+            {previewUrl && (file?.type === 'application/pdf' ? <PdfViewer source={file} title="Scanned PDF reference" height="70vh" /> :
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={previewUrl} alt="The scanned document" className="source" />
             )}
@@ -421,7 +426,6 @@ function BoqScannerContent() {
       )}
 
       <style jsx>{`
-        .pdf-preview { width: 100%; min-height: 400px; border: 1px solid #cbd5e1; border-radius: 8px; }
         .location-field { margin: 18px 0; }
         .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
         .crumb {

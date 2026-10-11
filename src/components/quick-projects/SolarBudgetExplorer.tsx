@@ -37,9 +37,6 @@ import {
   SOLAR_PACKAGES,
   KVA_POWER_GUIDE,
   getRequiredZeraTier,
-  type InverterOption,
-  type BatteryOption,
-  type PanelOption,
   type SolarPackage,
 } from '@/lib/quick-projects/solar/catalog';
 import {
@@ -47,7 +44,15 @@ import {
   solarBalanceOfSystemCost,
   SOLAR_INSTALL_LABOR_PCT,
   SOLAR_TRANSPORT_COST,
+  type SolarWiringKit,
 } from '@/lib/quick-projects/solar/boq';
+import { allocateBudget, type Objective } from '@/lib/quick-projects/solar/allocateBudget';
+import { BACKUP_LOADS, backupHours, describeBackup } from '@/lib/quick-projects/solar/backupHours';
+import {
+  decodeSolarExplorerState,
+  encodeSolarExplorerState,
+  SOLAR_CARD_IDS,
+} from '@/lib/quick-projects/solar/explorerUrl';
 import type { BOQItem, LaborConfig } from '@/lib/quick-projects/engine/types';
 import type { SolarWizardOutput } from '@/lib/quick-projects/solar/types';
 import QuickBOQTable from './QuickBOQTable';
@@ -68,277 +73,6 @@ const LABOR_RATE_OPTIONS = [
   { pct: 0.15, note: 'Typical local installer' },
   { pct: 0.20, note: 'Registered company' },
 ] as const;
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
-type Objective = 'economy' | 'balanced' | 'quality';
-
-interface BudgetAllocation {
-  panels: { count: number; brand: PanelOption; cost: number };
-  inverter: { kva: number; brand: InverterOption; cost: number };
-  battery: { units: number; brand: BatteryOption; cost: number };
-  /** droppedForBudget: switched on, but the money did not reach it. */
-  protection: { cost: number; droppedForBudget: boolean };
-  installation: { cost: number; pct: number; isCustom: boolean };
-  transport: { cost: number };
-  // Advisor: cheapest battery brand that fits budget when selected brand is too expensive
-  fallbackBattery: BatteryOption | null;
-}
-
-// ─── Helpers ───────────────────────────────────────────────────────────────────
-
-function bestInverterForBudget(budget: number, brand: InverterOption): { kva: number; price: number } {
-  const sizes = Object.entries(brand.prices)
-    .map(([k, v]) => ({ kva: Number(k), price: v }))
-    .sort((a, b) => b.kva - a.kva);
-  for (const s of sizes) {
-    if (s.price <= budget) return s;
-  }
-  const smallest = sizes[sizes.length - 1];
-  return smallest ?? { kva: 3, price: 350 };
-}
-
-function allocateBudget(
-  totalBudget: number,
-  panelBrand: PanelOption,
-  inverterBrand: InverterOption,
-  batteryBrand: BatteryOption,
-  enabledCards: Record<string, boolean>,
-  objective: Objective,
-  installCustom: number | null,
-  /** Labour as a share of hardware, e.g. 0.15. The user picks this. */
-  laborPct: number,
-  redistribute: boolean,
-): BudgetAllocation {
-  // Proportional splits — all three core components get budget simultaneously
-  const ratios = {
-    economy:  { inverter: 0.30, battery: 0.25, panels: 0.45 },
-    balanced: { inverter: 0.33, battery: 0.28, panels: 0.39 },
-    quality:  { inverter: 0.38, battery: 0.27, panels: 0.35 },
-  }[objective];
-
-  const transportCost = enabledCards.transport ? TRANSPORT_COST : 0;
-
-  /* Protection is deliberately NOT reserved ahead of the system.
-     It used to be, and on a $1,000 budget a $511 balance-of-system kit took
-     over half the money before a single panel was costed — so the page
-     answered "what does $1,000 buy?" with a surge arrestor and no battery.
-     That is not how this market buys solar. Panels, inverter and battery are
-     what the money is for; protection is priced after them and is the first
-     thing to give way when the total will not fit. The cost is still shown in
-     full, and said plainly when the budget does not reach it. */
-  let coreBudget = totalBudget - transportCost;
-  if (enabledCards.installation) {
-    coreBudget = installCustom !== null
-      ? Math.max(0, coreBudget - installCustom)
-      : Math.max(0, coreBudget / (1 + laborPct)); // hardware = total / (1 + pct)
-  }
-
-  // ── Step 1: Select inverter ─────────────────────────────────────────────────
-  const inv = bestInverterForBudget(
-    enabledCards.inverter ? coreBudget * ratios.inverter : 0,
-    inverterBrand,
-  );
-  const inverterCost = enabledCards.inverter ? inv.price : 0;
-  const afterInverter = coreBudget - inverterCost;
-
-  // ── Step 2: Smart battery combo — guarantee all 3 when possible ────────────
-  // If selected brand doesn't fit in its proportion, try to reserve at least 1 unit
-  // of the cheapest brand that still leaves room for panels.
-  let batteryUnits = 0;
-  let batteryCost = 0;
-  let fallbackBattery: BatteryOption | null = null;
-
-  if (enabledCards.battery) {
-    const proportionalUnits = Math.floor((coreBudget * ratios.battery) / batteryBrand.unitPrice);
-
-    if (proportionalUnits > 0) {
-      // Selected brand fits proportionally
-      batteryUnits = proportionalUnits;
-      batteryCost = batteryUnits * batteryBrand.unitPrice;
-    } else {
-      // Selected brand too expensive for its proportion — try cheapest brand that
-      // fits and still leaves room for at least 1 panel
-      const cheapest = BATTERY_BRANDS
-        .slice()
-        .sort((a, b) => a.unitPrice - b.unitPrice)
-        .find((b) => afterInverter - b.unitPrice >= panelBrand.pricePerPanel);
-
-      if (cheapest) {
-        // Use cheapest brand for 1 unit, signal to UI via fallbackBattery
-        batteryUnits = 1;
-        batteryCost = cheapest.unitPrice;
-        fallbackBattery = cheapest;
-      }
-    }
-  }
-
-  // ── Step 3: Panels from their share ────────────────────────────────────────
-  //
-  // Their *share*, not everything left over. Panels used to take the whole
-  // remainder, which is how a $2,500 budget ended up with a 10 kW array on an
-  // 8 kVA inverter and a single 2.6 kWh battery — three components that are
-  // meant to be proportional, with one of them eating the other two's
-  // headroom. Panels are the cheapest unit here, so any rounding error lands
-  // on them and the imbalance compounds.
-  const afterBattery = afterInverter - batteryCost;
-  const panelBudget = Math.min(coreBudget * ratios.panels, afterBattery);
-
-  /* An array the inverter cannot take is not a bigger system, it is wasted
-     money. Leftover budget used to pile onto panels with no ceiling, which
-     produced an 18.9 kW array on a 12 kVA inverter. 1.3x the inverter rating
-     is the usual limit for DC oversizing on a hybrid unit. */
-  const maxPanelsForInverter = Math.max(
-    1,
-    Math.floor((inv.kva * 1.3 * 1000) / (panelBrand.watt || 440)),
-  );
-
-  let panelCount = enabledCards.panels && panelBudget >= panelBrand.pricePerPanel
-    ? Math.min(maxPanelsForInverter, Math.floor(panelBudget / panelBrand.pricePerPanel))
-    : 0;
-  let panelCost = panelCount * panelBrand.pricePerPanel;
-
-  // ── Step 5: Price it the way the BOQ will, then make it fit ────────────────
-  //
-  // Everything above allocates against estimates. This step prices the result
-  // with the same functions solarSizingToBOQ uses and trims until the total is
-  // actually within budget. Without it the two disagreed badly: on a $1,000
-  // budget the explorer reported $869 allocated and the BOQ came out at
-  // $2,139 — the number the user had typed in meant nothing.
-  let protectionFunded = enabledCards.protection;
-
-  const priceAll = (panels: number, batteries: number) => {
-    const activeBattery = fallbackBattery ?? batteryBrand;
-    const panelsCost = panels * panelBrand.pricePerPanel;
-    const batteriesCost = batteries * activeBattery.unitPrice;
-    const protection = protectionFunded
-      ? solarBalanceOfSystemCost(panels, batteries > 0)
-      : 0;
-    const hardware = inverterCost + batteriesCost + panelsCost + protection;
-    const install = enabledCards.installation
-      ? installCustom !== null && installCustom > 0
-        ? installCustom
-        : Math.round(hardware * laborPct)
-      : 0;
-    return { panelsCost, batteriesCost, protection, hardware, install, total: hardware + install + transportCost };
-  };
-
-  let priced = priceAll(panelCount, batteryUnits);
-
-  // ── What gives way, in the order this market actually gives it up ──────────
-  //
-  // Protection goes first. It used to be the one thing held back while panels
-  // and then the battery were stripped out, which produced the absurd result
-  // of a budget buying surge arrestors and no solar. Panels, inverter and
-  // battery are the system; the rest is what an installer adds on top.
-  let protectionDroppedForBudget = false;
-  if (priced.total > totalBudget && protectionFunded) {
-    protectionFunded = false;
-    protectionDroppedForBudget = true;
-    priced = priceAll(panelCount, batteryUnits);
-  }
-
-  // Then panels — the divisible part. A battery or an inverter cannot be
-  // bought in fractions, and dropping either changes what the system can do
-  // rather than just how much of it there is.
-  while (priced.total > totalBudget && panelCount > 0) {
-    panelCount -= 1;
-    priced = priceAll(panelCount, batteryUnits);
-  }
-
-  // Still over with no panels left: the battery is what does not fit.
-  while (priced.total > totalBudget && batteryUnits > 0) {
-    batteryUnits -= 1;
-    priced = priceAll(panelCount, batteryUnits);
-  }
-
-  /* Buy protection back if it can be afforded without gutting the system.
-     Deprioritising it must not mean leaving money unspent next to a row that
-     says "not funded" — at $2,500 that produced an 18-panel array, no wiring
-     and $346 idle. Panels are the only thing it may take from, and never more
-     than the marginal 30% of them: the inverter and battery are untouchable,
-     and so is the bulk of the array. If it still will not fit, it stays
-     unfunded and the page says so. */
-  if (protectionDroppedForBudget) {
-    const panelFloor = Math.max(1, Math.ceil(panelCount * 0.7));
-    protectionFunded = true;
-    let trialPanels = panelCount;
-    let trial = priceAll(trialPanels, batteryUnits);
-    while (trial.total > totalBudget && trialPanels > panelFloor) {
-      trialPanels -= 1;
-      trial = priceAll(trialPanels, batteryUnits);
-    }
-
-    if (trial.total <= totalBudget) {
-      panelCount = trialPanels;
-      protectionDroppedForBudget = false;
-      priced = trial;
-    } else {
-      protectionFunded = false;
-      priced = priceAll(panelCount, batteryUnits);
-    }
-  }
-
-  /* ── Spend what is genuinely left ──────────────────────────────────────────
-     This used to run before anything was properly costed, against a rough
-     core budget, so it emptied the leftover into panels while protection went
-     unfunded — a 43-panel array and no wiring on $5,000. It runs last now,
-     against the real priced total, and every step re-prices: adding a panel
-     also adds cable, trunking and labour, so spending "what is left" without
-     repricing overshoots the budget.
-
-     Order: storage first, because it is what people buy solar for here and
-     chunky unit sizes leave it furthest short; then protection, which by now
-     is affordable if it is ever going to be; then panels. */
-  if (redistribute) {
-    const activeBatBrand = fallbackBattery ?? batteryBrand;
-
-    while (enabledCards.battery && activeBatBrand.unitPrice > 0) {
-      const trial = priceAll(panelCount, batteryUnits + 1);
-      if (trial.total > totalBudget) break;
-      batteryUnits += 1;
-      priced = trial;
-    }
-
-    if (protectionDroppedForBudget) {
-      protectionFunded = true;
-      const trial = priceAll(panelCount, batteryUnits);
-      if (trial.total <= totalBudget) {
-        protectionDroppedForBudget = false;
-        priced = trial;
-      } else {
-        protectionFunded = false;
-      }
-    }
-
-    while (enabledCards.panels && panelBrand.pricePerPanel > 0 && panelCount < maxPanelsForInverter) {
-      const trial = priceAll(panelCount + 1, batteryUnits);
-      if (trial.total > totalBudget) break;
-      panelCount += 1;
-      priced = trial;
-    }
-  }
-
-  panelCost = priced.panelsCost;
-  batteryCost = priced.batteriesCost;
-  const protectionCost = priced.protection;
-  const installCost = priced.install;
-  const installPct =
-    installCustom !== null && installCustom > 0 && priced.hardware > 0
-      ? Math.round((installCustom / priced.hardware) * 100)
-      : Math.round(laborPct * 100);
-  const isCustom = installCustom !== null && installCustom > 0;
-
-  return {
-    panels: { count: panelCount, brand: panelBrand, cost: panelCost },
-    inverter: { kva: inv.kva, brand: inverterBrand, cost: inverterCost },
-    battery: { units: batteryUnits, brand: fallbackBattery ?? batteryBrand, cost: batteryCost },
-    protection: { cost: protectionCost, droppedForBudget: protectionDroppedForBudget },
-    installation: { cost: Math.round(installCost), pct: installPct, isCustom },
-    transport: { cost: transportCost },
-    fallbackBattery,
-  };
-}
 
 // ─── Combo helpers ─────────────────────────────────────────────────────────────
 
@@ -545,6 +279,11 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
      shown here. */
   const [laborPct, setLaborPct] = useState<number>(SOLAR_INSTALL_LABOR_PCT);
 
+  /* Full kit by default, so the estimate a user saw before this option existed
+     does not quietly change. The basic kit is offered on the wiring row — and
+     named in its shortfall line when the full kit does not fit. */
+  const [wiringKit, setWiringKit] = useState<SolarWiringKit>('full');
+
   // Enabled cards — protection OFF (user can add), transport OFF (usually bundled)
   const [enabledCards, setEnabledCards] = useState<Record<string, boolean>>({
     panels: true,
@@ -579,6 +318,26 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
   const [inverterBrand, setInverterBrand] = useState<string>('must');
   const [batteryBrand, setBatteryBrand] = useState<string>('dyness');
 
+  /* Open on the estimate a shared link describes. Read from window.location
+     after mount, like the page around it, rather than in the initial state:
+     this component is server-rendered too, where there is no URL to read, and
+     a different first render on each side would be a hydration mismatch. */
+  useEffect(() => {
+    const shared = decodeSolarExplorerState(new URLSearchParams(window.location.search));
+    if (shared.budget !== undefined) setBudgetInput(String(shared.budget));
+    // setObjective, not setObjectiveAndBrands: the link's own brands must win
+    // over the defaults a priority would otherwise pick.
+    if (shared.objective) setObjective(shared.objective);
+    if (shared.panelBrand) setPanelBrand(shared.panelBrand);
+    if (shared.inverterBrand) setInverterBrand(shared.inverterBrand);
+    if (shared.batteryBrand) setBatteryBrand(shared.batteryBrand);
+    if (shared.laborPct !== undefined) setLaborPct(shared.laborPct);
+    if (shared.installCustom !== undefined) setInstallCustom(shared.installCustom);
+    if (shared.enabledCards) setEnabledCards(shared.enabledCards);
+    if (shared.redistribute !== undefined) setRedistribute(shared.redistribute);
+    if (shared.wiringKit) setWiringKit(shared.wiringKit);
+  }, []);
+
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { success: showSuccess, error: showError } = useToast();
@@ -595,8 +354,20 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
   // Compute allocation
   const allocation = useMemo(
-    () => allocateBudget(budget, pBrand, iBrand, bBrand, enabledCards, objective, installCustom, laborPct, redistribute),
-    [budget, pBrand, iBrand, bBrand, enabledCards, objective, installCustom, laborPct, redistribute],
+    () =>
+      allocateBudget({
+        totalBudget: budget,
+        panelBrand: pBrand,
+        inverterBrand: iBrand,
+        batteryBrand: bBrand,
+        enabledCards,
+        objective,
+        installCustom,
+        laborPct,
+        redistribute,
+        wiringKit,
+      }),
+    [budget, pBrand, iBrand, bBrand, enabledCards, objective, installCustom, laborPct, redistribute, wiringKit],
   );
 
   const totalAllocated =
@@ -635,6 +406,10 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
   const systemKw = ((allocation.panels.count * pBrand.watt) / 1000).toFixed(1);
   const storageKwh = (allocation.battery.units * allocation.battery.brand.unitKwh).toFixed(1);
+  const backupWithFridge = backupHours(
+    allocation.battery.units * allocation.battery.brand.unitKwh,
+    BACKUP_LOADS[1],
+  );
   const zeraTier = getRequiredZeraTier(allocation.panels.count * pBrand.watt);
 
   const toggleCard = useCallback((id: string) => {
@@ -724,6 +499,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       /* The rate the user picked, so the saved BOQ charges the labour this page
          quoted rather than the catalog default. */
       install_labor_pct: allocation.installation.isCustom ? undefined : laborPct,
+      wiring_kit: wiringKit,
     };
 
     return solarSizingToBOQ(sizingResult, augAnswers as Parameters<typeof solarSizingToBOQ>[1]);
@@ -763,21 +539,42 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
   };
 
   const handleShare = async () => {
+    /* A link that rebuilds this exact estimate. It used to be the page's bare
+       address, which opened an empty explorer for whoever received it. */
+    const link = `${window.location.origin}/quick-budget?${encodeSolarExplorerState({
+      budget,
+      objective,
+      panelBrand,
+      inverterBrand,
+      batteryBrand,
+      laborPct,
+      installCustom,
+      enabledCards: Object.fromEntries(
+        SOLAR_CARD_IDS.map((id) => [id, Boolean(enabledCards[id])]),
+      ) as Record<(typeof SOLAR_CARD_IDS)[number], boolean>,
+      redistribute,
+      wiringKit,
+    }).toString()}`;
+
     const shareText = [
-      'ZimEstimate Solar Budget',
-      `Budget: $${budget.toLocaleString()}`,
-      `System: ${systemKw} kW array, ${allocation.inverter.kva} kVA inverter`,
-      `Battery: ${(allocation.battery.units * bBrand.unitKwh).toFixed(1)} kWh`,
-      `Allocated: $${Math.round(totalAllocated).toLocaleString()}`,
+      `What ${usd(budget)} buys in solar — ZimEstimate`,
+      `${systemKw} kW of panels, ${allocation.inverter.kva} kVA inverter`,
+      // storageKwh reads the battery actually bought. This line used the
+      // selected brand's size, which was wrong whenever the cheaper fallback
+      // battery had been substituted.
+      allocation.battery.units > 0
+        ? `${storageKwh} kWh battery — ${BACKUP_LOADS[1].label} for ${describeBackup(backupWithFridge)} when ZESA is off`
+        : 'No battery at this budget',
+      `Total ${usd(totalAllocated)}`,
     ].join('\n');
 
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'Solar Budget Estimate', text: shareText, url: window.location.href });
+        await navigator.share({ title: 'Solar Budget Estimate', text: shareText, url: link });
         showSuccess('Estimate shared.');
         return;
       }
-      await navigator.clipboard.writeText(`${shareText}\n\n${window.location.href}`);
+      await navigator.clipboard.writeText(`${shareText}\n\n${link}`);
       showSuccess('Estimate summary copied to clipboard.');
     } catch {
       showError('Sharing was cancelled or unavailable.');
@@ -848,6 +645,10 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       description: allocation.battery.units > 0
         ? `${allocation.battery.units}x ${allocation.battery.brand.unitKwh}kWh ${allocation.battery.brand.label} — ${storageKwh} kWh`
         : `${bBrand.label} · $${bBrand.unitPrice}/${bBrand.unitKwh}kWh`,
+      /* What the kWh figure means to the person buying it. */
+      outcome: allocation.battery.units > 0
+        ? `Keeps ${BACKUP_LOADS[1].label} on for ${describeBackup(backupWithFridge)} when ZESA is off`
+        : undefined,
       hasBrandPicker: true,
       hasCustomInput: false,
     },
@@ -861,9 +662,12 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       icon: <ShieldCheck size={22} weight="duotone" />,
       enabled: enabledCards.protection,
       cost: allocation.protection.cost,
-      description: 'Cables, breakers, changeover switch, DB board, earthing, AVS, roof mounting',
+      description: wiringKit === 'full'
+        ? 'Full kit — cables, breakers, changeover, DB board, earthing, AVS, surge protection, mounting'
+        : 'Basic kit — cables, breakers, changeover, DB board, earthing, AVS, mounting',
       hasBrandPicker: false,
-      hasCustomInput: false,
+      // Expandable, to choose between the full and basic kit.
+      hasCustomInput: true,
     },
     {
       id: 'installation',
@@ -915,13 +719,21 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
        it needs a gap figure too — the real cost of the kit for the system that
        was actually bought. */
     if (cardId === 'protection' && allocation.protection.droppedForBudget) {
-      return solarBalanceOfSystemCost(allocation.panels.count, allocation.battery.units > 0);
+      return solarBalanceOfSystemCost(allocation.panels.count, allocation.battery.units > 0, wiringKit);
     }
     return null;
   };
 
   /* Only offered when it is genuinely cheaper than the current selection. */
   const cheaperAlternativeFor = (cardId: string): { label: string; price: number } | null => {
+    // Named where it helps most: on the row the full kit could not fund.
+    if (cardId === 'protection') {
+      if (wiringKit === 'basic') return null;
+      return {
+        label: 'basic kit',
+        price: solarBalanceOfSystemCost(allocation.panels.count, allocation.battery.units > 0, 'basic'),
+      };
+    }
     if (cardId !== 'battery') return null;
     const cheapest = [...BATTERY_BRANDS].sort((a, b) => a.unitPrice - b.unitPrice)[0];
     if (!cheapest || !bBrand || cheapest.unitPrice >= bBrand.unitPrice) return null;
@@ -943,7 +755,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
     },
     required: {
       title: 'What the installer adds on top',
-      note: 'Priced after the system. Switch these on or off depending on what you are arranging yourself.',
+      note: 'Needed to install it. When the budget is too small for both, the system comes first. Switch off anything you are arranging yourself.',
     },
     optional: { title: 'Optional', note: 'Switch on if you are charged for these separately.' },
   };
@@ -1154,8 +966,8 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
             <div className="flex items-start gap-3 p-4 rounded-xl bg-indigo-50 border border-indigo-200 mb-5">
               <Info size={18} className="flex-shrink-0 mt-0.5 text-indigo-600" />
               <div className="text-sm text-indigo-900 flex-1">
-                <strong>Using {allocation.fallbackBattery.label} ({allocation.fallbackBattery.unitKwh}kWh) to fit your budget.</strong>{' '}
-                Your selected <strong>{bBrand.label}</strong> costs ${bBrand.unitPrice.toLocaleString()} — ${(bBrand.unitPrice - allocation.fallbackBattery.unitPrice).toLocaleString()} more than currently allocated.
+                <strong>Using {allocation.fallbackBattery.label} batteries for now.</strong>{' '}
+                Your selected <strong>{bBrand.label}</strong> (${bBrand.unitPrice.toLocaleString()} a unit) does not fit this budget yet.
                 <br />
                 <button
                   type="button"
@@ -1168,30 +980,25 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
             </div>
           )}
 
-          {/* ── Matching Packages (grouped by kVA) ──────────────────────────────── */}
-          {packageGroups.length > 0 && (
-            <div className="mb-6">
-              <h4 className="font-bold text-[var(--color-text)] mb-1 text-sm flex items-center gap-2">
-                <Lightning size={16} weight="duotone" className="text-yellow-500" />
-                Packages Within Your Budget
-              </h4>
-              <p className="text-xs text-[var(--color-text-secondary)] mb-4">Real Zimbabwe market combos — click to load into the explorer.</p>
-              {packageGroups.map((group) => (
-                <div key={group.label} className="mb-4">
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">{group.label}</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {group.packages.map((pkg) => (
-                      <PackageCard
-                        key={pkg.id}
-                        pkg={pkg}
-                        budget={budget}
-                        isLoaded={comboLoaded === pkg.id}
-                        onSelect={handleSelectCombo}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
+          {/* ── More storage with a cheaper brand ─────────────────────────────
+              Offered, never applied: the brand is the user's choice, and the
+              cheapest brand is also cheapest per kWh, so applying it whenever it
+              stored more would override every choice at every budget. */}
+          {allocation.storageOffer && enabledCards.battery && (
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 mb-5">
+              <BatteryCharging size={18} className="flex-shrink-0 mt-0.5 text-emerald-700" />
+              <div className="text-sm text-emerald-900 flex-1">
+                <strong>More storage for the same money:</strong> {allocation.storageOffer.brand.label} batteries would give
+                you {allocation.storageOffer.kwh.toFixed(1)} kWh at this budget, against {storageKwh} kWh with {bBrand.label}.
+                <br />
+                <button
+                  type="button"
+                  onClick={() => setBatteryBrand(allocation.storageOffer!.brand.brand)}
+                  className="text-emerald-800 underline hover:no-underline text-xs font-semibold mt-1 inline-block"
+                >
+                  Switch to {allocation.storageOffer.brand.label}
+                </button>
+              </div>
             </div>
           )}
 
@@ -1302,7 +1109,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                             {card.icon}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between gap-3">
                               <span className={`font-semibold text-sm ${card.enabled ? 'text-[var(--color-text)]' : 'text-[var(--color-text-secondary)]'}`}>
                                 {card.label}
                               </span>
@@ -1326,6 +1133,9 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                               </span>
                             </div>
                             <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 truncate">{card.description}</p>
+                            {'outcome' in card && card.outcome && card.enabled && card.cost > 0 && (
+                              <p className="mt-1 text-xs font-semibold text-emerald-700">{card.outcome}</p>
+                            )}
                             {shortfall !== null && (
                               /* The actionable half of the message. Someone at this
                                  budget wants to know the gap, not that a dash
@@ -1427,6 +1237,57 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                                   </div>
                                 )}
 
+                                {/* Which wiring kit. Both are priced from the same
+                                    parts list the BOQ emits, so the figure here is
+                                    the figure the saved estimate will charge. */}
+                                {card.id === 'protection' && (
+                                  <div>
+                                    <p className="text-xs font-bold text-[var(--color-text)] mb-2">Which kit?</p>
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                      {([
+                                        {
+                                          kit: 'basic' as const,
+                                          title: 'Basic',
+                                          note: 'Everything to connect it safely. No surge arrestors, combiner box or trunking.',
+                                        },
+                                        {
+                                          kit: 'full' as const,
+                                          title: 'Full',
+                                          note: 'What a registered installer fits, with surge protection on both sides.',
+                                        },
+                                      ]).map((option) => {
+                                        const active = wiringKit === option.kit;
+                                        const price = solarBalanceOfSystemCost(
+                                          allocation.panels.count,
+                                          allocation.battery.units > 0,
+                                          option.kit,
+                                        );
+                                        return (
+                                          <button
+                                            key={option.kit}
+                                            type="button"
+                                            aria-pressed={active}
+                                            onClick={() => setWiringKit(option.kit)}
+                                            className={`rounded-xl border p-3 text-left transition ${
+                                              active
+                                                ? 'border-blue-500 bg-[var(--color-accent-muted)] ring-1 ring-blue-500'
+                                                : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-dark)]'
+                                            }`}
+                                          >
+                                            <span className="flex items-baseline justify-between gap-2">
+                                              <span className="text-sm font-bold text-[var(--color-text)]">{option.title}</span>
+                                              <span className="text-sm font-bold tabular-nums text-[var(--color-text)]">{usd(price)}</span>
+                                            </span>
+                                            <span className="mt-0.5 block text-[11px] leading-relaxed text-[var(--color-text-secondary)]">
+                                              {option.note}
+                                            </span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+
                                 {/* Installation labour — a rate, or a quoted amount.
                                     Labour is negotiated here, so a fixed
                                     percentage was both too high and unarguable. */}
@@ -1520,6 +1381,11 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                   { label: 'Inverter', value: `${allocation.inverter.kva} kVA`, show: enabledCards.inverter },
                   { label: 'Battery', value: `${storageKwh} kWh`, show: enabledCards.battery && allocation.battery.units > 0 },
                   {
+                    label: 'Load-shedding',
+                    value: backupWithFridge >= 24 ? '24 h+' : `~${backupWithFridge} h with fridge`,
+                    show: enabledCards.battery && allocation.battery.units > 0,
+                  },
+                  {
                     label: 'Wiring & essentials',
                     /* "Included" was shown whenever the toggle was on, even when
                        the budget never reached it. */
@@ -1553,6 +1419,11 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                       : `${allocation.installation.pct}% of hardware cost`}
                   </li>
                   <li>Battery: LiFePO4 with 90-95% depth of discharge</li>
+                  <li>
+                    Load-shedding hours: 6 LED lights, TV, WiFi, phone charging and a fridge
+                    ({BACKUP_LOADS[1].watts}W average), using 81% of the battery after inverter losses.
+                    Rounded down.
+                  </li>
                   {!enabledCards.transport && (
                     <li className="text-[var(--color-text-secondary)]">Transport not included — enable if your supplier charges separately</li>
                   )}
@@ -1563,6 +1434,37 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                   )}
                 </ul>
               </div>
+            </div>
+          )}
+
+          {/* ── Matching Packages (grouped by kVA) ──────────────────────────────
+              Below the user's own estimate, not above it. On a phone this list
+              sat between the budget and the answer, five or six cards deep, so
+              you scrolled past other people's systems to find out what your own
+              money bought. Packages are the alternative; the split is the answer. */}
+          {packageGroups.length > 0 && (
+            <div className="mb-6">
+              <h4 className="font-bold text-[var(--color-text)] mb-1 text-sm flex items-center gap-2">
+                <Lightning size={16} weight="duotone" className="text-yellow-500" />
+                Packages Within Your Budget
+              </h4>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-4">Real Zimbabwe market combos — click to load into the explorer.</p>
+              {packageGroups.map((group) => (
+                <div key={group.label} className="mb-4">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">{group.label}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {group.packages.map((pkg) => (
+                      <PackageCard
+                        key={pkg.id}
+                        pkg={pkg}
+                        budget={budget}
+                        isLoaded={comboLoaded === pkg.id}
+                        onSelect={handleSelectCombo}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 

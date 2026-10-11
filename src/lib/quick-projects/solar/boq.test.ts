@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { solarSizingToBOQ, SOLAR_INSTALL_LABOR_PCT } from './boq';
+import {
+  solarBalanceOfSystemCost,
+  solarSizingToBOQ,
+  solarWiringKitItems,
+  SOLAR_INSTALL_LABOR_PCT,
+} from './boq';
 import type { SolarSizingResult, SolarWizardAnswers } from './types';
 
 const baseResult: SolarSizingResult = {
@@ -103,6 +108,50 @@ describe('solarSizingToBOQ', () => {
         installFor(0).hardware * 0.05,
         2,
       );
+    });
+  });
+
+  describe('wiring kit', () => {
+    const WIRING_IDS = new Set(solarWiringKitItems(40, true, 'full').map((item) => item.id));
+    const wiringTotal = (items: ReturnType<typeof solarSizingToBOQ>) =>
+      items.filter((item) => WIRING_IDS.has(item.id)).reduce((sum, item) => sum + item.totalCostUsd, 0);
+
+    it('costs in the BOQ exactly what the budget explorer reserved', () => {
+      // The two used to be separate lists and drifted apart by over $100. If
+      // they ever disagree again, a budget the explorer says fits will come
+      // out over budget once saved.
+      for (const wiring_kit of ['full', 'basic'] as const) {
+        const items = solarSizingToBOQ(baseResult, { ...baseAnswers, wiring_kit });
+        const batteryUnits = items.some((item) => item.id === 'sol_bat_breaker');
+        expect(wiringTotal(items), wiring_kit).toBeCloseTo(
+          solarBalanceOfSystemCost(baseResult.panelCount, batteryUnits, wiring_kit),
+          2,
+        );
+      }
+    });
+
+    it('defaults to the full kit', () => {
+      const ids = solarSizingToBOQ(baseResult, baseAnswers).map((item) => item.id);
+      expect(ids).toContain('sol_surge_dc');
+      expect(ids).toContain('sol_trunking');
+    });
+
+    it('the basic kit is cheaper but still connects the system safely', () => {
+      const basic = solarWiringKitItems(6, true, 'basic').map((item) => item.id);
+      // What a system cannot be installed without.
+      for (const id of ['sol_mount', 'sol_dc_cable', 'sol_ac_cable', 'sol_dc_iso', 'sol_ac_iso', 'sol_avs', 'sol_bat_breaker', 'sol_changeover', 'sol_db', 'sol_earth']) {
+        expect(basic, id).toContain(id);
+      }
+      // The extras a budget install goes without.
+      for (const id of ['sol_combiner', 'sol_surge_dc', 'sol_surge_ac', 'sol_trunking']) {
+        expect(basic, id).not.toContain(id);
+      }
+      expect(solarBalanceOfSystemCost(6, true, 'basic')).toBeLessThan(solarBalanceOfSystemCost(6, true, 'full'));
+    });
+
+    it('leaves the kit out entirely when protection is switched off', () => {
+      const items = solarSizingToBOQ(baseResult, { ...baseAnswers, include_protection: false, wiring_kit: 'basic' });
+      expect(wiringTotal(items)).toBe(0);
     });
   });
 

@@ -13,6 +13,7 @@ import {
 } from '@/lib/services/projects';
 import { ProjectDocument, DocumentCategory } from '@/lib/database.types';
 import { FunnelSimple, File, Warning } from '@phosphor-icons/react';
+import PdfViewer from '@/components/ui/PdfViewer';
 
 interface DocumentsTabProps {
     projectId: string;
@@ -198,7 +199,11 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                                     />
                                 </div>
                             ) : previewDoc.file_type === 'application/pdf' ? (
-                                <iframe src={previewUrl} title={previewDoc.file_name} />
+                                /* Drawn by PDF.js rather than an <iframe>, which shows
+                                   nothing on Android — Chrome there has no PDF viewer. */
+                                <div className="preview-pdf">
+                                    <PdfViewer source={previewUrl} title={previewDoc.file_name} height="72vh" />
+                                </div>
                             ) : (
                                 <div className="no-preview">
                                     <File size={64} weight="light" />
@@ -417,11 +422,9 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                     height: 80vh;
                 }
 
-                .preview-body iframe {
+                .preview-pdf {
                     width: 800px;
                     max-width: 100%;
-                    height: 80vh;
-                    border: none;
                 }
 
                 .no-preview {
