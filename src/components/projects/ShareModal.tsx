@@ -73,14 +73,20 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
     }
 
     setIsInviting(true);
-    const { share, error } = await shareProject(projectId, email, accessLevel);
+    const { share, linked, emailed, error } = await shareProject(projectId, email.trim(), accessLevel);
 
     if (error) {
       showError(error.message);
     } else if (share) {
       setShares([share, ...shares]);
       setEmail('');
-      success('Invitation sent!');
+      // Says what actually happened: an existing account sees the project
+      // now; anyone else gets it once they sign up with that address.
+      success(linked
+        ? 'Shared. They can open it from their Projects now.'
+        : emailed
+          ? 'Invitation emailed. The project appears once they sign up with that address.'
+          : 'Invited. The project appears once they sign up with that address — let them know.');
     }
     setIsInviting(false);
   };
@@ -122,7 +128,8 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
 
           {/* Invite by Email */}
           <div className="invite-section">
-            <label className="section-label">Invite by Email</label>
+            <label className="section-label">Invite someone by email</label>
+            <p className="link-hint">&ldquo;Can help manage&rdquo; lets them update the BOQ, stages, purchases and usage. Only you can delete the project or invite others.</p>
             <div className="invite-row">
               <Input
                 placeholder="Enter email address"
@@ -136,8 +143,8 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
                 onChange={(e) => setAccessLevel(e.target.value as AccessLevel)}
                 className="access-select"
               >
-                <option value="view">Can View</option>
-                <option value="edit">Can Edit</option>
+                <option value="view">Can view</option>
+                <option value="edit">Can help manage</option>
               </select>
               <Button
                 icon={isInviting ? <CircleNotch size={18} className="spin" /> : <UserPlus size={18} />}
@@ -169,7 +176,7 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
                     <div className="user-info">
                       <span className="user-email">{share.shared_with_email}</span>
                       <span className={`user-status ${share.shared_with_user_id ? 'accepted' : 'pending'}`}>
-                        {share.shared_with_user_id ? '' : 'Pending signup'}
+                        {share.shared_with_user_id ? (share.access_level === 'edit' ? 'Can help manage' : 'Can view') : 'Waiting for them to sign up'}
                       </span>
                     </div>
                     <select
@@ -177,8 +184,8 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
                       onChange={(e) => handleUpdateAccess(share.id, e.target.value as AccessLevel)}
                       className="access-select-sm"
                     >
-                      <option value="view">View</option>
-                      <option value="edit">Edit</option>
+                      <option value="view">Can view</option>
+                      <option value="edit">Can manage</option>
                     </select>
                     <button className="remove-btn" onClick={() => handleRemoveShare(share.id)}>
                       <Trash size={16} />
@@ -193,7 +200,7 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
           <div className="link-section">
             <label className="section-label">
               <LinkIcon size={16} weight="light" />
-              Share Link
+              Project link
             </label>
             <div className="link-row">
               <input
@@ -210,7 +217,7 @@ export default function ShareModal({ isOpen, onClose, projectName, projectId }: 
                 {copied ? 'Copied!' : 'Copy'}
               </Button>
             </div>
-            <p className="link-hint">Anyone with this link can view the project summary (requires login)</p>
+            <p className="link-hint">Opens only for people you have invited, once they are signed in.</p>
           </div>
         </div>
       </div>

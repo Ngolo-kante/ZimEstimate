@@ -5,6 +5,8 @@ import { requireAdmin } from '@/lib/server/auth';
 import { enforceCsrf, enforceRateLimit, sanitizeNumber } from '@/lib/server/security';
 import { dispatchQueuedNotifications } from '@/lib/server/notificationDispatch';
 import { prunePlanSamples } from '@/lib/server/planSamples';
+import { sendEmail, escapeHtml } from '@/lib/server/email';
+import { getSiteUrl } from '@/lib/siteUrl';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -62,31 +64,24 @@ function normalizePhone(rawPhone: string): string {
   return `+${cleaned}`;
 }
 
-async function sendEmailReminder(to: string, subject: string, message: string) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.REMINDER_EMAIL_FROM;
-
-  if (!apiKey || !from) {
-    throw new Error('Email provider not configured (RESEND_API_KEY / REMINDER_EMAIL_FROM).');
-  }
-
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from,
-      to,
-      subject,
-      text: message,
-    }),
+/**
+ * Through the same verified sender as every other email
+ * (src/lib/server/email.ts). Reminders used their own REMINDER_EMAIL_FROM,
+ * which in production was Resend's sandbox address: Resend refused every
+ * reminder ("You can only send testing emails to your own email address")
+ * while all other mail went out from noreply@zimestimate.com. Not one email
+ * reminder had ever been delivered. The variable is no longer read.
+ */
+async function sendEmailReminder(to: string, subject: string, message: string, projectId: string) {
+  const link = `${getSiteUrl()}/projects/${projectId}`;
+  const sent = await sendEmail({
+    to,
+    subject,
+    html: `<p>${escapeHtml(message).replace(/\n/g, '<br />')}</p><p><a href="${escapeHtml(link)}" style="display:inline-block;padding:10px 16px;background:#0b1f3b;color:#fff;border-radius:6px;text-decoration:none">Open the project</a></p><p style="color:#667;font-size:12px">You can turn reminders off in Settings.</p>`,
+    text: `${message}\n\nOpen the project: ${link}`,
   });
-
-  if (!response.ok) {
-    const details = await response.text();
-    throw new Error(details || 'Email delivery failed.');
+  if (!sent) {
+    throw new Error('Email could not be sent (check RESEND_API_KEY).');
   }
 }
 
@@ -402,7 +397,7 @@ export async function POST(request: Request) {
 
     try {
       if (channel === 'email') {
-        await sendEmailReminder(profile.email, subject, body);
+        await sendEmailReminder(profile.email, subject, body, reminder.project_id);
       }
 
       if (channel === 'sms') {

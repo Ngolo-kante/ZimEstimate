@@ -14,6 +14,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { NotificationDelivery } from '@/lib/database.types';
 import { sendEmail, escapeHtml } from '@/lib/server/email';
+import { getSiteUrl } from '@/lib/siteUrl';
 
 const whatsappApiUrl = process.env.WHATSAPP_API_URL;
 const whatsappPhoneId = process.env.WHATSAPP_PHONE_ID;
@@ -86,11 +87,17 @@ async function sendEmailDelivery(
   const title = typeof payload.title === 'string' ? payload.title : 'ZimEstimate notification';
   const body = typeof payload.body === 'string' ? payload.body : '';
 
+  // Project notices link back to the project they are about.
+  const projectId = typeof payload.project_id === 'string' ? payload.project_id : null;
+  const link = projectId ? `${getSiteUrl()}/projects/${projectId}` : null;
+
   const sent = await sendEmail({
     to: email,
     subject: title,
-    html: `<p>${escapeHtml(body).replace(/\n/g, '<br />')}</p>`,
-    text: body,
+    html: `<p>${escapeHtml(body).replace(/\n/g, '<br />')}</p>${link
+      ? `<p><a href="${escapeHtml(link)}" style="display:inline-block;padding:10px 16px;background:#0b1f3b;color:#fff;border-radius:6px;text-decoration:none">Open the project</a></p><p style="color:#667;font-size:12px">You can turn these emails off in Settings.</p>`
+      : ''}`,
+    text: link ? `${body}\n\nOpen the project: ${link}` : body,
   });
 
   if (!sent) {
@@ -132,6 +139,12 @@ export async function dispatchQueuedNotifications(
   const results: NotificationDispatchResult['results'] = [];
 
   for (const delivery of (deliveries || []) as NotificationDelivery[]) {
+    // No email provider here (local development, a preview without the key):
+    // leave the row queued for an environment that can send it. Marking it
+    // failed would lose a real person's email, since both share one database.
+    if (!mock && delivery.channel === 'email' && !process.env.RESEND_API_KEY) {
+      continue;
+    }
     try {
       if (mock) {
         // Deliberately still writes the status through, so a dry run proves the

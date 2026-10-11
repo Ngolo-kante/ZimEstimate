@@ -704,21 +704,40 @@ export async function updateProjectRecurringReminder(
 // PROJECT NOTIFICATIONS
 // ============================================
 
-/** Create a project notification for a user. */
+/**
+ * Create a project notification for a user.
+ *
+ * Not read back: a collaborator notifying the owner may insert the row but,
+ * rightly, not read it, and asking for it back made the whole insert fail.
+ * Any email it queues (migration 055) is sent straight away by the flush.
+ */
 export async function createProjectNotification(
     data: ProjectNotificationInsert
-): Promise<{ notification: ProjectNotification | null; error: Error | null }> {
-    const { data: notification, error } = await db
+): Promise<{ error: Error | null }> {
+    const { error } = await db
         .from('project_notifications')
-        .insert(data)
-        .select()
-        .single();
+        .insert(data);
 
     if (error) {
-        return { notification: null, error: new Error(error.message) };
+        return { error: new Error(error.message) };
     }
 
-    return { notification, error: null };
+    void flushNotificationEmails();
+    return { error: null };
+}
+
+/** Asks the server to send queued notification emails now; best effort. */
+export async function flushNotificationEmails(): Promise<void> {
+    try {
+        const { data: { session } } = await db.auth.getSession();
+        if (!session) return;
+        await fetch('/api/notifications/flush', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+    } catch {
+        // The daily job sends anything left in the queue.
+    }
 }
 
 /** Fetch notifications for a user within a project. */
@@ -1463,49 +1482,40 @@ export async function deleteUsageRecord(usageId: string): Promise<{ error: Error
 // SHARING OPERATIONS
 // ============================================
 
-/** Share a project with another user. */
+/**
+ * Invite someone to a project by email. Done on the server, which can see
+ * whether the address already has an account (see /api/projects/[id]/invite).
+ */
 export async function shareProject(
     projectId: string,
     email: string,
     accessLevel: AccessLevel = 'view'
-): Promise<{ share: ProjectShare | null; error: Error | null }> {
-    // Check if share already exists
-    const { data: existing } = await db
-        .from('project_shares')
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('shared_with_email', email)
-        .single();
-
-    if (existing) {
-        return { share: null, error: new Error('Project already shared with this email') };
+): Promise<{ share: ProjectShare | null; linked: boolean; emailed: boolean; error: Error | null }> {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) {
+        return { share: null, linked: false, emailed: false, error: new Error('Please sign in again.') };
     }
-
-    // Check if user exists with this email
-    const { data: profile } = await db
-        .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .single();
-
-    const shareData = {
-        project_id: projectId,
-        shared_with_email: email,
-        shared_with_user_id: profile?.id || null,
-        access_level: accessLevel,
-    };
-
-    const { data: share, error } = await db
-        .from('project_shares')
-        .insert(shareData)
-        .select()
-        .single();
-
-    if (error) {
-        return { share: null, error: new Error(error.message) };
+    try {
+        const response = await fetch(`/api/projects/${projectId}/invite`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ email, accessLevel }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            return { share: null, linked: false, emailed: false, error: new Error(result.error || 'Could not send the invitation.') };
+        }
+        return { share: result.share, linked: Boolean(result.linked), emailed: Boolean(result.emailed), error: null };
+    } catch {
+        return { share: null, linked: false, emailed: false, error: new Error('Could not reach the server. Check your connection.') };
     }
+}
 
-    return { share, error: null };
+/** Attach invites sent to this account's (confirmed) email. Run on sign-in. */
+export async function linkMyProjectInvites(): Promise<number> {
+    const { data, error } = await db.rpc('link_my_project_invites' as never);
+    if (error) return 0;
+    return Number(data) || 0;
 }
 
 /** Fetch sharing records for a project. */

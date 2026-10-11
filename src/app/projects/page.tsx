@@ -921,6 +921,10 @@ function ProjectsContent() {
                                     <CardHeader>
                                         <div className="project-header">
                                             <CardTitle>{project.name}</CardTitle>
+                                            {/* Someone else's project, shared with this person. */}
+                                            {profile?.id && project.owner_id !== profile.id && (
+                                                <CardBadge variant="default">Shared with you</CardBadge>
+                                            )}
                                             <CardBadge variant={statusColors[project.status] || 'default'}>
                                                 {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
                                             </CardBadge>
@@ -934,18 +938,25 @@ function ProjectsContent() {
                                                     <button onClick={(e) => handleEdit(e, project.id)}>
                                                         <PencilSimple size={16} /> Edit
                                                     </button>
-                                                    <button onClick={(e) => handleShare(e, project.id)}>
-                                                        <ShareNetwork size={16} /> Share
-                                                    </button>
+                                                    {/* Sharing, archiving and deleting stay with the owner. */}
+                                                    {project.owner_id === profile?.id && (
+                                                        <button onClick={(e) => handleShare(e, project.id)}>
+                                                            <ShareNetwork size={16} /> Share
+                                                        </button>
+                                                    )}
                                                     <button onClick={(e) => { void handleDownloadPdf(e, project.id); }}>
                                                         <FileArrowDown size={16} /> Download BOQ PDF
                                                     </button>
-                                                    <button onClick={(e) => handleArchive(e, project.id)}>
-                                                        <Archive size={16} /> Archive
-                                                    </button>
-                                                    <button className="danger" onClick={(e) => handleDelete(e, project.id)}>
-                                                        <Trash size={16} /> Delete
-                                                    </button>
+                                                    {project.owner_id === profile?.id && (
+                                                        <>
+                                                            <button onClick={(e) => handleArchive(e, project.id)}>
+                                                                <Archive size={16} /> Archive
+                                                            </button>
+                                                            <button className="danger" onClick={(e) => handleDelete(e, project.id)}>
+                                                                <Trash size={16} /> Delete
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

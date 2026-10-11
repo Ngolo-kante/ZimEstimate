@@ -93,6 +93,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return count || 0;
     }, []);
 
+    // Projects shared to this person's email before they had an account (or
+    // while signed out) are attached here (migration 055). Once per user per
+    // page load; cheap when there is nothing waiting.
+    const linkedInvitesFor = useRef<string | null>(null);
+    const linkProjectInvites = useCallback(async (userId: string) => {
+        if (linkedInvitesFor.current === userId) return;
+        linkedInvitesFor.current = userId;
+        try {
+            await supabase.rpc('link_my_project_invites' as never);
+        } catch {
+            // Not fatal: tried again on the next sign-in or page load.
+            linkedInvitesFor.current = null;
+        }
+    }, []);
+
     // Initialize auth state
     useEffect(() => {
         const initializeAuth = async () => {
@@ -103,6 +118,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (currentSession?.user) {
                     setSession(currentSession);
                     setUser(currentSession.user);
+                    // Before counting projects, so a newly shared one is counted.
+                    await linkProjectInvites(currentSession.user.id);
 
                     const userProfile = await fetchProfile(currentSession.user.id);
                     setProfile(userProfile);
@@ -129,6 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (newSession?.user) {
                     // Small delay to allow profile trigger to complete
                     setTimeout(async () => {
+                        await linkProjectInvites(newSession.user.id);
                         const userProfile = await fetchProfile(newSession.user.id);
                         // Supabase re-emits auth events on things like tab focus and
                         // token refresh. A refetch that fails must not wipe a profile
@@ -153,7 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return () => {
             subscription.unsubscribe();
         };
-    }, [fetchProfile, fetchProjectCount]);
+    }, [fetchProfile, fetchProjectCount, linkProjectInvites]);
 
     // Sign up with email and password
     const signUp = useCallback(async (email: string, password: string, fullName?: string) => {

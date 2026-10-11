@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 import {
   Bell,
   CaretDown,
@@ -54,6 +55,37 @@ const exploreNavItems: NavItem[] = [
   { label: 'Contractors', href: '/contractors', description: 'Browse verified professionals' },
 ];
 
+type NavNotification = { id: string; title: string; time: string; unread: boolean; projectId: string | null };
+
+async function fetchNavNotifications(userId: string): Promise<NavNotification[]> {
+  const { data } = await supabase
+    .from('project_notifications')
+    .select('id, title, is_read, created_at, project_id')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(8);
+  const rows = (data ?? []) as { id: string; title: string; is_read: boolean; created_at: string; project_id: string | null }[];
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    time: timeAgo(row.created_at),
+    unread: !row.is_read,
+    projectId: row.project_id,
+  }));
+}
+
+function timeAgo(timestamp: string): string {
+  const seconds = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
+  if (!Number.isFinite(seconds)) return '';
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.floor(hours / 24);
+  return days < 7 ? `${days} d ago` : new Date(timestamp).toLocaleDateString();
+}
+
 export default function TopNavbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -72,12 +104,48 @@ export default function TopNavbar() {
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
 
-  // No live feed is wired to the navbar yet. Until one is, show an honest
-  // empty state — the previous hardcoded samples ("Project 'Harare Home'
-  // created 2 mins ago") rendered for every visitor, alongside a permanent
-  // unread dot signalling activity that did not exist.
-  const notifications: { id: number; title: string; time: string; unread: boolean }[] = [];
+  // The signed-in person's latest project notifications: invites, people
+  // joining, usage logged, stock running low, price updates. Refreshed when
+  // the menu opens and every minute while the tab is visible.
+  const router = useRouter();
+  const userId = user?.id ?? null;
+  const [loadedNotifications, setNotifications] = useState<NavNotification[]>([]);
+  // Signed out shows nothing, without a state reset on sign-out.
+  const notifications = userId ? loadedNotifications : [];
   const hasUnread = notifications.some((note) => note.unread);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    const refresh = async () => {
+      const list = await fetchNavNotifications(userId);
+      if (!cancelled) setNotifications(list);
+    };
+    void refresh();
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void refresh();
+    }, 60_000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [userId]);
+
+  const loadNotifications = async () => {
+    if (userId) setNotifications(await fetchNavNotifications(userId));
+  };
+
+  const markAllRead = async () => {
+    if (!userId) return;
+    setNotifications((current) => current.map((note) => ({ ...note, unread: false })));
+    await supabase.from('project_notifications').update({ is_read: true } as never).eq('user_id', userId).eq('is_read', false);
+  };
+
+  const openNotification = async (note: { id: string; projectId: string | null; unread: boolean }) => {
+    setNotificationMenuOpen(false);
+    if (note.unread) {
+      setNotifications((current) => current.map((n) => (n.id === note.id ? { ...n, unread: false } : n)));
+      await supabase.from('project_notifications').update({ is_read: true } as never).eq('id', note.id);
+    }
+    router.push(note.projectId ? `/projects/${note.projectId}` : '/notifications');
+  };
 
   /* Close menus when clicking outside */
   useEffect(() => {
@@ -200,6 +268,7 @@ export default function TopNavbar() {
             <button
               className={`icon-btn notification-btn ${notificationMenuOpen ? 'active' : ''}`}
               onClick={() => {
+                if (!notificationMenuOpen) void loadNotifications();
                 setNotificationMenuOpen(!notificationMenuOpen);
                 setProfileMenuOpen(false);
                 setExploreMenuOpen(false);
@@ -217,7 +286,7 @@ export default function TopNavbar() {
                 <div className="dropdown-header">
                   <h3>Notifications</h3>
                   {hasUnread && (
-                    <button className="text-xs text-blue-600 font-medium hover:text-blue-700">Mark all read</button>
+                    <button type="button" onClick={() => void markAllRead()} className="text-xs text-blue-600 font-medium hover:text-blue-700">Mark all read</button>
                   )}
                 </div>
                 <div className="notification-list">
@@ -228,7 +297,14 @@ export default function TopNavbar() {
                     </div>
                   )}
                   {notifications.map(note => (
-                    <div key={note.id} className={`notification-item ${note.unread ? 'unread' : ''}`}>
+                    <div
+                      key={note.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => void openNotification(note)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') void openNotification(note); }}
+                      className={`notification-item ${note.unread ? 'unread' : ''}`}
+                    >
                       <div className="notification-icon">
                         <Bell size={14} weight="fill" />
                       </div>

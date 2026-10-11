@@ -163,6 +163,9 @@ function ProjectDetailContent() {
 
     // Core state
     const [project, setProject] = useState<Project | null>(null);
+    // 'owner' | 'edit' | 'view' for whoever is looking. Writes are enforced by
+    // RLS (migration 055); this only decides which controls to offer.
+    const [sharedAccess, setSharedAccess] = useState<'edit' | 'view' | null>(null);
     const [items, setItems] = useState<BOQItem[]>([]);
     const [stages, setStages] = useState<ProjectStageWithTasks[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -787,6 +790,27 @@ function ProjectDetailContent() {
         priceNotificationSentRef.current = true;
     }, [priceUpdates, project, profile?.id]);
 
+    useEffect(() => {
+        if (!project?.id || !profile?.id || project.owner_id === profile.id) {
+            setSharedAccess(null);
+            return;
+        }
+        let cancelled = false;
+        void (async () => {
+            const { data } = await supabase
+                .from('project_shares')
+                .select('access_level')
+                .eq('project_id', project.id)
+                .eq('shared_with_user_id', profile.id)
+                .maybeSingle();
+            if (!cancelled) setSharedAccess((data as { access_level?: 'edit' | 'view' } | null)?.access_level ?? 'view');
+        })();
+        return () => { cancelled = true; };
+    }, [project?.id, project?.owner_id, profile?.id]);
+
+    const isProjectOwner = Boolean(project && profile && project.owner_id === profile.id);
+    const canManageProject = isProjectOwner || sharedAccess === 'edit';
+
     // Handlers
     const handleProjectUpdate = async (updates: Partial<Project>) => {
         if (!project) return;
@@ -1299,23 +1323,35 @@ function ProjectDetailContent() {
                                     </div>
                                 </div>
                                 <div className="overview-actions">
-                                    <Button
-                                        variant="secondary"
-                                        size="sm"
-                                        onClick={() => setShowShareModal(true)}
-                                        icon={<ShareNetwork size={16} />}
-                                    >
-                                        Share
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        icon={<PencilSimple size={16} />}
-                                        onClick={() => setActiveView('settings')}
-                                    >
-                                        Edit Project
-                                    </Button>
+                                    {isProjectOwner && (
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => setShowShareModal(true)}
+                                            icon={<ShareNetwork size={16} />}
+                                        >
+                                            Share
+                                        </Button>
+                                    )}
+                                    {canManageProject && (
+                                        <Button
+                                            size="sm"
+                                            icon={<PencilSimple size={16} />}
+                                            onClick={() => setActiveView('settings')}
+                                        >
+                                            Edit Project
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
+
+                            {sharedAccess && (
+                                <p className="mt-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-secondary">
+                                    {sharedAccess === 'edit'
+                                        ? 'This project was shared with you. You can update its BOQ, stages, purchases and usage; only the owner can delete it or invite others.'
+                                        : 'This project was shared with you to view. Ask the owner for manage access if you need to make changes.'}
+                                </p>
+                            )}
 
                             {/* Price Update Alert */}
                             {priceUpdates.length > 0 && (
