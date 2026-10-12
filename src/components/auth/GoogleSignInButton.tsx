@@ -54,6 +54,26 @@ export default function GoogleSignInButton({
     signInWithTokenRef.current = signInWithGoogleIdToken;
   });
 
+  // Redrawn when the column really changes width (narrowing the window,
+  // turning a phone). The button took its width once, so after a resize it
+  // stayed 392px wide on a 320px screen and pushed the page sideways.
+  const renderButtonRef = useRef<(() => void) | null>(null);
+  const renderedWidthRef = useRef(0);
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const observer = new ResizeObserver(() => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const width = Math.max(200, Math.min(400, Math.floor(container.offsetWidth)));
+        if (Math.abs(width - renderedWidthRef.current) >= 16) renderButtonRef.current?.();
+      }, 200);
+    });
+    observer.observe(container);
+    return () => { observer.disconnect(); clearTimeout(timer); };
+  }, []);
+
   const handleFallback = useCallback(async () => {
     setIsWorking(true);
     const { error } = await signInWithGoogle();
@@ -96,20 +116,27 @@ export default function GoogleSignInButton({
           },
         });
 
-        // Emptied first: StrictMode mounts, unmounts and remounts in
-        // development, and renderButton appends rather than replaces, so
-        // without this the dev build shows two Google buttons stacked.
-        containerRef.current.innerHTML = '';
-
-        window.google.accounts.id.renderButton(containerRef.current, {
-          type: 'standard',
-          theme: 'outline',
-          size: 'large',
-          text: 'continue_with',
-          shape: 'rectangular',
-          logo_alignment: 'left',
-          width: containerRef.current.offsetWidth || 320,
-        });
+        renderButtonRef.current = () => {
+          const container = containerRef.current;
+          if (!container || !window.google) return;
+          // Emptied first: StrictMode mounts, unmounts and remounts in
+          // development, and renderButton appends rather than replaces, so
+          // without this the dev build shows two Google buttons stacked.
+          container.innerHTML = '';
+          // Google accepts 200–400px.
+          const width = Math.max(200, Math.min(400, Math.floor(container.offsetWidth || 320)));
+          renderedWidthRef.current = width;
+          window.google.accounts.id.renderButton(container, {
+            type: 'standard',
+            theme: 'outline',
+            size: 'large',
+            text: 'continue_with',
+            shape: 'rectangular',
+            logo_alignment: 'left',
+            width,
+          });
+        };
+        renderButtonRef.current();
       } catch {
         // Script blocked, offline, or an unconfigured origin — the redirect
         // flow still works, so use it rather than showing nothing.
@@ -162,9 +189,12 @@ export default function GoogleSignInButton({
          column so it lines up with the email form below. */
       .google-gsi {
         width: 100%;
+        max-width: 100%;
         min-height: 44px;
         display: flex;
         justify-content: center;
+        /* Never wider than the column, even mid-resize. */
+        overflow: hidden;
       }
     `}</style>
   );

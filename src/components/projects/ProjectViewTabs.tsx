@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DotsThree, X } from '@phosphor-icons/react';
 import { PROJECT_NAV_ITEMS, type ProjectView } from './SidebarSpine';
 
 const PRIMARY_VIEWS: ProjectView[] = ['overview', 'boq', 'budget', 'procurement'];
 const MORE_VIEWS: ProjectView[] = ['usage', 'compliance', 'documents', 'settings'];
 
-const MOBILE_LABELS: Partial<Record<ProjectView, string>> = {
-  procurement: 'Buy',
-};
+// One name per section on every device: the dock used "Buy" where the
+// sidebar said "Procurement Hub".
+const MOBILE_LABELS: Partial<Record<ProjectView, string>> = {};
 
 const VIEW_DESCRIPTIONS: Partial<Record<ProjectView, string>> = {
   usage: 'Log materials used on site',
@@ -27,13 +27,26 @@ export default function ProjectViewTabs({
 }) {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const isMoreActive = MORE_VIEWS.includes(activeView);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const moreButtonRef = useRef<HTMLButtonElement>(null);
 
+  // A native modal dialog: showModal() moves focus inside, makes the page
+  // behind inert, and Escape closes it. The old sheet only said
+  // aria-modal="true" — focus stayed on More, behind it.
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsMoreOpen(false);
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (isMoreOpen && !dialog.open) dialog.showModal();
+    if (!isMoreOpen && dialog.open) dialog.close();
+  }, [isMoreOpen]);
+
+  // The sheet is phone-only; widening the window closes it rather than
+  // leaving an invisible modal over the desktop layout.
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 769px)');
+    const onChange = () => { if (desktop.matches) setIsMoreOpen(false); };
+    desktop.addEventListener('change', onChange);
+    return () => desktop.removeEventListener('change', onChange);
   }, []);
 
   const selectView = (view: ProjectView) => {
@@ -61,27 +74,34 @@ export default function ProjectViewTabs({
           );
         })}
         <button
+          ref={moreButtonRef}
           type="button"
           className={`dock-item ${isMoreActive || isMoreOpen ? 'active' : ''}`}
+          aria-haspopup="dialog"
           aria-expanded={isMoreOpen}
           aria-controls="project-more-sheet"
+          aria-current={isMoreActive ? 'page' : undefined}
+          aria-label={isMoreActive ? `More sections, on ${PROJECT_NAV_ITEMS.find((item) => item.id === activeView)?.label ?? 'this section'}` : 'More sections'}
           onClick={() => setIsMoreOpen((open) => !open)}
         >
           <span className="dock-icon" aria-hidden="true"><DotsThree size={21} weight="bold" /></span>
-          <span>More</span>
+          <span>{isMoreActive ? (PROJECT_NAV_ITEMS.find((item) => item.id === activeView)?.short ?? 'More') : 'More'}</span>
         </button>
       </nav>
 
-      {isMoreOpen && (
-        <div className="sheet-layer" onClick={() => setIsMoreOpen(false)}>
-          <section
-            className="more-sheet"
-            id="project-more-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="project-more-title"
-            onClick={(event) => event.stopPropagation()}
-          >
+      <dialog
+        ref={dialogRef}
+        className="sheet-layer"
+        id="project-more-sheet"
+        aria-labelledby="project-more-title"
+        onClose={() => {
+          setIsMoreOpen(false);
+          moreButtonRef.current?.focus();
+        }}
+        // A click on the dimmed area (the dialog itself, outside the sheet) closes it.
+        onClick={(event) => { if (event.target === event.currentTarget) setIsMoreOpen(false); }}
+      >
+          <section className="more-sheet">
             <div className="sheet-handle" aria-hidden="true" />
             <div className="sheet-header">
               <div>
@@ -101,6 +121,7 @@ export default function ProjectViewTabs({
                     key={view}
                     type="button"
                     className={`sheet-item ${isActive ? 'active' : ''}`}
+                    aria-current={isActive ? 'page' : undefined}
                     onClick={() => selectView(view)}
                   >
                     <span className="sheet-icon" aria-hidden="true">{item.icon}</span>
@@ -114,8 +135,7 @@ export default function ProjectViewTabs({
               })}
             </div>
           </section>
-        </div>
-      )}
+      </dialog>
 
       <style jsx>{`
         .project-mobile-dock,
@@ -152,10 +172,11 @@ export default function ProjectViewTabs({
             padding: 4px 1px;
             border: 0;
             border-radius: 7px;
-            color: #748196;
+            /* #475569 on white is 7.6:1; the old #748196 was 3.95:1 at 10px. */
+            color: #475569;
             background: transparent;
             font: inherit;
-            font-size: 0.66rem;
+            font-size: 0.7rem;
             font-weight: 650;
             cursor: pointer;
           }
@@ -193,15 +214,24 @@ export default function ProjectViewTabs({
             outline-offset: 1px;
           }
 
-          .sheet-layer {
+          .sheet-layer[open] {
             position: fixed;
-            z-index: 140;
             inset: 0;
             display: flex;
             align-items: flex-end;
             justify-content: center;
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            max-height: none;
+            margin: 0;
             padding: 12px;
+            border: 0;
             background: rgba(5, 18, 35, 0.46);
+          }
+
+          .sheet-layer::backdrop {
+            background: transparent;
           }
 
           .more-sheet {

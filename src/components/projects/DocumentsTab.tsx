@@ -44,9 +44,13 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
     const previewDialog = useRef<HTMLDialogElement>(null);
     useEffect(() => { if (previewUrl) previewDialog.current?.showModal(); }, [previewUrl]);
     const [setupRequired, setSetupRequired] = useState(false);
+    // A failed load used to settle into "No documents yet", as if the
+    // project had none.
+    const [loadFailed, setLoadFailed] = useState(false);
 
     const loadDocuments = useCallback(async () => {
         setIsLoading(true);
+        setLoadFailed(false);
         const { documents: docs, error } = await getProjectDocuments(projectId);
         if (error) {
             // Check if it's a missing table error
@@ -54,6 +58,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
             if (error.message?.includes('does not exist') || errorCode === '42P01') {
                 setSetupRequired(true);
             } else {
+                setLoadFailed(true);
                 showError('Failed to load documents');
             }
         } else {
@@ -156,6 +161,20 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                     <div className="loading-state">
                         <div className="spinner"></div>
                         <p>Loading documents...</p>
+                    </div>
+                ) : loadFailed ? (
+                    <div className="empty-state">
+                        <Warning size={48} weight="light" />
+                        <h4>Documents could not be loaded</h4>
+                        <p>Check your connection and try again.</p>
+                        <button type="button" className="state-action" onClick={() => void loadDocuments()}>Retry</button>
+                    </div>
+                ) : documents.length > 0 && filteredDocuments.length === 0 ? (
+                    <div className="empty-state">
+                        <File size={48} weight="light" />
+                        <h4>No documents in this category</h4>
+                        <p>{documents.length} document{documents.length === 1 ? '' : 's'} in other categories.</p>
+                        <button type="button" className="state-action" onClick={() => setFilter('all')}>Show all documents</button>
                     </div>
                 ) : filteredDocuments.length === 0 ? (
                     <div className="empty-state">
@@ -336,6 +355,19 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                 .empty-state p {
                     margin: 0;
                     font-size: 0.875rem;
+                }
+
+                .state-action {
+                    margin-top: 14px;
+                    min-height: 44px;
+                    padding: 10px 16px;
+                    border: 1px solid var(--color-border);
+                    border-radius: 8px;
+                    background: var(--color-surface);
+                    color: var(--color-text);
+                    font: inherit;
+                    font-weight: 600;
+                    cursor: pointer;
                 }
 
                 .documents-grid {

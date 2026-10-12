@@ -299,6 +299,8 @@
 
 .notification-centre {
     border-color: rgba(46, 108, 246, 0.15);
+    /* Clears the sticky site header when the savings plan scrolls here. */
+    scroll-margin-top: 88px;
 }
 
 .notification-centre:hover {
@@ -835,4 +837,13 @@
         padding-left: 16px;
         padding-right: 16px;
     }
+}
+
+.notif-draft {
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(46, 108, 246, 0.07);
+    color: var(--color-text);
+    font-size: 0.85rem;
 }

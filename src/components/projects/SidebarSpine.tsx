@@ -50,10 +50,10 @@ export const PROJECT_NAV_ITEMS: { id: ProjectView; label: string; short: string;
     { id: 'budget', label: 'Budget Planner', short: 'Budget', icon: <CurrencyCircleDollar size={20} /> },
     { id: 'boq', label: 'Bill of Quantities', short: 'BOQ', icon: <ListChecks size={20} /> },
     { id: 'compliance', label: 'Compliance Tracker', short: 'Compliance', icon: <ShieldCheck size={20} /> },
-    { id: 'procurement', label: 'Procurement Hub', short: 'Procurement', icon: <Truck size={20} /> },
+    { id: 'procurement', label: 'Buying & quotes', short: 'Buying', icon: <Truck size={20} /> },
     { id: 'usage', label: 'Usage Tracking', short: 'Usage', icon: <Clipboard size={20} /> },
     { id: 'documents', label: 'Documents', short: 'Documents', icon: <Files size={20} /> },
-    { id: 'settings', label: 'Configurations', short: 'Settings', icon: <Gear size={20} /> },
+    { id: 'settings', label: 'Settings', short: 'Settings', icon: <Gear size={20} /> },
 ];
 
 const navItems = PROJECT_NAV_ITEMS;
@@ -63,20 +63,24 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
     const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoadingProjects, setIsLoadingProjects] = useState(false);
-    const [isCollapsed, setIsCollapsed] = useState(false);
-
-    // Initialize collapse state from local storage on mount
-    useState(() => {
-        if (typeof window !== 'undefined') {
+    // The saved choice, else the compact rail on tablets: the full 252px
+    // sidebar left about 500px for the project on an 834px screen. (This
+    // used to call setState inside a useState initialiser.)
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        try {
             const saved = localStorage.getItem('sidebar_collapsed');
-            if (saved) setIsCollapsed(saved === 'true');
+            if (saved !== null) return saved === 'true';
+        } catch {
+            // Storage unavailable: fall through to the width default.
         }
+        return window.matchMedia('(min-width: 769px) and (max-width: 1100px)').matches;
     });
 
     const toggleCollapse = () => {
         const newState = !isCollapsed;
         setIsCollapsed(newState);
-        localStorage.setItem('sidebar_collapsed', String(newState));
+        try { localStorage.setItem('sidebar_collapsed', String(newState)); } catch { /* not remembered */ }
         if (newState) setIsProjectMenuOpen(false); // Close menu if collapsing
     };
 
@@ -113,9 +117,13 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                 {/* Project Switcher */}
                 <div className="project-switcher">
                     <button
+                        type="button"
                         className="switcher-btn"
                         onClick={handleToggleMenu}
                         title={isCollapsed ? project.name : undefined}
+                        aria-label={isCollapsed ? `Project: ${project.name}. Expand sidebar` : undefined}
+                        aria-expanded={isCollapsed ? undefined : isProjectMenuOpen}
+                        aria-haspopup={isCollapsed ? undefined : 'menu'}
                     >
                         <div className="project-icon">
                             <Buildings size={20} weight="duotone" />
@@ -135,14 +143,16 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                             ) : (
                                 <>
                                     {projects.map((p) => (
-                                        <div
+                                        <button
+                                            type="button"
                                             key={p.id}
                                             className={`dropdown-item ${p.id === project.id ? 'active' : ''}`}
+                                            aria-current={p.id === project.id ? 'page' : undefined}
                                             onClick={() => handleProjectSelect(p.id)}
                                         >
-                                            <Buildings size={16} />
+                                            <Buildings size={16} aria-hidden="true" />
                                             <span className="truncate">{p.name}</span>
-                                        </div>
+                                        </button>
                                     ))}
 
                                     {projects.length === 0 && (
@@ -161,10 +171,13 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                 </div>
 
                 {/* Navigation */}
-                <nav className="spine-nav">
+                <nav className="spine-nav" aria-label="Project sections">
                     {navItems.map((item) => (
                         <button
+                            type="button"
                             key={item.id}
+                            aria-current={activeView === item.id ? 'page' : undefined}
+                            aria-label={isCollapsed ? item.label : undefined}
                             onClick={() => {
                                 onViewChange(item.id);
                                 onMobileClose?.();
@@ -181,8 +194,10 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
 
                 {/* Collapse Toggle (Desktop only) */}
                 <button
+                    type="button"
                     className="collapse-toggle"
                     onClick={toggleCollapse}
+                    aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                     title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
                 >
                     <CaretDown size={16} className={`toggle-icon ${isCollapsed ? 'collapsed' : ''}`} />
@@ -250,8 +265,9 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                     }
 
                     .switcher-btn:focus-visible {
-                        outline: none;
-                        box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.25);
+                        /* Solid, not a 25% glow that was ~1.3:1 against white. */
+                        outline: 2px solid var(--color-focus-ring, #2e6cf6);
+                        outline-offset: 2px;
                     }
 
                     .project-icon {
@@ -284,7 +300,7 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                         font-size: 0.68rem;
                         text-transform: uppercase;
                         letter-spacing: 0.05em;
-                        color: #7689a5;
+                        color: #4b5f7a;
                         font-weight: 600;
                         margin-bottom: 2px;
                     }
@@ -335,6 +351,11 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                     }
 
                     .dropdown-item {
+                        width: 100%;
+                        border: 0;
+                        background: none;
+                        font: inherit;
+                        text-align: left;
                         display: flex;
                         align-items: center;
                         gap: 12px;
@@ -354,8 +375,9 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                     }
 
                     .dropdown-item:focus-visible {
-                        outline: none;
-                        box-shadow: inset 0 0 0 2px rgba(78, 154, 247, 0.22);
+                        /* Solid, not a 25% glow that was ~1.3:1 against white. */
+                        outline: 2px solid var(--color-focus-ring, #2e6cf6);
+                        outline-offset: 2px;
                     }
 
                     .dropdown-item.active {
@@ -428,8 +450,9 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                     }
 
                     .nav-item:focus-visible {
-                        outline: none;
-                        box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.25);
+                        /* Solid, not a 25% glow that was ~1.3:1 against white. */
+                        outline: 2px solid var(--color-focus-ring, #2e6cf6);
+                        outline-offset: 2px;
                     }
 
                     .nav-icon {
@@ -507,8 +530,9 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                     }
 
                     .collapse-toggle:focus-visible {
-                        outline: none;
-                        box-shadow: inset 0 0 0 3px rgba(78, 154, 247, 0.24);
+                        /* Solid, not a 25% glow that was ~1.3:1 against white. */
+                        outline: 2px solid var(--color-focus-ring, #2e6cf6);
+                        outline-offset: 2px;
                     }
 
                     .toggle-icon {

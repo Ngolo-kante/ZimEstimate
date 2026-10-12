@@ -20,6 +20,7 @@ import { clearOptimisticProjectCard, getOptimisticProjectCard } from '@/lib/proj
 import { supabase } from '@/lib/supabase';
 import { Project, ProjectStatus, ProjectScope } from '@/lib/database.types';
 import { useReveal } from '@/hooks/useReveal';
+import { slopeLabel, soilLabel } from '@/lib/projects/siteLabels';
 import ProjectShareSheet from '@/components/projects/ProjectShareSheet';
 import QuickShareSheet from '@/components/projects/QuickShareSheet';
 import InviteModal from '@/components/projects/InviteModal';
@@ -82,28 +83,16 @@ const formatScopeLabel = (project: Project) => {
     return formatStageLabel(project.scope);
 };
 
-const SOIL_LABELS: Record<string, string> = {
-    sandy: 'Sandy Soil',
-    clay_black_mountain: 'Clay/Black Mountain',
-    loam: 'Loam Soil',
-    rock: 'Rock Soil',
-};
 
-const SLOPE_LABELS: Record<string, string> = {
-    flat: 'Flat Site',
-    gentle: 'Gentle Slope',
-    moderate: 'Moderate Slope',
-    steep: 'Steep Slope',
-};
 
 const getComplianceChips = (project: Project): Array<{ label: string; tone: 'ok' | 'info' | 'warn' }> => {
     const chips: Array<{ label: string; tone: 'ok' | 'info' | 'warn' }> = [];
 
     if (project.soil_type) {
-        chips.push({ label: SOIL_LABELS[project.soil_type] || project.soil_type, tone: 'info' });
+        chips.push({ label: soilLabel(project.soil_type)!, tone: 'info' });
     }
     if (project.site_slope) {
-        chips.push({ label: SLOPE_LABELS[project.site_slope] || project.site_slope, tone: 'info' });
+        chips.push({ label: slopeLabel(project.site_slope)!, tone: 'info' });
     }
 
     chips.push({
@@ -209,8 +198,24 @@ function ProjectsContent() {
         // ones; any other status shows the ones still in use.
         if (statusFilter === 'archived') result = result.filter((i) => i.status === 'archived');
         else if (statusFilter !== 'all') result = result.filter((i) => i.status !== 'archived');
-        return result;
-    }, [quickItems, searchQuery, typeFilter, statusFilter]);
+        // The same sort as full builds; it used to apply to those only.
+        return [...result].sort((a, b) => {
+            switch (sortBy) {
+                case 'updated_asc':
+                    return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+                case 'name_asc':
+                    return a.name.localeCompare(b.name);
+                case 'name_desc':
+                    return b.name.localeCompare(a.name);
+                case 'budget_desc':
+                    return b.totalUsd - a.totalUsd;
+                case 'budget_asc':
+                    return a.totalUsd - b.totalUsd;
+                default:
+                    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+            }
+        });
+    }, [quickItems, searchQuery, typeFilter, statusFilter, sortBy]);
 
     // Selecting a quick type hides full builds, and vice versa.
     const visibleProjects = useMemo(
@@ -646,10 +651,12 @@ function ProjectsContent() {
         };
     }, [profile?.id, loadProjects]);
 
+    // Same meaning, same colour everywhere: blue = in progress, neutral =
+    // draft or put away, green = done.
     const statusColors: Record<string, 'success' | 'accent' | 'default'> = {
-        active: 'success',
+        active: 'accent',
         draft: 'default',
-        completed: 'accent',
+        completed: 'success',
         archived: 'default',
     };
 
@@ -741,7 +748,9 @@ function ProjectsContent() {
                 </div>
 
                 {/* Filters Bar */}
-                {projects.length > 0 && (
+                {/* For all saved work: someone with only quick estimates had no
+                    search or filters at all. */}
+                {(projects.length > 0 || quickItems.length > 0) && (
                     <div className="filters-bar reveal" data-delay="2">
                         <div className="filters-top-row">
                             <div className="search-box">
@@ -793,6 +802,7 @@ function ProjectsContent() {
                             <div className="filter-select">
                                 <Funnel size={16} weight="light" />
                                 <select
+                                    aria-label="Filter by status"
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value as ProjectStatus | 'all')}
                                 >
@@ -807,6 +817,7 @@ function ProjectsContent() {
 
                             <div className="filter-select">
                                 <select
+                                    aria-label="Filter by scope"
                                     value={scopeFilter}
                                     onChange={(e) => setScopeFilter(e.target.value as ProjectScope | 'all')}
                                 >
@@ -824,6 +835,7 @@ function ProjectsContent() {
                             <div className="filter-select">
                                 <SortAscending size={16} weight="light" />
                                 <select
+                                    aria-label="Sort by"
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value as SortOption)}
                                 >
@@ -831,8 +843,8 @@ function ProjectsContent() {
                                     <option value="updated_asc">Oldest First</option>
                                     <option value="name_asc">Name A-Z</option>
                                     <option value="name_desc">Name Z-A</option>
-                                    <option value="budget_desc">Budget High-Low</option>
-                                    <option value="budget_asc">Budget Low-High</option>
+                                    <option value="budget_desc">Estimate High-Low</option>
+                                    <option value="budget_asc">Estimate Low-High</option>
                                 </select>
                                 <CaretDown size={14} />
                             </div>
@@ -929,7 +941,7 @@ function ProjectsContent() {
                                         )}
                                     </div>
                                     <div className="project-budget">
-                                        <span className="budget-label">Budget</span>
+                                        <span className="budget-label">Estimate</span>
                                         <span className="budget-value">--</span>
                                     </div>
                                 </Card>
@@ -983,7 +995,7 @@ function ProjectsContent() {
                                     </div>
 
                                     <div className="project-budget">
-                                        <span className="budget-label">Estimated</span>
+                                        <span className="budget-label">Estimate</span>
                                         <span className="budget-value">
                                             <PriceDisplay priceUsd={item.totalUsd} priceZwg={item.totalUsd * 30} />
                                         </span>
@@ -1055,7 +1067,7 @@ function ProjectsContent() {
                                     </div>
 
                                     <div className="project-budget">
-                                        <span className="budget-label">Budget</span>
+                                        <span className="budget-label">Estimate</span>
                                         <span className="budget-value">
                                             <PriceDisplay
                                                 priceUsd={Number(project.total_usd)}

@@ -102,3 +102,57 @@ export const getComplianceRequirementStatus = (
 
 export const getStageRequirements = (stage: BOQCategory) =>
   STAGE_COMPLIANCE_REQUIREMENTS.filter((requirement) => requirement.stage === stage);
+
+export interface ComplianceStageInput {
+  id: string;
+  name: string;
+  boq_category: BOQCategory;
+  is_applicable: boolean;
+  tasks: StageTask[];
+}
+
+export interface ComplianceSummary {
+  totalCerts: number;
+  doneCerts: number;
+  totalTasks: number;
+  doneTasks: number;
+  total: number;
+  done: number;
+  pending: number;
+  /** The first certificate or task still open, in stage order. */
+  next: { stageId: string; stageName: string; label: string; type: 'Certificate' | 'Admin task'; requirementId?: string; taskId?: string } | null;
+}
+
+/**
+ * Counts certificates and admin tasks across the applicable stages. The one
+ * calculation for both the Compliance Tracker and the Overview card, which
+ * used to count a different, older checklist and three fixed certificates —
+ * "Certificates 0/3" on one page and "0/6" on the next for the same build.
+ */
+export function summariseCompliance(stages: ComplianceStageInput[]): ComplianceSummary {
+  let totalCerts = 0;
+  let doneCerts = 0;
+  let totalTasks = 0;
+  let doneTasks = 0;
+  let next: ComplianceSummary['next'] = null;
+
+  for (const stage of stages.filter((s) => s.is_applicable)) {
+    const requirements = getStageRequirements(stage.boq_category);
+    totalCerts += requirements.length;
+    for (const requirement of requirements) {
+      const done = getComplianceRequirementStatus(stage.tasks, requirement.id) === 'done';
+      if (done) doneCerts += 1;
+      else if (!next) next = { stageId: stage.id, stageName: stage.name, label: requirement.label, type: 'Certificate', requirementId: requirement.id };
+    }
+    const admin = stage.tasks.filter((task) => !isComplianceCertificateTask(task));
+    totalTasks += admin.length;
+    for (const task of admin) {
+      if (task.is_completed) doneTasks += 1;
+      else if (!next) next = { stageId: stage.id, stageName: stage.name, label: task.title, type: 'Admin task', taskId: task.id };
+    }
+  }
+
+  const total = totalCerts + totalTasks;
+  const done = doneCerts + doneTasks;
+  return { totalCerts, doneCerts, totalTasks, doneTasks, total, done, pending: total - done, next };
+}

@@ -335,7 +335,7 @@ export default function ProjectProcurementView({ project, items }: ProjectProcur
     <div className="procurement-page">
       <div className="procurement-header">
         <div>
-          <h2>Procurement Hub</h2>
+          <h2>Buying &amp; quotes</h2>
           <p>Request quotes and track supplier responses.</p>
         </div>
       </div>

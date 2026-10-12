@@ -25,6 +25,7 @@ import {
   getComplianceRequirementStatus,
   getStageRequirements,
   isComplianceCertificateTask,
+  summariseCompliance,
 } from '@/lib/compliance';
 import {
   Bell,
@@ -110,29 +111,8 @@ export default function ComplianceTrackerTab({
   );
 
   /* ---- Global stats ---- */
-  const globalStats = useMemo(() => {
-    let totalCerts = 0;
-    let doneCerts = 0;
-    let totalTasks = 0;
-    let doneTasks = 0;
-
-    applicableStages.forEach((stage) => {
-      const reqs = getStageRequirements(stage.boq_category);
-      totalCerts += reqs.length;
-      doneCerts += reqs.filter(
-        (r) => getComplianceRequirementStatus(stage.tasks, r.id) === 'done'
-      ).length;
-
-      const admin = stage.tasks.filter((t) => !isComplianceCertificateTask(t));
-      totalTasks += admin.length;
-      doneTasks += admin.filter((t) => t.is_completed).length;
-    });
-
-    const total = totalCerts + totalTasks;
-    const done = doneCerts + doneTasks;
-    const pending = total - done;
-    return { totalCerts, doneCerts, totalTasks, doneTasks, total, done, pending };
-  }, [applicableStages]);
+  // Shared with the Overview card, so both pages count the same things.
+  const globalStats = useMemo(() => summariseCompliance(stages), [stages]);
 
   /* ---- Collapse toggle ---- */
   const toggleCollapse = useCallback((stageId: string) => {

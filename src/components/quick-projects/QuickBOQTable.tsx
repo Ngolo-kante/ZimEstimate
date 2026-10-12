@@ -272,7 +272,73 @@ export default function QuickBOQTable({
 
       {/* ── Flat item list ──────────────────────────────────────────── */}
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="overflow-x-auto">
+        {/* Phones: one compact card per item — the six-column table was about
+            570px wide in a 293px column and needed sideways scrolling. */}
+        <ul className="divide-y divide-slate-100 sm:hidden">
+          {allItems.map((item) => {
+            const dimmed = item.owned || !item.included;
+            const displayUnit = currency === 'ZWG' ? item.unitCostUsd * zwgRate : item.unitCostUsd;
+            return (
+              <li key={item.id} className={`px-3 py-3 ${dimmed ? 'opacity-50' : ''}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-800">{item.description}</p>
+                    <div className="mt-0.5 flex flex-wrap gap-1">
+                      {item.brand && <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">{item.brand}</span>}
+                      {item.owned && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">Owned</span>}
+                      {item.optional && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">Optional</span>}
+                    </div>
+                  </div>
+                  {!item.owned && (
+                    <button
+                      type="button"
+                      aria-label={`${item.included ? 'Remove' : 'Add'} ${item.description} ${item.included ? 'from' : 'to'} the BOQ`}
+                      aria-pressed={item.included}
+                      onClick={() => toggleItem(item.id)}
+                      className="-m-1 p-2 rounded hover:bg-slate-100"
+                    >
+                      {item.included ? <ToggleRight size={24} weight="fill" className="text-green-600" /> : <ToggleLeft size={24} className="text-slate-500" />}
+                    </button>
+                  )}
+                </div>
+                <div className="mt-2 grid grid-cols-[1fr_auto_1fr_auto] items-center gap-1.5 text-xs text-slate-600">
+                  <label className="grid gap-0.5">
+                    <span>Qty ({item.unit})</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={Math.round(item.quantity * 100) / 100}
+                      min={0}
+                      step={0.01}
+                      disabled={dimmed}
+                      onChange={(e) => updateQty(item.id, parseFloat(e.target.value) || 0)}
+                      className="w-full rounded border border-slate-300 px-2 py-1.5 text-base text-slate-800 disabled:opacity-50"
+                    />
+                  </label>
+                  <span className="pt-4">×</span>
+                  <label className="grid gap-0.5">
+                    <span>Unit price</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={parseFloat(displayUnit.toFixed(2))}
+                      min={0}
+                      step={0.01}
+                      disabled={dimmed}
+                      onChange={(e) => updatePrice(item.id, parseFloat(e.target.value) || 0)}
+                      className="w-full rounded border border-slate-300 px-2 py-1.5 text-base text-slate-800 disabled:opacity-50"
+                    />
+                  </label>
+                  <span className="pt-4 pl-1 text-right text-sm font-semibold text-slate-800 whitespace-nowrap">
+                    {dimmed ? '\u2014' : fmt(item.totalCostUsd, currency, zwgRate)}
+                  </span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="hidden overflow-x-auto sm:block">
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
@@ -325,7 +391,7 @@ export default function QuickBOQTable({
                     <td className="px-4 py-2.5">
                       <input
                         type="number"
-                        value={item.quantity}
+                        value={Math.round(item.quantity * 100) / 100}
                         min={0}
                         step={0.01}
                         disabled={dimmed}
@@ -365,6 +431,8 @@ export default function QuickBOQTable({
                         <button
                           type="button"
                           title={item.included ? 'Remove from BOQ' : 'Add to BOQ'}
+                          aria-label={`${item.included ? 'Remove' : 'Add'} ${item.description} ${item.included ? 'from' : 'to'} the BOQ`}
+                          aria-pressed={item.included}
                           onClick={() => toggleItem(item.id)}
                           className="p-1 rounded hover:bg-slate-100 transition-colors"
                         >
@@ -385,17 +453,17 @@ export default function QuickBOQTable({
               })}
             </tbody>
           </table>
+        </div>
 
-          {/* Add custom item */}
-          <div className="flex flex-wrap gap-2 border-t border-slate-100 p-3">
-            <button
-              type="button"
-              onClick={() => addCustomItem('Custom')}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              <Plus size={12} /> Add Item
-            </button>
-          </div>
+        {/* Add custom item — on phones too. */}
+        <div className="flex flex-wrap gap-2 border-t border-slate-100 p-3">
+          <button
+            type="button"
+            onClick={() => addCustomItem('Custom')}
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            <Plus size={12} /> Add Item
+          </button>
         </div>
       </div>
 

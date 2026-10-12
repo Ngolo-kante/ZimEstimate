@@ -13,6 +13,7 @@ import {
   Wallet,
 } from '@phosphor-icons/react';
 import { useCurrency } from './CurrencyToggle';
+import { projectMoney, savingsPace, type SavingsPeriod } from '@/lib/projects/budgetMath';
 
 // Email and WhatsApp first: what people in Zimbabwe actually use. Telegram
 // was offered but is set aside for now (its bot routes in /api/telegram are
@@ -20,36 +21,59 @@ import { useCurrency } from './CurrencyToggle';
 export type NotificationChannel = 'email' | 'whatsapp' | 'sms';
 
 interface BudgetPlannerProps {
-  totalBudgetUsd: number;
+  /** What the BOQ adds up to. */
+  estimateUsd: number;
+  /** What the owner says they can spend; null when not set. */
+  limitUsd?: number | null;
   amountSpentUsd?: number;
   targetDate?: string | null;
-  onTargetDateChange?: (date: string) => void;
-  onOpenSettings?: () => void;
+  /** Resolves false when the date could not be saved, so it is rolled back. */
+  onTargetDateChange?: (date: string) => Promise<boolean> | boolean;
+  onLimitChange?: (limitUsd: number | null) => Promise<boolean> | boolean;
+  savingsMode?: PlanMode;
+  savingsCustomUsd?: number | null;
+  onSavingsTargetChange?: (mode: PlanMode, customUsd: number | null) => Promise<boolean> | boolean;
+  /** Opens reminder setup with this plan's recommended amount filled in. */
+  onSetReminder?: (plan: { amountUsd: number; frequency: SavingsPeriod }) => void;
   criticalItemsUsd?: number;
 }
 
-type PlanMode = 'all' | 'critical' | 'custom';
+export type PlanMode = 'remaining' | 'critical' | 'custom';
+type SaveState = 'idle' | 'saving' | 'saved' | 'failed';
+
+const PERIOD_LABEL: Record<SavingsPeriod, string> = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' };
 
 export default function BudgetPlanner({
-  totalBudgetUsd,
+  estimateUsd,
+  limitUsd = null,
   amountSpentUsd = 0,
   targetDate,
   onTargetDateChange,
-  onOpenSettings,
+  onLimitChange,
+  savingsMode = 'remaining',
+  savingsCustomUsd = null,
+  onSavingsTargetChange,
+  onSetReminder,
   criticalItemsUsd = 0,
 }: BudgetPlannerProps) {
   const { exchangeRate, formatPrice } = useCurrency();
-  const [planMode, setPlanMode] = useState<PlanMode>('all');
-  const [customAmount, setCustomAmount] = useState('');
+  // Seeded from the project, so leaving Budget and coming back (or
+  // reloading) shows the target that was chosen, not the default.
+  const [planMode, setPlanMode] = useState<PlanMode>(savingsMode);
+  const [customAmount, setCustomAmount] = useState(savingsCustomUsd ? String(savingsCustomUsd) : '');
   const [localTargetDate, setLocalTargetDate] = useState(targetDate || '');
+  const [targetSave, setTargetSave] = useState<SaveState>('idle');
+  const [dateSave, setDateSave] = useState<SaveState>('idle');
+  const [editingLimit, setEditingLimit] = useState(false);
+  const [limitDraft, setLimitDraft] = useState(limitUsd ? String(limitUsd) : '');
+  const [limitSave, setLimitSave] = useState<SaveState>('idle');
 
-  const budgetBalance = totalBudgetUsd - amountSpentUsd;
-  const remainingBudget = Math.max(0, budgetBalance);
-  const amountOverBudget = Math.max(0, -budgetBalance);
-  const percentComplete = totalBudgetUsd > 0 ? (amountSpentUsd / totalBudgetUsd) * 100 : 0;
-  const displayedProgress = Math.min(100, Math.max(0, percentComplete));
-  const isOverBudget = budgetBalance < 0;
-  const hasBudget = totalBudgetUsd > 0;
+  const m = projectMoney({ estimateUsd, limitUsd, spentUsd: amountSpentUsd });
+  const isOverBudget = m.overspentUsd > 0;
+  const estimateOverLimit = m.estimateOverLimitUsd > 0;
+  const percentSpent = m.budgetUsd > 0 ? (m.spentUsd / m.budgetUsd) * 100 : 0;
+  const displayedProgress = Math.min(100, Math.max(0, percentSpent));
+  const hasEstimate = m.estimateUsd > 0;
 
   const targetAmount = useMemo(() => {
     switch (planMode) {
@@ -58,60 +82,91 @@ export default function BudgetPlanner({
       case 'custom':
         return parseFloat(customAmount) || 0;
       default:
-        return remainingBudget;
+        return m.stillToFundUsd;
     }
-  }, [planMode, criticalItemsUsd, customAmount, remainingBudget]);
+  }, [planMode, criticalItemsUsd, customAmount, m.stillToFundUsd]);
 
   const daysUntilTarget = useMemo(() => {
     if (!localTargetDate) return 0;
-    const target = new Date(localTargetDate);
+    // Calendar days, so a date of tomorrow reads "1 day" whatever the hour.
+    const target = new Date(`${localTargetDate}T00:00:00`);
     const today = new Date();
-    const diff = target.getTime() - today.getTime();
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+    today.setHours(0, 0, 0, 0);
+    return Math.max(0, Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
   }, [localTargetDate]);
 
-  const savingsPerDay = daysUntilTarget > 0 ? targetAmount / daysUntilTarget : 0;
-  const savingsPerWeek = savingsPerDay * 7;
-  const savingsPerMonth = savingsPerDay * 30;
-  const hasSavingsPlan = Boolean(localTargetDate && targetAmount > 0 && daysUntilTarget > 0);
+  const pace = savingsPace(targetAmount, daysUntilTarget);
+  const recommendedAmount = pace
+    ? pace.recommended === 'monthly' ? pace.perMonth! : pace.recommended === 'weekly' ? pace.perWeek! : pace.perDay
+    : 0;
 
   const emptyPlanCopy = useMemo(() => {
-    if (isOverBudget) {
-      return {
-        title: 'Spending is over the planned budget',
-        detail: 'Increase the budget or choose a custom savings target.',
-      };
-    }
-    if (totalBudgetUsd <= 0) {
-      return {
-        title: 'Add BOQ items to calculate a plan',
-        detail: 'The savings target uses your project BOQ total.',
-      };
+    if (!hasEstimate && planMode !== 'custom') {
+      return { title: 'Add BOQ items to calculate a plan', detail: 'The savings target uses your project BOQ total, or set a custom amount.' };
     }
     if (!localTargetDate) {
-      return {
-        title: 'Choose a target date',
-        detail: 'Your daily, weekly, and monthly pace will appear here.',
-      };
+      return { title: 'Choose a target date', detail: 'How much to set aside each day, week or month will appear here.' };
     }
     if (daysUntilTarget <= 0) {
-      return {
-        title: 'Choose a future target date',
-        detail: 'The savings pace needs at least one day.',
-      };
+      return { title: 'Choose a future target date', detail: 'The savings pace needs at least one day.' };
     }
-    return {
-      title: 'No remaining amount to fund',
-      detail: 'Choose a custom target to create a savings plan.',
-    };
-  }, [daysUntilTarget, isOverBudget, localTargetDate, totalBudgetUsd]);
+    return { title: 'Nothing left to fund', detail: 'Choose a custom amount to plan savings for.' };
+  }, [daysUntilTarget, hasEstimate, localTargetDate, planMode]);
 
-  const handleDateChange = (date: string) => {
+  const run = async (
+    save: (() => Promise<boolean> | boolean) | undefined,
+    setState: (s: SaveState) => void,
+  ): Promise<boolean> => {
+    if (!save) return true;
+    setState('saving');
+    const ok = await Promise.resolve(save()).catch(() => false);
+    setState(ok ? 'saved' : 'failed');
+    if (ok) window.setTimeout(() => setState('idle'), 2000);
+    return ok;
+  };
+
+  const saveTarget = (mode: PlanMode, amount: string) => {
+    const custom = mode === 'custom' && amount ? Math.max(0, parseFloat(amount) || 0) : null;
+    void run(onSavingsTargetChange && (() => onSavingsTargetChange(mode, custom)), setTargetSave);
+  };
+
+  const chooseMode = (mode: PlanMode) => {
+    setPlanMode(mode);
+    saveTarget(mode, customAmount);
+  };
+
+  const handleDateChange = async (date: string) => {
+    const previous = localTargetDate;
     setLocalTargetDate(date);
-    onTargetDateChange?.(date);
+    const ok = await run(onTargetDateChange && (() => onTargetDateChange(date)), setDateSave);
+    // A date that did not save must not look saved.
+    if (!ok) setLocalTargetDate(previous);
+  };
+
+  const saveLimit = async (clear = false) => {
+    const value = clear ? null : Math.max(0, parseFloat(limitDraft) || 0) || null;
+    const ok = await run(onLimitChange && (() => onLimitChange(value)), setLimitSave);
+    if (ok) {
+      setEditingLimit(false);
+      setLimitDraft(value ? String(value) : '');
+    }
   };
 
   const formatAmount = (amount: number) => formatPrice(amount, amount * exchangeRate);
+
+  const status = isOverBudget
+    ? { tone: 'status-warning', icon: <Warning size={16} weight="fill" />, text: `Over budget by ${formatAmount(m.overspentUsd)}` }
+    : estimateOverLimit
+      ? { tone: 'status-attention', icon: <Warning size={16} weight="fill" />, text: `Estimate is ${formatAmount(m.estimateOverLimitUsd)} over your limit` }
+      : m.limitUsd !== null
+        ? { tone: 'status-good', icon: <CheckCircle size={16} weight="fill" />, text: 'Within your limit' }
+        : { tone: 'status-neutral', icon: <Wallet size={16} weight="fill" />, text: hasEstimate ? 'No budget limit set' : 'No budget yet' };
+
+  const saveNote = (state: SaveState, onRetry: () => void) =>
+    state === 'saving' ? <span className="save-note">Saving…</span>
+      : state === 'saved' ? <span className="save-note ok">Saved</span>
+        : state === 'failed' ? <span className="save-note bad">Not saved. <button type="button" onClick={onRetry}>Retry</button></span>
+          : null;
 
   return (
     <div className="budget-planner">
@@ -121,43 +176,71 @@ export default function BudgetPlanner({
             <span className="eyebrow">Project budget</span>
             <h2 id="budget-position-title">Budget position</h2>
           </div>
-          <span className={`status-badge ${isOverBudget ? 'status-warning' : hasBudget ? 'status-good' : 'status-neutral'}`}>
-            {isOverBudget
-              ? <Warning size={16} weight="fill" />
-              : hasBudget
-                ? <CheckCircle size={16} weight="fill" />
-                : <Wallet size={16} weight="fill" />}
-            {isOverBudget ? 'Over budget' : hasBudget ? 'On track' : 'No budget yet'}
+          <span className={`status-badge ${status.tone}`}>
+            {status.icon}
+            {status.text}
           </span>
         </header>
 
         <div className="metric-grid">
           <div className="metric">
             <span className="metric-icon"><Wallet size={18} weight="duotone" /></span>
-            <span className="metric-label">Planned</span>
-            <strong className="metric-value">{formatAmount(totalBudgetUsd)}</strong>
+            <span className="metric-label">BOQ estimate</span>
+            <strong className="metric-value">{formatAmount(m.estimateUsd)}</strong>
+          </div>
+          <div className="metric">
+            <span className="metric-icon"><Target size={18} weight="duotone" /></span>
+            <span className="metric-label">
+              Your limit
+              {onLimitChange && !editingLimit && (
+                <button type="button" className="inline-edit" onClick={() => { setLimitDraft(m.limitUsd ? String(m.limitUsd) : ''); setEditingLimit(true); }}>
+                  {m.limitUsd !== null ? 'Edit' : 'Set'}
+                </button>
+              )}
+            </span>
+            {editingLimit ? (
+              <span className="limit-editor">
+                <span className="money-input-wrapper">
+                  <span aria-hidden="true">$</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    value={limitDraft}
+                    onChange={(e) => setLimitDraft(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') void saveLimit(); if (e.key === 'Escape') setEditingLimit(false); }}
+                    className="modern-input money-input"
+                    aria-label="Budget limit in US dollars"
+                    autoFocus
+                  />
+                </span>
+                <span className="limit-actions">
+                  <button type="button" onClick={() => void saveLimit()}>Save</button>
+                  {m.limitUsd !== null && <button type="button" onClick={() => void saveLimit(true)}>Clear</button>}
+                  <button type="button" onClick={() => setEditingLimit(false)}>Cancel</button>
+                </span>
+                {saveNote(limitSave, () => void saveLimit())}
+              </span>
+            ) : (
+              <strong className="metric-value">{m.limitUsd !== null ? formatAmount(m.limitUsd) : <span className="not-set">Not set</span>}</strong>
+            )}
           </div>
           <div className="metric">
             <span className="metric-icon"><CurrencyDollar size={18} weight="duotone" /></span>
             <span className="metric-label">Spent</span>
-            <strong className="metric-value">{formatAmount(amountSpentUsd)}</strong>
+            <strong className="metric-value">{formatAmount(m.spentUsd)}</strong>
           </div>
           <div className={`metric ${isOverBudget ? 'metric-warning' : 'metric-success'}`}>
-            <span className="metric-icon"><Target size={18} weight="duotone" /></span>
-            <span className="metric-label">{isOverBudget ? 'Over by' : 'Remaining'}</span>
-            <strong className="metric-value">{formatAmount(isOverBudget ? amountOverBudget : remainingBudget)}</strong>
-          </div>
-          <div className="metric metric-progress">
             <span className="metric-icon"><TrendUp size={18} weight="duotone" /></span>
-            <span className="metric-label">Progress</span>
-            <strong className="metric-value">{percentComplete.toFixed(0)}%</strong>
+            <span className="metric-label">Still to fund</span>
+            <strong className="metric-value">{formatAmount(m.stillToFundUsd)}</strong>
           </div>
         </div>
 
         <div
           className="progress-track"
           role="progressbar"
-          aria-label="Budget spent"
+          aria-label={`Share of the ${m.basis === 'limit' ? 'budget limit' : 'BOQ estimate'} spent`}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(displayedProgress)}
@@ -165,8 +248,8 @@ export default function BudgetPlanner({
           <div className="progress-fill" style={{ width: `${displayedProgress}%` }} />
         </div>
         <div className="progress-caption">
-          <span>{formatAmount(amountSpentUsd)} spent</span>
-          <span>{formatAmount(totalBudgetUsd)} planned</span>
+          <span>{formatAmount(m.spentUsd)} spent · {percentSpent.toFixed(0)}% of the {m.basis === 'limit' ? 'limit' : 'estimate'}</span>
+          <span>{formatAmount(m.budgetUsd)} {m.basis === 'limit' ? 'limit' : 'estimate'}</span>
         </div>
       </section>
 
@@ -176,7 +259,7 @@ export default function BudgetPlanner({
             <span className="title-icon"><Target size={20} weight="duotone" /></span>
             <div>
               <h2 id="savings-plan-title">Savings target</h2>
-              <p>Choose what to fund and when you need it.</p>
+              <p>Choose what to fund and when you need it. Your choice is saved.</p>
             </div>
           </div>
           <div className="target-readout" aria-live="polite">
@@ -188,22 +271,22 @@ export default function BudgetPlanner({
         <div className="workspace-grid">
           <div className="target-controls">
             <fieldset className="input-group">
-              <legend>What are you saving for?</legend>
+              <legend>What are you saving for? {saveNote(targetSave, () => saveTarget(planMode, customAmount))}</legend>
               <div className={`toggle-group ${criticalItemsUsd > 0 ? 'has-critical' : ''}`}>
                 <button
                   type="button"
-                  className={`toggle-btn ${planMode === 'all' ? 'active' : ''}`}
-                  aria-pressed={planMode === 'all'}
-                  onClick={() => setPlanMode('all')}
+                  className={`toggle-btn ${planMode === 'remaining' ? 'active' : ''}`}
+                  aria-pressed={planMode === 'remaining'}
+                  onClick={() => chooseMode('remaining')}
                 >
-                  Remaining
+                  Still to fund
                 </button>
                 {criticalItemsUsd > 0 && (
                   <button
                     type="button"
                     className={`toggle-btn ${planMode === 'critical' ? 'active' : ''}`}
                     aria-pressed={planMode === 'critical'}
-                    onClick={() => setPlanMode('critical')}
+                    onClick={() => chooseMode('critical')}
                   >
                     Critical
                   </button>
@@ -212,7 +295,7 @@ export default function BudgetPlanner({
                   type="button"
                   className={`toggle-btn ${planMode === 'custom' ? 'active' : ''}`}
                   aria-pressed={planMode === 'custom'}
-                  onClick={() => setPlanMode('custom')}
+                  onClick={() => chooseMode('custom')}
                 >
                   Custom
                 </button>
@@ -222,7 +305,7 @@ export default function BudgetPlanner({
             <div className={`field-grid ${planMode === 'custom' ? 'has-custom' : ''}`}>
               {planMode === 'custom' && (
                 <div className="input-group animate-in">
-                  <label htmlFor="budget-target-amount">Target amount</label>
+                  <label htmlFor="budget-target-amount">Target amount (US$)</label>
                   <div className="money-input-wrapper">
                     <span aria-hidden="true">$</span>
                     <input
@@ -231,6 +314,8 @@ export default function BudgetPlanner({
                       inputMode="decimal"
                       value={customAmount}
                       onChange={(event) => setCustomAmount(event.target.value)}
+                      onBlur={() => saveTarget('custom', customAmount)}
+                      onKeyDown={(event) => { if (event.key === 'Enter') saveTarget('custom', customAmount); }}
                       placeholder="0.00"
                       min="0"
                       className="modern-input money-input"
@@ -247,13 +332,18 @@ export default function BudgetPlanner({
                     id="budget-target-date"
                     type="date"
                     value={localTargetDate}
-                    onChange={(event) => handleDateChange(event.target.value)}
+                    onChange={(event) => void handleDateChange(event.target.value)}
                     min={new Date().toISOString().split('T')[0]}
                     className="modern-input with-icon"
+                    aria-describedby="budget-target-date-help"
                   />
                 </div>
-                <span className="helper-text">
-                  {daysUntilTarget > 0 ? `${daysUntilTarget} days to reach your target` : 'Select a future date'}
+                <span className="helper-text" id="budget-target-date-help">
+                  {dateSave === 'failed'
+                    ? <span className="save-note bad">The date could not be saved, so it was put back. Try again.</span>
+                    : daysUntilTarget > 0 ? `${daysUntilTarget} day${daysUntilTarget === 1 ? '' : 's'} to reach your target` : 'Select a future date'}
+                  {dateSave === 'saving' && <span className="save-note"> · Saving…</span>}
+                  {dateSave === 'saved' && <span className="save-note ok"> · Saved</span>}
                 </span>
               </div>
             </div>
@@ -268,21 +358,24 @@ export default function BudgetPlanner({
               <TrendUp size={20} weight="duotone" aria-hidden="true" />
             </div>
 
-            {hasSavingsPlan ? (
-              <div className="savings-list">
-                <div className="savings-row">
-                  <span>Daily</span>
-                  <strong>{formatAmount(savingsPerDay)}</strong>
+            {pace ? (
+              <>
+                <div className="savings-list">
+                  {(['daily', 'weekly', 'monthly'] as SavingsPeriod[]).map((period) => {
+                    const amount = period === 'daily' ? pace.perDay : period === 'weekly' ? pace.perWeek : pace.perMonth;
+                    if (amount === null) return null;
+                    return (
+                      <div key={period} className={`savings-row ${pace.recommended === period ? 'featured' : ''}`}>
+                        <span>{PERIOD_LABEL[period]} {pace.recommended === period && <small>Recommended</small>}</span>
+                        <strong>{formatAmount(amount)}</strong>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="savings-row featured">
-                  <span>Weekly <small>Recommended</small></span>
-                  <strong>{formatAmount(savingsPerWeek)}</strong>
-                </div>
-                <div className="savings-row">
-                  <span>Monthly</span>
-                  <strong>{formatAmount(savingsPerMonth)}</strong>
-                </div>
-              </div>
+                {pace.perWeek === null && (
+                  <p className="pace-note">The date is under a week away, so this is the daily amount to set aside.</p>
+                )}
+              </>
             ) : (
               <div className="empty-state">
                 <CalendarBlank size={24} weight="duotone" aria-hidden="true" />
@@ -293,16 +386,20 @@ export default function BudgetPlanner({
               </div>
             )}
 
-            {onOpenSettings ? (
-              <button type="button" className="reminder-note reminder-action" onClick={onOpenSettings}>
+            {onSetReminder && pace ? (
+              <button
+                type="button"
+                className="reminder-note reminder-action"
+                onClick={() => onSetReminder({ amountUsd: recommendedAmount, frequency: pace.recommended })}
+              >
                 <BellSimple size={17} weight="duotone" aria-hidden="true" />
-                <span>Set delivery reminders</span>
+                <span>Remind me to save {formatAmount(recommendedAmount)} {pace.recommended === 'daily' ? 'a day' : pace.recommended === 'weekly' ? 'a week' : 'a month'}</span>
                 <ArrowRight size={15} weight="bold" aria-hidden="true" />
               </button>
             ) : (
               <div className="reminder-note">
                 <BellSimple size={17} weight="duotone" aria-hidden="true" />
-                <span>Set delivery reminders in Project Settings.</span>
+                <span>Choose a target and date to set a savings reminder.</span>
               </div>
             )}
           </div>
@@ -311,6 +408,7 @@ export default function BudgetPlanner({
 
       <style jsx>{`
         .budget-planner {
+          container-type: inline-size;
           display: grid;
           gap: 16px;
           min-width: 0;
@@ -448,7 +546,8 @@ export default function BudgetPlanner({
         .target-readout strong,
         .savings-row strong {
           min-width: 0;
-          overflow-wrap: anywhere;
+          /* Whole figures: "$32,914.79" broke mid-number at tablet width. */
+          white-space: nowrap;
           font-family: var(--font-mono);
           font-variant-numeric: tabular-nums;
         }
@@ -626,7 +725,8 @@ export default function BudgetPlanner({
           background: var(--color-surface);
           color: var(--color-text);
           font: inherit;
-          font-size: 0.9375rem;
+          /* 16px: iOS zooms the page into anything smaller. */
+          font-size: 1rem;
           transition: border-color 160ms ease, box-shadow 160ms ease;
         }
 
@@ -643,7 +743,7 @@ export default function BudgetPlanner({
         }
 
         .money-input-wrapper > span,
-        .input-icon {
+        .date-input-wrapper > :global(.input-icon) {
           position: absolute;
           z-index: 1;
           top: 50%;
@@ -820,20 +920,8 @@ export default function BudgetPlanner({
             display: block;
           }
 
-          .metric-grid {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-          }
-
           .metric {
             padding: 16px;
-          }
-
-          .metric:nth-child(n) {
-            border-bottom: 0;
-          }
-
-          .metric:not(:last-child) {
-            border-right: 1px solid var(--color-border-light);
           }
 
           .metric-value {
@@ -868,6 +956,92 @@ export default function BudgetPlanner({
             border-top: 0;
             border-left: 1px solid var(--color-border-light);
           }
+        }
+
+        /* Four across only when the planner itself is wide enough — with the
+           project sidebar open on a tablet it is far narrower than the screen. */
+        @container (min-width: 720px) {
+          .metric-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+          }
+
+          .metric:nth-child(n) {
+            border-bottom: 0;
+            border-right: 0;
+          }
+
+          .metric:not(:last-child) {
+            border-right: 1px solid var(--color-border-light);
+          }
+        }
+
+        .status-attention {
+          color: #92400e;
+          background: #fef3c7;
+        }
+
+        .inline-edit {
+          margin-left: 6px;
+          padding: 0;
+          border: 0;
+          background: none;
+          color: var(--color-accent);
+          font: inherit;
+          font-weight: 700;
+          cursor: pointer;
+          text-decoration: underline;
+        }
+
+        .not-set {
+          color: var(--color-text-secondary);
+          font-family: var(--font-sans);
+          font-weight: 600;
+        }
+
+        .limit-editor {
+          display: grid;
+          gap: 6px;
+          margin-top: 6px;
+        }
+
+        .limit-actions {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+
+        .limit-actions button,
+        .save-note button {
+          min-height: 32px;
+          padding: 4px 10px;
+          border: 1px solid var(--color-border);
+          border-radius: 6px;
+          background: var(--color-surface);
+          color: var(--color-text);
+          font: inherit;
+          font-size: 0.8rem;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .save-note {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--color-text-secondary);
+        }
+
+        .save-note.ok {
+          color: var(--color-success);
+        }
+
+        .save-note.bad {
+          color: var(--color-error, #b91c1c);
+        }
+
+        .pace-note {
+          margin: 10px 0 0;
+          font-size: 0.78rem;
+          color: var(--color-text-secondary);
         }
 
         @media (prefers-reduced-motion: reduce) {

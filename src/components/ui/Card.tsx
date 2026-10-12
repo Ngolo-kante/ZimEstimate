@@ -149,42 +149,48 @@ export function CardBadge({
     <>
       <span className={`card-badge badge-${variant}`}>{children}</span>
       <style jsx>{`
+        /* One recipe per meaning, each pair at least 4.5:1 on its own
+           background (the default badge was #64748B on a translucent grey,
+           about 3.9:1). Meaning: neutral = draft or planned; accent = action
+           or selection; warning = needs attention; error = blocking or over
+           budget; success = done or on track. */
         .card-badge {
           display: inline-flex;
           align-items: center;
           padding: 0.25rem 0.75rem;
           font-size: 0.75rem;
-          font-weight: 500;
+          font-weight: 600;
           border-radius: 9999px;
+          white-space: nowrap;
         }
 
         .badge-default {
-          background: var(--color-border-light);
-          color: var(--color-text-secondary);
+          background: #f1f5f9;
+          color: #334155;
         }
 
         .badge-success {
-          background: rgba(16, 185, 129, 0.1);
-          color: var(--color-success);
+          background: #dcfce7;
+          color: #166534;
         }
 
         .badge-warning {
-          background: rgba(245, 158, 11, 0.15);
-          color: var(--color-warning);
+          background: #fef3c7;
+          color: #92400e;
         }
 
         .badge-accent {
-          background: rgba(78, 154, 247, 0.15);
-          color: var(--color-accent-dark);
+          background: #e0ebff;
+          color: #1e4fc2;
         }
 
         .badge-error {
-          background: rgba(239, 68, 68, 0.1);
-          color: #dc2626;
+          background: #fee2e2;
+          color: #b91c1c;
         }
 
         .badge-info {
-          background: rgba(59, 130, 246, 0.1);
+          background: #eff6ff;
           color: #1d4ed8;
         }
       `}</style>

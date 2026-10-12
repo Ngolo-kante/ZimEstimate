@@ -161,6 +161,44 @@ export default function ProjectUsageView({
     }
   }, [selectedItemForUsage, onClearSelectedItem]);
 
+  // Options for "which material was used", grouped by stage and labelled
+  // with quantity and what is left — 99 lines of bare names repeated "DPC
+  // Roll" and "Standard Cement 32.5N" with nothing to tell them apart.
+  const materialOptionGroups = useMemo(() => {
+    const STAGE_ORDER = ['substructure', 'superstructure', 'roofing', 'finishing', 'exterior', 'labor'];
+    const STAGE_NAMES: Record<string, string> = {
+      substructure: 'Foundations', superstructure: 'Walls & frame', roofing: 'Roofing',
+      finishing: 'Finishes', exterior: 'Outside works', labor: 'Labour',
+    };
+    const fmt = (n: number) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const unitOf = (unit: string) => unit.replace(/^per\s+/i, '').replace(/^each$/i, '').trim();
+    const groups = new Map<string, typeof items>();
+    for (const item of items) {
+      const key = item.category || 'other';
+      groups.set(key, [...(groups.get(key) ?? []), item]);
+    }
+    return [...groups.entries()]
+      .sort(([a], [b]) => (STAGE_ORDER.indexOf(a) + 1 || 99) - (STAGE_ORDER.indexOf(b) + 1 || 99))
+      .map(([key, stageItems]) => {
+        const nameCount = new Map<string, number>();
+        stageItems.forEach((i) => nameCount.set(i.material_name, (nameCount.get(i.material_name) ?? 0) + 1));
+        return {
+          key,
+          label: STAGE_NAMES[key] ?? key.replace(/_/g, ' '),
+          options: stageItems.map((item) => {
+            const total = Number(item.actual_quantity ?? item.quantity ?? 0);
+            const left = Math.max(0, total - (usageByItem[item.id] || 0));
+            const unit = unitOf(item.unit);
+            const purpose = nameCount.get(item.material_name)! > 1 && item.notes ? ` (${item.notes.replace(/\[Enablement Cost\]\s*/g, '').trim()})` : '';
+            return {
+              id: item.id,
+              label: `${item.material_name}${purpose} · ${fmt(total)}${unit ? ` ${unit}` : ''} · ${fmt(left)} left`,
+            };
+          }),
+        };
+      });
+  }, [items, usageByItem]);
+
   const itemLookup = useMemo(() => {
     const map = new Map<string, BOQItem>();
     items.forEach((item) => map.set(item.id, item));
@@ -386,28 +424,42 @@ export default function ProjectUsageView({
       </div>
 
       {/* Tab Navigation */}
-      <div className="usage-tabs">
+      {/* Three equal columns that always fit: as a row that could not
+          shrink it pushed the page to 426px on a 390px phone and cut off
+          the ledger. Short labels on small screens. */}
+      <div className="usage-tabs" role="tablist" aria-label="Usage tracking">
         <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'log'}
           className={`usage-tab ${activeTab === 'log' ? 'active' : ''}`}
           onClick={() => setActiveTab('log')}
         >
-          <Plus size={16} weight="duotone" />
-          <span>Log Usage</span>
+          <Plus size={16} weight="duotone" aria-hidden="true" />
+          <span className="tab-label-long">Log Usage</span>
+          <span className="tab-label-short">Log</span>
         </button>
         <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'materials'}
           className={`usage-tab ${activeTab === 'materials' ? 'active' : ''}`}
           onClick={() => setActiveTab('materials')}
         >
-          <Package size={16} weight="duotone" />
+          <Package size={16} weight="duotone" aria-hidden="true" />
           <span>Materials</span>
           <span className="tab-count">{items.length}</span>
         </button>
         <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'ledger'}
           className={`usage-tab ${activeTab === 'ledger' ? 'active' : ''}`}
           onClick={() => setActiveTab('ledger')}
         >
-          <Receipt size={16} weight="duotone" />
-          <span>Usage Ledger</span>
+          <Receipt size={16} weight="duotone" aria-hidden="true" />
+          <span className="tab-label-long">Usage Ledger</span>
+          <span className="tab-label-short">Ledger</span>
           {usageHistory.length > 0 && <span className="tab-count">{usageHistory.length}</span>}
         </button>
       </div>
@@ -488,10 +540,12 @@ export default function ProjectUsageView({
                     onChange={(e) => setFormState({ ...formState, itemId: e.target.value })}
                   >
                     <option value="">Select material...</option>
-                    {items.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.material_name}
-                      </option>
+                    {materialOptionGroups.map((group) => (
+                      <optgroup key={group.key} label={group.label}>
+                        {group.options.map((option) => (
+                          <option key={option.id} value={option.id}>{option.label}</option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </div>
@@ -949,7 +1003,7 @@ export default function ProjectUsageView({
           width: 140px;
           height: 140px;
           border-radius: 50%;
-          background: conic-gradient(#3b82f6 0 var(--percent), #f1f5f9 var(--percent) 100%);
+          background: conic-gradient(var(--color-accent) 0 var(--percent), #f1f5f9 var(--percent) 100%);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1013,7 +1067,7 @@ export default function ProjectUsageView({
         }
         
         .reminder-left svg {
-            color: #3b82f6;
+            color: var(--color-accent);
             padding: 8px;
             background: #eff6ff;
             border-radius: 10px;
@@ -1049,7 +1103,7 @@ export default function ProjectUsageView({
           font-weight: 600;
           border: 1px solid #d9e7f5;
           background: #f8fafc;
-          color: #3b82f6;
+          color: var(--color-accent);
           cursor: pointer;
           transition: all 0.2s;
           white-space: nowrap;
@@ -1122,7 +1176,7 @@ export default function ProjectUsageView({
         
         .form-group input:focus,
         .form-group select:focus {
-          border-color: #3b82f6;
+          border-color: var(--color-accent);
           box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
         
@@ -1224,7 +1278,7 @@ export default function ProjectUsageView({
 
         .burn-fill {
           height: 100%;
-          background: #3b82f6;
+          background: var(--color-accent);
           border-radius: 999px;
         }
         
@@ -1285,7 +1339,7 @@ export default function ProjectUsageView({
         }
         
         .group-header svg {
-            color: #3b82f6;
+            color: var(--color-accent);
         }
 
         .group-list {
@@ -1330,7 +1384,9 @@ export default function ProjectUsageView({
 
         /* Tab Navigation */
         .usage-tabs {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          min-width: 0;
           gap: 6px;
           background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
           padding: 6px;
@@ -1341,8 +1397,12 @@ export default function ProjectUsageView({
         .usage-tab {
           display: flex;
           align-items: center;
+          justify-content: center;
+          min-width: 0;
+          min-height: 44px;
           gap: 8px;
-          padding: 10px 18px;
+          padding: 10px 12px;
+          white-space: nowrap;
           background: transparent;
           border: none;
           border-radius: 10px;
@@ -1364,6 +1424,30 @@ export default function ProjectUsageView({
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
+        .tab-label-short {
+          display: none;
+        }
+
+        @media (max-width: 480px) {
+          .tab-label-long {
+            display: none;
+          }
+
+          .tab-label-short {
+            display: inline;
+          }
+
+          .usage-tab {
+            gap: 5px;
+            padding: 8px 6px;
+            font-size: 0.8rem;
+          }
+
+          .usage-tab :global(svg) {
+            display: none;
+          }
+        }
+
         .tab-count {
           background: rgba(100, 116, 139, 0.15);
           color: #64748b;
@@ -1375,7 +1459,7 @@ export default function ProjectUsageView({
 
         .usage-tab.active .tab-count {
           background: rgba(59, 130, 246, 0.15);
-          color: #2563eb;
+          color: var(--color-accent-dark);
         }
 
         /* Materials Tab */
@@ -1487,7 +1571,7 @@ export default function ProjectUsageView({
         }
 
         .stat-value.used {
-          color: #3b82f6;
+          color: var(--color-accent);
         }
 
         .stat-value.depleted {
@@ -1511,7 +1595,7 @@ export default function ProjectUsageView({
 
         .material-progress .progress-fill {
           height: 100%;
-          background: #3b82f6;
+          background: var(--color-accent);
           border-radius: 999px;
         }
 
@@ -1656,7 +1740,7 @@ export default function ProjectUsageView({
         .ledger-date-total {
           font-size: 0.85rem;
           font-weight: 600;
-          color: #3b82f6;
+          color: var(--color-accent);
         }
 
         .ledger-table {

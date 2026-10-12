@@ -274,6 +274,8 @@ export interface Database {
                     target_completion_date: string | null;
                     target_purchase_date: string | null;
                     savings_frequency: SavingsFrequency;
+                    savings_target_mode: 'remaining' | 'critical' | 'custom';
+                    savings_target_usd: number | null;
                     soil_type: ProjectSoilType | null;
                     site_slope: SiteSlopeType | null;
                     geotech_report_uploaded: boolean;
@@ -304,6 +306,8 @@ export interface Database {
                     target_completion_date?: string | null;
                     target_purchase_date?: string | null;
                     savings_frequency?: SavingsFrequency;
+                    savings_target_mode?: 'remaining' | 'critical' | 'custom';
+                    savings_target_usd?: number | null;
                     soil_type?: ProjectSoilType | null;
                     site_slope?: SiteSlopeType | null;
                     geotech_report_uploaded?: boolean;
@@ -334,6 +338,8 @@ export interface Database {
                     target_completion_date?: string | null;
                     target_purchase_date?: string | null;
                     savings_frequency?: SavingsFrequency;
+                    savings_target_mode?: 'remaining' | 'critical' | 'custom';
+                    savings_target_usd?: number | null;
                     soil_type?: ProjectSoilType | null;
                     site_slope?: SiteSlopeType | null;
                     geotech_report_uploaded?: boolean;

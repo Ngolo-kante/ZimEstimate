@@ -297,14 +297,16 @@ function SavedQuickEstimate() {
 
         {/* Icons carry these on a phone; the labels return once there is room. */}
         <div className="actions">
-          <button type="button" onClick={handleEditInputs} className="act">
-            <PencilSimple size={16} weight="bold" /><span>Edit inputs</span>
+          {/* Named for screen readers too: on phones the words are hidden and
+              the buttons used to be announced as nothing at all. */}
+          <button type="button" onClick={handleEditInputs} className="act" aria-label="Edit inputs">
+            <PencilSimple size={16} weight="bold" aria-hidden="true" /><span>Edit inputs</span>
           </button>
-          <button type="button" onClick={handleShare} className="act">
-            <ShareNetwork size={16} weight="bold" /><span>Share</span>
+          <button type="button" onClick={handleShare} className="act" aria-label="Share a copy">
+            <ShareNetwork size={16} weight="bold" aria-hidden="true" /><span>Share</span>
           </button>
-          <button type="button" onClick={handleDownloadPdf} className="act">
-            <Download size={16} weight="bold" /><span>PDF</span>
+          <button type="button" onClick={handleDownloadPdf} className="act" aria-label="Download BOQ PDF">
+            <Download size={16} weight="bold" aria-hidden="true" /><span>PDF</span>
           </button>
         </div>
       </header>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
 import Card, { CardHeader, CardTitle } from '@/components/ui/Card';
@@ -19,12 +19,15 @@ import { RunningTotalBar } from '@/components/ui/RunningTotalBar';
 import { StageProgressCards } from '@/components/projects/StageProgressCards';
 import { CelebrationModal } from '@/components/ui/CelebrationModal';
 import BudgetPlanner, { NotificationChannel } from '@/components/ui/BudgetPlanner';
+import { projectMoney } from '@/lib/projects/budgetMath';
+import { summariseCompliance } from '@/lib/compliance';
+import { slopeLabel, soilLabel } from '@/lib/projects/siteLabels';
 import { useReminderChannels } from '@/hooks/useReminderChannels';
 import PhoneNumberModal from '@/components/ui/PhoneNumberModal';
 import ProjectUsageView from '@/components/projects/ProjectUsageView';
 import UnifiedProcurementView from '@/components/projects/UnifiedProcurementView';
 import ProjectKPIDashboard from '@/components/projects/ProjectKPIDashboard';
-import SidebarSpine, { ProjectView } from '@/components/projects/SidebarSpine';
+import SidebarSpine, { PROJECT_NAV_ITEMS, ProjectView } from '@/components/projects/SidebarSpine';
 import ProjectSettings from '@/components/projects/ProjectSettings';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useToast } from '@/components/ui/Toast';
@@ -101,31 +104,7 @@ const categoryShortLabels: Record<BOQCategory, string> = {
 const CHECKLIST_TASK_PREFIX = 'boq_checklist:';
 const GEOTECH_DOC_TAG = 'geotech_report';
 
-const CERTIFICATE_ITEMS = [
-    { id: 'approved_site_plan', label: 'Approved Site Plan' },
-    { id: 'slab_foundation_certificate', label: 'Slab/Foundation Certificate' },
-    { id: 'completion_occupation_certificate', label: 'Completion/Occupation Certificate' },
-] as const;
 
-const CERTIFICATE_STATUS_PRIORITY: Record<'pending' | 'in_progress' | 'done', number> = {
-    pending: 0,
-    in_progress: 1,
-    done: 2,
-};
-
-const SOIL_LABELS: Record<string, string> = {
-    sandy: 'Sandy',
-    clay_black_mountain: 'Clay / Black Mountain',
-    loam: 'Loam',
-    rock: 'Rock',
-};
-
-const SLOPE_LABELS: Record<string, string> = {
-    flat: 'Flat',
-    gentle: 'Gentle Slope',
-    moderate: 'Moderate Slope',
-    steep: 'Steep',
-};
 
 const LOCATION_TYPE_LABELS: Record<LocationTypeRule, string> = {
     urban: 'Urban',
@@ -203,9 +182,44 @@ function ProjectDetailContent() {
     } | null>(null);
     const [isComplianceBannerDismissed, setIsComplianceBannerDismissed] = useState(false);
 
-    // View state
-    const [activeView, setActiveView] = useState<ProjectView>('overview');
-    const [activeTab, setActiveTab] = useState<BOQCategory>('substructure');
+    // View state lives in the URL (?view=budget&stage=roofing), so refresh,
+    // Back and a shared link land on the same section. It was component state,
+    // and a refresh always returned to Overview. Next keeps useSearchParams in
+    // step with history.pushState, so switching needs no server round trip.
+    const searchParams = useSearchParams();
+    const viewParam = searchParams.get('view');
+    const activeView: ProjectView = PROJECT_NAV_ITEMS.some((item) => item.id === viewParam) ? (viewParam as ProjectView) : 'overview';
+    const stageParam = searchParams.get('stage');
+    const activeTab: BOQCategory = STAGE_CATEGORIES.includes(stageParam as BOQCategory) ? (stageParam as BOQCategory) : 'substructure';
+
+    const writeUrl = useCallback((patch: Record<string, string | null>, mode: 'push' | 'replace') => {
+        const params = new URLSearchParams(window.location.search);
+        for (const [key, value] of Object.entries(patch)) {
+            if (value === null) params.delete(key); else params.set(key, value);
+        }
+        const query = params.toString();
+        const next = `${window.location.pathname}${query ? `?${query}` : ''}`;
+        if (next === `${window.location.pathname}${window.location.search}`) return;
+        if (mode === 'push') window.history.pushState(null, '', next);
+        else window.history.replaceState(null, '', next);
+    }, []);
+
+    const setActiveView = useCallback((view: ProjectView) => {
+        writeUrl({ view: view === 'overview' ? null : view }, 'push');
+        // A new section starts at its top, not wherever the last one was scrolled.
+        window.scrollTo({ top: 0 });
+    }, [writeUrl]);
+
+    /** A person picking a stage adds a history entry; a correction does not. */
+    const setActiveTab = useCallback((
+        next: BOQCategory | ((current: BOQCategory) => BOQCategory),
+        mode: 'push' | 'replace' = 'push',
+    ) => {
+        const fromUrl = new URLSearchParams(window.location.search).get('stage');
+        const current: BOQCategory = STAGE_CATEGORIES.includes(fromUrl as BOQCategory) ? (fromUrl as BOQCategory) : 'substructure';
+        const value = typeof next === 'function' ? next(current) : next;
+        writeUrl({ stage: value === 'substructure' ? null : value }, mode);
+    }, [writeUrl]);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [selectedItemForPurchase, setSelectedItemForPurchase] = useState<BOQItem | null>(null);
     const [selectedItemForUsage, setSelectedItemForUsage] = useState<BOQItem | null>(null);
@@ -326,71 +340,22 @@ function ProjectDetailContent() {
         [stages]
     );
 
-    const checklistSummary = useMemo(() => {
-        const checklistTasks = (substructureStage?.tasks || []).filter((task) =>
-            (task.verification_note || '').startsWith(CHECKLIST_TASK_PREFIX)
-        );
-        const completed = checklistTasks.filter((task) => task.is_completed).length;
-        return {
-            completed,
-            total: checklistTasks.length,
-        };
-    }, [substructureStage?.tasks]);
-
-    const checklistEntries = useMemo(() => {
-        return (substructureStage?.tasks || [])
-            .filter((task) => (task.verification_note || '').startsWith(CHECKLIST_TASK_PREFIX))
-            .map((task) => {
-                const ruleId = (task.verification_note || '').replace(CHECKLIST_TASK_PREFIX, '').split('|')[0];
-                const ruleLabel = LOCATION_PROCEDURE_RULES.find((rule) => rule.id === ruleId)?.label || ruleId;
-                return {
-                    id: ruleId,
-                    label: ruleLabel,
-                    completed: task.is_completed,
-                };
-            });
-    }, [substructureStage?.tasks]);
-
-    const certificateSummary = useMemo(() => {
-        const certificateState = CERTIFICATE_ITEMS.reduce<Record<string, 'pending' | 'in_progress' | 'done'>>(
-            (acc, certificate) => {
-                acc[certificate.id] = 'pending';
-                return acc;
-            },
-            {}
-        );
-
-        stages.forEach((stage) => {
-            CERTIFICATE_ITEMS.forEach((certificate) => {
-                const nextStatus = getComplianceRequirementStatus(stage.tasks, certificate.id);
-                const currentStatus = certificateState[certificate.id];
-                if (CERTIFICATE_STATUS_PRIORITY[nextStatus] > CERTIFICATE_STATUS_PRIORITY[currentStatus]) {
-                    certificateState[certificate.id] = nextStatus;
-                }
-            });
-        });
-
-        const completed = Object.values(certificateState).filter((status) => status === 'done').length;
-        return {
-            completed,
-            total: CERTIFICATE_ITEMS.length,
-            state: certificateState,
-        };
-    }, [stages]);
-
     const applyStages = useCallback((nextStages: ProjectStageWithTasks[], forcePrimaryStage = false) => {
         setStages(nextStages);
         const firstApplicable = nextStages.find((stage) => stage.is_applicable);
         if (!firstApplicable) return;
 
+        // A stage named in the link (a refresh, Back, a shared URL) wins over
+        // the first stage, as long as that stage is still in the project.
+        const stageInUrl = new URLSearchParams(window.location.search).has('stage');
         setActiveTab((currentTab) => {
-            if (forcePrimaryStage) return firstApplicable.boq_category;
+            if (forcePrimaryStage && !stageInUrl) return firstApplicable.boq_category;
             const stillApplicable = nextStages.some(
                 (stage) => stage.is_applicable && stage.boq_category === currentTab
             );
             return stillApplicable ? currentTab : firstApplicable.boq_category;
-        });
-    }, []);
+        }, 'replace');
+    }, [setActiveTab]);
 
     const refreshStages = useCallback(async (forcePrimaryStage = false) => {
         const stagesResult = await getProjectStages(projectId);
@@ -801,17 +766,24 @@ function ProjectDetailContent() {
     const canManageProject = isProjectOwner;
 
     // Handlers
-    const handleProjectUpdate = async (updates: Partial<Project>) => {
-        if (!project) return;
+    /** Resolves false when nothing was saved, so callers can roll back. */
+    const handleProjectUpdate = async (updates: Partial<Project>, options: { quiet?: boolean } = {}): Promise<boolean> => {
+        if (!project) return false;
 
         const { project: updated, error } = await updateProject(projectId, updates);
-        if (error) {
+        if (error || !updated) {
             showError('Failed to update project');
-        } else if (updated) {
-            setProject(updated);
-            success('Project updated');
+            return false;
         }
+        setProject(updated);
+        // The Budget Planner shows its own Saving / Saved next to the field.
+        if (!options.quiet) success('Project updated');
+        return true;
     };
+
+    // "Remind me to save $X a week" from the Budget Planner: carried into
+    // reminder setup so the amount and frequency are already filled in.
+    const [reminderDraft, setReminderDraft] = useState<{ amountUsd: number; frequency: 'daily' | 'weekly' | 'monthly' } | null>(null);
 
     const handleItemUpdate = async (itemId: string, updates: Partial<BOQItem>): Promise<void> => {
         const { item, error } = await updateBOQItem(itemId, updates);
@@ -907,9 +879,8 @@ function ProjectDetailContent() {
         setStages(prev => prev.map(s => s.id === updatedStage.id ? updatedStage : s));
     };
 
-    const handleSavingsTargetDateChange = async (date: string) => {
-        await handleProjectUpdate({ target_purchase_date: date });
-    };
+    const handleSavingsTargetDateChange = (date: string) =>
+        handleProjectUpdate({ target_purchase_date: date || null }, { quiet: true });
 
     const getNextRunAt = (frequency: 'daily' | 'weekly' | 'monthly', baseDate = new Date()) => {
         const next = new Date(baseDate);
@@ -1066,6 +1037,7 @@ function ProjectDetailContent() {
     };
 
     const currentStage = stages.find(s => s.boq_category === activeTab);
+    const complianceSummary = useMemo(() => summariseCompliance(stages), [stages]);
     const hasLabor = project?.labor_preference === 'with_labor';
     const projectLocationType = parseProjectLocationType(project?.location);
     const activeStageComplianceWarnings = useMemo(() => {
@@ -1205,7 +1177,7 @@ function ProjectDetailContent() {
             description: '',
         },
         procurement: {
-            title: 'Procurement Hub',
+            title: 'Buying & quotes',
             description: '',
         },
         usage: {
@@ -1217,7 +1189,7 @@ function ProjectDetailContent() {
             description: 'Store plans, permits, receipts, and site records for your team.',
         },
         settings: {
-            title: 'Configurations',
+            title: 'Settings',
             description: 'Adjust project scope, visibility, and low-stock alert settings.',
         },
     };
@@ -1407,7 +1379,7 @@ function ProjectDetailContent() {
                                     items={items}
                                     purchases={purchases}
                                     usageByItem={usageByItem}
-                                    totalBudget={project.budget_target_usd || purchaseStats.estimatedTotal}
+                                    totalBudget={projectMoney({ estimateUsd: purchaseStats.estimatedTotal, limitUsd: project.budget_target_usd, spentUsd: purchaseStats.actualSpent }).budgetUsd}
                                     onNavigate={(view) => setActiveView(view as ProjectView)}
                                 />
                             </section>
@@ -1465,11 +1437,19 @@ function ProjectDetailContent() {
                                         </CardHeader>
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center py-2 border-b border-border-light">
-                                                <span className="text-sm text-secondary">Total Budget</span>
+                                                <span className="text-sm text-secondary">BOQ estimate</span>
                                                 <span className="font-bold text-primary">
-                                                    {formatPrice(project.total_usd, project.total_zwg)}
+                                                    {formatPrice(purchaseStats.estimatedTotal, purchaseStats.estimatedTotal * exchangeRate)}
                                                 </span>
                                             </div>
+                                            {project.budget_target_usd ? (
+                                                <div className="flex justify-between items-center py-2 border-b border-border-light">
+                                                    <span className="text-sm text-secondary">Your limit</span>
+                                                    <span className="font-bold text-primary">
+                                                        {formatPrice(project.budget_target_usd, project.budget_target_usd * exchangeRate)}
+                                                    </span>
+                                                </div>
+                                            ) : null}
                                             <div className="flex justify-between items-center py-2 border-b border-border-light">
                                                 <span className="text-sm text-secondary">Est. Materials</span>
                                                 <span className="font-medium text-primary">{items.length} Items</span>
@@ -1494,67 +1474,47 @@ function ProjectDetailContent() {
                                         <CardHeader>
                                             <CardTitle>Compliance Snapshot</CardTitle>
                                         </CardHeader>
+                                        {/* Counted exactly as the Compliance Tracker counts them
+                                            (summariseCompliance), so the two pages agree. */}
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center py-2 border-b border-border-light">
-                                                <span className="text-sm text-secondary">Checklist Tasks</span>
-                                                <span className="font-medium text-primary">
-                                                    {checklistSummary.completed}/{checklistSummary.total}
-                                                </span>
-                                            </div>
-                                            {checklistEntries.slice(0, 3).map((entry, index) => (
-                                                <div key={`${entry.id}-${index}`} className="flex justify-between items-center text-xs">
-                                                    <span className="text-secondary">{entry.label}</span>
-                                                    <span className={`px-2 py-0.5 rounded-full font-medium ${entry.completed ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
-                                                        }`}>
-                                                        {entry.completed ? 'Done' : 'Pending'}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                            {checklistSummary.total === 0 && (
-                                                <div className="text-xs text-secondary">
-                                                    No checklist tasks synced yet.
-                                                </div>
-                                            )}
-
-                                            <div className="flex justify-between items-center py-2 border-y border-border-light">
                                                 <span className="text-sm text-secondary">Certificates</span>
                                                 <span className="font-medium text-primary">
-                                                    {certificateSummary.completed}/{certificateSummary.total}
+                                                    {complianceSummary.doneCerts}/{complianceSummary.totalCerts}
                                                 </span>
                                             </div>
-                                            {CERTIFICATE_ITEMS.map((certificate) => {
-                                                const status = certificateSummary.state[certificate.id];
-                                                const badgeClass = status === 'done'
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : status === 'in_progress'
-                                                        ? 'bg-amber-100 text-amber-700'
-                                                        : 'bg-slate-100 text-slate-600';
-                                                const statusLabel = status === 'done'
-                                                    ? 'Received'
-                                                    : status === 'in_progress'
-                                                        ? 'In Progress'
-                                                        : 'Pending';
-                                                return (
-                                                    <div key={certificate.id} className="flex justify-between items-center text-xs">
-                                                        <span className="text-secondary">{certificate.label}</span>
-                                                        <span className={`px-2 py-0.5 rounded-full font-medium ${badgeClass}`}>
-                                                            {statusLabel}
-                                                        </span>
-                                                    </div>
-                                                );
-                                            })}
+                                            <div className="flex justify-between items-center py-2 border-b border-border-light">
+                                                <span className="text-sm text-secondary">Admin tasks</span>
+                                                <span className="font-medium text-primary">
+                                                    {complianceSummary.doneTasks}/{complianceSummary.totalTasks}
+                                                </span>
+                                            </div>
+                                            {complianceSummary.next ? (
+                                                <div className="text-xs">
+                                                    <span className="text-secondary">Next {complianceSummary.next.type === 'Certificate' ? 'certificate' : 'task'}: </span>
+                                                    <span className="font-medium text-primary">{complianceSummary.next.label}</span>
+                                                    <span className="text-secondary"> · {complianceSummary.next.stageName}</span>
+                                                </div>
+                                            ) : complianceSummary.total > 0 ? (
+                                                <div className="text-xs font-medium text-green-700">All certificates and tasks are done.</div>
+                                            ) : (
+                                                <div className="text-xs text-secondary">No stages switched on yet.</div>
+                                            )}
+                                            <Button size="sm" variant="secondary" className="w-full" onClick={() => setActiveView('compliance')}>
+                                                Open Compliance Tracker
+                                            </Button>
 
                                             <div className="pt-2 border-t border-border-light space-y-2">
                                                 <div className="flex justify-between items-center text-xs">
                                                     <span className="text-secondary">Soil Type</span>
                                                     <span className="font-medium text-primary">
-                                                        {project.soil_type ? (SOIL_LABELS[project.soil_type] || project.soil_type) : 'Not set'}
+                                                        {soilLabel(project.soil_type) ?? 'Not set'}
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between items-center text-xs">
                                                     <span className="text-secondary">Site Slope</span>
                                                     <span className="font-medium text-primary">
-                                                        {project.site_slope ? (SLOPE_LABELS[project.site_slope] || project.site_slope) : 'Not set'}
+                                                        {slopeLabel(project.site_slope) ?? 'Not set'}
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between items-center text-xs">
@@ -1576,7 +1536,7 @@ function ProjectDetailContent() {
                                         <div className="p-4">
                                             <h4 className="font-bold text-blue-900 mb-2">Pro Tip</h4>
                                             <p className="text-sm text-blue-700">
-                                                Use the <strong>Procurement Hub</strong> to request quotes from multiple suppliers and get the best deals.
+                                                Use <strong>Buying &amp; quotes</strong> to request quotes from multiple suppliers and get the best deals.
                                             </p>
                                             <Button
                                                 size="sm"
@@ -1754,11 +1714,16 @@ function ProjectDetailContent() {
                     {activeView === 'budget' && (
                         <div className="view-panel space-y-6">
                             <BudgetPlanner
-                                totalBudgetUsd={purchaseStats.estimatedTotal}
+                                estimateUsd={purchaseStats.estimatedTotal}
+                                limitUsd={project.budget_target_usd}
                                 amountSpentUsd={purchaseStats.actualSpent}
                                 targetDate={project.target_purchase_date}
                                 onTargetDateChange={handleSavingsTargetDateChange}
-                                onOpenSettings={() => setActiveView('settings')}
+                                onLimitChange={(limitUsd) => handleProjectUpdate({ budget_target_usd: limitUsd }, { quiet: true })}
+                                savingsMode={project.savings_target_mode ?? 'remaining'}
+                                savingsCustomUsd={project.savings_target_usd}
+                                onSavingsTargetChange={(mode, customUsd) => handleProjectUpdate({ savings_target_mode: mode, savings_target_usd: customUsd }, { quiet: true })}
+                                onSetReminder={(plan) => { setReminderDraft(plan); setActiveView('settings'); }}
                             />
                         </div>
                     )}
@@ -1768,7 +1733,9 @@ function ProjectDetailContent() {
                         <div className="view-panel">
                             <ProjectSettings
                                 project={project}
-                                onUpdate={handleProjectUpdate}
+                                // Settings has already saved; this only takes the result.
+                                // It used to save the whole project a second time.
+                                onUpdate={setProject}
                                 onSetReminder={handleSavingsReminder}
                                 canUseMobileReminders={Boolean(profile?.phone_number)}
                                 defaultReminderChannel={activeReminderChannel}
@@ -1777,6 +1744,8 @@ function ProjectDetailContent() {
                                 reminderFrequency={(savingsReminder?.frequency as 'daily' | 'weekly' | 'monthly' | null) ?? null}
                                 onToggleReminder={handleToggleSavingsReminder}
                                 defaultReminderAmountUsd={Math.max(purchaseStats.estimatedTotal - purchaseStats.actualSpent, 0)}
+                                reminderDraft={reminderDraft}
+                                onReminderDraftUsed={() => setReminderDraft(null)}
                                 onReminderChannelChange={setPreferredReminderChannel}
                             />
                         </div>

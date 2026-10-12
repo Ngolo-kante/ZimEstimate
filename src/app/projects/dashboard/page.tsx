@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { slopeLabel, soilLabel } from '@/lib/projects/siteLabels';
 import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
 import ProjectsSubNav from '@/components/projects/ProjectsSubNav';
@@ -31,19 +32,7 @@ import {
   Lightning,
 } from '@phosphor-icons/react';
 
-const SOIL_LABELS: Record<string, string> = {
-  sandy: 'Sandy',
-  clay_black_mountain: 'Clay/Black Mountain',
-  loam: 'Loam',
-  rock: 'Rock',
-};
 
-const SLOPE_LABELS: Record<string, string> = {
-  flat: 'Flat',
-  gentle: 'Gentle Slope',
-  moderate: 'Moderate Slope',
-  steep: 'Steep',
-};
 
 
 function DashboardContent() {
@@ -51,18 +40,30 @@ function DashboardContent() {
   const { formatPrice, exchangeRate } = useCurrency();
   const [analytics, setAnalytics] = useState<PortfolioAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  // A failed request used to fall through to "Welcome — create your first
+  // project", telling someone with projects that they had none.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useReveal({ deps: [loading] });
 
   useEffect(() => {
+    let active = true;
     const load = async () => {
-      setLoading(true);
-      const { data } = await getPortfolioAnalytics();
-      setAnalytics(data);
+      const { data, error } = await getPortfolioAnalytics();
+      if (!active) return;
+      if (error || !data) {
+        setLoadFailed(true);
+      } else {
+        setLoadFailed(false);
+        // On a retry, keep showing what was there until new data arrives.
+        setAnalytics(data);
+      }
       setLoading(false);
     };
-    load();
-  }, []);
+    void load();
+    return () => { active = false; };
+  }, [attempt]);
 
   const formatValue = (usd: number) => formatPrice(usd, usd * exchangeRate);
 
@@ -103,6 +104,39 @@ function DashboardContent() {
             animation: spin 0.8s linear infinite;
           }
           @keyframes spin { to { transform: rotate(360deg); } }
+        `}</style>
+      </MainLayout>
+    );
+  }
+
+  if (loadFailed && !analytics) {
+    return (
+      <MainLayout title="My Projects">
+        <ProjectsSubNav active="dashboard" />
+        <div className="dashboard-failed" role="alert">
+          <h2>Insights could not be loaded</h2>
+          <p>Your projects are safe — this was a problem fetching the figures. Check your connection and try again.</p>
+          <Button onClick={() => { setLoading(true); setAttempt((n) => n + 1); }}>Retry</Button>
+        </div>
+        <style jsx>{`
+          .dashboard-failed {
+            display: grid;
+            justify-items: center;
+            gap: 12px;
+            min-height: 360px;
+            align-content: center;
+            text-align: center;
+            color: var(--color-text-secondary);
+          }
+          .dashboard-failed h2 {
+            margin: 0;
+            color: var(--color-text);
+            font-size: 1.25rem;
+          }
+          .dashboard-failed p {
+            margin: 0;
+            max-width: 46ch;
+          }
         `}</style>
       </MainLayout>
     );
@@ -276,8 +310,8 @@ function DashboardContent() {
                       {project.site_slope && (
                         <span className="pt-location">
                           <MapPin size={11} weight="fill" />
-                          {SLOPE_LABELS[project.site_slope] || project.site_slope}
-                          {project.soil_type ? ` · ${SOIL_LABELS[project.soil_type] || project.soil_type}` : ''}
+                          {slopeLabel(project.site_slope)}
+                          {project.soil_type ? ` · ${soilLabel(project.soil_type)}` : ''}
                         </span>
                       )}
                     </div>

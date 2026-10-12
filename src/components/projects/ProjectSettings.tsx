@@ -44,6 +44,9 @@ interface ProjectSettingsProps {
     reminderFrequency?: ReminderFrequency | null;
     onToggleReminder?: (active: boolean) => void;
     defaultReminderAmountUsd?: number;
+    /** A savings plan from the Budget Planner, to pre-fill the budget reminder. */
+    reminderDraft?: { amountUsd: number; frequency: ReminderFrequency } | null;
+    onReminderDraftUsed?: () => void;
     onReminderChannelChange?: (channel: NotificationChannel) => void;
 }
 
@@ -275,6 +278,8 @@ export default function ProjectSettings({
     reminderFrequency = null,
     onToggleReminder,
     defaultReminderAmountUsd = 0,
+    reminderDraft = null,
+    onReminderDraftUsed,
     onReminderChannelChange,
 }: ProjectSettingsProps) {
     const { success, error: showError } = useToast();
@@ -347,6 +352,26 @@ export default function ProjectSettings({
             },
         }));
     }, [reminderActive, reminderFrequency, defaultReminderAmountUsd]);
+
+    // Arriving from "Remind me to save $X a week" on Budget: switch the budget
+    // reminder on with that plan and bring it into view. It is saved with
+    // Save changes like any other edit.
+    const [draftApplied, setDraftApplied] = useState<{ amountUsd: number; frequency: ReminderFrequency } | null>(null);
+    useEffect(() => {
+        if (!reminderDraft) return;
+        setAlertStates(prev => ({
+            ...prev,
+            budget_reminder: {
+                ...prev.budget_reminder,
+                enabled: true,
+                frequency: reminderDraft.frequency,
+                amount: reminderDraft.amountUsd.toFixed(2),
+            },
+        }));
+        setDraftApplied(reminderDraft);
+        onReminderDraftUsed?.();
+        window.setTimeout(() => document.getElementById('settings-notifications')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    }, [reminderDraft, onReminderDraftUsed]);
 
     // --- Handlers ---
     const handleStageToggle = (stageId: string) => {
@@ -515,7 +540,7 @@ export default function ProjectSettings({
             </section>
 
             {/* ========== 3. NOTIFICATIONS ========== */}
-            <section className="settings-card notification-centre">
+            <section className="settings-card notification-centre" id="settings-notifications">
                 <header className="settings-card-header">
                     <span className="settings-card-icon"><BellRinging size={18} weight="duotone" /></span>
                     <span><h3>Notifications</h3><p>Alerts for this project, and how they reach you.</p></span>
@@ -543,6 +568,12 @@ export default function ProjectSettings({
                             <p className="notif-channel-desc">By email, and in the bell at the top of the page.</p>
                         )}
                     </div>
+
+                    {draftApplied && (
+                        <p className="notif-draft">
+                            Budget reminder set up from your savings plan. Press <strong>Save changes</strong> to start it.
+                        </p>
+                    )}
 
                     <div className="alert-list">
                         {WORKING_ALERTS.map((config) => (
