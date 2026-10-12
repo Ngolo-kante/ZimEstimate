@@ -64,7 +64,9 @@ export default function FindContractorCTA({ projectType, area, className = '' }:
           <p className="text-sm font-bold text-slate-900">Ready to build this?</p>
           <p className="mt-0.5 text-xs leading-relaxed text-slate-600">
             {tradeLabel
-              ? `Browse listed ${tradeLabel.toLowerCase()} contractors and send them these quantities.`
+              // "General contractor" already says contractor; it printed as
+              // "general contractor contractors".
+              ? `Browse listed ${/contractor$/i.test(tradeLabel) ? `${tradeLabel.toLowerCase()}s` : `${tradeLabel.toLowerCase()} contractors`} and send them these quantities.`
               : 'Browse listed contractors and send them these quantities.'}
           </p>
         </div>

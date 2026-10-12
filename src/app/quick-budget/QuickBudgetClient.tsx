@@ -14,6 +14,7 @@ import { createProject, saveProjectWithItems } from '@/lib/services/projects';
 import { setCreatedProjectSnapshot, setOptimisticProjectCard } from '@/lib/projectCreationCache';
 import { createQuickBOQ } from '@/lib/services/quickBoq';
 import FindContractorCTA from '@/components/contractors/FindContractorCTA';
+import StageReachList from '@/components/quick-budget/StageReachList';
 import type { BOQItem, LaborConfig } from '@/lib/quick-projects/engine/types';
 import SolarBudgetExplorer from '@/components/quick-projects/SolarBudgetExplorer';
 import BudgetFitExplorer from '@/components/quick-projects/BudgetFitExplorer';
@@ -734,31 +735,16 @@ export default function QuickBudgetPage() {
                   </div>
                 </div>
 
+                {/* The shortfall, not the next stage's full price: "Next stage
+                    gap: $4,669" read as $4,669 missing when the budget already
+                    covered three quarters of it. */}
                 <div className="guidance">
                   {nextLockedStage
-                    ? `Next stage gap: ${nextLockedStage.label} is estimated around ${formatUsd(nextLockedStage.stageCostUsd)}.`
-                    : 'Current budget can absorb all stage bands in this quick estimate.'}
+                    ? <>Your budget covers {affordableStageCount} of {stageEstimate.rows.length} stages. About <strong>{formatUsd(nextLockedStage.stageCostUsd * (1 - Math.min(100, nextLockedStage.coveragePercent) / 100))}</strong> more finishes {nextLockedStage.label}{stageEstimate.estimatedTotalUsd - stageEstimate.budgetUsd > nextLockedStage.stageCostUsd * (1 - Math.min(100, nextLockedStage.coveragePercent) / 100) + 1 ? <>, and {formatUsd(stageEstimate.estimatedTotalUsd - stageEstimate.budgetUsd)} the whole house</> : ''}.</>
+                    : <>Your budget covers every stage{stageEstimate.budgetUsd > stageEstimate.estimatedTotalUsd ? <>, with about <strong>{formatUsd(stageEstimate.budgetUsd - stageEstimate.estimatedTotalUsd)}</strong> to spare</> : ''}.</>}
                 </div>
 
-                <div className="stage-list">
-                  {stageEstimate.rows.map((stage) => (
-                    <article key={stage.id} className={`stage ${stage.affordable ? 'done' : ''}`}>
-                      <div className="stage-head">
-                        <div className="stage-copy">
-                          <span>{stage.label}</span>
-                          <p>{stageCategoryLabels[stage.id] ?? 'Construction stage checkpoint'}</p>
-                        </div>
-                        <div className="stage-metrics">
-                          <strong>{formatUsd(stage.stageCostUsd)}</strong>
-                          <small>{Math.round(stage.coveragePercent)}% covered</small>
-                        </div>
-                      </div>
-                      <div className="stage-track">
-                        <span style={{ width: `${Math.min(100, stage.coveragePercent)}%` }} />
-                      </div>
-                    </article>
-                  ))}
-                </div>
+                <StageReachList rows={stageEstimate.rows} lines={detailedItems} />
 
                 <p className="note">
                   Indicative estimate only. Final totals vary based on design complexity, specification shifts, and
@@ -1253,105 +1239,17 @@ export default function QuickBudgetPage() {
         }
 
         .guidance {
-          border: 1px solid rgba(59, 130, 246, 0.28);
-          background: rgba(239, 246, 255, 0.9);
           border-radius: 12px;
-          padding: 10px 12px;
-          font-size: 0.8rem;
-          line-height: 1.45;
+          padding: 11px 14px;
+          font-size: 0.86rem;
+          line-height: 1.5;
           color: #1e3a8a;
-          font-weight: 600;
-          margin-bottom: 10px;
+          background: #eff6ff;
+          margin-bottom: 12px;
         }
 
-        .stage-list {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .stage {
-          border-radius: 12px;
-          border: 1px solid rgba(148, 163, 184, 0.24);
-          background: rgba(255, 255, 255, 0.92);
-          padding: 10px;
-          animation: stageEnter 420ms ease both;
-        }
-
-        .stage:nth-child(2) {
-          animation-delay: 60ms;
-        }
-
-        .stage:nth-child(3) {
-          animation-delay: 120ms;
-        }
-
-        .stage:nth-child(4) {
-          animation-delay: 180ms;
-        }
-
-        .stage:nth-child(5) {
-          animation-delay: 240ms;
-        }
-
-        .stage.done {
-          border-color: rgba(22, 163, 74, 0.38);
-          background: rgba(240, 253, 244, 0.92);
-        }
-
-        .stage-head {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 10px;
-          margin-bottom: 7px;
-        }
-
-        .stage-copy span {
-          display: block;
-          font-size: 0.85rem;
-          font-weight: 700;
-          color: var(--color-primary);
-          margin-bottom: 2px;
-        }
-
-        .stage-copy p {
-          margin: 0;
-          font-size: 0.72rem;
-          color: var(--color-text-muted);
-          line-height: 1.35;
-        }
-
-        .stage-metrics {
-          text-align: right;
-        }
-
-        .stage-metrics strong {
-          display: block;
-          font-size: 0.81rem;
-          color: var(--color-primary);
-          line-height: 1.25;
-        }
-
-        .stage-metrics small {
-          font-size: 0.7rem;
-          color: var(--color-text-muted);
-          font-weight: 600;
-        }
-
-        .stage-track {
-          width: 100%;
-          height: 7px;
-          border-radius: 999px;
-          background: rgba(148, 163, 184, 0.28);
-          overflow: hidden;
-        }
-
-        .stage-track span {
-          display: block;
-          height: 100%;
-          border-radius: 999px;
-          background: linear-gradient(90deg, var(--color-accent), var(--color-accent-dark));
+        .guidance :global(strong) {
+          font-weight: 800;
         }
 
         .note {
@@ -1476,17 +1374,6 @@ export default function QuickBudgetPage() {
           }
           to {
             transform: translate3d(8px, -8px, 0);
-          }
-        }
-
-        @keyframes stageEnter {
-          from {
-            opacity: 0;
-            transform: translateY(4px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
           }
         }
 
