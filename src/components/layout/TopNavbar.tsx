@@ -55,22 +55,22 @@ const exploreNavItems: NavItem[] = [
   { label: 'Contractors', href: '/contractors', description: 'Browse verified professionals' },
 ];
 
-type NavNotification = { id: string; title: string; time: string; unread: boolean; projectId: string | null };
+type NavNotification = { id: string; title: string; time: string; unread: boolean; href: string | null };
 
 async function fetchNavNotifications(userId: string): Promise<NavNotification[]> {
   const { data } = await supabase
     .from('project_notifications')
-    .select('id, title, is_read, created_at, project_id')
+    .select('id, title, is_read, created_at, project_id, quick_boq_id')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(8);
-  const rows = (data ?? []) as { id: string; title: string; is_read: boolean; created_at: string; project_id: string | null }[];
+  const rows = (data ?? []) as { id: string; title: string; is_read: boolean; created_at: string; project_id: string | null; quick_boq_id: string | null }[];
   return rows.map((row) => ({
     id: row.id,
     title: row.title,
     time: timeAgo(row.created_at),
     unread: !row.is_read,
-    projectId: row.project_id,
+    href: row.project_id ? `/projects/${row.project_id}` : row.quick_boq_id ? `/projects/quick/${row.quick_boq_id}` : null,
   }));
 }
 
@@ -138,13 +138,13 @@ export default function TopNavbar() {
     await supabase.from('project_notifications').update({ is_read: true } as never).eq('user_id', userId).eq('is_read', false);
   };
 
-  const openNotification = async (note: { id: string; projectId: string | null; unread: boolean }) => {
+  const openNotification = async (note: { id: string; href: string | null; unread: boolean }) => {
     setNotificationMenuOpen(false);
     if (note.unread) {
       setNotifications((current) => current.map((n) => (n.id === note.id ? { ...n, unread: false } : n)));
       await supabase.from('project_notifications').update({ is_read: true } as never).eq('id', note.id);
     }
-    router.push(note.projectId ? `/projects/${note.projectId}` : '/notifications');
+    router.push(note.href ?? '/notifications');
   };
 
   /* Close menus when clicking outside */

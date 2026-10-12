@@ -18,16 +18,16 @@ export default function SitePhotosPanel({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     let active = true;
-    void getSitePhotos(projectId).then((result) => { if (active) setPhotos(result.photos); });
+    void getSitePhotos({ kind: 'project', id: projectId }).then((result) => { if (active) setPhotos(result.photos); });
     return () => { active = false; };
   }, [projectId]);
 
   const add = async (chosen: File | undefined) => {
     if (!chosen) return;
     setUploading(true);
-    const { error } = await uploadSitePhoto(projectId, await prepareImageForUpload(chosen, 'record'), '');
+    const { error } = await uploadSitePhoto({ kind: 'project', id: projectId }, await prepareImageForUpload(chosen, 'record'), '');
     if (error) showError(error);
-    else { success('Photo added.'); setPhotos((await getSitePhotos(projectId)).photos); }
+    else { success('Photo added.'); setPhotos((await getSitePhotos({ kind: 'project', id: projectId })).photos); }
     setUploading(false);
   };
 

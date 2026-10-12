@@ -36,9 +36,12 @@ import NextStepsCard from '@/components/quick-projects/NextStepsCard';
 import type { ComplianceStatus } from '@/lib/quick-projects/compliance';
 import { QUICK_TYPE_LABELS } from '@/lib/services/savedWork';
 import QuickShareSheet from '@/components/projects/QuickShareSheet';
+import InviteModal from '@/components/projects/InviteModal';
+import SiteView from '@/components/projects/SiteView';
+import { getSiteAccess, type SiteAccess } from '@/lib/services/site';
 import { estimateName as estimateNameFor, quickEstimateTotal } from '@/lib/quick-projects/savedEstimate';
 import type { BOQItem, LaborConfig, QuickBOQ } from '@/lib/quick-projects/engine/types';
-import { ArrowLeft, PencilSimple, ShareNetwork, Download, Warning } from '@phosphor-icons/react';
+import { ArrowLeft, PencilSimple, ShareNetwork, Download, UserPlus, Warning } from '@phosphor-icons/react';
 import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 import { captureProductEvent } from '@/lib/productAnalytics';
 
@@ -203,6 +206,8 @@ function SavedQuickEstimate() {
   // summary, and the view-only link (/estimate/<token>), which it creates on
   // request. Re-read on close so "Stop sharing" appears once a link exists.
   const [shareOpen, setShareOpen] = useState(false);
+  // Invite gives access (an installer reports progress); Share sends a copy.
+  const [inviteOpen, setInviteOpen] = useState(false);
   const handleShare = useCallback(() => {
     if (!boq) return;
     setShareOpen(true);
@@ -305,6 +310,9 @@ function SavedQuickEstimate() {
           <button type="button" onClick={handleShare} className="act" aria-label="Share a copy">
             <ShareNetwork size={16} weight="bold" aria-hidden="true" /><span>Share</span>
           </button>
+          <button type="button" onClick={() => setInviteOpen(true)} className="act" aria-label="Invite people">
+            <UserPlus size={16} weight="bold" aria-hidden="true" /><span>Invite</span>
+          </button>
           <button type="button" onClick={handleDownloadPdf} className="act" aria-label="Download BOQ PDF">
             <Download size={16} weight="bold" aria-hidden="true" /><span>PDF</span>
           </button>
@@ -314,7 +322,8 @@ function SavedQuickEstimate() {
       {/* The estimate is the project surface. No stages, no workspace — the
           user was explicit that neither applies to a borehole — but everything
           that does travel: what it costs, what to put aside, what it has to
-          clear legally, and who can price or build it. */}
+          clear legally, who can price or build it, and (On site) the job's
+          steps, photos and materials used, which an invited installer updates. */}
       <BudgetPlanCard
         totalUsd={total}
         targetDate={boq.targetDate}
@@ -329,6 +338,10 @@ function SavedQuickEstimate() {
         onRequestQuotes={() => void handleRequestQuotes()}
         requestingQuotes={requestingQuotes}
       />
+
+      {/* Steps, photos and materials used — what an invited installer
+          updates, and what the owner follows. */}
+      <SiteView target={{ kind: 'quick', id: boq.id }} embedded onInvite={() => setInviteOpen(true)} />
 
       <ComplianceCard
         projectType={boq.projectType}
@@ -387,6 +400,14 @@ function SavedQuickEstimate() {
         }
       `}</style>
 
+      <InviteModal
+        isOpen={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        projectName={estimateName(boq)}
+        projectId={boq.id}
+        kind="quick"
+      />
+
       {shareOpen && (
         <QuickShareSheet
           isOpen
@@ -400,11 +421,32 @@ function SavedQuickEstimate() {
   );
 }
 
+/**
+ * The owner gets the whole estimate. Anyone it was shared with gets the site
+ * view — steps, photos, materials without prices — because they cannot read
+ * quick_boqs at all (migration 061).
+ */
+function QuickEstimateAccessGate() {
+  const { id } = useParams<{ id: string }>();
+  const [access, setAccess] = useState<SiteAccess | 'none' | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void getSiteAccess({ kind: 'quick', id }).then((result) => { if (active) setAccess(result ?? 'none'); });
+    return () => { active = false; };
+  }, [id]);
+
+  if (access === null) return null;
+  if (access === 'edit' || access === 'view') return <SiteView target={{ kind: 'quick', id }} />;
+  // The owner, or no access: the estimate page says "could not open" itself.
+  return <SavedQuickEstimate />;
+}
+
 export default function SavedQuickEstimatePage() {
   return (
     <MainLayout>
       <ProtectedRoute>
-        <SavedQuickEstimate />
+        <QuickEstimateAccessGate />
       </ProtectedRoute>
     </MainLayout>
   );

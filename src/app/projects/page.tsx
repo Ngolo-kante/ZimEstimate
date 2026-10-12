@@ -24,7 +24,7 @@ import { slopeLabel, soilLabel } from '@/lib/projects/siteLabels';
 import ProjectShareSheet from '@/components/projects/ProjectShareSheet';
 import QuickShareSheet from '@/components/projects/QuickShareSheet';
 import InviteModal from '@/components/projects/InviteModal';
-import { getSiteProjects, type SiteProjectSummary } from '@/lib/services/site';
+import { getSiteProjects, getSiteQuickEstimates, type SiteProjectSummary, type SiteQuickSummary } from '@/lib/services/site';
 import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 import {
     Plus,
@@ -296,9 +296,11 @@ function ProjectsContent() {
     };
 
     const [siteProjects, setSiteProjects] = useState<SiteProjectSummary[]>([]);
+    const [siteQuick, setSiteQuick] = useState<SiteQuickSummary[]>([]);
     useEffect(() => {
         let active = true;
         void getSiteProjects().then((list) => { if (active) setSiteProjects(list); });
+        void getSiteQuickEstimates().then((list) => { if (active) setSiteQuick(list); });
         return () => { active = false; };
     }, []);
 
@@ -416,6 +418,14 @@ function ProjectsContent() {
         e.stopPropagation();
         setOpenMenuId(null);
         setQuickShareTarget(item);
+    };
+    // Invite gives an installer access to report progress on the job.
+    const [quickInviteTarget, setQuickInviteTarget] = useState<SavedWorkItem | null>(null);
+    const handleQuickInvite = (e: React.MouseEvent, item: SavedWorkItem) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpenMenuId(null);
+        setQuickInviteTarget(item);
     };
 
     // The list view only carries totals, not line items — fetched on demand,
@@ -878,7 +888,7 @@ function ProjectsContent() {
                 )}
 
                 {/* Projects other people invited you to: the site view only. */}
-                {siteProjects.length > 0 && (
+                {(siteProjects.length > 0 || siteQuick.length > 0) && (
                     <section className="shared-section">
                         <h2>Shared with you</h2>
                         <div className="shared-list">
@@ -887,6 +897,13 @@ function ProjectsContent() {
                                     <strong>{sp.name}</strong>
                                     <span>{sp.location || 'No location'} · from {sp.owner_name}</span>
                                     <span className="shared-access">{sp.access_level === 'edit' ? 'You report progress' : 'You follow progress'}</span>
+                                </Link>
+                            ))}
+                            {siteQuick.map((sq) => (
+                                <Link key={sq.id} href={`/projects/quick/${sq.id}`} className="shared-card">
+                                    <strong>{sq.name}</strong>
+                                    <span>{QUICK_TYPE_LABELS[sq.project_type] ?? 'Quick'} · {sq.location || 'No location'} · from {sq.owner_name}</span>
+                                    <span className="shared-access">{sq.access_level === 'edit' ? 'You report progress' : 'You follow progress'}</span>
                                 </Link>
                             ))}
                         </div>
@@ -972,6 +989,9 @@ function ProjectsContent() {
                                                     </button>
                                                     <button onClick={(e) => handleQuickShare(e, item)}>
                                                         <ShareNetwork size={16} /> Share a copy
+                                                    </button>
+                                                    <button onClick={(e) => handleQuickInvite(e, item)}>
+                                                        <UserPlus size={16} /> Invite people
                                                     </button>
                                                     <button onClick={(e) => { void handleQuickDownloadPdf(e, item); }}>
                                                         <FileArrowDown size={16} /> Download BOQ PDF
@@ -1117,6 +1137,9 @@ function ProjectsContent() {
                                 </button>
                                 <button className="bottom-sheet-item" onClick={(e) => { handleQuickShare(e, quickTarget); setMobileMenuProjectId(null); }}>
                                     <ShareNetwork size={20} /> Share a copy
+                                </button>
+                                <button className="bottom-sheet-item" onClick={(e) => { handleQuickInvite(e, quickTarget); setMobileMenuProjectId(null); }}>
+                                    <UserPlus size={20} /> Invite people
                                 </button>
                                 <button className="bottom-sheet-item" onClick={(e) => { void handleQuickDownloadPdf(e, quickTarget); setMobileMenuProjectId(null); }}>
                                     <FileArrowDown size={20} /> Download BOQ PDF
@@ -2085,6 +2108,15 @@ function ProjectsContent() {
                     quickId={quickShareTarget.id}
                     name={quickShareTarget.name}
                     typeLabel={quickShareTarget.typeLabel}
+                />
+            )}
+            {quickInviteTarget && (
+                <InviteModal
+                    isOpen
+                    onClose={() => setQuickInviteTarget(null)}
+                    projectId={quickInviteTarget.id}
+                    projectName={quickInviteTarget.name}
+                    kind="quick"
                 />
             )}
             {inviteProjectId && projects.find((p) => p.id === inviteProjectId) && (

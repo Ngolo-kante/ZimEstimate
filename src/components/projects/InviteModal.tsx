@@ -4,6 +4,9 @@
 // project itself, so they can log materials used and update progress while
 // the owner is told each time. Not the same as sending a copy — that is
 // Share (ProjectShareSheet), which gives no access at all.
+//
+// Quick estimates (kind="quick") work the same way: an installer or driller
+// ticks off the job's steps, logs materials and adds photos (migration 061).
 
 import { useState, useEffect, useCallback } from 'react';
 import Button from '@/components/ui/Button';
@@ -15,7 +18,13 @@ import {
   updateShareAccess,
   removeShare,
 } from '@/lib/services/projects';
-import { ProjectShare, AccessLevel } from '@/lib/database.types';
+import { ProjectShare, AccessLevel, QuickBoqShare } from '@/lib/database.types';
+import {
+  inviteToQuickEstimate,
+  getQuickEstimateShares,
+  updateQuickShareAccess,
+  removeQuickShare,
+} from '@/lib/services/site';
 import {
   X,
   EnvelopeSimple,
@@ -32,28 +41,36 @@ interface InviteModalProps {
   onClose: () => void;
   projectName: string;
   projectId: string;
+  /** A full build (default) or a quick estimate. */
+  kind?: 'project' | 'quick';
 }
 
-export default function InviteModal({ isOpen, onClose, projectName, projectId }: InviteModalProps) {
+type Share = Pick<ProjectShare | QuickBoqShare, 'id' | 'shared_with_email' | 'shared_with_user_id' | 'access_level'>;
+
+export default function InviteModal({ isOpen, onClose, projectName, projectId, kind = 'project' }: InviteModalProps) {
+  const isQuick = kind === 'quick';
+  const noun = isQuick ? 'job' : 'project';
   const { success, error: showError } = useToast();
   const [email, setEmail] = useState('');
   // Updating progress is what people are usually invited for.
   const [accessLevel, setAccessLevel] = useState<AccessLevel>('edit');
   const [copied, setCopied] = useState(false);
-  const [shares, setShares] = useState<ProjectShare[]>([]);
+  const [shares, setShares] = useState<Share[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
 
   const loadShares = useCallback(async () => {
     setIsLoading(true);
-    const { shares: loadedShares, error } = await getProjectShares(projectId);
+    const { shares: loadedShares, error } = isQuick
+      ? await getQuickEstimateShares(projectId)
+      : await getProjectShares(projectId);
     if (error) {
       showError('Failed to load shares');
     } else {
       setShares(loadedShares);
     }
     setIsLoading(false);
-  }, [projectId, showError]);
+  }, [projectId, isQuick, showError]);
 
   useEffect(() => {
     if (isOpen) {
@@ -64,7 +81,7 @@ export default function InviteModal({ isOpen, onClose, projectName, projectId }:
 
   if (!isOpen) return null;
 
-  const shareLink = `${window.location.origin}/projects/${projectId}`;
+  const shareLink = `${window.location.origin}/projects/${isQuick ? 'quick/' : ''}${projectId}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareLink);
@@ -79,7 +96,9 @@ export default function InviteModal({ isOpen, onClose, projectName, projectId }:
     }
 
     setIsInviting(true);
-    const { share, linked, emailed, error } = await shareProject(projectId, email.trim(), accessLevel);
+    const { share, linked, emailed, error } = isQuick
+      ? await inviteToQuickEstimate(projectId, email.trim(), accessLevel)
+      : await shareProject(projectId, email.trim(), accessLevel);
 
     if (error) {
       showError(error.message);
@@ -91,14 +110,16 @@ export default function InviteModal({ isOpen, onClose, projectName, projectId }:
       success(linked
         ? 'Shared. They can open it from their Projects now.'
         : emailed
-          ? 'Invitation emailed. The project appears once they sign up with that address.'
-          : 'Invited. The project appears once they sign up with that address — let them know.');
+          ? `Invitation emailed. The ${noun} appears once they sign up with that address.`
+          : `Invited. The ${noun} appears once they sign up with that address — let them know.`);
     }
     setIsInviting(false);
   };
 
   const handleUpdateAccess = async (shareId: string, newAccess: AccessLevel) => {
-    const { share, error } = await updateShareAccess(shareId, newAccess);
+    const { share, error } = isQuick
+      ? await updateQuickShareAccess(shareId, newAccess)
+      : await updateShareAccess(shareId, newAccess);
     if (error) {
       showError('Failed to update access level');
     } else if (share) {
@@ -108,7 +129,7 @@ export default function InviteModal({ isOpen, onClose, projectName, projectId }:
   };
 
   const handleRemoveShare = async (shareId: string) => {
-    const { error } = await removeShare(shareId);
+    const { error } = isQuick ? await removeQuickShare(shareId) : await removeShare(shareId);
     if (error) {
       showError('Could not remove their access');
     } else {
@@ -124,7 +145,7 @@ export default function InviteModal({ isOpen, onClose, projectName, projectId }:
           {/* Header */}
           <div className="modal-header">
             <h2>Invite people</h2>
-            <button className="close-btn" onClick={onClose}>
+            <button className="close-btn" onClick={onClose} aria-label="Close">
               <X size={20} weight="bold" />
             </button>
           </div>
@@ -135,12 +156,15 @@ export default function InviteModal({ isOpen, onClose, projectName, projectId }:
           {/* Invite by Email */}
           <div className="invite-section">
             <p className="link-hint">
-              Invite your builder or site manager to tick off tasks, log materials used and add site photos.
-              You&rsquo;ll be notified each time they do.
+              {isQuick
+                ? 'Invite your installer, driller or builder to tick off the job’s steps, log materials used and add site photos.'
+                : 'Invite your builder or site manager to tick off tasks, log materials used and add site photos.'}
+              {' '}You&rsquo;ll be notified each time they do.
             </p>
             <p className="link-hint">
-              They only see this project&rsquo;s progress, photos and materials with quantities &mdash;
-              never your budget, prices, purchases, documents or other projects.
+              {isQuick
+                ? 'They only see this job’s steps, photos and materials with quantities — never prices, your savings, target date or other work.'
+                : 'They only see this project’s progress, photos and materials with quantities — never your budget, prices, purchases, documents or other projects.'}
             </p>
             <label className="section-label">Their email</label>
             <div className="invite-row">
@@ -154,6 +178,7 @@ export default function InviteModal({ isOpen, onClose, projectName, projectId }:
               <select
                 value={accessLevel}
                 onChange={(e) => setAccessLevel(e.target.value as AccessLevel)}
+                aria-label="What they can do"
                 className="access-select"
               >
                 <option value="edit">Can report progress</option>
@@ -171,7 +196,7 @@ export default function InviteModal({ isOpen, onClose, projectName, projectId }:
 
           {/* Shared Users List */}
           <div className="shared-users">
-            <label className="section-label">People on this project</label>
+            <label className="section-label">People on this {noun}</label>
             {isLoading ? (
               <div className="loading-state">
                 <CircleNotch size={20} className="spin" />
@@ -195,12 +220,13 @@ export default function InviteModal({ isOpen, onClose, projectName, projectId }:
                     <select
                       value={share.access_level}
                       onChange={(e) => handleUpdateAccess(share.id, e.target.value as AccessLevel)}
+                      aria-label={`What ${share.shared_with_email} can do`}
                       className="access-select-sm"
                     >
                       <option value="edit">Reports progress</option>
                       <option value="view">Follows progress</option>
                     </select>
-                    <button className="remove-btn" onClick={() => handleRemoveShare(share.id)}>
+                    <button className="remove-btn" onClick={() => handleRemoveShare(share.id)} aria-label={`Remove ${share.shared_with_email}`}>
                       <Trash size={16} />
                     </button>
                   </li>

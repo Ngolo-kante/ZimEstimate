@@ -74,9 +74,12 @@ async function sendEmailDelivery(
   const title = typeof payload.title === 'string' ? payload.title : 'ZimEstimate notification';
   const body = typeof payload.body === 'string' ? payload.body : '';
 
-  // Project notices link back to the project they are about.
+  // Notices link back to the project or quick estimate they are about.
   const projectId = typeof payload.project_id === 'string' ? payload.project_id : null;
-  const link = projectId ? `${getSiteUrl()}/projects/${projectId}` : null;
+  const quickId = typeof payload.quick_boq_id === 'string' ? payload.quick_boq_id : null;
+  const link = projectId
+    ? `${getSiteUrl()}/projects/${projectId}`
+    : quickId ? `${getSiteUrl()}/projects/quick/${quickId}` : null;
 
   const sent = await sendEmail({
     to: email,

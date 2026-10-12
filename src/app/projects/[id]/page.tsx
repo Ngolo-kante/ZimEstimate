@@ -2406,7 +2406,7 @@ function ProjectAccessGate() {
         return <MainLayout><div className="p-8 text-center text-secondary">Loading project…</div></MainLayout>;
     }
     if (access === 'edit' || access === 'view') {
-        return <MainLayout><SiteView projectId={projectId} /></MainLayout>;
+        return <MainLayout><SiteView target={{ kind: 'project', id: projectId }} /></MainLayout>;
     }
     return <ProjectDetailContent />;
 }

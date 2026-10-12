@@ -371,6 +371,7 @@ export interface Database {
                     funds_saved_usd: number;
                     share_token: string | null;
                     compliance: Json;
+                    progress: Json;
                     created_at: string;
                     updated_at: string;
                 };
@@ -392,6 +393,7 @@ export interface Database {
                     funds_saved_usd?: number;
                     share_token?: string | null;
                     compliance?: Json;
+                    progress?: Json;
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -413,6 +415,7 @@ export interface Database {
                     funds_saved_usd?: number;
                     share_token?: string | null;
                     compliance?: Json;
+                    progress?: Json;
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -507,6 +510,33 @@ export interface Database {
                     shared_with_email?: string;
                     access_level?: AccessLevel;
                     created_at?: string;
+                };
+            };
+            quick_boq_shares: {
+                Row: {
+                    id: string;
+                    quick_boq_id: string;
+                    shared_with_user_id: string | null;
+                    shared_with_email: string;
+                    access_level: AccessLevel;
+                    invited_by: string | null;
+                    accepted_at: string | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    quick_boq_id: string;
+                    shared_with_user_id?: string | null;
+                    shared_with_email: string;
+                    access_level?: AccessLevel;
+                    invited_by?: string | null;
+                    accepted_at?: string | null;
+                    created_at?: string;
+                };
+                Update: {
+                    access_level?: AccessLevel;
+                    shared_with_user_id?: string | null;
+                    accepted_at?: string | null;
                 };
             };
             materials: {
@@ -914,7 +944,8 @@ export interface Database {
             project_notifications: {
                 Row: {
                     id: string;
-                    project_id: string;
+                    project_id: string | null;
+                    quick_boq_id: string | null;
                     user_id: string;
                     type: string;
                     title: string;
@@ -924,7 +955,8 @@ export interface Database {
                 };
                 Insert: {
                     id?: string;
-                    project_id: string;
+                    project_id?: string | null;
+                    quick_boq_id?: string | null;
                     user_id: string;
                     type: string;
                     title: string;
@@ -934,7 +966,8 @@ export interface Database {
                 };
                 Update: {
                     id?: string;
-                    project_id?: string;
+                    project_id?: string | null;
+                    quick_boq_id?: string | null;
                     user_id?: string;
                     type?: string;
                     title?: string;
@@ -2030,6 +2063,7 @@ export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type Project = Database['public']['Tables']['projects']['Row'];
 export type BOQItem = Database['public']['Tables']['boq_items']['Row'];
 export type ProjectShare = Database['public']['Tables']['project_shares']['Row'];
+export type QuickBoqShare = Database['public']['Tables']['quick_boq_shares']['Row'];
 export type Material = Database['public']['Tables']['materials']['Row'];
 export type Supplier = Database['public']['Tables']['suppliers']['Row'];
 export type SupplierApiKey = Database['public']['Tables']['supplier_api_keys']['Row'];
