@@ -1,6 +1,9 @@
 'use client';
 
 import { useMemo, useState, useCallback } from 'react';
+import Link from 'next/link';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { useReminderChannels } from '@/hooks/useReminderChannels';
 import { useToast } from '@/components/ui/Toast';
 import Button from '@/components/ui/Button';
 import { NotificationChannel } from '@/components/ui/BudgetPlanner';
@@ -84,6 +87,8 @@ export default function ComplianceTrackerTab({
   onNavigateToSettings,
 }: ComplianceTrackerTabProps) {
   const { success, error: showError } = useToast();
+  const { user } = useAuth();
+  const reminderChannels = useReminderChannels();
   const [newTaskByStage, setNewTaskByStage] = useState<Record<string, string>>({});
   const [isSavingTask, setIsSavingTask] = useState<Record<string, boolean>>({});
   const [collapsedStages, setCollapsedStages] = useState<Set<string>>(
@@ -411,11 +416,24 @@ export default function ComplianceTrackerTab({
         )}
       </section>
 
+      {/* With email the only channel, "Change" opened project settings where
+          there was nothing to change. Now it says where reminders go and
+          links to changing that address; the channel picker comes back once
+          another channel can send. */}
       <div className="compliance-channel-row">
         <span className="channel-icon" aria-hidden="true">{channelInfo.icon}</span>
-        <span>Reminders: <strong>{channelInfo.label}</strong></span>
-        {onNavigateToSettings && (
-          <button type="button" onClick={onNavigateToSettings}>Change</button>
+        {reminderChannels.length > 1 ? (
+          <>
+            <span>Reminders: <strong>{channelInfo.label}</strong></span>
+            {onNavigateToSettings && (
+              <button type="button" onClick={onNavigateToSettings}>Change</button>
+            )}
+          </>
+        ) : (
+          <>
+            <span>Reminders go to <strong>{user?.email ?? 'your email'}</strong></span>
+            <Link href="/settings#email" className="compliance-channel-link">Change email</Link>
+          </>
         )}
       </div>
 

@@ -182,7 +182,10 @@
   color: var(--color-text);
 }
 
-.compliance-channel-row button {
+.compliance-channel-row button,
+.compliance-channel-row .compliance-channel-link {
+  display: inline-flex;
+  align-items: center;
   min-height: 40px;
   padding: 8px 4px;
   border: 0;

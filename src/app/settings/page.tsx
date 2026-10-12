@@ -26,6 +26,7 @@ import {
     DeviceMobile
 } from '@phosphor-icons/react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
 
 function SettingsContent() {
     const { user, profile, updateProfile, isLoading: authLoading } = useAuth();
@@ -48,6 +49,46 @@ function SettingsContent() {
     const [notifyProjectReminders, setNotifyProjectReminders] = useState(true);
     const [isSavingNotifications, setIsSavingNotifications] = useState(false);
     const [deliveryLogs, setDeliveryLogs] = useState<NotificationDelivery[]>([]);
+
+    // Email change. Supabase sends a confirmation link (to the new address,
+    // and to the current one when secure email change is on); the address
+    // only changes once it is followed.
+    const [editingEmail, setEditingEmail] = useState(false);
+    const [newEmail, setNewEmail] = useState('');
+    const [isChangingEmail, setIsChangingEmail] = useState(false);
+    const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+    const signsInWithGoogle = user?.app_metadata?.provider === 'google'
+        || (Array.isArray(user?.app_metadata?.providers) && user.app_metadata.providers.includes('google') && !user.app_metadata.providers.includes('email'));
+
+    const handleChangeEmail = async () => {
+        const next = newEmail.trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next)) {
+            showError('Enter a valid email address.');
+            return;
+        }
+        if (next === (user?.email || '').toLowerCase()) {
+            showError('That is already your email address.');
+            return;
+        }
+        setIsChangingEmail(true);
+        try {
+            try { sessionStorage.setItem('zimestimate_auth_redirect', '/settings'); } catch { /* optional */ }
+            const { error } = await supabase.auth.updateUser(
+                { email: next },
+                { emailRedirectTo: `${window.location.origin}/auth/callback` },
+            );
+            if (error) {
+                showError(error.message);
+                return;
+            }
+            setPendingEmail(next);
+            setEditingEmail(false);
+            setNewEmail('');
+            success(`Check ${next} for a confirmation link.`);
+        } finally {
+            setIsChangingEmail(false);
+        }
+    };
 
     // Password form state
     const [newPassword, setNewPassword] = useState('');
@@ -143,12 +184,9 @@ function SettingsContent() {
         setIsChangingPassword(true);
 
         try {
-            const { createClient } = await import('@supabase/supabase-js');
-            const supabase = createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-            );
-
+            // The signed-in client. This used to build a fresh client with no
+            // session, so every password change failed with "Auth session
+            // missing".
             const { error } = await supabase.auth.updateUser({
                 password: newPassword,
             });
@@ -227,13 +265,44 @@ function SettingsContent() {
                         </div>
 
                         <div className="card-content">
-                            <div className="form-group">
+                            <div className="form-group" id="email">
                                 <label>Email Address</label>
                                 <div className="input-box disabled">
                                     <EnvelopeSimple size={18} />
                                     <input type="email" value={user?.email || ''} disabled />
                                     <span className="badge">Verified</span>
                                 </div>
+                                {signsInWithGoogle ? (
+                                    <p className="field-note">You sign in with Google, so this is your Google address. To use another, sign in with that Google account.</p>
+                                ) : editingEmail ? (
+                                    <div className="email-change">
+                                        <div className="input-box">
+                                            <EnvelopeSimple size={18} />
+                                            <input
+                                                type="email"
+                                                value={newEmail}
+                                                onChange={(e) => setNewEmail(e.target.value)}
+                                                placeholder="New email address"
+                                                autoComplete="email"
+                                                autoFocus
+                                            />
+                                        </div>
+                                        <div className="email-change-actions">
+                                            <Button variant="secondary" size="sm" onClick={() => { setEditingEmail(false); setNewEmail(''); }}>Cancel</Button>
+                                            <Button size="sm" onClick={() => void handleChangeEmail()} disabled={isChangingEmail}>
+                                                {isChangingEmail ? 'Sending…' : 'Send confirmation link'}
+                                            </Button>
+                                        </div>
+                                        <p className="field-note">We&rsquo;ll email a link to the new address. Your email changes once you open it; you may also be asked to confirm from your current inbox.</p>
+                                    </div>
+                                ) : (
+                                    <p className="field-note">
+                                        {pendingEmail
+                                            ? <>Waiting for you to confirm <strong>{pendingEmail}</strong> — open the link we emailed. </>
+                                            : 'Reminders and notifications are sent here. '}
+                                        <button type="button" className="text-link" onClick={() => setEditingEmail(true)}>Change email</button>
+                                    </p>
+                                )}
                             </div>
 
                             <div className="form-row">
@@ -843,6 +912,36 @@ function SettingsContent() {
                     font-size: 0.8rem;
                     color: #64748b;
                     line-height: 1.45;
+                }
+
+                .field-note {
+                    margin: 8px 0 0;
+                    font-size: 0.8rem;
+                    line-height: 1.5;
+                    color: var(--color-text-secondary);
+                }
+
+                .text-link {
+                    padding: 0;
+                    border: none;
+                    background: none;
+                    color: var(--color-accent);
+                    font: inherit;
+                    font-weight: 600;
+                    text-decoration: underline;
+                    cursor: pointer;
+                }
+
+                .email-change {
+                    display: grid;
+                    gap: 8px;
+                    margin-top: 10px;
+                }
+
+                .email-change-actions {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 8px;
                 }
 
                 .badge {
