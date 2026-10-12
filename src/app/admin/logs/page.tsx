@@ -59,8 +59,8 @@ export default function AdminLogsPage() {
   return (
     <div className="admin-page">
       <div className="admin-header">
-        <Link href="/admin/suppliers" className="back-link">
-          <ArrowLeft size={18} /> Admin
+        <Link href="/admin" className="back-link">
+          <ArrowLeft size={18} /> Overview
         </Link>
         <h1>System Audit Logs</h1>
         <p className="header-sub">{total.toLocaleString()} total entries</p>

@@ -24,22 +24,19 @@ import {
   X,
 } from '@phosphor-icons/react';
 
-// Material Prices, Payouts, Featured, Reports and Settings used to be here.
-// The first three read hardcoded arrays and no database — Payouts in
-// particular showed invented money an admin could have acted on. The other two
-// were working buttons attached to nothing: Settings flashed "Saved" and
-// persisted none of it, and Reports ran a spinner for 1.8 seconds and produced
-// no file. Material Prices also overlapped Review Queue, which does the same
-// job against real scraped data.
-//
-// Deleted rather than unlinked, so the fabrications are not one URL away. Real
-// prices live under Review Queue and Scraper; real money lives under Revenue.
+// Material Prices, Payouts, Featured, Reports and Settings were removed
+// because they showed hardcoded arrays or buttons attached to nothing
+// (Payouts showed invented money). "Prices" (/admin/content) is the
+// replacement, and it is real: every catalog material with the price the
+// public sees, which an admin can override with a confirmed "Admin manual
+// price" row in price_observations (lib/pricing/publishedPrice.ts).
 const navItems = [
+  { label: 'Overview', href: '/admin', icon: SquaresFour },
   { label: 'Revenue', href: '/admin/revenue', icon: ChartLine },
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Suppliers', href: '/admin/suppliers', icon: Storefront },
   { label: 'Performance', href: '/admin/performance', icon: TrendUp },
-  { label: 'Content', href: '/admin/content', icon: Package },
+  { label: 'Prices', href: '/admin/content', icon: Package },
   { label: 'Tickets', href: '/admin/tickets', icon: ChatCircle },
   { label: 'Agreements', href: '/admin/agreements', icon: FileText },
   { label: 'Packages', href: '/admin/packages', icon: SquaresFour },
@@ -117,7 +114,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         >
           <List size={22} weight="bold" />
         </button>
-        <Link href="/admin/revenue" className="mobile-topbar-logo">
+        <Link href="/admin" className="mobile-topbar-logo">
           <Image src="/logo.png" alt="ZimEstimate" width={24} height={24} />
           <span>Admin Hub</span>
         </Link>
@@ -147,7 +144,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         >
           <X size={20} weight="bold" />
         </button>
-        <Link href="/admin/revenue" className="sidebar-logo" title={collapsed ? 'ZimEstimate Admin Hub' : undefined}>
+        <Link href="/admin" className="sidebar-logo" title={collapsed ? 'ZimEstimate Admin Hub' : undefined}>
           <Image src="/logo.png" alt="ZimEstimate" width={28} height={28} className="logo-img" />
           <div className={`sidebar-logo-text${collapsed ? ' hidden' : ''}`}>
             <span className="logo-name">ZimEstimate</span>
@@ -157,7 +154,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <nav className="sidebar-nav">
           {navItems.map(({ label, href, icon: Icon }) => {
-            const active = pathname.startsWith(href);
+            const active = href === '/admin' ? pathname === href : pathname.startsWith(href);
             return (
               <Link
                 key={href}

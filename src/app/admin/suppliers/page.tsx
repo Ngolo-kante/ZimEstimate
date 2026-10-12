@@ -277,7 +277,7 @@ export default function AdminSuppliersPage() {
           margin: '0 auto',
         }}>
           <Link
-            href="/dashboard"
+            href="/admin"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -288,7 +288,7 @@ export default function AdminSuppliersPage() {
             }}
           >
             <ArrowLeft size={18} />
-            Back to Dashboard
+            Overview
           </Link>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
@@ -299,47 +299,6 @@ export default function AdminSuppliersPage() {
                 Review and manage supplier registration requests
               </p>
             </div>
-            <div style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#7c3aed',
-              color: 'white',
-              borderRadius: '6px',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-            }}>
-              Admin Panel
-            </div>
-          </div>
-          {/* Admin Hub Navigation */}
-          <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
-            {[
-              { href: '/admin/revenue', label: 'Revenue' },
-              { href: '/admin/users', label: 'Users' },
-              { href: '/admin/performance', label: 'Performance' },
-              { href: '/admin/content', label: 'Content' },
-              { href: '/admin/scraper-review', label: 'Scraper' },
-              { href: '/admin/logs', label: 'Logs' },
-              { href: '/admin/tickets', label: 'Tickets' },
-              { href: '/admin/agreements', label: 'Agreements' },
-              { href: '/admin/packages', label: 'Packages' },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                style={{
-                  padding: '5px 14px',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: '#475569',
-                  textDecoration: 'none',
-                  backgroundColor: '#f8fafc',
-                }}
-              >
-                {item.label}
-              </Link>
-            ))}
           </div>
         </div>
       </div>

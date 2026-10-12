@@ -46,7 +46,7 @@ function LoginForm() {
                     .single();
                 const profile = profileRaw as { tier: string; user_type: string } | null;
                 if (profile?.tier === 'admin' || profile?.user_type === 'admin') {
-                    destination = redirect || '/admin/revenue';
+                    destination = redirect || '/admin';
                 } else if (profile?.user_type === 'supplier') {
                     destination = redirect || '/supplier/dashboard';
                 }

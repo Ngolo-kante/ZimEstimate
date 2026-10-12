@@ -254,7 +254,7 @@ export default function TopNavbar() {
         <div className="navbar-right">
           {isAdmin && (
             <Link
-              href="/admin/revenue"
+              href="/admin"
               className={`admin-panel-link ${pathname.startsWith('/admin') ? 'active' : ''}`}
               aria-label="Open administrator panel"
             >
@@ -391,7 +391,7 @@ export default function TopNavbar() {
                       <span className="menu-section-label">Workspace</span>
                       {isAdmin && (
                         <Link
-                          href="/admin/revenue"
+                          href="/admin"
                           className="quick-link admin-quick-link"
                           onClick={() => setProfileMenuOpen(false)}
                         >
@@ -532,7 +532,7 @@ export default function TopNavbar() {
           <nav className="mobile-nav">
             {isAdmin && (
               <Link
-                href="/admin/revenue"
+                href="/admin"
                 className={`mobile-nav-link admin ${pathname.startsWith('/admin') ? 'active' : ''}`}
                 onClick={() => setMobileMenuOpen(false)}
               >

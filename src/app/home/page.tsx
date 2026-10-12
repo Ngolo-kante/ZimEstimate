@@ -17,6 +17,7 @@ import {
 } from '@phosphor-icons/react/dist/ssr';
 import MainLayout from '@/components/layout/MainLayout';
 import HeroBudgetWidget from '@/components/home/HeroBudgetWidget';
+import PublicPricePreview from '@/components/home/PublicPricePreview';
 import DescribeProject from '@/components/estimate/DescribeProject';
 import styles from './home.module.css';
 
@@ -121,6 +122,8 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        <PublicPricePreview />
 
         <section className={styles.startSection} aria-labelledby="start-heading">
           <div className={styles.sectionInner}>

@@ -175,7 +175,7 @@ export default function ScraperReviewPage() {
             <div className="review-page">
                 {/* Header */}
                 <div className="page-header">
-                    <Link href="/scraper" className="back-link">
+                    <Link href="/admin/scraper" className="back-link">
                         <ArrowLeft size={16} /> Back to Scrapers
                     </Link>
                     <div className="header-main">

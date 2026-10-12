@@ -39,6 +39,9 @@ describe('price services', () => {
           data: [
             {
               material_key: 'cement',
+              review_status: 'auto',
+              source_name: 'Supplier A site',
+              unit: null,
               price_usd: 120,
               price_zwg: 3600,
               confidence: 4,
@@ -54,6 +57,7 @@ describe('price services', () => {
 
     vi.doMock('@/lib/materials', () => ({
       getBestPrice: () => null,
+      getMaterialById: () => ({ unit: 'per 50kg bag' }),
       getPricesForMaterial: () => [],
       materials: [],
     }));
@@ -79,6 +83,7 @@ describe('price services', () => {
         priceZwg: 2850,
         lastUpdated: '2026-02-01',
       }),
+      getMaterialById: () => ({ unit: 'per tonne' }),
       getPricesForMaterial: () => [],
       materials: [],
     }));
@@ -98,6 +103,7 @@ describe('price services', () => {
           data: [
             {
               material_key: 'bricks',
+              review_status: 'auto',
               price_usd: 10,
               price_zwg: 300,
               confidence: 3,
@@ -118,6 +124,7 @@ describe('price services', () => {
 
     vi.doMock('@/lib/materials', () => ({
       getBestPrice: () => null,
+      getMaterialById: () => ({ unit: 'per 50kg bag' }),
       getPricesForMaterial: () => [],
       materials: [],
     }));

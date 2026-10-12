@@ -87,7 +87,7 @@ export default function AuthCallbackPage() {
                             .single();
                         const profile = profileRaw as { tier: string; user_type: string } | null;
                         if (profile?.tier === 'admin' || profile?.user_type === 'admin') {
-                            redirectUrl = '/admin/revenue';
+                            redirectUrl = '/admin';
                         } else if (profile?.user_type === 'supplier') {
                             redirectUrl = '/supplier/dashboard';
                         }

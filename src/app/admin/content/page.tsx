@@ -1,284 +1,108 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import Card, { CardContent } from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase';
-import type { Material } from '@/lib/database.types';
-import {
-  ArrowLeft,
-  MagnifyingGlass,
-  PencilSimple,
-  CheckCircle,
-  X,
-  Package,
-} from '@phosphor-icons/react';
+import { categoryInfo, getBestPrice, materials } from '@/lib/materials';
+import { MANUAL_PRICE_SOURCE, selectPublishedObservation, type PublishedObservation } from '@/lib/pricing/publishedPrice';
 
-export default function AdminContentPage() {
+const money = (value: number | null) => value == null ? '—' : `$${value.toLocaleString('en-US', { minimumFractionDigits: value < 1 ? 3 : 2, maximumFractionDigits: value < 1 ? 4 : 2 })}`;
+
+export default function AdminPricesPage() {
   const { adminId, checking } = useAdminAuth();
-  const [materials, setMaterials] = useState<Material[]>([]);
+  const [observations, setObservations] = useState<PublishedObservation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [categories, setCategories] = useState<string[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editPriceUsd, setEditPriceUsd] = useState('');
-  const [editPriceZwg, setEditPriceZwg] = useState('');
+  const [category, setCategory] = useState('all');
+  const [sourceFilter, setSourceFilter] = useState('all');
+  const [editing, setEditing] = useState<string | null>(null);
+  const [usd, setUsd] = useState('');
+  const [zwg, setZwg] = useState('');
   const [saving, setSaving] = useState(false);
-  const [page, setPage] = useState(1);
-  const PAGE_SIZE = 30;
+
+  const request = useCallback(async (body?: object) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Your session expired. Please sign in again.');
+    const response = await fetch('/api/admin/prices', {
+      method: body ? 'POST' : 'GET', cache: 'no-store',
+      headers: { Authorization: `Bearer ${session.access_token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Could not load prices.');
+    return data as { observations?: PublishedObservation[] };
+  }, []);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    setLoading(true); setError('');
+    try { setObservations((await request()).observations ?? []); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not load prices.'); }
+    finally { setLoading(false); }
+  }, [request]);
+  useEffect(() => { if (adminId) void load(); }, [adminId, load]);
+
+  const rows = useMemo(() => materials.map((material) => {
+    const baseline = getBestPrice(material.id);
+    const published = selectPublishedObservation(observations.filter((row) => row.material_key === material.id), material.unit, baseline?.priceUsd);
+    return {
+      material, published,
+      priceUsd: published?.price_usd ?? baseline?.priceUsd ?? null,
+      priceZwg: published?.price_zwg ?? baseline?.priceZwg ?? null,
+      source: published?.source_name === MANUAL_PRICE_SOURCE ? 'Manual' : published ? 'Scraped' : baseline ? 'Reference' : 'Unpriced',
+      updated: published?.scraped_at ?? baseline?.lastUpdated ?? null,
+    };
+  }), [observations]);
+  const shown = rows.filter((row) => `${row.material.name} ${row.material.id} ${row.material.subcategory}`.toLowerCase().includes(search.toLowerCase()) && (category === 'all' || row.material.category === category) && (sourceFilter === 'all' || row.source === sourceFilter));
+
+  const mutate = async (materialKey: string, action: 'publish' | 'withdraw') => {
+    if (action === 'publish' && (!usd.trim() || !Number.isFinite(Number(usd)) || Number(usd) <= 0)) { setError('Enter a positive USD price.'); return; }
+    setSaving(true); setError(''); setNotice('');
     try {
-      const offset = (page - 1) * PAGE_SIZE;
-
-      let query = supabase
-        .from('materials')
-        .select('*')
-        .order('category', { ascending: true })
-        .order('name', { ascending: true })
-        .range(offset, offset + PAGE_SIZE - 1);
-
-      if (categoryFilter) query = query.eq('category', categoryFilter);
-      if (search) query = query.ilike('name', `%${search}%`);
-
-      const { data } = await query;
-      setMaterials((data ?? []) as Material[]);
-
-      if (categories.length === 0) {
-        const { data: cats } = await supabase
-          .from('materials')
-          .select('category')
-          .order('category');
-        const unique = [...new Set(((cats ?? []) as unknown as Array<{ category: string | null }>).map((r) => r.category).filter((c): c is string => c !== null))];
-        setCategories(unique);
-      }
-
-    } finally {
-      // Guarantees the spinner clears even if a query rejects.
-      setLoading(false);
-    }
-  }, [search, categoryFilter, page, categories.length]);
-
-  useEffect(() => {
-    if (!adminId) return;
-    void Promise.resolve().then(load);
-  }, [adminId, load]);
-
-  const startEdit = (m: Material) => {
-    setEditingId(m.id);
-    setEditPriceUsd(String(m.price_usd));
-    setEditPriceZwg(String(m.price_zwg));
+      await request({ materialKey, action, priceUsd: usd, priceZwg: zwg });
+      setEditing(null);
+      await load();
+      setNotice(action === 'publish' ? 'Manual price published. It now appears on public price pages.' : 'Manual price withdrawn. The approved scraped or reference price now appears.');
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not save price.'); }
+    finally { setSaving(false); }
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-  };
-
-  const saveEdit = async (id: string) => {
-    setSaving(true);
-    await supabase
-      .from('materials')
-      .update({
-        price_usd: parseFloat(editPriceUsd),
-        price_zwg: parseFloat(editPriceZwg),
-        last_updated: new Date().toISOString(),
-      } as never)
-      .eq('id', id);
-
-    setSaving(false);
-    setEditingId(null);
-    load();
-  };
-
-  const toggleActive = async (m: Material) => {
-    await supabase
-      .from('materials')
-      .update({ is_active: !m.is_active } as never)
-      .eq('id', m.id);
-    load();
-  };
-
-  if (checking) return <div className="admin-loading">Loading...</div>;
-
-  return (
-    <div className="admin-page">
-      <div className="admin-header">
-        <Link href="/admin/suppliers" className="back-link">
-          <ArrowLeft size={18} /> Admin
-        </Link>
-        <h1>Content Management</h1>
-        <p className="header-sub">Manage material catalog and prices</p>
-      </div>
-
-      <div className="filters-row">
-        <div className="search-wrap">
-          <MagnifyingGlass size={16} className="search-icon" />
-          <input
-            type="text"
-            placeholder="Search materials..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="search-input"
-          />
-        </div>
-        <select
-          value={categoryFilter}
-          onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
-          className="filter-select"
-        >
-          <option value="">All categories</option>
-          {categories.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-        <Button size="sm" variant="secondary" onClick={load}>Refresh</Button>
-      </div>
-
-      <Card>
-        <CardContent>
-          {loading ? (
-            <div className="table-loading">Loading materials...</div>
-          ) : materials.length === 0 ? (
-            <div className="empty-state">
-              <Package size={40} />
-              <p>No materials found.</p>
-            </div>
-          ) : (
-            <div className="mat-table">
-              <div className="table-header">
-                <span>Material</span>
-                <span>Category</span>
-                <span>Unit</span>
-                <span>Price USD</span>
-                <span>Price ZWG</span>
-                <span>Status</span>
-                <span>Actions</span>
-              </div>
-              {materials.map((m) => (
-                <div key={m.id} className={`table-row ${!m.is_active ? 'inactive' : ''}`}>
-                  <div>
-                    <div className="mat-name">{m.name}</div>
-                    {m.specifications && <div className="mat-spec">{m.specifications}</div>}
-                  </div>
-                  <span className="category-label">{m.category}</span>
-                  <span className="unit-label">{m.unit}</span>
-                  {editingId === m.id ? (
-                    <>
-                      <input
-                        type="number"
-                        value={editPriceUsd}
-                        onChange={(e) => setEditPriceUsd(e.target.value)}
-                        className="price-input"
-                        step="0.01"
-                        min="0"
-                      />
-                      <input
-                        type="number"
-                        value={editPriceZwg}
-                        onChange={(e) => setEditPriceZwg(e.target.value)}
-                        className="price-input"
-                        step="0.01"
-                        min="0"
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <span className="price-cell">${Number(m.price_usd).toFixed(2)}</span>
-                      <span className="price-cell zwg">ZWG {Number(m.price_zwg).toFixed(2)}</span>
-                    </>
-                  )}
-                  <span>
-                    <button
-                      className={`active-toggle ${m.is_active ? 'active' : 'inactive'}`}
-                      onClick={() => toggleActive(m)}
-                    >
-                      {m.is_active ? 'Active' : 'Inactive'}
-                    </button>
-                  </span>
-                  <div className="actions-cell">
-                    {editingId === m.id ? (
-                      <>
-                        <Button size="sm" variant="primary" loading={saving} onClick={() => saveEdit(m.id)} icon={<CheckCircle size={14} />}>
-                          Save
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit} icon={<X size={14} />} />
-                      </>
-                    ) : (
-                      <Button size="sm" variant="ghost" icon={<PencilSimple size={14} />} onClick={() => startEdit(m)}>
-                        Edit
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="pagination">
-            <Button size="sm" variant="ghost" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Prev</Button>
-            <span className="page-info">Page {page}</span>
-            <Button size="sm" variant="ghost" disabled={materials.length < PAGE_SIZE} onClick={() => setPage((p) => p + 1)}>Next</Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <style jsx>{`
-        .admin-page { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
-        .admin-loading { text-align: center; padding: 60px; color: #64748b; }
-        .admin-header { margin-bottom: 24px; }
-        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #64748b; font-size: 14px; text-decoration: none; margin-bottom: 10px; }
-        .back-link:hover { color: #1e40af; }
-        h1 { font-size: 26px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
-        .header-sub { font-size: 14px; color: #94a3b8; margin: 0; }
-        .filters-row { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
-        .search-wrap { position: relative; flex: 1; min-width: 200px; }
-        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
-        .search-input { width: 100%; padding: 8px 12px 8px 36px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; }
-        .search-input:focus { outline: none; border-color: #1e40af; }
-        .filter-select { padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; }
-        .table-loading { text-align: center; padding: 40px; color: #94a3b8; }
-        .empty-state { text-align: center; padding: 60px; color: #94a3b8; }
-        .empty-state p { font-size: 15px; color: #64748b; margin-top: 12px; }
-        .mat-table { display: flex; flex-direction: column; }
-        .table-header {
-          display: grid; grid-template-columns: 2fr 1fr 0.7fr 1fr 1fr 0.8fr 1fr;
-          padding: 8px 12px; font-size: 11px; font-weight: 600; color: #94a3b8;
-          text-transform: uppercase; border-bottom: 1px solid #f1f5f9;
-        }
-        .table-row {
-          display: grid; grid-template-columns: 2fr 1fr 0.7fr 1fr 1fr 0.8fr 1fr;
-          padding: 10px 12px; border-bottom: 1px solid #f8fafc; align-items: center; font-size: 13px;
-        }
-        .table-row.inactive { opacity: 0.6; }
-        .table-row:last-child { border-bottom: none; }
-        .mat-name { font-size: 14px; font-weight: 600; color: #1e293b; }
-        .mat-spec { font-size: 11px; color: #94a3b8; }
-        .category-label { font-size: 12px; color: #64748b; }
-        .unit-label { font-size: 13px; color: #475569; }
-        .price-cell { font-size: 13px; font-weight: 600; color: #1e293b; }
-        .price-cell.zwg { color: #475569; font-weight: 400; }
-        .price-input { width: 90px; padding: 5px 8px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; }
-        .price-input:focus { outline: none; border-color: #1e40af; }
-        .active-toggle {
-          padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
-          border: 1px solid; cursor: pointer; background: none;
-        }
-        .active-toggle.active { color: #16a34a; border-color: #86efac; background: #f0fdf4; }
-        .active-toggle.inactive { color: #94a3b8; border-color: #e2e8f0; background: #f8fafc; }
-        .active-toggle:hover { opacity: 0.8; }
-        .actions-cell { display: flex; gap: 6px; }
-        .pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px 0 0; }
-        .page-info { font-size: 13px; color: #64748b; }
-        @media (max-width: 900px) {
-          .table-header { grid-template-columns: 2fr 1fr 1fr 1fr; }
-          .table-row { grid-template-columns: 2fr 1fr 1fr 1fr; }
-          .table-header span:nth-child(n+5), .table-row > *:nth-child(n+5) { display: none; }
-        }
-      `}</style>
+  if (checking) return <p className="p-8 text-slate-600">Checking admin access…</p>;
+  return <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-8">
+    <header className="flex flex-wrap items-end justify-between gap-4">
+      <div><p className="text-xs font-bold uppercase tracking-[.18em] text-blue-700">Catalog & publishing</p><h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">Material prices</h1><p className="mt-2 max-w-2xl text-sm text-slate-600">Edit any catalog price. Manual prices take priority over scraper updates until you withdraw them.</p></div>
+      <div className="flex gap-2"><Link href="/admin/scraper" className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700">Manage scrapers</Link><Link href="/market-insights" className="rounded-lg bg-blue-700 px-3 py-2 text-sm font-semibold text-white">View public prices ↗</Link></div>
+    </header>
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Price coverage">
+      {([['Catalog items', rows.length], ['Manual prices', rows.filter((r) => r.source === 'Manual').length], ['Scraped prices', rows.filter((r) => r.source === 'Scraped').length], ['Unpriced', rows.filter((r) => r.source === 'Unpriced').length]] as const).map(([label, value]) => <div key={label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div><div className="mt-1 text-2xl font-bold text-slate-950">{value}</div></div>)}
     </div>
-  );
+    <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950">Public price pages use the manual price first, then an approved scrape from the last 30 days, then the reference price. Existing saved estimates keep their own amounts.</p>
+    {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>}
+    {notice && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}
+    <div className="flex flex-wrap gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <label className="min-w-[220px] flex-1 text-xs font-semibold text-slate-600">Search materials<input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name or code" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900" /></label>
+      <label className="text-xs font-semibold text-slate-600">Category<select value={category} onChange={(e) => setCategory(e.target.value)} className="mt-1 block rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"><option value="all">All categories</option>{Object.entries(categoryInfo).map(([key, value]) => <option key={key} value={key}>{value.label}</option>)}</select></label>
+      <label className="text-xs font-semibold text-slate-600">Source<select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="mt-1 block rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"><option value="all">All sources</option><option>Manual</option><option>Scraped</option><option>Reference</option><option>Unpriced</option></select></label>
+      <button type="button" onClick={() => void load()} className="self-end rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700">Refresh</button>
+    </div>
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-200 px-4 py-3 text-sm text-slate-600">Showing <strong>{shown.length}</strong> of {rows.length} materials</div>
+      {loading ? <p className="p-8 text-sm text-slate-500">Loading published prices…</p> : shown.length === 0 ? <p className="p-8 text-sm text-slate-500">No materials match these filters.</p> : <div className="divide-y divide-slate-100">{shown.map((row) => <div key={row.material.id} className="grid gap-3 px-4 py-4 md:grid-cols-[minmax(180px,2fr)_1fr_1fr_1fr_1fr_auto] md:items-center">
+        <div><div className="font-semibold text-slate-950">{row.material.name}</div><div className="text-xs text-slate-500">{row.material.id} · {row.material.unit}</div></div>
+        <div className="text-xs text-slate-600">{categoryInfo[row.material.category].label}</div>
+        <div><div className="text-xs text-slate-500">USD</div><div className="font-semibold tabular-nums text-slate-950">{money(row.priceUsd)}</div></div>
+        <div><div className="text-xs text-slate-500">ZWG</div><div className="font-medium tabular-nums text-slate-700">{row.priceZwg == null ? '—' : row.priceZwg.toLocaleString('en-US', { maximumFractionDigits: 2 })}</div></div>
+        <div><span className={`rounded-full px-2 py-1 text-xs font-semibold ${row.source === 'Manual' ? 'bg-blue-100 text-blue-800' : row.source === 'Scraped' ? 'bg-emerald-100 text-emerald-800' : row.source === 'Unpriced' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'}`}>{row.source}</span><div className="mt-1 text-xs text-slate-500">{row.updated ? new Date(row.updated).toLocaleDateString() : 'No date'}</div></div>
+        <button type="button" onClick={() => { setEditing(row.material.id); setUsd(row.priceUsd == null ? '' : String(row.priceUsd)); setZwg(row.priceZwg == null ? '' : String(row.priceZwg)); setError(''); setNotice(''); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700">Edit price</button>
+        {editing === row.material.id && <div className="rounded-lg bg-slate-50 p-4 md:col-span-6"><div className="mb-3 text-sm font-semibold text-slate-900">Publish price for {row.material.name} <span className="font-normal text-slate-500">({row.material.unit})</span></div><div className="flex flex-wrap items-end gap-3">
+          <label className="text-xs font-semibold text-slate-600">USD price<input aria-label="USD price" inputMode="decimal" value={usd} onChange={(e) => setUsd(e.target.value)} className="mt-1 block w-32 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900" /></label>
+          <label className="text-xs font-semibold text-slate-600">ZWG price (optional)<input aria-label="ZWG price" inputMode="decimal" value={zwg} onChange={(e) => setZwg(e.target.value)} className="mt-1 block w-36 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900" /></label>
+          <button type="button" disabled={saving} onClick={() => void mutate(row.material.id, 'publish')} className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Publishing…' : 'Publish price'}</button>
+          {row.source === 'Manual' && <button type="button" disabled={saving} onClick={() => void mutate(row.material.id, 'withdraw')} className="rounded-lg border border-amber-300 px-3 py-2 text-sm font-semibold text-amber-900 disabled:opacity-50">Withdraw manual price</button>}
+          <button type="button" onClick={() => setEditing(null)} className="px-2 py-2 text-sm text-slate-600">Cancel</button>
+        </div></div>}
+      </div>)}</div>}
+    </div>
+  </div>;
 }

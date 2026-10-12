@@ -17,26 +17,42 @@ export default function AdminRevenuePage() {
   const { adminId, checking } = useAdminAuth();
   const [metrics, setMetrics] = useState<RevenueMetrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!adminId) return;
-    getRevenueMetrics().then((m) => {
-      setMetrics(m);
-      setLoading(false);
-    });
-  }, [adminId]);
+    let active = true;
+    // A failed read used to leave this on "Loading…" for good.
+    getRevenueMetrics()
+      .then((m) => { if (active) { setMetrics(m); setFailed(false); } })
+      .catch(() => { if (active) setFailed(true); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [adminId, attempt]);
 
   if (checking || loading) {
     return <div className="admin-loading">Loading revenue data...</div>;
   }
 
-  const m = metrics!;
+  if (failed || !metrics) {
+    return (
+      <div className="admin-loading">
+        Could not load revenue data.{' '}
+        <button type="button" onClick={() => { setLoading(true); setAttempt((a) => a + 1); }} style={{ fontWeight: 600, textDecoration: 'underline' }}>
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  const m = metrics;
 
   return (
     <div className="admin-page">
       <div className="admin-header">
-        <Link href="/admin/suppliers" className="back-link">
-          <ArrowLeft size={18} /> Admin
+        <Link href="/admin" className="back-link">
+          <ArrowLeft size={18} /> Overview
         </Link>
         <h1>Revenue Dashboard</h1>
       </div>

@@ -24,6 +24,7 @@ import {
   materials,
   getBestPrice,
 } from '@/lib/materials';
+import { selectPublishedObservation } from '@/lib/pricing/publishedPrice';
 
 // Material categories for filtering
 const categories = [
@@ -88,7 +89,7 @@ export default function MarketInsightsPage() {
       // "Price Movers" headline stats, so a page captioned "Real-time
       // construction material prices tracked across Zimbabwe" was reporting
       // movements that had never happened.
-      const baseItems: MarketItem[] = materials.slice(0, 25).map((m) => {
+      const baseItems: MarketItem[] = materials.map((m) => {
         const bestPrice = getBestPrice(m.id);
 
         return {
@@ -109,46 +110,21 @@ export default function MarketInsightsPage() {
         const { data } = await supabase
           .from('price_observations')
           .select('*')
+          .in('review_status', ['auto', 'confirmed'])
           .order('scraped_at', { ascending: false });
 
         const observations = data as PriceObservation[] | null;
 
         if (observations && observations.length > 0) {
-          const latestObs = new Map<string, PriceObservation>();
-          observations.forEach((obs) => {
-            if (!latestObs.has(obs.material_key)) {
-              latestObs.set(obs.material_key, obs);
-            }
-          });
-
           baseItems.forEach(item => {
-            const obs = latestObs.get(item.id);
+            const obs = selectPublishedObservation(
+              observations.filter((row) => row.material_key === item.id),
+              item.unit, item.priceUsd,
+            );
             if (!obs || obs.price_usd === null) return;
 
-            // Reject an observation whose unit contradicts the catalogue's.
-            const obsUnit = (obs.unit ?? '').trim().toLowerCase();
-            if (obsUnit && obsUnit !== item.unit.trim().toLowerCase()) return;
-
-            // Most scraped rows carry no unit at all, so the check above cannot
-            // protect us. Fall back to an order-of-magnitude sanity band against
-            // the catalogue price: brick-common is catalogued at $0.12 each and
-            // observed at $108, which is a per-1000 quote recorded against a
-            // material sold each — displaying it made a single brick cost $108.
-            // A disagreement that large means the two are not measuring the same
-            // quantity, so the known-good catalogue price is kept.
-            if (item.priceUsd !== null && item.priceUsd > 0) {
-              const ratio = obs.price_usd / item.priceUsd;
-              if (ratio > 10 || ratio < 0.1) {
-                console.warn(
-                  `Ignoring ${obs.material_key} observation $${obs.price_usd}: ` +
-                  `${ratio.toFixed(0)}x the catalogue price of $${item.priceUsd} per ${item.unit} — likely a different unit.`
-                );
-                return;
-              }
-            }
-
             item.priceUsd = obs.price_usd;
-            item.priceZwg = null;
+            item.priceZwg = obs.price_zwg;
             if (obs.scraped_at) item.lastUpdated = obs.scraped_at;
           });
         }

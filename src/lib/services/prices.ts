@@ -3,7 +3,8 @@
 
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
-import { getBestPrice as getStaticBestPrice, getPricesForMaterial } from '@/lib/materials';
+import { getBestPrice as getStaticBestPrice, getPricesForMaterial, getMaterialById } from '@/lib/materials';
+import { MANUAL_PRICE_SOURCE, selectPublishedObservation } from '@/lib/pricing/publishedPrice';
 
 type PriceObservation = Database['public']['Tables']['price_observations']['Row'];
 type PriceWeekly = Database['public']['Tables']['price_weekly']['Row'];
@@ -12,7 +13,7 @@ export interface LivePrice {
   materialKey: string;
   priceUsd: number;
   priceZwg: number;
-  source: 'scraped' | 'static';
+  source: 'scraped' | 'static' | 'manual';
   confidence: number; // 1-5 scale
   lastUpdated: Date;
   supplierName?: string;
@@ -43,7 +44,7 @@ export interface PriceComparison {
   priceZwg: number;
   lastUpdated: Date;
   confidence: number;
-  source: 'scraped' | 'static';
+  source: 'scraped' | 'static' | 'manual';
   location?: string;
 }
 
@@ -66,25 +67,36 @@ export async function getLatestPrice(materialKey: string): Promise<LivePrice | n
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const { data: observations, error } = await supabase
-    .from('price_observations')
-    .select('*')
-    .eq('material_key', materialKey)
-    .gte('scraped_at', thirtyDaysAgo.toISOString())
-    .in('review_status', ['auto', 'confirmed'])
-    .order('scraped_at', { ascending: false })
-    .limit(1);
+  // The admin's manual price (kept until withdrawn, however old) and recent
+  // approved scrapes, chosen between by the one rule every price surface
+  // uses (lib/pricing/publishedPrice.ts), so this cannot disagree with the
+  // price list or the admin Prices page.
+  const [manualResult, scrapedResult] = await Promise.all([
+    supabase.from('price_observations').select('*')
+      .eq('material_key', materialKey).eq('source_name', MANUAL_PRICE_SOURCE)
+      .eq('review_status', 'confirmed').order('scraped_at', { ascending: false }).limit(50),
+    supabase.from('price_observations').select('*')
+      .eq('material_key', materialKey)
+      .gte('scraped_at', thirtyDaysAgo.toISOString())
+      .in('review_status', ['auto', 'confirmed'])
+      .order('scraped_at', { ascending: false }).limit(50),
+  ]);
+  const observations = [...(manualResult.data ?? []), ...(scrapedResult.data ?? [])] as PriceObservation[];
 
-  if (!error && observations && observations.length > 0) {
-    const obs = observations[0] as PriceObservation;
+  const selected = selectPublishedObservation(
+    observations, getMaterialById(materialKey)?.unit ?? '', getStaticBestPrice(materialKey)?.priceUsd,
+  ) as PriceObservation | null;
+  if (selected) {
+    const obs = selected;
+    const isManual = obs.source_name === MANUAL_PRICE_SOURCE;
     const livePrice: LivePrice = {
       materialKey: obs.material_key,
       priceUsd: obs.price_usd || 0,
       priceZwg: obs.price_zwg || (obs.price_usd || 0) * 30, // Fallback ZWG conversion
-      source: 'scraped',
-      confidence: obs.confidence,
+      source: isManual ? 'manual' : 'scraped',
+      confidence: isManual ? 5 : obs.confidence,
       lastUpdated: new Date(obs.scraped_at),
-      supplierName: obs.supplier_name || undefined,
+      supplierName: isManual ? undefined : obs.supplier_name || undefined,
       location: obs.location || undefined,
     };
 
@@ -297,34 +309,31 @@ export async function getBatchPrices(materialKeys: string[]): Promise<Map<string
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const { data: observations } = await supabase
-    .from('price_observations')
-    .select('*')
-    .in('material_key', uncached)
-    .gte('scraped_at', thirtyDaysAgo.toISOString())
-    .in('review_status', ['auto', 'confirmed'])
-    .order('scraped_at', { ascending: false });
-
-  // Group by material and take latest
-  const latestByMaterial = new Map<string, PriceObservation>();
-  if (observations) {
-    (observations as PriceObservation[]).forEach(obs => {
-      if (!latestByMaterial.has(obs.material_key)) {
-        latestByMaterial.set(obs.material_key, obs);
-      }
-    });
-  }
+  const [manualResult, scrapedResult] = await Promise.all([
+    supabase.from('price_observations').select('*')
+      .in('material_key', uncached).eq('source_name', MANUAL_PRICE_SOURCE)
+      .eq('review_status', 'confirmed').order('scraped_at', { ascending: false }),
+    supabase.from('price_observations').select('*')
+      .in('material_key', uncached)
+      .gte('scraped_at', thirtyDaysAgo.toISOString())
+      .in('review_status', ['auto', 'confirmed'])
+      .order('scraped_at', { ascending: false }),
+  ]);
+  const observations = [...(manualResult.data ?? []), ...(scrapedResult.data ?? [])] as PriceObservation[];
 
   // Process each uncached material
   uncached.forEach(key => {
-    const obs = latestByMaterial.get(key);
+    const obs = selectPublishedObservation(
+      observations.filter((row) => row.material_key === key),
+      getMaterialById(key)?.unit ?? '', getStaticBestPrice(key)?.priceUsd,
+    ) as PriceObservation | null;
 
     if (obs && obs.price_usd !== null) {
       const livePrice: LivePrice = {
         materialKey: obs.material_key,
         priceUsd: obs.price_usd,
         priceZwg: obs.price_zwg || obs.price_usd * 30,
-        source: 'scraped',
+        source: obs.source_name === MANUAL_PRICE_SOURCE ? 'manual' : 'scraped',
         confidence: obs.confidence,
         lastUpdated: new Date(obs.scraped_at),
         supplierName: obs.supplier_name || undefined,

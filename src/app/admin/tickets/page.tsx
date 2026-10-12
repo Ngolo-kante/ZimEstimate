@@ -129,8 +129,8 @@ export default function AdminTicketsPage() {
   return (
     <div className="admin-page">
       <div className="admin-header">
-        <Link href="/admin/suppliers" className="back-link">
-          <ArrowLeft size={18} /> Admin
+        <Link href="/admin" className="back-link">
+          <ArrowLeft size={18} /> Overview
         </Link>
         <h1>Support Tickets</h1>
         <p className="header-sub">{total} tickets</p>

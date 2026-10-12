@@ -49,8 +49,8 @@ export default function AdminAgreementsPage() {
   return (
     <div className="admin-page">
       <div className="admin-header">
-        <Link href="/admin/suppliers" className="back-link">
-          <ArrowLeft size={18} /> Admin
+        <Link href="/admin" className="back-link">
+          <ArrowLeft size={18} /> Overview
         </Link>
         <h1>Supplier Agreements</h1>
         <p className="header-sub">{total} acceptance records</p>
