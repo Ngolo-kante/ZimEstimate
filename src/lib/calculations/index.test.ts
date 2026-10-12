@@ -47,8 +47,8 @@ describe('generateBOQFromBasics assumptions', () => {
     const economy = generateBOQFromBasics({ ...base, cementTypes: ['cement_325'] });
     const standard = generateBOQFromBasics({ ...base, cementTypes: ['cement_425'] });
 
-    const economyMortarCement = getItemQuantity(economy, 'Superstructure mortar');
-    const standardMortarCement = getItemQuantity(standard, 'Superstructure mortar');
+    const economyMortarCement = getItemQuantity(economy, 'Mortar for laying the wall bricks');
+    const standardMortarCement = getItemQuantity(standard, 'Mortar for laying the wall bricks');
     expect(standardMortarCement).toBeGreaterThan(economyMortarCement);
   });
 
@@ -184,5 +184,38 @@ describe('exterior works', () => {
     };
 
     expect(panels(1200)).toBeGreaterThan(panels(600));
+  });
+});
+
+describe('reading a BOQ line by line', () => {
+  const items = generateBOQFromBasics({
+    floorArea: 120, roomCount: 7, wallHeight: 2.7, brickTypes: ['common'], cementTypes: ['cement_325'],
+    scope: 'full_house', includeLabor: false, locationType: 'urban', finishLevel: 'standard',
+  });
+
+  it('never shows two lines with the same name in one stage', () => {
+    const seen = new Set<string>();
+    const repeated = items.filter((item) => {
+      const key = `${item.category}|${item.materialName}`;
+      if (seen.has(key)) return true;
+      seen.add(key);
+      return false;
+    });
+    expect(repeated.map((i) => `${i.category}: ${i.materialName}`)).toEqual([]);
+  });
+
+  it('names each cement line for its job', () => {
+    const cement = items.filter((i) => i.materialId.startsWith('cement') && i.category === 'substructure').map((i) => i.materialName);
+    expect(cement).toEqual(expect.arrayContaining([expect.stringMatching(/\(Foundation Concrete\)$/), expect.stringMatching(/\(Foundation Mortar\)$/)]));
+  });
+
+  it('lists the wall bricks once, with the inside/outside split in the note', () => {
+    const walls = items.filter((i) => i.category === 'superstructure' && i.materialId.startsWith('brick-') && i.materialId !== 'brickforce');
+    expect(walls).toHaveLength(1);
+    expect(walls[0].calculationNote).toMatch(/^External walls [\d,]+ \+ internal walls [\d,]+$/);
+  });
+
+  it('leaves no line without a note', () => {
+    expect(items.filter((i) => !i.calculationNote.trim()).map((i) => i.materialName)).toEqual([]);
   });
 });

@@ -9,6 +9,16 @@ interface ExportOptions {
     includeSupplierInfo: boolean;
 }
 
+/**
+ * The material column: the name, and under it what the line is for. Without
+ * the second line, a stage with cement for concrete and cement for mortar
+ * printed as two identical-looking "Cement" rows.
+ */
+function materialCell(name: string, note?: string | null): string {
+    const purpose = (note ?? '').replace(/\[Enablement Cost\]\s*/g, '').trim();
+    return purpose && purpose.toLowerCase() !== name.toLowerCase() ? `${name}\n${purpose}` : name;
+}
+
 export interface AnalyticsReportData {
     projectName: string;
     generatedAt: Date;
@@ -322,7 +332,7 @@ export function generateBOQPDF(
             const total = opts.currency === 'USD' ? Number(item.total_usd) : Number(item.total_zwg);
 
             return [
-                item.material_name,
+                materialCell(item.material_name, item.notes),
                 `${Number(item.quantity).toLocaleString()} ${item.unit}`,
                 formatCurrency(unitPrice, opts.currency),
                 formatCurrency(total, opts.currency),
@@ -424,6 +434,8 @@ interface VisionBOQData {
         unit: string;
         unit_price_usd: number;
         unit_price_zwg: number;
+        /** What the line is for, printed under the name. */
+        note?: string | null;
     }>;
     totals: { usd: number; zwg: number };
     config: {
@@ -614,7 +626,7 @@ export function exportBOQToPDF(data: VisionBOQData, currency: 'USD' | 'ZWG' = 'U
             const total = item.quantity * unitPrice;
 
             return [
-                item.material_name,
+                materialCell(item.material_name, item.note),
                 `${item.quantity.toLocaleString()} ${item.unit}`,
                 formatCurrency(unitPrice, currency),
                 formatCurrency(total, currency),

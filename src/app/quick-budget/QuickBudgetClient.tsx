@@ -417,6 +417,7 @@ export default function QuickBudgetPage() {
             unit: item.unit,
             unit_price_usd: item.unitPriceUsd,
             unit_price_zwg: item.unitPriceZwg,
+            note: item.calculationNote,
           })),
           totals: {
             usd: totals.usd,

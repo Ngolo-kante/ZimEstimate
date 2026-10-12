@@ -267,6 +267,7 @@ function BoqNewPageContent() {
         unit: item.unit,
         unit_price_usd: item.actualPriceUsd,
         unit_price_zwg: item.actualPriceZwg,
+        note: item.description,
       }))
     );
 

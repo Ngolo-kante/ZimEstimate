@@ -231,6 +231,7 @@ export default function BOQResultsStep({
         unit: item.unit,
         unit_price_usd: item.unitPriceUsd,
         unit_price_zwg: item.unitPriceZwg,
+        note: item.calculationNote,
       })),
       totals,
       config,
