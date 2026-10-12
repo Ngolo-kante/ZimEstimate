@@ -23,8 +23,7 @@ import {
     ListChecks,
     CalendarCheck,
     ShieldCheck,
-    CaretDown,
-    CaretUp,
+    Stack,
 } from '@phosphor-icons/react';
 
 import '@/styles/project-settings.css';
@@ -149,6 +148,11 @@ const ALERT_DEFINITIONS: AlertConfig[] = [
     },
 ];
 
+/* Only alerts the app actually acts on. Price change, upcoming stage, admin
+   task and compliance deadline switches were here too, but nothing saved or
+   sent them — switches that did nothing. */
+const WORKING_ALERTS = ALERT_DEFINITIONS.filter((alert) => alert.id === 'low_stock' || alert.id === 'budget_reminder');
+
 /* ================ SUB-COMPONENT: AlertRow ================ */
 
 interface AlertRowState {
@@ -162,21 +166,14 @@ function AlertRow({
     config,
     state,
     onChange,
-    expanded,
-    onToggleExpand,
 }: {
     config: AlertConfig;
     state: AlertRowState;
     onChange: (updates: Partial<AlertRowState>) => void;
-    expanded: boolean;
-    onToggleExpand: () => void;
 }) {
     return (
         <div className={`alert-row ${state.enabled ? 'enabled' : ''}`}>
-            <div
-                className="alert-row-header"
-                onClick={onToggleExpand}
-            >
+            <div className="alert-row-header">
                 <div className="alert-row-left">
                     <div
                         className="alert-icon-badge"
@@ -189,27 +186,20 @@ function AlertRow({
                         <p>{config.description}</p>
                     </div>
                 </div>
-                <div className="alert-row-right">
-                    {state.enabled && (
-                        <span className="alert-active-dot" />
-                    )}
-                    <div
-                        className={`switch-btn ${state.enabled ? 'active' : ''}`}
-                        role="presentation"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onChange({ enabled: !state.enabled });
-                        }}
-                    >
-                        <span className="switch-slider" />
-                    </div>
-                    <span className="alert-caret">
-                        {expanded ? <CaretUp size={14} /> : <CaretDown size={14} />}
-                    </span>
-                </div>
+                <button
+                    type="button"
+                    role="switch"
+                    aria-checked={state.enabled}
+                    aria-label={`${config.title}: ${state.enabled ? 'on' : 'off'}`}
+                    className={`switch-btn ${state.enabled ? 'active' : ''}`}
+                    onClick={() => onChange({ enabled: !state.enabled })}
+                >
+                    <span className="switch-slider" />
+                </button>
             </div>
 
-            {expanded && state.enabled && (
+            {/* Settings show as soon as the alert is on — no second click. */}
+            {state.enabled && (
                 <div className="alert-row-body">
                     {/* Threshold input */}
                     {config.hasThreshold && (
@@ -303,8 +293,6 @@ export default function ProjectSettings({
     const reminderChannels = useReminderChannels();
     const channelOptions = CHANNEL_OPTIONS.filter((option) => reminderChannels.includes(option.id));
     const effectiveChannel: NotificationChannel = reminderChannels.includes(selectedChannel) ? selectedChannel : 'email';
-    const [openSections, setOpenSections] = useState<Set<string>>(new Set(['general']));
-    const [expandedAlerts, setExpandedAlerts] = useState<Set<string>>(new Set(['low_stock', 'budget_reminder']));
     const [alertStates, setAlertStates] = useState<Record<string, AlertRowState>>(() => ({
         low_stock: {
             enabled: project.usage_low_stock_alert_enabled ?? false,
@@ -379,24 +367,6 @@ export default function ProjectSettings({
         onReminderChannelChange?.(channel);
     };
 
-    const toggleExpand = useCallback((id: string) => {
-        setExpandedAlerts(prev => {
-            const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
-        });
-    }, []);
-
-    const toggleSection = (id: string) => {
-        setOpenSections(prev => {
-            const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
-        });
-    };
-
     const updateAlertState = useCallback((id: string, updates: Partial<AlertRowState>) => {
         setAlertStates(prev => ({
             ...prev,
@@ -444,6 +414,7 @@ export default function ProjectSettings({
                 onToggleReminder?.(false);
             }
 
+            setSavedSnapshot(snapshot);
             success('Project configurations saved');
         } catch (err) {
             showError('Failed to save changes');
@@ -453,36 +424,34 @@ export default function ProjectSettings({
         }
     };
 
-    const enabledCount = Object.values(alertStates).filter(s => s.enabled).length;
+    const enabledCount = WORKING_ALERTS.filter((a) => alertStates[a.id]?.enabled).length;
+
+    // What would be saved, to tell whether anything has changed since.
+    const snapshot = JSON.stringify({
+        name, location, stages: [...selectedStages].sort(),
+        low: alertStates.low_stock, budget: alertStates.budget_reminder,
+    });
+    const [savedSnapshot, setSavedSnapshot] = useState(snapshot);
+    const isDirty = snapshot !== savedSnapshot;
 
     return (
         <div className="settings-page">
-            {/* ========== HEADER ========== */}
-            <div className="settings-header">
-                <Button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    icon={isSaving
-                        ? <div className="spinner-border animate-spin w-4 h-4 border-2 border-white rounded-full" />
-                        : <FloppyDisk size={18} />
-                    }
-                >
-                    {isSaving ? 'Saving...' : 'Save Changes'}
-                </Button>
-            </div>
+            {/* Every section is open: collapsed, the settings looked like they
+                were not there. */}
 
             {/* ========== 1. GENERAL ========== */}
-            <div className="settings-card">
-                <button type="button" className="settings-card-header" onClick={() => toggleSection('general')} aria-expanded={openSections.has('general')}>
+            <section className="settings-card">
+                <header className="settings-card-header">
+                    <span className="settings-card-icon"><HouseLine size={18} weight="duotone" /></span>
                     <span><h3>General</h3><p>Project name and location.</p></span>
-                    {openSections.has('general') ? <CaretUp size={18} /> : <CaretDown size={18} />}
-                </button>
-                {openSections.has('general') && <div className="settings-card-content">
+                </header>
+                <div className="settings-card-content">
                     <div className="form-grid">
                         <div className="form-group">
-                            <label className="form-label">Project Name</label>
+                            <label className="form-label" htmlFor="settings-name">Project name</label>
                             <div className="form-input-wrapper">
                                 <input
+                                    id="settings-name"
                                     className="form-input"
                                     type="text"
                                     value={name}
@@ -492,9 +461,10 @@ export default function ProjectSettings({
                             </div>
                         </div>
                         <div className="form-group">
-                            <label className="form-label">Location</label>
+                            <label className="form-label" htmlFor="settings-location">Location</label>
                             <div className="form-input-wrapper">
                                 <input
+                                    id="settings-location"
                                     className="form-input"
                                     type="text"
                                     value={location}
@@ -505,111 +475,106 @@ export default function ProjectSettings({
                             </div>
                         </div>
                     </div>
-                </div>}
-            </div>
+                </div>
+            </section>
 
             {/* ========== 2. STAGE VISIBILITY ========== */}
-            <div className="settings-card">
-                <button type="button" className="settings-card-header" onClick={() => toggleSection('stages')} aria-expanded={openSections.has('stages')}>
-                    <span><h3>Project Stages</h3><p>{selectedStages.length} stages visible.</p></span>
-                    {openSections.has('stages') ? <CaretUp size={18} /> : <CaretDown size={18} />}
-                </button>
-                {openSections.has('stages') && <div className="settings-card-content">
+            <section className="settings-card">
+                <header className="settings-card-header">
+                    <span className="settings-card-icon"><Stack size={18} weight="duotone" /></span>
+                    <span><h3>Project stages</h3><p>{selectedStages.length} of {STAGE_CATEGORIES.length} stages shown in this project. Turn off the ones you are not building.</p></span>
+                </header>
+                <div className="settings-card-content stage-grid">
                     {STAGE_CATEGORIES.map((stage) => {
                         const isVisible = selectedStages.includes(stage.id);
                         return (
-                            <div
+                            <button
                                 key={stage.id}
+                                type="button"
+                                role="switch"
+                                aria-checked={isVisible}
                                 className={`stage-toggle-card ${isVisible ? 'active' : ''}`}
                                 onClick={() => handleStageToggle(stage.id)}
-                                style={{ cursor: 'pointer' }}
                             >
-                                <div className="stage-info">
-                                    <div className="stage-icon">
-                                        {isVisible ? <Check size={18} weight="bold" /> : <EyeSlash size={18} />}
-                                    </div>
-                                    <div className="stage-text">
+                                <span className="stage-info">
+                                    <span className="stage-icon">
+                                        {isVisible ? <Check size={16} weight="bold" /> : <EyeSlash size={16} />}
+                                    </span>
+                                    <span className="stage-text">
                                         <h4>{stage.label}</h4>
                                         <p>{stage.description}</p>
-                                    </div>
-                                </div>
-                                <div
-                                    className={`switch-btn ${isVisible ? 'active' : ''}`}
-                                    role="presentation"
-                                >
+                                    </span>
+                                </span>
+                                <span className={`switch-btn ${isVisible ? 'active' : ''}`} aria-hidden="true">
                                     <span className="switch-slider" />
-                                </div>
-                            </div>
+                                </span>
+                            </button>
                         );
                     })}
-                </div>}
-            </div>
+                </div>
+            </section>
 
-            {/* ========== 3. NOTIFICATION CENTRE ========== */}
-            <div className="settings-card notification-centre">
-                <button type="button" className="settings-card-header" onClick={() => toggleSection('alerts')} aria-expanded={openSections.has('alerts')}>
-                    <div className="notif-header-row">
-                        <div>
-                            <h3>
-                                <BellRinging size={18} weight="duotone" style={{ marginRight: '8px', verticalAlign: '-3px' }} />
-                                Notification Centre
-                            </h3>
-                            <p>Configure which alerts you receive and how.</p>
-                        </div>
-                        <div className="notif-count-badge">
-                            {enabledCount} active
-                        </div>
-                    </div>
-                    {openSections.has('alerts') ? <CaretUp size={18} /> : <CaretDown size={18} />}
-                </button>
+            {/* ========== 3. NOTIFICATIONS ========== */}
+            <section className="settings-card notification-centre">
+                <header className="settings-card-header">
+                    <span className="settings-card-icon"><BellRinging size={18} weight="duotone" /></span>
+                    <span><h3>Notifications</h3><p>Alerts for this project, and how they reach you.</p></span>
+                    <span className="notif-count-badge">{enabledCount} on</span>
+                </header>
 
-                {openSections.has('alerts') && <div className="settings-card-content">
-                    {/* === Preferred Channel === */}
+                <div className="settings-card-content">
                     <div className="notif-channel-section">
-                        <label className="form-label">Preferred Notification Method</label>
+                        <label className="form-label">How alerts reach you</label>
                         {channelOptions.length > 1 ? (
-                            <>
-                                <p className="notif-channel-desc">
-                                    All alerts below will be sent through your selected channel.
-                                </p>
-                                <div className="channel-selector">
-                                    {channelOptions.map((option) => (
-                                        <button
-                                            key={option.id}
-                                            type="button"
-                                            className={`channel-option ${effectiveChannel === option.id ? 'selected' : ''}`}
-                                            onClick={() => handleChannelSelect(option.id)}
-                                        >
-                                            {option.icon}
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </>
+                            <div className="channel-selector">
+                                {channelOptions.map((option) => (
+                                    <button
+                                        key={option.id}
+                                        type="button"
+                                        className={`channel-option ${effectiveChannel === option.id ? 'selected' : ''}`}
+                                        onClick={() => handleChannelSelect(option.id)}
+                                    >
+                                        {option.icon}
+                                        {option.label}
+                                    </button>
+                                ))}
+                            </div>
                         ) : (
-                            <p className="notif-channel-desc">All alerts below are sent to you by email.</p>
+                            <p className="notif-channel-desc">By email, and in the bell at the top of the page.</p>
                         )}
                     </div>
 
-                    {/* === Divider === */}
-                    <div className="notif-divider">
-                        <span>Alert Types</span>
-                    </div>
-
-                    {/* === Alert Rows === */}
                     <div className="alert-list">
-                        {ALERT_DEFINITIONS.map((config) => (
+                        {WORKING_ALERTS.map((config) => (
                             <AlertRow
                                 key={config.id}
                                 config={config}
                                 state={alertStates[config.id]}
                                 onChange={(updates) => updateAlertState(config.id, updates)}
-                                expanded={expandedAlerts.has(config.id)}
-                                onToggleExpand={() => toggleExpand(config.id)}
                             />
                         ))}
                     </div>
-                </div>}
+
+                    <p className="notif-footnote">
+                        Price updates on your BOQ show in your notifications automatically. To be reminded about
+                        a permit or inspection, set a reminder on that task in the Compliance Tracker.
+                    </p>
+                </div>
+            </section>
+
+            {/* Always in reach at the bottom, and says when something is unsaved. */}
+            <div className={`settings-savebar ${isDirty ? 'dirty' : ''}`}>
+                <span>{isDirty ? 'You have unsaved changes' : 'All changes saved'}</span>
+                <Button
+                    onClick={handleSave}
+                    disabled={isSaving || !isDirty}
+                    icon={isSaving
+                        ? <div className="spinner-border animate-spin w-4 h-4 border-2 border-white rounded-full" />
+                        : <FloppyDisk size={18} />
+                    }
+                >
+                    {isSaving ? 'Saving...' : 'Save changes'}
+                </Button>
             </div>
         </div>
     );
