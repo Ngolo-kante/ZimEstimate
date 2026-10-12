@@ -5,12 +5,15 @@ import { requireAdmin } from '@/lib/server/auth';
 import { enforceCsrf, enforceRateLimit, sanitizeNumber } from '@/lib/server/security';
 import { dispatchQueuedNotifications } from '@/lib/server/notificationDispatch';
 import { prunePlanSamples } from '@/lib/server/planSamples';
+import { runActiveScrapers } from '@/lib/server/scraperRunner';
 import { sendEmail, escapeHtml } from '@/lib/server/email';
 import { getSiteUrl } from '@/lib/siteUrl';
 import { channelStatus, sendSms, sendTelegram, sendWhatsApp } from '@/lib/server/messaging';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// Mondays also run the supplier price scrapers (below).
+export const maxDuration = 60;
 
 type DeliveryChannel = 'email' | 'sms' | 'whatsapp' | 'telegram';
 
@@ -166,7 +169,24 @@ export async function GET(request: Request) {
     planSamples = { error: error instanceof Error ? error.message : 'Plan sample pruning failed.' };
   }
 
-  return NextResponse.json({ reminders, notifications, planSamples });
+  // Supplier prices, once a week (Monday). They ride on this daily job
+  // because Vercel's free plan allows two scheduled jobs and both are taken.
+  let scrapers: unknown = 'not scheduled today';
+  if (new Date().getUTCDay() === 1) {
+    try {
+      const { results, notReached } = await runActiveScrapers(45_000);
+      scrapers = {
+        ran: results.length,
+        succeeded: results.filter((r) => r.success).length,
+        matched: results.reduce((sum, r) => sum + (r.itemsMatched ?? 0), 0),
+        notReached,
+      };
+    } catch (error) {
+      scrapers = { error: error instanceof Error ? error.message : 'Scrapers failed.' };
+    }
+  }
+
+  return NextResponse.json({ reminders, notifications, planSamples, scrapers });
 }
 
 export async function POST(request: Request) {

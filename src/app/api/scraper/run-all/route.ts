@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/lib/database.types';
 import { enforceCsrf, enforceRateLimit, sanitizeText } from '@/lib/server/security';
 import { requireAdmin } from '@/lib/server/auth';
-import { runCategoryScrape, runSingleScrape } from '@/lib/server/scraperRunner';
+import { runScraperConfig } from '@/lib/server/scraperRunner';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -111,49 +111,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<RunAllRespons
         let failed = 0;
 
         for (const config of configs) {
-            try {
-                if ((config.scrape_mode || 'single') === 'category') {
-                    const result = await runCategoryScrape({
-                        configId: config.id,
-                        url: config.base_url,
-                        containerSelector: config.container_selector,
-                        itemCardSelector: config.item_card_selector || '',
-                        nameSelector: config.item_name_selector,
-                        priceSelector: config.price_selector,
-                    });
-                    succeeded++;
-                    results.push({
-                        configId: config.id,
-                        siteName: config.site_name,
-                        success: true,
-                        itemsFound: result.itemsFound,
-                        itemsMatched: result.itemsMatched,
-                    });
-                } else {
-                    const result = await runSingleScrape({
-                        configId: config.id,
-                        url: config.base_url,
-                        priceSelector: config.price_selector,
-                        nameSelector: config.item_name_selector,
-                    });
-                    succeeded++;
-                    results.push({
-                        configId: config.id,
-                        siteName: config.site_name,
-                        success: true,
-                        itemsFound: 1,
-                        itemsMatched: result.match.materialCode ? 1 : 0,
-                    });
-                }
-            } catch (err) {
-                failed++;
-                results.push({
-                    configId: config.id,
-                    siteName: config.site_name,
-                    success: false,
-                    error: err instanceof Error ? err.message : 'Unknown error'
-                });
-            }
+            const outcome = await runScraperConfig(config);
+            if (outcome.success) succeeded++; else failed++;
+            results.push(outcome);
         }
 
         return NextResponse.json({

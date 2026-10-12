@@ -250,6 +250,28 @@ export class MaterialMatcher {
     ): Promise<void> {
         if (!matchResult.needsReview) return;
 
+        // The same product comes back on every scheduled run. Refresh the one
+        // waiting entry rather than queueing it again each week.
+        let existing = this.supabase
+            .from('pending_matches')
+            .select('id')
+            .eq('scraped_name', scrapedName)
+            .is('resolved_at', null)
+            .limit(1);
+        existing = scraperConfigId ? existing.eq('scraper_config_id', scraperConfigId) : existing.is('scraper_config_id', null);
+        const { data: waiting } = await existing;
+        const waitingId = (waiting as { id: string }[] | null)?.[0]?.id;
+        if (waitingId) {
+            await this.supabase.from('pending_matches').update({
+                scraped_price: scrapedPrice,
+                source_url: sourceUrl,
+                suggested_material_code: matchResult.materialCode,
+                confidence: matchResult.confidence,
+                match_method: matchResult.method,
+            } as never).eq('id', waitingId);
+            return;
+        }
+
         await this.supabase.from('pending_matches').insert({
             scraped_name: scrapedName,
             scraped_price: scrapedPrice,

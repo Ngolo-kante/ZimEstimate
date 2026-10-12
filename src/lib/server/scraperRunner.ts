@@ -24,6 +24,8 @@ export type ScraperTestPayload = {
   url?: string;
   priceSelector?: string;
   nameSelector?: string;
+  /** The site's name, recorded with each price so admins can see where it came from. */
+  sourceName?: string;
 };
 
 export type CategoryScrapePayload = {
@@ -34,6 +36,7 @@ export type CategoryScrapePayload = {
   nameSelector: string;
   priceSelector: string;
   limit?: number;
+  sourceName?: string;
 };
 
 export interface ScrapedItem {
@@ -232,6 +235,8 @@ export async function runSingleScrape(payload: ScraperTestPayload): Promise<Sing
         material_name: finalItemName,
         price_usd: price,
         confidence: confidenceScale,
+        source_name: sanitizeText(payload.sourceName, { maxLength: 120 }) || null,
+        supplier_name: sanitizeText(payload.sourceName, { maxLength: 120 }) || null,
         url,
         scraped_at: new Date().toISOString(),
         review_status: matchResult.needsReview ? 'pending' : 'auto',
@@ -359,6 +364,8 @@ export async function runCategoryScrape(payload: CategoryScrapePayload): Promise
         material_name: material?.name || item.name,
         price_usd: price,
         confidence: confidenceScale,
+        source_name: sanitizeText(payload.sourceName, { maxLength: 120 }) || null,
+        supplier_name: sanitizeText(payload.sourceName, { maxLength: 120 }) || null,
         url: sanitizedUrl,
         scraped_at: new Date().toISOString(),
         review_status: matchResult.needsReview ? 'pending' : 'auto',
@@ -391,4 +398,77 @@ export async function runCategoryScrape(payload: CategoryScrapePayload): Promise
     itemsPending: pendingCount,
     items: scrapedItems,
   };
+}
+
+export type ScraperConfigRow = {
+  id: string;
+  site_name: string;
+  base_url: string;
+  price_selector: string;
+  item_name_selector: string;
+  scrape_mode?: string | null;
+  container_selector?: string | null;
+  item_card_selector?: string | null;
+};
+
+export type ScraperRunOutcome = {
+  configId: string;
+  siteName: string;
+  success: boolean;
+  itemsFound?: number;
+  itemsMatched?: number;
+  error?: string;
+};
+
+/** Runs one saved scraper, in whichever mode it is set up for. Never throws. */
+export async function runScraperConfig(config: ScraperConfigRow): Promise<ScraperRunOutcome> {
+  try {
+    if ((config.scrape_mode || 'single') === 'category') {
+      const result = await runCategoryScrape({
+        configId: config.id,
+        url: config.base_url,
+        containerSelector: config.container_selector ?? undefined,
+        itemCardSelector: config.item_card_selector || '',
+        nameSelector: config.item_name_selector,
+        priceSelector: config.price_selector,
+        sourceName: config.site_name,
+      });
+      return { configId: config.id, siteName: config.site_name, success: true, itemsFound: result.itemsFound, itemsMatched: result.itemsMatched };
+    }
+    const result = await runSingleScrape({
+      configId: config.id,
+      url: config.base_url,
+      priceSelector: config.price_selector,
+      nameSelector: config.item_name_selector,
+      sourceName: config.site_name,
+    });
+    return { configId: config.id, siteName: config.site_name, success: true, itemsFound: 1, itemsMatched: result.match.materialCode ? 1 : 0 };
+  } catch (error) {
+    return { configId: config.id, siteName: config.site_name, success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * Every active scraper, one after another (one request per site at a time),
+ * stopping before the time budget runs out so a scheduled job is never cut
+ * off half way. Those not reached run first next time: oldest run first.
+ */
+export async function runActiveScrapers(budgetMs = 45_000): Promise<{ results: ScraperRunOutcome[]; notReached: number }> {
+  const started = Date.now();
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from('scraper_configs')
+    .select('*')
+    .eq('is_active', true)
+    .order('last_successful_run_at', { ascending: true, nullsFirst: true });
+  if (error) throw new ScraperRunnerError(error.message, 500);
+  const configs = (data ?? []) as unknown as ScraperConfigRow[];
+
+  const results: ScraperRunOutcome[] = [];
+  for (const config of configs) {
+    // A fetch can take up to SCRAPE_TIMEOUT_MS; do not start one that cannot finish.
+    if (Date.now() - started > budgetMs - SCRAPE_TIMEOUT_MS) break;
+    results.push(await runScraperConfig(config));
+  }
+  return { results, notReached: configs.length - results.length };
 }
