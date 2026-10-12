@@ -9,7 +9,8 @@ import {
   ChartLine,
   Users,
   Storefront,
-  TrendUp,
+  Gauge,
+  Tag,
   Package,
   ChatCircle,
   FileText,
@@ -35,11 +36,11 @@ const navItems = [
   { label: 'Revenue', href: '/admin/revenue', icon: ChartLine },
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Suppliers', href: '/admin/suppliers', icon: Storefront },
-  { label: 'Performance', href: '/admin/performance', icon: TrendUp },
-  { label: 'Prices', href: '/admin/content', icon: Package },
+  { label: 'Performance', href: '/admin/performance', icon: Gauge },
+  { label: 'Prices', href: '/admin/content', icon: Tag },
   { label: 'Tickets', href: '/admin/tickets', icon: ChatCircle },
   { label: 'Agreements', href: '/admin/agreements', icon: FileText },
-  { label: 'Packages', href: '/admin/packages', icon: SquaresFour },
+  { label: 'Packages', href: '/admin/packages', icon: Package },
   { label: 'Audit Logs', href: '/admin/logs', icon: ClipboardText },
   { label: 'Scraper', href: '/admin/scraper', icon: Robot },
   { label: 'Review Queue', href: '/admin/scraper-review', icon: MagnifyingGlass },
@@ -252,7 +253,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           min-width: 64px;
         }
 
-        .sidebar-logo {
+        .admin-sidebar :global(.sidebar-logo) {
           display: flex;
           align-items: center;
           gap: 10px;
@@ -264,7 +265,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           white-space: nowrap;
         }
 
-        .admin-sidebar.collapsed .sidebar-logo {
+        .admin-sidebar.collapsed :global(.sidebar-logo) {
           justify-content: center;
           padding: 18px 0;
         }
@@ -319,7 +320,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           overflow-x: hidden;
         }
 
-        .nav-item {
+        .sidebar-nav :global(.nav-item) {
           display: flex;
           align-items: center;
           gap: 10px;
@@ -336,23 +337,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           position: relative;
         }
 
-        .nav-item.collapsed {
+        .sidebar-nav :global(.nav-item.collapsed) {
           justify-content: center;
           padding: 10px 0;
           gap: 0;
         }
 
-        .nav-item:hover {
+        .sidebar-nav :global(.nav-item:hover) {
           color: #164d83;
           background: #edf6ff;
           transform: translateX(2px);
         }
 
-        .nav-item.collapsed:hover {
+        .sidebar-nav :global(.nav-item.collapsed:hover) {
           transform: none;
         }
 
-        .nav-item.active {
+        .sidebar-nav :global(.nav-item.active) {
           color: #164d83;
           font-weight: 600;
           background: linear-gradient(135deg, #e9f4ff, #f3f9ff);
@@ -401,7 +402,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           flex-shrink: 0;
         }
 
-        .back-site {
+        .sidebar-bottom :global(.back-site) {
           display: flex;
           align-items: center;
           gap: 7px;
@@ -415,12 +416,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           overflow: hidden;
         }
 
-        .back-site.collapsed {
+        .sidebar-bottom :global(.back-site.collapsed) {
           justify-content: center;
           padding: 7px 0;
         }
 
-        .back-site:hover {
+        .sidebar-bottom :global(.back-site:hover) {
           color: #255f9b;
           background: rgba(233,244,255,0.65);
         }
@@ -583,7 +584,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .mobile-menu-btn:hover { background: #edf6ff; }
         .mobile-menu-btn:active { transform: scale(0.96); }
 
-        .mobile-topbar-logo {
+        .mobile-topbar :global(.mobile-topbar-logo) {
           display: inline-flex;
           align-items: center;
           gap: 8px;
