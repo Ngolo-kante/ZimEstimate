@@ -83,17 +83,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (file.size > MAX_BYTES) return NextResponse.json({ error: 'That photo is over 10MB.' }, { status: 400 });
   const caption = typeof form?.get('caption') === 'string' ? String(form.get('caption')).trim().slice(0, 300) : '';
   const rawStep = form?.get('stageId');
-  const stepId = typeof rawStep === 'string' && /^[a-z_]{1,40}$/.test(rawStep) ? rawStep : null;
+  const stepId = typeof rawStep === 'string' && /^[a-z0-9_]{1,40}$/.test(rawStep) ? rawStep : null;
 
   const db = createServiceRoleClient();
   const { data: estimate } = await db.from('quick_boqs').select('user_id, project_type, answers').eq('id', quickId).single();
   const quick = estimate as { user_id: string | null; project_type: string; answers: Record<string, unknown> } | null;
   if (!quick) return NextResponse.json({ error: 'Estimate not found.' }, { status: 404 });
 
-  // A step id that is not one of this type's steps is dropped, not trusted.
+  // A step id that is not one of this estimate's steps is dropped, not trusted.
   let step: { id: string; title: string } | null = null;
   if (stepId) {
-    const { data: steps } = await db.rpc('quick_progress_steps' as never, { p_project_type: quick.project_type } as never);
+    const { data: steps } = await db.rpc('quick_job_steps' as never, { p_quick_boq_id: quickId } as never);
     step = ((steps as { id: string; title: string }[] | null) ?? []).find((s) => s.id === stepId) ?? null;
   }
 

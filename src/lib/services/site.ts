@@ -42,8 +42,9 @@ export interface SiteView {
   project: { id: string; name: string; location: string | null; status: string; usage_tracking_enabled: boolean; owner_name: string };
   /** Full builds: stages, each with its tasks. */
   stages: SiteStage[];
-  /** Quick estimates: one fixed list of steps for the job type. */
+  /** Quick estimates: the job's steps (its type's list until the owner edits it). */
   steps: SiteTask[];
+  stepsCustomised: boolean;
   materials: SiteMaterial[];
   recent_usage: SiteUsage[];
 }
@@ -75,7 +76,7 @@ export async function getSiteAccess(target: SiteTarget): Promise<SiteAccess | nu
 
 interface QuickSiteViewRow {
   access: SiteAccess;
-  estimate: { id: string; name: string; project_type: string; location: string | null; owner_name: string };
+  estimate: { id: string; name: string; project_type: string; location: string | null; owner_name: string; steps_customised?: boolean };
   steps: SiteTask[];
   materials: SiteMaterial[];
   recent_usage: SiteUsage[];
@@ -85,7 +86,7 @@ export async function getSiteView(target: SiteTarget): Promise<SiteView | null> 
   if (target.kind === 'project') {
     const { data, error } = await rpc('get_site_view', { p_project_id: target.id });
     if (error || !data) return null;
-    return { steps: [], ...(data as Omit<SiteView, 'steps'>) };
+    return { steps: [], stepsCustomised: false, ...(data as Omit<SiteView, 'steps' | 'stepsCustomised'>) };
   }
   const { data, error } = await rpc('get_quick_site_view', { p_quick_boq_id: target.id });
   if (error || !data) return null;
@@ -102,6 +103,7 @@ export async function getSiteView(target: SiteTarget): Promise<SiteView | null> 
     },
     stages: [],
     steps: row.steps,
+    stepsCustomised: Boolean(row.estimate.steps_customised),
     materials: row.materials,
     recent_usage: row.recent_usage,
   };
@@ -123,6 +125,14 @@ export const siteSetTask = (target: SiteTarget, taskId: string, completed: boole
   target.kind === 'project'
     ? call('site_set_task', { p_task_id: taskId, p_completed: completed })
     : call('quick_site_set_step', { p_quick_boq_id: target.id, p_step_id: taskId, p_completed: completed });
+
+/** Owner only: a quick estimate's own steps (the type's list until changed). */
+export const quickAddStep = (quickId: string, title: string) =>
+  call('quick_add_step', { p_quick_boq_id: quickId, p_title: title });
+export const quickRemoveStep = (quickId: string, stepId: string) =>
+  call('quick_remove_step', { p_quick_boq_id: quickId, p_step_id: stepId });
+export const quickResetSteps = (quickId: string) =>
+  call('quick_reset_steps', { p_quick_boq_id: quickId });
 
 export const siteSetStageStatus = (stageId: string, status: string) =>
   call('site_set_stage_status', { p_stage_id: stageId, p_status: status });

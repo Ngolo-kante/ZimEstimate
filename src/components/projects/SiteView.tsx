@@ -22,10 +22,11 @@ import Link from 'next/link';
 import { useToast } from '@/components/ui/Toast';
 import { prepareImageForUpload } from '@/lib/compressImage';
 import {
-  getSitePhotos, getSiteView, siteLogUsage, siteSetStageStatus, siteSetTask, uploadSitePhoto,
+  getSitePhotos, getSiteView, quickAddStep, quickRemoveStep, quickResetSteps,
+  siteLogUsage, siteSetStageStatus, siteSetTask, uploadSitePhoto,
   type SitePhoto, type SiteTarget, type SiteTask, type SiteView as SiteViewData,
 } from '@/lib/services/site';
-import { ArrowLeft, Camera, CheckCircle, Circle, CircleNotch, Image as ImageIcon, MapPin, Package, UserPlus } from '@phosphor-icons/react';
+import { ArrowLeft, Camera, CheckCircle, Circle, CircleNotch, Image as ImageIcon, MapPin, Package, Plus, Trash, UserPlus } from '@phosphor-icons/react';
 
 const STATUS_LABELS: Record<string, string> = {
   planning: 'Not started',
@@ -62,6 +63,9 @@ export default function SiteView({ target, embedded = false, onInvite }: SiteVie
   const [usage, setUsage] = useState({ itemId: '', quantity: '', date: today(), notes: '' });
   const [caption, setCaption] = useState('');
   const [photoStage, setPhotoStage] = useState('');
+  // The owner can change a quick estimate's steps; jobs of one type still vary.
+  const [editingSteps, setEditingSteps] = useState(false);
+  const [newStep, setNewStep] = useState('');
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
 
@@ -129,6 +133,29 @@ export default function SiteView({ target, embedded = false, onInvite }: SiteVie
       setUsage((u) => ({ ...u, itemId: '', quantity: '', notes: '' }));
       await refresh();
     }
+    setBusy(null);
+  };
+
+  const addStep = async () => {
+    const title = newStep.trim();
+    if (!title) return;
+    setBusy('step:add');
+    const { error } = await quickAddStep(id, title);
+    if (error) showError(error); else { setNewStep(''); await refresh(); }
+    setBusy(null);
+  };
+
+  const removeStep = async (stepId: string) => {
+    setBusy(`step:remove:${stepId}`);
+    const { error } = await quickRemoveStep(id, stepId);
+    if (error) showError(error); else await refresh();
+    setBusy(null);
+  };
+
+  const resetSteps = async () => {
+    setBusy('step:reset');
+    const { error } = await quickResetSteps(id);
+    if (error) showError(error); else { success('Back to the standard steps.'); await refresh(); }
     setBusy(null);
   };
 
@@ -265,12 +292,61 @@ export default function SiteView({ target, embedded = false, onInvite }: SiteVie
           <>
             <div className="block-head">
               <h2>Progress</h2>
-              <span className="muted">{stepsDone} of {view.steps.length} steps done</span>
+              <span className="block-head-end">
+                <span className="muted">{stepsDone} of {view.steps.length} steps done</span>
+                {isOwner && (
+                  <button type="button" className="link-btn" onClick={() => setEditingSteps((v) => !v)} aria-pressed={editingSteps}>
+                    {editingSteps ? 'Done' : 'Edit steps'}
+                  </button>
+                )}
+              </span>
             </div>
             <div className="bar progress-bar" role="progressbar" aria-valuemin={0} aria-valuemax={view.steps.length} aria-valuenow={stepsDone} aria-label="Steps done">
               <span style={{ width: `${view.steps.length ? (stepsDone / view.steps.length) * 100 : 0}%` }} />
             </div>
-            {renderTasks(view.steps)}
+            {view.steps.length === 0 && !editingSteps && (
+              <p className="muted">{isOwner ? 'No steps. Use Edit steps to add the ones this job needs.' : 'The owner has not set any steps yet.'}</p>
+            )}
+            {editingSteps ? (
+              <>
+                <ul className="tasks">
+                  {view.steps.map((step) => (
+                    <li key={step.id} className="step-edit">
+                      <span className="task-text">
+                        <span className="task-title">{step.title}</span>
+                        {step.is_completed && <span className="task-by">Done — removing it also removes the tick</span>}
+                      </span>
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        onClick={() => void removeStep(step.id)}
+                        disabled={busy === `step:remove:${step.id}`}
+                        aria-label={`Remove step: ${step.title}`}
+                      >
+                        {busy === `step:remove:${step.id}` ? <CircleNotch size={16} className="spin" /> : <Trash size={16} />}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <form className="step-add" onSubmit={(e) => { e.preventDefault(); void addStep(); }}>
+                  <input
+                    value={newStep}
+                    onChange={(e) => setNewStep(e.target.value)}
+                    placeholder="Add a step, e.g. ZINWA registration"
+                    maxLength={120}
+                    aria-label="New step"
+                  />
+                  <button type="submit" className="primary" disabled={!newStep.trim() || busy === 'step:add'}>
+                    {busy === 'step:add' ? <CircleNotch size={16} className="spin" /> : <Plus size={16} />} Add
+                  </button>
+                </form>
+                {view.stepsCustomised && (
+                  <button type="button" className="link-btn reset" onClick={() => void resetSteps()} disabled={busy === 'step:reset'}>
+                    Go back to the standard steps
+                  </button>
+                )}
+              </>
+            ) : renderTasks(view.steps)}
           </>
         ) : (
           <>
@@ -380,6 +456,16 @@ export default function SiteView({ target, embedded = false, onInvite }: SiteVie
         .site :global(.block) { margin-top: 16px; padding: 16px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface); }
         .site :global(.block-head) { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
         .site :global(.block-head h2) { margin: 0; }
+        .site :global(.block-head-end) { display: inline-flex; align-items: center; gap: 10px; }
+        .site :global(button.link-btn) { min-height: 36px; padding: 6px 10px; border: none; background: none; color: var(--color-accent); font-size: 0.85rem; }
+        .site :global(button.link-btn:hover) { text-decoration: underline; }
+        .site :global(button.link-btn.reset) { margin-top: 8px; padding-left: 0; }
+        .site :global(.step-edit) { display: flex; align-items: center; gap: 10px; padding: 6px 4px 6px 8px; border-radius: 8px; background: var(--color-background); }
+        .site :global(.step-edit .task-title) { font-size: 0.9rem; color: var(--color-text); }
+        .site :global(button.icon-btn) { flex-shrink: 0; width: 44px; padding: 0; color: var(--color-text-secondary); }
+        .site :global(button.icon-btn:hover) { color: var(--color-error, #b91c1c); border-color: currentColor; }
+        .site :global(.step-add) { display: flex; gap: 8px; margin-top: 10px; }
+        .site :global(.step-add input) { flex: 1; }
         .site :global(h2) { margin: 0 0 12px; font-size: 1.05rem; font-weight: 700; color: var(--color-text); }
         .site :global(h3) { margin: 16px 0 8px; font-size: 0.9rem; font-weight: 700; color: var(--color-text); }
         .site :global(.muted) { color: var(--color-text-secondary); font-size: 0.82rem; }
