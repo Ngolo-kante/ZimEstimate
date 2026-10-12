@@ -13,14 +13,15 @@ import { ProjectCardSkeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
-import { getProjects, deleteProject, archiveProject, getBOQItems } from '@/lib/services/projects';
+import { getProjects, deleteProject, archiveProject, unarchiveProject, getBOQItems } from '@/lib/services/projects';
 import { listSavedWork, QUICK_TYPE_LABELS, type SavedWorkItem, type SavedWorkKind } from '@/lib/services/savedWork';
-import { deleteQuickBOQ, getQuickBOQ } from '@/lib/services/quickBoq';
+import { deleteQuickBOQ, getQuickBOQ, setQuickBOQArchived } from '@/lib/services/quickBoq';
 import { clearOptimisticProjectCard, getOptimisticProjectCard } from '@/lib/projectCreationCache';
 import { supabase } from '@/lib/supabase';
 import { Project, ProjectStatus, ProjectScope } from '@/lib/database.types';
 import { useReveal } from '@/hooks/useReveal';
 import ProjectShareSheet from '@/components/projects/ProjectShareSheet';
+import QuickShareSheet from '@/components/projects/QuickShareSheet';
 import InviteModal from '@/components/projects/InviteModal';
 import { getSiteProjects, type SiteProjectSummary } from '@/lib/services/site';
 import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
@@ -204,8 +205,12 @@ function ProjectsContent() {
             result = result.filter((i) => i.name.toLowerCase().includes(q) || i.typeLabel.toLowerCase().includes(q));
         }
         if (typeFilter !== 'all') result = result.filter((i) => i.filterKey === typeFilter);
+        // Archive applies to quick estimates too: "Archived" shows the archived
+        // ones; any other status shows the ones still in use.
+        if (statusFilter === 'archived') result = result.filter((i) => i.status === 'archived');
+        else if (statusFilter !== 'all') result = result.filter((i) => i.status !== 'archived');
         return result;
-    }, [quickItems, searchQuery, typeFilter]);
+    }, [quickItems, searchQuery, typeFilter, statusFilter]);
 
     // Selecting a quick type hides full builds, and vice versa.
     const visibleProjects = useMemo(
@@ -317,17 +322,41 @@ function ProjectsContent() {
         const project = projects.find(p => p.id === projectId);
         if (!project) return;
 
-        const { error } = await archiveProject(projectId);
+        // Archive, or Restore when it is already archived — the same for
+        // full builds and quick estimates.
+        const restoring = project.status === 'archived';
+        const { project: updated, error } = restoring ? await unarchiveProject(projectId) : await archiveProject(projectId);
 
         if (error) {
-            showError('Failed to archive project. Please try again.');
+            showError(restoring ? 'Could not restore the project. Please try again.' : 'Failed to archive project. Please try again.');
         } else {
             // Update local state to reflect the change
             setProjects(projects.map(p =>
-                p.id === projectId ? { ...p, status: 'archived' as const } : p
+                p.id === projectId ? { ...p, status: updated?.status ?? (restoring ? 'draft' : 'archived') } : p
             ));
-            success(`"${project.name}" has been archived`);
+            success(restoring ? `"${project.name}" is back in your projects` : `"${project.name}" has been archived`);
         }
+    };
+
+    const handleQuickArchive = async (e: React.MouseEvent, item: SavedWorkItem) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpenMenuId(null);
+        const restoring = item.status === 'archived';
+        const { error } = await setQuickBOQArchived(item.id, !restoring);
+        if (error) {
+            showError(restoring ? 'Could not restore the estimate. Please try again.' : 'Could not archive the estimate. Please try again.');
+            return;
+        }
+        setQuickItems((current) => current.map((i) => (i.id === item.id ? { ...i, status: restoring ? null : 'archived' } : i)));
+        success(restoring ? `"${item.name}" is back in your projects` : `"${item.name}" has been archived`);
+    };
+
+    const handleQuickEdit = (e: React.MouseEvent, item: SavedWorkItem) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpenMenuId(null);
+        router.push(item.href);
     };
 
     const handleDelete = (e: React.MouseEvent, projectId: string) => {
@@ -373,15 +402,15 @@ function ProjectsContent() {
     // Same menu affordance as a full build; different table underneath. Archive
     // is absent on purpose — there are no stages to pause, and the user was
     // explicit that quick estimates get no lifecycle controls.
+    // Opens the same share sheet as a full build. "Copy link" used to copy
+    // the owner's own page address, which showed "not found" to anyone else;
+    // the sheet's view-only link is the one that opens for them.
+    const [quickShareTarget, setQuickShareTarget] = useState<SavedWorkItem | null>(null);
     const handleQuickShare = (e: React.MouseEvent, item: SavedWorkItem) => {
         e.preventDefault();
         e.stopPropagation();
         setOpenMenuId(null);
-        const url = `${window.location.origin}${item.href}`;
-        void navigator.clipboard.writeText(url).then(
-            () => success('Link copied to clipboard'),
-            () => showError('Could not copy the link'),
-        );
+        setQuickShareTarget(item);
     };
 
     // The list view only carries totals, not line items — fetched on demand,
@@ -637,7 +666,10 @@ function ProjectsContent() {
                         <Link href="/quick-projects" className="quick-project-action">
                             Quick Estimate <CaretRight size={15} weight="bold" />
                         </Link>
-                        <Link href="/boq/new">
+                        {/* The start page lists every kind of estimate — full house,
+                            by stage, from a plan, solar, borehole and the rest —
+                            rather than dropping straight into the house builder. */}
+                        <Link href="/estimate">
                             <Button
                                 icon={<Plus size={18} weight="bold" />}
                                 disabled={!canCreateProject()}
@@ -855,7 +887,7 @@ function ProjectsContent() {
                         <FolderOpen size={64} weight="light" />
                         <h3>No projects yet</h3>
                         <p>Create your first construction estimate to get started</p>
-                        <Link href="/boq/new">
+                        <Link href="/estimate">
                             <Button icon={<Plus size={18} />}>
                                 Create First Project
                             </Button>
@@ -915,6 +947,7 @@ function ProjectsContent() {
                                                 real project and a card that looks like a lesser
                                                 object teaches the wrong thing. */}
                                             <CardBadge variant="info">{item.typeLabel}</CardBadge>
+                                            {item.status === 'archived' && <CardBadge variant="default">Archived</CardBadge>}
                                         </div>
                                         <div className="menu-container" ref={openMenuId === item.id ? menuRef : null}>
                                             <button className="menu-btn" onClick={(e) => handleMenuToggle(e, item.id)}>
@@ -922,11 +955,17 @@ function ProjectsContent() {
                                             </button>
                                             {openMenuId === item.id && (
                                                 <div className="dropdown-menu">
+                                                    <button onClick={(e) => handleQuickEdit(e, item)}>
+                                                        <PencilSimple size={16} /> Edit
+                                                    </button>
                                                     <button onClick={(e) => handleQuickShare(e, item)}>
-                                                        <ShareNetwork size={16} /> Copy link
+                                                        <ShareNetwork size={16} /> Share a copy
                                                     </button>
                                                     <button onClick={(e) => { void handleQuickDownloadPdf(e, item); }}>
                                                         <FileArrowDown size={16} /> Download BOQ PDF
+                                                    </button>
+                                                    <button onClick={(e) => { void handleQuickArchive(e, item); }}>
+                                                        <Archive size={16} /> {item.status === 'archived' ? 'Restore' : 'Archive'}
                                                     </button>
                                                     <button className="danger" onClick={(e) => handleQuickDelete(e, item)}>
                                                         <Trash size={16} /> Delete
@@ -990,7 +1029,7 @@ function ProjectsContent() {
                                                     {project.owner_id === profile?.id && (
                                                         <>
                                                             <button onClick={(e) => handleArchive(e, project.id)}>
-                                                                <Archive size={16} /> Archive
+                                                                <Archive size={16} /> {project.status === 'archived' ? 'Restore' : 'Archive'}
                                                             </button>
                                                             <button className="danger" onClick={(e) => handleDelete(e, project.id)}>
                                                                 <Trash size={16} /> Delete
@@ -1061,11 +1100,17 @@ function ProjectsContent() {
                         <div className="bottom-sheet-handle" />
                         {quickTarget ? (
                             <>
+                                <button className="bottom-sheet-item" onClick={(e) => { handleQuickEdit(e, quickTarget); setMobileMenuProjectId(null); }}>
+                                    <PencilSimple size={20} /> Edit
+                                </button>
                                 <button className="bottom-sheet-item" onClick={(e) => { handleQuickShare(e, quickTarget); setMobileMenuProjectId(null); }}>
-                                    <ShareNetwork size={20} /> Copy link
+                                    <ShareNetwork size={20} /> Share a copy
                                 </button>
                                 <button className="bottom-sheet-item" onClick={(e) => { void handleQuickDownloadPdf(e, quickTarget); setMobileMenuProjectId(null); }}>
                                     <FileArrowDown size={20} /> Download BOQ PDF
+                                </button>
+                                <button className="bottom-sheet-item" onClick={(e) => { void handleQuickArchive(e, quickTarget); setMobileMenuProjectId(null); }}>
+                                    <Archive size={20} /> {quickTarget.status === 'archived' ? 'Restore' : 'Archive'}
                                 </button>
                                 <button className="bottom-sheet-item danger" onClick={(e) => { handleQuickDelete(e, quickTarget); setMobileMenuProjectId(null); }}>
                                     <Trash size={20} /> Delete
@@ -1091,7 +1136,7 @@ function ProjectsContent() {
                                 {projects.find((p) => p.id === mobileMenuProjectId)?.owner_id === profile?.id && (
                                     <>
                                         <button className="bottom-sheet-item" onClick={(e) => { handleArchive(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
-                                            <Archive size={20} /> Archive
+                                            <Archive size={20} /> {projects.find((p) => p.id === mobileMenuProjectId)?.status === 'archived' ? 'Restore' : 'Archive'}
                                         </button>
                                         <button className="bottom-sheet-item danger" onClick={(e) => { handleDelete(e, mobileMenuProjectId); setMobileMenuProjectId(null); }}>
                                             <Trash size={20} /> Delete
@@ -2019,6 +2064,15 @@ function ProjectsContent() {
                     isOpen
                     onClose={() => setShareProjectId(null)}
                     project={projects.find((p) => p.id === shareProjectId)!}
+                />
+            )}
+            {quickShareTarget && (
+                <QuickShareSheet
+                    isOpen
+                    onClose={() => setQuickShareTarget(null)}
+                    quickId={quickShareTarget.id}
+                    name={quickShareTarget.name}
+                    typeLabel={quickShareTarget.typeLabel}
                 />
             )}
             {inviteProjectId && projects.find((p) => p.id === inviteProjectId) && (

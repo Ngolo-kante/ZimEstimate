@@ -119,7 +119,7 @@ function DashboardContent() {
           <Buildings size={64} weight="light" />
           <h2>Welcome to ZimEstimate</h2>
           <p>Create your first project to start tracking budgets and purchases.</p>
-          <Link href="/boq/new">
+          <Link href="/estimate">
             <Button icon={<Plus size={18} />}>Create Project</Button>
           </Link>
         </div>
@@ -212,7 +212,7 @@ function DashboardContent() {
             </div>
           </div>
           <div className="hero-actions">
-            <Link href="/boq/new">
+            <Link href="/estimate">
               <Button icon={<Plus size={16} />}>New Project</Button>
             </Link>
             <Button variant="secondary" icon={<DownloadSimple size={16} />} onClick={() => window.print()}>
@@ -327,7 +327,7 @@ function DashboardContent() {
               <div className="empty-projects">
                 <Buildings size={40} weight="light" />
                 <p>No projects yet.</p>
-                <Link href="/boq/new">
+                <Link href="/estimate">
                   <Button size="sm" icon={<Plus size={16} />}>Create Project</Button>
                 </Link>
               </div>

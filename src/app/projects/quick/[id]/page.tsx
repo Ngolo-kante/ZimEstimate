@@ -20,7 +20,6 @@ import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import {
   getQuickBOQ,
-  startSharingQuickBOQ,
   stopSharingQuickBOQ,
   updateQuickBOQ,
   persistQuickBOQSession,
@@ -36,6 +35,7 @@ import ComplianceCard from '@/components/quick-projects/ComplianceCard';
 import NextStepsCard from '@/components/quick-projects/NextStepsCard';
 import type { ComplianceStatus } from '@/lib/quick-projects/compliance';
 import { QUICK_TYPE_LABELS } from '@/lib/services/savedWork';
+import QuickShareSheet from '@/components/projects/QuickShareSheet';
 import { estimateName as estimateNameFor, quickEstimateTotal } from '@/lib/quick-projects/savedEstimate';
 import type { BOQItem, LaborConfig, QuickBOQ } from '@/lib/quick-projects/engine/types';
 import { ArrowLeft, PencilSimple, ShareNetwork, Download, Warning } from '@phosphor-icons/react';
@@ -199,38 +199,21 @@ function SavedQuickEstimate() {
     if (error) showError(error);
   }, [boq, showError]);
 
-  const handleShare = useCallback(async () => {
+  // The same "Share a copy" sheet as the card menu and full projects: PDF,
+  // summary, and the view-only link (/estimate/<token>), which it creates on
+  // request. Re-read on close so "Stop sharing" appears once a link exists.
+  const [shareOpen, setShareOpen] = useState(false);
+  const handleShare = useCallback(() => {
     if (!boq) return;
-    /* Shares a link anyone can open (/estimate/<token>). The token is made
-       on the first share and kept until the owner stops sharing; it shows
-       the estimate only — not the savings, dates or compliance on this page.
-       Before this, saved estimates were owner-only and the link showed
-       "not found" to whoever received it. */
-    const { token, error } = await startSharingQuickBOQ(boq.id);
-    if (error || !token) {
-      showError('Could not create a share link — check your connection and try again.');
-      return;
-    }
-    if (boq.shareToken !== token) setBoq({ ...boq, shareToken: token });
-
-    const link = `${window.location.origin}/estimate/${token}`;
-    const text = [
-      `ZimEstimate — ${estimateName(boq)}`,
-      `Materials: $${Math.round(total).toLocaleString()} · ${boq.boqItems.filter((i) => i.included !== false && !i.owned).length} items`,
-    ].join('\n');
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: estimateName(boq), text, url: link });
-        captureProductEvent('estimate_shared', { estimate: `saved_${boq.projectType}`, method: 'share_sheet' });
-        return;
-      }
-      await navigator.clipboard.writeText(`${text}\n\n${link}`);
-      success('Link copied — anyone with it can view this estimate.');
-      captureProductEvent('estimate_shared', { estimate: `saved_${boq.projectType}`, method: 'clipboard' });
-    } catch {
-      /* dismissed by the user — nothing to report */
-    }
-  }, [boq, total, success, showError]);
+    setShareOpen(true);
+    captureProductEvent('estimate_shared', { estimate: `saved_${boq.projectType}`, method: 'share_sheet' });
+  }, [boq]);
+  const closeShare = useCallback(async () => {
+    setShareOpen(false);
+    if (!boq) return;
+    const { boq: fresh } = await getQuickBOQ(boq.id);
+    if (fresh && fresh.shareToken !== boq.shareToken) setBoq({ ...boq, shareToken: fresh.shareToken });
+  }, [boq]);
 
   const handleStopSharing = useCallback(async () => {
     if (!boq) return;
@@ -401,6 +384,16 @@ function SavedQuickEstimate() {
           .act span { display: none; }
         }
       `}</style>
+
+      {shareOpen && (
+        <QuickShareSheet
+          isOpen
+          onClose={() => void closeShare()}
+          quickId={boq.id}
+          name={estimateName(boq)}
+          typeLabel={QUICK_TYPE_LABELS[boq.projectType] ?? boq.projectType}
+        />
+      )}
     </div>
   );
 }

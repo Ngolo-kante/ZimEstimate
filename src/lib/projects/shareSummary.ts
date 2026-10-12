@@ -30,6 +30,9 @@ const STAGE_LABELS: Record<string, string> = {
 };
 const STAGE_ORDER = Object.keys(STAGE_LABELS);
 
+/** "pump_and_controls" → "Pump and controls" for categories without a label. */
+const readable = (key: string) => (key.charAt(0).toUpperCase() + key.slice(1)).replace(/[_-]+/g, ' ');
+
 const usd = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`;
 
 const lineTotal = (item: ShareSummaryItem) => {
@@ -47,7 +50,7 @@ export function projectShareSummary(project: ShareSummaryProject, items: ShareSu
   const stages = [...byStage.entries()]
     .filter(([, value]) => value > 0)
     .sort(([a], [b]) => (STAGE_ORDER.indexOf(a) + 1 || 99) - (STAGE_ORDER.indexOf(b) + 1 || 99))
-    .map(([stage, value]) => `• ${STAGE_LABELS[stage] ?? stage}: ${usd(value)}`);
+    .map(([stage, value]) => `• ${STAGE_LABELS[stage] ?? readable(stage)}: ${usd(value)}`);
 
   return [
     `${project.name}${project.location ? ` — ${project.location}` : ''}`,

@@ -72,6 +72,7 @@ function toQuickBOQ(row: DBQuickBOQ): QuickBOQ {
     fundsSavedUsd: Number(row.funds_saved_usd) || 0,
     compliance: (row.compliance ?? {}) as Record<string, ComplianceStatus>,
     shareToken: (row as { share_token?: string | null }).share_token ?? null,
+    archivedAt: (row as { archived_at?: string | null }).archived_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -149,6 +150,15 @@ export async function listQuickBOQs(
   const { data, error } = await query;
   if (error) return { boqs: [], error: new Error(error.message) };
   return { boqs: (data as QuickBoqRow[]).map(toQuickBOQ), error: null };
+}
+
+/** Put a quick estimate away, or bring it back, as projects can be. */
+export async function setQuickBOQArchived(id: string, archived: boolean): Promise<{ error: Error | null }> {
+  const { error } = await supabase
+    .from('quick_boqs')
+    .update({ archived_at: archived ? new Date().toISOString() : null } as never)
+    .eq('id', id);
+  return { error: error ? new Error(error.message) : null };
 }
 
 // ─── Sharing by link ──────────────────────────────────────────────────────────

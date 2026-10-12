@@ -81,8 +81,8 @@ export async function listSavedWork(): Promise<{ items: SavedWorkItem[]; partial
       filterKey: type,
       totalUsd: quickTotal(q.boqItems),
       updatedAt: q.updatedAt || q.createdAt,
-      location: null,
-      status: null,
+      location: typeof q.answers?.project_location === 'string' ? q.answers.project_location : null,
+      status: q.archivedAt ? 'archived' : null,
       // Opens the saved BOQ. This used to point at the quick list page with an
       // id it never read, whose own cards then pushed to the blank wizard — so
       // clicking a saved estimate threw the user back to the form.

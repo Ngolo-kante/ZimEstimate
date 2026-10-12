@@ -141,6 +141,8 @@ export interface QuickBOQ {
   compliance: Record<string, ComplianceStatus>;
   /** Set while the estimate is shared by link; null when it is private. */
   shareToken?: string | null;
+  /** Set when put away from My Projects (migration 059). */
+  archivedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
