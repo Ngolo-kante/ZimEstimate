@@ -8,7 +8,8 @@ import { useToast } from '@/components/ui/Toast';
 import { BOQItem, BOQCategory, PurchaseRecord } from '@/lib/database.types';
 import { StageBudgetStats } from '@/lib/services/stages';
 import { addBOQItem } from '@/lib/services/projects';
-import { materials, getBestPrice } from '@/lib/materials';
+import { useCatalog } from '@/lib/catalog/useCatalog';
+import { getLatestPrice } from '@/lib/services/prices';
 import { Package, CaretDown, CaretUp, Trash, ShoppingCart, Plus, TrendUp, TrendDown, Minus, MagnifyingGlass, ClipboardText, Check, Warning, Clock, Funnel } from '@phosphor-icons/react';
 
 type StageCategory = BOQCategory | 'labor';
@@ -151,6 +152,9 @@ export default function StageBOQSection({
     const columnsMenuRef = useRef<HTMLDivElement | null>(null);
     const { exchangeRate, formatPrice } = useCurrency();
     const { success, error: showError } = useToast();
+    // The catalog as an admin has edited it, so added products can be picked
+    // and hidden ones are not offered.
+    const { visible: materials } = useCatalog();
 
     useEffect(() => {
         if (!isColumnsOpen) return;
@@ -173,7 +177,7 @@ export default function StageBOQSection({
             return laborItems;
         }
         return materials.filter(m => m.milestones.includes(category));
-    }, [category, stageScope]);
+    }, [materials, category, stageScope]);
 
     const handleQuantityUpdate = async (item: BOQItem, newQuantity: number) => {
         await onItemUpdate(item.id, {
@@ -252,9 +256,11 @@ export default function StageBOQSection({
             return;
         }
 
-        const bestPrice = getBestPrice(material.id);
+        // The price the public sees: an admin's published price, a recent
+        // scrape, or the reference price — the same rule as the price list.
+        const bestPrice = await getLatestPrice(material.id);
         if (!bestPrice) {
-            showError('No pricing available for this material');
+            showError('This material has no price yet. Ask an admin to publish one.');
             return;
         }
 

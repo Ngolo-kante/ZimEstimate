@@ -7,7 +7,8 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/server/auth';
 import { createServiceRoleClient } from '@/lib/supabase';
-import { getBestPrice, materials } from '@/lib/materials';
+import { getBestPrice } from '@/lib/materials';
+import { loadServerCatalog } from '@/lib/catalog/serverCatalog';
 import { MANUAL_PRICE_SOURCE, selectPublishedObservation, type PublishedObservation } from '@/lib/pricing/publishedPrice';
 import { estimateName } from '@/lib/quick-projects/savedEstimate';
 import { QUICK_TYPE_LABELS } from '@/lib/quick-projects/typeLabels';
@@ -76,8 +77,10 @@ export async function GET(request: Request) {
 
     // Price health, by the same rule the public pages use (lib/pricing).
     const obs = (observations.data ?? []) as PublishedObservation[];
-    const priceHealth = { manual: 0, scraped: 0, reference: 0, unpriced: 0, total: materials.length };
-    for (const material of materials) {
+    // What the public sees: the catalog with admin edits, hidden ones left out.
+    const shown = (await loadServerCatalog(db)).all.filter((m) => !m.hidden);
+    const priceHealth = { manual: 0, scraped: 0, reference: 0, unpriced: 0, total: shown.length };
+    for (const material of shown) {
       const baseline = getBestPrice(material.id);
       const published = selectPublishedObservation(obs.filter((o) => o.material_key === material.id), material.unit, baseline?.priceUsd, now);
       if (published?.source_name === MANUAL_PRICE_SOURCE) priceHealth.manual += 1;

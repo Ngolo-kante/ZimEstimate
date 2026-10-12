@@ -22,7 +22,8 @@ export function selectPublishedObservation(
   const valid = rows.filter((row) => {
     if (!row.price_usd || row.price_usd <= 0) return false;
     if (!['auto', 'confirmed'].includes(row.review_status)) return false;
-    if (row.unit && row.unit.trim().toLowerCase() !== unit.trim().toLowerCase()) return false;
+    // An empty expected unit means the caller does not know it; skip the check.
+    if (unit.trim() && row.unit && row.unit.trim().toLowerCase() !== unit.trim().toLowerCase()) return false;
     if (row.source_name === MANUAL_PRICE_SOURCE) return row.review_status === 'confirmed';
     const age = now - new Date(row.scraped_at).getTime();
     if (!Number.isFinite(age) || age < 0 || age > 30 * 24 * 60 * 60 * 1000) return false;

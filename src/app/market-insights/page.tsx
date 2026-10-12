@@ -25,6 +25,8 @@ import {
   getBestPrice,
 } from '@/lib/materials';
 import { selectPublishedObservation } from '@/lib/pricing/publishedPrice';
+import { mergeCatalog } from '@/lib/catalog/mergeCatalog';
+import { loadCatalogRows } from '@/lib/catalog/useCatalog';
 
 // Material categories for filtering
 const categories = [
@@ -89,7 +91,9 @@ export default function MarketInsightsPage() {
       // "Price Movers" headline stats, so a page captioned "Real-time
       // construction material prices tracked across Zimbabwe" was reporting
       // movements that had never happened.
-      const baseItems: MarketItem[] = materials.map((m) => {
+      // The catalog as an admin has edited it: renamed, added, hidden.
+      const catalog = mergeCatalog(materials, await loadCatalogRows()).filter((m) => !m.hidden);
+      const baseItems: MarketItem[] = catalog.map((m) => {
         const bestPrice = getBestPrice(m.id);
 
         return {

@@ -11,6 +11,8 @@ import LoadingState from '@/components/ui/LoadingState';
 import ErrorState from '@/components/ui/ErrorState';
 import { listAllUsers, suspendUser, reactivateUser, type UserListRow } from '@/lib/services/admin-analytics';
 import type { UserType } from '@/lib/database.types';
+import { supabase } from '@/lib/supabase';
+import type { UserActivity } from '@/app/api/admin/users/activity/route';
 import {
   ArrowLeft,
   MagnifyingGlass,
@@ -20,6 +22,16 @@ import {
   ArrowLeft as PrevIcon,
   ArrowRight as NextIcon,
 } from '@phosphor-icons/react';
+
+/** "3 days ago", or the date once it is more than a month back. */
+function ago(at: string | null): string {
+  if (!at) return 'Never';
+  const days = Math.floor((new Date().getTime() - new Date(at).getTime()) / 86_400_000);
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 30) return `${days} days ago`;
+  return new Date(at).toLocaleDateString();
+}
 
 const USER_TYPE_LABELS: Record<UserType, string> = {
   builder: 'Builder',
@@ -40,6 +52,9 @@ export default function AdminUsersPage() {
   const [actionUser, setActionUser] = useState<UserListRow | null>(null);
   const [actionType, setActionType] = useState<'suspend' | 'reactivate' | null>(null);
   const [processing, setProcessing] = useState(false);
+  // Saved work and last sign-in for the people on this page, from the server
+  // (the browser can see neither). Missing until it arrives; never blocks the list.
+  const [activity, setActivity] = useState<Record<string, UserActivity>>({});
 
   const PAGE_SIZE = 25;
 
@@ -55,6 +70,20 @@ export default function AdminUsersPage() {
       });
       setUsers(result.users);
       setTotal(result.total);
+      void (async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session || result.users.length === 0) return;
+          const response = await fetch('/api/admin/users/activity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ ids: result.users.map((u) => u.id) }),
+          });
+          if (response.ok) setActivity((await response.json()).activity ?? {});
+        } catch {
+          // The columns show a dash; the list itself is unaffected.
+        }
+      })();
     } catch (error) {
       // Without this the spinner stayed up for good on any rejection.
       setLoadError(error instanceof Error ? error.message : 'Unknown error');
@@ -104,6 +133,7 @@ export default function AdminUsersPage() {
           <input
             type="text"
             placeholder="Search by name or email..."
+            aria-label="Search users"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             className="search-input"
@@ -112,10 +142,12 @@ export default function AdminUsersPage() {
         <select
           value={typeFilter}
           onChange={(e) => { setTypeFilter(e.target.value as UserType | ''); setPage(1); }}
+          aria-label="Filter by account type"
           className="type-filter"
         >
           <option value="">All types</option>
           <option value="builder">Builders</option>
+          <option value="contractor">Contractors</option>
           <option value="supplier">Suppliers</option>
           <option value="admin">Admins</option>
         </select>
@@ -143,7 +175,8 @@ export default function AdminUsersPage() {
                 <div className="table-header">
                   <span>User</span>
                   <span>Type</span>
-                  <span>Tier</span>
+                  <span>Saved work</span>
+                  <span>Last signed in</span>
                   <span>Joined</span>
                   <span>Status</span>
                   <span>Actions</span>
@@ -162,8 +195,23 @@ export default function AdminUsersPage() {
                         {USER_TYPE_LABELS[u.user_type]}
                       </span>
                     </span>
-                    <span className="tier-label">{u.tier}</span>
-                    <span className="date-label">{new Date(u.created_at).toLocaleDateString()}</span>
+                    <span className="work-label">
+                      {activity[u.id] ? (
+                        activity[u.id].projects + activity[u.id].quickEstimates === 0
+                          ? <span className="muted">None yet</span>
+                          : <>
+                              {activity[u.id].projects} project{activity[u.id].projects === 1 ? '' : 's'}
+                              {' · '}
+                              {activity[u.id].quickEstimates} estimate{activity[u.id].quickEstimates === 1 ? '' : 's'}
+                              {activity[u.id].lastWorkAt && <span className="muted"> · edited {ago(activity[u.id].lastWorkAt).toLowerCase()}</span>}
+                            </>
+                      ) : <span className="muted">—</span>}
+                    </span>
+                    <span className="date-label">{activity[u.id] ? ago(activity[u.id].lastSignInAt) : '—'}</span>
+                    <span className="date-label">
+                      {new Date(u.created_at).toLocaleDateString()}
+                      {u.tier !== 'free' && <span className="tier-label"> · {u.tier}</span>}
+                    </span>
                     <span>
                       {u.is_suspended ? (
                         <span className="status-suspended">Suspended</span>
@@ -240,7 +288,7 @@ export default function AdminUsersPage() {
       />
 
       <style jsx>{`
-        .admin-page { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+        .admin-page { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
         .admin-loading { text-align: center; padding: 60px; color: #64748b; }
         .admin-header { margin-bottom: 24px; }
         .back-link {
@@ -262,12 +310,12 @@ export default function AdminUsersPage() {
         .table-loading, .empty-state { text-align: center; padding: 40px; color: #94a3b8; }
         .users-table { display: flex; flex-direction: column; }
         .table-header {
-          display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1.5fr;
+          display: grid; grid-template-columns: 2fr 0.9fr 1.6fr 1fr 1fr 0.8fr 1.2fr; gap: 8px;
           padding: 8px 12px; font-size: 11px; font-weight: 600; color: #94a3b8;
           text-transform: uppercase; border-bottom: 1px solid #f1f5f9;
         }
         .table-row {
-          display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1.5fr;
+          display: grid; grid-template-columns: 2fr 0.9fr 1.6fr 1fr 1fr 0.8fr 1.2fr; gap: 8px;
           padding: 12px; border-bottom: 1px solid #f8fafc; align-items: center; font-size: 13px;
         }
         .table-row.suspended { background: #fef2f2; }
@@ -282,6 +330,9 @@ export default function AdminUsersPage() {
         .type-builder { background: #dbeafe; color: #1e40af; }
         .type-supplier { background: #dcfce7; color: #166534; }
         .type-admin { background: #fef3c7; color: #92400e; }
+        .type-contractor { background: #ede9fe; color: #5b21b6; }
+        .work-label { font-size: 13px; color: #334155; }
+        .muted { color: #94a3b8; }
         .tier-label { font-size: 13px; color: #64748b; }
         .date-label { font-size: 12px; color: #94a3b8; }
         .status-active { font-size: 12px; color: #16a34a; font-weight: 600; }
@@ -290,9 +341,10 @@ export default function AdminUsersPage() {
         .pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px 0 0; }
         .page-info { font-size: 13px; color: #64748b; }
         @media (max-width: 768px) {
-          .table-header { grid-template-columns: 2fr 1fr 1fr; }
-          .table-row { grid-template-columns: 2fr 1fr 1fr; }
-          .table-header span:nth-child(n+4), .table-row > *:nth-child(n+4) { display: none; }
+          /* User, saved work and actions on a phone. */
+          .table-header, .table-row { grid-template-columns: 1.4fr 1fr auto; }
+          .table-header span:nth-child(2), .table-row > *:nth-child(2),
+          .table-header span:nth-child(n+4):not(:last-child), .table-row > *:nth-child(n+4):not(:last-child) { display: none; }
           .actions-cell { display: flex; }
         }
       `}</style>

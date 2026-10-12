@@ -512,6 +512,49 @@ export interface Database {
                     created_at?: string;
                 };
             };
+            material_catalog: {
+                Row: {
+                    material_key: string;
+                    name: string | null;
+                    description: string | null;
+                    category: string | null;
+                    subcategory: string | null;
+                    unit: string | null;
+                    milestones: string[] | null;
+                    is_custom: boolean;
+                    is_hidden: boolean;
+                    featured_rank: number | null;
+                    updated_by: string | null;
+                    updated_at: string;
+                };
+                Insert: {
+                    material_key: string;
+                    name?: string | null;
+                    description?: string | null;
+                    category?: string | null;
+                    subcategory?: string | null;
+                    unit?: string | null;
+                    milestones?: string[] | null;
+                    is_custom?: boolean;
+                    is_hidden?: boolean;
+                    featured_rank?: number | null;
+                    updated_by?: string | null;
+                    updated_at?: string;
+                };
+                Update: {
+                    name?: string | null;
+                    description?: string | null;
+                    category?: string | null;
+                    subcategory?: string | null;
+                    unit?: string | null;
+                    milestones?: string[] | null;
+                    is_custom?: boolean;
+                    is_hidden?: boolean;
+                    featured_rank?: number | null;
+                    updated_by?: string | null;
+                    updated_at?: string;
+                };
+            };
             quick_boq_shares: {
                 Row: {
                     id: string;

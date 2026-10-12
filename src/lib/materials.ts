@@ -16,6 +16,10 @@ export interface Material {
     unit: string;
     specifications?: string;
     milestones: string[]; // Which milestones use this material
+    /** Added by an admin (material_catalog), not built in. */
+    custom?: boolean;
+    /** Hidden by an admin from public lists and pickers. */
+    hidden?: boolean;
 }
 
 export interface MaterialPrice {

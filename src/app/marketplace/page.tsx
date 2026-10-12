@@ -53,12 +53,12 @@ import {
   X,
 } from '@phosphor-icons/react';
 import {
-  materials,
   getPricesForMaterial,
   categoryInfo,
   type Material,
   type MaterialCategory,
 } from '@/lib/materials';
+import { useCatalog } from '@/lib/catalog/useCatalog';
 
 // Icon mapping
 const categoryIcons: Record<string, React.ComponentType<{ size?: number; weight?: 'light' | 'regular' | 'bold' }>> = {
@@ -85,6 +85,8 @@ interface MaterialWithPrice extends Material {
 }
 
 export default function MarketplacePage() {
+  // The catalog as an admin has edited it (renamed, added, hidden).
+  const { visible: materials } = useCatalog();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<MaterialCategory | 'all'>('all');
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialWithPrice | null>(null);
@@ -114,16 +116,21 @@ export default function MarketplacePage() {
 
 
   // Load live prices on mount
+  // Runs again once admin catalog edits load; a slower earlier answer must
+  // not land after a newer one and drop prices for added products.
   useEffect(() => {
+    let active = true;
     const loadPrices = async () => {
       setIsLoadingPrices(true);
       const materialKeys = materials.map(m => m.id);
       const prices = await getBatchPrices(materialKeys);
+      if (!active) return;
       setLivePrices(prices);
       setIsLoadingPrices(false);
     };
     loadPrices();
-  }, []);
+    return () => { active = false; };
+  }, [materials]);
 
   // Load detailed price when material is selected
   useEffect(() => {
@@ -270,7 +277,7 @@ export default function MarketplacePage() {
     }
 
     return result;
-  }, [searchQuery, selectedCategory]);
+  }, [materials, searchQuery, selectedCategory]);
 
   // Group materials by category
   const groupedMaterials = useMemo(() => {
@@ -297,12 +304,12 @@ export default function MarketplacePage() {
       (m) => m.id !== selectedMaterial.id && m.category === selectedMaterial.category && m.subcategory !== selectedMaterial.subcategory
     );
     return [...sameSubcategory, ...sameCategory].slice(0, 4);
-  }, [selectedMaterial]);
+  }, [materials, selectedMaterial]);
 
   const compareTarget = useMemo(() => {
     if (!compareTargetId) return null;
     return materials.find((m) => m.id === compareTargetId) || null;
-  }, [compareTargetId]);
+  }, [materials, compareTargetId]);
 
   useEffect(() => {
     if (!selectedMaterial) return;
@@ -422,6 +429,8 @@ export default function MarketplacePage() {
                                 <span className={`source-badge ${livePrice.source}`}>
                                   {livePrice.source === 'scraped' ? (
                                     <><Database size={10} /> Live</>
+                                  ) : livePrice.source === 'manual' ? (
+                                    <><Info size={10} /> Updated by ZimEstimate</>
                                   ) : (
                                     <><Info size={10} /> Static</>
                                   )}
@@ -539,7 +548,7 @@ export default function MarketplacePage() {
                         <div className="info-item">
                           <span className="info-label">Source</span>
                           <span className={`info-value source ${selectedPriceDetail.source}`}>
-                            {selectedPriceDetail.source === 'scraped' ? 'Live Data' : 'Static'}
+                            {selectedPriceDetail.source === 'scraped' ? 'Live Data' : selectedPriceDetail.source === 'manual' ? 'Updated by ZimEstimate' : 'Static'}
                           </span>
                         </div>
                         <div className="info-item">
@@ -800,7 +809,7 @@ export default function MarketplacePage() {
                         <span className="supplier-name">{row.supplierName}</span>
                         <span className="supplier-location">{row.location || 'Location TBD'}</span>
                         <span className={`source-badge ${row.source}`}>
-                          {row.source === 'scraped' ? 'Live' : 'Static'}
+                          {row.source === 'scraped' ? 'Live' : row.source === 'manual' ? 'Updated by ZimEstimate' : 'Static'}
                         </span>
                       </div>
                       <div className="comparison-price">
@@ -1120,6 +1129,11 @@ export default function MarketplacePage() {
         .source-badge.static {
           background: var(--color-mist);
           color: var(--color-text-secondary);
+        }
+
+        .source-badge.manual {
+          background: rgba(46, 108, 246, 0.12);
+          color: var(--color-accent);
         }
 
         .last-updated {

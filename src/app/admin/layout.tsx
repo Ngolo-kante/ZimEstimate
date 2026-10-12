@@ -27,23 +27,44 @@ import {
 
 // Material Prices, Payouts, Featured, Reports and Settings were removed
 // because they showed hardcoded arrays or buttons attached to nothing
-// (Payouts showed invented money). "Prices" (/admin/content) is the
+// (Payouts showed invented money). "Catalog & prices" (/admin/content) is the
 // replacement, and it is real: every catalog material with the price the
 // public sees, which an admin can override with a confirmed "Admin manual
 // price" row in price_observations (lib/pricing/publishedPrice.ts).
-const navItems = [
-  { label: 'Overview', href: '/admin', icon: SquaresFour },
-  { label: 'Revenue', href: '/admin/revenue', icon: ChartLine },
-  { label: 'Users', href: '/admin/users', icon: Users },
-  { label: 'Suppliers', href: '/admin/suppliers', icon: Storefront },
-  { label: 'Performance', href: '/admin/performance', icon: Gauge },
-  { label: 'Prices', href: '/admin/content', icon: Tag },
-  { label: 'Tickets', href: '/admin/tickets', icon: ChatCircle },
-  { label: 'Agreements', href: '/admin/agreements', icon: FileText },
-  { label: 'Packages', href: '/admin/packages', icon: Package },
-  { label: 'Audit Logs', href: '/admin/logs', icon: ClipboardText },
-  { label: 'Scraper', href: '/admin/scraper', icon: Robot },
-  { label: 'Review Queue', href: '/admin/scraper-review', icon: MagnifyingGlass },
+// Grouped by the job at hand rather than one list of twelve.
+const navGroups = [
+  {
+    title: 'Insights',
+    items: [
+      { label: 'Overview', href: '/admin', icon: SquaresFour },
+      { label: 'Revenue', href: '/admin/revenue', icon: ChartLine },
+    ],
+  },
+  {
+    title: 'People',
+    items: [
+      { label: 'Users', href: '/admin/users', icon: Users },
+      { label: 'Suppliers', href: '/admin/suppliers', icon: Storefront },
+      { label: 'Performance', href: '/admin/performance', icon: Gauge },
+      { label: 'Agreements', href: '/admin/agreements', icon: FileText },
+    ],
+  },
+  {
+    title: 'Catalog & prices',
+    items: [
+      { label: 'Catalog & prices', href: '/admin/content', icon: Tag },
+      { label: 'Packages', href: '/admin/packages', icon: Package },
+      { label: 'Scraper', href: '/admin/scraper', icon: Robot },
+      { label: 'Review queue', href: '/admin/scraper-review', icon: MagnifyingGlass },
+    ],
+  },
+  {
+    title: 'Support & records',
+    items: [
+      { label: 'Tickets', href: '/admin/tickets', icon: ChatCircle },
+      { label: 'Audit logs', href: '/admin/logs', icon: ClipboardText },
+    ],
+  },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -153,24 +174,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </Link>
 
-        <nav className="sidebar-nav">
-          {navItems.map(({ label, href, icon: Icon }) => {
-            const active = href === '/admin' ? pathname === href : pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`nav-item${active ? ' active' : ''}${collapsed ? ' collapsed' : ''}`}
-                title={collapsed ? label : undefined}
-              >
-                <span className="nav-icon-wrap">
-                  <Icon size={18} weight={active ? 'fill' : 'regular'} />
-                  {active && <span className="active-dot" />}
-                </span>
-                <span className={`nav-label${collapsed ? ' hidden' : ''}`}>{label}</span>
-              </Link>
-            );
-          })}
+        <nav className="sidebar-nav" aria-label="Admin sections">
+          {navGroups.map((group) => (
+            <div key={group.title} className="nav-group">
+              {/* Collapsed, the group name gives way to a thin rule. */}
+              <span className={`nav-group-title${collapsed ? ' collapsed' : ''}`}>{collapsed ? '' : group.title}</span>
+              {group.items.map(({ label, href, icon: Icon }) => {
+                const active = href === '/admin' ? pathname === href : pathname.startsWith(href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`nav-item${active ? ' active' : ''}${collapsed ? ' collapsed' : ''}`}
+                    title={collapsed ? label : undefined}
+                    aria-label={collapsed ? label : undefined}
+                    aria-current={active ? 'page' : undefined}
+                  >
+                    <span className="nav-icon-wrap">
+                      <Icon size={18} weight={active ? 'fill' : 'regular'} aria-hidden="true" />
+                      {active && <span className="active-dot" />}
+                    </span>
+                    <span className={`nav-label${collapsed ? ' hidden' : ''}`}>{label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         <div className="sidebar-bottom">
@@ -312,12 +341,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         .sidebar-nav {
           flex: 1;
-          padding: 10px 10px;
+          padding: 6px 10px 10px;
           display: flex;
           flex-direction: column;
-          gap: 3px;
+          gap: 10px;
           overflow-y: auto;
           overflow-x: hidden;
+        }
+
+        .nav-group {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .nav-group-title {
+          padding: 8px 12px 4px;
+          font-size: 0.65rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #7a8aa3;
+          white-space: nowrap;
+          overflow: hidden;
+        }
+
+        .nav-group-title.collapsed {
+          height: 1px;
+          padding: 0;
+          margin: 6px 12px;
+          background: rgba(211,211,215,0.8);
         }
 
         .sidebar-nav :global(.nav-item) {
