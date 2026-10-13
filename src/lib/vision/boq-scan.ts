@@ -15,8 +15,7 @@
 // fields directly, which is why this reuses the Gemini client already here
 // rather than adding an OCR vendor.
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { PLAN_MODELS } from './model';
+import { generateWithFailover } from '@/lib/ai/gemini';
 
 export interface ScannedBoqItem {
   /** Exactly as written on the page, before any catalogue matching. */
@@ -78,16 +77,6 @@ Rules:
 - Ignore subtotal, VAT and grand total rows. Those are computed, not line items.
 - confidence is about legibility, not correctness: 95+ for clear print, 70–90 for clear handwriting, below 60 for anything smudged, crossed out, or ambiguous.
 - If the image contains no bill of quantities at all — a photo of a wall, a receipt for lunch, a blank page — set notABoq to true and return an empty items array.`;
-
-let genAI: GoogleGenerativeAI | null = null;
-function getGenAI(): GoogleGenerativeAI {
-  if (!genAI) {
-    const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
-    if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY environment variable is not set');
-    genAI = new GoogleGenerativeAI(apiKey);
-  }
-  return genAI;
-}
 
 /** Strips the code fences the model adds despite being asked not to. */
 function parseJson(text: string): unknown {
@@ -164,39 +153,16 @@ async function generateWithRetry(
   imageBase64: string,
   mimeType: string,
 ): Promise<string> {
-  /* Flash-Lite first, full Flash as the fallback — the same chain the plan
-     reader uses, for the same reason. On a printed nine-line quote, Lite read
-     every line, quantity and price correctly in 2.8 s while full Flash
-     answered 503 "high demand" (2026-10-11). Each attempt has its own limit;
-     a busy, rate-limited or timed-out model moves on to the next, while a
-     permanent error (bad key, unreadable file) stops at once. */
-  const ai = getGenAI();
-  let lastError: unknown;
-
-  for (const attempt of PLAN_MODELS) {
-    try {
-      const model = ai.getGenerativeModel({
-        model: attempt.model,
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.1, maxOutputTokens: 8192 },
-      });
-      const result = await model.generateContent(
-        [BOQ_SCAN_PROMPT, { inlineData: { mimeType, data: imageBase64 } }],
-        { timeout: attempt.timeoutMs },
-      );
-      return result.response.text();
-    } catch (error) {
-      lastError = error;
-      const status = (error as { status?: number })?.status;
-      const name = error instanceof Error ? error.name : '';
-      const message = error instanceof Error ? error.message : String(error);
-      const transient =
-        status === 429 || status === 500 || status === 502 || status === 503 || status === 504 ||
-        name === 'AbortError' || /\b(aborted|timed out|timeout)\b/i.test(message);
-      if (!transient) throw error;
-    }
-  }
-
-  throw lastError;
+  /* Through the shared caller: a busy, rate-limited or slow model moves on
+     to the next and round again while time allows; a bad key or an
+     unreadable file stops at once (lib/ai/gemini.ts). 52 s fits the
+     route's 60-second limit. */
+  const { text } = await generateWithFailover({
+    parts: [{ text: BOQ_SCAN_PROMPT }, { inlineData: { mimeType, data: imageBase64 } }],
+    generationConfig: { responseMimeType: 'application/json', temperature: 0.1, maxOutputTokens: 8192 },
+    deadlineMs: 52_000,
+  });
+  return text;
 }
 
 export async function extractBoqFromImage(

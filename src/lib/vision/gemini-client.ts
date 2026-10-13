@@ -1,23 +1,12 @@
 // Gemini Vision API Client
-// Wrapper for Google's Generative AI for floor plan analysis
+// Floor plan analysis, through the shared caller that works past a busy model
+// (lib/ai/gemini.ts).
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { PLAN_MODELS } from './model';
+import { generateWithFailover } from '@/lib/ai/gemini';
 import { VisionAnalysisResult, DetectedRoom, DetectedWall } from './types';
 
-// Lazy initialization of Gemini client
-let genAI: GoogleGenerativeAI | null = null;
-
-function getGenAI(): GoogleGenerativeAI {
-  if (!genAI) {
-    const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('GOOGLE_GEMINI_API_KEY environment variable is not set');
-    }
-    genAI = new GoogleGenerativeAI(apiKey);
-  }
-  return genAI;
-}
+/** Plan reads get this long in total — inside the route's 60-second limit. */
+const PLAN_READ_DEADLINE_MS = 52_000;
 
 // Floor plan analysis prompt
 const FLOOR_PLAN_PROMPT = `You are an expert architectural floor plan analyzer. Analyze this floor plan image and extract detailed room information.
@@ -154,44 +143,28 @@ export async function analyzeFloorPlan(
   imageBase64: string,
   mimeType: string
 ): Promise<VisionAnalysisResult> {
-  const ai = getGenAI();
-  let lastError: PlanReadError | null = null;
-
-  for (const attempt of PLAN_MODELS) {
-    try {
-      const model = ai.getGenerativeModel({
-        model: attempt.model,
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.1,
-          // Room lists for a large house run to a few thousand tokens; the
-          // old 4,096 cap could cut a big plan's JSON off mid-way.
-          maxOutputTokens: 8192,
-        },
-      });
-
-      const result = await model.generateContent(
-        [FLOOR_PLAN_PROMPT, { inlineData: { mimeType, data: imageBase64 } }],
-        { timeout: attempt.timeoutMs },
-      );
-      return toAnalysisResult(result);
-    } catch (error) {
-      lastError = classifyGeminiError(error);
-      console.error('Plan read failed', {
-        model: attempt.model,
-        status: (error as { status?: number })?.status ?? null,
-        message: error instanceof Error ? error.message.slice(0, 300) : String(error),
-      });
-      if (!lastError.retryable) break;
-    }
+  try {
+    const { text, model, attempts } = await generateWithFailover({
+      parts: [{ text: FLOOR_PLAN_PROMPT }, { inlineData: { mimeType, data: imageBase64 } }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.1,
+        // Room lists for a large house run to a few thousand tokens; the
+        // old 4,096 cap could cut a big plan's JSON off mid-way.
+        maxOutputTokens: 8192,
+      },
+      deadlineMs: PLAN_READ_DEADLINE_MS,
+      // A reply that is not the JSON asked for is worth another model.
+      accept: (reply) => !parseGeminiResponse(reply).error,
+    });
+    if (attempts > 1) console.info('Plan read after failover', { model, attempts });
+    return toAnalysisResult(text);
+  } catch (error) {
+    throw classifyGeminiError(error);
   }
-
-  throw lastError ?? new PlanReadError('We could not read that plan. Try again, or use the room builder.', false);
 }
 
-function toAnalysisResult(result: Awaited<ReturnType<ReturnType<GoogleGenerativeAI['getGenerativeModel']>['generateContent']>>): VisionAnalysisResult {
-  const response = result.response;
-  const text = response.text();
+function toAnalysisResult(text: string): VisionAnalysisResult {
   const parsed = parseGeminiResponse(text);
 
   if (parsed.error) {

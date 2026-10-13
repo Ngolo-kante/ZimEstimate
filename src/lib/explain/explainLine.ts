@@ -1,5 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { PLAN_MODELS } from '@/lib/vision/model';
+import { generateWithFailover } from '@/lib/ai/gemini';
 import { buildLineFacts, type ExplainLineInput, type ExplainProjectInput } from './lineFacts';
 
 /**
@@ -48,29 +47,14 @@ export function parseExplanation(raw: unknown): LineExplanation | null {
 }
 
 export async function explainLine(line: ExplainLineInput, project: ExplainProjectInput): Promise<LineExplanation> {
-  const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY environment variable is not set');
-  const ai = new GoogleGenerativeAI(apiKey);
   const text = prompt(buildLineFacts(line, project));
-  let lastError: unknown;
-  for (const attempt of PLAN_MODELS) {
-    try {
-      const model = ai.getGenerativeModel({
-        model: attempt.model,
-        generationConfig: { responseMimeType: 'application/json', temperature: 0, maxOutputTokens: 1024 },
-      });
-      const result = await model.generateContent(text, { timeout: attempt.timeoutMs });
-      const parsed = parseExplanation(JSON.parse(result.response.text()));
-      if (parsed) return parsed;
-      lastError = new SyntaxError('Empty explanation');
-    } catch (error) {
-      lastError = error;
-      const status = (error as { status?: number })?.status;
-      const transient = status === 429 || (status !== undefined && status >= 500) || error instanceof SyntaxError ||
-        (error instanceof Error && error.name === 'AbortError') ||
-        /\b(aborted|timed out|timeout)\b/i.test(error instanceof Error ? error.message : '');
-      if (!transient) break;
-    }
-  }
-  throw lastError instanceof Error ? lastError : new Error('Could not explain this line.');
+  const readable = (reply: string) => { try { return parseExplanation(JSON.parse(reply)) !== null; } catch { return false; } };
+  // Busy, slow or garbled replies try the next model (lib/ai/gemini.ts).
+  const { text: reply } = await generateWithFailover({
+    parts: [{ text }],
+    generationConfig: { responseMimeType: 'application/json', temperature: 0, maxOutputTokens: 1024 },
+    deadlineMs: 40_000,
+    accept: readable,
+  });
+  return parseExplanation(JSON.parse(reply)) as LineExplanation;
 }

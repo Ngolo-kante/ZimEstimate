@@ -1,5 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { PLAN_MODELS } from '@/lib/vision/model';
+import { generateWithFailover } from '@/lib/ai/gemini';
 import type { ProjectIntent, ProjectKind } from './routeProject';
 
 /**
@@ -66,27 +65,13 @@ export function parseIntent(raw: unknown): ProjectIntent {
 }
 
 export async function describeProject(text: string): Promise<ProjectIntent> {
-  const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY environment variable is not set');
-  const ai = new GoogleGenerativeAI(apiKey);
-  let lastError: unknown;
-  for (const attempt of PLAN_MODELS) {
-    try {
-      const model = ai.getGenerativeModel({
-        model: attempt.model,
-        generationConfig: { responseMimeType: 'application/json', temperature: 0, maxOutputTokens: 512 },
-      });
-      const result = await model.generateContent(prompt(text.slice(0, MAX_DESCRIPTION_LENGTH)), { timeout: attempt.timeoutMs });
-      return parseIntent(JSON.parse(result.response.text()));
-    } catch (error) {
-      lastError = error;
-      // Same rule as the readers: busy, slow or garbled tries the next model.
-      const status = (error as { status?: number })?.status;
-      const transient = status === 429 || (status !== undefined && status >= 500) || error instanceof SyntaxError ||
-        (error instanceof Error && error.name === 'AbortError') ||
-        /\b(aborted|timed out|timeout)\b/i.test(error instanceof Error ? error.message : '');
-      if (!transient) break;
-    }
-  }
-  throw lastError instanceof Error ? lastError : new Error('Could not read the description.');
+  // Busy, slow or garbled replies try the next model (lib/ai/gemini.ts).
+  // Someone is waiting on the home page, so this gives up sooner.
+  const { text: reply } = await generateWithFailover({
+    parts: [{ text: prompt(text.slice(0, MAX_DESCRIPTION_LENGTH)) }],
+    generationConfig: { responseMimeType: 'application/json', temperature: 0, maxOutputTokens: 512 },
+    deadlineMs: 30_000,
+    accept: (candidate) => { try { JSON.parse(candidate); return true; } catch { return false; } },
+  });
+  return parseIntent(JSON.parse(reply));
 }

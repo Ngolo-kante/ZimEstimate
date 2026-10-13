@@ -1,6 +1,5 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { materials } from '@/lib/materials';
-import { PLAN_MODELS } from '@/lib/vision/model';
+import { generateWithFailover } from '@/lib/ai/gemini';
 import type { LineMatch, QuoteLine } from './marketCheck';
 
 /**
@@ -33,12 +32,6 @@ ${lines.map((l, i) => `${i} | ${l.description} | ${l.unit}`).join('\n')}
 Return ONLY JSON: {"matches":[{"index":0,"materialId":"id-or-null","unitFactor":1}]} with one entry per quote line.`;
 }
 
-function getGenAI(): GoogleGenerativeAI {
-  const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY environment variable is not set');
-  return new GoogleGenerativeAI(apiKey);
-}
-
 /** Keeps only answers that refer to real catalogue items and sensible factors. */
 export function sanitiseMatches(raw: unknown, lineCount: number): LineMatch[] {
   const result: LineMatch[] = Array.from({ length: lineCount }, () => ({ materialId: null, unitFactor: null }));
@@ -62,26 +55,12 @@ export function sanitiseMatches(raw: unknown, lineCount: number): LineMatch[] {
 
 export async function matchQuoteLines(lines: QuoteLine[]): Promise<LineMatch[]> {
   if (lines.length === 0) return [];
-  const ai = getGenAI();
-  let lastError: unknown;
-  for (const attempt of PLAN_MODELS) {
-    try {
-      const model = ai.getGenerativeModel({
-        model: attempt.model,
-        generationConfig: { responseMimeType: 'application/json', temperature: 0, maxOutputTokens: 4096 },
-      });
-      const result = await model.generateContent(prompt(lines), { timeout: attempt.timeoutMs });
-      return sanitiseMatches(JSON.parse(result.response.text()), lines.length);
-    } catch (error) {
-      lastError = error;
-      const status = (error as { status?: number })?.status;
-      // Same rule as the plan and BOQ readers: busy, rate-limited, slow or
-      // garbled is worth the next model; a 4xx is our configuration.
-      const transient = status === 429 || (status !== undefined && status >= 500) || error instanceof SyntaxError ||
-        (error instanceof Error && error.name === 'AbortError') ||
-        /\b(aborted|timed out|timeout)\b/i.test(error instanceof Error ? error.message : '');
-      if (!transient) break;
-    }
-  }
-  throw lastError instanceof Error ? lastError : new Error('Could not match the quote lines.');
+  // Busy, slow or garbled replies try the next model (lib/ai/gemini.ts).
+  const { text } = await generateWithFailover({
+    parts: [{ text: prompt(lines) }],
+    generationConfig: { responseMimeType: 'application/json', temperature: 0, maxOutputTokens: 4096 },
+    deadlineMs: 45_000,
+    accept: (reply) => { try { JSON.parse(reply); return true; } catch { return false; } },
+  });
+  return sanitiseMatches(JSON.parse(text), lines.length);
 }
