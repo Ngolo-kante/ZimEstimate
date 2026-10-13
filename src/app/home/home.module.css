@@ -199,7 +199,8 @@
 .startHeader > p {
   margin: 0;
   color: var(--color-text-secondary);
-  line-height: 1.65;
+  font-size: 0.95rem;
+  line-height: 1.55;
 }
 
 .startGrid {
@@ -447,7 +448,13 @@
 }
 
 .estimateContent h3,
-.secondaryPathContent h3,
+.secondaryPathContent h3 {
+  margin: 9px 0 0;
+  font-family: var(--font-heading);
+  font-weight: 780;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
 
 .estimateContent h3 {
   font-size: 1.85rem;
@@ -868,7 +875,10 @@
   }
 
   .secondaryPaths,
-  .budgetInner,
+  .budgetInner {
+    grid-template-columns: 1fr;
+  }
+
   .budgetTool {
     max-width: 520px;
     justify-self: start;
@@ -935,7 +945,10 @@
 
   .pathways,
   .startSection,
-  .budgetSection,
+  .budgetSection {
+    padding-block: 68px;
+  }
+
   .sectionHeading h2,
   .startHeader h2,
   .budgetCopy h2,
@@ -1159,5 +1172,17 @@
   .heroTextLink {
     margin-top: 12px;
     font-size: 0.86rem;
+  }
+}
+
+/* Phones: heading, one line of explanation and the describe box close together. */
+@media (max-width: 640px) {
+  .startHeader {
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .describeRow {
+    margin: 14px 0 18px;
   }
 }
