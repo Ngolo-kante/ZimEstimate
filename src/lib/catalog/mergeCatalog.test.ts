@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Material } from '@/lib/materials';
-import { featuredKeys, keyForNewProduct, mergeCatalog, type CatalogRow } from './mergeCatalog';
+import { keyForNewProduct, mergeCatalog, type CatalogRow } from './mergeCatalog';
 
 const base: Material[] = [
   { id: 'cement-325', name: 'Standard Cement 32.5N', category: 'cement', subcategory: 'Portland', unit: 'per 50kg bag', specifications: 'PPC/Lafarge', milestones: ['substructure'] },
@@ -39,14 +39,6 @@ describe('the catalog people see', () => {
 
   it('flags hidden materials instead of dropping them', () => {
     expect(mergeCatalog(base, [row({ is_hidden: true })])[0].hidden).toBe(true);
-  });
-
-  it('lists home-page materials in slot order, skipping hidden ones', () => {
-    expect(featuredKeys([
-      row({ material_key: 'b', featured_rank: 2 }),
-      row({ material_key: 'a', featured_rank: 1 }),
-      row({ material_key: 'c', featured_rank: 3, is_hidden: true }),
-    ])).toEqual(['a', 'b']);
   });
 
   it('makes a readable key for a new product', () => {

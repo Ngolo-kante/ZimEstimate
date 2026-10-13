@@ -7,7 +7,6 @@
 //   hide     { materialKey }   kept, but off public lists and pickers
 //   show     { materialKey }
 //   reset    { materialKey }   built-in: back to the original; added: removed
-//   feature  { materialKey | null, slot: 1 | 2 | 3 }   home-page price slots
 //
 // Writes material_catalog (migration 063) with the service role; each change
 // is audit-logged. Reads are public, through lib/catalog.
@@ -89,8 +88,6 @@ export async function POST(request: Request) {
       if (!key || !all.some((m) => m.id === key)) return fail('That material is not in the catalog.', 404);
       const { error } = await db.from('material_catalog').upsert({
         material_key: key, is_hidden: action === 'hide',
-        // Hidden materials cannot hold a home-page slot.
-        ...(action === 'hide' ? { featured_rank: null } : {}),
         updated_by: auth.userId, updated_at: now,
       } as never, { onConflict: 'material_key' });
       if (error) throw error;
@@ -100,31 +97,11 @@ export async function POST(request: Request) {
 
     if (action === 'reset') {
       if (!key) return fail('Choose a material.');
-      // Built-in: drop the edits (a home-page slot goes with them). Added:
+      // Built-in: drop the edits. Added:
       // the product is removed; its price history stays in the price table.
       const { error } = await db.from('material_catalog').delete().eq('material_key', key);
       if (error) throw error;
       await logAuditEvent({ userId: auth.userId, action: builtIn.has(key) ? 'catalog.reset' : 'catalog.remove', resourceType: 'material', resourceId: key });
-      return NextResponse.json({ success: true });
-    }
-
-    if (action === 'feature') {
-      const slot = Number(body?.slot);
-      if (![1, 2, 3].includes(slot)) return fail('Choose slot 1, 2 or 3.');
-      const material = key ? all.find((m) => m.id === key) : null;
-      if (key && !material) return fail('That material is not in the catalog.', 404);
-      if (material?.hidden) return fail('Show this material again before putting it on the home page.');
-      // Free the slot, and the material's old slot, then take it.
-      const { error: clearError } = await db.from('material_catalog').update({ featured_rank: null } as never).eq('featured_rank', slot);
-      if (clearError) throw clearError;
-      if (key) {
-        await db.from('material_catalog').update({ featured_rank: null } as never).eq('material_key', key);
-        const { error } = await db.from('material_catalog').upsert({
-          material_key: key, featured_rank: slot, updated_by: auth.userId, updated_at: now,
-        } as never, { onConflict: 'material_key' });
-        if (error) throw error;
-      }
-      await logAuditEvent({ userId: auth.userId, action: 'catalog.feature', resourceType: 'material', resourceId: key ?? undefined, metadata: { slot } });
       return NextResponse.json({ success: true });
     }
 

@@ -84,14 +84,6 @@ export function mergeCatalog(base: Material[], rows: CatalogRow[]): Material[] {
   return [...edited, ...added];
 }
 
-/** The materials chosen for the home page, in slot order. */
-export function featuredKeys(rows: CatalogRow[]): string[] {
-  return rows
-    .filter((row) => row.featured_rank !== null && !row.is_hidden)
-    .sort((a, b) => (a.featured_rank ?? 0) - (b.featured_rank ?? 0))
-    .map((row) => row.material_key);
-}
-
 /** A key for a new product from its name: "Waterproof membrane 4mm" → "custom-waterproof-membrane-4mm". */
 export function keyForNewProduct(name: string): string {
   const slug = name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50);

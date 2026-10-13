@@ -139,3 +139,38 @@
     justify-content: center;
   }
 }
+
+/* On a white section. */
+.light .label {
+  color: #a55e12;
+}
+
+.light .row input {
+  border-color: #c9d4e2;
+  background: white;
+}
+
+.light .row input:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.light .examples button {
+  border-color: #d5dfeb;
+  color: #475569;
+  background: #f8fafc;
+}
+
+.light .examples button:hover {
+  border-color: #efb760;
+  color: #0b1f3b;
+}
+
+.light .result {
+  background: #fff7e8;
+  border: 1px solid #f3d9a8;
+}
+
+.light .message {
+  color: #8a4b0f;
+}

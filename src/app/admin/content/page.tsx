@@ -3,8 +3,7 @@
 // Catalog & prices: every material the public sees, with its price and where
 // that price came from, and everything an admin can change about it —
 // publish or withdraw a price, edit the name and description, add a product,
-// hide one, see its price history, update many prices at once, and choose
-// the three prices on the home page.
+// hide one, see its price history, and update many prices at once.
 //
 // Reads /api/admin/prices (prices + catalog edits); writes through
 // /api/admin/prices and /api/admin/catalog, both audit-logged.
@@ -15,7 +14,7 @@ import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { supabase } from '@/lib/supabase';
 import { categoryInfo, getBestPrice, materials, type Material, type MaterialCategory } from '@/lib/materials';
 import { MANUAL_PRICE_SOURCE, selectPublishedObservation, type PublishedObservation } from '@/lib/pricing/publishedPrice';
-import { featuredKeys, mergeCatalog, type CatalogRow } from '@/lib/catalog/mergeCatalog';
+import { mergeCatalog, type CatalogRow } from '@/lib/catalog/mergeCatalog';
 
 type Source = 'Manual' | 'Scraped' | 'Reference' | 'Unpriced';
 type Row = { material: Material; priceUsd: number | null; priceZwg: number | null; source: Source; updated: string | null };
@@ -100,7 +99,6 @@ export default function AdminCatalogPage() {
 
   const catalog = useMemo(() => mergeCatalog(materials, catalogRows), [catalogRows]);
   const byKey = useMemo(() => new Map(catalog.map((m) => [m.id, m])), [catalog]);
-  const featured = useMemo(() => featuredKeys(catalogRows), [catalogRows]);
   const edited = useMemo(() => new Set(catalogRows.filter((r) => !r.is_custom && (r.name || r.description !== null || r.category || r.subcategory)).map((r) => r.material_key)), [catalogRows]);
 
   const rows: Row[] = useMemo(() => catalog.map((material) => {
@@ -163,7 +161,7 @@ export default function AdminCatalogPage() {
 
   const publish = (materialKey: string) => {
     if (!(Number(usd) > 0)) { setError('Enter a positive USD price.'); return; }
-    void run(() => call('/api/admin/prices', { action: 'publish', materialKey, priceUsd: usd, priceZwg: zwg }), 'Price published. It now shows on the public price list and home page.')
+    void run(() => call('/api/admin/prices', { action: 'publish', materialKey, priceUsd: usd, priceZwg: zwg }), 'Price published. It now shows on the public price list and in new estimates.')
       .then((ok) => { if (ok) setPanel(null); });
   };
   const withdraw = (materialKey: string) =>
@@ -173,8 +171,6 @@ export default function AdminCatalogPage() {
     run(() => call('/api/admin/catalog', { action: 'save', materialKey, ...details }), materialKey ? 'Details saved.' : 'Product added.');
   const catalogAction = (action: 'hide' | 'show' | 'reset', materialKey: string, done: string) =>
     void run(() => call('/api/admin/catalog', { action, materialKey }), done).then((ok) => { if (ok) setPanel(null); });
-  const feature = (slot: number, materialKey: string) =>
-    void run(() => call('/api/admin/catalog', { action: 'feature', slot, materialKey: materialKey || null }), `Home page slot ${slot} updated.`);
 
   const addProduct = async () => {
     const result = await run(async () => {
@@ -336,21 +332,6 @@ export default function AdminCatalogPage() {
         </section>
       )}
 
-      <section aria-labelledby="home-heading" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 id="home-heading" className="text-lg font-bold text-slate-950">Prices on the home page</h2>
-        <p className="mt-1 text-sm text-slate-600">The three materials in the “Current material prices” strip. Empty slots use cement, common brick and Y12 rebar.</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {[1, 2, 3].map((slot) => (
-            <label key={slot} className="text-xs font-semibold text-slate-600">Slot {slot}
-              <select value={featured[slot - 1] ?? ''} disabled={saving || loading} onChange={(e) => feature(slot, e.target.value)} className={inputClass}>
-                <option value="">Default</option>
-                {visible.map((r) => <option key={r.material.id} value={r.material.id}>{r.material.name}</option>)}
-              </select>
-            </label>
-          ))}
-        </div>
-      </section>
-
       <div className="flex flex-wrap gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
         <label className="min-w-[220px] flex-1 text-xs font-semibold text-slate-600">Search
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name, code or description" className={inputClass} />
@@ -382,7 +363,6 @@ export default function AdminCatalogPage() {
             {shown.map((row) => {
               const m = row.material;
               const open = panel?.id === m.id ? panel.mode : null;
-              const slot = featured.indexOf(m.id) + 1;
               return (
                 <li key={m.id} className={`px-4 py-4 ${m.hidden ? 'bg-slate-50' : ''}`}>
                   <div className="grid gap-3 md:grid-cols-[minmax(220px,2.4fr)_1fr_1fr_1.1fr_auto] md:items-center">
@@ -392,7 +372,6 @@ export default function AdminCatalogPage() {
                         {m.custom && <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-semibold text-violet-800">Added</span>}
                         {edited.has(m.id) && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">Edited</span>}
                         {m.hidden && <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-700">Hidden</span>}
-                        {slot > 0 && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">Home page {slot}</span>}
                       </div>
                       <div className="text-xs text-slate-500">{m.id} · {m.unit} · {categoryInfo[m.category]?.label ?? m.category}</div>
                       {m.specifications && <div className="mt-0.5 truncate text-xs text-slate-500" title={m.specifications}>{m.specifications}</div>}

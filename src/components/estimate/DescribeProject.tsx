@@ -18,7 +18,14 @@ const EXAMPLES = [
   'My builder quoted $9,000 for roofing — is it fair?',
 ];
 
-export default function DescribeProject({ label = 'Or describe it in a sentence' }: { label?: string }) {
+export default function DescribeProject({
+  label = 'Or describe it in a sentence',
+  tone = 'dark',
+}: {
+  label?: string;
+  /** Dark navy backgrounds (the default, /estimate) or white sections (home). */
+  tone?: 'dark' | 'light';
+}) {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [route, setRoute] = useState<ProjectRoute | null>(null);
@@ -48,7 +55,7 @@ export default function DescribeProject({ label = 'Or describe it in a sentence'
   };
 
   return (
-    <div className={styles.box}>
+    <div className={`${styles.box} ${tone === 'light' ? styles.light : ''}`}>
       <form onSubmit={submit} className={styles.form}>
         <label htmlFor="describe-project" className={styles.label}>
           <Sparkle size={14} weight="fill" aria-hidden="true" /> {label}

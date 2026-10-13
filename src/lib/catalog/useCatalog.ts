@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { materials } from '@/lib/materials';
-import { CATALOG_COLUMNS, featuredKeys, mergeCatalog, type CatalogRow } from './mergeCatalog';
+import { CATALOG_COLUMNS, mergeCatalog, type CatalogRow } from './mergeCatalog';
 
 let pending: Promise<CatalogRow[]> | null = null;
 
@@ -35,7 +35,6 @@ export function useCatalog() {
 
   const all = useMemo(() => mergeCatalog(materials, rows ?? []), [rows]);
   const visible = useMemo(() => all.filter((m) => !m.hidden), [all]);
-  const featured = useMemo(() => featuredKeys(rows ?? []), [rows]);
 
-  return { all, visible, featured, rows: rows ?? [], loaded: rows !== null, reload };
+  return { all, visible, rows: rows ?? [], loaded: rows !== null, reload };
 }
