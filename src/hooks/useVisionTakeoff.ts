@@ -174,6 +174,7 @@ export function useVisionTakeoff() {
   // ============================================
 
   const updateRoom = useCallback((roomId: string, updates: Partial<DetectedRoom>) => {
+    const dimensions = updates.dimensions;
     setState((prev) => ({
       ...prev,
       editedRooms: prev.editedRooms.map((room) =>
@@ -190,6 +191,18 @@ export function useVisionTakeoff() {
             }
           : room
       ),
+      // Wall segments created by the reader carry the room's original side
+      // lengths. Keep them in sync when a person corrects those dimensions,
+      // otherwise the review and BOQ can still use the stale scan geometry.
+      editedWalls: dimensions ? prev.editedWalls.map((wall) => {
+        if (wall.id === `wall_${roomId}_top` || wall.id === `wall_${roomId}_bottom`) {
+          return { ...wall, length: dimensions.width };
+        }
+        if (wall.id === `wall_${roomId}_left` || wall.id === `wall_${roomId}_right`) {
+          return { ...wall, length: dimensions.length };
+        }
+        return wall;
+      }) : prev.editedWalls,
     }));
   }, []);
 
@@ -247,13 +260,20 @@ export function useVisionTakeoff() {
     }));
   }, []);
 
+  const updatePlanOpenings = useCallback((openings: { doors?: number; windows?: number }) => {
+    setState((prev) => ({
+      ...prev,
+      analysisResult: prev.analysisResult ? { ...prev.analysisResult, ...openings } : null,
+    }));
+  }, []);
+
   const confirmConfig = useCallback(() => {
     setState((prev) => ({ ...prev, step: 'calculating' }));
 
     // Small delay for animation, then generate BOQ
     setTimeout(() => {
       setState((prev) => {
-        const boqItems = generateBOQ(prev.editedRooms, prev.editedWalls, prev.config, prev.analysisResult?.windows);
+        const boqItems = generateBOQ(prev.editedRooms, prev.editedWalls, prev.config, prev.analysisResult?.windows, prev.analysisResult?.doors);
         const boqItemsWithEnablement = addTemporaryEnablementItems(boqItems, prev.config);
         return {
           ...prev,
@@ -345,6 +365,8 @@ export function useVisionTakeoff() {
   return {
     // State
     state,
+
+    updatePlanOpenings,
 
     // Derived values
     totalArea,

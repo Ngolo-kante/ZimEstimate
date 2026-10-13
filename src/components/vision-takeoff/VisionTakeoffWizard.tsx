@@ -154,7 +154,14 @@ export default function VisionTakeoffWizard() {
           <ConfigurationStep
             config={state.config}
             totalArea={wizard.totalArea}
+            rooms={state.editedRooms}
+            walls={state.editedWalls}
+            doors={state.analysisResult?.doors ?? 0}
+            windows={state.analysisResult?.windows ?? 0}
+            confidence={wizard.confidence}
             onUpdate={wizard.updateConfig}
+            onUpdateOpenings={wizard.updatePlanOpenings}
+            onEditPlan={() => wizard.goToStep('editing')}
             onConfirm={wizard.confirmConfig}
             onBack={() => wizard.goToStep('project_info')}
           />

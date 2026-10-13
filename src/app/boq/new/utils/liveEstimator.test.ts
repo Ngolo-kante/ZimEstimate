@@ -39,5 +39,6 @@ describe('uploaded plan in the BOQ builder', () => {
     expect(walls.some((item) => item.materialId === 'brick-common')).toBe(true);
     expect(finishes.find((item) => item.materialId === 'window-sill-brick')?.quantity).toBe(10.5);
     expect(finishes.find((item) => item.materialId === 'window-steel')?.description).toBe('7 windows');
+    expect(finishes.find((item) => item.materialId === 'hinges-door')?.quantity).toBe(4);
   });
 });

@@ -63,15 +63,19 @@ export interface ManualBuilderConfig {
   standAreaSqm?: number;     // Plot size — drives boundary wall length in exterior works
   rooms?: DetailedRoom[];   // NEW: Detailed room data
   totalWindows?: number;     // Plan total, when individual rooms lack opening counts
+  totalDoors?: number;       // Uploaded plan total, including entrance doors
 }
 
 /**
  * Estimate building perimeter and internal walls from floor area
  */
-function estimateDimensions(floorArea: number, roomCount: number): {
+export function estimateDimensions(floorArea: number, roomCount: number): {
   perimeter: number;
   internalWallLength: number;
 } {
+  if (!Number.isFinite(floorArea) || floorArea <= 0) {
+    return { perimeter: 0, internalWallLength: 0 };
+  }
   // Assume 1.4:1 aspect ratio for typical house
   const length = Math.sqrt(floorArea * 1.4);
   const width = floorArea / length;
@@ -81,6 +85,25 @@ function estimateDimensions(floorArea: number, roomCount: number): {
   const internalWallLength = Math.max(0, (roomCount - 1) * 4);
 
   return { perimeter, internalWallLength };
+}
+
+export function estimateVisionWallDimensions(rooms: DetectedRoom[], walls: DetectedWall[]): {
+  perimeter: number;
+  internalWallLength: number;
+  noExternalWallsDetected: boolean;
+} {
+  const totalArea = rooms.reduce((sum, room) => sum + room.area, 0);
+  const estimated = estimateDimensions(totalArea, rooms.length);
+  // The scanner creates four wall segments per room, so each list is divided
+  // by four before it can inform the area-based floor. Labels-only reads mark
+  // every room as internal; the external envelope must never become zero.
+  const scannedExternal = walls.filter((wall) => wall.type === 'external').reduce((sum, wall) => sum + wall.length, 0) / 4;
+  const scannedInternal = walls.filter((wall) => wall.type === 'internal').reduce((sum, wall) => sum + wall.length, 0) / 4;
+  return {
+    perimeter: Math.max(estimated.perimeter, scannedExternal),
+    internalWallLength: Math.max(estimated.internalWallLength, scannedInternal),
+    noExternalWallsDetected: scannedExternal === 0,
+  };
 }
 
 /**
@@ -283,6 +306,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
       perimeter,
       internalWallLength,
       totalWindows,
+      totalDoors: config.totalDoors,
       cementType: getFirstValue(cementTypes) as CementType,
       finishLevel: normalizeFinishLevel(config.finishLevel),
     }));
@@ -681,10 +705,11 @@ function calculateFinishes(input: {
   perimeter: number;
   internalWallLength: number;
   totalWindows: number;
+  totalDoors?: number;
   cementType: CementType;
   finishLevel: FinishLevel;
 }): GeneratedBOQItem[] {
-  const { floorArea, roomCount, wallHeight, perimeter, internalWallLength, totalWindows, cementType, finishLevel } = input;
+  const { floorArea, roomCount, wallHeight, perimeter, internalWallLength, totalWindows, totalDoors, cementType, finishLevel } = input;
   const items: GeneratedBOQItem[] = [];
   const quality = getBuildQuality(cementType);
   const spec = FINISH_LEVEL_SPEC[finishLevel];
@@ -738,9 +763,10 @@ function calculateFinishes(input: {
   items.push(createBOQItem('ceiling-board', 'Ceiling Board', 'finishing', roundTo(ceilingArea, 1), 'per m²', `${floorArea}m² ceiling`));
   items.push(createBOQItem('cornice', 'Cornice', 'finishing', corniceLengths, 'per 4m length', 'Ceiling perimeter'));
 
-  // Joinery — one door per room plus front and back doors.
-  const interiorDoors = Math.max(1, roomCount);
-  items.push(createBOQItem('door-interior', 'Interior Door', 'finishing', interiorDoors, 'each', `${roomCount} rooms`));
+  // Joinery — use the reviewed upload count when available; otherwise assume
+  // one interior door per room plus front and back doors.
+  const interiorDoors = totalDoors && totalDoors > 0 ? Math.max(0, totalDoors - spec.exteriorDoors) : Math.max(1, roomCount);
+  items.push(createBOQItem('door-interior', 'Interior Door', 'finishing', interiorDoors, 'each', totalDoors && totalDoors > 0 ? `${totalDoors} doors detected, less ${spec.exteriorDoors} entrance doors` : `${roomCount} rooms`));
   items.push(createBOQItem('door-exterior', 'Exterior Door', 'finishing', spec.exteriorDoors, 'each', 'Front and back'));
   items.push(createBOQItem('hinges-door', 'Door Hinges', 'finishing', interiorDoors + spec.exteriorDoors, 'per pair', 'One pair per door'));
   items.push(createBOQItem('lock-mortice', 'Mortice Lock', 'finishing', interiorDoors + spec.exteriorDoors, 'each', 'One per door'));
@@ -891,21 +917,14 @@ export function generateBOQ(
   rooms: DetectedRoom[],
   walls: DetectedWall[],
   config: VisionConfig,
-  detectedWindows?: number
+  detectedWindows?: number,
+  detectedDoors?: number
 ): GeneratedBOQItem[] {
   itemIdCounter = 0;
   const allItems: GeneratedBOQItem[] = [];
 
   const totalArea = rooms.reduce((sum, r) => sum + r.area, 0);
-  const estimated = estimateDimensions(totalArea, rooms.length);
-  // The scanner creates four wall segments for every room. Their labels are
-  // room-level guesses, not a traced building envelope; label-only scans even
-  // classify every wall as internal. Keep the area-derived envelope and room
-  // partitions as a floor so a valid plan cannot cost as zero external walls.
-  const scannedExternal = walls.filter((w) => w.type === 'external').reduce((sum, w) => sum + w.length, 0) / 4;
-  const scannedInternal = walls.filter((w) => w.type === 'internal').reduce((sum, w) => sum + w.length, 0) / 4;
-  const perimeterLength = Math.max(estimated.perimeter, scannedExternal);
-  const internalWallLength = Math.max(estimated.internalWallLength, scannedInternal);
+  const { perimeter: perimeterLength, internalWallLength } = estimateVisionWallDimensions(rooms, walls);
 
   const { includeLabor } = config;
   const scopes: ProjectScope[] = Array.isArray(config.scope) ? config.scope : [config.scope];
@@ -934,6 +953,7 @@ export function generateBOQ(
       perimeter: perimeterLength,
       internalWallLength,
       totalWindows: windows,
+      totalDoors: detectedDoors,
       cementType: getFirstValue(config.cementType),
       finishLevel: DEFAULT_FINISH_LEVEL,
     }));

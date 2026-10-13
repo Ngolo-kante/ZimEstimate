@@ -200,20 +200,16 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planStatus]);
 
-  /* planSummary only lives for this mount, so after a reload the panel showed
-     "Select file" again even though the plan's rooms were still loaded and
-     still being costed. Falling back to the store means the panel reflects
-     what the estimate is actually using, not what happened to be uploaded
-     during this visit. The file name and confidence are genuinely unknown in
-     that case, so they are left out rather than guessed at. */
-  const planView = planSummary ?? (detailedRooms.length > 0 && Number(projectDetails.floorPlanSize) > 0
+  /* Room edits and reloads must show the values the estimate is actually
+     costing. Filename and confidence belong to this upload session only. */
+  const planView = detailedRooms.length > 0 && Number(projectDetails.floorPlanSize) > 0
     ? {
-        fileName: null as string | null,
+        fileName: planSummary?.fileName ?? null,
         rooms: detailedRooms.length,
         area: Number(projectDetails.floorPlanSize),
-        confidence: null as number | null,
+        confidence: planSummary?.confidence ?? null,
       }
-    : null);
+    : null;
 
   const readPlan = async (chosen: File) => {
     setPlanError(null);
@@ -247,8 +243,8 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
          needs to know the numbers arrived from a drawing. */
       setDetailedRooms(mapped.rooms);
       updateProjectDetails({ floorPlanSize: String(mapped.totalArea) });
-      if (mapped.doors > 0) setTotalDoors(mapped.doors);
-      if (mapped.windows > 0) setTotalWindows(mapped.windows);
+      setTotalDoors(mapped.doors);
+      setTotalWindows(mapped.windows);
 
       captureProductEvent('ai_scan_used', { tool: 'plan_upload', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'success', rooms: mapped.rooms.length });
       setPlanSummary({
@@ -759,18 +755,10 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
                   <dd className="text-right font-bold tabular-nums text-slate-800">
                     {planView.area.toFixed(1)} m²
                   </dd>
-                  {totalDoors > 0 && (
-                    <>
-                      <dt className="wiz-text-muted">Doors</dt>
-                      <dd className="text-right font-bold tabular-nums text-slate-800">{totalDoors}</dd>
-                    </>
-                  )}
-                  {totalWindows > 0 && (
-                    <>
-                      <dt className="wiz-text-muted">Windows</dt>
-                      <dd className="text-right font-bold tabular-nums text-slate-800">{totalWindows}</dd>
-                    </>
-                  )}
+                  <dt className="wiz-text-muted">Doors</dt>
+                  <dd className="text-right font-bold tabular-nums text-slate-800">{totalDoors > 0 ? totalDoors : 'Not detected'}</dd>
+                  <dt className="wiz-text-muted">Windows</dt>
+                  <dd className="text-right font-bold tabular-nums text-slate-800">{totalWindows > 0 ? totalWindows : 'Not detected'}</dd>
                 </dl>
                 {/* Said plainly rather than hidden: the figures came off a
                     drawing, and the person checking them is the one who knows

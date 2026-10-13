@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateBOQ, generateBOQFromBasics, ManualBuilderConfig } from './index';
+import { estimateVisionWallDimensions, generateBOQ, generateBOQFromBasics, ManualBuilderConfig } from './index';
 import { getBestPrice } from '../materials';
 import type { DetectedRoom, DetectedWall } from '../vision/types';
 
@@ -242,6 +242,9 @@ describe('uploaded plan costing', () => {
       type: 'internal' as const,
     })));
     const config = { scope: 'full_house' as const, brickType: 'common' as const, cementType: 'cement_325' as const, includeLabor: true, wallHeight: 2.7, foundationDepth: 0.6 };
+    const wallsForReview = estimateVisionWallDimensions(rooms, walls);
+    expect(wallsForReview.noExternalWallsDetected).toBe(true);
+    expect(wallsForReview.perimeter).toBeGreaterThan(50);
     const uploaded = generateBOQ(rooms, walls, config);
     const manual = generateBOQFromBasics({ floorArea: 178, roomCount: 10, wallHeight: 2.7, brickTypes: ['common'], cementTypes: ['cement_325'], scope: 'full_house', includeLabor: true });
 
@@ -262,11 +265,13 @@ describe('uploaded plan costing', () => {
     const items = generateBOQ([room], [], {
       scope: 'finishing', brickType: 'common', cementType: 'cement_325',
       includeLabor: false, wallHeight: 2.7, foundationDepth: 0.6,
-    }, 4);
+    }, 4, 5);
 
     expect(new Set(items.map((item) => item.category))).toEqual(new Set(['finishing']));
     expect(items.find((item) => item.materialId === 'window-sill-brick')?.quantity).toBe(6);
     expect(items.find((item) => item.materialId === 'window-steel')?.calculationNote).toBe('4 windows');
+    expect(items.find((item) => item.materialId === 'door-interior')?.quantity).toBe(3);
+    expect(items.find((item) => item.materialId === 'hinges-door')?.quantity).toBe(5);
   });
 });
 

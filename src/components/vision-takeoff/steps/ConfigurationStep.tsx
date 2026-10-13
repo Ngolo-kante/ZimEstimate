@@ -1,6 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import Card from '@/components/ui/Card';
+import PlanReviewCheckpoint from '@/components/boq/PlanReviewCheckpoint';
+import { estimateVisionWallDimensions } from '@/lib/calculations';
+import { planReviewKey } from '@/lib/vision/planReview';
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,12 +22,21 @@ import {
   BRICK_INFO,
   CEMENT_INFO,
   SCOPE_INFO,
+  type DetectedRoom,
+  type DetectedWall,
 } from '@/lib/vision/types';
 
 interface ConfigurationStepProps {
   config: VisionConfig;
   totalArea: number;
+  rooms: DetectedRoom[];
+  walls: DetectedWall[];
+  doors: number;
+  windows: number;
+  confidence: number;
   onUpdate: (config: Partial<VisionConfig>) => void;
+  onUpdateOpenings: (openings: { doors?: number; windows?: number }) => void;
+  onEditPlan: () => void;
   onConfirm: () => void;
   onBack: () => void;
 }
@@ -31,13 +44,40 @@ interface ConfigurationStepProps {
 export default function ConfigurationStep({
   config,
   totalArea,
+  rooms,
+  walls,
+  doors,
+  windows,
+  confidence,
   onUpdate,
+  onUpdateOpenings,
+  onEditPlan,
   onConfirm,
   onBack,
 }: ConfigurationStepProps) {
+  const [reviewedKey, setReviewedKey] = useState<string | null>(null);
   const scopes: ProjectScope[] = ['full_house', 'substructure', 'superstructure', 'roofing', 'finishing', 'exterior'];
   const brickTypes: BrickType[] = ['common', 'farm', 'blocks_6inch', 'blocks_8inch', 'face_brick'];
   const cementTypes: CementType[] = ['cement_325', 'cement_425'];
+  const wallAssumptions = estimateVisionWallDimensions(rooms, walls);
+  const selectedScopes = Array.isArray(config.scope) ? config.scope : [config.scope];
+  const includedScopes: ProjectScope[] = selectedScopes.includes('full_house')
+    ? ['substructure', 'superstructure', 'roofing', 'finishing', 'exterior']
+    : selectedScopes;
+  const reviewInput = {
+    area: totalArea,
+    rooms: rooms.map((room) => ({ name: room.name, length: room.dimensions.length, width: room.dimensions.width })),
+    doors,
+    windows,
+    externalWallLength: wallAssumptions.perimeter,
+    internalWallLength: wallAssumptions.internalWallLength,
+    noExternalWallsDetected: wallAssumptions.noExternalWallsDetected,
+    confidence,
+    stages: includedScopes.map((scope) => SCOPE_INFO[scope].name),
+    includeLabor: config.includeLabor,
+  };
+  const currentReviewKey = planReviewKey(reviewInput);
+  const planConfirmed = reviewedKey === currentReviewKey;
 
   // Helper to check if a scope is selected
   const isScopeSelected = (scope: ProjectScope): boolean => {
@@ -123,7 +163,8 @@ export default function ConfigurationStep({
 
       <div className="config-sections">
         {/* Scope Selection */}
-        <Card>
+        <div id="vision-scope-selection" style={{ scrollMarginTop: 120 }}>
+          <Card>
           <div className="section-header">
             <House size={22} weight="light" />
             <div>
@@ -158,7 +199,8 @@ export default function ConfigurationStep({
           {!isFullHouseSelected && (
             <p className="multi-select-hint">Select multiple stages or choose Full House for complete estimate</p>
           )}
-        </Card>
+          </Card>
+        </div>
 
         {/* Brick Type Selection */}
         <Card>
@@ -261,13 +303,25 @@ export default function ConfigurationStep({
         </Card>
       </div>
 
+      <div className="review-checkpoint">
+        <PlanReviewCheckpoint
+          input={reviewInput}
+          confirmed={planConfirmed}
+          onConfirmedChange={(checked) => setReviewedKey(checked ? currentReviewKey : null)}
+          onDoorsChange={(value) => onUpdateOpenings({ doors: value })}
+          onWindowsChange={(value) => onUpdateOpenings({ windows: value })}
+          onEditRooms={onEditPlan}
+          onEditStages={() => document.getElementById('vision-scope-selection')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        />
+      </div>
+
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onBack}>
           <ArrowLeft size={18} weight="bold" />
           Back
         </button>
 
-        <button className="btn btn-primary" onClick={onConfirm}>
+        <button className="btn btn-primary" onClick={onConfirm} disabled={!planConfirmed}>
           Generate BOQ
           <ArrowRight size={18} weight="bold" />
         </button>
@@ -481,6 +535,7 @@ export default function ConfigurationStep({
           display: flex;
           justify-content: space-between;
           gap: var(--spacing-md);
+          margin-top: var(--spacing-xl);
         }
 
         .btn {
@@ -503,6 +558,11 @@ export default function ConfigurationStep({
 
         .btn-primary:hover {
           background: var(--color-primary-dark);
+        }
+
+        .btn-primary:disabled {
+          cursor: not-allowed;
+          opacity: 0.5;
         }
 
         .btn-secondary {

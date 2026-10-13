@@ -21,8 +21,11 @@ import LaborSection from './components/sections/LaborSection';
 import SiteConditionsSection from './components/sections/SiteConditionsSection';
 import { InteractiveRoomBuilder, type RoomInstance } from './components/InteractiveRoomBuilder';
 import { buildLiveMilestones } from './utils/liveEstimator';
+import { estimateDimensions } from '@/lib/calculations';
+import { planReviewKey } from '@/lib/vision/planReview';
+import PlanReviewCheckpoint from '@/components/boq/PlanReviewCheckpoint';
 import { validateBOQWizardStep, type BOQWizardValidationState } from './wizardValidation';
-import { FULL_HOUSE_STAGES, inferProjectType } from './projectTypes';
+import { FULL_HOUSE_STAGES, MANUAL_BUILDER_STAGES, inferProjectType } from './projectTypes';
 import { getTemplateById, resolveFinishLevel } from '@/lib/projectTemplates';
 import { useToast } from '@/components/ui/Toast';
 import type { BOQItem as DbBOQItem, Project } from '@/lib/database.types';
@@ -247,6 +250,33 @@ function BoqNewPageContent() {
   };
 
   const isReviewStep = currentStep === WIZARD_STEPS.length - 1;
+  const [reviewedPlanKey, setReviewedPlanKey] = useState<string | null>(null);
+  const uploadedArea = Number(projectDetails.floorPlanSize) || 0;
+  const uploadedWallAssumptions = estimateDimensions(uploadedArea, detailedRooms.length);
+  const reviewStages = projectScope === 'entire' ? FULL_HOUSE_STAGES : selectedStages;
+  const uploadedPlanReview = {
+    area: uploadedArea,
+    rooms: detailedRooms.map((room) => ({ name: room.label, length: room.length, width: room.width })),
+    doors: totalDoors,
+    windows: totalWindows,
+    externalWallLength: uploadedWallAssumptions.perimeter,
+    internalWallLength: uploadedWallAssumptions.internalWallLength,
+    stages: reviewStages.map((stage) => MANUAL_BUILDER_STAGES.find((item) => item.id === stage)?.label ?? stage),
+    includeLabor: laborType === 'materials_labor',
+  };
+  const currentPlanKey = planReviewKey(uploadedPlanReview);
+  const planConfirmed = geometryMode !== 'upload' || reviewedPlanKey === currentPlanKey;
+  const requirePlanReview = () => {
+    if (planConfirmed) return true;
+    showError('Check and confirm the uploaded plan summary before saving or sharing this BOQ.');
+    if (!isReviewStep) {
+      setCurrentStep(WIZARD_STEPS.length - 1);
+      window.scrollTo(0, 0);
+    } else {
+      document.getElementById('plan-review-checkpoint')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    return false;
+  };
 
   /**
    * The finished BOQ, assembled the same way BOQTable assembles it — scope and
@@ -279,6 +309,7 @@ function BoqNewPageContent() {
   // Free, and deliberately so: the PDF is the thing that gets forwarded to a
   // builder or a lender, and it carries our name with it.
   const handleDownloadPdf = async () => {
+    if (!requirePlanReview()) return;
     if (reviewBoq.items.length === 0) {
       showError('Add some items to the estimate before downloading.');
       return;
@@ -307,6 +338,7 @@ function BoqNewPageContent() {
   };
 
   const handleShareEstimate = async () => {
+    if (!requirePlanReview()) return;
     const text = [
       `ZimEstimate — ${projectDetails.name || 'Construction estimate'}`,
       projectDetails.floorPlanSize ? `Floor area: ${projectDetails.floorPlanSize} m2` : '',
@@ -696,6 +728,7 @@ function BoqNewPageContent() {
   };
 
   const handleSave = async () => {
+    if (!requirePlanReview()) return;
     if (!isAuthenticated) {
       setShowSavePrompt(true);
       return;
@@ -876,7 +909,20 @@ function BoqNewPageContent() {
                     )}
 
                     {currentStep === 5 && (
-                      <ReviewTabs projectId={project?.id} isSaving={isSaving} onSave={() => { if (!isAuthenticated) setShowSavePrompt(true); else void runSave(false); }} />
+                      <>
+                        {geometryMode === 'upload' && (
+                          <PlanReviewCheckpoint
+                            input={uploadedPlanReview}
+                            confirmed={planConfirmed}
+                            onConfirmedChange={(checked) => setReviewedPlanKey(checked ? currentPlanKey : null)}
+                            onDoorsChange={setTotalDoors}
+                            onWindowsChange={setTotalWindows}
+                            onEditRooms={() => { setCurrentStep(2); setShowInteractiveBuilder(true); }}
+                            onEditStages={() => { setCurrentStep(0); scrollStepIntoView(); }}
+                          />
+                        )}
+                        <ReviewTabs projectId={project?.id} isSaving={isSaving} onSave={() => { if (!requirePlanReview()) return; if (!isAuthenticated) setShowSavePrompt(true); else void runSave(false); }} />
+                      </>
                     )}
                   </motion.div>
                 </AnimatePresence>
