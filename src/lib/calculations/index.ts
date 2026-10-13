@@ -62,6 +62,7 @@ export interface ManualBuilderConfig {
   finishLevel?: FinishLevel; // Drives tiling coverage, paint coats, wet-area tiling
   standAreaSqm?: number;     // Plot size — drives boundary wall length in exterior works
   rooms?: DetailedRoom[];   // NEW: Detailed room data
+  totalWindows?: number;     // Plan total, when individual rooms lack opening counts
 }
 
 /**
@@ -101,7 +102,7 @@ function calculateSuperstructureFromRooms(
   if (!rooms || rooms.length === 0) return items;
 
   const totalFloorArea = config.floorArea || rooms.reduce((sum, r) => sum + (r.length * r.width), 0);
-  const totalWallLength = perimeter + internalWallLength;
+  const totalWallArea = perimeter * Math.max(1, wallHeight - 1) + internalWallLength * wallHeight;
 
   // Group rooms by material
   const materialGroups: Record<string, number> = {};
@@ -120,11 +121,9 @@ function calculateSuperstructureFromRooms(
   // Calculate items for each material
   Object.entries(materialGroups).forEach(([materialId, groupArea]) => {
     const ratio = groupArea / totalFloorArea;
-    const groupWallLength = totalWallLength * ratio; // Approximation
-
-    // Superstructure height (deduct 1m substructure)
-    const superHeight = Math.max(1, wallHeight - 1.0);
-    const wallArea = groupWallLength * superHeight;
+    // Only the external wall has a metre already counted in foundation walls;
+    // partitions run from floor level to ceiling height.
+    const wallArea = totalWallArea * ratio;
 
     // Get info
     const info = getBrickInfoById(materialId);
@@ -265,7 +264,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   // FINISHING (Add Windows Sills)
   // ============================================
   if (hasScope('finishing')) {
-    const totalWindows = rooms ? rooms.reduce((sum, r) => sum + r.windows, 0) : Math.ceil(floorArea / 15);
+    const totalWindows = config.totalWindows || (rooms ? rooms.reduce((sum, r) => sum + r.windows, 0) : Math.ceil(floorArea / 15));
     const sillLength = totalWindows * 1.5;
 
     items.push(createBOQItem(
@@ -552,16 +551,13 @@ function calculateSubstructure(
 // ============================================
 
 function calculateSuperstructure(
-  rooms: DetectedRoom[],
-  walls: DetectedWall[],
+  externalWallLength: number,
+  internalWallLength: number,
   config: VisionConfig,
   locationType: LocationType = DEFAULT_LOCATION_TYPE
 ): GeneratedBOQItem[] {
   const items: GeneratedBOQItem[] = [];
   const cfg = normalizeConfig(config);
-
-  const externalWallLength = walls.filter((w) => w.type === 'external').reduce((sum, w) => sum + w.length, 0) / 4;
-  const internalWallLength = walls.filter((w) => w.type === 'internal').reduce((sum, w) => sum + w.length, 0) / 4;
   const masonryWasteMultiplier = getMasonryWasteMultiplier(locationType);
 
   const superWallHeight = cfg.wallHeight - 1.0;
@@ -894,13 +890,22 @@ function calculateLabor(
 export function generateBOQ(
   rooms: DetectedRoom[],
   walls: DetectedWall[],
-  config: VisionConfig
+  config: VisionConfig,
+  detectedWindows?: number
 ): GeneratedBOQItem[] {
   itemIdCounter = 0;
   const allItems: GeneratedBOQItem[] = [];
 
   const totalArea = rooms.reduce((sum, r) => sum + r.area, 0);
-  const perimeterLength = walls.filter((w) => w.type === 'external').reduce((sum, w) => sum + w.length, 0) / 4;
+  const estimated = estimateDimensions(totalArea, rooms.length);
+  // The scanner creates four wall segments for every room. Their labels are
+  // room-level guesses, not a traced building envelope; label-only scans even
+  // classify every wall as internal. Keep the area-derived envelope and room
+  // partitions as a floor so a valid plan cannot cost as zero external walls.
+  const scannedExternal = walls.filter((w) => w.type === 'external').reduce((sum, w) => sum + w.length, 0) / 4;
+  const scannedInternal = walls.filter((w) => w.type === 'internal').reduce((sum, w) => sum + w.length, 0) / 4;
+  const perimeterLength = Math.max(estimated.perimeter, scannedExternal);
+  const internalWallLength = Math.max(estimated.internalWallLength, scannedInternal);
 
   const { includeLabor } = config;
   const scopes: ProjectScope[] = Array.isArray(config.scope) ? config.scope : [config.scope];
@@ -912,11 +917,34 @@ export function generateBOQ(
   }
 
   if (hasScope('superstructure')) {
-    allItems.push(...calculateSuperstructure(rooms, walls, config, locationType));
+    allItems.push(...calculateSuperstructure(perimeterLength, internalWallLength, config, locationType));
   }
 
   if (hasScope('roofing')) {
     allItems.push(...calculateRoofing(totalArea, locationType));
+  }
+
+  if (hasScope('finishing')) {
+    const windows = detectedWindows && detectedWindows > 0 ? detectedWindows : Math.ceil(totalArea / 15);
+    allItems.push(createBOQItem('window-sill-brick', 'Window Sill (Brick)', 'finishing', windows * 1.5, 'per meter', `${windows} windows`));
+    allItems.push(...calculateFinishes({
+      floorArea: totalArea,
+      roomCount: rooms.length,
+      wallHeight: config.wallHeight,
+      perimeter: perimeterLength,
+      internalWallLength,
+      totalWindows: windows,
+      cementType: getFirstValue(config.cementType),
+      finishLevel: DEFAULT_FINISH_LEVEL,
+    }));
+  }
+
+  if (hasScope('exterior')) {
+    allItems.push(...calculateExteriorWorks({
+      floorArea: totalArea,
+      perimeter: perimeterLength,
+      cementType: getFirstValue(config.cementType),
+    }));
   }
 
   if (includeLabor) {

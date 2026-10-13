@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { generateBOQFromBasics, ManualBuilderConfig } from './index';
+import { generateBOQ, generateBOQFromBasics, ManualBuilderConfig } from './index';
 import { getBestPrice } from '../materials';
+import type { DetectedRoom, DetectedWall } from '../vision/types';
 
 function getItemQuantity(items: ReturnType<typeof generateBOQFromBasics>, notePrefix: string): number {
   const item = items.find((entry) => entry.calculationNote.startsWith(notePrefix));
@@ -217,5 +218,78 @@ describe('reading a BOQ line by line', () => {
 
   it('leaves no line without a note', () => {
     expect(items.filter((i) => !i.calculationNote.trim()).map((i) => i.materialName)).toEqual([]);
+  });
+});
+
+describe('uploaded plan costing', () => {
+  it('costs a 178m² full-house scan even when the reader marks every room wall internal', () => {
+    const rooms: DetectedRoom[] = Array.from({ length: 10 }, (_, index) => ({
+      id: `room-${index}`,
+      name: `Room ${index + 1}`,
+      dimensions: { width: 4.45, length: 4 },
+      area: 17.8,
+      position: { x: 0, y: 0, width: 20, height: 20 },
+      wallType: 'internal',
+      isEdited: false,
+    }));
+    const walls: DetectedWall[] = rooms.flatMap((room) => [room.dimensions.width, room.dimensions.length, room.dimensions.width, room.dimensions.length].map((length, index) => ({
+      id: `${room.id}-wall-${index}`,
+      startPoint: { x: 0, y: 0 },
+      endPoint: { x: 1, y: 1 },
+      length,
+      height: 2.7,
+      thickness: 115,
+      type: 'internal' as const,
+    })));
+    const config = { scope: 'full_house' as const, brickType: 'common' as const, cementType: 'cement_325' as const, includeLabor: true, wallHeight: 2.7, foundationDepth: 0.6 };
+    const uploaded = generateBOQ(rooms, walls, config);
+    const manual = generateBOQFromBasics({ floorArea: 178, roomCount: 10, wallHeight: 2.7, brickTypes: ['common'], cementTypes: ['cement_325'], scope: 'full_house', includeLabor: true });
+
+    expect(new Set(uploaded.map((item) => item.category))).toEqual(new Set(['substructure', 'superstructure', 'roofing', 'finishing', 'exterior', 'labor']));
+    expect(uploaded.find((item) => item.materialName.includes('Foundation Walls'))?.quantity).toBeGreaterThan(0);
+    expect(uploaded.find((item) => item.materialName.includes('(Walls)'))?.quantity).toBeGreaterThan(0);
+    expect(uploaded.filter((item) => item.quantity > 0 && item.unitPriceUsd <= 0).map((item) => item.materialId)).toEqual([]);
+    const uploadedTotal = uploaded.reduce((sum, item) => sum + item.totalUsd, 0);
+    const manualTotal = manual.reduce((sum, item) => sum + item.totalUsd, 0);
+    expect(uploadedTotal).toBeGreaterThan(manualTotal * 0.75);
+  });
+
+  it('honors a finishing-only scan and its detected window count', () => {
+    const room: DetectedRoom = {
+      id: 'room-1', name: 'Lounge', dimensions: { width: 10, length: 10 }, area: 100,
+      position: { x: 0, y: 0, width: 100, height: 100 }, wallType: 'internal', isEdited: false,
+    };
+    const items = generateBOQ([room], [], {
+      scope: 'finishing', brickType: 'common', cementType: 'cement_325',
+      includeLabor: false, wallHeight: 2.7, foundationDepth: 0.6,
+    }, 4);
+
+    expect(new Set(items.map((item) => item.category))).toEqual(new Set(['finishing']));
+    expect(items.find((item) => item.materialId === 'window-sill-brick')?.quantity).toBe(6);
+    expect(items.find((item) => item.materialId === 'window-steel')?.calculationNote).toBe('4 windows');
+  });
+});
+
+describe('detailed room masonry', () => {
+  it('uses full room height for internal partitions', () => {
+    const base: ManualBuilderConfig = {
+      floorArea: 178, roomCount: 10, wallHeight: 2.7,
+      brickTypes: ['common'], cementTypes: ['cement_325'],
+      scope: 'superstructure', includeLabor: false,
+    };
+    const quick = generateBOQFromBasics(base);
+    const detailed = generateBOQFromBasics({
+      ...base,
+      rooms: Array.from({ length: 10 }, (_, index) => ({
+        id: `room-${index}`, label: `Room ${index + 1}`,
+        length: 4, width: 4.45, doors: 1, windows: 1,
+        materialId: 'brick-common',
+      })),
+    });
+    const bricks = (items: ReturnType<typeof generateBOQFromBasics>) => items
+      .filter((item) => item.category === 'superstructure' && item.materialId === 'brick-common')
+      .reduce((sum, item) => sum + item.quantity, 0);
+
+    expect(bricks(detailed)).toBeGreaterThanOrEqual(bricks(quick) - 1);
   });
 });

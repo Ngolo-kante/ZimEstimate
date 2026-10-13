@@ -35,7 +35,7 @@ export default function ConfigurationStep({
   onConfirm,
   onBack,
 }: ConfigurationStepProps) {
-  const scopes: ProjectScope[] = ['full_house', 'substructure', 'superstructure', 'roofing', 'finishing'];
+  const scopes: ProjectScope[] = ['full_house', 'substructure', 'superstructure', 'roofing', 'finishing', 'exterior'];
   const brickTypes: BrickType[] = ['common', 'farm', 'blocks_6inch', 'blocks_8inch', 'face_brick'];
   const cementTypes: CementType[] = ['cement_325', 'cement_425'];
 

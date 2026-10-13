@@ -253,7 +253,7 @@ export function useVisionTakeoff() {
     // Small delay for animation, then generate BOQ
     setTimeout(() => {
       setState((prev) => {
-        const boqItems = generateBOQ(prev.editedRooms, prev.editedWalls, prev.config);
+        const boqItems = generateBOQ(prev.editedRooms, prev.editedWalls, prev.config, prev.analysisResult?.windows);
         const boqItemsWithEnablement = addTemporaryEnablementItems(boqItems, prev.config);
         return {
           ...prev,

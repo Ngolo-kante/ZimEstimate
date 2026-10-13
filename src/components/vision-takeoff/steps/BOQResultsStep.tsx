@@ -153,6 +153,12 @@ export default function BOQResultsStep({
     });
     return groups;
   }, [items]);
+  const laborTotals = useMemo(() => items.filter((item) => item.category === 'labor').reduce(
+    (sum, item) => ({ usd: sum.usd + item.totalUsd, zwg: sum.zwg + item.totalZwg }),
+    { usd: 0, zwg: 0 },
+  ), [items]);
+  const includesExterior = (Array.isArray(config.scope) ? config.scope : [config.scope])
+    .some((scope) => scope === 'full_house' || scope === 'exterior');
 
   const categories = Object.keys(groupedItems);
 
@@ -450,14 +456,14 @@ export default function BOQResultsStep({
           <div className="total-item">
             <span className="total-label">Materials</span>
             <span className="total-value">
-              {formatPrice(totals.usd * (config.includeLabor ? 0.7 : 1), totals.zwg * (config.includeLabor ? 0.7 : 1))}
+              {formatPrice(totals.usd - laborTotals.usd, totals.zwg - laborTotals.zwg)}
             </span>
           </div>
           {config.includeLabor && (
             <div className="total-item">
               <span className="total-label">Labor</span>
               <span className="total-value">
-                {formatPrice(totals.usd * 0.3, totals.zwg * 0.3)}
+                {formatPrice(laborTotals.usd, laborTotals.zwg)}
               </span>
             </div>
           )}
@@ -466,6 +472,9 @@ export default function BOQResultsStep({
             <span className="total-value">{formatPrice(totals.usd, totals.zwg)}</span>
           </div>
         </div>
+        {includesExterior && (
+          <p className="estimate-assumption">Exterior works use an assumed 600m² stand because the uploaded plan does not provide plot dimensions. Review or remove those lines if they do not apply.</p>
+        )}
       </Card>
 
       {/* BOQ Table */}
@@ -783,8 +792,16 @@ export default function BOQResultsStep({
 
         .totals-grid {
           display: flex;
+          flex-wrap: wrap;
           gap: var(--spacing-xl);
           align-items: center;
+        }
+
+        .estimate-assumption {
+          margin: var(--spacing-md) 0 0;
+          color: var(--color-text-muted);
+          font-size: 0.8rem;
+          line-height: 1.5;
         }
 
         .total-item {

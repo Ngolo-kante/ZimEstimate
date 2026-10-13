@@ -341,7 +341,8 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
         ? projectDetails.finishLevel
         : DEFAULT_FINISH_LEVEL,
     standAreaSqm: Number(projectDetails.standSize) || undefined,
-    rooms: geometryMode === 'detailed' ? toDetailedRooms(detailedRooms) : undefined,
+    rooms: geometryMode !== 'quick' && detailedRooms.length > 0 ? toDetailedRooms(detailedRooms) : undefined,
+    totalWindows: geometryMode === 'upload' ? (totalWindows > 0 ? totalWindows : Math.ceil(floorArea / 15)) : undefined,
   }).map(toStoreItem);
 
   const includesSubstructure =
