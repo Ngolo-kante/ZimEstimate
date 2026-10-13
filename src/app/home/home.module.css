@@ -1155,94 +1155,9 @@
   text-decoration-color: white;
 }
 
-/* Price insights: three everyday prices as tags on the navy. */
-.priceInsights {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  max-width: 600px;
-  margin-top: 22px;
-  padding: 12px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #dbe6f5;
-}
-
-.priceInsightsTitle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  color: #f2b483;
-  font-size: 0.74rem;
-  font-weight: 750;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.priceInsights ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.priceInsights li {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  font-size: 0.84rem;
-}
-
-.priceInsights li strong {
-  color: white;
-  font-variant-numeric: tabular-nums;
-}
-
-.priceInsightsUnit {
-  color: #9fb2cc;
-  font-size: 0.76rem;
-}
-
-.priceInsightsLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  margin-left: auto;
-  color: white;
-  font-size: 0.84rem;
-  font-weight: 650;
-  text-decoration: none;
-}
-
-.priceInsightsLink:hover {
-  text-decoration: underline;
-}
-
 @media (max-width: 640px) {
   .heroTextLink {
     margin-top: 12px;
     font-size: 0.86rem;
-  }
-
-  .priceInsights {
-    margin-top: 16px;
-    padding: 10px 12px;
-  }
-
-  .priceInsights li {
-    font-size: 0.78rem;
-    padding: 4px 8px;
-  }
-
-  .priceInsightsLink {
-    margin-left: 0;
   }
 }

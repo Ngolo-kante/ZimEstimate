@@ -16,7 +16,6 @@ import MainLayout from '@/components/layout/MainLayout';
 import HeroBudgetWidget from '@/components/home/HeroBudgetWidget';
 import DescribeProject from '@/components/estimate/DescribeProject';
 import SignedInEntryRedirect from '@/components/home/SignedInEntryRedirect';
-import HeroPriceInsights from '@/components/home/HeroPriceInsights';
 import FeatureShowcase from '@/components/home/FeatureShowcase';
 import styles from './home.module.css';
 
@@ -87,8 +86,6 @@ export default function HomePage() {
                 Looking for a builder? Find a contractor
                 <ArrowRight size={14} weight="bold" aria-hidden="true" />
               </Link>
-
-              <HeroPriceInsights />
 
               <div className={styles.heroAssurances} aria-label="Estimate benefits">
                 <span><CheckCircle size={17} weight="fill" /> Start without an account</span>
