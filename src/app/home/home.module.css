@@ -375,7 +375,6 @@
 
 .sectionHeading h2,
 .budgetCopy h2,
-.workflowHeader h2,
 .closingInner h2 {
   margin: 10px 0 0;
   font-family: var(--font-heading);
@@ -449,13 +448,6 @@
 
 .estimateContent h3,
 .secondaryPathContent h3,
-.workflowStep h3 {
-  margin: 9px 0 0;
-  font-family: var(--font-heading);
-  font-weight: 780;
-  line-height: 1.2;
-  letter-spacing: 0;
-}
 
 .estimateContent h3 {
   font-size: 1.85rem;
@@ -608,85 +600,17 @@
   justify-self: end;
 }
 
-.workflowSection {
-  padding: 72px 0 76px;
-  background: #eef3f8;
-}
 
-.workflowHeader {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.7fr);
-  align-items: end;
-  gap: 64px;
-}
 
-.workflowHeader p {
-  margin: 0 0 3px;
-  color: var(--color-text-secondary);
-  line-height: 1.65;
-}
 
-.workflowSteps {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 36px;
-}
 
 /* Each step is a button into the feature it describes. */
-.workflowStep {
-  display: flex;
-  flex-direction: column;
-  padding: 22px 22px 20px;
-  border: 1px solid #d5dfeb;
-  border-radius: 12px;
-  background: white;
-  color: var(--color-text);
-  text-decoration: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-}
 
-.workflowStep:hover {
-  border-color: var(--color-accent);
-  box-shadow: 0 10px 24px rgba(11, 31, 59, 0.08);
-  transform: translateY(-2px);
-}
 
-.stepAction {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: auto;
-  padding-top: 16px;
-  color: var(--color-accent);
-  font-size: 0.88rem;
-  font-weight: 700;
-}
 
-.stepTopline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--color-accent);
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
 
-.stepTopline svg {
-  color: #c45d3e;
-}
 
-.workflowStep h3 {
-  margin-top: 18px;
-  font-size: 1.2rem;
-}
 
-.workflowStep p {
-  margin: 10px 0 0;
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-  line-height: 1.58;
-}
 
 /* Cleaned alongside the hero. Leaving a photograph under a 76% scrim here
    while the hero above became flat navy would have read as two different
@@ -877,10 +801,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .workflowSteps {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
 
   .startCard {
     min-height: 280px;
@@ -949,18 +869,11 @@
 
   .secondaryPaths,
   .budgetInner,
-  .workflowHeader {
-    grid-template-columns: 1fr;
-  }
-
   .budgetTool {
     max-width: 520px;
     justify-self: start;
   }
 
-  .workflowHeader {
-    gap: 18px;
-  }
 }
 
 @media (max-width: 640px) {
@@ -1023,14 +936,9 @@
   .pathways,
   .startSection,
   .budgetSection,
-  .workflowSection {
-    padding-block: 68px;
-  }
-
   .sectionHeading h2,
   .startHeader h2,
   .budgetCopy h2,
-  .workflowHeader h2,
   .closingInner h2 {
     font-size: 2rem;
   }
@@ -1124,36 +1032,6 @@
   /* Two by two on a phone: the title says what it is and the button goes
      there; the sentence under each title made this section a screen and a
      half of reading. */
-  .workflowSteps {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    margin-top: 24px;
-  }
-
-  .workflowStep {
-    padding: 14px 14px 12px;
-  }
-
-  .workflowStep p {
-    display: none;
-  }
-
-  .workflowStep h3 {
-    font-size: 1.02rem;
-  }
-
-  .stepAction {
-    font-size: 0.8rem;
-  }
-
-  .workflowStep h3 {
-    margin-top: 12px;
-  }
-
-  .stepAction {
-    padding-top: 12px;
-  }
-
   .closingSection {
     min-height: 410px;
   }
@@ -1176,7 +1054,6 @@
   .sectionHeading h2,
   .startHeader h2,
   .budgetCopy h2,
-  .workflowHeader h2,
   .closingInner h2 {
     font-size: 1.8rem;
   }
@@ -1197,8 +1074,7 @@
 
   .startCard,
   .startCardIcon,
-  .startCardArrow,
-  .workflowStep {
+  .startCardArrow {
     transition: none;
     transform: none !important;
   }
