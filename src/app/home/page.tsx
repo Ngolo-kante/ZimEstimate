@@ -2,7 +2,6 @@ import Link from 'next/link';
 import {
   ArrowRight,
   BookOpenText,
-  Briefcase,
   Calculator,
   ChartLineUp,
   CheckCircle,
@@ -11,7 +10,6 @@ import {
   Package,
   PencilLine,
   ShieldCheck,
-  Scales,
   Tag,
   UploadSimple,
   UserPlus,
@@ -21,6 +19,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import HeroBudgetWidget from '@/components/home/HeroBudgetWidget';
 import DescribeProject from '@/components/estimate/DescribeProject';
 import SignedInEntryRedirect from '@/components/home/SignedInEntryRedirect';
+import HeroPriceInsights from '@/components/home/HeroPriceInsights';
 import styles from './home.module.css';
 
 const estimateStarts = [
@@ -66,7 +65,7 @@ const workflow = [
     number: '01',
     title: 'Estimate',
     description: 'Build a BOQ by answering questions, from a plan, or from a quote.',
-    action: 'Start an estimate',
+    action: 'Start your BOQ',
     href: '/estimate',
     icon: Calculator,
   },
@@ -104,7 +103,6 @@ export default function HomePage() {
         <section className={styles.hero} aria-labelledby="home-heading">
           <div className={styles.heroInner}>
             <div className={styles.heroCopy}>
-              <span className={styles.eyebrow}>ZimEstimate</span>
               <h1 id="home-heading">Construction estimates built for Zimbabwe.</h1>
               <p>
                 Know what your build needs and what it could cost. Create an itemised
@@ -114,16 +112,22 @@ export default function HomePage() {
               <div className={styles.heroActions}>
                 <Link href="/estimate" className={styles.primaryButton}>
                   <Calculator size={20} weight="bold" aria-hidden="true" />
-                  Start your estimate
+                  Start your BOQ
                   <ArrowRight size={18} weight="bold" aria-hidden="true" />
                 </Link>
-                <Link href="/contractors" className={styles.secondaryButton}>
-                  <Briefcase size={19} weight="bold" aria-hidden="true" />
-                  Find a contractor
+                <Link href="/ai/vision-takeoff" className={styles.secondaryButton}>
+                  <UploadSimple size={19} weight="bold" aria-hidden="true" />
+                  Upload your plan
                   <ArrowRight size={16} weight="bold" className={styles.secondaryArrow} aria-hidden="true" />
                 </Link>
-
               </div>
+
+              <Link href="/contractors" className={styles.heroTextLink}>
+                Looking for a builder? Find a contractor
+                <ArrowRight size={14} weight="bold" aria-hidden="true" />
+              </Link>
+
+              <HeroPriceInsights />
 
               <div className={styles.heroAssurances} aria-label="Estimate benefits">
                 <span><CheckCircle size={17} weight="fill" /> Start without an account</span>
@@ -188,16 +192,6 @@ export default function HomePage() {
               })}
             </div>
 
-            {/* The quote checker is how people arrive with a number already in
-                hand; a slim strip rather than a fifth card in a four-column grid. */}
-            <Link href="/ai/quote-check" className={styles.quoteStrip}>
-              <Scales size={22} weight="duotone" aria-hidden="true" />
-              <span>
-                <strong>Got a quote from a builder or hardware?</strong>
-                <span>Check each price against what materials cost in Harare right now.</span>
-              </span>
-              <ArrowRight size={18} weight="bold" aria-hidden="true" className={styles.quoteStripArrow} />
-            </Link>
           </div>
         </section>
 
@@ -244,7 +238,7 @@ export default function HomePage() {
               <p>No account needed to start. Sign in when you want to save it.</p>
               <Link href="/estimate" className={styles.closingButton}>
                 <Calculator size={20} weight="bold" aria-hidden="true" />
-                Start your estimate
+                Start your BOQ
                 <ArrowRight size={18} weight="bold" aria-hidden="true" />
               </Link>
             </div>

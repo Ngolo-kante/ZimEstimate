@@ -16,7 +16,7 @@
      buttons overflowed the section by 16px and bled onto the white band below.
      The clamp still sets the intended size; the section is now allowed to grow
      when the content needs it rather than spilling out of itself. */
-  min-height: clamp(520px, calc(100svh - 132px), 680px);
+  min-height: clamp(440px, calc(100svh - 200px), 580px);
   display: flex;
   align-items: stretch;
   background: var(--color-primary);
@@ -39,7 +39,7 @@
   grid-template-columns: minmax(0, 1.08fr) minmax(390px, 0.72fr);
   align-items: center;
   gap: 56px;
-  padding-block: 64px 76px;
+  padding-block: 44px 52px;
 }
 
 .heroCopy {
@@ -55,7 +55,6 @@
   animation: heroToolEnter 620ms 90ms ease-out both;
 }
 
-.eyebrow,
 .sectionIndex,
 .pathLabel {
   display: block;
@@ -66,16 +65,11 @@
   text-transform: uppercase;
 }
 
-.eyebrow {
-  color: #dce8ff;
-  margin-bottom: 18px;
-}
-
 .hero h1 {
-  max-width: 670px;
+  max-width: 560px;
   margin: 0;
   font-family: var(--font-heading);
-  font-size: 4.15rem;
+  font-size: 3.05rem;
   font-weight: 800;
   line-height: 1.02;
   letter-spacing: 0;
@@ -83,10 +77,10 @@
 }
 
 .heroCopy > p {
-  max-width: 590px;
-  margin: 24px 0 0;
+  max-width: 540px;
+  margin: 16px 0 0;
   color: #dbe6f5;
-  font-size: 1.12rem;
+  font-size: 1.05rem;
   line-height: 1.65;
 }
 
@@ -96,7 +90,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
   gap: 12px;
-  margin-top: 32px;
+  margin-top: 24px;
 }
 
 .heroActions .primaryButton {
@@ -823,51 +817,6 @@
   text-decoration: underline;
 }
 
-.quoteStrip {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 14px;
-  padding: 16px 18px;
-  border-radius: 12px;
-  border: 1px solid #f3d9a8;
-  background: #fffaf0;
-  color: var(--color-text);
-  text-decoration: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.quoteStrip > svg:first-child {
-  flex-shrink: 0;
-  color: #b7791f;
-}
-
-.quoteStrip > span {
-  display: grid;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-
-.quoteStrip strong {
-  font-size: 0.98rem;
-}
-
-.quoteStrip > span > span {
-  color: var(--color-text-secondary);
-  font-size: 0.88rem;
-}
-
-.quoteStrip:hover {
-  border-color: #e3b45c;
-  box-shadow: 0 6px 18px rgba(183, 121, 31, 0.12);
-}
-
-.quoteStripArrow {
-  flex-shrink: 0;
-  color: #b7791f;
-}
-
 .closingButton {
   margin-top: 30px;
   padding: 13px 18px;
@@ -917,7 +866,7 @@
   }
 
   .hero h1 {
-    font-size: 3.55rem;
+    font-size: 2.7rem;
   }
 
   .pathwayGrid {
@@ -977,7 +926,7 @@
   }
 
   .hero h1 {
-    font-size: 3.05rem;
+    font-size: 2.45rem;
   }
 
   .startHeader {
@@ -1032,8 +981,8 @@
   }
 
   .hero h1 {
-    font-size: 2rem;
-    line-height: 1.04;
+    font-size: 1.75rem;
+    line-height: 1.08;
   }
 
   .heroCopy > p {
@@ -1212,7 +1161,7 @@
 
 @media (max-width: 380px) {
   .hero h1 {
-    font-size: 1.82rem;
+    font-size: 1.6rem;
   }
 
   .heroCopy > p,
@@ -1268,5 +1217,156 @@
 @media (max-width: 900px) {
   .page {
     margin-bottom: -100px;
+  }
+}
+
+/* Two hero actions — Start your BOQ and Upload your plan — sharing a row on a
+   phone, both readable (the old secondary button was set at 0.73rem). */
+@media (max-width: 640px) {
+  .heroActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .heroActions .primaryButton,
+  .heroActions .secondaryButton {
+    width: 100%;
+    min-height: 50px;
+    padding: 12px 10px;
+    justify-content: center;
+    font-size: 0.9rem;
+  }
+
+  .heroActions .primaryButton > svg:last-child,
+  .heroActions .secondaryButton > svg:last-child {
+    display: none;
+  }
+
+  .secondaryButton > svg:first-child {
+    display: inline;
+  }
+}
+
+/* Upload your plan: white, like Start your BOQ — two equal ways in. */
+.heroActions .secondaryButton {
+  color: var(--color-primary);
+  background: white;
+  border-color: white;
+}
+
+.heroActions .secondaryButton:hover {
+  background: #e8eef7;
+  border-color: #e8eef7;
+}
+
+/* Find a contractor: a quiet text link, not a third button. */
+.heroTextLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  color: #dbe6f5;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: rgba(219, 230, 245, 0.4);
+  text-underline-offset: 4px;
+}
+
+.heroTextLink:hover {
+  color: white;
+  text-decoration-color: white;
+}
+
+/* Price insights: three everyday prices as tags on the navy. */
+.priceInsights {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  max-width: 600px;
+  margin-top: 22px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #dbe6f5;
+}
+
+.priceInsightsTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  color: #f2b483;
+  font-size: 0.74rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.priceInsights ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.priceInsights li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.84rem;
+}
+
+.priceInsights li strong {
+  color: white;
+  font-variant-numeric: tabular-nums;
+}
+
+.priceInsightsUnit {
+  color: #9fb2cc;
+  font-size: 0.76rem;
+}
+
+.priceInsightsLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: white;
+  font-size: 0.84rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.priceInsightsLink:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .heroTextLink {
+    margin-top: 12px;
+    font-size: 0.86rem;
+  }
+
+  .priceInsights {
+    margin-top: 16px;
+    padding: 10px 12px;
+  }
+
+  .priceInsights li {
+    font-size: 0.78rem;
+    padding: 4px 8px;
+  }
+
+  .priceInsightsLink {
+    margin-left: 0;
   }
 }

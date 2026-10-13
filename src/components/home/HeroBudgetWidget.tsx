@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, CheckCircle } from '@phosphor-icons/react';
 import { estimateStageReach } from '@/lib/estimators/stageBudgetEstimator';
@@ -14,6 +14,16 @@ import { captureProductEvent, getBudgetBand } from '@/lib/productAnalytics';
  * itself stage by stage — foundation, brick walls, roof, windows and doors,
  * then the boundary wall. Each stage's group fades from ghost silhouette to
  * solid as its funding rises; the bars below carry the exact percentages.
+ *
+ * Motion (all of it off under prefers-reduced-motion):
+ * - on first view the amount counts up from $0 to $15,000 and the house
+ *   rises in front of the visitor, until they touch the field;
+ * - each stage builds in pieces in the order it is built — the foundation
+ *   pours left to right, walls go up course by course, the roof drops on,
+ *   door then windows, boundary posts one by one — so 60% funded looks 60%
+ *   built rather than like a faded whole wall;
+ * - the bars fill in building order, the verdict pops when the reached stage
+ *   changes, and a check lands over the roof when the build is fully funded.
  *
  * Assumptions mirror the Budget Studio's defaults exactly — 120m², urban,
  * standard profile (3.0m walls, 42.5 cement) — so the verdict here is the
@@ -36,23 +46,27 @@ const PLAN_AREA_M2 = 120;
 const PLAN_BEDROOMS = 3;
 const PLAN_LOCATION = 'urban';
 
-/* Starts populated rather than empty. An empty field left the house as a bare
-   silhouette and every stage bar at zero, so the first thing a visitor saw was
-   the demo switched off. $15,000 lands mid-build — enough stages funded to show
+/* Where the first-view count-up lands, and what shows straight away when
+   motion is reduced. $15,000 lands mid-build — enough stages funded to show
    the thing working, not so many that there is nothing left to discover by
    typing. */
 const DEFAULT_BUDGET = '15000';
+const INTRO_MS = 1800;
 
-/** Ghost-to-solid: 0% funded stays a faint silhouette, 100% is fully built. */
-function stageOpacity(pct: number): number {
-  return 0.12 + 0.88 * Math.min(100, Math.max(0, pct)) / 100;
+/** How much of piece `index` (of `count`) is built when a stage is `pct`% funded: 0–1. */
+function piece(pct: number, index: number, count: number): number {
+  return Math.min(1, Math.max(0, (Math.min(100, Math.max(0, pct)) / 100) * count - index));
 }
 
-function BuildingHouse({ coverage }: { coverage: Record<string, number> }) {
-  const g = (id: string) => ({
-    style: { opacity: stageOpacity(coverage[id] ?? 0), transition: 'opacity 500ms ease' },
-    className: 'motion-reduce:transition-none',
-  });
+const FADE = { transition: 'opacity 450ms ease, transform 450ms ease' };
+
+function BuildingHouse({ coverage, complete }: { coverage: Record<string, number>; complete: boolean }) {
+  const sub = coverage.substructure ?? 0;
+  const walls = coverage.superstructure ?? 0;
+  const roof = coverage.roofing ?? 0;
+  const finish = coverage.finishing ?? 0;
+  const ext = coverage.exterior ?? 0;
+  const roofIn = piece(roof, 0, 1);
 
   return (
     <svg
@@ -65,47 +79,122 @@ function BuildingHouse({ coverage }: { coverage: Record<string, number> }) {
       {/* Ground */}
       <line x1="10" y1="126" x2="210" y2="126" stroke="#CBD5E1" strokeWidth="2" strokeLinecap="round" />
 
-      {/* Substructure — concrete strip foundation */}
-      <g {...g('substructure')}>
+      {/* The whole house as a faint outline, so what is not yet funded is
+          still visible as what the money is for. */}
+      <g opacity="0.12">
         <rect x="38" y="116" width="114" height="10" rx="2" fill="#94A3B8" />
-      </g>
-
-      {/* Superstructure — brick walls */}
-      <g {...g('superstructure')}>
         <rect x="44" y="66" width="102" height="50" fill="#C97B5A" />
-        <line x1="44" y1="79" x2="146" y2="79" stroke="#B4663F" strokeWidth="1" />
-        <line x1="44" y1="92" x2="146" y2="92" stroke="#B4663F" strokeWidth="1" />
-        <line x1="44" y1="105" x2="146" y2="105" stroke="#B4663F" strokeWidth="1" />
+        <polygon points="36,66 95,32 154,66" fill="#475569" />
+        <rect x="85" y="88" width="20" height="28" rx="1.5" fill="#0B1F3B" />
+        <rect x="54" y="76" width="17" height="15" rx="1.5" fill="#0B1F3B" />
+        <rect x="119" y="76" width="17" height="15" rx="1.5" fill="#0B1F3B" />
+        <rect x="168" y="102" width="40" height="24" fill="#94A3B8" />
+        <rect x="12" y="102" width="18" height="24" fill="#94A3B8" />
       </g>
 
-      {/* Roofing — IBR sheet gable */}
-      <g {...g('roofing')}>
+      {/* Substructure — the strip foundation pours left to right. */}
+      {Array.from({ length: 6 }, (_, i) => (
+        <rect key={`f${i}`} x={38 + i * 19} y="116" width="19" height="10" fill="#94A3B8"
+          style={{ ...FADE, opacity: piece(sub, i, 6) }} className="motion-reduce:transition-none" />
+      ))}
+
+      {/* Superstructure — brick walls, course by course from the ground up. */}
+      {Array.from({ length: 4 }, (_, i) => {
+        const y = 116 - (i + 1) * 12.5;
+        return (
+          <g key={`w${i}`} style={{ ...FADE, opacity: piece(walls, i, 4) }} className="motion-reduce:transition-none">
+            <rect x="44" y={y} width="102" height="12.5" fill="#C97B5A" />
+            <line x1="44" y1={y} x2="146" y2={y} stroke="#B4663F" strokeWidth="1" />
+          </g>
+        );
+      })}
+
+      {/* Roofing — IBR sheets drop on once the walls are up. */}
+      <g style={{ ...FADE, opacity: roofIn, transform: `translateY(${(1 - roofIn) * -10}px)` }} className="motion-reduce:transition-none">
         <polygon points="36,66 95,32 154,66" fill="#475569" />
         <rect x="36" y="63" width="118" height="4" rx="2" fill="#334155" />
       </g>
 
-      {/* Finishing — door and windows */}
-      <g {...g('finishing')}>
-        <rect x="85" y="88" width="20" height="28" rx="1.5" fill="#0B1F3B" />
-        <rect x="54" y="76" width="17" height="15" rx="1.5" fill="#BFDBFE" stroke="#0B1F3B" strokeWidth="1.5" />
-        <rect x="119" y="76" width="17" height="15" rx="1.5" fill="#BFDBFE" stroke="#0B1F3B" strokeWidth="1.5" />
-      </g>
+      {/* Finishing — the door, then each window. */}
+      <rect x="85" y="88" width="20" height="28" rx="1.5" fill="#0B1F3B"
+        style={{ ...FADE, opacity: piece(finish, 0, 3) }} className="motion-reduce:transition-none" />
+      <rect x="54" y="76" width="17" height="15" rx="1.5" fill="#BFDBFE" stroke="#0B1F3B" strokeWidth="1.5"
+        style={{ ...FADE, opacity: piece(finish, 1, 3) }} className="motion-reduce:transition-none" />
+      <rect x="119" y="76" width="17" height="15" rx="1.5" fill="#BFDBFE" stroke="#0B1F3B" strokeWidth="1.5"
+        style={{ ...FADE, opacity: piece(finish, 2, 3) }} className="motion-reduce:transition-none" />
 
-      {/* External works — precast boundary wall and gate */}
-      <g {...g('exterior')}>
-        <rect x="168" y="102" width="40" height="24" fill="#E2E8F0" />
-        <rect x="168" y="100" width="4" height="26" rx="1" fill="#94A3B8" />
-        <rect x="186" y="100" width="4" height="26" rx="1" fill="#94A3B8" />
-        <rect x="204" y="100" width="4" height="26" rx="1" fill="#94A3B8" />
-        <rect x="12" y="102" width="18" height="24" fill="#E2E8F0" />
-        <rect x="12" y="100" width="4" height="26" rx="1" fill="#94A3B8" />
+      {/* External works — the precast boundary wall, piece by piece. */}
+      {[
+        <rect key="lp" x="12" y="100" width="4" height="26" rx="1" fill="#94A3B8" />,
+        <rect key="ln" x="16" y="102" width="14" height="24" fill="#E2E8F0" />,
+        <rect key="r1" x="168" y="100" width="4" height="26" rx="1" fill="#94A3B8" />,
+        <rect key="rn1" x="172" y="102" width="14" height="24" fill="#E2E8F0" />,
+        <rect key="r2" x="186" y="100" width="4" height="26" rx="1" fill="#94A3B8" />,
+        <rect key="rn2" x="190" y="102" width="14" height="24" fill="#E2E8F0" />,
+        <rect key="r3" x="204" y="100" width="4" height="26" rx="1" fill="#94A3B8" />,
+      ].map((el, i, all) => (
+        <g key={el.key} style={{ ...FADE, opacity: piece(ext, i, all.length) }} className="motion-reduce:transition-none">{el}</g>
+      ))}
+
+      {/* Fully funded: a check lands over the roof. */}
+      <g
+        style={{
+          transition: 'opacity 300ms ease, transform 400ms cubic-bezier(.34,1.56,.64,1)',
+          opacity: complete ? 1 : 0,
+          transform: complete ? 'scale(1)' : 'scale(0.4)',
+          transformOrigin: '95px 18px',
+        }}
+        className="motion-reduce:transition-none"
+        aria-hidden="true"
+      >
+        <circle cx="95" cy="18" r="9" fill="#16A34A" />
+        <path d="M90.5 18.2l3 3 6-6.4" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
       </g>
     </svg>
   );
 }
 
 export default function HeroBudgetWidget() {
-  const [budgetInput, setBudgetInput] = useState(DEFAULT_BUDGET);
+  // Empty until the first-view count-up (or, with reduced motion, straight
+  // to the default), so the house can be seen building from nothing.
+  const [budgetInput, setBudgetInput] = useState('');
+  const tookOver = useRef(false);
+  const frame = useRef<number | null>(null);
+
+  useEffect(() => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) {
+      // Straight to the default, no count-up.
+      const show = window.setTimeout(() => { if (!tookOver.current) setBudgetInput(DEFAULT_BUDGET); }, 0);
+      return () => window.clearTimeout(show);
+    }
+    const target = Number(DEFAULT_BUDGET);
+    let start: number | null = null;
+    const step = (now: number) => {
+      if (tookOver.current) return;
+      if (start === null) start = now;
+      const t = Math.min(1, (now - start) / INTRO_MS);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setBudgetInput(String(Math.round((target * eased) / 250) * 250));
+      if (t < 1) frame.current = requestAnimationFrame(step);
+    };
+    // A beat after the card has slid in.
+    const timer = window.setTimeout(() => { frame.current = requestAnimationFrame(step); }, 650);
+    // A tab in the background never runs frames; land on the default anyway.
+    const fallback = window.setTimeout(() => {
+      if (!tookOver.current && document.visibilityState === 'hidden') setBudgetInput(DEFAULT_BUDGET);
+    }, 650 + INTRO_MS + 200);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(fallback);
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+    };
+  }, []);
+
+  const takeOver = () => {
+    tookOver.current = true;
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+  };
 
   const parsedBudget = Number(budgetInput.replace(/[^0-9]/g, ''));
   const hasValidBudget = Number.isFinite(parsedBudget) && parsedBudget > 0;
@@ -142,6 +231,7 @@ export default function HeroBudgetWidget() {
         : 'Covers part of the foundation stage.';
 
   const handleInput = (raw: string) => {
+    takeOver();
     const digits = raw.replace(/[^0-9]/g, '').slice(0, 9);
     setBudgetInput(digits);
   };
@@ -193,7 +283,7 @@ export default function HeroBudgetWidget() {
             tree, so it remains visible when the mobile keyboard opens. */}
         <div className="flex flex-col gap-2 sm:gap-3">
           <div className="flex min-h-[116px] flex-shrink-0 items-center justify-center overflow-visible sm:min-h-28">
-            <BuildingHouse coverage={coverage} />
+            <BuildingHouse coverage={coverage} complete={fullyFunded} />
           </div>
 
           <label className="block">
@@ -205,6 +295,7 @@ export default function HeroBudgetWidget() {
                 inputMode="numeric"
                 value={displayValue}
                 onChange={(e) => handleInput(e.target.value)}
+                onFocus={takeOver}
                 onBlur={() => {
                   if (!hasValidBudget) return;
                   captureProductEvent('budget_entered', {
@@ -224,7 +315,7 @@ export default function HeroBudgetWidget() {
 
         {/* Stage coverage bars */}
         <div className="hidden sm:flex flex-1 flex-col justify-center gap-1.5 min-h-0">
-          {(estimate?.rows ?? []).map((row) => {
+          {(estimate?.rows ?? []).map((row, index) => {
             const pct = Math.round(row.coveragePercent);
             return (
               <div key={row.id} className="flex items-center gap-2.5">
@@ -234,7 +325,8 @@ export default function HeroBudgetWidget() {
                 <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-[var(--color-success)] transition-all duration-500 motion-reduce:transition-none"
-                    style={{ width: `${pct}%` }}
+                    // In building order: each stage starts a moment after the one before.
+                    style={{ width: `${pct}%`, transitionDelay: `${index * 70}ms` }}
                   />
                 </div>
                 <span className={`w-9 flex-shrink-0 text-right text-xs font-bold tabular-nums ${pct > 0 ? 'text-slate-700' : 'text-slate-400'}`}>
@@ -258,7 +350,9 @@ export default function HeroBudgetWidget() {
               <CheckCircle size={16} weight="fill" className="text-[var(--color-success)] flex-shrink-0" aria-hidden="true" />
             )}
             <p
-              className="text-sm font-semibold text-slate-800 leading-snug"
+              // A new key when the reached stage changes replays the pop.
+              key={fullyFunded ? 'full' : estimate?.reachableStageId ?? 'none'}
+              className="hero-verdict text-sm font-semibold text-slate-800 leading-snug"
               aria-live="polite"
               aria-atomic="true"
             >
@@ -285,6 +379,14 @@ export default function HeroBudgetWidget() {
           Materials only, standard finish. Adjust size, location and finish in the Budget Studio.
         </p>
       </div>
+      <style>{`
+        .hero-verdict { animation: hero-verdict-pop 320ms ease-out; }
+        @keyframes hero-verdict-pop {
+          from { opacity: 0.2; transform: translateY(4px); }
+          to { opacity: 1; transform: none; }
+        }
+        @media (prefers-reduced-motion: reduce) { .hero-verdict { animation: none; } }
+      `}</style>
     </div>
   );
 }
