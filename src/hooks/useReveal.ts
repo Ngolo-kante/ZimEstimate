@@ -37,10 +37,16 @@ export function useReveal({
     const elements = Array.from(document.querySelectorAll(selector));
     if (!elements.length) return;
 
+    // A section is shown once `threshold` of it is on screen — or 120px of
+    // it, for sections taller than the screen. A long price list (17,000px on
+    // a phone) can never be 10% visible, so it used to stay at opacity 0.
+    const enough = (entry: IntersectionObserverEntry) =>
+      entry.isIntersecting && (entry.intersectionRatio >= threshold || entry.intersectionRect.height >= 120);
+
     const observer = new IntersectionObserver(
       (entries, obs) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
+          if (enough(entry)) {
             entry.target.classList.add('in-view');
             if (once) {
               obs.unobserve(entry.target);
@@ -48,7 +54,9 @@ export function useReveal({
           }
         });
       },
-      { threshold, rootMargin }
+      // Several steps, so tall sections are re-checked as they scroll in
+      // rather than only when the single threshold is crossed.
+      { threshold: [0, 0.01, 0.02, 0.05, threshold], rootMargin }
     );
 
     elements.forEach((el) => observer.observe(el));

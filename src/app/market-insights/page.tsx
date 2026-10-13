@@ -18,24 +18,41 @@ import {
   Lightning,
   ChartLineUp,
   Storefront,
-  Database as DatabaseIcon
+  Database as DatabaseIcon,
+  Wrench,
+  Tree,
+  PaintBrush,
+  Hammer,
+  HardHat,
+  Mountains,
+  House,
 } from '@phosphor-icons/react';
 import {
   materials,
   getBestPrice,
 } from '@/lib/materials';
-import { selectPublishedObservation } from '@/lib/pricing/publishedPrice';
+import { MANUAL_PRICE_SOURCE, selectPublishedObservation } from '@/lib/pricing/publishedPrice';
+import { priceMove } from '@/lib/pricing/priceTrend';
 import { mergeCatalog } from '@/lib/catalog/mergeCatalog';
 import { loadCatalogRows } from '@/lib/catalog/useCatalog';
 
 // Material categories for filtering
+// Every catalogue category. Steel, timber, plumbing and the rest were missing,
+// so materials in them (Y12 rebar, from the home page) had no filter of their own.
 const categories = [
   { id: 'all', label: 'All', icon: Cube },
   { id: 'bricks', label: 'Bricks', icon: Cube },
   { id: 'cement', label: 'Cement', icon: CheckCircle },
   { id: 'sand', label: 'Sand', icon: Drop },
-  { id: 'roofing', label: 'Roofing', icon: Cube },
+  { id: 'aggregates', label: 'Aggregates', icon: Mountains },
+  { id: 'steel', label: 'Steel', icon: Wrench },
+  { id: 'roofing', label: 'Roofing', icon: House },
+  { id: 'timber', label: 'Timber', icon: Tree },
   { id: 'electrical', label: 'Electrical', icon: Lightning },
+  { id: 'plumbing', label: 'Plumbing', icon: Drop },
+  { id: 'finishes', label: 'Finishes', icon: PaintBrush },
+  { id: 'hardware', label: 'Hardware', icon: Hammer },
+  { id: 'labor', label: 'Labour', icon: HardHat },
 ];
 
 interface MarketItem {
@@ -69,6 +86,9 @@ export default function MarketInsightsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'price' | 'change'>('name');
+  // Set by the summary cards: only materials whose price moved, or only those
+  // with no price yet.
+  const [focus, setFocus] = useState<'none' | 'movers' | 'unpriced'>('none');
 
   // Dynamic price data state
   const [marketPrices, setMarketPrices] = useState<MarketItem[]>([]);
@@ -130,51 +150,30 @@ export default function MarketInsightsPage() {
             item.priceUsd = obs.price_usd;
             item.priceZwg = obs.price_zwg;
             if (obs.scraped_at) item.lastUpdated = obs.scraped_at;
+
+            // 3. Movement: this price against the one recorded about a month
+            // or more before it. Nothing to compare with → stays null and
+            // reads "No history", never a number nobody measured.
+            const move = priceMove(
+              { priceUsd: obs.price_usd, at: obs.scraped_at },
+              observations.filter((row) => row.material_key === item.id),
+            );
+            if (move) {
+              item.change = move.changePercent;
+              item.trend = move.trend;
+            }
           });
+
+          // 4. The sources behind the current numbers: distinct suppliers
+          // and sites seen in the last 30 days (ZimEstimate counts as one).
+          const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+          const recent = observations.filter((row) => new Date(row.scraped_at).getTime() >= monthAgo);
+          setSourceCount(new Set(recent.map((row) => (row.source_name === MANUAL_PRICE_SOURCE ? 'ZimEstimate' : row.source_name || row.supplier_name || 'unnamed'))).size);
+        } else {
+          setSourceCount(0);
         }
       } catch (err) {
         console.error('Failed to fetch observations:', err);
-      }
-
-      // 3. Real 30-day movement from weekly history. Anything without at least
-      // two weeks of data keeps trend === null and renders as "No data" rather
-      // than as a number nobody measured.
-      try {
-        const { data } = await supabase
-          .from('price_weekly')
-          .select('material_key, week_start, avg_price_usd')
-          .order('week_start', { ascending: false });
-
-        const weekly = (data ?? []) as { material_key: string; week_start: string; avg_price_usd: number | null }[];
-        const byMaterial = new Map<string, { week_start: string; avg_price_usd: number | null }[]>();
-        weekly.forEach((w) => {
-          if (!byMaterial.has(w.material_key)) byMaterial.set(w.material_key, []);
-          byMaterial.get(w.material_key)!.push(w);
-        });
-
-        baseItems.forEach((item) => {
-          const history = (byMaterial.get(item.id) ?? []).filter((w) => w.avg_price_usd !== null);
-          if (history.length < 2) return;
-
-          const latest = history[0].avg_price_usd!;
-          const previous = history[1].avg_price_usd!;
-          if (previous === 0) return;
-
-          const changePercent = ((latest - previous) / previous) * 100;
-          item.change = Math.round(changePercent * 10) / 10;
-          item.trend = changePercent > 1 ? 'up' : changePercent < -1 ? 'down' : 'stable';
-        });
-      } catch (err) {
-        console.error('Failed to fetch weekly prices:', err);
-      }
-
-      // 4. How many distinct sources actually back these numbers.
-      try {
-        const { count } = await supabase
-          .from('price_sources')
-          .select('id', { count: 'exact', head: true });
-        setSourceCount(count ?? 0);
-      } catch {
         setSourceCount(0);
       }
 
@@ -187,6 +186,8 @@ export default function MarketInsightsPage() {
 
   const filteredMaterials = marketPrices
     .filter((m) => selectedCategory === 'all' || m.category === selectedCategory)
+    .filter((m) => focus === 'none'
+      || (focus === 'movers' ? m.trend === 'up' || m.trend === 'down' : m.priceUsd === null || m.priceUsd <= 0))
     .filter((m) => m.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       if (sortBy === 'price') return (b.priceUsd ?? -1) - (a.priceUsd ?? -1);
@@ -203,6 +204,19 @@ export default function MarketInsightsPage() {
     : null;
   const risingCount = marketPrices.filter((m) => m.trend === 'up').length;
   const pricedCount = marketPrices.filter((m) => m.priceUsd !== null && m.priceUsd > 0).length;
+  const fallingCount = marketPrices.filter((m) => m.trend === 'down').length;
+
+  /** The cards act on the list below them; take the reader there. */
+  const showList = (next: { focus?: typeof focus; sort?: typeof sortBy }) => {
+    if (next.focus !== undefined) setFocus(next.focus);
+    if (next.sort) setSortBy(next.sort);
+    setSelectedCategory('all');
+    document.getElementById('price-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  const FOCUS_LABEL: Record<Exclude<typeof focus, 'none'>, string> = {
+    movers: 'Materials whose price moved',
+    unpriced: 'Materials not priced yet',
+  };
 
   return (
     <MainLayout title="Market Insights">
@@ -219,9 +233,11 @@ export default function MarketInsightsPage() {
           </div>
         </div>
 
-        {/* Summary Stats */}
+        {/* Summary Stats — each one opens the part of the list it describes. */}
         <div className="stats-row">
-          <div className="stat-card reveal" data-delay="1">
+          <button type="button" className="stat-card reveal" data-delay="1"
+            onClick={() => showList({ focus: 'none', sort: 'change' })}
+            aria-label="Sort the price list by change">
             <div className="stat-icon up">
               <ChartLineUp size={24} weight="fill" />
             </div>
@@ -230,7 +246,7 @@ export default function MarketInsightsPage() {
               {avgChange === null ? (
                 <>
                   <p className="stat-value neutral">&mdash;</p>
-                  <p className="stat-period">Awaiting price history</p>
+                  <p className="stat-period">Shows once a price has been checked twice, a month apart. Prices are checked weekly.</p>
                 </>
               ) : (
                 <>
@@ -238,36 +254,40 @@ export default function MarketInsightsPage() {
                     {avgChange >= 0 ? '+' : ''}{avgChange.toFixed(1)}%
                   </p>
                   <p className="stat-period">
-                    Avg. 30-day change across {measured.length} tracked {measured.length === 1 ? 'item' : 'items'}
+                    Average change across {measured.length} tracked {measured.length === 1 ? 'material' : 'materials'}
                   </p>
                 </>
               )}
+              <span className="stat-action">Sort by change &rarr;</span>
             </div>
-          </div>
+          </button>
 
-          <div className="stat-card reveal" data-delay="2">
+          <button type="button" className={`stat-card reveal ${focus === 'movers' ? 'active' : ''}`} data-delay="2"
+            onClick={() => showList({ focus: focus === 'movers' ? 'none' : 'movers', sort: 'change' })}
+            aria-pressed={focus === 'movers'}>
             <div className="stat-icon neutral">
               <Storefront size={24} weight="fill" />
             </div>
             <div>
               <p className="stat-label">Price Movers</p>
               <p className="stat-value neutral">
-                {measured.length === 0 ? <>&mdash;</> : <>{risingCount} <span className="sub">of {measured.length}</span></>}
+                {measured.length === 0 ? <>&mdash;</> : <>{risingCount} <span className="sub">up</span> · {fallingCount} <span className="sub">down</span></>}
               </p>
               <p className="stat-period">
-                {measured.length === 0 ? 'No movement recorded yet' : 'Tracked items rising in price'}
+                {measured.length === 0 ? 'No price changes recorded yet' : `Of ${measured.length} materials with price history`}
               </p>
+              <span className="stat-action">{focus === 'movers' ? 'Show everything' : 'Show the movers'} &rarr;</span>
             </div>
-          </div>
+          </button>
 
-          <div className="stat-card reveal" data-delay="3">
+          <button type="button" className={`stat-card reveal ${focus === 'unpriced' ? 'active' : ''}`} data-delay="3"
+            onClick={() => showList({ focus: focus === 'unpriced' ? 'none' : 'unpriced' })}
+            aria-pressed={focus === 'unpriced'}>
             <div className="stat-icon blue">
               <DatabaseIcon size={24} weight="fill" />
             </div>
             <div>
               <p className="stat-label">Data Coverage</p>
-              {/* Was hardcoded to "12 Sources / Live tracking active" while the
-                  price_sources table was empty. */}
               <p className="stat-value neutral">
                 {pricedCount} <span className="sub">of {marketPrices.length} priced</span>
               </p>
@@ -275,11 +295,12 @@ export default function MarketInsightsPage() {
                 {sourceCount === null
                   ? 'Checking sources…'
                   : sourceCount > 0
-                    ? `${sourceCount} live ${sourceCount === 1 ? 'source' : 'sources'} tracking`
-                    : 'Catalogue pricing — no live sources connected'}
+                    ? `${sourceCount} ${sourceCount === 1 ? 'source' : 'sources'} updated in the last 30 days`
+                    : 'Reference prices — no live updates in the last 30 days'}
               </p>
+              <span className="stat-action">{focus === 'unpriced' ? 'Show everything' : `See the ${marketPrices.length - pricedCount} not priced`} &rarr;</span>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* content grid */}
@@ -333,9 +354,14 @@ export default function MarketInsightsPage() {
           </div>
 
           {/* Main Content */}
-          <div className="listings-section reveal" data-delay="4">
+          <div className="listings-section reveal" data-delay="4" id="price-list">
             <div className="list-header">
               <h2>{categories.find(c => c.id === selectedCategory)?.label} Prices</h2>
+              {focus !== 'none' && (
+                <button type="button" className="focus-chip" onClick={() => setFocus('none')}>
+                  {FOCUS_LABEL[focus]} <span aria-hidden="true">&times;</span><span className="sr-only">Show all</span>
+                </button>
+              )}
               <div className="sort-control">
                 <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)}>
                   <option value="name">Sort by Name</option>
@@ -480,6 +506,47 @@ export default function MarketInsightsPage() {
           box-shadow: var(--shadow-md);
         }
 
+        /* The cards are buttons now: they sort or filter the list. */
+        button.stat-card {
+          width: 100%;
+          font: inherit;
+          color: inherit;
+          text-align: left;
+          cursor: pointer;
+        }
+
+        button.stat-card:focus-visible {
+          outline: 2px solid var(--color-focus-ring, #2e6cf6);
+          outline-offset: 2px;
+        }
+
+        .stat-card.active {
+          border-color: var(--color-accent);
+          box-shadow: 0 0 0 2px rgba(46, 108, 246, 0.15);
+        }
+
+        .stat-action {
+          display: inline-block;
+          margin-top: 8px;
+          color: var(--color-accent);
+          font-size: 0.8rem;
+          font-weight: 700;
+        }
+
+        .focus-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 10px;
+          border: 1px solid var(--color-accent);
+          border-radius: 999px;
+          background: rgba(46, 108, 246, 0.08);
+          color: var(--color-accent);
+          font-size: 0.8rem;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
         .stat-icon {
           width: 48px;
           height: 48px;
@@ -617,8 +684,10 @@ export default function MarketInsightsPage() {
 
         .list-header {
           display: flex;
+          flex-wrap: wrap;
           align-items: center;
           justify-content: space-between;
+          gap: 10px;
         }
 
         .list-header h2 {
