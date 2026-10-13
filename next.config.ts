@@ -62,6 +62,18 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   transpilePackages: ['@phosphor-icons/react'],
+  // Plan label reading (src/lib/vision/ocrPlan.ts) runs Tesseract in a Node
+  // worker thread, which finds its own files on disk: it must stay a plain
+  // node_modules package, and its engine and English data must ship with the
+  // plan reader's route.
+  serverExternalPackages: ['tesseract.js', 'tesseract.js-core'],
+  outputFileTracingIncludes: {
+    '/api/vision/analyze': [
+      './node_modules/tesseract.js/**/*',
+      './node_modules/tesseract.js-core/**/*',
+      './node_modules/@tesseract.js-data/eng/4.0.0_best_int/**/*',
+    ],
+  },
   async headers() {
     return [
       {

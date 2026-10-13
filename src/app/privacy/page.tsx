@@ -20,7 +20,7 @@ export default function PrivacyPage() {
     <MainLayout title="Privacy Policy">
       <div style={shellStyle}>
         <p style={introStyle}>
-          <strong>Effective date: 1 January 2025 · Last updated: 26 March 2025</strong>
+          <strong>Effective date: 1 January 2025 · Last updated: 13 October 2026</strong>
           <br /><br />
           This Privacy Policy explains how <strong>ZimEstimate (Private) Limited</strong> (&ldquo;ZimEstimate&rdquo;,
           &ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) collects, uses, stores, and protects your personal
@@ -230,6 +230,11 @@ export default function PrivacyPage() {
                 <td style={tdStyle}>Google (Gemini API)</td>
                 <td style={tdStyle}>USA</td>
                 <td style={tdStyle}>AI-assisted BOQ and Vision Takeoff features (when used)</td>
+              </tr>
+              <tr>
+                <td style={tdStyle}>NVIDIA and OpenRouter (when configured)</td>
+                <td style={tdStyle}>USA</td>
+                <td style={tdStyle}>Backup AI floor-plan reading. A resized image copy of an uploaded plan may be sent to these providers when Vision Takeoff is used.</td>
               </tr>
             </tbody>
           </table>

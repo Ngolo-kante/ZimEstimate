@@ -27,7 +27,8 @@ const EXTENSIONS: Record<string, string> = {
 };
 
 export interface PlanSampleOutcome {
-  outcome: 'read' | 'failed';
+  /** 'read-from-labels': no AI reader answered; rooms came from the printed labels. */
+  outcome: 'read' | 'read-from-labels' | 'failed';
   rooms?: number;
   totalArea?: number;
   confidence?: number;

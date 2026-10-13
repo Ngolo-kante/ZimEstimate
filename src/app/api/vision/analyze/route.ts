@@ -3,14 +3,17 @@
 // Accepts floor plan image and returns structured room data
 
 import { after, NextRequest, NextResponse } from 'next/server';
-import { analyzeFloorPlan } from '@/lib/vision/gemini-client';
+import { analyzeFloorPlan, analysisFromLabels } from '@/lib/vision/gemini-client';
+import { makeReadingCopy, type ReadingCopy } from '@/lib/vision/readingCopy';
+import { readPlanLabels } from '@/lib/vision/ocrPlan';
 import { enforceCsrf, enforceRateLimit } from '@/lib/server/security';
 import { keepPlanSample } from '@/lib/server/planSamples';
 
-/* Room for the plan reader's two attempts (20 s, then 32 s) and the upload.
-   Without this the platform default decided, and a user could wait on a
-   request the reader had already abandoned. */
+/* The readers share a 52-second deadline (lib/ai/planReaders.ts); this is
+   that plus the upload. Without it the platform default decided, and a user
+   could wait on a request the reader had already abandoned. */
 export const maxDuration = 60;
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   // Held for keeping a copy of the plan once the response has gone — see
@@ -31,17 +34,6 @@ export async function POST(request: NextRequest) {
 
     const csrf = enforceCsrf(request);
     if (csrf) return csrf;
-
-    // Check for API key
-    if (!process.env.GOOGLE_GEMINI_API_KEY) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Gemini API key not configured. Please add GOOGLE_GEMINI_API_KEY to environment variables.',
-        },
-        { status: 500 }
-      );
-    }
 
     // Parse multipart form data
     const formData = await request.formData();
@@ -76,14 +68,38 @@ export async function POST(request: NextRequest) {
     upload = { bytes: arrayBuffer, mimeType: file.type };
     const base64 = Buffer.from(arrayBuffer).toString('base64');
 
-    // Analyze with Gemini
-    const result = await analyzeFloorPlan(base64, file.type);
+    // An image copy for the readers that cannot take a PDF: made here from an
+    // uploaded image, or sent by the browser, which renders a PDF's first page.
+    const sentCopy = formData.get('readingCopy');
+    let copy: ReadingCopy | null = null;
+    if (file.type !== 'application/pdf') copy = await makeReadingCopy(arrayBuffer);
+    else if (sentCopy instanceof File && sentCopy.size > 0 && sentCopy.size < 8 * 1024 * 1024) copy = await makeReadingCopy(await sentCopy.arrayBuffer());
+
+    // The printed labels are read at the same time, in case no AI reader answers.
+    const labels = copy
+      ? readPlanLabels(copy).catch((error) => { console.error('Label reading failed', error instanceof Error ? error.message : error); return []; })
+      : Promise.resolve([]);
+
+    let result;
+    try {
+      result = await analyzeFloorPlan(
+        { mimeType: file.type, base64 },
+        copy ? { mimeType: copy.mimeType, base64: copy.base64 } : undefined,
+      );
+    } catch (readError) {
+      // Every AI reader busy or failed: use the names and sizes printed on
+      // the plan if there are enough of them to be worth reviewing.
+      const fromLabels = await labels;
+      if (fromLabels.length < 2) throw readError;
+      console.info('Plan read from its labels', { rooms: fromLabels.length });
+      result = analysisFromLabels(fromLabels);
+    }
     const { rawResponse: _rawResponse, ...data } = result;
     void _rawResponse;
 
     const kept = upload;
     after(() => keepPlanSample(kept, {
-      outcome: 'read',
+      outcome: data.source === 'labels' ? 'read-from-labels' : 'read',
       rooms: data.rooms.length,
       totalArea: data.totalArea,
       confidence: data.confidence,

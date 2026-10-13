@@ -2,7 +2,8 @@
 // Floor plan analysis, through the shared caller that works past a busy model
 // (lib/ai/gemini.ts).
 
-import { generateWithFailover } from '@/lib/ai/gemini';
+import { readWithFirstAvailable, type ImageInput } from '@/lib/ai/planReaders';
+import type { LabelledRoom } from './roomLabels';
 import { VisionAnalysisResult, DetectedRoom, DetectedWall } from './types';
 
 /** Plan reads get this long in total — inside the route's 60-second limit. */
@@ -78,10 +79,18 @@ function parseGeminiResponse(text: string): {
     }
     cleanedText = cleanedText.trim();
 
+    // Some readers wrap the JSON in a sentence; take the outermost object.
+    if (!cleanedText.startsWith('{')) {
+      const first = cleanedText.indexOf('{');
+      const last = cleanedText.lastIndexOf('}');
+      if (first >= 0 && last > first) cleanedText = cleanedText.slice(first, last + 1);
+    }
+
     const parsed = JSON.parse(cleanedText);
+    if (!Array.isArray(parsed?.rooms)) throw new SyntaxError('No rooms in reply');
     return parsed;
   } catch (e) {
-    console.error('Failed to parse Gemini response:', e, 'Raw text:', text);
+    console.error('Failed to parse plan reader response:', e instanceof Error ? e.message : e);
     return {
       rooms: [],
       doors: 0,
@@ -90,6 +99,16 @@ function parseGeminiResponse(text: string): {
       error: 'Failed to parse AI response',
     };
   }
+}
+
+/** Do not present a model's omitted or invented default dimensions as a read plan. */
+export function isUsablePlanResponse(text: string): boolean {
+  const parsed = parseGeminiResponse(text);
+  return !parsed.error && parsed.rooms.length > 0 && parsed.rooms.every((room) =>
+    typeof room.name === 'string' && room.name.trim().length > 0 &&
+    typeof room.width === 'number' && Number.isFinite(room.width) && room.width >= 0.8 && room.width <= 40 &&
+    typeof room.length === 'number' && Number.isFinite(room.length) && room.length >= 0.8 && room.length <= 40,
+  );
 }
 
 // Generate unique IDs
@@ -140,28 +159,81 @@ export function classifyGeminiError(error: unknown): PlanReadError {
 
 // Analyze floor plan image
 export async function analyzeFloorPlan(
-  imageBase64: string,
-  mimeType: string
+  original: ImageInput,
+  readingCopy?: ImageInput,
 ): Promise<VisionAnalysisResult> {
   try {
-    const { text, model, attempts } = await generateWithFailover({
-      parts: [{ text: FLOOR_PLAN_PROMPT }, { inlineData: { mimeType, data: imageBase64 } }],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: 0.1,
-        // Room lists for a large house run to a few thousand tokens; the
-        // old 4,096 cap could cut a big plan's JSON off mid-way.
-        maxOutputTokens: 8192,
-      },
+    // Gemini, NVIDIA and OpenRouter at once; the first usable reply wins
+    // (lib/ai/planReaders.ts).
+    const { text, provider, model } = await readWithFirstAvailable({
+      prompt: FLOOR_PLAN_PROMPT,
+      original,
+      readingCopy,
+      // Room lists for a large house run to a few thousand tokens; the old
+      // 4,096 cap could cut a big plan's JSON off mid-way.
+      maxOutputTokens: 8192,
       deadlineMs: PLAN_READ_DEADLINE_MS,
-      // A reply that is not the JSON asked for is worth another model.
-      accept: (reply) => !parseGeminiResponse(reply).error,
+      // A reply that is not the JSON asked for, or has no rooms, is no answer.
+      accept: isUsablePlanResponse,
     });
-    if (attempts > 1) console.info('Plan read after failover', { model, attempts });
-    return toAnalysisResult(text);
+    console.info('Plan read', { provider, model });
+    return { ...toAnalysisResult(text), source: 'ai' };
   } catch (error) {
     throw classifyGeminiError(error);
   }
+}
+
+/**
+ * Rooms read from the names and sizes printed on the plan, when no AI reader
+ * answered. Sizes are as printed; positions are laid out from where each
+ * label sits, so the room builder shows them roughly where they are.
+ */
+export function analysisFromLabels(labelled: LabelledRoom[]): VisionAnalysisResult {
+  // Rows of labels at about the same height give the house's width in metres;
+  // columns give its depth. Each room is then drawn to that scale.
+  const groupBy = (key: 'x' | 'y') => {
+    const groups: LabelledRoom[][] = [];
+    for (const room of [...labelled].sort((a, b) => a.at[key] - b.at[key])) {
+      const group = groups.find((g) => Math.abs(g[0].at[key] - room.at[key]) < 0.08);
+      if (group) group.push(room); else groups.push([room]);
+    }
+    return groups;
+  };
+  const houseWidth = Math.max(...groupBy('y').map((row) => row.reduce((s, r) => s + r.width, 0)), 1);
+  const houseDepth = Math.max(...groupBy('x').map((col) => col.reduce((s, r) => s + r.length, 0)), 1);
+
+  const rooms: DetectedRoom[] = labelled.map((room) => {
+    const w = Math.min(100, (room.width / houseWidth) * 100);
+    const h = Math.min(100, (room.length / houseDepth) * 100);
+    return {
+      id: generateId(),
+      name: room.name,
+      dimensions: { width: room.width, length: room.length },
+      area: Math.round(room.width * room.length * 100) / 100,
+      position: {
+        x: Math.max(0, Math.min(100 - w, room.at.x * 100 - w / 2)),
+        y: Math.max(0, Math.min(100 - h, room.at.y * 100 - h / 2)),
+        width: w,
+        height: h,
+      },
+      wallType: 'internal',
+      isEdited: false,
+    };
+  });
+
+  return {
+    rooms,
+    walls: generateWallsFromRooms(rooms),
+    totalArea: Math.round(rooms.reduce((sum, r) => sum + r.area, 0) * 100) / 100,
+    doors: 0,
+    windows: 0,
+    // Sizes are exactly as printed, but nothing checked them against the
+    // drawing: below the 90 that skips the review screen.
+    confidence: 60,
+    imageWidth: 100,
+    imageHeight: 100,
+    source: 'labels',
+  };
 }
 
 function toAnalysisResult(text: string): VisionAnalysisResult {

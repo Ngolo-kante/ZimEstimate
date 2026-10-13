@@ -37,6 +37,8 @@ export type GeminiRequest = {
   models?: GeminiModelChoice[];
   /** For tests. */
   fetchImpl?: typeof fetch;
+  /** Stops the search early, e.g. when another reader has already answered. */
+  signal?: AbortSignal;
 };
 
 export type GeminiResult = { text: string; model: string; attempts: number };
@@ -62,7 +64,9 @@ export async function generateWithFailover(request: GeminiRequest): Promise<Gemi
   let lastError: GeminiCallError | null = null;
   let attempts = 0;
 
-  for (let round = 0; remaining() > 2_500; round += 1) {
+  const stopped = () => request.signal?.aborted === true;
+
+  for (let round = 0; remaining() > 2_500 && !stopped(); round += 1) {
     if (round > 0) {
       // A short, growing pause between rounds; never more than the time left.
       await sleep(Math.min(800 * round, Math.max(0, remaining() - 2_500)));
@@ -70,6 +74,7 @@ export async function generateWithFailover(request: GeminiRequest): Promise<Gemi
     let triedThisRound = 0;
 
     for (const choice of models) {
+      if (stopped()) break;
       if (retired.has(choice.model)) continue;
       const budget = Math.min(choice.timeoutMs, remaining() - 500);
       if (budget < 2_000) break;
@@ -89,7 +94,7 @@ export async function generateWithFailover(request: GeminiRequest): Promise<Gemi
                 contents: [{ role: 'user', parts: request.parts }],
                 generationConfig: { ...(request.generationConfig ?? {}), ...(thinking ? { thinkingConfig: thinking } : {}) },
               }),
-              signal: AbortSignal.timeout(budget),
+              signal: request.signal ? AbortSignal.any([AbortSignal.timeout(budget), request.signal]) : AbortSignal.timeout(budget),
             },
           );
         } catch (error) {
@@ -129,5 +134,6 @@ export async function generateWithFailover(request: GeminiRequest): Promise<Gemi
     if (triedThisRound === 0) break;
   }
 
+  if (stopped()) throw new GeminiCallError('Stopped: another reader answered first.', undefined, 'AbortError');
   throw lastError ?? new GeminiCallError('No model could be reached in time.', 504, 'AbortError');
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyGeminiError } from './gemini-client';
+import { classifyGeminiError, isUsablePlanResponse } from './gemini-client';
 
 /**
  * The bug these guard: errors were classified by searching the message for
@@ -45,5 +45,13 @@ describe('classifying plan reader errors', () => {
     const error = classifyGeminiError(fetchError(400, 'Candidate was blocked due to SAFETY'));
     expect(error.message).toMatch(/safety/i);
     expect(error.retryable).toBe(false);
+  });
+});
+
+describe('accepting a plan reader reply', () => {
+  it('requires measured room dimensions before treating a reply as usable', () => {
+    expect(isUsablePlanResponse('{"rooms":[{"name":"Kitchen","width":3.6,"length":4.5}]}')).toBe(true);
+    expect(isUsablePlanResponse('{"rooms":[{"name":"Kitchen"}]}')).toBe(false);
+    expect(isUsablePlanResponse('{"rooms":[{"name":"Kitchen","width":0,"length":4.5}]}')).toBe(false);
   });
 });

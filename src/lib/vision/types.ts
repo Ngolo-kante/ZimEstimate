@@ -45,6 +45,9 @@ export interface VisionAnalysisResult {
   imageWidth: number;
   imageHeight: number;
   rawResponse?: string; // For debugging
+  /** 'labels' when the AI readers were all busy and the rooms were read from
+   *  the names and sizes printed on the plan; positions are then approximate. */
+  source?: 'ai' | 'labels';
 }
 
 // ============================================
