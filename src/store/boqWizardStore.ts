@@ -6,7 +6,7 @@ import { STAGE_COMPLIANCE_REQUIREMENTS } from '@/lib/compliance';
 import { BrickType, CementType } from '@/lib/vision/types';
 import type { FinishLevel } from '@/lib/calculations';
 import type { RoofCovering } from '@/lib/calculations/roofingOptions';
-import type { LaborPercentages, LaborSubstageId } from '@/lib/calculations/laborSubstages';
+import { OWN_FIGURE_NOTE, type ResidentialDensity } from '@/lib/projectFees';
 import type { RoomInstance } from '@/app/boq/new/components/room-builder/types';
 
 export type SiteSlopeType = 'flat' | 'gentle' | 'moderate' | 'steep';
@@ -21,6 +21,7 @@ export const BOQ_MILESTONE_IDS = [
   'finishing',
   'exterior',
   'labor',
+  'project_fees',
 ] as const;
 
 export type BoqMilestoneId = (typeof BOQ_MILESTONE_IDS)[number];
@@ -65,6 +66,8 @@ export interface ProjectDetailsState {
   // 'not_sure' is an answer: use the default, but record that it was not chosen.
   finishLevel: FinishLevel | 'not_sure' | null;
   roofCovering: RoofCovering;
+  /** Prices the council fee lines (plan approval, inspections, certificate). */
+  residentialDensity: ResidentialDensity;
   roomInputs: Record<RoomInputKey, string>;
 }
 
@@ -144,8 +147,6 @@ interface BoqWizardState {
   // Labor
   laborType: LaborPreference;
   setLaborType: (labor: LaborPreference) => void;
-  laborPercentages: LaborPercentages;
-  setLaborPercentage: (substage: LaborSubstageId, percentage: number) => void;
 
   // BOQ data
   milestonesState: MilestoneData[];
@@ -211,6 +212,7 @@ const initialProjectDetails: ProjectDetailsState = {
   cementTypes: ['cement_325'],
   finishLevel: null,
   roofCovering: 'ibr_05',
+  residentialDensity: 'low',
   roomInputs: { ...DEFAULT_ROOM_INPUTS },
 };
 
@@ -221,6 +223,7 @@ const milestoneLabels: Record<BoqMilestoneId, string> = {
   finishing: 'Finishing',
   exterior: 'Exterior Works',
   labor: 'Labor',
+  project_fees: 'Professional & Statutory Fees',
 };
 
 const initialMilestonesState: MilestoneData[] = BOQ_MILESTONE_IDS.map((id) => ({
@@ -252,7 +255,6 @@ function getInitialState(): Omit<BoqWizardState,
   | 'setSelectedStages'
   | 'toggleStage'
   | 'setLaborType'
-  | 'setLaborPercentage'
   | 'setMilestonesState'
   | 'updateMilestoneItemQuantity'
   | 'updateMilestoneItem'
@@ -285,7 +287,6 @@ function getInitialState(): Omit<BoqWizardState,
     projectScope: 'entire',
     selectedStages: ['substructure', 'superstructure'],
     laborType: 'materials_only',
-    laborPercentages: {},
     milestonesState: initialMilestonesState.map((milestone) => ({ ...milestone, items: [] })),
     temporaryWorksSelections: [],
     includeSepticTank: false,
@@ -304,6 +305,7 @@ function getInitialState(): Omit<BoqWizardState,
 
 function calculateVisibleMilestones(state: Pick<BoqWizardState, 'projectScope' | 'selectedStages' | 'laborType' | 'milestonesState'>): MilestoneData[] {
   return state.milestonesState.filter((milestone) => {
+    if (milestone.id === 'project_fees') return true;
     if (milestone.id === 'labor') {
       return state.laborType === 'materials_labor';
     }
@@ -362,9 +364,6 @@ export const useBoqWizardStore = create<BoqWizardState>()(
   })),
 
   setLaborType: (labor) => set({ laborType: labor }),
-  setLaborPercentage: (substage, percentage) => set((state) => ({
-    laborPercentages: { ...state.laborPercentages, [substage]: Math.min(100, Math.max(0, percentage)) },
-  })),
 
   setMilestonesState: (milestones) => set((state) => {
     const existingExpanded = new Map(state.milestonesState.map((m) => [m.id, m.expanded]));
@@ -400,9 +399,13 @@ export const useBoqWizardStore = create<BoqWizardState>()(
       milestone.id === milestoneId
         ? {
           ...milestone,
-          items: milestone.items.map((item) =>
-            item.id === itemId ? { ...item, ...updates } : item
-          ),
+          items: milestone.items.map((item) => {
+            if (item.id !== itemId) return item;
+            // A typed-in fee replaces the tariff figure. Its note says so, and
+            // is saved with it, so a reload or a new floor area keeps it.
+            const ownFee = milestoneId === 'project_fees' && updates.actualPriceUsd !== undefined && updates.actualPriceUsd !== item.actualPriceUsd;
+            return { ...item, ...updates, ...(ownFee ? { description: OWN_FIGURE_NOTE, isOverridden: true } : {}) };
+          }),
         }
         : milestone
     ),
@@ -511,7 +514,7 @@ export const useBoqWizardStore = create<BoqWizardState>()(
 
   getBoqHealth: () => {
     const visibleMilestones = calculateVisibleMilestones(get())
-      .filter((milestone) => milestone.id !== 'labor');
+      .filter((milestone) => milestone.id !== 'labor' && milestone.id !== 'project_fees');
 
     const healthInputs = visibleMilestones.map((milestone) => ({
       category: milestone.id,
@@ -547,7 +550,6 @@ export const useBoqWizardStore = create<BoqWizardState>()(
         projectScope: state.projectScope,
         selectedStages: state.selectedStages,
         laborType: state.laborType,
-        laborPercentages: state.laborPercentages,
         milestonesState: state.milestonesState,
         temporaryWorksSelections: state.temporaryWorksSelections,
         includeSepticTank: state.includeSepticTank,

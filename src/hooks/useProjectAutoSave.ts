@@ -202,7 +202,7 @@ export function useProjectAutoSave(
                         // For "entire_house" scope, enable stages that have BOQ items
                         const stagesWithItems = new Set<string>();
                         milestonesState.forEach(m => {
-                            if (m.items.length > 0) stagesWithItems.add(m.id);
+                            if (m.items.length > 0 && m.id !== 'labor' && m.id !== 'project_fees') stagesWithItems.add(m.id);
                         });
                         stagesToEnable = Array.from(stagesWithItems);
                     }

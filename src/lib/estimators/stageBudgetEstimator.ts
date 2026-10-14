@@ -1,4 +1,5 @@
 import { generateBOQFromBasics } from '@/lib/calculations';
+import type { RoofCovering } from '@/lib/calculations/roofingOptions';
 import type { LocationType } from '@/lib/calculations/assumptions';
 import type { BrickType, CementType } from '@/lib/vision/types';
 
@@ -28,6 +29,7 @@ export type StageReachInput = {
   brickTypes?: BrickType[];
   cementTypes?: CementType[];
   locationType?: LocationType;
+  roofCovering?: RoofCovering;
 };
 
 export type StageReachRow = {
@@ -71,6 +73,7 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     scope: 'full_house',
     includeLabor: false,
     locationType,
+    roofCovering: input.roofCovering,
   });
 
   const stageCosts: Record<StageId, number> = {

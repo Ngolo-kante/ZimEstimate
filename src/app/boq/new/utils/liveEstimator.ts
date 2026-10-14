@@ -1,6 +1,7 @@
 import { generateBOQFromBasics, DEFAULT_FINISH_LEVEL } from '@/lib/calculations';
-import { LABOR_SUBSTAGES, effectiveLaborPercentage, laborSubstageFor, type LaborPercentages } from '@/lib/calculations/laborSubstages';
+import { LABOR_SUBSTAGES, laborPercentageFor, laborSubstageFor } from '@/lib/calculations/laborSubstages';
 import { getBestPrice, materials } from '@/lib/materials';
+import { buildProjectFeeItems, isTariffPriced, OWN_FIGURE_NOTE } from '@/lib/projectFees';
 import type { DetailedRoom, GeneratedBOQItem, ProjectScope as VisionProjectScope } from '@/lib/vision/types';
 import {
   BOQ_MILESTONE_IDS,
@@ -32,7 +33,6 @@ interface BuildLiveMilestonesParams {
   projectScope: ProjectScope;
   selectedStages: string[];
   laborType: LaborPreference;
-  laborPercentages?: LaborPercentages;
   temporaryWorksSelections: TemporaryWorkSelection[];
   includeSepticTank: boolean;
   septicDimensions: {
@@ -296,7 +296,6 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
     projectScope,
     selectedStages,
     laborType,
-    laborPercentages,
     temporaryWorksSelections,
     includeSepticTank,
     septicDimensions,
@@ -335,7 +334,6 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
     cementTypes: projectDetails.cementTypes,
     scope,
     includeLabor: laborType === 'materials_labor',
-    laborPercentages,
     roofCovering: projectDetails.roofCovering,
     locationType: (projectDetails.locationType || 'urban') as 'urban' | 'peri-urban' | 'rural',
     // 'not_sure' and unanswered both price as standard — the estimate has to
@@ -362,7 +360,11 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
     : [];
 
   const mergedInput = applyQuickOpenings(
-    [...generatedItems, ...extraItems],
+    [...generatedItems, ...extraItems, ...buildProjectFeeItems({
+      floorArea,
+      density: projectDetails.residentialDensity || 'low',
+      doubleStorey: projectDetails.buildingType === 'double_storey',
+    })],
     geometryMode,
     totalWindows,
     totalDoors
@@ -379,6 +381,23 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
   mergedInput.forEach((item) => {
     const category = normalizeCategory(item.category || 'substructure');
     const existingItems = previousByMilestone.get(category) || [];
+
+    if (category === 'project_fees') {
+      // One line per fee, matched by fee rather than by note: the note changes
+      // with the floor area. A figure the user typed in is kept; a tariff line
+      // follows the current floor area, density and storeys.
+      const existing = existingItems.find((candidate) => candidate.materialId === item.materialId);
+      if (existing) usedExistingIds.add(existing.id);
+      const ownFigure = existing && (
+        existing.isOverridden ||
+        existing.description === OWN_FIGURE_NOTE ||
+        (!isTariffPriced(existing) && existing.actualPriceUsd > 0)
+      );
+      const fee = ownFigure ? existing : { ...item, id: existing?.id || item.id };
+      outputByMilestone.set(category, [...(outputByMilestone.get(category) || []), fee]);
+      return;
+    }
+
     const key = itemKey(
       category,
       item.materialId,
@@ -452,7 +471,7 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
     outputByMilestone.set('labor', LABOR_SUBSTAGES.flatMap((substage) => {
       const total = materialTotals.get(substage.id);
       if (!total) return [];
-      const percentage = effectiveLaborPercentage(laborPercentages, substage.id);
+      const percentage = laborPercentageFor(substage.id);
       const priceUsd = roundTo(total.usd * percentage / 100);
       const priceZwg = roundTo(total.zwg * percentage / 100);
       const existing = previousLabor.find((item) => item.materialId === `labor-${substage.id}`);

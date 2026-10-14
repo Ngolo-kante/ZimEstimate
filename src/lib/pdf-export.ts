@@ -78,7 +78,74 @@ const categoryLabels: Record<string, string> = {
     finishing: 'Interior & Finishing',
     exterior: 'External Work',
     labor: 'Labor & Services',
+    project_fees: 'Professional & Council Fees',
 };
+
+// ===== COST SPLIT (pie) =====
+type PdfSlice = { label: string; value: number; color: [number, number, number] };
+
+function costSplitSlices(rows: { category?: string | null; total: number }[]): PdfSlice[] {
+    const split = { materials: 0, labor: 0, fees: 0 };
+    for (const row of rows) {
+        if (row.category === 'labor') split.labor += row.total;
+        else if (row.category === 'project_fees') split.fees += row.total;
+        else split.materials += row.total;
+    }
+    return [
+        { label: 'Materials & works', value: split.materials, color: [11, 31, 59] },
+        { label: 'Labour', value: split.labor, color: [46, 108, 246] },
+        { label: 'Professional & council fees', value: split.fees, color: [217, 119, 6] },
+    ];
+}
+
+/** Draws "Where the budget goes" as a ring chart with a legend; returns the next y. */
+function drawCostSplit(doc: jsPDF, yPos: number, margin: number, slices: PdfSlice[], currency: 'USD' | 'ZWG'): number {
+    const shown = slices.filter((slice) => slice.value > 0);
+    const total = shown.reduce((sum, slice) => sum + slice.value, 0);
+    // A single kind of cost makes a plain circle that says nothing.
+    if (total <= 0 || shown.length < 2) return yPos;
+
+    doc.setTextColor(6, 20, 47);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Where the budget goes', margin, yPos);
+    yPos += 4;
+
+    const radius = 16;
+    const cx = margin + radius;
+    const cy = yPos + radius;
+    let angle = 0;
+    for (const slice of shown) {
+        const sweep = (slice.value / total) * Math.PI * 2;
+        const steps = Math.max(2, Math.ceil(sweep / (Math.PI / 36)));
+        const points: [number, number][] = [[cx, cy]];
+        for (let i = 0; i <= steps; i += 1) {
+            const a = angle + (sweep * i) / steps;
+            points.push([cx + radius * Math.sin(a), cy - radius * Math.cos(a)]);
+        }
+        const segments = points.slice(1).map((point, i) => [point[0] - points[i][0], point[1] - points[i][1]]);
+        doc.setFillColor(...slice.color);
+        doc.lines(segments, cx, cy, [1, 1], 'F', true);
+        angle += sweep;
+    }
+    doc.setFillColor(255, 255, 255);
+    doc.circle(cx, cy, radius * 0.56, 'F');
+
+    let rowY = yPos + 6;
+    const legendX = margin + radius * 2 + 10;
+    doc.setFontSize(9);
+    for (const slice of shown) {
+        doc.setFillColor(...slice.color);
+        doc.rect(legendX, rowY - 3, 4, 4, 'F');
+        doc.setTextColor(40, 40, 40);
+        doc.setFont('helvetica', 'normal');
+        doc.text(slice.label, legendX + 7, rowY);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${formatCurrency(slice.value, currency)}  (${((slice.value / total) * 100).toFixed(1)}%)`, legendX + 70, rowY);
+        rowY += 8;
+    }
+    return yPos + radius * 2 + 8;
+}
 
 // Format currency
 function formatCurrency(amount: number, currency: 'USD' | 'ZWG'): string {
@@ -296,6 +363,11 @@ export function generateBOQPDF(
     doc.text(`${items.length} line items`, pageWidth - margin - 10, yPos + 15, { align: 'right' });
 
     yPos += 35;
+
+    yPos = drawCostSplit(doc, yPos, margin, costSplitSlices(items.map((item) => ({
+        category: item.category,
+        total: Number(opts.currency === 'USD' ? item.total_usd : item.total_zwg) || 0,
+    }))), opts.currency);
 
     // ===== BOQ ITEMS BY CATEGORY =====
     const groupedItems = groupItemsByCategory(items);
@@ -606,6 +678,11 @@ function buildBOQDocument(data: VisionBOQData, currency: 'USD' | 'ZWG'): jsPDF {
     doc.text(`${data.items.length} line items`, pageWidth - margin - 10, yPos + 15, { align: 'right' });
 
     yPos += 35;
+
+    yPos = drawCostSplit(doc, yPos, margin, costSplitSlices(data.items.map((item) => ({
+        category: item.category,
+        total: item.quantity * (currency === 'USD' ? item.unit_price_usd : item.unit_price_zwg),
+    }))), currency);
 
     // Group items by category
     const grouped: Record<string, typeof data.items> = {};

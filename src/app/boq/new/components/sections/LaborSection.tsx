@@ -1,6 +1,6 @@
 'use client';
 
-import { LABOR_SUBSTAGES, DEFAULT_LABOR_PERCENTAGE, effectiveLaborPercentage, laborSubstageFor } from '@/lib/calculations/laborSubstages';
+import { LABOR_SUBSTAGES, STAGE_LABOR_PERCENTAGES, laborSubstageFor } from '@/lib/calculations/laborSubstages';
 import { useBoqWizardStore } from '@/store/boqWizardStore';
 
 const STAGES = [
@@ -11,13 +11,15 @@ const STAGES = [
   { id: 'exterior', label: 'Exterior works' },
 ] as const;
 
+const dollars = (value: number) => `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 export default function LaborSection() {
-  const { projectScope, selectedStages, laborPercentages, setLaborPercentage, milestonesState } = useBoqWizardStore();
+  const { projectScope, selectedStages, milestonesState } = useBoqWizardStore();
   const activeStages = STAGES.filter((stage) => projectScope === 'entire' || selectedStages.includes(stage.id));
   const materialsBySubstage = new Map<string, number>();
 
   for (const milestone of milestonesState) {
-    if (milestone.id === 'labor') continue;
+    if (milestone.id === 'labor' || milestone.id === 'project_fees') continue;
     for (const item of milestone.items) {
       const substage = laborSubstageFor({
         category: milestone.id,
@@ -32,35 +34,36 @@ export default function LaborSection() {
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-        <h3 className="text-base font-bold text-slate-900">Labour by work sub-stage</h3>
-        <p className="mt-1 text-sm leading-6 text-slate-700">Each allowance is a percentage of that sub-stage&apos;s material cost. {DEFAULT_LABOR_PERCENTAGE}% is a Zimbabwe planning starting point, not a contractor quote. Adjust any row to match your local rates.</p>
+        <h3 className="text-base font-bold text-slate-900">Labour by stage</h3>
+        <p className="mt-1 text-sm leading-6 text-slate-700">Labour is a fixed percentage of each stage&apos;s material cost, a Zimbabwe planning rule of thumb rather than a contractor quote. To use your builder&apos;s price, edit the labour lines in the BOQ review.</p>
       </div>
-      {activeStages.map((stage) => (
-        <section key={stage.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <h4 className="border-b border-slate-100 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 sm:px-5">{stage.label}</h4>
-          <div className="divide-y divide-slate-100">
-            {LABOR_SUBSTAGES.filter((substage) => substage.stage === stage.id).map((substage) => {
-              const rate = effectiveLaborPercentage(laborPercentages, substage.id);
-              const materialCost = materialsBySubstage.get(substage.id) || 0;
-              return (
-                <div key={substage.id} className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 sm:grid-cols-[1fr_auto_auto] sm:px-5">
-                  <div className="min-w-0">
-                    <label htmlFor={`labor-${substage.id}`} className="block text-sm font-semibold text-slate-800">{substage.label}</label>
-                    <p className="text-xs text-slate-500">Materials ${materialCost.toFixed(2)}</p>
+      {activeStages.map((stage) => {
+        const rate = STAGE_LABOR_PERCENTAGES[stage.id];
+        const substages = LABOR_SUBSTAGES.filter((substage) => substage.stage === stage.id);
+        const stageMaterials = substages.reduce((sum, substage) => sum + (materialsBySubstage.get(substage.id) || 0), 0);
+        return (
+          <section key={stage.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-3 sm:px-5">
+              <h4 className="text-sm font-bold text-slate-900">{stage.label}</h4>
+              <span className="text-sm text-slate-600"><strong className="text-slate-900">{rate}%</strong> of materials · {dollars(stageMaterials * rate / 100)}</span>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {substages.map((substage) => {
+                const materialCost = materialsBySubstage.get(substage.id) || 0;
+                return (
+                  <div key={substage.id} className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800">{substage.label}</p>
+                      <p className="text-xs text-slate-500">Materials {dollars(materialCost)}</p>
+                    </div>
+                    <strong className="shrink-0 text-sm text-slate-900">{dollars(materialCost * rate / 100)}</strong>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <input id={`labor-${substage.id}`} type="number" min="0" max="100" step="0.5" value={rate}
-                      onChange={(event) => setLaborPercentage(substage.id, Number(event.target.value) || 0)}
-                      className="w-16 rounded-lg border border-slate-300 px-2 py-2 text-right text-sm font-semibold text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" />
-                    <span className="text-sm text-slate-500">%</span>
-                  </div>
-                  <strong className="col-span-2 text-right text-sm text-slate-900 sm:col-span-1 sm:w-24">${(materialCost * rate / 100).toFixed(2)}</strong>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      ))}
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
       <p className="text-xs leading-5 text-slate-500">Labour is a planning allowance based on priced materials. Check subcontractor quotations, site conditions and materials with missing prices before relying on the total.</p>
     </div>
   );

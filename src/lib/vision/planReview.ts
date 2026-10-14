@@ -48,6 +48,15 @@ export function assessPlanReview(input: PlanReviewInput): PlanReviewFinding[] {
   return findings;
 }
 
-export function planReviewKey(input: PlanReviewInput): string {
-  return JSON.stringify(input);
+export function isPlanReviewBlocked(input: PlanReviewInput): boolean {
+  return assessPlanReview(input).some((finding) => finding.severity === 'required');
+}
+
+/**
+ * The plan itself: floor area and rooms. A confirmation stays valid while
+ * the user corrects doors, windows, stages, roof or labour — those are edits
+ * made on the same screen, not a different plan.
+ */
+export function planIdentityKey(input: PlanReviewInput): string {
+  return JSON.stringify({ area: input.area, rooms: input.rooms });
 }

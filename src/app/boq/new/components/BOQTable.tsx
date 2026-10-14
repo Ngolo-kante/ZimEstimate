@@ -26,6 +26,7 @@ const MILESTONE_LABELS: Record<string, string> = {
   finishing: 'Finishing & Internal Works',
   exterior: 'Exterior & Site Works',
   labor: 'Labor & Construction Crew',
+  project_fees: 'Professional & Statutory Fees',
 };
 
 function formatUSD(amount: number): string {
@@ -63,6 +64,7 @@ export default function BOQTable() {
   // Filter visible milestones based on scope and labor options
   const visibleMilestones = useMemo(() => {
     return milestonesState.filter((milestone) => {
+      if (milestone.id === 'project_fees') return true;
       if (milestone.id === 'labor') {
         return laborType === 'materials_labor';
       }
@@ -365,6 +367,7 @@ export default function BOQTable() {
                             <tbody className="divide-y divide-[var(--color-border-light)]">
                               {filteredItems.map((item) => {
                                 const qty = item.quantity || 0;
+                                const isFeeAllowance = milestone.id === 'project_fees' && item.materialId.startsWith('project-fee-');
                                 const lineTotal = qty * item.actualPriceUsd;
                                 const isModified =
                                   item.isOverridden ||
@@ -382,6 +385,7 @@ export default function BOQTable() {
                                       <input
                                         type="text"
                                         value={item.materialName}
+                                        readOnly={isFeeAllowance}
                                         onChange={(e) =>
                                           updateMilestoneItem(milestone.id, item.id, {
                                             materialName: e.target.value,
@@ -410,7 +414,7 @@ export default function BOQTable() {
 
                                     {/* Inline Quantity Controls */}
                                     <td className="px-4 py-3 align-middle">
-                                      <div className="flex items-center justify-center gap-1">
+                                      {isFeeAllowance ? <span className="block text-center text-sm font-semibold text-[var(--color-text)]">{qty}</span> : <div className="flex items-center justify-center gap-1">
                                         <button
                                           type="button"
                                           onClick={() =>
@@ -454,7 +458,7 @@ export default function BOQTable() {
                                         >
                                           <Plus size={12} />
                                         </button>
-                                      </div>
+                                      </div>}
                                     </td>
 
                                     {/* Unit */}
@@ -474,6 +478,7 @@ export default function BOQTable() {
                                           onChange={(e) =>
                                             updateMilestoneItem(milestone.id, item.id, {
                                               actualPriceUsd: Math.max(0, parseFloat(e.target.value) || 0),
+                                              ...(isFeeAllowance ? { actualPriceZwg: Math.max(0, parseFloat(e.target.value) || 0) * 30 } : {}),
                                               isOverridden: true,
                                             })
                                           }
@@ -491,7 +496,7 @@ export default function BOQTable() {
                                     {/* Action Buttons: Revert & Delete */}
                                     <td className="px-4 py-3 align-middle text-center">
                                       <div className="flex items-center justify-center gap-1.5">
-                                        {isModified && (
+                                        {isModified && !isFeeAllowance && (
                                           <button
                                             type="button"
                                             onClick={() => handleRevertItem(milestone.id, item)}
@@ -502,7 +507,7 @@ export default function BOQTable() {
                                             <ArrowCounterClockwise size={14} />
                                           </button>
                                         )}
-                                        <button
+                                        {!isFeeAllowance && <button
                                           type="button"
                                           onClick={() => removeMilestoneItem(milestone.id, item.id)}
                                           title="Delete line item"
@@ -510,7 +515,7 @@ export default function BOQTable() {
                                           className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-border-light)] bg-[var(--color-surface)] text-[var(--color-error)] hover:bg-[var(--color-error-bg)] transition"
                                         >
                                           <Trash size={14} />
-                                        </button>
+                                        </button>}
                                       </div>
                                     </td>
                                   </tr>
@@ -532,6 +537,7 @@ export default function BOQTable() {
                         <div className="block md:hidden divide-y divide-[var(--color-border-light)]">
                           {filteredItems.map((item) => {
                             const qty = item.quantity || 0;
+                            const isFeeAllowance = milestone.id === 'project_fees' && item.materialId.startsWith('project-fee-');
                             const lineTotal = qty * item.actualPriceUsd;
                             const isModified =
                               item.isOverridden ||
@@ -544,6 +550,7 @@ export default function BOQTable() {
                                     <input
                                       type="text"
                                       value={item.materialName}
+                                      readOnly={isFeeAllowance}
                                       onChange={(e) =>
                                         updateMilestoneItem(milestone.id, item.id, {
                                           materialName: e.target.value,
@@ -573,7 +580,7 @@ export default function BOQTable() {
 
                                 <div className="flex items-center justify-between pt-1">
                                   <div className="flex items-center gap-1">
-                                    <button
+                                    {!isFeeAllowance && <button
                                       type="button"
                                       onClick={() =>
                                         updateMilestoneItemQuantity(
@@ -586,8 +593,8 @@ export default function BOQTable() {
                                       className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]"
                                     >
                                       <Minus size={12} />
-                                    </button>
-                                    <input
+                                    </button>}
+                                    {isFeeAllowance ? <span className="w-16 text-center text-xs font-bold text-[var(--color-text)]">{qty}</span> : <input
                                       type="number"
                                       min="0"
                                       step="any"
@@ -601,8 +608,8 @@ export default function BOQTable() {
                                       }
                                       aria-label={`Quantity of ${item.materialName}`}
                                       className="w-16 rounded-lg border border-[var(--color-border)] py-1 text-center text-xs font-bold text-[var(--color-text)] outline-none"
-                                    />
-                                    <button
+                                    />}
+                                    {!isFeeAllowance && <button
                                       type="button"
                                       onClick={() =>
                                         updateMilestoneItemQuantity(
@@ -615,12 +622,12 @@ export default function BOQTable() {
                                       className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]"
                                     >
                                       <Plus size={12} />
-                                    </button>
+                                    </button>}
                                     <span className="ml-1 text-[11px] text-[var(--color-text-secondary)] font-semibold">{item.unit}</span>
                                   </div>
 
                                   <div className="flex items-center gap-2">
-                                    {isModified && (
+                                    {isModified && !isFeeAllowance && (
                                       <button
                                         type="button"
                                         onClick={() => handleRevertItem(milestone.id, item)}
@@ -630,14 +637,14 @@ export default function BOQTable() {
                                         <ArrowCounterClockwise size={14} />
                                       </button>
                                     )}
-                                    <button
+                                    {!isFeeAllowance && <button
                                       type="button"
                                       onClick={() => removeMilestoneItem(milestone.id, item.id)}
                                       aria-label={`Delete ${item.materialName}`}
                                       className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-border-light)] text-[var(--color-error)]"
                                     >
                                       <Trash size={14} />
-                                    </button>
+                                    </button>}
                                   </div>
                                 </div>
                                 {whyOpenId === item.id && <LineWhyPanel item={item} stage={milestone.id} />}

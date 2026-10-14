@@ -24,6 +24,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
 
   const visibleMilestones = useMemo(() => {
     return milestonesState.filter((milestone) => {
+      if (milestone.id === 'project_fees') return true;
       if (milestone.id === 'labor') {
         return laborType === 'materials_labor';
       }
@@ -45,7 +46,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
   const health = useMemo(() => {
     const healthMilestones = visibleMilestones.filter(
       (milestone): milestone is typeof milestone & { id: 'substructure' | 'superstructure' | 'roofing' | 'finishing' | 'exterior' } =>
-        milestone.id !== 'labor'
+        milestone.id !== 'labor' && milestone.id !== 'project_fees'
     );
 
     const inputs = healthMilestones

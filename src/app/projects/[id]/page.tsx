@@ -27,6 +27,8 @@ import PhoneNumberModal from '@/components/ui/PhoneNumberModal';
 import ProjectUsageView from '@/components/projects/ProjectUsageView';
 import UnifiedProcurementView from '@/components/projects/UnifiedProcurementView';
 import ProjectKPIDashboard from '@/components/projects/ProjectKPIDashboard';
+import ProjectFeesPanel from '@/components/projects/ProjectFeesPanel';
+import ProjectCostSplit from '@/components/projects/ProjectCostSplit';
 import SidebarSpine, { PROJECT_NAV_ITEMS, ProjectView } from '@/components/projects/SidebarSpine';
 import ProjectSettings from '@/components/projects/ProjectSettings';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
@@ -148,6 +150,8 @@ function ProjectDetailContent() {
     // Core state
     const [project, setProject] = useState<Project | null>(null);
     const [items, setItems] = useState<BOQItem[]>([]);
+    const feeItems = useMemo(() => items.filter((item) => item.category === 'project_fees'), [items]);
+    const materialItems = useMemo(() => items.filter((item) => item.category !== 'project_fees' && item.category !== 'labor'), [items]);
     const [stages, setStages] = useState<ProjectStageWithTasks[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -243,8 +247,8 @@ function ProjectDetailContent() {
 
     // Purchase stats (calculated from items)
     const purchaseStats = useMemo(() => {
-        const totalItems = items.length;
-        const purchasedItems = items.filter(i => i.is_purchased).length;
+        const totalItems = materialItems.length;
+        const purchasedItems = materialItems.filter(i => i.is_purchased).length;
         const totals = items.reduce(
             (acc, item) => {
                 const estimatedQty = Number(item.quantity) || 0;
@@ -299,7 +303,7 @@ function ProjectDetailContent() {
             qtyVariance: totals.qtyVariance,
             qtyVariancePercent,
         };
-    }, [items]);
+    }, [items, materialItems]);
 
     const priceUpdatePreview = useMemo(() => {
         if (priceUpdates.length === 0) return '';
@@ -1196,7 +1200,7 @@ function ProjectDetailContent() {
     const activeViewDetails = activeView === 'overview' ? null : viewDetails[activeView];
     const activeViewStats = activeView === 'boq'
             ? [
-                { label: 'Materials', value: String(items.length) },
+                { label: 'Materials', value: String(materialItems.length) },
                 { label: 'Estimate', value: formatPrice(purchaseStats.estimatedTotal, purchaseStats.estimatedTotal * exchangeRate) },
                 { label: 'Purchased', value: `${purchaseStats.purchasedItems}/${purchaseStats.totalItems}` },
             ]
@@ -1384,6 +1388,8 @@ function ProjectDetailContent() {
                                 />
                             </section>
 
+                            <ProjectCostSplit items={items} spentUsd={purchaseStats.actualSpent} />
+
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                                 {/* Left Column - Next Steps */}
                                 <div className="lg:col-span-2 space-y-8">
@@ -1391,7 +1397,7 @@ function ProjectDetailContent() {
                                     <section className="overview-card reveal" data-delay="5">
                                         <h3 className="text-lg font-bold text-primary mb-4 font-heading">Next Steps</h3>
                                         <div className="space-y-4">
-                                            {items.filter(i => !i.is_purchased).slice(0, 5).map(item => (
+                                            {materialItems.filter(i => !i.is_purchased).slice(0, 5).map(item => (
                                                 <div key={item.id} className="next-step-item">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-2 h-2 rounded-full bg-accent"></div>
@@ -1411,18 +1417,18 @@ function ProjectDetailContent() {
                                                     </Button>
                                                 </div>
                                             ))}
-                                            {items.filter(i => !i.is_purchased).length === 0 && (
+                                            {materialItems.filter(i => !i.is_purchased).length === 0 && (
                                                 <div className="text-center py-8 text-secondary">
                                                     <CheckCircle size={32} className="mx-auto mb-2 text-blue-600" />
                                                     <p>All items purchased! Great job.</p>
                                                 </div>
                                             )}
-                                            {items.filter(i => !i.is_purchased).length > 5 && (
+                                            {materialItems.filter(i => !i.is_purchased).length > 5 && (
                                                 <button
                                                     className="view-all-btn"
                                                     onClick={() => setActiveView('procurement')}
                                                 >
-                                                    View all {items.filter(i => !i.is_purchased).length} pending items
+                                                    View all {materialItems.filter(i => !i.is_purchased).length} pending items
                                                 </button>
                                             )}
                                         </div>
@@ -1452,7 +1458,7 @@ function ProjectDetailContent() {
                                             ) : null}
                                             <div className="flex justify-between items-center py-2 border-b border-border-light">
                                                 <span className="text-sm text-secondary">Est. Materials</span>
-                                                <span className="font-medium text-primary">{items.length} Items</span>
+                                                <span className="font-medium text-primary">{materialItems.length} Items</span>
                                             </div>
                                             <div className="flex justify-between items-center py-2 border-b border-border-light">
                                                 <span className="text-sm text-secondary">Completion</span>
@@ -1638,6 +1644,7 @@ function ProjectDetailContent() {
                                     showTasks={false}
                                 />
                             )}
+                            <ProjectFeesPanel items={feeItems} onUpdate={handleItemUpdate} />
                         </div>
                     )}
 
@@ -1662,7 +1669,7 @@ function ProjectDetailContent() {
                         <div className="view-panel">
                             <UnifiedProcurementView
                                 project={project}
-                                items={items}
+                                items={materialItems}
                                 onItemsRefresh={refreshProjectMaterialState}
                                 selectedItemForPurchase={selectedItemForPurchase}
                                 onClearSelectedItem={() => setSelectedItemForPurchase(null)}
@@ -1676,7 +1683,7 @@ function ProjectDetailContent() {
                             {project.usage_tracking_enabled ? (
                                 <ProjectUsageView
                                     project={project}
-                                    items={items}
+                                    items={materialItems}
                                     usageByItem={usageByItem}
                                     onUsageRecorded={handleUsageRecorded}
                                     onRequestPhone={handleRequestPhone}

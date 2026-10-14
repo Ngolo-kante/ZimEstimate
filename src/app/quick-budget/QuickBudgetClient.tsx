@@ -21,6 +21,9 @@ import BudgetFitExplorer from '@/components/quick-projects/BudgetFitExplorer';
 import { fencingBudgetFit, pavingBudgetFit } from '@/lib/quick-projects/budgetFitConfigs';
 import BoreholeBudgetExplorer from '@/components/quick-projects/BoreholeBudgetExplorer';
 import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
+import CostDonut, { SERIES_COLORS } from '@/components/ui/CostDonut';
+import { COUNCIL_TARIFF, councilFeesTotal } from '@/lib/projectFees';
+import { DEFAULT_ROOF_COVERING, ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
 import { captureProductEvent, getBudgetBand, recordSharedLinkArrival } from '@/lib/productAnalytics';
 import {
   House,
@@ -88,6 +91,7 @@ export default function QuickBudgetPage() {
   const [budgetInput, setBudgetInput] = useState(String(HOUSE_DEFAULTS.budget));
   const [floorAreaInput, setFloorAreaInput] = useState(String(HOUSE_DEFAULTS.area));
   const [locationType, setLocationType] = useState<(typeof locationOptions)[number]['id']>(HOUSE_DEFAULTS.location);
+  const [roofCovering, setRoofCovering] = useState<RoofCovering>(DEFAULT_ROOF_COVERING);
   const [buildProfile, setBuildProfile] = useState<(typeof profileOptions)[number]['id']>(HOUSE_DEFAULTS.profile);
   const [stageEstimate, setStageEstimate] = useState<ReturnType<typeof estimateStageReach> | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -123,6 +127,9 @@ export default function QuickBudgetPage() {
     if (locationOptions.some((option) => option.id === loc)) {
       setLocationType(loc as (typeof locationOptions)[number]['id']);
     }
+
+    const roof = params.get('roof');
+    if (roof && roof in ROOF_COVERINGS) setRoofCovering(roof as RoofCovering);
 
     const profile = params.get('profile');
     if (profileOptions.some((option) => option.id === profile)) {
@@ -172,8 +179,9 @@ export default function QuickBudgetPage() {
       scope: 'full_house',
       includeLabor: false,
       locationType,
+      roofCovering,
     };
-  }, [estimatorErrors.area, estimatorErrors.budget, locationType, parsedArea, selectedProfile.config.cementType, selectedProfile.config.wallHeightM]);
+  }, [estimatorErrors.area, estimatorErrors.budget, locationType, roofCovering, parsedArea, selectedProfile.config.cementType, selectedProfile.config.wallHeightM]);
 
   const detailedItems = useMemo(() => {
     if (!manualBuilderConfig) return [];
@@ -204,6 +212,7 @@ export default function QuickBudgetPage() {
         budgetUsd: parsedBudget,
         floorAreaM2: parsedArea,
         locationType,
+        roofCovering,
         wallHeightM: selectedProfile.config.wallHeightM,
         cementTypes: [selectedProfile.config.cementType],
       });
@@ -216,6 +225,7 @@ export default function QuickBudgetPage() {
     estimatorErrors.area,
     estimatorErrors.budget,
     locationType,
+    roofCovering,
     parsedArea,
     parsedBudget,
     selectedProfile.config.cementType,
@@ -231,6 +241,13 @@ export default function QuickBudgetPage() {
     return locationOptions.find((option) => option.id === locationType)?.label ?? 'Urban';
   }, [locationType]);
 
+  const councilFees = useMemo(() => {
+    const floorArea = Number(floorAreaInput) || 0;
+    return {
+      low: councilFeesTotal({ floorArea, density: 'low', doubleStorey: false }),
+      high: councilFeesTotal({ floorArea, density: 'high', doubleStorey: false }),
+    };
+  }, [floorAreaInput]);
   const overallPercent = stageEstimate ? Math.round(stageEstimate.coveragePercent) : 0;
   const affordableStageCount = stageEstimate?.rows.filter((stage) => stage.affordable).length ?? 0;
 
@@ -264,6 +281,7 @@ export default function QuickBudgetPage() {
         budget: String(parsedBudget),
         area: String(parsedArea),
         loc: locationType,
+        roof: roofCovering,
         profile: buildProfile,
       });
       showInfo('Please sign in to save this project.');
@@ -366,6 +384,7 @@ export default function QuickBudgetPage() {
       budget: String(Math.round(parsedBudget)),
       area: String(parsedArea),
       loc: locationType,
+      roof: roofCovering,
       profile: buildProfile,
       // Marks an arrival from a share, so it can be counted when opened.
       src: 'share',
@@ -639,6 +658,21 @@ export default function QuickBudgetPage() {
 
             <div className="panel-card">
               <div className="section-head">
+                <h2>Roof</h2>
+                <span>{ROOF_COVERINGS[roofCovering].label}</span>
+              </div>
+              <label className="roof-select">
+                <span className="sr-only">Roof covering</span>
+                <select value={roofCovering} onChange={(event) => setRoofCovering(event.target.value as RoofCovering)}>
+                  {(Object.entries(ROOF_COVERINGS) as [RoofCovering, (typeof ROOF_COVERINGS)[RoofCovering]][]).map(([id, option]) => (
+                    <option key={id} value={id}>{option.label} — {option.description}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="panel-card">
+              <div className="section-head">
                 <h2>Location Context</h2>
                 <span>{locationLabel}</span>
               </div>
@@ -742,6 +776,21 @@ export default function QuickBudgetPage() {
                   {nextLockedStage
                     ? <>Your budget covers {affordableStageCount} of {stageEstimate.rows.length} stages. About <strong>{formatUsd(nextLockedStage.stageCostUsd * (1 - Math.min(100, nextLockedStage.coveragePercent) / 100))}</strong> more finishes {nextLockedStage.label}{stageEstimate.estimatedTotalUsd - stageEstimate.budgetUsd > nextLockedStage.stageCostUsd * (1 - Math.min(100, nextLockedStage.coveragePercent) / 100) + 1 ? <>, and {formatUsd(stageEstimate.estimatedTotalUsd - stageEstimate.budgetUsd)} the whole house</> : ''}.</>
                     : <>Your budget covers every stage{stageEstimate.budgetUsd > stageEstimate.estimatedTotalUsd ? <>, with about <strong>{formatUsd(stageEstimate.budgetUsd - stageEstimate.estimatedTotalUsd)}</strong> to spare</> : ''}.</>}
+                </div>
+
+                <div className="budget-split">
+                  <h3>Where a full build goes</h3>
+                  <CostDonut
+                    size="sm"
+                    format={formatUsd}
+                    centerLabel="Full build"
+                    slices={stageEstimate.rows.map((row, index) => ({ label: row.label, value: row.stageCostUsd, color: SERIES_COLORS[index % SERIES_COLORS.length] }))}
+                  />
+                  {councilFees.low > 0 && (
+                    <p className="council-note">
+                      Not included: council plan approval, inspections and certificate, about <strong>{formatUsd(councilFees.low)}</strong> in a low-density area or {formatUsd(councilFees.high)} in high density ({COUNCIL_TARIFF.name}), plus your drawings.
+                    </p>
+                  )}
                 </div>
 
                 <StageReachList rows={stageEstimate.rows} lines={detailedItems} />
@@ -1238,6 +1287,34 @@ export default function QuickBudgetPage() {
           line-height: 1.3;
         }
 
+        .roof-select select {
+          width: 100%;
+          min-height: 44px;
+          border: 1px solid #cbd5e1;
+          border-radius: 10px;
+          padding: 8px 10px;
+          font-size: 0.9rem;
+          color: #0f172a;
+          background: #fff;
+        }
+        .budget-split {
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          padding: 14px;
+          margin-bottom: 12px;
+        }
+        .budget-split h3 {
+          margin: 0 0 12px;
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: #0f172a;
+        }
+        .council-note {
+          margin: 12px 0 0;
+          font-size: 0.8rem;
+          line-height: 1.5;
+          color: #475569;
+        }
         .guidance {
           border-radius: 12px;
           padding: 11px 14px;

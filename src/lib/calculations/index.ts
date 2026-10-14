@@ -12,7 +12,7 @@ import {
 } from '@/lib/vision/types';
 import { getBestPrice } from '@/lib/materials';
 import { DEFAULT_ROOF_COVERING, ROOF_COVERINGS, type RoofCovering } from './roofingOptions';
-import { LABOR_SUBSTAGES, effectiveLaborPercentage, laborSubstageFor, type LaborPercentages } from './laborSubstages';
+import { LABOR_SUBSTAGES, laborPercentageFor, laborSubstageFor } from './laborSubstages';
 import {
   BOQ_ASSUMPTIONS,
   DEFAULT_LOCATION_TYPE,
@@ -67,7 +67,6 @@ export interface ManualBuilderConfig {
   totalWindows?: number;     // Plan total, when individual rooms lack opening counts
   totalDoors?: number;       // Uploaded plan total, including entrance doors
   roofCovering?: RoofCovering;
-  laborPercentages?: LaborPercentages;
 }
 
 /**
@@ -326,7 +325,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   }
 
   if (includeLabor) {
-    items.push(...calculateLabor(items, config.laborPercentages));
+    items.push(...calculateLabor(items));
   }
 
   return items;
@@ -836,13 +835,13 @@ function calculateExteriorWorks(input: {
 // LABOR CALCULATIONS
 // ============================================
 
-function calculateLabor(materialItems: GeneratedBOQItem[], rates?: LaborPercentages): GeneratedBOQItem[] {
+function calculateLabor(materialItems: GeneratedBOQItem[]): GeneratedBOQItem[] {
   return LABOR_SUBSTAGES.flatMap((substage) => {
     const materials = materialItems.filter((item) => laborSubstageFor(item) === substage.id);
     if (materials.length === 0) return [];
     const materialUsd = materials.reduce((sum, item) => sum + item.totalUsd, 0);
     const materialZwg = materials.reduce((sum, item) => sum + item.totalZwg, 0);
-    const percentage = effectiveLaborPercentage(rates, substage.id);
+    const percentage = laborPercentageFor(substage.id);
     const usd = roundTo(materialUsd * percentage / 100, 2);
     const zwg = roundTo(materialZwg * percentage / 100, 2);
     return [{
@@ -921,7 +920,7 @@ export function generateBOQ(
   }
 
   if (includeLabor) {
-    allItems.push(...calculateLabor(allItems, config.laborPercentages));
+    allItems.push(...calculateLabor(allItems));
   }
 
   return allItems;

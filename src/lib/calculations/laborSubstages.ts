@@ -17,12 +17,19 @@ export const LABOR_SUBSTAGES = [
 ] as const;
 
 export type LaborSubstageId = (typeof LABOR_SUBSTAGES)[number]['id'];
-export type LaborPercentages = Partial<Record<LaborSubstageId, number>>;
+export type LaborStage = (typeof LABOR_SUBSTAGES)[number]['stage'];
+
 // A Zimbabwe contractor describes 35% of material spend as a labour rule of
-// thumb. This is a starting allowance, not a measured trade rate; each work
-// group can be changed by the user. Source: gravity.co.zw/2021/11/factors-
-// affecting-cost-of-building-or.html (search-indexed article, checked 2026-10).
-export const DEFAULT_LABOR_PERCENTAGE = 35;
+// thumb (gravity.co.zw/2021/11/factors-affecting-cost-of-building-or.html,
+// checked 2026-10). Each stage has its own fixed rate so they can differ once
+// we have better figures; users do not edit them.
+export const STAGE_LABOR_PERCENTAGES: Record<LaborStage, number> = {
+  substructure: 35,
+  superstructure: 35,
+  roofing: 35,
+  finishing: 35,
+  exterior: 35,
+};
 
 export function laborSubstageFor(item: { category: string; materialId: string; materialName: string; calculationNote?: string }): LaborSubstageId | null {
   const name = `${item.materialName} ${item.calculationNote || ''}`.toLowerCase();
@@ -50,7 +57,7 @@ export function laborSubstageFor(item: { category: string; materialId: string; m
   }
 }
 
-export function effectiveLaborPercentage(rates: LaborPercentages | undefined, id: LaborSubstageId): number {
-  const value = rates?.[id];
-  return typeof value === 'number' && Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : DEFAULT_LABOR_PERCENTAGE;
+export function laborPercentageFor(id: LaborSubstageId): number {
+  const substage = LABOR_SUBSTAGES.find((entry) => entry.id === id);
+  return substage ? STAGE_LABOR_PERCENTAGES[substage.stage] : 0;
 }

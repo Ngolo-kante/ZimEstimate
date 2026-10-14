@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import Card from '@/components/ui/Card';
 import PlanReviewCheckpoint from '@/components/boq/PlanReviewCheckpoint';
 import { estimateVisionWallDimensions } from '@/lib/calculations';
-import { planReviewKey } from '@/lib/vision/planReview';
+import { isPlanReviewBlocked } from '@/lib/vision/planReview';
 import { ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
-import { LABOR_SUBSTAGES, DEFAULT_LABOR_PERCENTAGE, effectiveLaborPercentage } from '@/lib/calculations/laborSubstages';
+import { STAGE_LABOR_PERCENTAGES } from '@/lib/calculations/laborSubstages';
 import {
   ArrowLeft,
   ArrowRight,
@@ -57,7 +56,6 @@ export default function ConfigurationStep({
   onConfirm,
   onBack,
 }: ConfigurationStepProps) {
-  const [reviewedKey, setReviewedKey] = useState<string | null>(null);
   const scopes: ProjectScope[] = ['full_house', 'substructure', 'superstructure', 'roofing', 'finishing', 'exterior'];
   const brickTypes: BrickType[] = ['common', 'farm', 'blocks_6inch', 'blocks_8inch', 'face_brick'];
   const cementTypes: CementType[] = ['cement_325', 'cement_425'];
@@ -78,8 +76,7 @@ export default function ConfigurationStep({
     stages: includedScopes.map((scope) => SCOPE_INFO[scope].name),
     includeLabor: config.includeLabor,
   };
-  const currentReviewKey = `${planReviewKey(reviewInput)}:${JSON.stringify({ roof: config.roofCovering, labor: config.laborPercentages })}`;
-  const planConfirmed = reviewedKey === currentReviewKey;
+  const planBlocked = isPlanReviewBlocked(reviewInput);
 
   // Helper to check if a scope is selected
   const isScopeSelected = (scope: ProjectScope): boolean => {
@@ -319,27 +316,22 @@ export default function ConfigurationStep({
           </div>
         </Card>
         {config.includeLabor && <Card>
-          <div className="section-header"><Users size={22} weight="light" /><div><h3>Labour by sub-stage</h3><p>Adjust the percentage of each work group&apos;s materials</p></div></div>
-          <p className="mb-3 text-xs text-slate-600">{DEFAULT_LABOR_PERCENTAGE}% is a planning starting point. Use contractor quotes when available.</p>
+          <div className="section-header"><Users size={22} weight="light" /><div><h3>Labour by stage</h3><p>A fixed share of each stage&apos;s material cost</p></div></div>
           <div className="grid gap-2 sm:grid-cols-2">
-            {LABOR_SUBSTAGES.filter((substage) => includedScopes.includes(substage.stage as ProjectScope)).map((substage) => (
-              <label key={substage.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 text-sm text-slate-800">
-                <span>{substage.label}</span>
-                <span className="flex shrink-0 items-center gap-1"><input type="number" min="0" max="100" step="0.5"
-                  value={effectiveLaborPercentage(config.laborPercentages, substage.id)}
-                  onChange={(event) => onUpdate({ laborPercentages: { ...config.laborPercentages, [substage.id]: Math.min(100, Math.max(0, Number(event.target.value) || 0)) } })}
-                  className="w-16 rounded-lg border border-slate-300 px-2 py-1.5 text-right text-sm text-slate-900" />%</span>
-              </label>
+            {(Object.entries(STAGE_LABOR_PERCENTAGES) as [ProjectScope, number][]).filter(([stage]) => includedScopes.includes(stage)).map(([stage, rate]) => (
+              <div key={stage} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 text-sm text-slate-800">
+                <span>{SCOPE_INFO[stage].name}</span>
+                <strong className="text-slate-900">{rate}%</strong>
+              </div>
             ))}
           </div>
+          <p className="mt-3 text-xs text-slate-600">A Zimbabwe planning rule of thumb, not a contractor quote. You can replace any labour line with your builder&apos;s price in the BOQ.</p>
         </Card>}
       </div>
 
       <div className="review-checkpoint">
         <PlanReviewCheckpoint
           input={reviewInput}
-          confirmed={planConfirmed}
-          onConfirmedChange={(checked) => setReviewedKey(checked ? currentReviewKey : null)}
           onDoorsChange={(value) => onUpdateOpenings({ doors: value })}
           onWindowsChange={(value) => onUpdateOpenings({ windows: value })}
           onEditRooms={onEditPlan}
@@ -353,8 +345,8 @@ export default function ConfigurationStep({
           Back
         </button>
 
-        <button className="btn btn-primary" onClick={onConfirm} disabled={!planConfirmed}>
-          Generate BOQ
+        <button className="btn btn-primary" onClick={onConfirm} disabled={planBlocked} title={planBlocked ? 'Fix the plan summary above first' : undefined}>
+          {planBlocked ? 'Fix the plan first' : 'Numbers look right, generate BOQ'}
           <ArrowRight size={18} weight="bold" />
         </button>
       </div>

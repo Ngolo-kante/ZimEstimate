@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { supabase } from '@/lib/supabase';
+import CostDonut, { SERIES_COLORS } from '@/components/ui/CostDonut';
 
 type Metrics = {
   projects: number; projects30d: number; activeProjects: number;
@@ -24,6 +25,7 @@ type Overview = {
   trends: { weeks: number; projects: number[]; quickEstimates: number[]; signups: number[] };
   quickByType: { type: string; label: string; count: number }[];
   priceHealth: { manual: number; scraped: number; reference: number; unpriced: number; total: number };
+  costSplit: { category: string; label: string; totalUsd: number; projects: number }[];
   recent: { id: string; kind: string; name: string; detail: string; owner: string; created_at: string }[];
 };
 
@@ -161,6 +163,27 @@ export default function AdminOverviewPage() {
             <WeeklyBars label="New sign-ups" values={data.trends.signups} />
           </div>
         ) : <p className="text-sm text-slate-500">{loading ? 'Loading…' : 'No data.'}</p>}
+      </section>
+
+      {/* What people are pricing, across every saved full-build BOQ */}
+      <section aria-labelledby="cost-split-heading" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 id="cost-split-heading" className="text-lg font-bold text-slate-950">What people are pricing</h2>
+        <p className="mt-1 text-sm text-slate-600">Estimated value of every saved full-build BOQ, by stage. Quick estimates are not included.</p>
+        <div className="mt-4">
+          {data && data.costSplit.length === 0 && <p className="text-sm text-slate-500">No priced BOQs yet.</p>}
+          {data && data.costSplit.length > 0 && (
+            <CostDonut
+              centerLabel="All projects"
+              slices={data.costSplit.map((row, index) => ({
+                label: row.label,
+                value: row.totalUsd,
+                color: SERIES_COLORS[index % SERIES_COLORS.length],
+                note: `${row.projects.toLocaleString()} ${row.projects === 1 ? 'project' : 'projects'}`,
+              }))}
+            />
+          )}
+          {!data && <p className="text-sm text-slate-500">{loading ? 'Loading…' : 'No data.'}</p>}
+        </div>
       </section>
 
       <div className="grid gap-4 md:grid-cols-2">

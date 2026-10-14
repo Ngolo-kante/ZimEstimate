@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assessPlanReview, planReviewKey, type PlanReviewInput } from './planReview';
+import { assessPlanReview, isPlanReviewBlocked, planIdentityKey, type PlanReviewInput } from './planReview';
 
 const base: PlanReviewInput = {
   area: 178,
@@ -28,9 +28,16 @@ describe('uploaded plan review', () => {
     expect(assessPlanReview(base)).toEqual([]);
   });
 
-  it('requires another acknowledgement after plan openings or scope change', () => {
-    const confirmedKey = planReviewKey(base);
-    expect(planReviewKey({ ...base, windows: 9 })).not.toBe(confirmedKey);
-    expect(planReviewKey({ ...base, stages: ['Roofing'] })).not.toBe(confirmedKey);
+  it('keeps a confirmation through door, window and stage edits but not a changed plan', () => {
+    const confirmedKey = planIdentityKey(base);
+    expect(planIdentityKey({ ...base, windows: 9, stages: ['Roofing'] })).toBe(confirmedKey);
+    expect(planIdentityKey({ ...base, area: base.area + 10 })).not.toBe(confirmedKey);
+    expect(planIdentityKey({ ...base, rooms: base.rooms.slice(1) })).not.toBe(confirmedKey);
+  });
+
+  it('blocks only on missing essentials', () => {
+    expect(isPlanReviewBlocked(base)).toBe(false);
+    expect(isPlanReviewBlocked({ ...base, windows: 0 })).toBe(false);
+    expect(isPlanReviewBlocked({ ...base, stages: [] })).toBe(true);
   });
 });

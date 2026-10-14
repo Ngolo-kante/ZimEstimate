@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { estimateVisionWallDimensions, generateBOQ, generateBOQFromBasics, ManualBuilderConfig } from './index';
 import { getBestPrice } from '../materials';
+import { STAGE_LABOR_PERCENTAGES } from './laborSubstages';
 import type { DetectedRoom, DetectedWall } from '../vision/types';
 
 function getItemQuantity(items: ReturnType<typeof generateBOQFromBasics>, notePrefix: string): number {
@@ -139,19 +140,18 @@ describe('roofing sheet coverage', () => {
 });
 
 describe('labour sizing', () => {
-  it('applies an independently adjustable percentage to each work sub-stage', () => {
+  it('applies the fixed roofing-stage percentage to each roofing sub-stage', () => {
     const items = generateBOQFromBasics({
       floorArea: 120, roomCount: 5, wallHeight: 2.7,
       brickTypes: ['common'], cementTypes: ['cement_325'],
       scope: 'roofing', includeLabor: true, locationType: 'urban',
-      laborPercentages: { roof_frame: 20, roof_cover: 40 },
     });
     const frame = items.filter((item) => item.category === 'roofing' && /timber|fascia/.test(item.materialId));
     const cover = items.filter((item) => item.category === 'roofing' && !/timber|fascia/.test(item.materialId));
     const frameMaterials = frame.reduce((sum, item) => sum + item.totalUsd, 0);
     const coverMaterials = cover.reduce((sum, item) => sum + item.totalUsd, 0);
-    expect(items.find((item) => item.materialId === 'labor-roof_frame')?.totalUsd).toBeCloseTo(frameMaterials * 0.2, 2);
-    expect(items.find((item) => item.materialId === 'labor-roof_cover')?.totalUsd).toBeCloseTo(coverMaterials * 0.4, 2);
+    expect(items.find((item) => item.materialId === 'labor-roof_frame')?.totalUsd).toBeCloseTo(frameMaterials * STAGE_LABOR_PERCENTAGES.roofing / 100, 2);
+    expect(items.find((item) => item.materialId === 'labor-roof_cover')?.totalUsd).toBeCloseTo(coverMaterials * STAGE_LABOR_PERCENTAGES.roofing / 100, 2);
   });
 
   it('keeps labour within the Zimbabwe market share of material cost', () => {

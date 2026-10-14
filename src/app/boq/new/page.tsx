@@ -9,7 +9,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import SavingOverlay from '@/components/ui/SavingOverlay';
 import WorkflowProgress from '@/components/boq/WorkflowProgress';
 import { useProjectAutoSave } from '@/hooks/useProjectAutoSave';
-import { useBoqWizardStore, DEFAULT_ROOM_INPUTS, type BoqMilestoneId, type MilestoneData, type BOQItem, type ProjectDetailsState } from '@/store/boqWizardStore';
+import { useBoqWizardStore, BOQ_MILESTONE_IDS, DEFAULT_ROOM_INPUTS, type BoqMilestoneId, type MilestoneData, type BOQItem, type ProjectDetailsState } from '@/store/boqWizardStore';
 import LiveEstimatorLayout from './components/LiveEstimatorLayout';
 import LiveEstimatePanel from './components/LiveEstimatePanel';
 import ReviewTabs from './components/ReviewTabs';
@@ -19,12 +19,12 @@ import BuildingDesignSection from './components/sections/BuildingDesignSection';
 import MaterialsSection from './components/sections/MaterialsSection';
 import LaborSection from './components/sections/LaborSection';
 import { ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
-import { LABOR_SUBSTAGES } from '@/lib/calculations/laborSubstages';
 import SiteConditionsSection from './components/sections/SiteConditionsSection';
 import { InteractiveRoomBuilder, type RoomInstance } from './components/InteractiveRoomBuilder';
 import { buildLiveMilestones } from './utils/liveEstimator';
 import { estimateDimensions } from '@/lib/calculations';
-import { planReviewKey } from '@/lib/vision/planReview';
+import { isPlanReviewBlocked, planIdentityKey } from '@/lib/vision/planReview';
+import { densityFromNotes } from '@/lib/projectFees';
 import PlanReviewCheckpoint from '@/components/boq/PlanReviewCheckpoint';
 import { validateBOQWizardStep, type BOQWizardValidationState } from './wizardValidation';
 import { FULL_HOUSE_STAGES, MANUAL_BUILDER_STAGES, inferProjectType } from './projectTypes';
@@ -59,7 +59,8 @@ function normalizeMilestone(category: string | null | undefined): BoqMilestoneId
     category === 'roofing' ||
     category === 'finishing' ||
     category === 'exterior' ||
-    category === 'labor'
+    category === 'labor' ||
+    category === 'project_fees'
   ) {
     return category;
   }
@@ -69,8 +70,14 @@ function normalizeMilestone(category: string | null | undefined): BoqMilestoneId
 
 function mapLoadedItemsToMilestones(items: DbBOQItem[], previous: MilestoneData[]): MilestoneData[] {
   const byMilestone = new Map<BoqMilestoneId, BOQItem[]>();
+  const allMilestones = BOQ_MILESTONE_IDS.map((id) => previous.find((milestone) => milestone.id === id) ?? {
+    id,
+    label: id === 'project_fees' ? 'Professional & Statutory Fees' : id,
+    items: [],
+    expanded: true,
+  });
 
-  previous.forEach((milestone) => {
+  allMilestones.forEach((milestone) => {
     byMilestone.set(milestone.id, []);
   });
 
@@ -98,7 +105,7 @@ function mapLoadedItemsToMilestones(items: DbBOQItem[], previous: MilestoneData[
     byMilestone.set(milestoneId, group);
   });
 
-  return previous.map((milestone) => ({
+  return allMilestones.map((milestone) => ({
     ...milestone,
     items: byMilestone.get(milestone.id) || [],
   }));
@@ -206,8 +213,6 @@ function BoqNewPageContent() {
     setSelectedStages,
     laborType,
     setLaborType,
-    laborPercentages,
-    setLaborPercentage,
     milestonesState,
     setMilestonesState,
     temporaryWorksSelections,
@@ -268,11 +273,13 @@ function BoqNewPageContent() {
     stages: reviewStages.map((stage) => MANUAL_BUILDER_STAGES.find((item) => item.id === stage)?.label ?? stage),
     includeLabor: laborType === 'materials_labor',
   };
-  const currentPlanKey = planReviewKey(uploadedPlanReview);
+  const currentPlanKey = planIdentityKey(uploadedPlanReview);
   const planConfirmed = geometryMode !== 'upload' || reviewedPlanKey === currentPlanKey;
   const requirePlanReview = () => {
     if (planConfirmed) return true;
-    showError('Check and confirm the uploaded plan summary before saving or sharing this BOQ.');
+    showError(isPlanReviewBlocked(uploadedPlanReview)
+      ? 'Fix the uploaded plan summary before saving or sharing this BOQ.'
+      : 'Check the uploaded plan summary, then press "These numbers look right".');
     if (!isReviewStep) {
       setCurrentStep(WIZARD_STEPS.length - 1);
       window.scrollTo(0, 0);
@@ -288,6 +295,7 @@ function BoqNewPageContent() {
    */
   const reviewBoq = useMemo(() => {
     const visible = milestonesState.filter((m) => {
+      if (m.id === 'project_fees') return true;
       if (m.id === 'labor') return laborType === 'materials_labor';
       if (projectScope === 'stage') return selectedStages.includes(m.id);
       return true;
@@ -405,6 +413,7 @@ function BoqNewPageContent() {
       onLoadComplete: (loadedProject: Project, items: DbBOQItem[]) => {
         const savedRoofCovering = (Object.entries(ROOF_COVERINGS) as [RoofCovering, (typeof ROOF_COVERINGS)[RoofCovering]][])
           .find(([, option]) => items.some((item) => item.material_id === option.materialId))?.[0];
+        const savedDensity = densityFromNotes(items.filter((item) => item.category === 'project_fees').map((item) => item.notes));
         const locationParts = (loadedProject.location || '').split(' - ');
         const locationType = normalizeLocationType(locationParts[0] || '');
         const locationCity = locationParts[1] || '';
@@ -422,6 +431,7 @@ function BoqNewPageContent() {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           siteSlope: (loadedProject.site_slope || '') as any,
           ...(savedRoofCovering ? { roofCovering: savedRoofCovering } : {}),
+          ...(savedDensity ? { residentialDensity: savedDensity } : {}),
         });
 
         const scopeRaw = loadedProject.scope;
@@ -437,11 +447,6 @@ function BoqNewPageContent() {
         }
 
         setLaborType(loadedProject.labor_preference === 'with_labor' ? 'materials_labor' : 'materials_only');
-        for (const substage of LABOR_SUBSTAGES) {
-          const savedLabor = items.find((item) => item.material_id === `labor-${substage.id}`);
-          const percentage = savedLabor?.notes?.match(/^([0-9]+(?:\.[0-9]+)?)%/)?.[1];
-          if (percentage !== undefined) setLaborPercentage(substage.id, Number(percentage));
-        }
 
         if (loadedProject.geotech_report_document_id) {
           setGeotechDocument({
@@ -599,7 +604,6 @@ function BoqNewPageContent() {
       projectScope,
       selectedStages,
       laborType,
-      laborPercentages,
       temporaryWorksSelections,
       includeSepticTank,
       septicDimensions,
@@ -621,7 +625,6 @@ function BoqNewPageContent() {
     projectScope,
     selectedStages,
     laborType,
-    laborPercentages,
     temporaryWorksSelections,
     includeSepticTank,
     septicDimensions,
@@ -638,7 +641,6 @@ function BoqNewPageContent() {
       projectScope,
       selectedStages,
       laborType,
-      laborPercentages,
       temporaryWorksSelections,
       includeSepticTank,
       septicDimensions,
@@ -654,7 +656,6 @@ function BoqNewPageContent() {
     projectScope,
     selectedStages,
     laborType,
-    laborPercentages,
     temporaryWorksSelections,
     includeSepticTank,
     septicDimensions,
@@ -930,7 +931,8 @@ function BoqNewPageContent() {
                           <PlanReviewCheckpoint
                             input={uploadedPlanReview}
                             confirmed={planConfirmed}
-                            onConfirmedChange={(checked) => setReviewedPlanKey(checked ? currentPlanKey : null)}
+                            onConfirm={() => setReviewedPlanKey(currentPlanKey)}
+                            onUndo={() => setReviewedPlanKey(null)}
                             onDoorsChange={setTotalDoors}
                             onWindowsChange={setTotalWindows}
                             onEditRooms={() => { setCurrentStep(2); setShowInteractiveBuilder(true); }}

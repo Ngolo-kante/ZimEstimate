@@ -44,6 +44,7 @@ export default function ProjectKPIDashboard({
   onNavigate,
 }: ProjectKPIDashboardProps) {
   const { formatPrice, exchangeRate } = useCurrency();
+  const materialItems = useMemo(() => items.filter((item) => item.category !== 'labor' && item.category !== 'project_fees'), [items]);
 
   // Calculate comprehensive statistics
   const stats = useMemo(() => {
@@ -72,12 +73,12 @@ export default function ProjectKPIDashboard({
     const budgetVariancePercent = estimatedTotal > 0 ? (budgetVariance / estimatedTotal) * 100 : 0;
 
     // Purchase status counts
-    const purchasedItems = items.filter(i => i.is_purchased).length;
-    const pendingItems = items.filter(i => !i.is_purchased).length;
-    const completionRate = items.length > 0 ? (purchasedItems / items.length) * 100 : 0;
+    const purchasedItems = materialItems.filter(i => i.is_purchased).length;
+    const pendingItems = materialItems.filter(i => !i.is_purchased).length;
+    const completionRate = materialItems.length > 0 ? (purchasedItems / materialItems.length) * 100 : 0;
 
     // Over-purchase detection
-    const overPurchasedItems = items.filter(item => {
+    const overPurchasedItems = materialItems.filter(item => {
       const estimatedQty = Number(item.quantity) || 0;
       const actualQty = Number(item.actual_quantity) || 0;
       return actualQty > estimatedQty * 1.05; // 5% tolerance
@@ -93,7 +94,7 @@ export default function ProjectKPIDashboard({
     // Usage stats
     const totalUsage = Object.values(usageByItem).reduce((sum, u) => sum + u, 0);
     const itemsWithUsage = Object.keys(usageByItem).length;
-    const usageValue = items.reduce((sum, item) => {
+    const usageValue = materialItems.reduce((sum, item) => {
       const usage = usageByItem[item.id] || 0;
       const price = Number(item.actual_price_usd ?? item.unit_price_usd) || 0;
       return sum + usage * price;
@@ -141,7 +142,7 @@ export default function ProjectKPIDashboard({
       remainingBudget,
       budgetUtilization,
     };
-  }, [items, purchases, usageByItem, totalBudget]);
+  }, [items, materialItems, purchases, usageByItem, totalBudget]);
 
   const kpiCards: KPICard[] = [
     {
@@ -155,7 +156,7 @@ export default function ProjectKPIDashboard({
     },
     {
       label: 'Purchased Items',
-      value: `${stats.purchasedItems}/${items.length}`,
+      value: `${stats.purchasedItems}/${materialItems.length}`,
       subValue: `${stats.completionRate.toFixed(0)}% complete`,
       icon: <ShoppingCart size={22} weight="duotone" />,
       color: 'blue',

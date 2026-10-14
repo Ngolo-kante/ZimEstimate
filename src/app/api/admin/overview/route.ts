@@ -31,6 +31,45 @@ function weekly(dates: string[], now: number): number[] {
 const within = (date: string | null | undefined, days: number, now: number) =>
   Boolean(date) && now - new Date(date as string).getTime() <= days * DAY;
 
+const COST_CATEGORY_LABELS: Record<string, string> = {
+  substructure: 'Foundations',
+  superstructure: 'Walls & frame',
+  roofing: 'Roofing',
+  finishing: 'Finishing',
+  exterior: 'Exterior',
+  labor: 'Labour',
+  project_fees: 'Professional & council fees',
+};
+
+/**
+ * Estimated value across every saved full-build BOQ, by stage. Read a page at
+ * a time: the API hands back at most 1,000 rows per request, and a total cut
+ * off at 1,000 lines would look plausible and be wrong.
+ */
+async function costByCategory(db: ReturnType<typeof createServiceRoleClient>) {
+  const totals = new Map<string, { totalUsd: number; projects: Set<string> }>();
+  const PAGE = 1_000;
+  for (let page = 0; page < 100; page += 1) {
+    const { data, error } = await db.from('boq_items')
+      .select('project_id, category, total_usd')
+      .order('id')
+      .range(page * PAGE, page * PAGE + PAGE - 1);
+    if (error) throw error;
+    for (const row of (data ?? []) as { project_id: string; category: string | null; total_usd: number | null }[]) {
+      const key = row.category && COST_CATEGORY_LABELS[row.category] ? row.category : 'other';
+      const entry = totals.get(key) ?? { totalUsd: 0, projects: new Set<string>() };
+      entry.totalUsd += Number(row.total_usd) || 0;
+      entry.projects.add(row.project_id);
+      totals.set(key, entry);
+    }
+    if (!data || data.length < PAGE) break;
+  }
+  return [...totals.entries()]
+    .map(([category, entry]) => ({ category, label: COST_CATEGORY_LABELS[category] ?? 'Other', totalUsd: Math.round(entry.totalUsd), projects: entry.projects.size }))
+    .filter((row) => row.totalUsd > 0)
+    .sort((a, b) => b.totalUsd - a.totalUsd);
+}
+
 export async function GET(request: Request) {
   const auth = await requireAdmin(request);
   if (auth instanceof NextResponse) return auth;
@@ -40,7 +79,7 @@ export async function GET(request: Request) {
     const now = Date.now();
     const since30 = new Date(now - 30 * DAY).toISOString();
 
-    const [projects, quick, profiles, users, projectShares, quickShares, tickets, applications, rfqs, reviews, observations] = await Promise.all([
+    const [projects, quick, profiles, users, projectShares, quickShares, tickets, applications, rfqs, reviews, observations, costSplit] = await Promise.all([
       db.from('projects').select('id, name, location, status, created_at, owner_id').order('created_at', { ascending: false }).limit(5000),
       db.from('quick_boqs').select('id, project_type, answers, created_at, user_id, share_token, archived_at').order('created_at', { ascending: false }).limit(5000),
       db.from('profiles').select('id, full_name, user_type, tier, created_at').limit(5000),
@@ -56,6 +95,7 @@ export async function GET(request: Request) {
         .in('review_status', ['auto', 'confirmed'])
         .order('scraped_at', { ascending: false })
         .limit(5000),
+      costByCategory(db),
     ]);
 
     type ProjectRow = { id: string; name: string; location: string | null; status: string; created_at: string; owner_id: string };
@@ -138,6 +178,7 @@ export async function GET(request: Request) {
       },
       quickByType,
       priceHealth,
+      costSplit,
       recent,
     });
   } catch (error) {

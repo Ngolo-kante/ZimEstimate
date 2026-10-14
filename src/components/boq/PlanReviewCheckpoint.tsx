@@ -1,12 +1,17 @@
 'use client';
 
-import { CheckCircle, PencilSimple, Warning } from '@phosphor-icons/react';
+import { ArrowCounterClockwise, CheckCircle, PencilSimple, Warning, WarningOctagon } from '@phosphor-icons/react';
 import { assessPlanReview, type PlanReviewInput } from '@/lib/vision/planReview';
 
 interface Props {
   input: PlanReviewInput;
-  confirmed: boolean;
-  onConfirmedChange: (confirmed: boolean) => void;
+  /**
+   * Where the screen has its own "these numbers look right" step. Leave both
+   * out when the page's main button already moves on (the plan-upload flow).
+   */
+  confirmed?: boolean;
+  onConfirm?: () => void;
+  onUndo?: () => void;
   onDoorsChange: (value: number) => void;
   onWindowsChange: (value: number) => void;
   onEditRooms: () => void;
@@ -18,17 +23,20 @@ const squareMetres = (value: number) => Number.isFinite(value) && value > 0 ? `$
 const count = (value: number) => Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
 
 export default function PlanReviewCheckpoint({
-  input, confirmed, onConfirmedChange, onDoorsChange, onWindowsChange, onEditRooms, onEditStages,
+  input, confirmed, onConfirm, onUndo, onDoorsChange, onWindowsChange, onEditRooms, onEditStages,
 }: Props) {
   const findings = assessPlanReview(input);
-  const blocked = findings.some((finding) => finding.severity === 'required');
+  const required = findings.filter((finding) => finding.severity === 'required');
+  const checks = findings.filter((finding) => finding.severity === 'check');
 
   return (
     <section id="plan-review-checkpoint" aria-labelledby="plan-review-heading" className="scroll-mt-28 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="border-t-4 border-blue-700 bg-slate-50 px-4 py-5 sm:px-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[.18em] text-blue-700">Plan read · verification</p>
+            <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[.18em] text-blue-700">
+              Plan read{confirmed ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 tracking-normal text-emerald-800 normal-case"><CheckCircle size={12} weight="fill" /> Checked</span> : ' · please check'}
+            </p>
             <h2 id="plan-review-heading" className="mt-1 text-xl font-bold tracking-tight text-slate-950">Check the quantities behind this BOQ</h2>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">Compare these figures with your drawing. They control the material quantities and estimate.</p>
           </div>
@@ -80,21 +88,45 @@ export default function PlanReviewCheckpoint({
           {input.stages.length > 0 && input.stages.length < 5 && <p className="mt-2 text-xs font-medium text-amber-900">This is a partial-stage estimate, not a full-house total.</p>}
         </div>
 
-        {findings.length > 0 ? (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4" role="status">
-            <div className="flex items-center gap-2 text-sm font-bold text-amber-950"><Warning size={18} /> Check before continuing</div>
-            <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-5 text-amber-950">
-              {findings.map((finding) => <li key={finding.id}>{finding.text}</li>)}
+        {required.length > 0 && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4" role="alert">
+            <div className="flex items-center gap-2 text-sm font-bold text-red-900"><WarningOctagon size={18} /> Fix before continuing</div>
+            <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-5 text-red-900">
+              {required.map((finding) => <li key={finding.id}>{finding.text}</li>)}
             </ul>
           </div>
-        ) : (
+        )}
+        {checks.length > 0 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4" role="status">
+            <div className="flex items-center gap-2 text-sm font-bold text-amber-950"><Warning size={18} /> Worth a second look</div>
+            <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-5 text-amber-950">
+              {checks.map((finding) => <li key={finding.id}>{finding.text}</li>)}
+            </ul>
+          </div>
+        )}
+        {findings.length === 0 && (
           <div className="flex items-center gap-2 text-sm font-medium text-emerald-800"><CheckCircle size={18} /> No missing or unusually low plan quantities found.</div>
         )}
 
-        <label className={`flex items-start gap-3 rounded-xl border p-4 text-sm leading-5 ${blocked ? 'border-slate-200 bg-slate-50 text-slate-500' : 'border-slate-300 bg-white text-slate-800'}`}>
-          <input type="checkbox" checked={confirmed} disabled={blocked} onChange={(event) => onConfirmedChange(event.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-blue-700" />
-          <span><strong>I checked this plan summary.</strong> I understand the highlighted quantities need review and can edit the BOQ after it is generated.</span>
-        </label>
+        {onConfirm && required.length === 0 && (
+          confirmed ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              <span className="flex items-center gap-2 font-semibold"><CheckCircle size={18} weight="fill" /> Plan checked. Your BOQ below uses these numbers.</span>
+              {onUndo && (
+                <button type="button" onClick={onUndo} className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-950">
+                  <ArrowCounterClockwise size={14} /> Check again
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs leading-5 text-slate-500">You can still change any line in the BOQ afterwards.</p>
+              <button type="button" onClick={onConfirm} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700">
+                <CheckCircle size={18} /> These numbers look right
+              </button>
+            </div>
+          )
+        )}
       </div>
     </section>
   );
