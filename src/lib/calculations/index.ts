@@ -12,7 +12,7 @@ import {
 } from '@/lib/vision/types';
 import { getBestPrice } from '@/lib/materials';
 import { DEFAULT_ROOF_COVERING, ROOF_COVERINGS, type RoofCovering } from './roofingOptions';
-import { LABOR_SUBSTAGES, laborPercentageFor, laborSubstageFor } from './laborSubstages';
+import { LABOR_SUBSTAGES, laborPercentageFor, laborSubstageFor, type LaborRates } from './laborSubstages';
 import {
   BOQ_ASSUMPTIONS,
   DEFAULT_LOCATION_TYPE,
@@ -67,6 +67,8 @@ export interface ManualBuilderConfig {
   totalWindows?: number;     // Plan total, when individual rooms lack opening counts
   totalDoors?: number;       // Uploaded plan total, including entrance doors
   roofCovering?: RoofCovering;
+  /** The user's own labour percentages by stage; defaults to 35% each. */
+  laborRates?: LaborRates;
 }
 
 /**
@@ -325,7 +327,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   }
 
   if (includeLabor) {
-    items.push(...calculateLabor(items));
+    items.push(...calculateLabor(items, config.laborRates));
   }
 
   return items;
@@ -840,13 +842,13 @@ function calculateExteriorWorks(input: {
 // LABOR CALCULATIONS
 // ============================================
 
-function calculateLabor(materialItems: GeneratedBOQItem[]): GeneratedBOQItem[] {
+function calculateLabor(materialItems: GeneratedBOQItem[], rates?: LaborRates): GeneratedBOQItem[] {
   return LABOR_SUBSTAGES.flatMap((substage) => {
     const materials = materialItems.filter((item) => laborSubstageFor(item) === substage.id);
     if (materials.length === 0) return [];
     const materialUsd = materials.reduce((sum, item) => sum + item.totalUsd, 0);
     const materialZwg = materials.reduce((sum, item) => sum + item.totalZwg, 0);
-    const percentage = laborPercentageFor(substage.id);
+    const percentage = laborPercentageFor(substage.id, rates);
     const usd = roundTo(materialUsd * percentage / 100, 2);
     const zwg = roundTo(materialZwg * percentage / 100, 2);
     return [{
@@ -925,7 +927,7 @@ export function generateBOQ(
   }
 
   if (includeLabor) {
-    allItems.push(...calculateLabor(allItems));
+    allItems.push(...calculateLabor(allItems, config.laborRates));
   }
 
   return allItems;

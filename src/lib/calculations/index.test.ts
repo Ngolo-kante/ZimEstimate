@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { estimateVisionWallDimensions, generateBOQ, generateBOQFromBasics, ManualBuilderConfig } from './index';
 import { getBestPrice } from '../materials';
-import { STAGE_LABOR_PERCENTAGES } from './laborSubstages';
+import { STAGE_LABOR_PERCENTAGES, laborRatesFromNotes } from './laborSubstages';
 import type { DetectedRoom, DetectedWall } from '../vision/types';
 
 function getItemQuantity(items: ReturnType<typeof generateBOQFromBasics>, notePrefix: string): number {
@@ -326,5 +326,29 @@ describe('detailed room masonry', () => {
       .reduce((sum, item) => sum + item.quantity, 0);
 
     expect(bricks(detailed)).toBeGreaterThanOrEqual(bricks(quick) - 1);
+  });
+});
+
+describe('labour rates set by the user', () => {
+  it('uses a stage’s own rate and leaves the others at the default', () => {
+    const config = {
+      floorArea: 120, roomCount: 5, wallHeight: 2.7,
+      brickTypes: ['common'] as const, cementTypes: ['cement_325'] as const,
+      scope: 'full_house' as const, includeLabor: true, locationType: 'urban' as const,
+    };
+    const items = generateBOQFromBasics({ ...config, brickTypes: [...config.brickTypes], cementTypes: [...config.cementTypes], laborRates: { roofing: 20 } });
+    const roofMaterials = items.filter((item) => item.category === 'roofing').reduce((sum, item) => sum + item.totalUsd, 0);
+    const roofLabour = items.filter((item) => item.materialId === 'labor-roof_frame' || item.materialId === 'labor-roof_cover').reduce((sum, item) => sum + item.totalUsd, 0);
+    expect(roofLabour).toBeCloseTo(roofMaterials * 0.2, 1);
+    const walling = items.find((item) => item.materialId === 'labor-walling')!;
+    expect(walling.calculationNote).toMatch(/^35% of superstructure materials/);
+  });
+
+  it('reads saved rates back from labour line notes', () => {
+    expect(laborRatesFromNotes([
+      { materialId: 'labor-roof_cover', note: '20% of roofing materials ($100.00)' },
+      { materialId: 'labor-walling', note: '35% of superstructure materials ($900.00)' },
+      { materialId: 'cement-325', note: '40% of something' },
+    ])).toEqual({ roofing: 20, superstructure: 35 });
   });
 });

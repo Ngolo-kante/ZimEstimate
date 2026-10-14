@@ -112,3 +112,11 @@ describe('stage choices in links', () => {
     expect(stageStatusFromParams(new URLSearchParams('done=garden'))).toEqual({});
   });
 });
+
+describe('a labour rate of the user’s own', () => {
+  it('replaces the 35% default', () => {
+    const base = { budgetUsd: 10000, floorAreaM2: 120, locationType: 'urban' as const, includeLabor: true };
+    const result = estimateStageReach({ ...base, laborRates: { substructure: 20, superstructure: 20, roofing: 20, finishing: 20, exterior: 20 } });
+    expect(result.laborUsd).toBeCloseTo(result.materialsUsd * 0.2, 6);
+  });
+});

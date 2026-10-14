@@ -336,6 +336,7 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
     cementTypes: projectDetails.cementTypes,
     scope,
     includeLabor: laborType === 'materials_labor',
+    laborRates: projectDetails.laborRates,
     roofCovering: projectDetails.roofCovering,
     locationType: (projectDetails.locationType || 'urban') as 'urban' | 'peri-urban' | 'rural',
     // 'not_sure' and unanswered both price as standard — the estimate has to
@@ -491,7 +492,7 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
     outputByMilestone.set('labor', LABOR_SUBSTAGES.flatMap((substage) => {
       const total = materialTotals.get(substage.id);
       if (!total) return [];
-      const percentage = laborPercentageFor(substage.id);
+      const percentage = laborPercentageFor(substage.id, projectDetails.laborRates);
       const priceUsd = roundTo(total.usd * percentage / 100);
       const priceZwg = roundTo(total.zwg * percentage / 100);
       const existing = previousLabor.find((item) => item.materialId === `labor-${substage.id}`);

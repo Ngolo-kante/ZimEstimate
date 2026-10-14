@@ -1,4 +1,5 @@
 import { allocateBudget } from '@/lib/quick-projects/solar/allocateBudget';
+import { LABOR_STAGES, type LaborRates } from '@/lib/calculations/laborSubstages';
 import { ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
 import { BACKUP_LOADS, backupHours, describeBackup } from '@/lib/quick-projects/solar/backupHours';
 import { BATTERY_BRANDS, INVERTER_BRANDS, PANEL_BRANDS } from '@/lib/quick-projects/solar/catalog';
@@ -124,6 +125,13 @@ function summariseBorehole(params: URLSearchParams): SharedEstimateSummary | nul
   };
 }
 
+/** ?labourPct=25 — one rate for every stage, as the budget page sets it. */
+function labourRatesFromParam(raw: string | null): LaborRates | undefined {
+  const pct = Number(raw);
+  if (!raw || !Number.isFinite(pct)) return undefined;
+  return Object.fromEntries(LABOR_STAGES.map((stage) => [stage, Math.min(100, Math.max(0, pct))])) as LaborRates;
+}
+
 function summariseHouse(params: URLSearchParams): SharedEstimateSummary | null {
   const budget = Number(params.get('budget'));
   if (!params.get('budget') || !Number.isFinite(budget) || budget <= 0) return null;
@@ -146,6 +154,7 @@ function summariseHouse(params: URLSearchParams): SharedEstimateSummary | null {
     cementTypes: [config.cementType],
     roofCovering: roof && roof in ROOF_COVERINGS ? (roof as RoofCovering) : undefined,
     includeLabor: params.get('labour') !== '0',
+    laborRates: labourRatesFromParam(params.get('labourPct')),
     stageStatus: stageStatusFromParams(params),
   });
   const coverage = Math.round(result.coveragePercent);

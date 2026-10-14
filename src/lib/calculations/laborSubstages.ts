@@ -21,8 +21,8 @@ export type LaborStage = (typeof LABOR_SUBSTAGES)[number]['stage'];
 
 // A Zimbabwe contractor describes 35% of material spend as a labour rule of
 // thumb (gravity.co.zw/2021/11/factors-affecting-cost-of-building-or.html,
-// checked 2026-10). Each stage has its own fixed rate so they can differ once
-// we have better figures; users do not edit them.
+// checked 2026-10). These are the starting rates; a user can set their own per
+// stage (LaborRates) when their builder charges differently.
 export const STAGE_LABOR_PERCENTAGES: Record<LaborStage, number> = {
   substructure: 35,
   superstructure: 35,
@@ -61,7 +61,39 @@ export function laborSubstageFor(item: { category: string; materialId: string; m
   }
 }
 
-export function laborPercentageFor(id: LaborSubstageId): number {
+/** A user's own labour percentages by stage. A missing stage uses the default. */
+export type LaborRates = Partial<Record<LaborStage, number>>;
+
+export const LABOR_STAGES = Object.keys(STAGE_LABOR_PERCENTAGES) as LaborStage[];
+export const MAX_LABOR_PERCENTAGE = 100;
+
+export function stageLaborPercentage(stage: LaborStage, rates?: LaborRates): number {
+  const value = rates?.[stage];
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(MAX_LABOR_PERCENTAGE, Math.max(0, value))
+    : STAGE_LABOR_PERCENTAGES[stage];
+}
+
+export function laborPercentageFor(id: LaborSubstageId, rates?: LaborRates): number {
   const substage = LABOR_SUBSTAGES.find((entry) => entry.id === id);
-  return substage ? STAGE_LABOR_PERCENTAGES[substage.stage] : 0;
+  return substage ? stageLaborPercentage(substage.stage, rates) : 0;
+}
+
+/** True when any stage differs from the default. */
+export function hasCustomLaborRates(rates?: LaborRates): boolean {
+  return LABOR_STAGES.some((stage) => stageLaborPercentage(stage, rates) !== STAGE_LABOR_PERCENTAGES[stage]);
+}
+
+/**
+ * The rates a saved BOQ was priced at, read back from its labour lines'
+ * notes ("40% of substructure materials ($…)").
+ */
+export function laborRatesFromNotes(lines: { materialId: string; note?: string | null }[]): LaborRates {
+  const rates: LaborRates = {};
+  for (const line of lines) {
+    const substage = LABOR_SUBSTAGES.find((entry) => `labor-${entry.id}` === line.materialId);
+    const pct = line.note?.match(/^(\d+(?:\.\d+)?)% of /)?.[1];
+    if (substage && pct !== undefined && rates[substage.stage] === undefined) rates[substage.stage] = Number(pct);
+  }
+  return rates;
 }

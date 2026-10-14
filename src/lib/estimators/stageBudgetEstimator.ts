@@ -1,6 +1,6 @@
 import { generateBOQFromBasics } from '@/lib/calculations';
 import type { RoofCovering } from '@/lib/calculations/roofingOptions';
-import { STAGE_LABOR_PERCENTAGES } from '@/lib/calculations/laborSubstages';
+import { stageLaborPercentage, type LaborRates } from '@/lib/calculations/laborSubstages';
 import type { LocationType } from '@/lib/calculations/assumptions';
 import type { BrickType, CementType } from '@/lib/vision/types';
 
@@ -41,6 +41,8 @@ export type StageReachInput = {
   roofCovering?: RoofCovering;
   /** Adds each stage's fixed labour percentage (laborSubstages.ts) to its cost. */
   includeLabor?: boolean;
+  /** The user's own labour percentages by stage; defaults to 35% each. */
+  laborRates?: LaborRates;
   /** Stages left out of the budget. Missing means 'build'. */
   stageStatus?: Partial<Record<StageId, StageStatus>>;
 };
@@ -132,7 +134,7 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     const counts = statusOf(stage.id) === 'build';
     if (counts) materialsUsd += stageCosts[stage.id];
     if (input.includeLabor) {
-      const labor = stageCosts[stage.id] * STAGE_LABOR_PERCENTAGES[stage.id] / 100;
+      const labor = stageCosts[stage.id] * stageLaborPercentage(stage.id, input.laborRates) / 100;
       stageCosts[stage.id] += labor;
       if (counts) laborUsd += labor;
     }

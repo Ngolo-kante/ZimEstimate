@@ -27,6 +27,7 @@ import { estimateDimensions } from '@/lib/calculations';
 import { isPlanReviewBlocked, planIdentityKey } from '@/lib/vision/planReview';
 import { densityFromNotes } from '@/lib/projectFees';
 import { normalizeHouseExtras } from '@/lib/houseExtras';
+import { laborRatesFromNotes } from '@/lib/calculations/laborSubstages';
 import PlanReviewCheckpoint from '@/components/boq/PlanReviewCheckpoint';
 import { validateBOQWizardStep, type BOQWizardValidationState } from './wizardValidation';
 import { FULL_HOUSE_STAGES, MANUAL_BUILDER_STAGES, inferProjectType } from './projectTypes';
@@ -161,7 +162,7 @@ const WIZARD_STEPS = [
     id: 'labor',
     label: 'Labour',
     title: 'Labour costs',
-    subtitle: 'A fixed share of each stage’s material cost.',
+    subtitle: 'A share of each stage’s material cost — set it to what your builder charges.',
   },
   {
     id: 'extras',
@@ -446,6 +447,7 @@ function BoqNewPageContent() {
           ...(savedRoofCovering ? { roofCovering: savedRoofCovering } : {}),
           ...(savedDensity ? { residentialDensity: savedDensity } : {}),
           houseExtras: normalizeHouseExtras(loadedProject.house_extras),
+          laborRates: laborRatesFromNotes(items.map((item) => ({ materialId: item.material_id, note: item.notes }))),
         });
 
         const scopeRaw = loadedProject.scope;

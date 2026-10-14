@@ -8,6 +8,7 @@ import type { FinishLevel } from '@/lib/calculations';
 import type { RoofCovering } from '@/lib/calculations/roofingOptions';
 import { OWN_FIGURE_NOTE, type ResidentialDensity } from '@/lib/projectFees';
 import { DEFAULT_HOUSE_EXTRAS, type HouseExtras } from '@/lib/houseExtras';
+import type { LaborRates } from '@/lib/calculations/laborSubstages';
 import type { RoomInstance } from '@/app/boq/new/components/room-builder/types';
 
 export type SiteSlopeType = 'flat' | 'gentle' | 'moderate' | 'steep';
@@ -71,6 +72,8 @@ export interface ProjectDetailsState {
   residentialDensity: ResidentialDensity;
   /** Septic, borehole, solar, site setup… (lib/houseExtras.ts). Optional for older saved state. */
   houseExtras?: HouseExtras;
+  /** The user's labour percentages by stage; a missing stage uses 35%. */
+  laborRates?: LaborRates;
   roomInputs: Record<RoomInputKey, string>;
 }
 
