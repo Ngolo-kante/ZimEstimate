@@ -56,9 +56,10 @@ export default function CostDonut({
   return (
     <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-8">
       <div role="img" aria-label={`Cost split: ${description}`} className={`relative ${ring} shrink-0 rounded-full`} style={{ background: conicGradient(slices) }}>
-        <div className="absolute inset-[23%] flex flex-col items-center justify-center rounded-full bg-[var(--color-surface)] text-center">
+        <div className={`absolute ${size === 'sm' ? 'inset-[17%]' : 'inset-[21%]'} flex flex-col items-center justify-center rounded-full bg-[var(--color-surface)] px-1 text-center`}>
           <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">{centerLabel}</span>
-          <strong className={`mt-0.5 ${size === 'sm' ? 'text-sm' : 'text-base'} text-[var(--color-text)]`}>{centerValue ?? format(total)}</strong>
+          {/* One line: a total split over two reads as two numbers. */}
+          <strong className={`mt-0.5 whitespace-nowrap ${size === 'sm' ? 'text-xs' : 'text-sm'} text-[var(--color-text)]`}>{centerValue ?? format(total)}</strong>
         </div>
       </div>
       <dl className="grid w-full min-w-0 gap-2">

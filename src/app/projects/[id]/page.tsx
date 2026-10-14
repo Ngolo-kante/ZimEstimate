@@ -1561,6 +1561,7 @@ function ProjectDetailContent() {
                     {/* BOQ View */}
                     {activeView === 'boq' && (
                         <div className="view-panel space-y-6 max-w-full mx-auto">
+                            <ProjectCostSplit items={items} spentUsd={purchaseStats.actualSpent} idSuffix="-boq" />
                             <nav ref={stageSwitcherRef} className="stage-switcher" aria-label="Construction stages">
                                 {STAGE_CATEGORIES.map((category, index) => {
                                     const stage = stages.find((candidate) => candidate.boq_category === category);

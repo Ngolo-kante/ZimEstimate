@@ -21,7 +21,9 @@ import BudgetFitExplorer from '@/components/quick-projects/BudgetFitExplorer';
 import { fencingBudgetFit, pavingBudgetFit } from '@/lib/quick-projects/budgetFitConfigs';
 import BoreholeBudgetExplorer from '@/components/quick-projects/BoreholeBudgetExplorer';
 import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
-import CostDonut, { SERIES_COLORS } from '@/components/ui/CostDonut';
+import CostDonut, { COST_COLORS } from '@/components/ui/CostDonut';
+import RoofProfileIcon from '@/components/ui/RoofProfileIcon';
+import { STAGE_LABOR_PERCENTAGES } from '@/lib/calculations/laborSubstages';
 import { COUNCIL_TARIFF, councilFeesTotal } from '@/lib/projectFees';
 import { DEFAULT_ROOF_COVERING, ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
 import { captureProductEvent, getBudgetBand, recordSharedLinkArrival } from '@/lib/productAnalytics';
@@ -92,6 +94,9 @@ export default function QuickBudgetPage() {
   const [floorAreaInput, setFloorAreaInput] = useState(String(HOUSE_DEFAULTS.area));
   const [locationType, setLocationType] = useState<(typeof locationOptions)[number]['id']>(HOUSE_DEFAULTS.location);
   const [roofCovering, setRoofCovering] = useState<RoofCovering>(DEFAULT_ROOF_COVERING);
+  // On by default: a house needs builders, and a materials-only figure made
+  // budgets look further along than they are.
+  const [includeLabor, setIncludeLabor] = useState(true);
   const [buildProfile, setBuildProfile] = useState<(typeof profileOptions)[number]['id']>(HOUSE_DEFAULTS.profile);
   const [stageEstimate, setStageEstimate] = useState<ReturnType<typeof estimateStageReach> | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -130,6 +135,7 @@ export default function QuickBudgetPage() {
 
     const roof = params.get('roof');
     if (roof && roof in ROOF_COVERINGS) setRoofCovering(roof as RoofCovering);
+    if (params.get('labour') === '0') setIncludeLabor(false);
 
     const profile = params.get('profile');
     if (profileOptions.some((option) => option.id === profile)) {
@@ -177,11 +183,11 @@ export default function QuickBudgetPage() {
       brickTypes: ['common'],
       cementTypes: [selectedProfile.config.cementType],
       scope: 'full_house',
-      includeLabor: false,
+      includeLabor,
       locationType,
       roofCovering,
     };
-  }, [estimatorErrors.area, estimatorErrors.budget, locationType, roofCovering, parsedArea, selectedProfile.config.cementType, selectedProfile.config.wallHeightM]);
+  }, [estimatorErrors.area, estimatorErrors.budget, locationType, roofCovering, includeLabor, parsedArea, selectedProfile.config.cementType, selectedProfile.config.wallHeightM]);
 
   const detailedItems = useMemo(() => {
     if (!manualBuilderConfig) return [];
@@ -213,6 +219,7 @@ export default function QuickBudgetPage() {
         floorAreaM2: parsedArea,
         locationType,
         roofCovering,
+        includeLabor,
         wallHeightM: selectedProfile.config.wallHeightM,
         cementTypes: [selectedProfile.config.cementType],
       });
@@ -226,6 +233,7 @@ export default function QuickBudgetPage() {
     estimatorErrors.budget,
     locationType,
     roofCovering,
+    includeLabor,
     parsedArea,
     parsedBudget,
     selectedProfile.config.cementType,
@@ -282,6 +290,7 @@ export default function QuickBudgetPage() {
         area: String(parsedArea),
         loc: locationType,
         roof: roofCovering,
+        labour: includeLabor ? '1' : '0',
         profile: buildProfile,
       });
       showInfo('Please sign in to save this project.');
@@ -297,7 +306,7 @@ export default function QuickBudgetPage() {
         location: locationLabel,
         description: `Budget check: $${Math.round(parsedBudget).toLocaleString()} budget, ${overallPercent}% coverage.`,
         scope: 'entire_house',
-        labor_preference: 'materials_only',
+        labor_preference: includeLabor ? 'with_labor' : 'materials_only',
         soil_type: null,
         site_slope: null,
         geotech_report_uploaded: false,
@@ -385,6 +394,7 @@ export default function QuickBudgetPage() {
       area: String(parsedArea),
       loc: locationType,
       roof: roofCovering,
+      labour: includeLabor ? '1' : '0',
       profile: buildProfile,
       // Marks an arrival from a share, so it can be counted when opened.
       src: 'share',
@@ -661,14 +671,41 @@ export default function QuickBudgetPage() {
                 <h2>Roof</h2>
                 <span>{ROOF_COVERINGS[roofCovering].label}</span>
               </div>
-              <label className="roof-select">
-                <span className="sr-only">Roof covering</span>
-                <select value={roofCovering} onChange={(event) => setRoofCovering(event.target.value as RoofCovering)}>
-                  {(Object.entries(ROOF_COVERINGS) as [RoofCovering, (typeof ROOF_COVERINGS)[RoofCovering]][]).map(([id, option]) => (
-                    <option key={id} value={id}>{option.label} — {option.description}</option>
-                  ))}
-                </select>
-              </label>
+              <div className="roof-grid" role="group" aria-label="Roof covering">
+                {(Object.entries(ROOF_COVERINGS) as [RoofCovering, (typeof ROOF_COVERINGS)[RoofCovering]][]).map(([id, option]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    aria-pressed={roofCovering === id}
+                    className={`roof-choice ${roofCovering === id ? 'selected' : ''}`}
+                    onClick={() => setRoofCovering(id)}
+                    title={option.description}
+                  >
+                    <RoofProfileIcon covering={id} className="roof-icon" />
+                    <span>{option.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="panel-card">
+              <div className="section-head">
+                <h2>Labour</h2>
+                <span>{includeLabor ? 'Included' : 'Materials only'}</span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={includeLabor}
+                className={`labour-switch ${includeLabor ? 'on' : ''}`}
+                onClick={() => setIncludeLabor((value) => !value)}
+              >
+                <span className="knob" aria-hidden="true" />
+                <span>
+                  <strong>{includeLabor ? 'Labour included' : 'Add labour'}</strong>
+                  <small>{STAGE_LABOR_PERCENTAGES.substructure}% of each stage&apos;s materials, a Zimbabwe rule of thumb</small>
+                </span>
+              </button>
             </div>
 
             <div className="panel-card">
@@ -779,16 +816,21 @@ export default function QuickBudgetPage() {
                 </div>
 
                 <div className="budget-split">
-                  <h3>Where a full build goes</h3>
+                  <h3>Where the money goes</h3>
                   <CostDonut
                     size="sm"
                     format={formatUsd}
-                    centerLabel="Full build"
-                    slices={stageEstimate.rows.map((row, index) => ({ label: row.label, value: row.stageCostUsd, color: SERIES_COLORS[index % SERIES_COLORS.length] }))}
+                    centerLabel="With fees"
+                    hideEmpty
+                    slices={[
+                      { label: 'Materials', value: stageEstimate.materialsUsd, color: COST_COLORS.materials },
+                      { label: 'Labour', value: stageEstimate.laborUsd, color: COST_COLORS.labor },
+                      { label: 'Council fees & inspections', value: councilFees.low, color: COST_COLORS.fees, note: 'Low-density stand' },
+                    ]}
                   />
                   {councilFees.low > 0 && (
                     <p className="council-note">
-                      Not included: council plan approval, inspections and certificate, about <strong>{formatUsd(councilFees.low)}</strong> in a low-density area or {formatUsd(councilFees.high)} in high density ({COUNCIL_TARIFF.name}), plus your drawings.
+                      Council fees are from the {COUNCIL_TARIFF.name} for a low-density stand ({formatUsd(councilFees.high)} in high density) and are not counted in how far your budget goes. Drawings are extra.
                     </p>
                   )}
                 </div>
@@ -1287,15 +1329,90 @@ export default function QuickBudgetPage() {
           line-height: 1.3;
         }
 
-        .roof-select select {
+        .roof-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+          gap: 8px;
+        }
+        .roof-choice {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          min-height: 44px;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 10px 8px;
+          background: #fff;
+          color: #334155;
+          font-size: 0.78rem;
+          font-weight: 600;
+          text-align: center;
+          line-height: 1.25;
+          cursor: pointer;
+        }
+        .roof-choice.selected {
+          border-color: #2e6cf6;
+          background: #eff6ff;
+          color: #1e3a8a;
+          box-shadow: 0 0 0 1px #2e6cf6;
+        }
+        .roof-choice :global(.roof-icon) {
+          width: 48px;
+          height: 24px;
+        }
+        .labour-switch {
+          display: flex;
+          align-items: center;
+          gap: 12px;
           width: 100%;
           min-height: 44px;
-          border: 1px solid #cbd5e1;
-          border-radius: 10px;
-          padding: 8px 10px;
-          font-size: 0.9rem;
-          color: #0f172a;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 10px 12px;
           background: #fff;
+          text-align: left;
+          cursor: pointer;
+        }
+        .labour-switch.on {
+          border-color: #2e6cf6;
+          background: #eff6ff;
+        }
+        .labour-switch .knob {
+          position: relative;
+          flex-shrink: 0;
+          width: 38px;
+          height: 22px;
+          border-radius: 999px;
+          background: #cbd5e1;
+          transition: background 0.2s;
+        }
+        .labour-switch .knob::after {
+          content: '';
+          position: absolute;
+          top: 3px;
+          left: 3px;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: #fff;
+          transition: transform 0.2s;
+        }
+        .labour-switch.on .knob {
+          background: #2e6cf6;
+        }
+        .labour-switch.on .knob::after {
+          transform: translateX(16px);
+        }
+        .labour-switch strong {
+          display: block;
+          font-size: 0.88rem;
+          color: #0f172a;
+        }
+        .labour-switch small {
+          display: block;
+          font-size: 0.75rem;
+          color: #64748b;
         }
         .budget-split {
           border: 1px solid #e2e8f0;

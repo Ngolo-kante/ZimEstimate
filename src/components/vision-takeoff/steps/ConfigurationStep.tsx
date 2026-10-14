@@ -5,6 +5,7 @@ import PlanReviewCheckpoint from '@/components/boq/PlanReviewCheckpoint';
 import { estimateVisionWallDimensions } from '@/lib/calculations';
 import { isPlanReviewBlocked } from '@/lib/vision/planReview';
 import { ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
+import RoofProfileIcon from '@/components/ui/RoofProfileIcon';
 import { STAGE_LABOR_PERCENTAGES } from '@/lib/calculations/laborSubstages';
 import {
   ArrowLeft,
@@ -272,9 +273,12 @@ export default function ConfigurationStep({
             {(Object.entries(ROOF_COVERINGS) as [RoofCovering, (typeof ROOF_COVERINGS)[RoofCovering]][]).map(([id, option]) => (
               <button key={id} type="button" onClick={() => onUpdate({ roofCovering: id })}
                 aria-pressed={(config.roofCovering || 'ibr_05') === id}
-                className={`rounded-xl border p-3 text-left ${(config.roofCovering || 'ibr_05') === id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'}`}>
-                <span className="block text-sm font-semibold text-slate-900">{option.label}</span>
-                <span className="mt-1 block text-xs text-slate-600">{option.description}</span>
+                className={`flex items-start gap-3 rounded-xl border p-3 text-left ${(config.roofCovering || 'ibr_05') === id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'}`}>
+                <RoofProfileIcon covering={id} className="mt-0.5 h-6 w-12 shrink-0 text-slate-700" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-slate-900">{option.label}</span>
+                  <span className="mt-1 block text-xs text-slate-600">{option.description}</span>
+                </span>
               </button>
             ))}
           </div>

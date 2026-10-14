@@ -1,5 +1,6 @@
 import { generateBOQFromBasics } from '@/lib/calculations';
 import type { RoofCovering } from '@/lib/calculations/roofingOptions';
+import { STAGE_LABOR_PERCENTAGES } from '@/lib/calculations/laborSubstages';
 import type { LocationType } from '@/lib/calculations/assumptions';
 import type { BrickType, CementType } from '@/lib/vision/types';
 
@@ -30,6 +31,8 @@ export type StageReachInput = {
   cementTypes?: CementType[];
   locationType?: LocationType;
   roofCovering?: RoofCovering;
+  /** Adds each stage's fixed labour percentage (laborSubstages.ts) to its cost. */
+  includeLabor?: boolean;
 };
 
 export type StageReachRow = {
@@ -43,6 +46,9 @@ export type StageReachRow = {
 
 export type StageReachResult = {
   estimatedTotalUsd: number;
+  /** The materials and labour inside estimatedTotalUsd. */
+  materialsUsd: number;
+  laborUsd: number;
   budgetUsd: number;
   coveragePercent: number;
   reachableStageId: StageId | null;
@@ -106,7 +112,17 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     stageCosts.exterior = Math.max(computedTotal * 0.08, floorAreaM2 * 18);
   }
 
-  const estimatedTotalUsd = Object.values(stageCosts).reduce((sum, cost) => sum + cost, 0);
+  const materialsUsd = Object.values(stageCosts).reduce((sum, cost) => sum + cost, 0);
+  let laborUsd = 0;
+  if (input.includeLabor) {
+    for (const stage of STAGE_ORDER) {
+      const labor = stageCosts[stage.id] * STAGE_LABOR_PERCENTAGES[stage.id] / 100;
+      stageCosts[stage.id] += labor;
+      laborUsd += labor;
+    }
+  }
+
+  const estimatedTotalUsd = materialsUsd + laborUsd;
   const normalizedTotal = clampPositive(estimatedTotalUsd, floorAreaM2 * 250);
   const coveragePercent = Math.min(100, normalizedTotal > 0 ? (budgetUsd / normalizedTotal) * 100 : 0);
 
@@ -139,6 +155,8 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
 
   return {
     estimatedTotalUsd: normalizedTotal,
+    materialsUsd,
+    laborUsd,
     budgetUsd,
     coveragePercent,
     reachableStageId,

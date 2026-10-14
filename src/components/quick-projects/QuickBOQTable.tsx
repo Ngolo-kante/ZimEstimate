@@ -14,6 +14,8 @@ import {
 import { groupByCategory, calculateGrandTotal, calculateLaborItems } from '@/lib/quick-projects/engine/boqEngine';
 import type { BOQItem, LaborConfig, ProjectType } from '@/lib/quick-projects/engine/types';
 import LaborSection from './LaborSection';
+import CostDonut from '@/components/ui/CostDonut';
+import { quickCostSlices } from '@/lib/quick-projects/costSplit';
 import ContractorMarkup from './ContractorMarkup';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { persistQuickBOQSession, PENDING_QUICK_SAVE_KEY } from '@/lib/services/quickBoq';
@@ -138,6 +140,7 @@ export default function QuickBOQTable({
     [allItems, markupPct, currency, zwgRate],
   );
   const grouped = useMemo(() => groupByCategory(allItems), [allItems]);
+  const costSlices = useMemo(() => quickCostSlices(allItems), [allItems]);
 
   // ── Auth gate ──────────────────────────────────────────────────────────
   function handleAuthGatedAction(action: 'save' | 'pdf') {
@@ -268,6 +271,20 @@ export default function QuickBOQTable({
           <Warning size={16} className="flex-shrink-0" />
           Items you already own are shown but excluded from the total cost.
         </div>
+      )}
+
+      {/* ── Where the money goes ─────────────────────────────────────── */}
+      {costSlices.some((slice) => slice.value > 0) && (
+        <section aria-labelledby="quick-cost-split" className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+          <h3 id="quick-cost-split" className="mb-4 text-base font-bold text-slate-900">Where the money goes</h3>
+          <CostDonut
+            size="sm"
+            slices={costSlices}
+            hideEmpty
+            centerLabel={totals.markupUsd > 0 ? 'Before markup' : 'Total'}
+            format={(usd) => fmt(usd, currency, zwgRate)}
+          />
+        </section>
       )}
 
       {/* ── Flat item list ──────────────────────────────────────────── */}

@@ -52,3 +52,16 @@ describe('estimateStageReach', () => {
     expect(result.rows).toHaveLength(5);
   });
 });
+
+describe('labour in the stage estimate', () => {
+  it('adds each stage’s fixed labour percentage on top of its materials', () => {
+    const base = { budgetUsd: 10000, floorAreaM2: 120, locationType: 'urban' as const };
+    const materialsOnly = estimateStageReach(base);
+    const withLabour = estimateStageReach({ ...base, includeLabor: true });
+    expect(materialsOnly.laborUsd).toBe(0);
+    expect(withLabour.materialsUsd).toBeCloseTo(materialsOnly.materialsUsd, 6);
+    expect(withLabour.laborUsd).toBeCloseTo(withLabour.materialsUsd * 0.35, 6);
+    expect(withLabour.estimatedTotalUsd).toBeCloseTo(withLabour.materialsUsd + withLabour.laborUsd, 6);
+    expect(withLabour.coveragePercent).toBeLessThan(materialsOnly.coveragePercent);
+  });
+});

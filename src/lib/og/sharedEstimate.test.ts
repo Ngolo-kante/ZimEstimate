@@ -45,9 +45,23 @@ describe('link preview for a shared estimate', () => {
       locationType: 'rural',
       wallHeightM: HOUSE_PROFILES.economy.wallHeightM,
       cementTypes: [HOUSE_PROFILES.economy.cementType],
+      // Labour is on unless the link says labour=0, as on the page.
+      includeLabor: true,
     });
     expect(summary?.headline).toBe('How far $12,000 goes on a 120\u00a0m² house');
     expect(summary?.lines[0]).toBe(`Reaches: ${page.reachableStageLabel}`);
+    expect(summary?.lines[1]).toContain(`${Math.round(page.coveragePercent)}%`);
+  });
+
+  it('leaves labour out when the shared link did', () => {
+    const summary = summariseSharedEstimate(new URLSearchParams('budget=12000&area=120&loc=rural&profile=economy&labour=0'));
+    const page = estimateStageReach({
+      budgetUsd: 12000,
+      floorAreaM2: 120,
+      locationType: 'rural',
+      wallHeightM: HOUSE_PROFILES.economy.wallHeightM,
+      cementTypes: [HOUSE_PROFILES.economy.cementType],
+    });
     expect(summary?.lines[1]).toContain(`${Math.round(page.coveragePercent)}%`);
   });
 

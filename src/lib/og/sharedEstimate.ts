@@ -1,4 +1,5 @@
 import { allocateBudget } from '@/lib/quick-projects/solar/allocateBudget';
+import { ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
 import { BACKUP_LOADS, backupHours, describeBackup } from '@/lib/quick-projects/solar/backupHours';
 import { BATTERY_BRANDS, INVERTER_BRANDS, PANEL_BRANDS } from '@/lib/quick-projects/solar/catalog';
 import { decodeSolarExplorerState, SOLAR_EXPLORER_DEFAULTS } from '@/lib/quick-projects/solar/explorerUrl';
@@ -134,13 +135,17 @@ function summariseHouse(params: URLSearchParams): SharedEstimateSummary | null {
   const profileRaw = params.get('profile');
   const profile: HouseProfile = profileRaw && profileRaw in HOUSE_PROFILES ? (profileRaw as HouseProfile) : HOUSE_DEFAULTS.profile;
   const config = HOUSE_PROFILES[profile];
+  const roof = params.get('roof');
 
+  // The same inputs the page restores, so the preview shows the sender's figure.
   const result = estimateStageReach({
     budgetUsd: budget,
     floorAreaM2: area,
     locationType: location,
     wallHeightM: config.wallHeightM,
     cementTypes: [config.cementType],
+    roofCovering: roof && roof in ROOF_COVERINGS ? (roof as RoofCovering) : undefined,
+    includeLabor: params.get('labour') !== '0',
   });
   const coverage = Math.round(result.coveragePercent);
 

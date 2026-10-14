@@ -18,7 +18,7 @@ export function splitProjectCosts(items: Pick<BOQItem, 'category' | 'quantity' |
   return split;
 }
 
-export default function ProjectCostSplit({ items, spentUsd }: { items: BOQItem[]; spentUsd: number }) {
+export default function ProjectCostSplit({ items, spentUsd, idSuffix = '' }: { items: BOQItem[]; spentUsd: number; /** Keeps heading ids unique when shown on two tabs. */ idSuffix?: string }) {
   const { formatPrice, exchangeRate } = useCurrency();
   const split = useMemo(() => splitProjectCosts(items), [items]);
   const total = split.materials + split.labor + split.fees;
@@ -26,13 +26,15 @@ export default function ProjectCostSplit({ items, spentUsd }: { items: BOQItem[]
   const format = (usd: number) => formatPrice(usd, usd * exchangeRate);
 
   return (
-    <section className="overview-card reveal" data-delay="4" aria-labelledby="project-cost-split-title">
+    // Its own card styles: the page's .overview-card is styled-jsx scoped to
+    // the page and does not reach a separate component.
+    <section className="rounded-[20px] border border-slate-200/70 bg-white/95 p-6 shadow-[0_8px_20px_rgba(6,20,47,0.03)]" aria-labelledby={`project-cost-split-title${idSuffix}`}>
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
           <ChartPieSlice size={24} weight="duotone" />
         </div>
         <div>
-          <h3 id="project-cost-split-title" className="font-heading text-lg font-bold text-primary">Where the budget goes</h3>
+          <h3 id={`project-cost-split-title${idSuffix}`} className="font-heading text-lg font-bold text-primary">Where the budget goes</h3>
           <p className="text-sm text-secondary">{spentUsd > 0 ? `${format(spentUsd)} spent so far of ${format(total)}` : 'Your estimate by type of cost'}</p>
         </div>
       </div>

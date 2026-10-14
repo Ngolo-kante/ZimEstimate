@@ -332,7 +332,10 @@ export default function QuickProjectWizard({ flow, onSave, isContractor = false 
   const [showValidation, setShowValidation] = useState(false);
   const [labor, setLabor] = useState<LaborConfig>(
     restoredForThisFlow?.labor ?? {
-      enabled: false,
+      // On by default: most of these jobs need a builder. Borehole quotes
+      // already carry the drilling crew and pump fitting as their own lines,
+      // so a further percentage there would charge for labour twice.
+      enabled: flow.projectType !== 'borehole',
       method: 'percentage',
       percentage: 25,
       dailyRateUsd: 35,

@@ -6,6 +6,7 @@ import { Wall, CheckCircle, Info, Truck, Question, HardHat, Package } from '@pho
 import { BRICK_INFO, CEMENT_INFO, type BrickType, type CementType } from '@/lib/vision/types';
 import type { FinishLevel } from '@/lib/calculations';
 import { ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
+import RoofProfileIcon from '@/components/ui/RoofProfileIcon';
 import { useBoqWizardStore } from '@/store/boqWizardStore';
 
 const BRICK_OPTIONS = Object.entries(BRICK_INFO).map(([key, val]) => ({
@@ -125,9 +126,12 @@ export default function MaterialsSection() {
           {(Object.entries(ROOF_COVERINGS) as [RoofCovering, (typeof ROOF_COVERINGS)[RoofCovering]][]).map(([id, option]) => (
             <button key={id} type="button" onClick={() => updateProjectDetails({ roofCovering: id })}
               aria-pressed={(projectDetails.roofCovering || 'ibr_05') === id}
-              className={`rounded-xl border p-3 text-left transition ${((projectDetails.roofCovering || 'ibr_05') === id) ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-slate-200 hover:border-blue-300'}`}>
+              className={`flex items-start gap-3 rounded-xl border p-3 text-left transition ${((projectDetails.roofCovering || 'ibr_05') === id) ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-slate-200 hover:border-blue-300'}`}>
+              <RoofProfileIcon covering={id} className="mt-0.5 h-6 w-12 shrink-0 text-slate-700" />
+              <span className="min-w-0">
               <span className="block text-sm font-semibold text-slate-900">{option.label}</span>
               <span className="mt-1 block text-xs text-slate-600">{option.description}</span>
+              </span>
             </button>
           ))}
         </div>
