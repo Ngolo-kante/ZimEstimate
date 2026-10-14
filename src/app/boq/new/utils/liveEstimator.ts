@@ -2,6 +2,8 @@ import { generateBOQFromBasics, DEFAULT_FINISH_LEVEL } from '@/lib/calculations'
 import { LABOR_SUBSTAGES, laborPercentageFor, laborSubstageFor } from '@/lib/calculations/laborSubstages';
 import { getBestPrice, materials } from '@/lib/materials';
 import { buildProjectFeeItems, isTariffPriced, OWN_FIGURE_NOTE } from '@/lib/projectFees';
+import { buildExtraItems, isExtraLine, normalizeHouseExtras } from '@/lib/houseExtras';
+import { boundaryLengthForStand } from '@/lib/calculations';
 import type { DetailedRoom, GeneratedBOQItem, ProjectScope as VisionProjectScope } from '@/lib/vision/types';
 import {
   BOQ_MILESTONE_IDS,
@@ -352,7 +354,24 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
   const includesSubstructure =
     projectScope === 'entire' || selectedStages.includes('substructure');
 
-  const extraItems = includesSubstructure
+  // Extras belong to a whole house. The solar geyser replaces the electric one.
+  const houseExtras = normalizeHouseExtras(projectDetails.houseExtras);
+  const extraItems = projectScope === 'entire'
+    ? buildExtraItems(houseExtras, {
+      windows: generatedItems.filter((item) => item.materialId === 'window-steel').reduce((sum, item) => sum + (item.quantity || 0), 0),
+      exteriorDoors: generatedItems.filter((item) => item.materialId === 'door-exterior').reduce((sum, item) => sum + (item.quantity || 0), 0),
+      boundaryLengthM: boundaryLengthForStand(Number(projectDetails.standSize) || undefined, floorArea),
+      laborIncluded: laborType === 'materials_labor',
+      roofCovering: projectDetails.roofCovering,
+      city: projectDetails.locationCity,
+      locationType: projectDetails.locationType,
+    })
+    : [];
+  const stageItems = projectScope === 'entire' && houseExtras.solar_geyser.enabled
+    ? generatedItems.filter((item) => item.materialId !== 'geyser-150')
+    : generatedItems;
+
+  const siteItems = includesSubstructure
     ? [
       ...buildTemporaryWorkItems(temporaryWorksSelections),
       ...buildSepticItem(includeSepticTank, septicDimensions),
@@ -360,7 +379,7 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
     : [];
 
   const mergedInput = applyQuickOpenings(
-    [...generatedItems, ...extraItems, ...buildProjectFeeItems({
+    [...stageItems, ...siteItems, ...extraItems, ...buildProjectFeeItems({
       floorArea,
       density: projectDetails.residentialDensity || 'low',
       doubleStorey: projectDetails.buildingType === 'double_storey',
@@ -444,7 +463,8 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
     // Carry manually added rows only. Generated rows that no longer match may
     // belong to a roof covering the user has just replaced, or an old labour
     // percentage; keeping them would double-count both options.
-    const carryForward = items.filter((item) => !usedExistingIds.has(item.id) && !item.id.startsWith('auto-') && !item.materialId.startsWith('labor-') && !(milestoneId === 'labor' && item.materialId === 'service-food'));
+    // Extras are rebuilt from the choices on every pass, so one switched off goes.
+    const carryForward = items.filter((item) => !usedExistingIds.has(item.id) && !item.id.startsWith('auto-') && !item.materialId.startsWith('labor-') && !isExtraLine(item.materialId) && !(milestoneId === 'labor' && item.materialId === 'service-food'));
     if (carryForward.length === 0) {
       return;
     }

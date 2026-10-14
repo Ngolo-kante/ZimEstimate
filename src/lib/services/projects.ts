@@ -60,6 +60,7 @@ export async function createProject(data: {
     geotech_report_uploaded_at?: string | null;
     geotech_report_document_id?: string | null;
     geotech_analysis_mode?: 'manual' | 'pro_available' | 'pro_applied';
+    house_extras?: Record<string, unknown> | null;
 }): Promise<{ project: Project | null; error: Error | null }> {
     const { data: { user } } = await db.auth.getUser();
 
@@ -85,6 +86,7 @@ export async function createProject(data: {
         geotech_report_uploaded_at: data.geotech_report_uploaded_at ?? null,
         geotech_report_document_id: data.geotech_report_document_id ?? null,
         geotech_analysis_mode: data.geotech_analysis_mode ?? 'manual',
+        ...(data.house_extras ? { house_extras: data.house_extras } : {}),
     };
 
     const { data: project, error } = await db

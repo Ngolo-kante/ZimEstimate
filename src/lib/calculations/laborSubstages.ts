@@ -34,6 +34,10 @@ export const STAGE_LABOR_PERCENTAGES: Record<LaborStage, number> = {
 export function laborSubstageFor(item: { category: string; materialId: string; materialName: string; calculationNote?: string }): LaborSubstageId | null {
   const name = `${item.materialName} ${item.calculationNote || ''}`.toLowerCase();
   const id = item.materialId.toLowerCase();
+  // Extras (septic, borehole, solar…) carry their own labour where it applies;
+  // a stage percentage on top would charge for it twice. The solar geyser is
+  // the exception: it replaces the electric geyser and is fitted the same way.
+  if (id.startsWith('extra-') && !id.startsWith('extra-solar_geyser--')) return null;
   switch (item.category) {
     case 'substructure':
       if (/dpc|dpm|termite/.test(id)) return 'damp_proofing';

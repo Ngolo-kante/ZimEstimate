@@ -282,6 +282,7 @@ export interface Database {
                     geotech_report_uploaded_at: string | null;
                     geotech_report_document_id: string | null;
                     geotech_analysis_mode: 'manual' | 'pro_available' | 'pro_applied';
+                    house_extras: Record<string, unknown> | null;
                     created_at: string;
                     updated_at: string;
                 };
@@ -314,6 +315,7 @@ export interface Database {
                     geotech_report_uploaded_at?: string | null;
                     geotech_report_document_id?: string | null;
                     geotech_analysis_mode?: 'manual' | 'pro_available' | 'pro_applied';
+                    house_extras?: Record<string, unknown> | null;
                     created_at?: string;
                     updated_at?: string;
                 };
@@ -346,6 +348,7 @@ export interface Database {
                     geotech_report_uploaded_at?: string | null;
                     geotech_report_document_id?: string | null;
                     geotech_analysis_mode?: 'manual' | 'pro_available' | 'pro_applied';
+                    house_extras?: Record<string, unknown> | null;
                     created_at?: string;
                     updated_at?: string;
                 };

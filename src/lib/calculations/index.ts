@@ -789,6 +789,14 @@ const PAVING_WASTE = 1.08;
  * estimate that included it therefore omitted the boundary wall, gates and
  * paving, which local sources put at a five-figure sum on a typical build.
  */
+/** Boundary wall length for a stand, on the same 1.4:1 footprint assumption as the house. */
+export function boundaryLengthForStand(standAreaSqm: number | undefined, floorArea: number): number {
+  const standArea = standAreaSqm && standAreaSqm > floorArea ? standAreaSqm : DEFAULT_STAND_AREA_SQM;
+  const standLength = Math.sqrt(standArea * 1.4);
+  const standWidth = standArea / standLength;
+  return 2 * (standLength + standWidth);
+}
+
 function calculateExteriorWorks(input: {
   floorArea: number;
   perimeter: number;
@@ -800,10 +808,7 @@ function calculateExteriorWorks(input: {
 
   const standArea = standAreaSqm && standAreaSqm > floorArea ? standAreaSqm : DEFAULT_STAND_AREA_SQM;
   const assumedStand = !standAreaSqm || standAreaSqm <= floorArea;
-  // Same 1.4:1 footprint assumption used for the house itself.
-  const standLength = Math.sqrt(standArea * 1.4);
-  const standWidth = standArea / standLength;
-  const boundaryLength = 2 * (standLength + standWidth);
+  const boundaryLength = boundaryLengthForStand(standAreaSqm, floorArea);
 
   const standNote = assumedStand
     ? `${standArea}m² stand assumed — adjust if your stand differs`

@@ -13,6 +13,7 @@ import { useBoqWizardStore, BOQ_MILESTONE_IDS, DEFAULT_ROOM_INPUTS, type BoqMile
 import LiveEstimatorLayout from './components/LiveEstimatorLayout';
 import LiveEstimatePanel from './components/LiveEstimatePanel';
 import ReviewTabs from './components/ReviewTabs';
+import ExtrasSection from './components/sections/ExtrasSection';
 import ProjectTypeSection from './components/sections/ProjectTypeSection';
 import ProjectLocationSection from './components/sections/ProjectLocationSection';
 import BuildingDesignSection from './components/sections/BuildingDesignSection';
@@ -25,6 +26,7 @@ import { buildLiveMilestones } from './utils/liveEstimator';
 import { estimateDimensions } from '@/lib/calculations';
 import { isPlanReviewBlocked, planIdentityKey } from '@/lib/vision/planReview';
 import { densityFromNotes } from '@/lib/projectFees';
+import { normalizeHouseExtras } from '@/lib/houseExtras';
 import PlanReviewCheckpoint from '@/components/boq/PlanReviewCheckpoint';
 import { validateBOQWizardStep, type BOQWizardValidationState } from './wizardValidation';
 import { FULL_HOUSE_STAGES, MANUAL_BUILDER_STAGES, inferProjectType } from './projectTypes';
@@ -159,7 +161,13 @@ const WIZARD_STEPS = [
     id: 'labor',
     label: 'Labour',
     title: 'Labour costs',
-    subtitle: 'Adjust a labour percentage for each work sub-stage.',
+    subtitle: 'A fixed share of each stage’s material cost.',
+  },
+  {
+    id: 'extras',
+    label: 'Extras',
+    title: 'Extras for your stand',
+    subtitle: 'Site setup, septic, water, borehole, solar, security and power — only what the house BOQ does not already cover.',
   },
   {
     id: 'review-estimate',
@@ -304,6 +312,7 @@ function BoqNewPageContent() {
     const items = visible.flatMap((m) =>
       m.items.map((item) => ({
         material_name: item.materialName,
+        material_id: item.materialId,
         category: m.label ?? m.id,
         quantity: item.quantity || 0,
         unit: item.unit,
@@ -387,6 +396,10 @@ function BoqNewPageContent() {
       geotechReportUploadedAt: geotechDocument?.createdAt || null,
       geotechReportDocumentId: geotechDocument?.id || null,
       geotechAnalysisMode,
+      // Saved only when something is switched on, so an untouched project stays null.
+      houseExtras: Object.values(normalizeHouseExtras(projectDetails.houseExtras)).some((extra) => extra.enabled)
+        ? (normalizeHouseExtras(projectDetails.houseExtras) as unknown as Record<string, unknown>)
+        : null,
     };
   }, [projectDetails, geotechDocument, profile]);
 
@@ -432,6 +445,7 @@ function BoqNewPageContent() {
           siteSlope: (loadedProject.site_slope || '') as any,
           ...(savedRoofCovering ? { roofCovering: savedRoofCovering } : {}),
           ...(savedDensity ? { residentialDensity: savedDensity } : {}),
+          houseExtras: normalizeHouseExtras(loadedProject.house_extras),
         });
 
         const scopeRaw = loadedProject.scope;
@@ -814,7 +828,7 @@ function BoqNewPageContent() {
     let nextStep = currentStep + 1;
     // Skip Labour step (index 4) if user chose materials_only
     if (nextStep === 4 && laborType !== 'materials_labor') {
-      nextStep = 5; // Jump to Review
+      nextStep = 5; // Jump to Extras
     }
     const target = Math.min(WIZARD_STEPS.length - 1, nextStep);
     setCurrentStep(target);
@@ -926,6 +940,10 @@ function BoqNewPageContent() {
                     )}
 
                     {currentStep === 5 && (
+                      <ExtrasSection />
+                    )}
+
+                    {currentStep === 6 && (
                       <>
                         {geometryMode === 'upload' && (
                           <PlanReviewCheckpoint

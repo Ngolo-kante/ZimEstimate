@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
+import { useIsClient } from '@/hooks/useIsClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -147,7 +148,7 @@ interface SolarQuickWizardProps {
   onSave?: (output: SolarWizardOutput & { boqItems?: BOQItem[] }) => void;
 }
 
-export default function SolarQuickWizard({ onChange, isContractor = false, onSave }: SolarQuickWizardProps) {
+function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: SolarQuickWizardProps) {
   // Restored from a save attempt that bounced through sign-in, or from "Edit
   // inputs" on a saved estimate. Read in a lazy initialiser so restored state
   // is on screen immediately rather than flashing the first question.
@@ -947,4 +948,18 @@ export default function SolarQuickWizard({ onChange, isContractor = false, onSav
       </div>
     </div>
   );
+}
+
+/**
+ * The wizard restores a session from browser storage in its first render
+ * (a save that went through sign-in, or "Edit inputs"). The server cannot see
+ * that storage, so it renders this placeholder, and the wizard mounts on the
+ * client with the restored session already in place.
+ */
+export default function SolarQuickWizard(props: SolarQuickWizardProps) {
+  const isClient = useIsClient();
+  if (!isClient) {
+    return <div className="mx-auto w-full max-w-3xl pb-24" aria-busy="true"><div className="h-2 w-full animate-pulse rounded-full bg-slate-100" /></div>;
+  }
+  return <SolarQuickWizardInner {...props} />;
 }

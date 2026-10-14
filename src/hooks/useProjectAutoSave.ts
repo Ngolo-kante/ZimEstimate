@@ -42,6 +42,8 @@ interface ProjectDetails {
     geotechReportUploadedAt?: string | null;
     geotechReportDocumentId?: string | null;
     geotechAnalysisMode?: 'manual' | 'pro_available' | 'pro_applied';
+    /** The extras behind the extra BOQ lines (lib/houseExtras.ts). */
+    houseExtras?: Record<string, unknown> | null;
 }
 
 interface UseProjectAutoSaveOptions {
@@ -185,6 +187,7 @@ export function useProjectAutoSave(
                     geotech_report_uploaded_at: projectDetails.geotechReportUploadedAt ?? null,
                     geotech_report_document_id: projectDetails.geotechReportDocumentId ?? null,
                     geotech_analysis_mode: projectDetails.geotechAnalysisMode ?? 'manual',
+                    house_extras: projectDetails.houseExtras ?? null,
                 },
                 items
             );
@@ -268,6 +271,7 @@ export function useProjectAutoSave(
                 geotech_report_uploaded_at: details.geotechReportUploadedAt ?? null,
                 geotech_report_document_id: details.geotechReportDocumentId ?? null,
                 geotech_analysis_mode: details.geotechAnalysisMode ?? 'manual',
+                house_extras: details.houseExtras ?? null,
             });
 
             if (createError) {

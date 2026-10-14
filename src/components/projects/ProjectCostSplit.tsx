@@ -5,13 +5,14 @@ import { ChartPieSlice } from '@phosphor-icons/react';
 import CostDonut, { COST_COLORS } from '@/components/ui/CostDonut';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import type { BOQItem } from '@/lib/database.types';
+import { isExtrasLabourLine } from '@/lib/projectFees';
 
 /** The saved estimate split into materials, labour and fees — the same split the BOQ review shows. */
-export function splitProjectCosts(items: Pick<BOQItem, 'category' | 'quantity' | 'unit_price_usd'>[]) {
+export function splitProjectCosts(items: Pick<BOQItem, 'category' | 'quantity' | 'unit_price_usd' | 'material_id'>[]) {
   const split = { materials: 0, labor: 0, fees: 0 };
   for (const item of items) {
     const amount = (Number(item.quantity) || 0) * (Number(item.unit_price_usd) || 0);
-    if (item.category === 'labor') split.labor += amount;
+    if (item.category === 'labor' || isExtrasLabourLine(item.material_id)) split.labor += amount;
     else if (item.category === 'project_fees') split.fees += amount;
     else split.materials += amount;
   }

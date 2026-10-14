@@ -126,14 +126,21 @@ export function buildProjectFeeItems(basis?: FeeBasis, zwgRate = 30): BOQItem[] 
   });
 }
 
+/** Labour on an extra (septic, water tank) sits with the extra but is labour. */
+export function isExtrasLabourLine(materialId: string | null | undefined): boolean {
+  return Boolean(materialId?.startsWith('extra-') && materialId.endsWith('--labour'));
+}
+
 export function getCostBreakdown(milestones: MilestoneData[]) {
   const result = { materials: 0, labor: 0, fees: 0, total: 0 };
   for (const milestone of milestones) {
-    const amount = milestone.items.reduce((sum, item) => sum + (item.quantity || 0) * item.actualPriceUsd, 0);
-    if (milestone.id === 'labor') result.labor += amount;
-    else if (milestone.id === 'project_fees') result.fees += amount;
-    else result.materials += amount;
-    result.total += amount;
+    for (const item of milestone.items) {
+      const amount = (item.quantity || 0) * item.actualPriceUsd;
+      if (milestone.id === 'labor' || isExtrasLabourLine(item.materialId)) result.labor += amount;
+      else if (milestone.id === 'project_fees') result.fees += amount;
+      else result.materials += amount;
+      result.total += amount;
+    }
   }
   return result;
 }

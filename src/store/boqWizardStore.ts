@@ -7,6 +7,7 @@ import { BrickType, CementType } from '@/lib/vision/types';
 import type { FinishLevel } from '@/lib/calculations';
 import type { RoofCovering } from '@/lib/calculations/roofingOptions';
 import { OWN_FIGURE_NOTE, type ResidentialDensity } from '@/lib/projectFees';
+import { DEFAULT_HOUSE_EXTRAS, type HouseExtras } from '@/lib/houseExtras';
 import type { RoomInstance } from '@/app/boq/new/components/room-builder/types';
 
 export type SiteSlopeType = 'flat' | 'gentle' | 'moderate' | 'steep';
@@ -68,6 +69,8 @@ export interface ProjectDetailsState {
   roofCovering: RoofCovering;
   /** Prices the council fee lines (plan approval, inspections, certificate). */
   residentialDensity: ResidentialDensity;
+  /** Septic, borehole, solar, site setup… (lib/houseExtras.ts). Optional for older saved state. */
+  houseExtras?: HouseExtras;
   roomInputs: Record<RoomInputKey, string>;
 }
 
@@ -213,6 +216,7 @@ const initialProjectDetails: ProjectDetailsState = {
   finishLevel: null,
   roofCovering: 'ibr_05',
   residentialDensity: 'low',
+  houseExtras: DEFAULT_HOUSE_EXTRAS,
   roomInputs: { ...DEFAULT_ROOM_INPUTS },
 };
 

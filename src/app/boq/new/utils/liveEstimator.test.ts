@@ -5,6 +5,7 @@ import type { BrickType, CementType } from '@/lib/vision/types';
 import type { RoomInstance } from '@/app/boq/new/components/room-builder/types';
 import { densityFromNotes, getCostBreakdown, OWN_FIGURE_NOTE, PROJECT_FEES, tariffLine } from '@/lib/projectFees';
 import { STAGE_LABOR_PERCENTAGES } from '@/lib/calculations/laborSubstages';
+import { normalizeHouseExtras } from '@/lib/houseExtras';
 
 describe('uploaded plan in the BOQ builder', () => {
   it('prices council fees from the Harare tariff, keeps typed-in fees and follows the floor area', () => {
@@ -60,6 +61,64 @@ describe('uploaded plan in the BOQ builder', () => {
 
     // Fees are never counted as materials for labour.
     expect(bigger.find((milestone) => milestone.id === 'labor')!.items.every((item) => !/fee/i.test(item.description || ''))).toBe(true);
+  });
+
+  it('adds extras to a whole-house BOQ without stage labour or a second geyser, and drops them when switched off', () => {
+    const extras = normalizeHouseExtras({
+      septic: { enabled: true },
+      borehole: { enabled: true },
+      solar_geyser: { enabled: true },
+      security: { enabled: true },
+    });
+    const params = {
+      projectDetails: {
+        projectType: 'new_build', name: 'House', locationType: 'urban',
+        locationCity: 'Harare', specificLocation: '', soilType: '' as const, siteSlope: '' as const,
+        floorPlanSize: '120', standSize: '', buildingType: 'single_storey', wallHeight: '2.7',
+        brickTypes: ['common'] as BrickType[], cementTypes: ['cement_325'] as CementType[],
+        finishLevel: 'standard' as const, roofCovering: 'ibr_05' as const, residentialDensity: 'low' as const,
+        houseExtras: extras,
+        roomInputs: { ...DEFAULT_ROOM_INPUTS },
+      },
+      geometryMode: 'quick' as const, detailedRooms: [], totalWindows: 0, totalDoors: 0,
+      projectScope: 'entire' as const, selectedStages: [], laborType: 'materials_labor' as const,
+      temporaryWorksSelections: [], includeSepticTank: false,
+      septicDimensions: { length: '', width: '', height: '', unitPriceUsd: '' },
+      previousMilestones: BOQ_MILESTONE_IDS.map((id) => ({ id, items: [], expanded: true })),
+    };
+    const withExtras = buildLiveMilestones(params);
+    const all = withExtras.flatMap((milestone) => milestone.items);
+    const exterior = withExtras.find((milestone) => milestone.id === 'exterior')!.items;
+    expect(exterior.some((item) => item.materialId.startsWith('extra-septic--'))).toBe(true);
+    expect(exterior.some((item) => item.materialId.startsWith('extra-borehole--'))).toBe(true);
+    expect(all.some((item) => item.materialId === 'geyser-150')).toBe(false);
+    expect(all.some((item) => item.materialId === 'extra-solar_geyser--geyser')).toBe(true);
+
+    // Stage labour ignores the septic, borehole and security lines…
+    const noExtras = buildLiveMilestones({ ...params, projectDetails: { ...params.projectDetails, houseExtras: normalizeHouseExtras({}) } });
+    const geyserOnly = buildLiveMilestones({ ...params, projectDetails: { ...params.projectDetails, houseExtras: normalizeHouseExtras({ solar_geyser: { enabled: true } }) } });
+    const stageLabour = (milestones: MilestoneData[]) =>
+      milestones.find((milestone) => milestone.id === 'labor')!.items.reduce((sum, item) => sum + item.actualPriceUsd, 0);
+    expect(stageLabour(withExtras)).toBeCloseTo(stageLabour(geyserOnly), 2);
+    // …while the solar geyser is fitted like the geyser it replaces.
+    const solarGeyser = all.find((item) => item.materialId === 'extra-solar_geyser--geyser')!;
+    const electricGeyser = noExtras.flatMap((milestone) => milestone.items).find((item) => item.materialId === 'geyser-150')!;
+    expect(stageLabour(geyserOnly) - stageLabour(noExtras))
+      .toBeCloseTo((solarGeyser.actualPriceUsd - electricGeyser.actualPriceUsd) * STAGE_LABOR_PERCENTAGES.finishing / 100, 0);
+
+    // The septic labour line counts as labour in the cost split.
+    const septicLabour = all.find((item) => item.materialId === 'extra-septic--labour')!.actualPriceUsd;
+    expect(getCostBreakdown(withExtras).labor - getCostBreakdown(geyserOnly).labor).toBeCloseTo(septicLabour, 2);
+
+    // A quote typed into an extra survives; switching it off removes its lines.
+    const quoted = withExtras.map((milestone) => ({
+      ...milestone,
+      items: milestone.items.map((item) => item.materialId === 'extra-security--bars' ? { ...item, actualPriceUsd: 45 } : item),
+    }));
+    const again = buildLiveMilestones({ ...params, previousMilestones: quoted });
+    expect(again.flatMap((milestone) => milestone.items).find((item) => item.materialId === 'extra-security--bars')?.actualPriceUsd).toBe(45);
+    const off = buildLiveMilestones({ ...params, projectDetails: { ...params.projectDetails, houseExtras: normalizeHouseExtras({}) }, previousMilestones: again });
+    expect(off.flatMap((milestone) => milestone.items).some((item) => item.materialId.startsWith('extra-'))).toBe(false);
   });
 
   it('charges the double-storey rate and the minimum fee', () => {

@@ -84,10 +84,10 @@ const categoryLabels: Record<string, string> = {
 // ===== COST SPLIT (pie) =====
 type PdfSlice = { label: string; value: number; color: [number, number, number] };
 
-function costSplitSlices(rows: { category?: string | null; total: number }[]): PdfSlice[] {
+function costSplitSlices(rows: { category?: string | null; materialId?: string | null; total: number }[]): PdfSlice[] {
     const split = { materials: 0, labor: 0, fees: 0 };
     for (const row of rows) {
-        if (row.category === 'labor') split.labor += row.total;
+        if (row.category === 'labor' || (row.materialId?.startsWith('extra-') && row.materialId.endsWith('--labour'))) split.labor += row.total;
         else if (row.category === 'project_fees') split.fees += row.total;
         else split.materials += row.total;
     }
@@ -366,6 +366,7 @@ export function generateBOQPDF(
 
     yPos = drawCostSplit(doc, yPos, margin, costSplitSlices(items.map((item) => ({
         category: item.category,
+        materialId: item.material_id,
         total: Number(opts.currency === 'USD' ? item.total_usd : item.total_zwg) || 0,
     }))), opts.currency);
 
@@ -501,6 +502,8 @@ interface VisionBOQData {
     totalArea: number;
     items: Array<{
         material_name: string;
+        /** Lets the cost split tell an extra's labour line from its materials. */
+        material_id?: string;
         category: string;
         quantity: number;
         unit: string;
@@ -681,6 +684,7 @@ function buildBOQDocument(data: VisionBOQData, currency: 'USD' | 'ZWG'): jsPDF {
 
     yPos = drawCostSplit(doc, yPos, margin, costSplitSlices(data.items.map((item) => ({
         category: item.category,
+        materialId: item.material_id,
         total: item.quantity * (currency === 'USD' ? item.unit_price_usd : item.unit_price_zwg),
     }))), currency);
 
