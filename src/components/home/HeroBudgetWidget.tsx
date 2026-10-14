@@ -209,6 +209,7 @@ export default function HeroBudgetWidget() {
       locationType: PLAN_LOCATION,
       wallHeightM: 3.0,
       cementTypes: ['cement_425'],
+      includeLabor: true,
     });
   }, [hasValidBudget, parsedBudget]);
 
@@ -225,7 +226,7 @@ export default function HeroBudgetWidget() {
   const verdict = !estimate
     ? 'Enter a budget to see your reach.'
     : fullyFunded
-      ? 'Fully funds the build — materials covered.'
+      ? 'Fully funds the build — materials and labour covered.'
       : estimate.reachableStageId
         ? `Reaches ${STAGE_SHORT_LABELS[estimate.reachableStageId]} on a standard 3-bed build.`
         : 'Covers part of the foundation stage.';
@@ -376,7 +377,7 @@ export default function HeroBudgetWidget() {
         {/* The spec itself now sits under the heading, so this is only the
             caveat and the way out of it. */}
         <p className="hidden sm:block text-xs text-slate-400 leading-snug">
-          Materials only, standard finish. Adjust size, location and finish in the Budget Studio.
+          Materials and labour, standard finish. Adjust size, location and finish in the Budget Studio.
         </p>
       </div>
       <style>{`

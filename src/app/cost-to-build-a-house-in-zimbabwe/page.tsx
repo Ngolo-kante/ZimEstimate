@@ -21,7 +21,7 @@ import styles from './page.module.css';
 const PAGE_PATH = '/cost-to-build-a-house-in-zimbabwe';
 const PAGE_TITLE = 'Cost to Build a House in Zimbabwe | Free Calculator';
 const PAGE_DESCRIPTION =
-  'Estimate the materials budget for building a house in Zimbabwe. Compare common floor areas, understand construction stages, and create a detailed BOQ.';
+  'Estimate materials and labour for building a house in Zimbabwe. Compare floor areas, explore construction stages, and create a detailed BOQ.';
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -69,6 +69,7 @@ const examplePlans = [
     locationType: 'urban',
     wallHeightM: 3,
     cementTypes: ['cement_425'],
+    includeLabor: true,
   }),
 }));
 
@@ -132,7 +133,7 @@ const faqs = [
   {
     question: 'Are labour costs included in these examples?',
     answer:
-      'No. The example plan figures on this page are materials-only planning estimates. Labour, professional fees, statutory approvals, utility connections and unusual site work should be budgeted separately.',
+      'Yes. The example plan figures include a planning allowance for labour based on each stage’s materials. Professional fees, statutory approvals, utility connections and unusual site work should be budgeted separately.',
   },
   {
     question: 'What is a BOQ?',
@@ -204,7 +205,7 @@ export default function HouseCostZimbabwePage() {
               </div>
               <h1 id="house-cost-heading">How much does it cost to build a house in Zimbabwe?</h1>
               <p className={styles.heroLead}>
-                Start with the size of the house and the money available. Get an indicative materials budget, see which construction stages it can cover, then turn it into a detailed Bill of Quantities.
+                Start with the size of the house and the money available. Get an indicative materials and labour budget, see which construction stages it can cover, then turn it into a detailed Bill of Quantities.
               </p>
               <div className={styles.heroActions}>
                 <TrackedLink
@@ -232,7 +233,7 @@ export default function HouseCostZimbabwePage() {
 
         <div className={styles.disclaimerBar}>
           <span>Planning note</span>
-          <p>Estimates are indicative and materials-only. Confirm current quantities, prices, labour and site requirements before building.</p>
+          <p>Estimates include a planning allowance for labour. Confirm current quantities, prices, labour rates and site requirements before building.</p>
         </div>
 
         <section className={styles.examples} id="example-costs" aria-labelledby="example-costs-heading">
@@ -258,7 +259,7 @@ export default function HouseCostZimbabwePage() {
                   </div>
                   <p>{plan.note}</p>
                   <div className={styles.planTotal}>
-                    <span>Indicative materials plan</span>
+                    <span>Indicative materials and labour</span>
                     <strong>{formatUsd(plan.estimate.estimatedTotalUsd)}</strong>
                   </div>
                   <TrackedLink
@@ -271,7 +272,7 @@ export default function HouseCostZimbabwePage() {
                 </article>
               ))}
             </div>
-            <p className={styles.dataNote}>Based on the estimator’s reference price catalogue, not live supplier quotations. Figures are rounded and do not include labour, professional fees or approvals.</p>
+            <p className={styles.dataNote}>Based on the estimator’s reference price catalogue and a stage-based labour allowance, not live quotations. Figures are rounded and exclude professional fees, approvals and utility connections.</p>
           </div>
         </section>
 

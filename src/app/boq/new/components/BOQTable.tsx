@@ -238,10 +238,10 @@ export default function BOQTable() {
               <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" />
               <input
                 type="text"
-                placeholder="Search material or code..."
+                placeholder="Search BOQ items and fees..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                aria-label="Filter line items by material name"
+                aria-label="Search line items by name or unit"
                 className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] py-2 pl-9 pr-3 text-xs sm:text-sm text-[var(--color-text)] placeholder-[var(--color-text-secondary)] outline-none transition focus:border-[var(--color-accent)] focus:bg-[var(--color-surface)]"
               />
             </div>
@@ -356,7 +356,7 @@ export default function BOQTable() {
                           <table className="w-full text-left text-xs sm:text-sm border-collapse" aria-label={`${MILESTONE_LABELS[milestone.id] || milestone.id} Table`}>
                             <thead>
                               <tr className="border-b border-[var(--color-border-light)] bg-[var(--color-background)] text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
-                                <th scope="col" className="px-5 py-3">Material / Description</th>
+                                <th scope="col" className="px-5 py-3">{milestone.id === 'project_fees' ? 'Fee / Description' : 'Material / Description'}</th>
                                 <th scope="col" className="px-4 py-3 text-center">Quantity</th>
                                 <th scope="col" className="px-4 py-3 text-left">Unit</th>
                                 <th scope="col" className="px-4 py-3 text-right">Unit Price (USD)</th>
@@ -726,13 +726,13 @@ export default function BOQTable() {
                             >
                               <Plus size={14} className="text-[var(--color-accent)]" /> Add Item
                             </button>
-                            <button
+                            {milestone.id !== 'project_fees' && <button
                               type="button"
                               onClick={() => addAiSuggestion(milestone.id)}
                               className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-accent)]/30 bg-[var(--color-accent-bg)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] hover:opacity-90 transition shadow-2xs"
                             >
                               <Sparkle size={14} /> AI Allowance
-                            </button>
+                            </button>}
                           </div>
                           <span className="text-[11px] text-[var(--color-text-secondary)] font-semibold">
                             Subtotal: {formatUSD(subtotal)}
@@ -754,7 +754,9 @@ export default function BOQTable() {
           <p className="text-xs uppercase tracking-wider text-[var(--color-text-secondary)] font-semibold">Finalized BOQ Total</p>
           <p className="text-2xl sm:text-3xl font-black text-[var(--color-surface)]">{formatUSD(grandTotal)}</p>
           <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-            Includes all materials, quantities, and active scope milestones.
+            {laborType === 'materials_labor'
+              ? 'Includes priced materials, labour and professional fees for the active scope.'
+              : 'Includes priced materials and professional fees for the active scope. Labour is not included.'}
           </p>
         </div>
         <div className="flex items-center gap-2">

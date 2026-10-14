@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { estimateStageReach } from '../src/lib/estimators/stageBudgetEstimator';
 
 test.describe('Public launch surfaces', () => {
   test('home page exposes primary launch navigation and trust links', async ({ page }) => {
@@ -48,7 +49,6 @@ test.describe('Public launch surfaces', () => {
     await budgetInput.pressSequentially('25000');
     await expect(page.getByRole('link', { name: 'Customize' }))
       .toHaveAttribute('href', '/quick-budget?budget=25000');
-
     // Footer trust links
     await expect(page.getByRole('link', { name: 'Privacy Policy' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Terms' })).toBeVisible();
@@ -63,6 +63,45 @@ test.describe('Public launch surfaces', () => {
       content: document.documentElement.scrollWidth,
     }));
     expect(mobileWidth.content).toBeLessThanOrEqual(mobileWidth.viewport);
+  });
+
+  test('home budget widget uses labour-inclusive stage reach', async ({ page }) => {
+    await page.goto('/home');
+    const budgetInput = page.getByRole('textbox', { name: /Your budget in US dollars/ });
+    // The widget starts its count-up once it is interactive; typing before that is lost.
+    await expect(budgetInput).toHaveValue(/\d/, { timeout: 20_000 });
+    await budgetInput.fill('');
+    await budgetInput.pressSequentially('12000');
+    const base = { budgetUsd: 12000, floorAreaM2: 120, locationType: 'urban' as const, wallHeightM: 3, cementTypes: ['cement_425' as const] };
+    const withLabour = estimateStageReach({ ...base, includeLabor: true });
+    const materialsOnly = estimateStageReach(base);
+    const finishing = (estimate: typeof withLabour) => `${Math.round(estimate.rows.find((row) => row.id === 'finishing')!.coveragePercent)}%`;
+    // At $12,000 labour is the difference between finishing the house and not.
+    expect(finishing(withLabour)).not.toBe(finishing(materialsOnly));
+    await expect(page.locator('.hero-preview').getByText('Finishing', { exact: true }).locator('..'))
+      .toContainText(finishing(withLabour));
+    await expect(page.locator('.hero-preview')).toContainText('Materials and labour, standard finish.');
+  });
+
+  test('house cost examples include the same labour allowance as the budget checker', async ({ page }) => {
+    await page.goto('/cost-to-build-a-house-in-zimbabwe');
+    const estimate = estimateStageReach({
+      budgetUsd: 1,
+      floorAreaM2: 80,
+      locationType: 'urban',
+      wallHeightM: 3,
+      cementTypes: ['cement_425'],
+      includeLabor: true,
+    });
+    const expectedTotal = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    }).format(Math.round(estimate.estimatedTotalUsd));
+    await expect(page.getByRole('article').filter({ hasText: 'Compact home' }))
+      .toContainText(`Indicative materials and labour${expectedTotal}`);
+    await expect(page.getByText('Estimates include a planning allowance for labour.'))
+      .toBeVisible();
   });
 
   test('estimate directory connects each need to the right service', async ({ page }) => {
