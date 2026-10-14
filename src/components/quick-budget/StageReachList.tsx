@@ -8,10 +8,20 @@
 // checked against what is in it without generating the whole BOQ. Rows
 // start closed — the list is a summary first — except the stage the money
 // runs out in, which is the one people want to look at.
+//
+// Each row also says where that stage stands: still to build, already built,
+// or not now. People here often build over years; a budget that starts at the
+// roof should not be spent on the foundation first.
 
 import { useState } from 'react';
 import { CaretDown, CheckCircle, Circle, CircleHalf } from '@phosphor-icons/react';
-import type { StageReachRow } from '@/lib/estimators/stageBudgetEstimator';
+import type { StageId, StageReachRow, StageStatus } from '@/lib/estimators/stageBudgetEstimator';
+
+const STATUS_OPTIONS: { value: StageStatus; label: string }[] = [
+  { value: 'build', label: 'To build' },
+  { value: 'built', label: 'Already built' },
+  { value: 'skip', label: 'Not now' },
+];
 
 export interface StageLine {
   category: string;
@@ -42,8 +52,14 @@ function unitLabel(unit: string, quantity: number): string {
   return /(bag|cube|roll|sheet|length|litre|trip|day|lot)$/i.test(base) ? `${base}s` : base;
 }
 
-export default function StageReachList({ rows, lines }: { rows: StageReachRow[]; lines: StageLine[] }) {
-  const firstShort = rows.find((row) => !row.affordable)?.id ?? null;
+export default function StageReachList({ rows, lines, onStatusChange }: {
+  rows: StageReachRow[];
+  lines: StageLine[];
+  /** Omit to show the list without the choices (e.g. a shared, read-only view). */
+  onStatusChange?: (id: StageId, status: StageStatus) => void;
+}) {
+  const firstShort = rows.find((row) => row.status === 'build' && !row.affordable)?.id ?? null;
+  const buildCount = rows.filter((row) => row.status === 'build').length;
   const [open, setOpen] = useState<Set<string>>(() => new Set(firstShort ? [firstShort] : []));
 
   const toggle = (id: string) =>
@@ -57,7 +73,7 @@ export default function StageReachList({ rows, lines }: { rows: StageReachRow[];
     <ol className="stages">
       {rows.map((row) => {
         const pct = Math.max(0, Math.min(100, Math.round(row.coveragePercent)));
-        const state = row.affordable ? 'covered' : pct > 0 ? 'partial' : 'short';
+        const state = row.status === 'built' ? 'built' : row.status === 'skip' ? 'later' : row.affordable ? 'covered' : pct > 0 ? 'partial' : 'short';
         const stageLines = lines
           .filter((line) => line.category === row.id && line.totalUsd > 0)
           .sort((a, b) => b.totalUsd - a.totalUsd);
@@ -68,7 +84,7 @@ export default function StageReachList({ rows, lines }: { rows: StageReachRow[];
           <li key={row.id} className={`stage ${state}`}>
             <button type="button" className="head" onClick={() => toggle(row.id)} aria-expanded={isOpen} aria-controls={panelId}>
               <span className="mark" aria-hidden="true">
-                {state === 'covered' ? <CheckCircle size={20} weight="fill" /> : state === 'partial' ? <CircleHalf size={20} weight="fill" /> : <Circle size={20} />}
+                {state === 'covered' || state === 'built' ? <CheckCircle size={20} weight="fill" /> : state === 'partial' ? <CircleHalf size={20} weight="fill" /> : <Circle size={20} />}
               </span>
               <span className="copy">
                 <span className="name">{row.label}</span>
@@ -77,7 +93,7 @@ export default function StageReachList({ rows, lines }: { rows: StageReachRow[];
               <span className="figures">
                 <span className="cost">{usd(row.stageCostUsd)}</span>
                 <span className={`pill ${state}`}>
-                  {state === 'covered' ? 'Covered' : state === 'partial' ? `${pct}% covered` : 'Not covered'}
+                  {state === 'built' ? 'Already built' : state === 'later' ? 'Not now' : state === 'covered' ? 'Covered' : state === 'partial' ? `${pct}% covered` : 'Not covered'}
                 </span>
               </span>
               <CaretDown size={16} weight="bold" className={`caret ${isOpen ? 'up' : ''}`} aria-hidden="true" />
@@ -85,6 +101,29 @@ export default function StageReachList({ rows, lines }: { rows: StageReachRow[];
 
             {state === 'partial' && (
               <div className="track" aria-hidden="true"><span style={{ width: `${pct}%` }} /></div>
+            )}
+
+            {onStatusChange && (
+              <div className="status" role="radiogroup" aria-label={`${row.label}: where this stage stands`}>
+                {STATUS_OPTIONS.map((option) => {
+                  // One stage has to stay on the budget, or there is nothing to estimate.
+                  const locked = option.value !== 'build' && row.status === 'build' && buildCount === 1;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={row.status === option.value}
+                      disabled={locked}
+                      title={locked ? 'Keep at least one stage to build' : undefined}
+                      className={row.status === option.value ? 'on' : ''}
+                      onClick={() => onStatusChange(row.id, option.value)}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
             )}
 
             {isOpen && (
@@ -137,6 +176,20 @@ export default function StageReachList({ rows, lines }: { rows: StageReachRow[];
         .pill.partial { color: #b45309; background: #fef3c7; }
         .pill.short { color: #64748b; background: #f1f5f9; }
         .short .name, .short .cost { color: #64748b; }
+        .built .mark { color: #94a3b8; }
+        .later .mark { color: #cbd5e1; }
+        .built .name, .built .cost, .later .name, .later .cost { color: #94a3b8; }
+        .built .cost { text-decoration: line-through; }
+        .pill.built { color: #475569; background: #e2e8f0; }
+        .pill.later { color: #64748b; background: #f1f5f9; }
+        .status { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 12px 50px; }
+        .status button {
+          min-height: 32px; padding: 4px 10px; border: 1px solid #e2e8f0; border-radius: 999px; background: #fff;
+          font: inherit; font-size: 0.74rem; font-weight: 600; color: #475569; cursor: pointer;
+        }
+        .status button.on { border-color: #2e6cf6; background: #eff6ff; color: #1e3a8a; }
+        .status button:disabled { opacity: 0.45; cursor: not-allowed; }
+        .status button:focus-visible { outline: 2px solid #2e6cf6; outline-offset: 2px; }
         :global(.caret) { color: #94a3b8; transition: transform 0.15s ease; }
         :global(.caret.up) { transform: rotate(180deg); }
         .track { height: 4px; margin: -4px 16px 12px 50px; border-radius: 999px; background: #f1f5f9; overflow: hidden; }

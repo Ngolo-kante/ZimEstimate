@@ -11,11 +11,13 @@ test.describe('Public launch surfaces', () => {
     ).toBeVisible({ timeout: 10000 });
 
     const hero = page.getByRole('region', { name: 'Construction estimates built for Zimbabwe.' });
-    await expect(hero.getByRole('link', { name: 'Start your estimate', exact: true }))
+    await expect(hero.getByRole('link', { name: 'Start your BOQ', exact: true }))
       .toHaveAttribute('href', '/estimate');
-    await expect(page.getByRole('link', { name: 'Find a contractor', exact: true }))
+    await expect(hero.getByRole('link', { name: 'Upload your plan', exact: true }))
+      .toHaveAttribute('href', '/ai/vision-takeoff');
+    await expect(hero.getByRole('link', { name: /Find a contractor/ }))
       .toHaveAttribute('href', '/contractors');
-    await expect(page.getByRole('region', { name: 'Help turn plans into finished projects.' }).getByRole('link', { name: 'Register as a contractor', exact: true }))
+    await expect(page.getByRole('region', { name: 'Put the first reliable number on your project.' }).getByRole('link', { name: 'Register so homeowners can find you', exact: true }))
       .toHaveAttribute('href', '/contractor/register');
     const manualMethod = page
       .getByRole('link')
@@ -39,10 +41,9 @@ test.describe('Public launch surfaces', () => {
     await expect(quickMethod).toHaveAttribute('href', '/quick-projects');
 
     const budgetInput = page.getByRole('textbox', { name: /Your budget in US dollars/ });
-    // The widget ships pre-filled so the house and stage bars are populated on
-    // arrival rather than showing the demo switched off. This asserted '' when
-    // the field started empty.
-    await expect(budgetInput).toHaveValue('15,000');
+    // The widget counts up to its starting figure on arrival, so the house and
+    // stage bars are populated rather than showing the demo switched off.
+    await expect(budgetInput).toHaveValue('15,000', { timeout: 20_000 });
     // The plan being costed has to be visible, not buried in the footnote.
     await expect(page.getByText('120m²', { exact: true })).toBeVisible();
     await budgetInput.fill('');
@@ -111,9 +112,9 @@ test.describe('Public launch surfaces', () => {
       .toHaveAttribute('href', '/boq/new?method=manual&fresh=1&preset=full_house');
     await expect(page.getByRole('link', { name: /Estimate by stage/ }))
       .toHaveAttribute('href', '/boq/new?method=manual&fresh=1&preset=building_in_stages');
-    await expect(page.getByRole('link', { name: /Check a solar budget/ }))
+    await expect(page.getByRole('link', { name: /The system your budget buys/ }))
       .toHaveAttribute('href', '/quick-budget?mode=solar');
-    await expect(page.getByRole('link', { name: /Read a floor plan/ }))
+    await expect(page.getByRole('link', { name: /Read my floor plan/ }))
       .toHaveAttribute('href', '/ai/vision-takeoff');
 
     await page.setViewportSize({ width: 390, height: 844 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estimateStageReach } from './stageBudgetEstimator';
+import { estimateStageReach, stageStatusFromParams, stageStatusToParams } from './stageBudgetEstimator';
 
 describe('estimateStageReach', () => {
   it('returns all construction stages in order', () => {
@@ -63,5 +63,52 @@ describe('labour in the stage estimate', () => {
     expect(withLabour.laborUsd).toBeCloseTo(withLabour.materialsUsd * 0.35, 6);
     expect(withLabour.estimatedTotalUsd).toBeCloseTo(withLabour.materialsUsd + withLabour.laborUsd, 6);
     expect(withLabour.coveragePercent).toBeLessThan(materialsOnly.coveragePercent);
+  });
+});
+
+describe('stages already built or left for later', () => {
+  const base = { budgetUsd: 6000, floorAreaM2: 120, locationType: 'urban' as const, includeLabor: true };
+
+  it('spends the budget from the first stage still to build', () => {
+    const all = estimateStageReach(base);
+    const fromRoof = estimateStageReach({ ...base, stageStatus: { substructure: 'built', superstructure: 'built' } });
+    const cost = (id: string) => all.rows.find((row) => row.id === id)!.stageCostUsd;
+    expect(fromRoof.estimatedTotalUsd).toBeCloseTo(cost('roofing') + cost('finishing') + cost('exterior'), 6);
+    // The roof is now the first thing the money pays for.
+    const roof = fromRoof.rows.find((row) => row.id === 'roofing')!;
+    expect(roof.coveragePercent).toBeCloseTo(Math.min(100, (6000 / cost('roofing')) * 100), 6);
+    expect(fromRoof.rows.find((row) => row.id === 'substructure')).toMatchObject({ status: 'built', affordable: true, coveragePercent: 100 });
+    expect(fromRoof.coveragePercent).toBeGreaterThan(all.coveragePercent);
+  });
+
+  it('leaves a stage for later out of the total but keeps its cost on show', () => {
+    const all = estimateStageReach(base);
+    const noExterior = estimateStageReach({ ...base, stageStatus: { exterior: 'skip' } });
+    const exterior = noExterior.rows.find((row) => row.id === 'exterior')!;
+    expect(exterior).toMatchObject({ status: 'skip', affordable: false, coveragePercent: 0 });
+    expect(exterior.stageCostUsd).toBeCloseTo(all.rows.find((row) => row.id === 'exterior')!.stageCostUsd, 6);
+    expect(noExterior.estimatedTotalUsd).toBeCloseTo(all.estimatedTotalUsd - exterior.stageCostUsd, 6);
+    expect(noExterior.materialsUsd + noExterior.laborUsd).toBeCloseTo(noExterior.estimatedTotalUsd, 6);
+  });
+
+  it('reports full coverage when the only stage left is affordable', () => {
+    const result = estimateStageReach({
+      ...base,
+      budgetUsd: 1_000_000,
+      stageStatus: { substructure: 'built', superstructure: 'built', roofing: 'built', finishing: 'built' },
+    });
+    expect(result.coveragePercent).toBe(100);
+    expect(result.reachableStageId).toBe('exterior');
+  });
+});
+
+describe('stage choices in links', () => {
+  it('round-trips through link parameters and refuses a link with nothing left to build', () => {
+    const status = { substructure: 'built', superstructure: 'built', exterior: 'skip' } as const;
+    const params = new URLSearchParams(stageStatusToParams(status));
+    expect(params.toString()).toBe('done=substructure%2Csuperstructure&later=exterior');
+    expect(stageStatusFromParams(params)).toEqual(status);
+    expect(stageStatusFromParams(new URLSearchParams('done=substructure,superstructure,roofing,finishing,exterior'))).toEqual({});
+    expect(stageStatusFromParams(new URLSearchParams('done=garden'))).toEqual({});
   });
 });

@@ -6,7 +6,7 @@ import { decodeSolarExplorerState, SOLAR_EXPLORER_DEFAULTS } from '@/lib/quick-p
 import { decodeBoreholeExplorerState } from '@/lib/quick-projects/borehole/explorerUrl';
 import { fitBoreholeToBudget, getCasingLabel, type PumpType } from '@/lib/quick-projects/borehole/pricing';
 import { LOCATION_DEFAULTS, boreholeAreaType } from '@/lib/quick-projects/borehole/catalog';
-import { estimateStageReach } from '@/lib/estimators/stageBudgetEstimator';
+import { estimateStageReach, stageStatusFromParams } from '@/lib/estimators/stageBudgetEstimator';
 import {
   HOUSE_DEFAULTS,
   HOUSE_LOCATIONS,
@@ -146,6 +146,7 @@ function summariseHouse(params: URLSearchParams): SharedEstimateSummary | null {
     cementTypes: [config.cementType],
     roofCovering: roof && roof in ROOF_COVERINGS ? (roof as RoofCovering) : undefined,
     includeLabor: params.get('labour') !== '0',
+    stageStatus: stageStatusFromParams(params),
   });
   const coverage = Math.round(result.coveragePercent);
 

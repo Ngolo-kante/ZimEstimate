@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import { estimateStageReach } from '@/lib/estimators/stageBudgetEstimator';
+import { estimateStageReach, stageStatusFromParams, stageStatusToParams, type StageId, type StageStatus } from '@/lib/estimators/stageBudgetEstimator';
 import { HOUSE_DEFAULTS, HOUSE_PROFILES } from '@/lib/estimators/houseBudgetOptions';
 import { generateBOQFromBasics, ManualBuilderConfig } from '@/lib/calculations';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -23,7 +23,7 @@ import BoreholeBudgetExplorer from '@/components/quick-projects/BoreholeBudgetEx
 import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 import CostDonut, { COST_COLORS } from '@/components/ui/CostDonut';
 import RoofProfileIcon from '@/components/ui/RoofProfileIcon';
-import { STAGE_LABOR_PERCENTAGES } from '@/lib/calculations/laborSubstages';
+import { LABOR_SUBSTAGES, STAGE_LABOR_PERCENTAGES } from '@/lib/calculations/laborSubstages';
 import { COUNCIL_TARIFF, councilFeesTotal } from '@/lib/projectFees';
 import { DEFAULT_ROOF_COVERING, ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
 import { captureProductEvent, getBudgetBand, recordSharedLinkArrival } from '@/lib/productAnalytics';
@@ -97,6 +97,8 @@ export default function QuickBudgetPage() {
   // On by default: a house needs builders, and a materials-only figure made
   // budgets look further along than they are.
   const [includeLabor, setIncludeLabor] = useState(true);
+  // Stages already built, or left for later, are not paid for from this budget.
+  const [stageStatus, setStageStatus] = useState<Partial<Record<StageId, StageStatus>>>({});
   const [buildProfile, setBuildProfile] = useState<(typeof profileOptions)[number]['id']>(HOUSE_DEFAULTS.profile);
   const [stageEstimate, setStageEstimate] = useState<ReturnType<typeof estimateStageReach> | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -136,6 +138,7 @@ export default function QuickBudgetPage() {
     const roof = params.get('roof');
     if (roof && roof in ROOF_COVERINGS) setRoofCovering(roof as RoofCovering);
     if (params.get('labour') === '0') setIncludeLabor(false);
+    setStageStatus(stageStatusFromParams(params));
 
     const profile = params.get('profile');
     if (profileOptions.some((option) => option.id === profile)) {
@@ -194,8 +197,17 @@ export default function QuickBudgetPage() {
     return generateBOQFromBasics(manualBuilderConfig);
   }, [manualBuilderConfig]);
 
+  // The lines this budget pays for: stages already built or left for later are
+  // dropped, and so is their labour (a labour line names its sub-stage).
+  const countedItems = useMemo(() => detailedItems.filter((item) => {
+    const stage = item.category === 'labor'
+      ? LABOR_SUBSTAGES.find((substage) => `labor-${substage.id}` === item.materialId)?.stage
+      : item.category;
+    return !stage || (stageStatus[stage as StageId] ?? 'build') === 'build';
+  }), [detailedItems, stageStatus]);
+
   const totals = useMemo(() => {
-    return detailedItems.reduce(
+    return countedItems.reduce(
       (acc, item) => {
         acc.usd += item.totalUsd || 0;
         acc.zwg += item.totalZwg || 0;
@@ -203,7 +215,7 @@ export default function QuickBudgetPage() {
       },
       { usd: 0, zwg: 0 }
     );
-  }, [detailedItems]);
+  }, [countedItems]);
 
   useEffect(() => {
     if (estimatorErrors.budget || estimatorErrors.area) {
@@ -220,6 +232,7 @@ export default function QuickBudgetPage() {
         locationType,
         roofCovering,
         includeLabor,
+        stageStatus,
         wallHeightM: selectedProfile.config.wallHeightM,
         cementTypes: [selectedProfile.config.cementType],
       });
@@ -234,6 +247,7 @@ export default function QuickBudgetPage() {
     locationType,
     roofCovering,
     includeLabor,
+    stageStatus,
     parsedArea,
     parsedBudget,
     selectedProfile.config.cementType,
@@ -242,7 +256,7 @@ export default function QuickBudgetPage() {
 
   const nextLockedStage = useMemo(() => {
     if (!stageEstimate) return null;
-    return stageEstimate.rows.find((stage) => !stage.affordable) ?? null;
+    return stageEstimate.rows.find((stage) => stage.status === 'build' && !stage.affordable) ?? null;
   }, [stageEstimate]);
 
   const locationLabel = useMemo(() => {
@@ -257,7 +271,14 @@ export default function QuickBudgetPage() {
     };
   }, [floorAreaInput]);
   const overallPercent = stageEstimate ? Math.round(stageEstimate.coveragePercent) : 0;
-  const affordableStageCount = stageEstimate?.rows.filter((stage) => stage.affordable).length ?? 0;
+  const buildStageCount = stageEstimate?.rows.filter((stage) => stage.status === 'build').length ?? 0;
+  const affordableStageCount = stageEstimate?.rows.filter((stage) => stage.status === 'build' && stage.affordable).length ?? 0;
+  const setStatus = (id: StageId, status: StageStatus) =>
+    setStageStatus((current) => {
+      const next = { ...current, [id]: status };
+      if (status === 'build') delete next[id];
+      return next;
+    });
 
   const coverageTone = useMemo(() => {
     if (!stageEstimate) return 'idle';
@@ -292,6 +313,7 @@ export default function QuickBudgetPage() {
         roof: roofCovering,
         labour: includeLabor ? '1' : '0',
         profile: buildProfile,
+        ...stageStatusToParams(stageStatus),
       });
       showInfo('Please sign in to save this project.');
       router.push(`/auth/login?redirect=${encodeURIComponent(`/quick-budget?${restore}`)}`);
@@ -320,7 +342,7 @@ export default function QuickBudgetPage() {
         return;
       }
 
-      const itemsPayload = detailedItems.map((item, index) => ({
+      const itemsPayload = countedItems.map((item, index) => ({
         material_id: item.materialId,
         material_name: item.materialName,
         category: item.category,
@@ -337,7 +359,7 @@ export default function QuickBudgetPage() {
         {
           total_usd: totals.usd,
           total_zwg: totals.zwg,
-          selected_stages: stageEstimate.rows.filter((row) => row.affordable).map((row) => row.id),
+          selected_stages: stageEstimate.rows.filter((row) => row.status === 'build' && row.affordable).map((row) => row.id),
         },
         itemsPayload
       );
@@ -396,6 +418,7 @@ export default function QuickBudgetPage() {
       roof: roofCovering,
       labour: includeLabor ? '1' : '0',
       profile: buildProfile,
+      ...stageStatusToParams(stageStatus),
       // Marks an arrival from a share, so it can be counted when opened.
       src: 'share',
     }).toString()}`;
@@ -440,7 +463,7 @@ export default function QuickBudgetPage() {
           projectName: `Detailed BOQ - ${parsedArea}m2`,
           location: locationLabel,
           totalArea: parsedArea,
-          items: detailedItems.map((item) => ({
+          items: countedItems.map((item) => ({
             material_name: item.materialName,
             category: stageCategoryLabels[item.category] || item.category,
             quantity: item.quantity,
@@ -457,7 +480,7 @@ export default function QuickBudgetPage() {
             scope: 'entire_house',
             brickType: 'common',
             cementType: selectedProfile.config.cementType,
-            includeLabor: false,
+            includeLabor,
           },
         },
         'USD'
@@ -792,12 +815,12 @@ export default function QuickBudgetPage() {
 
                   <div className="result-stats">
                     <article>
-                      <span>Estimated Full Build</span>
+                      <span>{buildStageCount < 5 ? 'Still to build' : 'Estimated Full Build'}</span>
                       <strong>{formatUsd(stageEstimate.estimatedTotalUsd)}</strong>
                     </article>
                     <article>
                       <span>Affordable Stages</span>
-                      <strong>{affordableStageCount} / {stageEstimate.rows.length}</strong>
+                      <strong>{affordableStageCount} / {buildStageCount}</strong>
                     </article>
                     <article>
                       <span>Detailed BOQ Total</span>
@@ -811,7 +834,7 @@ export default function QuickBudgetPage() {
                     covered three quarters of it. */}
                 <div className="guidance">
                   {nextLockedStage
-                    ? <>Your budget covers {affordableStageCount} of {stageEstimate.rows.length} stages. About <strong>{formatUsd(nextLockedStage.stageCostUsd * (1 - Math.min(100, nextLockedStage.coveragePercent) / 100))}</strong> more finishes {nextLockedStage.label}{stageEstimate.estimatedTotalUsd - stageEstimate.budgetUsd > nextLockedStage.stageCostUsd * (1 - Math.min(100, nextLockedStage.coveragePercent) / 100) + 1 ? <>, and {formatUsd(stageEstimate.estimatedTotalUsd - stageEstimate.budgetUsd)} the whole house</> : ''}.</>
+                    ? <>Your budget covers {affordableStageCount} of the {buildStageCount}{buildStageCount < 5 ? ' stages still to build' : ' stages'}. About <strong>{formatUsd(nextLockedStage.stageCostUsd * (1 - Math.min(100, nextLockedStage.coveragePercent) / 100))}</strong> more finishes {nextLockedStage.label}{stageEstimate.estimatedTotalUsd - stageEstimate.budgetUsd > nextLockedStage.stageCostUsd * (1 - Math.min(100, nextLockedStage.coveragePercent) / 100) + 1 ? <>, and {formatUsd(stageEstimate.estimatedTotalUsd - stageEstimate.budgetUsd)} the whole house</> : ''}.</>
                     : <>Your budget covers every stage{stageEstimate.budgetUsd > stageEstimate.estimatedTotalUsd ? <>, with about <strong>{formatUsd(stageEstimate.budgetUsd - stageEstimate.estimatedTotalUsd)}</strong> to spare</> : ''}.</>}
                 </div>
 
@@ -835,7 +858,7 @@ export default function QuickBudgetPage() {
                   )}
                 </div>
 
-                <StageReachList rows={stageEstimate.rows} lines={detailedItems} />
+                <StageReachList rows={stageEstimate.rows} lines={detailedItems} onStatusChange={setStatus} />
 
                 <p className="note">
                   Indicative estimate only. Final totals vary based on design complexity, specification shifts, and

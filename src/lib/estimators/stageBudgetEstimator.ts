@@ -12,7 +12,15 @@ const STAGE_ORDER = [
   { id: 'exterior', label: 'External Work' },
 ] as const;
 
-type StageId = (typeof STAGE_ORDER)[number]['id'];
+export type StageId = (typeof STAGE_ORDER)[number]['id'];
+
+/**
+ * Where each stage stands. People in Zimbabwe often build over years, so a
+ * budget may start after the walls are up ('built'), or leave the boundary
+ * wall for later ('skip'). Neither is counted; a built stage reads as done.
+ */
+export type StageStatus = 'build' | 'built' | 'skip';
+export const STAGE_IDS: StageId[] = STAGE_ORDER.map((stage) => stage.id);
 
 const STAGE_WEIGHT_FALLBACK: Record<StageId, number> = {
   substructure: 0.22,
@@ -33,6 +41,8 @@ export type StageReachInput = {
   roofCovering?: RoofCovering;
   /** Adds each stage's fixed labour percentage (laborSubstages.ts) to its cost. */
   includeLabor?: boolean;
+  /** Stages left out of the budget. Missing means 'build'. */
+  stageStatus?: Partial<Record<StageId, StageStatus>>;
 };
 
 export type StageReachRow = {
@@ -42,6 +52,7 @@ export type StageReachRow = {
   cumulativeCostUsd: number;
   affordable: boolean;
   coveragePercent: number;
+  status: StageStatus;
 };
 
 export type StageReachResult = {
@@ -112,25 +123,46 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     stageCosts.exterior = Math.max(computedTotal * 0.08, floorAreaM2 * 18);
   }
 
-  const materialsUsd = Object.values(stageCosts).reduce((sum, cost) => sum + cost, 0);
+  const statusOf = (id: StageId): StageStatus => input.stageStatus?.[id] ?? 'build';
+  const counted = STAGE_ORDER.filter((stage) => statusOf(stage.id) === 'build');
+
+  let materialsUsd = 0;
   let laborUsd = 0;
-  if (input.includeLabor) {
-    for (const stage of STAGE_ORDER) {
+  for (const stage of STAGE_ORDER) {
+    const counts = statusOf(stage.id) === 'build';
+    if (counts) materialsUsd += stageCosts[stage.id];
+    if (input.includeLabor) {
       const labor = stageCosts[stage.id] * STAGE_LABOR_PERCENTAGES[stage.id] / 100;
       stageCosts[stage.id] += labor;
-      laborUsd += labor;
+      if (counts) laborUsd += labor;
     }
   }
 
   const estimatedTotalUsd = materialsUsd + laborUsd;
-  const normalizedTotal = clampPositive(estimatedTotalUsd, floorAreaM2 * 250);
-  const coveragePercent = Math.min(100, normalizedTotal > 0 ? (budgetUsd / normalizedTotal) * 100 : 0);
+  // Nothing left to build: the budget covers it, and there is no total to scale.
+  const normalizedTotal = counted.length === 0 ? 0 : clampPositive(estimatedTotalUsd, floorAreaM2 * 250);
+  const coveragePercent = counted.length === 0
+    ? 100
+    : Math.min(100, normalizedTotal > 0 ? (budgetUsd / normalizedTotal) * 100 : 0);
 
   let cumulative = 0;
   let reachableStageId: StageId | null = null;
 
   const rows: StageReachRow[] = STAGE_ORDER.map((stage) => {
     const stageCostUsd = stageCosts[stage.id];
+    const status = statusOf(stage.id);
+    if (status !== 'build') {
+      // Shown with its cost, but the money is not spent on it.
+      return {
+        id: stage.id,
+        label: stage.label,
+        stageCostUsd,
+        cumulativeCostUsd: cumulative,
+        affordable: status === 'built',
+        coveragePercent: status === 'built' ? 100 : 0,
+        status,
+      };
+    }
     const start = cumulative;
     cumulative += stageCostUsd;
     const affordable = budgetUsd >= cumulative;
@@ -146,6 +178,7 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
       cumulativeCostUsd: cumulative,
       affordable,
       coveragePercent: coveragePercentForStage,
+      status,
     };
   });
 
@@ -163,4 +196,26 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     reachableStageLabel,
     rows,
   };
+}
+
+/** Stage choices as link parameters: ?done=substructure,superstructure&later=exterior. */
+export function stageStatusToParams(status: Partial<Record<StageId, StageStatus>>): Record<string, string> {
+  const pick = (value: StageStatus) => STAGE_IDS.filter((id) => status[id] === value).join(',');
+  const params: Record<string, string> = {};
+  if (pick('built')) params.done = pick('built');
+  if (pick('skip')) params.later = pick('skip');
+  return params;
+}
+
+export function stageStatusFromParams(params: URLSearchParams): Partial<Record<StageId, StageStatus>> {
+  const status: Partial<Record<StageId, StageStatus>> = {};
+  const read = (key: string, value: StageStatus) => {
+    for (const id of (params.get(key) ?? '').split(',')) {
+      if ((STAGE_IDS as string[]).includes(id)) status[id as StageId] = value;
+    }
+  };
+  read('done', 'built');
+  read('later', 'skip');
+  // At least one stage has to be left to build.
+  return STAGE_IDS.every((id) => status[id]) ? {} : status;
 }
