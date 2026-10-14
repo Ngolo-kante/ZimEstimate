@@ -1,170 +1,67 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Info, CurrencyDollar, Percent, ListChecks } from '@phosphor-icons/react';
+import { LABOR_SUBSTAGES, DEFAULT_LABOR_PERCENTAGE, effectiveLaborPercentage, laborSubstageFor } from '@/lib/calculations/laborSubstages';
 import { useBoqWizardStore } from '@/store/boqWizardStore';
 
-type LaborChargeType = 'per_stage' | 'all_inclusive' | 'percentage' | null;
-
-const LABOR_CHARGE_OPTIONS: Array<{
-  value: LaborChargeType;
-  label: string;
-  description: string;
-  icon: typeof CurrencyDollar;
-}> = [
-  {
-    value: 'per_stage',
-    label: 'Per stage',
-    description: 'I know the labour cost for each stage (substructure, superstructure, etc.).',
-    icon: ListChecks,
-  },
-  {
-    value: 'all_inclusive',
-    label: 'All inclusive',
-    description: 'I have a single total labour cost for the entire project.',
-    icon: CurrencyDollar,
-  },
-  {
-    value: 'percentage',
-    label: 'As a percentage',
-    description: 'Add labour as a percentage of the total material cost.',
-    icon: Percent,
-  },
-];
+const STAGES = [
+  { id: 'substructure', label: 'Substructure' },
+  { id: 'superstructure', label: 'Superstructure' },
+  { id: 'roofing', label: 'Roofing' },
+  { id: 'finishing', label: 'Finishing' },
+  { id: 'exterior', label: 'Exterior works' },
+] as const;
 
 export default function LaborSection() {
-  // No preselection
-  const [laborChargeType, setLaborChargeType] = useState<LaborChargeType>(null);
-  const [laborPercentage, setLaborPercentage] = useState<string>('25');
-  const [laborTotal, setLaborTotal] = useState<string>('');
-  const { selectedStages } = useBoqWizardStore();
+  const { projectScope, selectedStages, laborPercentages, setLaborPercentage, milestonesState } = useBoqWizardStore();
+  const activeStages = STAGES.filter((stage) => projectScope === 'entire' || selectedStages.includes(stage.id));
+  const materialsBySubstage = new Map<string, number>();
+
+  for (const milestone of milestonesState) {
+    if (milestone.id === 'labor') continue;
+    for (const item of milestone.items) {
+      const substage = laborSubstageFor({
+        category: milestone.id,
+        materialId: item.materialId,
+        materialName: item.materialName,
+        calculationNote: item.description,
+      });
+      if (substage) materialsBySubstage.set(substage, (materialsBySubstage.get(substage) || 0) + (item.quantity || 0) * item.actualPriceUsd);
+    }
+  }
 
   return (
-    <div className="space-y-8">
-
-      {/* ── How to add labour ─────────────────────────────────── */}
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-lg font-bold wiz-text-primary mb-1">How would you like to calculate labour costs?</h3>
-          <p className="text-sm wiz-text-muted">
-            Choose how labour charges should be added to your estimate.
-          </p>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-3">
-          {LABOR_CHARGE_OPTIONS.map((opt) => {
-            const Icon = opt.icon;
-            const isSelected = laborChargeType === opt.value;
-            return (
-              <motion.button
-                key={opt.value}
-                type="button"
-                whileHover={{ scale: 1.01, y: -1 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setLaborChargeType(opt.value)}
-                className={`group relative flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-all duration-200 ${
-                  isSelected
-                    ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
-                    : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
-                }`}
-              >
-                {isSelected && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-blue-500" />}
-                <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-                  isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'
-                }`}>
-                  <Icon size={18} weight="regular" />
-                </div>
-                <div className={`text-sm font-semibold ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>{opt.label}</div>
-                <p className={`text-xs ${isSelected ? 'text-slate-600' : 'wiz-text-muted'} leading-relaxed`}>{opt.description}</p>
-              </motion.button>
-            );
-          })}
-        </div>
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+        <h3 className="text-base font-bold text-slate-900">Labour by work sub-stage</h3>
+        <p className="mt-1 text-sm leading-6 text-slate-700">Each allowance is a percentage of that sub-stage&apos;s material cost. {DEFAULT_LABOR_PERCENTAGE}% is a Zimbabwe planning starting point, not a contractor quote. Adjust any row to match your local rates.</p>
       </div>
-
-      {/* ── Percentage input ──────────────────────────────────── */}
-      <AnimatePresence>
-        {laborChargeType === 'percentage' && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            className="rounded-2xl border border-slate-100 bg-slate-50/60 p-5 space-y-3"
-          >
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div>
-                <p className="text-sm font-bold wiz-text-primary">Labour percentage of material cost</p>
-                <p className="mt-0.5 text-xs wiz-text-muted">
-                  Typical range: 20–35% depending on project complexity.
-                </p>
-              </div>
-              <div className="relative w-24">
-                <input
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={laborPercentage}
-                  onChange={(e) => setLaborPercentage(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-4 pr-8 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">%</span>
-              </div>
-            </div>
-            <div className="wiz-alert wiz-alert--info">
-              <Info size={14} weight="fill" className="wiz-alert__icon" />
-              <p>This percentage will be applied to your total material cost to calculate the labour allowance in your BOQ.</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── All inclusive input ────────────────────────────────── */}
-      <AnimatePresence>
-        {laborChargeType === 'all_inclusive' && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            className="rounded-2xl border border-slate-100 bg-slate-50/60 p-5 space-y-3"
-          >
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div>
-                <p className="text-sm font-bold wiz-text-primary">Total labour cost (USD)</p>
-                <p className="mt-0.5 text-xs wiz-text-muted">
-                  Enter the total labour charge for the entire project.
-                </p>
-              </div>
-              <div className="relative w-36">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={laborTotal}
-                  onChange={(e) => setLaborTotal(e.target.value)}
-                  placeholder="e.g. 5000"
-                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-7 pr-4 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 placeholder:font-normal placeholder:text-slate-400"
-                />
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Per stage info ─────────────────────────────────────── */}
-      <AnimatePresence>
-        {laborChargeType === 'per_stage' && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            className="wiz-alert wiz-alert--info"
-          >
-            <Info size={14} weight="fill" className="wiz-alert__icon" />
-            <p>Labour costs for each of your {selectedStages?.length ?? 0} selected stage{(selectedStages?.length ?? 0) !== 1 ? 's' : ''} will be added as separate line items in your BOQ. You can edit amounts in the review step.</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {activeStages.map((stage) => (
+        <section key={stage.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <h4 className="border-b border-slate-100 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 sm:px-5">{stage.label}</h4>
+          <div className="divide-y divide-slate-100">
+            {LABOR_SUBSTAGES.filter((substage) => substage.stage === stage.id).map((substage) => {
+              const rate = effectiveLaborPercentage(laborPercentages, substage.id);
+              const materialCost = materialsBySubstage.get(substage.id) || 0;
+              return (
+                <div key={substage.id} className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 sm:grid-cols-[1fr_auto_auto] sm:px-5">
+                  <div className="min-w-0">
+                    <label htmlFor={`labor-${substage.id}`} className="block text-sm font-semibold text-slate-800">{substage.label}</label>
+                    <p className="text-xs text-slate-500">Materials ${materialCost.toFixed(2)}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <input id={`labor-${substage.id}`} type="number" min="0" max="100" step="0.5" value={rate}
+                      onChange={(event) => setLaborPercentage(substage.id, Number(event.target.value) || 0)}
+                      className="w-16 rounded-lg border border-slate-300 px-2 py-2 text-right text-sm font-semibold text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                    <span className="text-sm text-slate-500">%</span>
+                  </div>
+                  <strong className="col-span-2 text-right text-sm text-slate-900 sm:col-span-1 sm:w-24">${(materialCost * rate / 100).toFixed(2)}</strong>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+      <p className="text-xs leading-5 text-slate-500">Labour is a planning allowance based on priced materials. Check subcontractor quotations, site conditions and materials with missing prices before relying on the total.</p>
     </div>
   );
 }

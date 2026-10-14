@@ -1,4 +1,6 @@
 import type { ProjectSoilType, SiteSlopeType } from '@/lib/database.types';
+import type { RoofCovering } from '@/lib/calculations/roofingOptions';
+import type { LaborPercentages } from '@/lib/calculations/laborSubstages';
 
 // Vision Takeoff Types
 // TypeScript interfaces for floor plan analysis and BOQ generation
@@ -79,6 +81,8 @@ export interface VisionConfig {
   includeLabor: boolean;
   wallHeight: number; // default 2.7m
   foundationDepth: number; // default 0.6m
+  roofCovering?: RoofCovering;
+  laborPercentages?: LaborPercentages;
 }
 
 export const DEFAULT_CONFIG: VisionConfig = {
@@ -88,6 +92,7 @@ export const DEFAULT_CONFIG: VisionConfig = {
   includeLabor: true,
   wallHeight: 2.7,
   foundationDepth: 0.6,
+  roofCovering: 'ibr_05',
 };
 
 // Helper to normalize config values to arrays

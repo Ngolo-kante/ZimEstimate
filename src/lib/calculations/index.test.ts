@@ -88,6 +88,23 @@ describe('generateBOQFromBasics assumptions', () => {
 });
 
 describe('roofing sheet coverage', () => {
+  it('changes covering quantity and price with the selected Zimbabwe roof material', () => {
+    const base: ManualBuilderConfig = {
+      floorArea: 120, roomCount: 5, wallHeight: 2.7,
+      brickTypes: ['common'], cementTypes: ['cement_325'],
+      scope: 'roofing', includeLabor: false, locationType: 'urban',
+    };
+    const sheet = generateBOQFromBasics({ ...base, roofCovering: 'ibr_05' });
+    const tile = generateBOQFromBasics({ ...base, roofCovering: 'concrete_tile' });
+    const qtile = generateBOQFromBasics({ ...base, roofCovering: 'qtile' });
+    expect(sheet.some((item) => item.materialId === 'ibr-05-3m')).toBe(true);
+    expect(tile.some((item) => item.materialId === 'ibr-05-3m')).toBe(false);
+    expect(tile.find((item) => item.materialId === 'roof-tile-concrete')?.quantity).toBeGreaterThan(1000);
+    expect(tile.find((item) => item.materialId === 'roof-tile-concrete')?.unitPriceUsd).toBeGreaterThan(0);
+    expect(qtile.find((item) => item.materialId === 'qtile-04-lm')?.unit).toBe('per metre');
+    expect(qtile.find((item) => item.materialId === 'qtile-04-lm')?.unitPriceUsd).toBeGreaterThan(0);
+  });
+
   // Roof_Sheet_Effective_Coverage was 0.85m2, a figure matching no real sheet,
   // and a 120m2 build ordered 179 sheets — 537 linear metres of sheeting for a
   // roof needing about 222m. These bounds are geometric rather than arbitrary,
@@ -122,6 +139,21 @@ describe('roofing sheet coverage', () => {
 });
 
 describe('labour sizing', () => {
+  it('applies an independently adjustable percentage to each work sub-stage', () => {
+    const items = generateBOQFromBasics({
+      floorArea: 120, roomCount: 5, wallHeight: 2.7,
+      brickTypes: ['common'], cementTypes: ['cement_325'],
+      scope: 'roofing', includeLabor: true, locationType: 'urban',
+      laborPercentages: { roof_frame: 20, roof_cover: 40 },
+    });
+    const frame = items.filter((item) => item.category === 'roofing' && /timber|fascia/.test(item.materialId));
+    const cover = items.filter((item) => item.category === 'roofing' && !/timber|fascia/.test(item.materialId));
+    const frameMaterials = frame.reduce((sum, item) => sum + item.totalUsd, 0);
+    const coverMaterials = cover.reduce((sum, item) => sum + item.totalUsd, 0);
+    expect(items.find((item) => item.materialId === 'labor-roof_frame')?.totalUsd).toBeCloseTo(frameMaterials * 0.2, 2);
+    expect(items.find((item) => item.materialId === 'labor-roof_cover')?.totalUsd).toBeCloseTo(coverMaterials * 0.4, 2);
+  });
+
   it('keeps labour within the Zimbabwe market share of material cost', () => {
     const items = generateBOQFromBasics({
       floorArea: 120,
@@ -137,17 +169,15 @@ describe('labour sizing', () => {
     let materials = 0;
     let labour = 0;
     for (const item of items) {
-      const line = (getBestPrice(item.materialId)?.priceUsd ?? 0) * item.quantity;
+      const line = item.totalUsd;
       if (item.category === 'labor') labour += line;
       else materials += line;
     }
 
     expect(materials).toBeGreaterThan(0);
-    // Contractors in Zimbabwe charge roughly 25-30% of the material spend. The
-    // previous area-based model produced labour worth 113% of materials.
+    // The default is 35% of each priced work sub-stage's material subtotal.
     const share = labour / materials;
-    expect(share).toBeGreaterThan(0.2);
-    expect(share).toBeLessThan(0.35);
+    expect(share).toBeCloseTo(0.35, 2);
   });
 });
 

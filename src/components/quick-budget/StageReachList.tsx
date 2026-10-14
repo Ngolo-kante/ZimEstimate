@@ -25,7 +25,7 @@ export interface StageLine {
 const STAGE_SUMMARY: Record<string, string> = {
   substructure: 'Hardcore, foundation concrete and walls, DPC and slab mesh',
   superstructure: 'Wall bricks and mortar, brickforce and ring-beam steel',
-  roofing: 'IBR sheets, roof timber, screws and fascia',
+  roofing: 'Roof covering, roof timber, fixings and fascia',
   finishing: 'Plaster, paint, tiles, ceiling, doors, windows, wiring and plumbing',
   exterior: 'Boundary wall, gates and paving',
 };

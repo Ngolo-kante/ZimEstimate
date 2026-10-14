@@ -11,6 +11,8 @@ import {
   ProjectScope,
 } from '@/lib/vision/types';
 import { getBestPrice } from '@/lib/materials';
+import { DEFAULT_ROOF_COVERING, ROOF_COVERINGS, type RoofCovering } from './roofingOptions';
+import { LABOR_SUBSTAGES, effectiveLaborPercentage, laborSubstageFor, type LaborPercentages } from './laborSubstages';
 import {
   BOQ_ASSUMPTIONS,
   DEFAULT_LOCATION_TYPE,
@@ -64,6 +66,8 @@ export interface ManualBuilderConfig {
   rooms?: DetailedRoom[];   // NEW: Detailed room data
   totalWindows?: number;     // Plan total, when individual rooms lack opening counts
   totalDoors?: number;       // Uploaded plan total, including entrance doors
+  roofCovering?: RoofCovering;
+  laborPercentages?: LaborPercentages;
 }
 
 /**
@@ -280,7 +284,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   // ROOFING (Simple Area based)
   // ============================================
   if (hasScope('roofing')) {
-    items.push(...calculateRoofing(floorArea, locationType));
+    items.push(...calculateRoofing(floorArea, locationType, config.roofCovering));
   }
 
   // ============================================
@@ -322,7 +326,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   }
 
   if (includeLabor) {
-    items.push(...calculateLabor(floorArea, config.scope, items));
+    items.push(...calculateLabor(items, config.laborPercentages));
   }
 
   return items;
@@ -344,33 +348,7 @@ const REBAR_Y12_PER_LM_RINGBEAM = 4;
 const STIRRUPS_PER_LM = 4;
 const MESH_SHEETS_PER_SQM = 0.07;
 
-const ROOF_SCREWS_PER_SHEET = 8;
 const ROOF_PITCH_FACTOR = 1.15;
-
-// Zimbabwe market practice: a builder/contractor charge of roughly 25-30% of the
-// material spend, with materials making up 60-70% of the total build.
-const LABOR_SHARE_OF_MATERIALS = 0.28;
-const ASSISTANTS_PER_BUILDER = 1;
-const FOREMEN_PER_BUILDER = 0.1;
-
-// Kept in sync with the catalogue rates so the crew cost used for sizing matches
-// what the BOQ is actually priced at.
-const LABOR_DAY_RATES = {
-  builder: 25,
-  assistant: 10,
-  foreman: 40,
-  food: 5,
-};
-
-// Fallback only — used when no material in the BOQ carries a price.
-const LABOR_DAYS_PER_SQM: Record<string, number> = {
-  full_house: 1.2,
-  substructure: 0.3,
-  superstructure: 0.5,
-  roofing: 0.2,
-  finishing: 0.2,
-  exterior: 0.15,
-};
 
 // ============================================
 // HELPER FUNCTIONS
@@ -622,25 +600,28 @@ function calculateSuperstructure(
 
 function calculateRoofing(
   totalArea: number,
-  locationType: LocationType = DEFAULT_LOCATION_TYPE
+  locationType: LocationType = DEFAULT_LOCATION_TYPE,
+  roofCovering: RoofCovering = DEFAULT_ROOF_COVERING
 ): GeneratedBOQItem[] {
   const items: GeneratedBOQItem[] = [];
 
   const roofArea = totalArea * ROOF_PITCH_FACTOR;
   const roofAreaWithWaste = roofArea * getRoofingWasteMultiplier(locationType);
-  const sheetCoverage = BOQ_ASSUMPTIONS.roofing.effectiveSheetCoverageM2;
+  const covering = ROOF_COVERINGS[roofCovering] ?? ROOF_COVERINGS[DEFAULT_ROOF_COVERING];
+  const coveringQuantity = Math.ceil(roofAreaWithWaste / covering.coverage);
+  items.push(createBOQItem(covering.materialId, covering.materialName, 'roofing', coveringQuantity, covering.unit, `Roof area: ${roofArea.toFixed(1)}m² + location waste; ${covering.coverage.toFixed(2)}m² effective cover per ${covering.unit.replace('per ', '')}. Confirm laps and pitch with supplier.${roofCovering === 'concrete_tile' ? ' Fixings and ridge pieces require a separate quote.' : ''}`));
 
-  const ibrSheets = Math.ceil(roofAreaWithWaste / sheetCoverage);
-  items.push(createBOQItem('ibr-05-3m', 'IBR Sheets 0.5mm x 3m', 'roofing', ibrSheets, 'per sheet', `Roof area: ${roofArea.toFixed(1)}m² + waste, ${sheetCoverage}m² effective coverage per sheet`));
-
-  const screwBoxes = Math.ceil((ibrSheets * ROOF_SCREWS_PER_SHEET) / 100);
-  items.push(createBOQItem('screws-roof', 'Roof Screws 65mm', 'roofing', screwBoxes, 'per 100', `${ibrSheets} sheets @ ${ROOF_SCREWS_PER_SHEET} screws each`));
+  if (covering.fixingRate > 0) {
+    const screwBoxes = Math.ceil((coveringQuantity * covering.fixingRate) / 100);
+    items.push(createBOQItem('screws-roof', 'Roof Screws 65mm', 'roofing', screwBoxes, 'per 100', `${coveringQuantity} ${covering.unit.replace('per ', '')} @ ${covering.fixingRate} screws each`));
+  }
 
   const rafterCount = Math.ceil(roofArea / 6);
-  items.push(createBOQItem('timber-50x76', 'Timber 50x76mm', 'roofing', rafterCount, 'per 6m length', 'Roof rafters @ 600mm spacing'));
+  const tileRoof = roofCovering === 'concrete_tile';
+  items.push(createBOQItem('timber-50x76', 'Timber 50x76mm', 'roofing', rafterCount, 'per 6m length', tileRoof ? 'Preliminary rafter allowance only; concrete tile weight requires a designed roof structure' : 'Roof rafters @ 600mm spacing'));
 
-  const branderingCount = Math.ceil(roofArea / 4);
-  items.push(createBOQItem('timber-38x38', 'Timber 38x38mm', 'roofing', branderingCount, 'per 6m length', 'Brandering @ 400mm spacing'));
+  const branderingCount = Math.ceil(roofArea / (tileRoof ? 3.2 : 4));
+  items.push(createBOQItem('timber-38x38', 'Timber 38x38mm', 'roofing', branderingCount, 'per 6m length', tileRoof ? 'Tile battens @ approximately 320mm gauge; confirm tile specification' : 'Brandering @ 400mm spacing'));
 
   const fasciaLength = Math.ceil(Math.sqrt(roofArea) * 4 / 6);
   items.push(createBOQItem('fascia-pvc', 'Fascia Board 228mm', 'roofing', fasciaLength, 'per 6m length', 'Perimeter fascia'));
@@ -855,58 +836,30 @@ function calculateExteriorWorks(input: {
 // LABOR CALCULATIONS
 // ============================================
 
-function calculateLabor(
-  totalArea: number,
-  scope: VisionConfig['scope'],
-  materialItems: GeneratedBOQItem[] = []
-): GeneratedBOQItem[] {
-  const items: GeneratedBOQItem[] = [];
-  const normalizedScope = getFirstValue(scope);
-
-  // Size the crew from the material spend rather than from floor area alone.
-  // Zimbabwe market practice is that a contractor's charge lands around 25-30%
-  // of the material bill, and materials are 60-70% of a build. Driving days off
-  // area (previously 1.2 builder-days/m², each with 1.5 assistants plus a food
-  // allowance) produced ~375 person-days for a 120m² house and left labour at
-  // 55% of the estimate — roughly double what the market carries.
-  const materialCost = materialItems.reduce((sum, item) => {
-    if (item.category === 'labor') return sum;
-    const unitPrice = getBestPrice(item.materialId)?.priceUsd ?? 0;
-    return sum + unitPrice * item.quantity;
-  }, 0);
-
-  const targetLaborCost = materialCost * LABOR_SHARE_OF_MATERIALS;
-
-  // Cost of running the standard crew for one builder-day: builder + one general
-  // hand + a tenth of a foreman, plus each of their food allowance.
-  const crewDayCost =
-    LABOR_DAY_RATES.builder +
-    LABOR_DAY_RATES.assistant * ASSISTANTS_PER_BUILDER +
-    LABOR_DAY_RATES.foreman * FOREMEN_PER_BUILDER +
-    LABOR_DAY_RATES.food * (1 + ASSISTANTS_PER_BUILDER + FOREMEN_PER_BUILDER);
-
-  // Fall back to the area-based estimate when nothing is priced yet, so an
-  // unpriced catalogue cannot silently zero out the labour section.
-  const builderDays =
-    targetLaborCost > 0 && crewDayCost > 0
-      ? Math.max(1, Math.round(targetLaborCost / crewDayCost))
-      : Math.ceil(totalArea * LABOR_DAYS_PER_SQM[normalizedScope]);
-
-  const assistantDays = Math.ceil(builderDays * ASSISTANTS_PER_BUILDER);
-  const foremanDays = Math.ceil(builderDays * FOREMEN_PER_BUILDER);
-
-  items.push(createBOQItem('labor-builder', 'Builder (Daily Rate)', 'labor', builderDays, 'per day', `${Math.round(LABOR_SHARE_OF_MATERIALS * 100)}% of material cost`));
-
-  items.push(createBOQItem('labor-assistant', 'General Hand (Daily Rate)', 'labor', assistantDays, 'per day', `${ASSISTANTS_PER_BUILDER} assistant per builder`));
-
-  if (foremanDays > 0) {
-    items.push(createBOQItem('labor-foreman', 'Foreman (Daily Rate)', 'labor', foremanDays, 'per day', 'Site supervision'));
-  }
-
-  const foodDays = builderDays + assistantDays + foremanDays;
-  items.push(createBOQItem('service-food', "Builder's Food Allowance", 'labor', foodDays, 'per day', `${foodDays} person-days`));
-
-  return items;
+function calculateLabor(materialItems: GeneratedBOQItem[], rates?: LaborPercentages): GeneratedBOQItem[] {
+  return LABOR_SUBSTAGES.flatMap((substage) => {
+    const materials = materialItems.filter((item) => laborSubstageFor(item) === substage.id);
+    if (materials.length === 0) return [];
+    const materialUsd = materials.reduce((sum, item) => sum + item.totalUsd, 0);
+    const materialZwg = materials.reduce((sum, item) => sum + item.totalZwg, 0);
+    const percentage = effectiveLaborPercentage(rates, substage.id);
+    const usd = roundTo(materialUsd * percentage / 100, 2);
+    const zwg = roundTo(materialZwg * percentage / 100, 2);
+    return [{
+      id: generateItemId(),
+      materialId: `labor-${substage.id}`,
+      materialName: `Labour — ${substage.label}`,
+      category: 'labor',
+      quantity: 1,
+      unit: 'allowance',
+      unitPriceUsd: usd,
+      unitPriceZwg: zwg,
+      totalUsd: usd,
+      totalZwg: zwg,
+      calculationNote: `${percentage}% of ${substage.stage} materials ($${materialUsd.toFixed(2)})`,
+      isEdited: false,
+    }];
+  });
 }
 
 // ============================================
@@ -940,7 +893,7 @@ export function generateBOQ(
   }
 
   if (hasScope('roofing')) {
-    allItems.push(...calculateRoofing(totalArea, locationType));
+    allItems.push(...calculateRoofing(totalArea, locationType, config.roofCovering));
   }
 
   if (hasScope('finishing')) {
@@ -968,7 +921,7 @@ export function generateBOQ(
   }
 
   if (includeLabor) {
-    allItems.push(...calculateLabor(totalArea, config.scope, allItems));
+    allItems.push(...calculateLabor(allItems, config.laborPercentages));
   }
 
   return allItems;

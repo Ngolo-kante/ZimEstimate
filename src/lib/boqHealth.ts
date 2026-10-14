@@ -60,10 +60,10 @@ export const BOQ_HEALTH_CRITICAL_REQUIREMENTS: Record<BoqHealthCategory, string[
     ['brickforce'],
   ],
   roofing: [
-    ['ibr-05-3m', 'ibr-04-3m'],
+    ['ibr-05-3m', 'ibr-04-3m', 'ibr-chromadek-04-36m', 'corrugated-36m', 'qtile-04-lm', 'roof-tile-concrete'],
     ['timber-50x76'],
     ['timber-38x38'],
-    ['screws-roof'],
+    ['screws-roof', 'tile-fixings'],
     ['fascia-pvc', 'gutter-pvc'],
   ],
   finishing: [

@@ -130,6 +130,11 @@ export const materials: Material[] = [
     // ROOFING
     { id: 'ibr-04-3m', name: 'IBR Sheet 0.4mm (3m)', category: 'roofing', subcategory: 'IBR Sheets', unit: 'per sheet', specifications: '0.4mm galvanized IBR, 3m length', milestones: ['roofing'] },
     { id: 'ibr-05-3m', name: 'IBR Sheet 0.5mm (3m)', category: 'roofing', subcategory: 'IBR Sheets', unit: 'per sheet', specifications: '0.5mm galvanized IBR, 3m length', milestones: ['roofing'] },
+    { id: 'ibr-chromadek-04-36m', name: 'Chromadek IBR 0.4mm (3.6m)', category: 'roofing', subcategory: 'Painted IBR', unit: 'per sheet', specifications: 'Pre-painted 0.4mm IBR, 686mm cover width', milestones: ['roofing'] },
+    { id: 'corrugated-36m', name: 'Corrugated Steel Sheet (3.6m)', category: 'roofing', subcategory: 'Corrugated Sheets', unit: 'per sheet', specifications: 'Galvanised corrugated metal, 3.6m length', milestones: ['roofing'] },
+    { id: 'qtile-04-lm', name: 'QTile 0.4mm', category: 'roofing', subcategory: 'Tile Effect Sheets', unit: 'per metre', specifications: 'Painted tile-effect metal sheet, cut to length', milestones: ['roofing'] },
+    { id: 'roof-tile-concrete', name: 'Double Roman Concrete Roof Tile', category: 'roofing', subcategory: 'Concrete Tiles', unit: 'each', specifications: 'Interlocking concrete roof tile', milestones: ['roofing'] },
+    { id: 'tile-fixings', name: 'Concrete Roof Tile Fixings', category: 'roofing', subcategory: 'Accessories', unit: 'per 100', specifications: 'Nails or clips to roof designer specification; quote locally', milestones: ['roofing'] },
     { id: 'tiles-harvey', name: 'Harvey Tiles', category: 'roofing', subcategory: 'Tiles', unit: 'per tile', specifications: 'Concrete roof tiles', milestones: ['roofing'] },
     { id: 'truss-steel', name: 'Steel Roof Truss', category: 'roofing', subcategory: 'Trusses', unit: 'per running meter', specifications: 'Prefabricated steel truss', milestones: ['roofing'] },
     { id: 'fascia-pvc', name: 'PVC Fascia Board', category: 'roofing', subcategory: 'Accessories', unit: 'per 6m length', specifications: '150mm PVC fascia', milestones: ['roofing'] },
@@ -262,6 +267,12 @@ export const materialPrices: MaterialPrice[] = [
     { materialId: 'rebar-12', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 7.80, priceZwg: 234, lastUpdated: '2026-01-31', inStock: true },
     { materialId: 'ibr-04-3m', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 18, priceZwg: 540, lastUpdated: '2026-01-30', inStock: true },
     { materialId: 'ibr-05-3m', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 22, priceZwg: 660, lastUpdated: '2026-01-30', inStock: true },
+    // Zimbabwe supplier listings checked 2026-10-13. Reference prices; verify
+    // branch, colour, gauge, delivery and length before ordering.
+    { materialId: 'ibr-chromadek-04-36m', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 28.41, priceZwg: 852.30, lastUpdated: '2026-10-13', inStock: true },
+    { materialId: 'corrugated-36m', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 14, priceZwg: 420, lastUpdated: '2026-10-13', inStock: true },
+    { materialId: 'qtile-04-lm', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 6, priceZwg: 180, lastUpdated: '2026-10-13', inStock: true },
+    { materialId: 'roof-tile-concrete', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 0.85, priceZwg: 25.50, lastUpdated: '2026-10-13', inStock: true },
     { materialId: 'cable-25', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 85, priceZwg: 2550, lastUpdated: '2026-01-29', inStock: true },
     { materialId: 'db-8way', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 65, priceZwg: 1950, lastUpdated: '2026-01-29', inStock: true },
     { materialId: 'paint-pva', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 35, priceZwg: 1050, lastUpdated: '2026-01-28', inStock: true },

@@ -1,6 +1,7 @@
 import { BOQ_ASSUMPTIONS, normalizeLocationType } from '@/lib/calculations/assumptions';
 import { getMaterialById } from '@/lib/materials';
 import { getVerifiedPrice, VERIFIED_PRICES_CHECKED_ON } from '@/lib/pricing/verifiedPrices';
+import { ROOF_COVERINGS } from '@/lib/calculations/roofingOptions';
 
 /**
  * The facts an explanation of one estimate line may use — and nothing else.
@@ -70,14 +71,16 @@ function assumptionsFor(materialId: string, stage: string, location: ReturnType<
   if ((id.startsWith('brick') && id !== 'brickforce') || id.startsWith('block') || id === 'sand-bricks' || (isCement && stage === 'superstructure')) {
     facts.push(`Masonry waste allowance on a ${location} site: ${pct(a.masonry.waste[location])} (breakage, cutting, handling).`);
   }
-  if (id.startsWith('ibr') || id.includes('roof') || id.includes('sheet')) {
-    facts.push(`Each 3 m IBR sheet covers ${a.roofing.effectiveSheetCoverageM2} m² after side overlap.`);
+  if (stage === 'roofing' && (id.startsWith('ibr') || id === 'corrugated-36m' || id === 'qtile-04-lm' || id === 'roof-tile-concrete')) {
+    const covering = Object.values(ROOF_COVERINGS).find((option) => option.materialId === id);
+    if (covering) facts.push(`This ${covering.unit.replace('per ', '')} covers approximately ${covering.coverage.toFixed(2)} m² in the planning estimate; verify actual overlap with the supplier.`);
+    else facts.push(`Each 3 m IBR sheet covers ${a.roofing.effectiveSheetCoverageM2} m² after side overlap.`);
     facts.push(`Roofing waste allowance on a ${location} site: ${pct(a.roofing.waste[location])} (end laps and offcuts).`);
   }
   if (id.includes('paint')) {
     facts.push(`Paint covers ${a.paint.coveragePerLitrePerCoat} m² per litre per coat; ${economy ? a.paint.coats.economy : a.paint.coats.standard} coats.`);
   }
-  if (id.includes('tile')) {
+  if (id.includes('tile') && stage !== 'roofing') {
     facts.push(`Tile waste allowance: ${pct(economy ? a.tiles.waste.economy : a.tiles.waste.standard)}; one bag of adhesive covers ${a.tiles.adhesiveCoverageM2PerBag} m².`);
   }
   if (id.startsWith('rebar') && stage === 'superstructure') {

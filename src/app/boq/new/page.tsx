@@ -18,6 +18,8 @@ import ProjectLocationSection from './components/sections/ProjectLocationSection
 import BuildingDesignSection from './components/sections/BuildingDesignSection';
 import MaterialsSection from './components/sections/MaterialsSection';
 import LaborSection from './components/sections/LaborSection';
+import { ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
+import { LABOR_SUBSTAGES } from '@/lib/calculations/laborSubstages';
 import SiteConditionsSection from './components/sections/SiteConditionsSection';
 import { InteractiveRoomBuilder, type RoomInstance } from './components/InteractiveRoomBuilder';
 import { buildLiveMilestones } from './utils/liveEstimator';
@@ -150,7 +152,7 @@ const WIZARD_STEPS = [
     id: 'labor',
     label: 'Labour',
     title: 'Labour costs',
-    subtitle: 'Choose whether to include labour and how to calculate it.',
+    subtitle: 'Adjust a labour percentage for each work sub-stage.',
   },
   {
     id: 'review-estimate',
@@ -204,6 +206,8 @@ function BoqNewPageContent() {
     setSelectedStages,
     laborType,
     setLaborType,
+    laborPercentages,
+    setLaborPercentage,
     milestonesState,
     setMilestonesState,
     temporaryWorksSelections,
@@ -399,6 +403,8 @@ function BoqNewPageContent() {
       projectId: projectIdFromUrl,
       autoSaveInterval: 5000,
       onLoadComplete: (loadedProject: Project, items: DbBOQItem[]) => {
+        const savedRoofCovering = (Object.entries(ROOF_COVERINGS) as [RoofCovering, (typeof ROOF_COVERINGS)[RoofCovering]][])
+          .find(([, option]) => items.some((item) => item.material_id === option.materialId))?.[0];
         const locationParts = (loadedProject.location || '').split(' - ');
         const locationType = normalizeLocationType(locationParts[0] || '');
         const locationCity = locationParts[1] || '';
@@ -415,6 +421,7 @@ function BoqNewPageContent() {
           soilType: (loadedProject.soil_type || '') as any,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           siteSlope: (loadedProject.site_slope || '') as any,
+          ...(savedRoofCovering ? { roofCovering: savedRoofCovering } : {}),
         });
 
         const scopeRaw = loadedProject.scope;
@@ -430,6 +437,11 @@ function BoqNewPageContent() {
         }
 
         setLaborType(loadedProject.labor_preference === 'with_labor' ? 'materials_labor' : 'materials_only');
+        for (const substage of LABOR_SUBSTAGES) {
+          const savedLabor = items.find((item) => item.material_id === `labor-${substage.id}`);
+          const percentage = savedLabor?.notes?.match(/^([0-9]+(?:\.[0-9]+)?)%/)?.[1];
+          if (percentage !== undefined) setLaborPercentage(substage.id, Number(percentage));
+        }
 
         if (loadedProject.geotech_report_document_id) {
           setGeotechDocument({
@@ -587,6 +599,7 @@ function BoqNewPageContent() {
       projectScope,
       selectedStages,
       laborType,
+      laborPercentages,
       temporaryWorksSelections,
       includeSepticTank,
       septicDimensions,
@@ -608,6 +621,7 @@ function BoqNewPageContent() {
     projectScope,
     selectedStages,
     laborType,
+    laborPercentages,
     temporaryWorksSelections,
     includeSepticTank,
     septicDimensions,
@@ -624,6 +638,7 @@ function BoqNewPageContent() {
       projectScope,
       selectedStages,
       laborType,
+      laborPercentages,
       temporaryWorksSelections,
       includeSepticTank,
       septicDimensions,
@@ -639,6 +654,7 @@ function BoqNewPageContent() {
     projectScope,
     selectedStages,
     laborType,
+    laborPercentages,
     temporaryWorksSelections,
     includeSepticTank,
     septicDimensions,

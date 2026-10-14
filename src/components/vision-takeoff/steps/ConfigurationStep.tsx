@@ -5,6 +5,8 @@ import Card from '@/components/ui/Card';
 import PlanReviewCheckpoint from '@/components/boq/PlanReviewCheckpoint';
 import { estimateVisionWallDimensions } from '@/lib/calculations';
 import { planReviewKey } from '@/lib/vision/planReview';
+import { ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
+import { LABOR_SUBSTAGES, DEFAULT_LABOR_PERCENTAGE, effectiveLaborPercentage } from '@/lib/calculations/laborSubstages';
 import {
   ArrowLeft,
   ArrowRight,
@@ -76,7 +78,7 @@ export default function ConfigurationStep({
     stages: includedScopes.map((scope) => SCOPE_INFO[scope].name),
     includeLabor: config.includeLabor,
   };
-  const currentReviewKey = planReviewKey(reviewInput);
+  const currentReviewKey = `${planReviewKey(reviewInput)}:${JSON.stringify({ roof: config.roofCovering, labor: config.laborPercentages })}`;
   const planConfirmed = reviewedKey === currentReviewKey;
 
   // Helper to check if a scope is selected
@@ -267,6 +269,21 @@ export default function ConfigurationStep({
           <p className="multi-select-hint">Select both cement types if using different grades for different purposes</p>
         </Card>
 
+        {includedScopes.includes('roofing') && <Card>
+          <div className="section-header"><House size={22} weight="light" /><div><h3>Roof covering</h3><p>Select the roof material to cost</p></div></div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {(Object.entries(ROOF_COVERINGS) as [RoofCovering, (typeof ROOF_COVERINGS)[RoofCovering]][]).map(([id, option]) => (
+              <button key={id} type="button" onClick={() => onUpdate({ roofCovering: id })}
+                aria-pressed={(config.roofCovering || 'ibr_05') === id}
+                className={`rounded-xl border p-3 text-left ${(config.roofCovering || 'ibr_05') === id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'}`}>
+                <span className="block text-sm font-semibold text-slate-900">{option.label}</span>
+                <span className="mt-1 block text-xs text-slate-600">{option.description}</span>
+              </button>
+            ))}
+          </div>
+          {config.roofCovering === 'concrete_tile' && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">Concrete tiles need a roof structure designed for their weight. Confirm timber sizes, spacing, fixings and ridge pieces with a local roof designer and supplier.</p>}
+        </Card>}
+
         {/* Labor Toggle */}
         <Card>
           <div className="section-header">
@@ -301,6 +318,21 @@ export default function ConfigurationStep({
             </button>
           </div>
         </Card>
+        {config.includeLabor && <Card>
+          <div className="section-header"><Users size={22} weight="light" /><div><h3>Labour by sub-stage</h3><p>Adjust the percentage of each work group&apos;s materials</p></div></div>
+          <p className="mb-3 text-xs text-slate-600">{DEFAULT_LABOR_PERCENTAGE}% is a planning starting point. Use contractor quotes when available.</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {LABOR_SUBSTAGES.filter((substage) => includedScopes.includes(substage.stage as ProjectScope)).map((substage) => (
+              <label key={substage.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 text-sm text-slate-800">
+                <span>{substage.label}</span>
+                <span className="flex shrink-0 items-center gap-1"><input type="number" min="0" max="100" step="0.5"
+                  value={effectiveLaborPercentage(config.laborPercentages, substage.id)}
+                  onChange={(event) => onUpdate({ laborPercentages: { ...config.laborPercentages, [substage.id]: Math.min(100, Math.max(0, Number(event.target.value) || 0)) } })}
+                  className="w-16 rounded-lg border border-slate-300 px-2 py-1.5 text-right text-sm text-slate-900" />%</span>
+              </label>
+            ))}
+          </div>
+        </Card>}
       </div>
 
       <div className="review-checkpoint">

@@ -23,6 +23,14 @@ describe('calculateBoqHealth', () => {
     expect(substructure!.totalCritical).toBe(9);
   });
 
+  it('recognizes concrete tiles but still flags their unpriced fixings', () => {
+    const result = calculateBoqHealth(withAllCategories({
+      roofing: ['roof-tile-concrete', 'timber-50x76', 'timber-38x38', 'fascia-pvc'],
+    }));
+    const roofing = result.categories.find((category) => category.category === 'roofing');
+    expect(roofing?.matchedCritical).toBe((roofing?.totalCritical || 0) - 1);
+  });
+
   it('flags high risk when weighted completion is below 40%', () => {
     const result = calculateBoqHealth(withAllCategories({
       substructure: ['cement-325', 'hardcore', 'sand-river', 'stone-19mm', 'mesh-ref193', 'dpc', 'dpm', 'termite-poison', 'brick-common'],

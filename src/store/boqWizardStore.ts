@@ -5,6 +5,8 @@ import { calculateBoqHealth, type BoqHealthCategoryInput, type BoqHealthResult }
 import { STAGE_COMPLIANCE_REQUIREMENTS } from '@/lib/compliance';
 import { BrickType, CementType } from '@/lib/vision/types';
 import type { FinishLevel } from '@/lib/calculations';
+import type { RoofCovering } from '@/lib/calculations/roofingOptions';
+import type { LaborPercentages, LaborSubstageId } from '@/lib/calculations/laborSubstages';
 import type { RoomInstance } from '@/app/boq/new/components/room-builder/types';
 
 export type SiteSlopeType = 'flat' | 'gentle' | 'moderate' | 'steep';
@@ -62,6 +64,7 @@ export interface ProjectDetailsState {
   // they nor we could tell a deliberate 'standard' from a question skipped.
   // 'not_sure' is an answer: use the default, but record that it was not chosen.
   finishLevel: FinishLevel | 'not_sure' | null;
+  roofCovering: RoofCovering;
   roomInputs: Record<RoomInputKey, string>;
 }
 
@@ -141,6 +144,8 @@ interface BoqWizardState {
   // Labor
   laborType: LaborPreference;
   setLaborType: (labor: LaborPreference) => void;
+  laborPercentages: LaborPercentages;
+  setLaborPercentage: (substage: LaborSubstageId, percentage: number) => void;
 
   // BOQ data
   milestonesState: MilestoneData[];
@@ -205,6 +210,7 @@ const initialProjectDetails: ProjectDetailsState = {
   brickTypes: ['common'],
   cementTypes: ['cement_325'],
   finishLevel: null,
+  roofCovering: 'ibr_05',
   roomInputs: { ...DEFAULT_ROOM_INPUTS },
 };
 
@@ -246,6 +252,7 @@ function getInitialState(): Omit<BoqWizardState,
   | 'setSelectedStages'
   | 'toggleStage'
   | 'setLaborType'
+  | 'setLaborPercentage'
   | 'setMilestonesState'
   | 'updateMilestoneItemQuantity'
   | 'updateMilestoneItem'
@@ -278,6 +285,7 @@ function getInitialState(): Omit<BoqWizardState,
     projectScope: 'entire',
     selectedStages: ['substructure', 'superstructure'],
     laborType: 'materials_only',
+    laborPercentages: {},
     milestonesState: initialMilestonesState.map((milestone) => ({ ...milestone, items: [] })),
     temporaryWorksSelections: [],
     includeSepticTank: false,
@@ -354,6 +362,9 @@ export const useBoqWizardStore = create<BoqWizardState>()(
   })),
 
   setLaborType: (labor) => set({ laborType: labor }),
+  setLaborPercentage: (substage, percentage) => set((state) => ({
+    laborPercentages: { ...state.laborPercentages, [substage]: Math.min(100, Math.max(0, percentage)) },
+  })),
 
   setMilestonesState: (milestones) => set((state) => {
     const existingExpanded = new Map(state.milestonesState.map((m) => [m.id, m.expanded]));
@@ -536,6 +547,7 @@ export const useBoqWizardStore = create<BoqWizardState>()(
         projectScope: state.projectScope,
         selectedStages: state.selectedStages,
         laborType: state.laborType,
+        laborPercentages: state.laborPercentages,
         milestonesState: state.milestonesState,
         temporaryWorksSelections: state.temporaryWorksSelections,
         includeSepticTank: state.includeSepticTank,
