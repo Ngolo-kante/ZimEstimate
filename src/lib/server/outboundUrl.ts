@@ -50,10 +50,10 @@ export function isPublicIpAddress(address: string): boolean {
   return false;
 }
 
-export async function validatePublicHttpUrl(
+export async function resolvePublicHttpUrl(
   value: string | URL,
   resolver: AddressResolver = defaultResolver
-): Promise<URL> {
+): Promise<{ url: URL; addresses: ResolvedAddress[] }> {
   const parsed = value instanceof URL ? new URL(value.toString()) : new URL(value);
   if (!['http:', 'https:'].includes(parsed.protocol)) {
     throw new Error('Only HTTP and HTTPS scraper URLs are allowed.');
@@ -86,5 +86,12 @@ export async function validatePublicHttpUrl(
     throw new Error('Private network scraper destinations are not allowed.');
   }
 
-  return parsed;
+  return { url: parsed, addresses };
+}
+
+export async function validatePublicHttpUrl(
+  value: string | URL,
+  resolver: AddressResolver = defaultResolver
+): Promise<URL> {
+  return (await resolvePublicHttpUrl(value, resolver)).url;
 }

@@ -96,10 +96,10 @@ export async function GET(request: Request) {
       width: 1200,
       height: 630,
       headers: {
-        // A Budget Estimator link fully determines its picture, so it can be
-        // kept. A saved estimate can be edited or unshared, so only briefly.
+        // A saved estimate can be edited or unshared. Do not keep its preview
+        // in a browser or CDN cache after the owner revokes the link.
         'Cache-Control': savedToken
-          ? 'public, max-age=300, s-maxage=3600'
+          ? 'private, no-store'
           : 'public, max-age=86400, s-maxage=604800, immutable',
       },
     },

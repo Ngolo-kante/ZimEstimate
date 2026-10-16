@@ -1,10 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import * as cheerio from 'cheerio';
+import { Agent, fetch as pinnedFetch } from 'undici';
 import type { Database } from '@/lib/database.types';
 import { materials } from '@/lib/materials';
 import { MaterialMatcher, type MatchResult } from '@/lib/services/material-matcher';
 import { sanitizeNumber, sanitizeText, sanitizeUrl } from '@/lib/server/security';
-import { validatePublicHttpUrl } from '@/lib/server/outboundUrl';
+import { resolvePublicHttpUrl } from '@/lib/server/outboundUrl';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -91,7 +92,7 @@ const SCRAPE_TIMEOUT_MS = 20_000;
 const MAX_REDIRECTS = 5;
 const MAX_HTML_BYTES = 5 * 1024 * 1024;
 
-async function readHtmlWithLimit(response: Response): Promise<string> {
+async function readHtmlWithLimit(response: Awaited<ReturnType<typeof pinnedFetch>>): Promise<string> {
   const declaredLength = Number(response.headers.get('content-length') || 0);
   if (declaredLength > MAX_HTML_BYTES) {
     throw new ScraperRunnerError('Scraper response exceeded the 5MB limit.', 502);
@@ -128,57 +129,74 @@ async function readHtmlWithLimit(response: Response): Promise<string> {
  * answers 403, which is what the standalone pricing scraper does.
  */
 async function fetchHtml(url: string): Promise<string> {
-  const attempt = (target: URL, headers: Record<string, string>) =>
-    fetch(target, {
-      headers,
-      redirect: 'manual',
-      signal: AbortSignal.timeout(SCRAPE_TIMEOUT_MS),
-    });
-
   let currentUrl = new URL(url);
 
   for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
     let safeUrl: URL;
-    let response: Response;
+    let dispatcher: Agent | null = null;
     try {
-      safeUrl = await validatePublicHttpUrl(currentUrl);
-      response = await attempt(safeUrl, SCRAPE_HEADERS);
+      const destination = await resolvePublicHttpUrl(currentUrl);
+      safeUrl = destination.url;
+      // Pin the connection to the IP address we just checked. A second DNS
+      // lookup by fetch could otherwise resolve the same hostname to a private
+      // address (DNS rebinding) after validation. The URL hostname remains in
+      // the HTTP Host header and TLS certificate/SNI checks.
+      const pinned = destination.addresses[0];
+      dispatcher = new Agent({
+        connect: {
+          lookup: (_hostname, _options, callback) => callback(null, pinned.address, pinned.family),
+        },
+      });
+      const attempt = (headers: Record<string, string>) => pinnedFetch(safeUrl.toString(), {
+        headers,
+        redirect: 'manual',
+        signal: AbortSignal.timeout(SCRAPE_TIMEOUT_MS),
+        dispatcher: dispatcher!,
+      });
+      let response = await attempt(SCRAPE_HEADERS);
       if (response.status === 403) {
-        response = await attempt(safeUrl, {
+        await response.body?.cancel();
+        response = await attempt({
           ...SCRAPE_HEADERS,
           Referer: safeUrl.origin,
           'Upgrade-Insecure-Requests': '1',
         });
       }
+
+      if ([301, 302, 303, 307, 308].includes(response.status)) {
+        const location = response.headers.get('location');
+        await response.body?.cancel();
+        if (!location) throw new ScraperRunnerError('Scraper redirect had no destination.', 502);
+        currentUrl = new URL(location, safeUrl);
+        continue;
+      }
+
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw new ScraperRunnerError(
+          `Scraper destination returned HTTP ${response.status}`,
+          response.status === 404 ? 404 : 502
+        );
+      }
+
+      const contentType = response.headers.get('content-type')?.toLowerCase() || '';
+      if (contentType && !contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
+        await response.body?.cancel();
+        throw new ScraperRunnerError('Scraper destination did not return HTML.', 502);
+      }
+
+      const html = await readHtmlWithLimit(response);
+      if (!html.trim()) {
+        throw new ScraperRunnerError('No HTML content returned from scraper destination.', 502);
+      }
+      return html;
     } catch (error) {
+      if (error instanceof ScraperRunnerError) throw error;
       const reason = error instanceof Error ? error.message : 'unknown error';
       throw new ScraperRunnerError(`Failed to fetch scraper URL: ${reason}`, 502);
+    } finally {
+      await dispatcher?.destroy();
     }
-
-    if ([301, 302, 303, 307, 308].includes(response.status)) {
-      const location = response.headers.get('location');
-      if (!location) throw new ScraperRunnerError('Scraper redirect had no destination.', 502);
-      currentUrl = new URL(location, safeUrl);
-      continue;
-    }
-
-    if (!response.ok) {
-      throw new ScraperRunnerError(
-        `Scraper destination returned HTTP ${response.status}`,
-        response.status === 404 ? 404 : 502
-      );
-    }
-
-    const contentType = response.headers.get('content-type')?.toLowerCase() || '';
-    if (contentType && !contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
-      throw new ScraperRunnerError('Scraper destination did not return HTML.', 502);
-    }
-
-    const html = await readHtmlWithLimit(response);
-    if (!html.trim()) {
-      throw new ScraperRunnerError('No HTML content returned from scraper destination.', 502);
-    }
-    return html;
   }
 
   throw new ScraperRunnerError(`Scraper exceeded ${MAX_REDIRECTS} redirects.`, 502);

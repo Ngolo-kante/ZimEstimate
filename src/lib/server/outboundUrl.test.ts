@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isPublicIpAddress, validatePublicHttpUrl } from './outboundUrl';
+import { isPublicIpAddress, resolvePublicHttpUrl, validatePublicHttpUrl } from './outboundUrl';
 
 describe('outbound URL validation', () => {
   it.each(['127.0.0.1', '10.0.0.1', '169.254.169.254', '192.168.1.2', '::1', 'fd00::1']) (
@@ -18,6 +18,15 @@ describe('outbound URL validation', () => {
       async () => [{ address: '203.0.114.10', family: 4 }]
     );
     expect(result.toString()).toBe('https://supplier.example/products');
+  });
+
+  it('returns the validated address for the HTTP connector to pin', async () => {
+    const resolved = await resolvePublicHttpUrl(
+      'https://supplier.example/products',
+      async () => [{ address: '203.0.114.10', family: 4 }]
+    );
+    expect(resolved.url.hostname).toBe('supplier.example');
+    expect(resolved.addresses).toEqual([{ address: '203.0.114.10', family: 4 }]);
   });
 
   it.each([

@@ -30,7 +30,7 @@ export async function requireAuth(request: Request): Promise<AuthResult | NextRe
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('user_type, tier')
+    .select('user_type, tier, is_suspended')
     .eq('id', userData.user.id)
     .single();
 
@@ -38,7 +38,12 @@ export async function requireAuth(request: Request): Promise<AuthResult | NextRe
     return NextResponse.json({ error: 'Profile not found.' }, { status: 403 });
   }
 
-  return { userId: userData.user.id, profile };
+  const account = profile as Pick<Profile, 'user_type' | 'tier' | 'is_suspended'>;
+  if (account.is_suspended) {
+    return NextResponse.json({ error: 'Account suspended.' }, { status: 403 });
+  }
+
+  return { userId: userData.user.id, profile: account };
 }
 
 export async function requireAdmin(request: Request): Promise<AuthResult | NextResponse> {

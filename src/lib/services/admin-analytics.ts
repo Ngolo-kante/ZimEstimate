@@ -137,8 +137,17 @@ export async function suspendUser(
   adminId: string,
   reason?: string
 ): Promise<{ success: boolean; error?: string }> {
-  // Use service role to update another user's profile
   const adminClient = createServiceRoleClient();
+
+  // The profile flag alone is only a UI marker. Ban the Auth identity first
+  // so the account cannot sign in or refresh its session after suspension.
+  const { error: banError } = await adminClient.auth.admin.updateUserById(userId, {
+    ban_duration: '876000h',
+  });
+  if (banError) {
+    logger.error('admin-analytics: failed to ban user', { error: banError, userId });
+    return { success: false, error: 'Could not suspend this account.' };
+  }
 
   const { error } = await adminClient
     .from('profiles')
@@ -151,6 +160,9 @@ export async function suspendUser(
     .eq('id', userId);
 
   if (error) {
+    // Keep Auth and the profile in sync if the database update failed.
+    const { error: rollbackError } = await adminClient.auth.admin.updateUserById(userId, { ban_duration: 'none' });
+    if (rollbackError) logger.error('admin-analytics: failed to undo user ban', { error: rollbackError, userId });
     logger.error('admin-analytics: failed to suspend user', { error, userId });
     return { success: false, error: mapSupabaseError(error)?.message };
   }
@@ -172,6 +184,14 @@ export async function reactivateUser(
 ): Promise<{ success: boolean; error?: string }> {
   const adminClient = createServiceRoleClient();
 
+  const { error: unbanError } = await adminClient.auth.admin.updateUserById(userId, {
+    ban_duration: 'none',
+  });
+  if (unbanError) {
+    logger.error('admin-analytics: failed to unban user', { error: unbanError, userId });
+    return { success: false, error: 'Could not reactivate this account.' };
+  }
+
   const { error } = await adminClient
     .from('profiles')
     .update({
@@ -183,6 +203,8 @@ export async function reactivateUser(
     .eq('id', userId);
 
   if (error) {
+    const { error: rollbackError } = await adminClient.auth.admin.updateUserById(userId, { ban_duration: '876000h' });
+    if (rollbackError) logger.error('admin-analytics: failed to restore user ban', { error: rollbackError, userId });
     logger.error('admin-analytics: failed to reactivate user', { error, userId });
     return { success: false, error: mapSupabaseError(error)?.message };
   }

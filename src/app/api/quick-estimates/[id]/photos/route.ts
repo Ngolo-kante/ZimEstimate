@@ -24,6 +24,9 @@ async function caller(request: Request, quickId: string) {
   const client = createServerClient(token);
   const { data: user } = await client.auth.getUser();
   if (!user?.user) return null;
+  const { data: profile, error: profileError } = await client
+    .from('profiles').select('is_suspended').eq('id', user.user.id).single();
+  if (profileError || !profile || (profile as { is_suspended: boolean }).is_suspended) return null;
   const { data: access } = await client.rpc('quick_site_access' as never, { p_quick_boq_id: quickId } as never);
   return { userId: user.user.id, access: (access as string | null) ?? null };
 }

@@ -205,6 +205,7 @@ export interface Database {
                     notify_price_alerts: boolean;
                     notify_project_reminders: boolean;
                     user_type: UserType;
+                    is_suspended: boolean;
                     telegram_chat_id: string | null;
                     created_at: string;
                     updated_at: string;
@@ -226,6 +227,7 @@ export interface Database {
                     notify_price_alerts?: boolean;
                     notify_project_reminders?: boolean;
                     user_type?: UserType;
+                    is_suspended?: boolean;
                     telegram_chat_id?: string | null;
                     created_at?: string;
                     updated_at?: string;
@@ -247,6 +249,7 @@ export interface Database {
                     notify_price_alerts?: boolean;
                     notify_project_reminders?: boolean;
                     user_type?: UserType;
+                    is_suspended?: boolean;
                     telegram_chat_id?: string | null;
                     created_at?: string;
                     updated_at?: string;

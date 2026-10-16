@@ -10,8 +10,11 @@ export async function POST(
   if (auth instanceof NextResponse) return auth;
 
   const { id: userId } = await params;
+  if (userId === auth.userId) {
+    return NextResponse.json({ error: 'You cannot suspend your own account.' }, { status: 400 });
+  }
   const body = await request.json().catch(() => ({}));
-  const reason = body.reason as string | undefined;
+  const reason = typeof body?.reason === 'string' ? body.reason.trim().slice(0, 500) : undefined;
 
   const { success, error } = await suspendUser(userId, auth.userId, reason);
 

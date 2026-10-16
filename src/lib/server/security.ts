@@ -154,7 +154,13 @@ export function enforceCsrf(req: RequestLike) {
   if (!origin) return null;
 
   const allowed = getAllowedOrigins();
-  if (allowed.length === 0) return null;
+  // An unset production allow-list must fail closed. Otherwise every browser
+  // origin passes the check whenever deployment configuration is incomplete.
+  if (allowed.length === 0) {
+    return process.env.NODE_ENV === 'production'
+      ? NextResponse.json({ error: 'Invalid request origin.' }, { status: 403 })
+      : null;
+  }
 
   const normalized = normalizeOrigin(origin);
   const isAllowed = allowed.some((value) => value === normalized);
