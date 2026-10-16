@@ -372,6 +372,8 @@ export function useVisionTakeoff() {
     totalArea,
     boqTotals,
     confidence: state.analysisResult?.confidence ?? 0,
+    /** The AI readers were busy and the rooms came from the plan's printed labels. */
+    readFromLabels: state.analysisResult?.source === 'labels',
 
     // Navigation
     goToStep,

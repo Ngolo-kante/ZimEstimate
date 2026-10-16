@@ -119,6 +119,9 @@ export default function VisionTakeoffWizard() {
         {state.step === 'warning' && (
           <ConfidenceWarning
             confidence={wizard.confidence}
+            readFromLabels={wizard.readFromLabels}
+            roomCount={state.editedRooms.length}
+            onRetry={wizard.clearFile}
             onContinue={wizard.continueFromWarning}
             onManualEntry={wizard.goToManualEntry}
           />
@@ -159,6 +162,7 @@ export default function VisionTakeoffWizard() {
             doors={state.analysisResult?.doors ?? 0}
             windows={state.analysisResult?.windows ?? 0}
             confidence={wizard.confidence}
+            readFromLabels={wizard.readFromLabels}
             onUpdate={wizard.updateConfig}
             onUpdateOpenings={wizard.updatePlanOpenings}
             onEditPlan={() => wizard.goToStep('editing')}

@@ -42,6 +42,8 @@ const box = (ws: OcrWord[], text = ws.map((w) => w.text).join(' ')): OcrWord => 
 const cx = (b: OcrWord) => (b.x0 + b.x1) / 2;
 const cy = (b: OcrWord) => (b.y0 + b.y1) / 2;
 const clean = (t: string) => t.toUpperCase().replace(/[^A-Z0-9.'\-]/g, '');
+/** "BEDROOM2" is how the reader often returns "BEDROOM 2": the name, number attached. */
+const nameWord = (t: string) => clean(t).replace(/(?<=[A-Z])\d+$/, '');
 
 /** Words on roughly the same baseline, left to right. */
 function toLines(words: OcrWord[]): Line[] {
@@ -61,12 +63,25 @@ function toLines(words: OcrWord[]): Line[] {
   return lines;
 }
 
-/** A metre value from a printed number: "4.5", "4,5", "4500" (mm). */
+/** No room in a house is this long; a larger number is a misread. */
+const MAX_ROOM_SIDE_M = 12;
+
+/**
+ * A metre value from a printed number: "4.5", "4,5", "4500" (mm).
+ *
+ * Text recognition often drops the decimal point: "3.5m x 3.0m" comes back as
+ * "35m x 30m". Taken at face value that made a 9 m² kitchen 1,050 m² and a 90
+ * m² house cost $100,000. A whole number that is too long for a room but
+ * becomes a room size with the point put back is read that way; anything still
+ * too long is dropped rather than priced.
+ */
 function metres(raw: string, unit?: string): number | null {
   const n = Number(raw.replace(',', '.'));
   if (!Number.isFinite(n) || n <= 0) return null;
-  const m = unit === 'mm' || (!unit && n >= 300) ? n / 1000 : n;
-  return m >= 0.8 && m <= 40 ? Math.round(m * 100) / 100 : null;
+  let m = unit === 'mm' || (!unit && n >= 300) ? n / 1000 : n;
+  const wholeNumber = !/[.,]/.test(raw);
+  if (m > MAX_ROOM_SIDE_M && wholeNumber && unit !== 'mm' && n < 300 && n / 10 >= 0.8 && n / 10 <= MAX_ROOM_SIDE_M) m = n / 10;
+  return m >= 0.8 && m <= MAX_ROOM_SIDE_M ? Math.round(m * 100) / 100 : null;
 }
 
 const DIMENSION = /(\d{1,5}(?:[.,]\d{1,3})?)\s*(mm|m)?\s*[x×X*]\s*(\d{1,5}(?:[.,]\d{1,3})?)\s*(mm|m)?/g;
@@ -100,17 +115,17 @@ function namesIn(line: Line): Span[] {
   const names: Span[] = [];
   const ws = line.words;
   for (let i = 0; i < ws.length; i += 1) {
-    if (!NAME_WORDS.has(clean(ws[i].text))) continue;
+    if (!NAME_WORDS.has(nameWord(ws[i].text))) continue;
     let j = i;
     while (j + 1 < ws.length) {
       const next = clean(ws[j + 1].text);
       const gap = ws[j + 1].x0 - ws[j].x1;
       if (gap > (ws[j].y1 - ws[j].y0) * 2.5) break;
-      if (NAME_WORDS.has(next) || QUALIFIERS.has(next)) { j += 1; continue; }
+      if (NAME_WORDS.has(nameWord(ws[j + 1].text)) || QUALIFIERS.has(next)) { j += 1; continue; }
       break;
     }
     const part = ws.slice(i, j + 1);
-    names.push({ text: part.map((w) => w.text).join(' '), box: box(part) });
+    names.push({ text: part.map((w) => w.text.replace(/(?<=[A-Za-z])(\d+)$/, ' $1')).join(' ').trim(), box: box(part) });
     i = j;
   }
   return names;
@@ -124,7 +139,13 @@ export function roomsFromWords(words: OcrWord[], image: { width: number; height:
   const lines = toLines(usable);
   const names = lines.flatMap(namesIn);
   const sizes = lines.flatMap(dimensionsIn);
-  const lineHeight = lines.length ? lines.reduce((s, l) => s + l.h, 0) / lines.length : 20;
+  // The height of the label text itself. Averaging every line let the specks
+  // a reader picks out of walls and hatching shrink it, and a size printed a
+  // normal line below its name then looked too far away to belong to it.
+  const labelHeights = [...names, ...sizes].map((span) => span.box.y1 - span.box.y0).sort((a, b) => a - b);
+  const lineHeight = labelHeights.length
+    ? labelHeights[Math.floor(labelHeights.length / 2)]
+    : lines.length ? lines.reduce((s, l) => s + l.h, 0) / lines.length : 20;
 
   const used = new Set<number>();
   const rooms: LabelledRoom[] = [];

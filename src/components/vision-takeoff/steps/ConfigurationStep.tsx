@@ -36,6 +36,8 @@ interface ConfigurationStepProps {
   doors: number;
   windows: number;
   confidence: number;
+  /** The rooms came from the plan's printed labels, not an AI reading. */
+  readFromLabels?: boolean;
   onUpdate: (config: Partial<VisionConfig>) => void;
   onUpdateOpenings: (openings: { doors?: number; windows?: number }) => void;
   onEditPlan: () => void;
@@ -51,6 +53,7 @@ export default function ConfigurationStep({
   doors,
   windows,
   confidence,
+  readFromLabels = false,
   onUpdate,
   onUpdateOpenings,
   onEditPlan,
@@ -74,6 +77,7 @@ export default function ConfigurationStep({
     internalWallLength: wallAssumptions.internalWallLength,
     noExternalWallsDetected: wallAssumptions.noExternalWallsDetected,
     confidence,
+    readFromLabels,
     stages: includedScopes.map((scope) => SCOPE_INFO[scope].name),
     includeLabor: config.includeLabor,
   };

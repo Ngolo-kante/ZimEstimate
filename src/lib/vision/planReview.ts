@@ -14,6 +14,8 @@ export interface PlanReviewInput {
   /** True when the reader could not identify any external wall segments. */
   noExternalWallsDetected?: boolean;
   confidence?: number | null;
+  /** The AI readers were busy and only the plan's printed labels were read. */
+  readFromLabels?: boolean;
   stages: string[];
   includeLabor: boolean;
 }
@@ -43,7 +45,11 @@ export function assessPlanReview(input: PlanReviewInput): PlanReviewFinding[] {
   if (input.windows === 0) add('windows', 'No windows were detected. Enter the plan count, or review the area-based allowance in the BOQ.');
   else if (input.area >= 80 && input.windows < Math.ceil(input.area / 45)) add('windows', 'Window count looks low for this floor area. Check the plan count.');
   if (input.noExternalWallsDetected) add('walls', 'No external wall segments were identified. External wall length is estimated from floor area.');
-  if (input.confidence != null && input.confidence < 70) add('confidence', 'The plan reader had low confidence. Confirm the room dimensions against the drawing.');
+  if (input.readFromLabels) {
+    add('labels', `Our AI plan readers were busy, so only the room names and sizes printed on the plan were read: ${input.rooms.length} ${input.rooms.length === 1 ? 'room' : 'rooms'}. Add any that are missing, or upload the plan again in a minute for a full reading.`);
+  } else if (input.confidence != null && input.confidence < 70) {
+    add('confidence', 'The plan reader had low confidence. Confirm the room dimensions against the drawing.');
+  }
 
   return findings;
 }

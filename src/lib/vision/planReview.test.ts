@@ -35,6 +35,14 @@ describe('uploaded plan review', () => {
     expect(planIdentityKey({ ...base, rooms: base.rooms.slice(1) })).not.toBe(confirmedKey);
   });
 
+  it('says when only the printed labels were read, instead of a generic confidence warning', () => {
+    const findings = assessPlanReview({ ...base, rooms: base.rooms.slice(0, 4), confidence: 60, readFromLabels: true });
+    const labels = findings.find((finding) => finding.id === 'labels');
+    expect(labels?.text).toContain('4 rooms');
+    expect(labels?.severity).toBe('check');
+    expect(findings.some((finding) => finding.id === 'confidence')).toBe(false);
+  });
+
   it('blocks only on missing essentials', () => {
     expect(isPlanReviewBlocked(base)).toBe(false);
     expect(isPlanReviewBlocked({ ...base, windows: 0 })).toBe(false);

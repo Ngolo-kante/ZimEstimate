@@ -1,24 +1,71 @@
 'use client';
 
+import css from 'styled-jsx/css';
 import Card from '@/components/ui/Card';
 import {
   Warning,
   ArrowRight,
   PencilLine,
+  ArrowClockwise,
 } from '@phosphor-icons/react';
 
 interface ConfidenceWarningProps {
   confidence: number;
+  /** The AI readers were busy and only the plan's printed labels were read. */
+  readFromLabels?: boolean;
+  roomCount?: number;
+  /** Back to the upload, to read the plan again. */
+  onRetry?: () => void;
   onContinue: () => void;
   onManualEntry: () => void;
 }
 
 export default function ConfidenceWarning({
   confidence,
+  readFromLabels = false,
+  roomCount = 0,
+  onRetry,
   onContinue,
   onManualEntry,
 }: ConfidenceWarningProps) {
   const confidenceLevel = confidence < 50 ? 'low' : 'medium';
+
+  // Not a poor reading of a good plan: the AI readers were busy and only the
+  // printed labels could be read, which finds some rooms and misses others.
+  // Saying so, and offering another try, beats a generic confidence score.
+  if (readFromLabels) {
+    return (
+      <div className="confidence-warning">
+        <Card className="warning-card">
+          <div className="warning-icon medium">
+            <Warning size={40} weight="fill" />
+          </div>
+          <h2>Only part of your plan was read</h2>
+          <p className="warning-message">
+            Our AI plan readers are busy right now, so we read the room names and sizes printed on your plan instead.
+            We found <strong>{roomCount} {roomCount === 1 ? 'room' : 'rooms'}</strong>, and some may be missing.
+          </p>
+          <div className="recommendation">
+            <strong>Best result:</strong> try again in a minute for a full reading. Or continue, check the rooms and
+            add any that are missing.
+          </div>
+          <div className="action-buttons">
+            <button className="btn btn-secondary" onClick={onContinue}>
+              Continue and check rooms
+              <ArrowRight size={18} weight="bold" />
+            </button>
+            {onRetry && (
+              <button className="btn btn-primary" onClick={onRetry}>
+                <ArrowClockwise size={18} weight="bold" />
+                Try again
+              </button>
+            )}
+          </div>
+        </Card>
+        <style jsx>{STYLES}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="confidence-warning">
@@ -69,7 +116,13 @@ export default function ConfidenceWarning({
         </div>
       </Card>
 
-      <style jsx>{`
+      <style jsx>{STYLES}</style>
+    </div>
+  );
+}
+
+// Shared by both versions of the screen.
+const STYLES = css`
         .confidence-warning {
           max-width: 500px;
           margin: 0 auto;
@@ -212,7 +265,4 @@ export default function ConfidenceWarning({
           border-color: var(--color-text-muted);
           color: var(--color-text);
         }
-      `}</style>
-    </div>
-  );
-}
+`;
