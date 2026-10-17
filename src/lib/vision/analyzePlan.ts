@@ -43,11 +43,12 @@ async function firstPageAsImage(file: File): Promise<Blob | null> {
 type AnalyzePlanOptions = {
   accessToken?: string;
   signal?: AbortSignal;
+  onPreviewImage?: (image: Blob) => void;
 };
 
 export async function analyzePlanFile(
   file: File,
-  { accessToken, signal }: AnalyzePlanOptions = {},
+  { accessToken, signal, onPreviewImage }: AnalyzePlanOptions = {},
 ): Promise<VisionAnalysisResult> {
   const controller = new AbortController();
   let timeout: number | null = null;
@@ -59,7 +60,10 @@ export async function analyzePlanFile(
     formData.append('file', file);
     if (file.type === 'application/pdf') {
       const copy = await firstPageAsImage(file);
-      if (copy) formData.append('readingCopy', copy, 'page-1.jpg');
+      if (copy) {
+        formData.append('readingCopy', copy, 'page-1.jpg');
+        if (!signal?.aborted) onPreviewImage?.(copy);
+      }
     }
     if (signal?.aborted) controller.abort('cancelled');
     timeout = window.setTimeout(() => controller.abort('timeout'), PLAN_ANALYSIS_TIMEOUT_MS);

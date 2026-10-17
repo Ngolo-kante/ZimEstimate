@@ -137,6 +137,16 @@ export default function VisionTakeoffWizard() {
             totalArea={wizard.totalArea}
             onRoomUpdate={wizard.updateRoom}
             onRoomRemove={wizard.removeRoom}
+            onRoomAdd={wizard.addRoom}
+            doors={state.analysisResult?.doors ?? 0}
+            windows={state.analysisResult?.windows ?? 0}
+            onOpeningsChange={wizard.updatePlanOpenings}
+            onUndo={wizard.undoPlanEdit}
+            onRedo={wizard.redoPlanEdit}
+            canUndo={wizard.canUndoPlanEdit}
+            canRedo={wizard.canRedoPlanEdit}
+            planRevision={wizard.planRevision}
+            error={state.error}
             onConfirm={wizard.confirmDimensions}
             onBack={wizard.clearFile}
           />

@@ -60,7 +60,7 @@ export default function RoomEditPanel({
     <Card className="room-edit-panel">
       <div className="panel-header">
         <h3>Edit Room</h3>
-        <button className="close-btn" onClick={onClose}>
+        <button type="button" className="close-btn" onClick={onClose} aria-label="Close room editor">
           <X size={20} weight="light" />
         </button>
       </div>
@@ -68,8 +68,9 @@ export default function RoomEditPanel({
       <div className="panel-content">
         {/* Room Name */}
         <div className="form-group">
-          <label>Room Name</label>
+          <label htmlFor={`room-name-${room.id}`}>Room Name</label>
           <input
+            id={`room-name-${room.id}`}
             type="text"
             value={name}
             onChange={(e) => handleNameChange(e.target.value)}
@@ -79,13 +80,14 @@ export default function RoomEditPanel({
 
         {/* Dimensions */}
         <div className="form-group">
-          <label>
+          <div className="input-heading">
             <ArrowsOutSimple size={16} weight="light" />
             Dimensions
-          </label>
+          </div>
           <div className="dimension-inputs">
             <div className="input-with-unit">
               <input
+                aria-label="Room width in metres"
                 type="number"
                 step="0.1"
                 min="0.1"
@@ -97,6 +99,7 @@ export default function RoomEditPanel({
             <span className="dimension-separator">x</span>
             <div className="input-with-unit">
               <input
+                aria-label="Room length in metres"
                 type="number"
                 step="0.1"
                 min="0.1"
@@ -114,21 +117,25 @@ export default function RoomEditPanel({
           <span className="area-value">{room.area.toFixed(1)} m²</span>
         </div>
 
-        {/* Wall Type */}
-        <div className="form-group">
-          <label>
+        {/* Only scanned rooms have wall segments that this control can change. */}
+        {room.position.width > 0 && <div className="form-group">
+          <div className="input-heading">
             <Wall size={16} weight="light" />
             Wall Type
-          </label>
+          </div>
           <div className="wall-type-buttons">
             <button
               className={`wall-type-btn ${room.wallType === 'external' ? 'active' : ''}`}
+              type="button"
+              aria-pressed={room.wallType === 'external'}
               onClick={() => handleWallTypeChange('external')}
             >
               External
             </button>
             <button
               className={`wall-type-btn ${room.wallType === 'internal' ? 'active' : ''}`}
+              type="button"
+              aria-pressed={room.wallType === 'internal'}
               onClick={() => handleWallTypeChange('internal')}
             >
               Internal
@@ -137,7 +144,8 @@ export default function RoomEditPanel({
           <span className="hint">
             External walls are thicker (230mm) and use more materials
           </span>
-        </div>
+        </div>}
+        {room.position.width === 0 && <p className="manual-room-hint">Added manually. The BOQ estimates wall length from the corrected floor area and room count.</p>}
 
         {/* Status indicator */}
         {room.isEdited && (
@@ -148,7 +156,7 @@ export default function RoomEditPanel({
       </div>
 
       <div className="panel-footer">
-        <button className="btn btn-danger" onClick={onRemove}>
+        <button type="button" className="btn btn-danger" onClick={onRemove}>
           <Trash size={16} weight="light" />
           Remove Room
         </button>
@@ -208,7 +216,7 @@ export default function RoomEditPanel({
           gap: var(--spacing-xs);
         }
 
-        label {
+        label, .input-heading {
           display: flex;
           align-items: center;
           gap: var(--spacing-xs);
@@ -333,6 +341,7 @@ export default function RoomEditPanel({
           color: var(--color-accent);
           align-self: flex-start;
         }
+        .manual-room-hint { margin: 0; color: var(--color-text-muted); font-size: .75rem; line-height: 1.45; }
 
         .panel-footer {
           padding-top: var(--spacing-md);

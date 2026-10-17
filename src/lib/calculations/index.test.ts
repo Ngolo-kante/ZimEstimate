@@ -303,6 +303,23 @@ describe('uploaded plan costing', () => {
     expect(items.find((item) => item.materialId === 'door-interior')?.quantity).toBe(3);
     expect(items.find((item) => item.materialId === 'hinges-door')?.quantity).toBe(5);
   });
+
+  it('recalculates a full-house BOQ when a missed room is added during scan review', () => {
+    const first: DetectedRoom = {
+      id: 'lounge', name: 'Lounge', dimensions: { width: 5, length: 4 }, area: 20,
+      position: { x: 10, y: 10, width: 50, height: 40 }, wallType: 'external', isEdited: false,
+    };
+    const missing: DetectedRoom = {
+      id: 'manual-bedroom', name: 'Bedroom', dimensions: { width: 3, length: 4 }, area: 12,
+      position: { x: 0, y: 0, width: 0, height: 0 }, wallType: 'internal', isEdited: true,
+    };
+    const config = { scope: 'full_house' as const, brickType: 'common' as const, cementType: 'cement_325' as const, includeLabor: true, wallHeight: 2.7, foundationDepth: 0.6 };
+    const before = generateBOQ([first], [], config);
+    const after = generateBOQ([first, missing], [], config);
+    const total = (items: ReturnType<typeof generateBOQ>) => items.reduce((sum, item) => sum + item.totalUsd, 0);
+    expect(total(after)).toBeGreaterThan(total(before));
+    expect(after.find((item) => item.materialId === 'window-sill-brick')?.quantity).toBeGreaterThan(before.find((item) => item.materialId === 'window-sill-brick')?.quantity ?? 0);
+  });
 });
 
 describe('detailed room masonry', () => {

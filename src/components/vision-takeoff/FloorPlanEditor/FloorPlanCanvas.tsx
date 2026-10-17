@@ -26,6 +26,9 @@ interface FloorPlanCanvasProps {
   imageUrl: string | null;
   selectedRoomId: string | null;
   onRoomSelect: (roomId: string) => void;
+  showOverlay: boolean;
+  showWalls: boolean;
+  zoom: number;
 }
 
 /* One hue, three tints. The previous palette cycled blue, amber, green, pink,
@@ -57,6 +60,9 @@ export default function FloorPlanCanvas({
   imageUrl,
   selectedRoomId,
   onRoomSelect,
+  showOverlay,
+  showWalls,
+  zoom,
 }: FloorPlanCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -66,7 +72,6 @@ export default function FloorPlanCanvas({
      so the effect never has to set state synchronously to clear it. */
   const [loaded, setLoaded] = useState<{ url: string; img: HTMLImageElement } | null>(null);
   const [hoveredRoomId, setHoveredRoomId] = useState<string | null>(null);
-  void walls;
 
   const plan = loaded && loaded.url === imageUrl ? loaded.img : null;
 
@@ -131,8 +136,10 @@ export default function FloorPlanCanvas({
 
     if (plan) {
       ctx.drawImage(plan, 0, 0, width, height);
-      ctx.fillStyle = PLAN_SCRIM;
-      ctx.fillRect(0, 0, width, height);
+      if (showOverlay) {
+        ctx.fillStyle = PLAN_SCRIM;
+        ctx.fillRect(0, 0, width, height);
+      }
     } else {
       // No plan behind the rooms — a light grid keeps the space from reading as
       // an error state.
@@ -151,6 +158,8 @@ export default function FloorPlanCanvas({
         ctx.stroke();
       }
     }
+
+    if (!showOverlay) return;
 
     rooms.forEach((room, index) => {
       const isSelected = room.id === selectedRoomId;
@@ -231,7 +240,18 @@ export default function FloorPlanCanvas({
         });
       }
     });
-  }, [rooms, width, height, plan, selectedRoomId, hoveredRoomId]);
+
+    if (showWalls) {
+      walls.forEach((wall) => {
+        ctx.beginPath();
+        ctx.moveTo(wall.startPoint.x / 100 * width, wall.startPoint.y / 100 * height);
+        ctx.lineTo(wall.endPoint.x / 100 * width, wall.endPoint.y / 100 * height);
+        ctx.strokeStyle = wall.type === 'external' ? '#0F294B' : '#B45309';
+        ctx.lineWidth = wall.type === 'external' ? 3 : 2;
+        ctx.stroke();
+      });
+    }
+  }, [rooms, walls, width, height, plan, selectedRoomId, hoveredRoomId, showOverlay, showWalls]);
 
   /* Hit testing stays in percentage space, so it is unaffected by the aspect
      ratio change. */
@@ -258,25 +278,25 @@ export default function FloorPlanCanvas({
         onMouseMove={(e) => setHoveredRoomId(roomAt(e)?.id ?? null)}
         onMouseLeave={() => setHoveredRoomId(null)}
         onClick={(e) => {
-          const room = roomAt(e);
-          if (room) onRoomSelect(room.id);
+      const room = roomAt(e);
+          if (room && showOverlay) onRoomSelect(room.id);
         }}
-        style={{ cursor: hoveredRoomId ? 'pointer' : 'default' }}
+        style={{ cursor: hoveredRoomId && showOverlay ? 'pointer' : 'default', width: `${zoom * 100}%` }}
       />
 
       <style jsx>{`
         .canvas-wrapper {
           width: 100%;
           border-radius: var(--radius-md);
-          overflow: hidden;
+          overflow: auto;
           border: 1px solid #dfe5ed;
           background: #fff;
         }
 
         canvas {
           display: block;
-          width: 100%;
           height: auto;
+          max-width: none;
         }
       `}</style>
     </div>

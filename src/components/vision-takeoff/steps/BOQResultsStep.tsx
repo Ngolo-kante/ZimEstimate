@@ -26,6 +26,8 @@ import { GeneratedBOQItem, ProjectInfo, VisionConfig, DetectedRoom, normalizeCon
 import ReviewWorkspace from '@/components/boq/ReviewWorkspace';
 import { useBoqWizardStore } from '@/store/boqWizardStore';
 import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
+import { getBestPrice } from '@/lib/materials';
+import { getVerifiedPrice, VERIFIED_PRICES_CHECKED_ON } from '@/lib/pricing/verifiedPrices';
 
 /**
  * Where an unsigned-in Save stashes its work across the trip to /auth/login.
@@ -86,6 +88,19 @@ const stripEnablementTag = (note: string) =>
   note.startsWith(ENABLEMENT_ITEM_TAG)
     ? note.replace(ENABLEMENT_ITEM_TAG, '').trim()
     : note;
+
+const priceBasis = (item: GeneratedBOQItem): string => {
+  if (item.unitPriceUsd <= 0) return 'Price needed';
+  if (item.category === 'labor') return 'Labour allowance';
+  if (item.calculationNote.startsWith(ENABLEMENT_ITEM_TAG)) return 'Planning allowance';
+  const cataloguePrice = getBestPrice(item.materialId);
+  if (!cataloguePrice || Math.abs(cataloguePrice.priceUsd - item.unitPriceUsd) >= 0.005) {
+    return 'Edited rate';
+  }
+  return getVerifiedPrice(item.materialId)
+    ? `Supplier listing checked ${VERIFIED_PRICES_CHECKED_ON}`
+    : 'Catalogue reference rate';
+};
 
 const buildLocationLabel = (projectInfo: ProjectInfo) => {
   const parts = [
@@ -598,13 +613,16 @@ export default function BOQResultsStep({
                               </button>
                             </div>
                           ) : (
-                            <span
-                              className="editable"
-                              onClick={() => startEditing(item.id, 'unitPriceUsd', item.unitPriceUsd)}
-                            >
-                              {formatPrice(item.unitPriceUsd, item.unitPriceZwg)}
-                              <PencilSimple size={12} className="edit-icon" />
-                            </span>
+                            <div className="price-cell">
+                              <span
+                                className="editable"
+                                onClick={() => startEditing(item.id, 'unitPriceUsd', item.unitPriceUsd)}
+                              >
+                                {formatPrice(item.unitPriceUsd, item.unitPriceZwg)}
+                                <PencilSimple size={12} className="edit-icon" />
+                              </span>
+                              <span className="price-basis">{priceBasis(item)}</span>
+                            </div>
                           )}
                         </td>
                         <td className="col-total">
@@ -941,6 +959,18 @@ export default function BOQResultsStep({
 
         .calc-note {
           font-size: 0.75rem;
+          color: var(--color-text-muted);
+        }
+
+        .price-cell {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 2px;
+        }
+
+        .price-basis {
+          font-size: 0.7rem;
           color: var(--color-text-muted);
         }
 

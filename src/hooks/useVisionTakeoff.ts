@@ -20,6 +20,12 @@ import { captureProductEvent } from '@/lib/productAnalytics';
 import { analyzePlanFile } from '@/lib/vision/analyzePlan';
 
 const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
+type PlanSnapshot = {
+  rooms: DetectedRoom[];
+  walls: DetectedWall[];
+  doors: number;
+  windows: number;
+};
 
 // API call to analyze floor plan
 //
@@ -28,10 +34,10 @@ const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
 // against cost abuse is IP-based rate limiting (10/min), not auth, so nothing
 // is given up by letting an anonymous visitor try the tool before signing up
 // for it.
-async function analyzeFloorPlanAPI(file: File, signal: AbortSignal): Promise<VisionAnalysisResult> {
+async function analyzeFloorPlanAPI(file: File, signal: AbortSignal, onPreviewImage: (image: Blob) => void): Promise<VisionAnalysisResult> {
   const { data } = await supabase.auth.getSession();
   const accessToken = data.session?.access_token;
-  return analyzePlanFile(file, { accessToken, signal });
+  return analyzePlanFile(file, { accessToken, signal, onPreviewImage });
 }
 
 function addTemporaryEnablementItems(items: GeneratedBOQItem[], config: VisionConfig): GeneratedBOQItem[] {
@@ -73,8 +79,26 @@ export function useVisionTakeoff() {
   const router = useRouter();
   const [state, setState] = useState<VisionTakeoffState>(INITIAL_STATE);
   const analysisControllerRef = useRef<AbortController | null>(null);
+  const [planHistory, setPlanHistory] = useState<{ past: PlanSnapshot[]; future: PlanSnapshot[] }>({ past: [], future: [] });
+  const [planRevision, setPlanRevision] = useState(0);
+
+  const snapshot = useCallback((): PlanSnapshot => ({
+    rooms: state.editedRooms,
+    walls: state.editedWalls,
+    doors: state.analysisResult?.doors ?? 0,
+    windows: state.analysisResult?.windows ?? 0,
+  }), [state.editedRooms, state.editedWalls, state.analysisResult]);
+
+  const recordPlanEdit = useCallback(() => {
+    const current = snapshot();
+    setPlanHistory((previous) => ({ past: [...previous.past, current].slice(-30), future: [] }));
+  }, [snapshot]);
 
   useEffect(() => () => analysisControllerRef.current?.abort(), []);
+  useEffect(() => {
+    const url = state.previewUrl;
+    return () => { if (url) URL.revokeObjectURL(url); };
+  }, [state.previewUrl]);
 
   // ============================================
   // STEP NAVIGATION
@@ -86,6 +110,8 @@ export function useVisionTakeoff() {
 
   const reset = useCallback(() => {
     setState(INITIAL_STATE);
+    setPlanHistory({ past: [], future: [] });
+    setPlanRevision(0);
   }, []);
 
   // ============================================
@@ -110,7 +136,10 @@ export function useVisionTakeoff() {
     }));
 
     try {
-      const result = await analyzeFloorPlanAPI(file, controller.signal);
+      const result = await analyzeFloorPlanAPI(file, controller.signal, (image) => {
+        const imageUrl = URL.createObjectURL(image);
+        setState((prev) => ({ ...prev, previewUrl: imageUrl }));
+      });
 
       // Determine next step based on confidence
       const nextStep: WizardStep = result.confidence < 90 ? 'warning' : 'editing';
@@ -124,6 +153,8 @@ export function useVisionTakeoff() {
         step: nextStep,
         isProcessing: false,
       }));
+      setPlanHistory({ past: [], future: [] });
+      setPlanRevision(0);
     } catch (error) {
       captureProductEvent('ai_scan_used', { tool: 'vision_takeoff', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'failed' });
       setState((prev) => ({
@@ -142,9 +173,6 @@ export function useVisionTakeoff() {
   }, []);
 
   const clearFile = useCallback(() => {
-    if (state.previewUrl) {
-      URL.revokeObjectURL(state.previewUrl);
-    }
     setState((prev) => ({
       ...prev,
       uploadedFile: null,
@@ -155,7 +183,9 @@ export function useVisionTakeoff() {
       step: 'upload',
       error: null,
     }));
-  }, [state.previewUrl]);
+    setPlanHistory({ past: [], future: [] });
+    setPlanRevision(0);
+  }, []);
 
   // ============================================
   // LOW CONFIDENCE HANDLING
@@ -174,6 +204,7 @@ export function useVisionTakeoff() {
   // ============================================
 
   const updateRoom = useCallback((roomId: string, updates: Partial<DetectedRoom>) => {
+    recordPlanEdit();
     const dimensions = updates.dimensions;
     setState((prev) => ({
       ...prev,
@@ -191,20 +222,23 @@ export function useVisionTakeoff() {
             }
           : room
       ),
+      error: null,
       // Wall segments created by the reader carry the room's original side
       // lengths. Keep them in sync when a person corrects those dimensions,
       // otherwise the review and BOQ can still use the stale scan geometry.
-      editedWalls: dimensions ? prev.editedWalls.map((wall) => {
+      editedWalls: (dimensions || updates.wallType) ? prev.editedWalls.map((wall) => {
+        if (!wall.id.startsWith(`wall_${roomId}_`)) return wall;
+        const next = updates.wallType ? { ...wall, type: updates.wallType } : wall;
         if (wall.id === `wall_${roomId}_top` || wall.id === `wall_${roomId}_bottom`) {
-          return { ...wall, length: dimensions.width };
+          return dimensions ? { ...next, length: dimensions.width } : next;
         }
         if (wall.id === `wall_${roomId}_left` || wall.id === `wall_${roomId}_right`) {
-          return { ...wall, length: dimensions.length };
+          return dimensions ? { ...next, length: dimensions.length } : next;
         }
-        return wall;
+        return next;
       }) : prev.editedWalls,
     }));
-  }, []);
+  }, [recordPlanEdit]);
 
   const updateWall = useCallback((wallId: string, updates: Partial<DetectedWall>) => {
     setState((prev) => ({
@@ -216,22 +250,53 @@ export function useVisionTakeoff() {
   }, []);
 
   const addRoom = useCallback((room: DetectedRoom) => {
+    recordPlanEdit();
     setState((prev) => ({
       ...prev,
       editedRooms: [...prev.editedRooms, room],
+      error: null,
     }));
-  }, []);
+  }, [recordPlanEdit]);
 
   const removeRoom = useCallback((roomId: string) => {
+    recordPlanEdit();
     setState((prev) => ({
       ...prev,
       editedRooms: prev.editedRooms.filter((room) => room.id !== roomId),
-      editedWalls: prev.editedWalls.filter((wall) => !wall.id.includes(roomId)),
+      editedWalls: prev.editedWalls.filter((wall) => !wall.id.startsWith(`wall_${roomId}_`)),
+      error: null,
     }));
-  }, []);
+  }, [recordPlanEdit]);
+
+  const undoPlanEdit = useCallback(() => {
+    const previous = planHistory.past.at(-1);
+    if (!previous) return;
+    const current = snapshot();
+    setState((prev) => ({ ...prev, editedRooms: previous.rooms, editedWalls: previous.walls,
+      analysisResult: prev.analysisResult ? { ...prev.analysisResult, doors: previous.doors, windows: previous.windows } : null }));
+    setPlanHistory((history) => ({ past: history.past.slice(0, -1), future: [current, ...history.future] }));
+    setPlanRevision((revision) => revision + 1);
+  }, [planHistory.past, snapshot]);
+
+  const redoPlanEdit = useCallback(() => {
+    const next = planHistory.future[0];
+    if (!next) return;
+    const current = snapshot();
+    setState((prev) => ({ ...prev, editedRooms: next.rooms, editedWalls: next.walls,
+      analysisResult: prev.analysisResult ? { ...prev.analysisResult, doors: next.doors, windows: next.windows } : null }));
+    setPlanHistory((history) => ({ past: [...history.past, current], future: history.future.slice(1) }));
+    setPlanRevision((revision) => revision + 1);
+  }, [planHistory.future, snapshot]);
 
   const confirmDimensions = useCallback(() => {
-    setState((prev) => ({ ...prev, step: 'project_info' }));
+    setState((prev) => {
+      if (prev.editedRooms.length === 0 || prev.editedRooms.some((room) =>
+        !Number.isFinite(room.dimensions.width) || !Number.isFinite(room.dimensions.length) ||
+        room.dimensions.width <= 0 || room.dimensions.length <= 0)) {
+        return { ...prev, error: 'Add at least one room with valid dimensions before continuing.' };
+      }
+      return { ...prev, step: 'project_info', error: null };
+    });
   }, []);
 
   // ============================================
@@ -261,11 +326,12 @@ export function useVisionTakeoff() {
   }, []);
 
   const updatePlanOpenings = useCallback((openings: { doors?: number; windows?: number }) => {
+    recordPlanEdit();
     setState((prev) => ({
       ...prev,
       analysisResult: prev.analysisResult ? { ...prev.analysisResult, ...openings } : null,
     }));
-  }, []);
+  }, [recordPlanEdit]);
 
   const confirmConfig = useCallback(() => {
     setState((prev) => ({ ...prev, step: 'calculating' }));
@@ -393,6 +459,11 @@ export function useVisionTakeoff() {
     updateWall,
     addRoom,
     removeRoom,
+    undoPlanEdit,
+    redoPlanEdit,
+    canUndoPlanEdit: planHistory.past.length > 0,
+    canRedoPlanEdit: planHistory.future.length > 0,
+    planRevision,
     confirmDimensions,
 
     // Project info
