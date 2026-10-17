@@ -13,14 +13,17 @@ import {
   ArrowClockwise,
   MagnifyingGlassPlus,
   MagnifyingGlassMinus,
+  Warning,
 } from '@phosphor-icons/react';
 import { DetectedRoom, DetectedWall } from '@/lib/vision/types';
+import { assessPlanReview } from '@/lib/vision/planReview';
 
 interface FloorPlanEditorProps {
   rooms: DetectedRoom[];
   walls: DetectedWall[];
   imageUrl: string | null;
   confidence: number;
+  readFromLabels: boolean;
   totalArea: number;
   onRoomUpdate: (roomId: string, updates: Partial<DetectedRoom>) => void;
   onRoomRemove: (roomId: string) => void;
@@ -43,6 +46,7 @@ export default function FloorPlanEditor({
   walls,
   imageUrl,
   confidence,
+  readFromLabels,
   totalArea,
   onRoomUpdate,
   onRoomRemove,
@@ -67,6 +71,23 @@ export default function FloorPlanEditor({
   const [newRoom, setNewRoom] = useState({ name: '', width: '', length: '' });
 
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
+  const reviewFindings = assessPlanReview({
+    area: totalArea,
+    rooms: rooms.map((room) => ({ name: room.name, width: room.dimensions.width, length: room.dimensions.length })),
+    doors,
+    windows,
+    externalWallLength: walls.filter((wall) => wall.type === 'external').reduce((sum, wall) => sum + wall.length, 0),
+    internalWallLength: walls.filter((wall) => wall.type === 'internal').reduce((sum, wall) => sum + wall.length, 0),
+    noExternalWallsDetected: !walls.some((wall) => wall.type === 'external'),
+    confidence,
+    readFromLabels,
+    // Construction stages are chosen later; this screen checks only the scan.
+    stages: ['scan review'],
+    includeLabor: false,
+  });
+  if (!readFromLabels && confidence >= 70 && confidence < 90) {
+    reviewFindings.push({ id: 'estimated-dimensions', text: 'Some dimensions may have been estimated. Compare each room with the original plan.', severity: 'check' });
+  }
 
   const handleRoomSelect = (roomId: string) => {
     setSelectedRoomId(roomId === selectedRoomId ? null : roomId);
@@ -113,6 +134,11 @@ export default function FloorPlanEditor({
           </div>
         </div>
       </div>
+
+      {reviewFindings.length > 0 && <section className="scan-review" aria-labelledby="scan-review-heading">
+        <h2 id="scan-review-heading"><Warning size={18} weight="fill" /> Check these scan results</h2>
+        <ul>{reviewFindings.map((finding) => <li key={finding.id}>{finding.text}</li>)}</ul>
+      </section>}
 
       <div className="review-toolbar" aria-label="Plan review controls">
         <div className="toolbar-group">
@@ -180,6 +206,7 @@ export default function FloorPlanEditor({
                     <div className="room-info">
                       <span className="room-name">{room.name}</span>
                       {room.position.width === 0 && <span className="manual-badge">Added manually</span>}
+                      {(room.dimensions.width <= 0 || room.dimensions.length <= 0) && <span className="manual-badge">Dimensions needed</span>}
                       <span className="room-dims">
                         {room.dimensions.width.toFixed(1)} x {room.dimensions.length.toFixed(1)}m
                       </span>
@@ -213,6 +240,10 @@ export default function FloorPlanEditor({
       </div>
 
       <style jsx>{`
+        .scan-review { border: 1px solid #e7c46a; border-radius: 12px; background: #fff9e9; padding: 14px 16px; color: #694408; }
+        .scan-review h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: .95rem; font-weight: 700; }
+        .scan-review ul { margin: 0; padding-left: 22px; font-size: .82rem; line-height: 1.5; }
+        .scan-review li + li { margin-top: 4px; }
         .review-toolbar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 10px; border: 1px solid #d9e3ef; border-radius: 12px; background: #f5f8fc; }
         .toolbar-group { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
         .tool-button { min-height: 40px; padding: 8px 12px; border: 1px solid #cbd8e6; border-radius: 8px; background: white; color: #173557; font-size: 0.8rem; font-weight: 600; cursor: pointer; }

@@ -37,18 +37,14 @@ export default function RoomEditPanel({
 
     if (dimension === 'width') {
       setWidth(value);
-      if (!isNaN(numValue) && numValue > 0) {
-        onUpdate({
-          dimensions: { ...room.dimensions, width: numValue },
-        });
-      }
+      onUpdate({
+        dimensions: { ...room.dimensions, width: Number.isFinite(numValue) && numValue > 0 ? numValue : 0 },
+      });
     } else {
       setLength(value);
-      if (!isNaN(numValue) && numValue > 0) {
-        onUpdate({
-          dimensions: { ...room.dimensions, length: numValue },
-        });
-      }
+      onUpdate({
+        dimensions: { ...room.dimensions, length: Number.isFinite(numValue) && numValue > 0 ? numValue : 0 },
+      });
     }
   };
 
@@ -91,6 +87,7 @@ export default function RoomEditPanel({
                 type="number"
                 step="0.1"
                 min="0.1"
+                aria-invalid={room.dimensions.width <= 0}
                 value={width}
                 onChange={(e) => handleDimensionChange('width', e.target.value)}
               />
@@ -103,12 +100,14 @@ export default function RoomEditPanel({
                 type="number"
                 step="0.1"
                 min="0.1"
+                aria-invalid={room.dimensions.length <= 0}
                 value={length}
                 onChange={(e) => handleDimensionChange('length', e.target.value)}
               />
               <span className="unit">m</span>
             </div>
           </div>
+          {(room.dimensions.width <= 0 || room.dimensions.length <= 0) && <p role="alert" className="hint">Enter both dimensions before continuing.</p>}
         </div>
 
         {/* Calculated Area */}

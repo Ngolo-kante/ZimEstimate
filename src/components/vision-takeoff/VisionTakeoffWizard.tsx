@@ -134,6 +134,7 @@ export default function VisionTakeoffWizard() {
             walls={state.editedWalls}
             imageUrl={state.previewUrl}
             confidence={wizard.confidence}
+            readFromLabels={wizard.readFromLabels}
             totalArea={wizard.totalArea}
             onRoomUpdate={wizard.updateRoom}
             onRoomRemove={wizard.removeRoom}
