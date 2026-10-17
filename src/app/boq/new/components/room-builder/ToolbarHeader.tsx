@@ -41,6 +41,7 @@ interface ToolbarHeaderProps {
     isOverTarget: boolean;
     isUnderTarget: boolean;
     onAutoFit: () => void;
+    isUploadedPlan?: boolean;
 }
 
 export default function ToolbarHeader({
@@ -67,6 +68,7 @@ export default function ToolbarHeader({
     isOverTarget,
     isUnderTarget,
     onAutoFit,
+    isUploadedPlan = false,
 }: ToolbarHeaderProps) {
     const btnStyle = (enabled: boolean): React.CSSProperties => ({
         padding: '6px',
@@ -228,12 +230,12 @@ export default function ToolbarHeader({
                 display: 'flex',
                 alignItems: 'center',
                 gap: isMobile ? '8px' : '16px',
-                background: isOverTarget ? '#fef2f2' : isUnderTarget ? '#fffbeb' : '#f0fdf4',
+                background: isUploadedPlan ? '#eff6ff' : isOverTarget ? '#fef2f2' : isUnderTarget ? '#fffbeb' : '#f0fdf4',
                 padding: isMobile ? '6px 10px' : '8px 16px',
                 borderRadius: '8px',
-                border: `1px solid ${isOverTarget ? '#fecaca' : isUnderTarget ? '#fde68a' : '#bbf7d0'}`,
+                border: `1px solid ${isUploadedPlan ? '#bfdbfe' : isOverTarget ? '#fecaca' : isUnderTarget ? '#fde68a' : '#bbf7d0'}`,
             }}>
-                {isOverTarget ? (
+                {isUploadedPlan ? <CheckCircle size={isMobile ? 16 : 18} color="#2563eb" /> : isOverTarget ? (
                     <Warning size={isMobile ? 16 : 18} color="#dc2626" weight="fill" />
                 ) : isUnderTarget ? (
                     <Warning size={isMobile ? 16 : 18} color="#d97706" weight="fill" />
@@ -242,19 +244,19 @@ export default function ToolbarHeader({
                 )}
                 <div>
                     <div style={{ fontSize: isMobile ? '10px' : '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>
-                        Target: {targetFloorArea}m²
+                        {isUploadedPlan ? 'Original scan' : 'Target'}: {targetFloorArea}m²
                     </div>
                     <div style={{
                         fontSize: isMobile ? '12px' : '13px',
                         fontWeight: 700,
-                        color: isOverTarget ? '#dc2626' : isUnderTarget ? '#d97706' : '#16a34a',
+                        color: isUploadedPlan ? '#2563eb' : isOverTarget ? '#dc2626' : isUnderTarget ? '#d97706' : '#16a34a',
                     }}>
-                        {isOverTarget ? `${Math.abs(areaDiff).toFixed(1)}m² over` :
+                        {isUploadedPlan ? 'Check edited rooms against the drawing' : isOverTarget ? `${Math.abs(areaDiff).toFixed(1)}m² over` :
                             isUnderTarget ? `${areaDiff.toFixed(1)}m² remaining` :
                                 'Target met!'}
                     </div>
                 </div>
-                {isUnderTarget && (
+                {isUnderTarget && !isUploadedPlan && (
                     <button
                         onClick={onAutoFit}
                         style={{

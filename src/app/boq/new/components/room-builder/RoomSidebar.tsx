@@ -4,7 +4,6 @@ import {
     Minus,
     Door,
     FrameCorners,
-    FloppyDisk,
     Trash,
     X,
     Toilet,
@@ -31,6 +30,7 @@ interface RoomSidebarProps {
     onRemoveRoom: () => void;
     onAddEnSuite: (typeKey: string) => void;
     onRemoveEnSuite: (roomId: string) => void;
+    fromUpload?: boolean;
 }
 
 export default function RoomSidebar({
@@ -43,6 +43,7 @@ export default function RoomSidebar({
     onRemoveRoom,
     onAddEnSuite,
     onRemoveEnSuite,
+    fromUpload = false,
 }: RoomSidebarProps) {
     const [showEnSuitePicker, setShowEnSuitePicker] = useState(false);
 
@@ -314,7 +315,8 @@ export default function RoomSidebar({
                         </div>
                     </div>
 
-                    {/* Window Count */}
+                    {fromUpload && <p style={{ margin: '0 0 20px', padding: '10px 12px', borderRadius: 8, background: '#eff6ff', color: '#17406d', fontSize: 12, lineHeight: 1.45 }}>Door and window totals from the drawing are edited in the uploaded-plan review. They are not assigned to individual rooms by the scan.</p>}
+                    {!fromUpload && <>{/* Window Count */}
                     <div style={{ marginBottom: '24px' }}>
                         <label style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>
                             Window Count:
@@ -415,27 +417,8 @@ export default function RoomSidebar({
                         })()}
                     </div>
 
-                    <button
-                        style={{
-                            width: '100%',
-                            padding: '12px',
-                            background: '#1f2937',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '6px',
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            marginTop: 'auto',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                        }}
-                    >
-                        <FloppyDisk size={18} />
-                        SAVE CHANGES
-                    </button>
+                    </>}
+                    <p style={{ marginTop: 'auto', fontSize: 11, color: '#64748b' }}>Room changes are kept as you edit. Continue to scope when finished.</p>
                 </div>
             ) : (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '14px', padding: '40px', textAlign: 'center' }}>

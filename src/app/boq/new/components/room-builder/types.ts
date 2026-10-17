@@ -60,6 +60,9 @@ export interface InteractiveRoomBuilderProps {
      * at default sizes and would overwrite real measured dimensions.
      */
     initialRooms?: RoomInstance[];
+    /** Session-only drawing reference for rooms imported from an upload. */
+    uploadedPlan?: { url: string; width: number; height: number } | null;
+    fromUpload?: boolean;
     targetFloorArea: number;
     onContinue: (rooms: RoomInstance[], totals: { area: number; walls: number; bricks: number }) => void;
     onBack: () => void;

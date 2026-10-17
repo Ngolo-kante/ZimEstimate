@@ -97,6 +97,15 @@ describe('reading a plan into the wizard', () => {
     expect(rooms[0].x).toBe(8 * 40); // 8 metres at PIXELS_PER_METER
   });
 
+  it('keeps the drawing aspect ratio and imported room positions in the same canvas space', () => {
+    const mapped = planToWizardRooms(analysis([
+      room({ name: 'Lounge', dimensions: { width: 4, length: 4 }, position: { x: 50, y: 25, width: 25, height: 25 } }),
+    ]));
+    expect(mapped.planCanvasSize.height / mapped.planCanvasSize.width).toBeCloseTo(1.4, 2);
+    expect(mapped.rooms[0].x).toBe(mapped.planCanvasSize.width * 0.5);
+    expect(mapped.rooms[0].y).toBe(mapped.planCanvasSize.height * 0.25);
+  });
+
   it('survives a plan whose rooms carry no usable positions', () => {
     const { rooms, totalArea } = planToWizardRooms(
       analysis([room({ name: 'Lounge', position: { x: 0, y: 0, width: 0, height: 0 } })]),

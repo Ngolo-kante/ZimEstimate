@@ -19,6 +19,7 @@ const PLAN_MAX_BYTES = 10 * 1024 * 1024;
 
 interface BuildingDesignSectionProps {
   onLaunchRoomBuilder: () => void;
+  onPlanPreviewChange: (image: Blob | null, canvasSize: { width: number; height: number }) => void;
 }
 
 // ── DATA ────────────────────────────────────────────────────────────────────
@@ -148,7 +149,7 @@ const Stepper = ({
 
 // ── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
-export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingDesignSectionProps) {
+export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPreviewChange }: BuildingDesignSectionProps) {
   const [isRoomMenuOpen, setIsRoomMenuOpen] = useState(false);
 
   const {
@@ -230,7 +231,10 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
 
     setPlanStatus('reading');
     try {
-      const mapped = planToWizardRooms(await analyzePlanFile(file));
+      let previewImage: Blob | null = file.type === 'application/pdf' ? null : file;
+      const mapped = planToWizardRooms(await analyzePlanFile(file, {
+        onPreviewImage: (image) => { previewImage = image; },
+      }));
 
       if (mapped.rooms.length === 0 || mapped.totalArea <= 0) {
         setPlanError('No rooms could be measured on that drawing. Try a clearer copy, or use the room builder.');
@@ -245,6 +249,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder }: BuildingD
       updateProjectDetails({ floorPlanSize: String(mapped.totalArea) });
       setTotalDoors(mapped.doors);
       setTotalWindows(mapped.windows);
+      onPlanPreviewChange(previewImage, mapped.planCanvasSize);
 
       captureProductEvent('ai_scan_used', { tool: 'plan_upload', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'success', rooms: mapped.rooms.length });
       setPlanSummary({

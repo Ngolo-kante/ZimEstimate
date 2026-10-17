@@ -33,7 +33,7 @@ const KonvaCanvas = dynamic(() => import('./KonvaCanvas'), {
     ),
 });
 
-export function InteractiveRoomBuilder({ roomCounts, initialRooms, targetFloorArea, onContinue, onBack }: InteractiveRoomBuilderProps) {
+export function InteractiveRoomBuilder({ roomCounts, initialRooms, uploadedPlan, fromUpload = false, targetFloorArea, onContinue, onBack }: InteractiveRoomBuilderProps) {
     const [isMobile, setIsMobile] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [showRoomPicker, setShowRoomPicker] = useState(false);
@@ -216,6 +216,7 @@ export function InteractiveRoomBuilder({ roomCounts, initialRooms, targetFloorAr
                 isOverTarget={isOverTarget}
                 isUnderTarget={isUnderTarget}
                 onAutoFit={autoAdjustRooms}
+                isUploadedPlan={fromUpload}
             />
 
             <div style={{
@@ -229,6 +230,7 @@ export function InteractiveRoomBuilder({ roomCounts, initialRooms, targetFloorAr
                 {/* Canvas Area */}
                 <div style={{
                     flex: isMobile && sidebarOpen ? '0 0 auto' : 1,
+                    minWidth: 0,
                     display: isMobile && sidebarOpen ? 'none' : 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -243,8 +245,10 @@ export function InteractiveRoomBuilder({ roomCounts, initialRooms, targetFloorAr
                         onAddRoom={handleAddRoom}
                     />
 
-                    {/* Konva Canvas (desktop) / Mobile grid fallback */}
-                    {isMobile ? (
+                    {uploadedPlan && <p style={{ alignSelf: 'stretch', margin: '8px 0', color: '#475569', fontSize: 12 }}>Imported rooms are shown over your drawing for comparison. Their placement is approximate; confirm dimensions printed on the plan before costing.</p>}
+                    {fromUpload && !uploadedPlan && <p style={{ alignSelf: 'stretch', margin: '8px 0', color: '#475569', fontSize: 12 }}>The uploaded drawing preview is available only during this session. Re-upload it to compare room placement with the original.</p>}
+                    {/* Uploaded plans use the same drawing overlay on every screen. */}
+                    {isMobile && !uploadedPlan ? (
                         <MobileRoomGrid
                             rooms={rooms}
                             selectedRoomId={selectedRoomId}
@@ -254,6 +258,7 @@ export function InteractiveRoomBuilder({ roomCounts, initialRooms, targetFloorAr
                     ) : (
                         <KonvaCanvas
                             rooms={rooms}
+                            uploadedPlan={uploadedPlan}
                             selectedRoomId={selectedRoomId}
                             roomCollisions={roomCollisions}
                             zoom={zoom}
@@ -282,6 +287,7 @@ export function InteractiveRoomBuilder({ roomCounts, initialRooms, targetFloorAr
                     onRemoveRoom={removeSelectedRoom}
                     onAddEnSuite={addEnSuiteRoom}
                     onRemoveEnSuite={handleRemoveEnSuite}
+                    fromUpload={fromUpload}
                 />
             </div>
 
@@ -292,6 +298,7 @@ export function InteractiveRoomBuilder({ roomCounts, initialRooms, targetFloorAr
                 isMobile={isMobile}
                 onContinue={onContinue}
                 rooms={rooms}
+                fromUpload={fromUpload}
             />
 
             {/* Help Modal */}

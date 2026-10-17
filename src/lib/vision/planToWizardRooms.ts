@@ -66,6 +66,8 @@ function planExtentMetres(rooms: DetectedRoom[]): { width: number; height: numbe
 
 export interface MappedPlan {
   rooms: RoomInstance[];
+  /** Canvas size matching the drawing's aspect ratio; positions are approximate. */
+  planCanvasSize: { width: number; height: number };
   /** Summed from the room dimensions, not from the model's own total. */
   totalArea: number;
   doors: number;
@@ -75,6 +77,11 @@ export interface MappedPlan {
 
 export function planToWizardRooms(result: VisionAnalysisResult): MappedPlan {
   const extent = planExtentMetres(result.rooms);
+  const canvasWidth = extent.width * PIXELS_PER_METER;
+  const aspect = result.imageWidth > 0 && result.imageHeight > 0
+    ? result.imageHeight / result.imageWidth
+    : extent.height / extent.width;
+  const canvasHeight = canvasWidth * aspect;
 
   const rooms: RoomInstance[] = result.rooms.map((room, index) => {
     const type = roomTypeFromName(room.name);
@@ -96,8 +103,8 @@ export function planToWizardRooms(result: VisionAnalysisResult): MappedPlan {
       // one door, and the real totals are carried separately.
       doors: 1,
       windows: 1,
-      x: Math.round((room.position.x / 100) * extent.width * PIXELS_PER_METER),
-      y: Math.round((room.position.y / 100) * extent.height * PIXELS_PER_METER),
+      x: Math.round((room.position.x / 100) * canvasWidth),
+      y: Math.round((room.position.y / 100) * canvasHeight),
       materialId: 'brick-common',
     };
   });
@@ -109,6 +116,7 @@ export function planToWizardRooms(result: VisionAnalysisResult): MappedPlan {
 
   return {
     rooms,
+    planCanvasSize: { width: Math.round(canvasWidth), height: Math.round(canvasHeight) },
     totalArea: round1(totalArea),
     doors: result.doors ?? 0,
     windows: result.windows ?? 0,

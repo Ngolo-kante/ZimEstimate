@@ -23,7 +23,6 @@ import BoreholeBudgetExplorer from '@/components/quick-projects/BoreholeBudgetEx
 import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 import CostDonut, { COST_COLORS } from '@/components/ui/CostDonut';
 import RoofProfileIcon from '@/components/ui/RoofProfileIcon';
-import RoofCoveringGuide from '@/components/ui/RoofCoveringGuide';
 import { LABOR_STAGES, LABOR_SUBSTAGES, MAX_LABOR_PERCENTAGE, STAGE_LABOR_PERCENTAGES, type LaborRates } from '@/lib/calculations/laborSubstages';
 import { COUNCIL_TARIFF, councilFeesTotal } from '@/lib/projectFees';
 import { DEFAULT_ROOF_COVERING, ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
@@ -689,7 +688,6 @@ export default function QuickBudgetPage() {
                   </button>
                 ))}
               </div>
-              <RoofCoveringGuide />
             </div>
 
             <div className="panel-card">

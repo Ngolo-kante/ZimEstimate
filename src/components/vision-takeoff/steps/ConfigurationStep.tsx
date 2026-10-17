@@ -3,7 +3,6 @@
 import Card from '@/components/ui/Card';
 import { ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
 import RoofProfileIcon from '@/components/ui/RoofProfileIcon';
-import RoofCoveringGuide from '@/components/ui/RoofCoveringGuide';
 import { LABOR_STAGES, MAX_LABOR_PERCENTAGE, STAGE_LABOR_PERCENTAGES, stageLaborPercentage } from '@/lib/calculations/laborSubstages';
 import {
   ArrowLeft,
@@ -248,7 +247,6 @@ export default function ConfigurationStep({
               </button>
             ))}
           </div>
-          <RoofCoveringGuide />
           {config.roofCovering === 'concrete_tile' && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">Concrete tiles need a roof structure designed for their weight. Confirm timber sizes, spacing, fixings and ridge pieces with a local roof designer and supplier.</p>}
         </Card>}
 

@@ -7,7 +7,6 @@ import { BRICK_INFO, CEMENT_INFO, type BrickType, type CementType } from '@/lib/
 import type { FinishLevel } from '@/lib/calculations';
 import { ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
 import RoofProfileIcon from '@/components/ui/RoofProfileIcon';
-import RoofCoveringGuide from '@/components/ui/RoofCoveringGuide';
 import { useBoqWizardStore } from '@/store/boqWizardStore';
 
 const BRICK_OPTIONS = Object.entries(BRICK_INFO).map(([key, val]) => ({
@@ -136,7 +135,6 @@ export default function MaterialsSection() {
             </button>
           ))}
         </div>
-        <RoofCoveringGuide />
         {projectDetails.roofCovering === 'concrete_tile' && <p className="rounded-lg bg-amber-50 p-3 text-xs text-amber-900">Concrete tiles are heavier than sheets. The frame is a preliminary allowance; have a roof designer confirm timber sizes, spacing, pitch and fixings. Fixings and ridge pieces need a local quote.</p>}
         <p className="text-xs text-slate-500">Roof shape, pitch and sheet lengths are estimated from floor area; verify them against the roof plan and supplier quote.</p>
       </div>

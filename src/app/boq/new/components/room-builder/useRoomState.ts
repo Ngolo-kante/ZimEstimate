@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
     RoomInstance,
     ROOM_TYPES,
@@ -22,6 +22,7 @@ export function useRoomState({ roomCounts, initialRooms, targetFloorArea, isMobi
     const [rooms, setRooms] = useState<RoomInstance[]>([]);
     const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
     const [loadedFromStorage, setLoadedFromStorage] = useState(false);
+    const initializedRef = useRef(false);
 
     // History state
     const [past, setPast] = useState<RoomInstance[][]>([]);
@@ -286,8 +287,17 @@ export function useRoomState({ roomCounts, initialRooms, targetFloorArea, isMobi
         }
     }, [rooms, targetFloorArea]);
 
-    // Load from localStorage on mount
+    // Imported or previously confirmed wizard rooms are authoritative. A
+    // separate room-builder draft may have the same area but belong to a
+    // different plan, so it must not replace these rooms on open.
     useEffect(() => {
+        if (initializedRef.current) return;
+        initializedRef.current = true;
+        if (initialRooms && initialRooms.length > 0) {
+            setRooms(initialRooms);
+            setSelectedRoomId(initialRooms[0].id);
+            return;
+        }
         try {
             const saved = localStorage.getItem('zimestimate_room_builder');
             if (saved) {
@@ -313,17 +323,6 @@ export function useRoomState({ roomCounts, initialRooms, targetFloorArea, isMobi
                 }
             }
         } catch {}
-
-        /* Rooms that already exist win over roomCounts. An uploaded plan
-           arrives with measured dimensions and real labels; regenerating from
-           counts would replace those with type defaults and quietly change the
-           estimate. This is also what makes reopening the builder show the
-           plan you already drew instead of an empty canvas. */
-        if (rooms.length === 0 && initialRooms && initialRooms.length > 0) {
-            setRooms(initialRooms);
-            setSelectedRoomId(initialRooms[0].id);
-            return;
-        }
 
         // Initialize from roomCounts
         if (rooms.length === 0) {

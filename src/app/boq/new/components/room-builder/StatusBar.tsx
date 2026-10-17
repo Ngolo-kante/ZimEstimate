@@ -8,9 +8,10 @@ interface StatusBarProps {
     isMobile: boolean;
     onContinue: (rooms: RoomInstance[], totals: { area: number; walls: number; bricks: number }) => void;
     rooms: RoomInstance[];
+    fromUpload?: boolean;
 }
 
-export default function StatusBar({ totals, isOverTarget, isMobile, onContinue, rooms }: StatusBarProps) {
+export default function StatusBar({ totals, isOverTarget, isMobile, onContinue, rooms, fromUpload = false }: StatusBarProps) {
     return (
         <div style={{
             background: '#fff',
@@ -32,21 +33,21 @@ export default function StatusBar({ totals, isOverTarget, isMobile, onContinue, 
                     <div style={{
                         fontSize: isMobile ? '16px' : '18px',
                         fontWeight: 700,
-                        color: isOverTarget ? '#dc2626' : '#10b981',
+                        color: fromUpload ? '#2563eb' : isOverTarget ? '#dc2626' : '#10b981',
                     }}>
                         {totals.area.toFixed(1)}m²
                     </div>
                 </div>
-                {!isMobile && (
+                {!isMobile && !fromUpload && (
                     <div>
                         <div style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Wall Area</div>
                         <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>{totals.walls.toFixed(1)}m²</div>
                     </div>
                 )}
-                <div>
+                {!fromUpload && <div>
                     <div style={{ fontSize: isMobile ? '10px' : '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Brick Count</div>
                     <div style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: 700, color: '#10b981' }}>~{Math.ceil(totals.bricks).toLocaleString()}</div>
-                </div>
+                </div>}
             </div>
 
             <button

@@ -16,6 +16,7 @@ interface KonvaRoomProps {
     onDragMove: (id: string, x: number, y: number) => void;
     onWallClick: (roomId: string, side: 'top' | 'right' | 'bottom' | 'left') => void;
     transformerRef: React.RefObject<Konva.Transformer | null>;
+    overDrawing?: boolean;
 }
 
 export default function KonvaRoom({
@@ -30,6 +31,7 @@ export default function KonvaRoom({
     onDragMove,
     onWallClick,
     transformerRef,
+    overDrawing = false,
 }: KonvaRoomProps) {
     const groupRef = useRef<Konva.Group>(null);
     const roomColors = getRoomTypeColor(room.type);
@@ -105,6 +107,7 @@ export default function KonvaRoom({
                 width={widthPx}
                 height={lengthPx}
                 fill={fillColor}
+                opacity={overDrawing ? 0.34 : 1}
                 stroke={strokeWidth > 0 ? strokeColor : undefined}
                 strokeWidth={strokeWidth}
                 cornerRadius={2}

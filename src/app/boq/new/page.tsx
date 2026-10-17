@@ -680,6 +680,23 @@ function BoqNewPageContent() {
   ]);
 
   const baselineRef = useRef<string | null>(null);
+  const planPreviewUrlRef = useRef<string | null>(null);
+  const [planPreview, setPlanPreview] = useState<{ url: string; width: number; height: number } | null>(null);
+  useEffect(() => () => {
+    if (planPreviewUrlRef.current) URL.revokeObjectURL(planPreviewUrlRef.current);
+  }, []);
+
+  const handlePlanPreviewChange = (image: Blob | null, canvasSize: { width: number; height: number }) => {
+    if (planPreviewUrlRef.current) URL.revokeObjectURL(planPreviewUrlRef.current);
+    if (!image) {
+      planPreviewUrlRef.current = null;
+      setPlanPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(image);
+    planPreviewUrlRef.current = url;
+    setPlanPreview({ url, ...canvasSize });
+  };
 
   useEffect(() => {
     if (!project?.id) {
@@ -708,13 +725,14 @@ function BoqNewPageContent() {
     totals: { area: number; walls: number; bricks: number }
   ) => {
     setDetailedRooms(rooms);
-    setGeometryMode('detailed');
-
-    const windowCount = rooms.reduce((sum, room) => sum + room.windows, 0);
-    const doorCount = rooms.reduce((sum, room) => sum + room.doors, 0);
-
-    setTotalWindows(windowCount);
-    setTotalDoors(doorCount);
+    // The uploaded drawing remains the source after room corrections. Its
+    // detected opening totals are separate from the builder's per-room defaults,
+    // so summing those defaults would silently replace real scan values.
+    if (geometryMode !== 'upload') {
+      setGeometryMode('detailed');
+      setTotalWindows(rooms.reduce((sum, room) => sum + room.windows, 0));
+      setTotalDoors(rooms.reduce((sum, room) => sum + room.doors, 0));
+    }
     updateProjectDetails({ floorPlanSize: String(totals.area.toFixed(1)) });
     setShowInteractiveBuilder(false);
   };
@@ -930,7 +948,7 @@ function BoqNewPageContent() {
                     )}
 
                     {currentStep === 2 && (
-                      <BuildingDesignSection onLaunchRoomBuilder={() => setShowInteractiveBuilder(true)} />
+                      <BuildingDesignSection onLaunchRoomBuilder={() => setShowInteractiveBuilder(true)} onPlanPreviewChange={handlePlanPreviewChange} />
                     )}
 
                     {currentStep === 3 && (
@@ -1046,7 +1064,7 @@ function BoqNewPageContent() {
             <div className="relative z-[210] flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
               <div>
                 <h2 className="font-semibold text-slate-900">Interactive Floor Plan</h2>
-                <p className="text-xs text-slate-500">Draw rooms to calculate derived area and openings.</p>
+                <p className="text-xs text-slate-500">{geometryMode === 'upload' ? 'Correct imported rooms; the drawing’s overall door and window counts stay intact.' : 'Draw rooms to calculate derived area and openings.'}</p>
               </div>
               <button
                 type="button"
@@ -1067,6 +1085,8 @@ function BoqNewPageContent() {
                    the summary and nothing on the canvas, and reopening the
                    builder lost a drawing you had already made. */
                 initialRooms={detailedRooms}
+                uploadedPlan={geometryMode === 'upload' ? planPreview : null}
+                fromUpload={geometryMode === 'upload'}
                 targetFloorArea={Number(projectDetails.floorPlanSize) || 0}
                 onContinue={handleInteractiveBuilderContinue}
                 onBack={() => setShowInteractiveBuilder(false)}

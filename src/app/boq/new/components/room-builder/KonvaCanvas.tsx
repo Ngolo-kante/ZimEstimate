@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, useState, useEffect } from 'react';
-import { Stage, Layer, Transformer } from 'react-konva';
+import { Stage, Layer, Transformer, Image as KonvaImage } from 'react-konva';
 import Konva from 'konva';
 import KonvaGridLayer from './KonvaGridLayer';
 import KonvaAlignmentGuides from './KonvaAlignmentGuides';
@@ -8,6 +8,7 @@ import { RoomInstance } from './types';
 
 interface KonvaCanvasProps {
     rooms: RoomInstance[];
+    uploadedPlan?: { url: string; width: number; height: number } | null;
     selectedRoomId: string | null;
     roomCollisions: { [key: string]: boolean };
     zoom: number;
@@ -28,6 +29,7 @@ const CANVAS_HEIGHT = 600;
 
 export default function KonvaCanvas({
     rooms,
+    uploadedPlan,
     selectedRoomId,
     roomCollisions,
     zoom,
@@ -46,7 +48,22 @@ export default function KonvaCanvas({
     const transformerRef = useRef<Konva.Transformer>(null);
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [containerSize, setContainerSize] = useState({ width: CANVAS_WIDTH, height: CANVAS_HEIGHT });
+    const [planImage, setPlanImage] = useState<{ url: string; image: HTMLImageElement } | null>(null);
+    const [showDrawing, setShowDrawing] = useState(true);
     const containerRef = useRef<HTMLDivElement>(null);
+    const fit = uploadedPlan
+        ? Math.min(1, containerSize.width / uploadedPlan.width, containerSize.height / uploadedPlan.height)
+        : 1;
+    const canvasScale = zoom * fit;
+
+    useEffect(() => {
+        if (!uploadedPlan) return;
+        const image = new window.Image();
+        let cancelled = false;
+        image.onload = () => { if (!cancelled) setPlanImage({ url: uploadedPlan.url, image }); };
+        image.src = uploadedPlan.url;
+        return () => { cancelled = true; };
+    }, [uploadedPlan]);
 
     // Resize observer
     useEffect(() => {
@@ -129,6 +146,8 @@ export default function KonvaCanvas({
             ref={containerRef}
             style={{
                 flex: 1,
+                width: '100%',
+                minWidth: 0,
                 position: 'relative',
                 overflow: 'hidden',
                 background: '#f0f9ff',
@@ -141,18 +160,21 @@ export default function KonvaCanvas({
                 ref={stageRef}
                 width={containerSize.width}
                 height={containerSize.height}
-                scaleX={zoom}
-                scaleY={zoom}
+                scaleX={canvasScale}
+                scaleY={canvasScale}
                 onClick={handleStageClick}
                 onTap={handleStageClick}
                 onWheel={handleWheel}
             >
-                {/* Grid layer */}
-                <KonvaGridLayer
-                    width={containerSize.width / zoom + 100}
-                    height={containerSize.height / zoom + 100}
+                {uploadedPlan && planImage?.url === uploadedPlan.url && showDrawing && <Layer listening={false}>
+                    <KonvaImage image={planImage.image} width={uploadedPlan.width} height={uploadedPlan.height} opacity={0.68} />
+                </Layer>}
+                {/* A grid helps sketches; the uploaded drawing is the reference for imports. */}
+                {!uploadedPlan && <KonvaGridLayer
+                    width={containerSize.width / canvasScale + 100}
+                    height={containerSize.height / canvasScale + 100}
                     gridSize={20}
-                />
+                />}
 
                 {/* Rooms layer */}
                 <Layer>
@@ -160,6 +182,7 @@ export default function KonvaCanvas({
                         <KonvaRoom
                             key={room.id}
                             room={room}
+                            overDrawing={Boolean(uploadedPlan && showDrawing)}
                             isSelected={room.id === selectedRoomId}
                             isDragging={room.id === draggingId}
                             hasCollision={roomCollisions[room.id] || false}
@@ -202,10 +225,12 @@ export default function KonvaCanvas({
                 <KonvaAlignmentGuides
                     horizontal={alignmentGuides.horizontal}
                     vertical={alignmentGuides.vertical}
-                    canvasWidth={containerSize.width / zoom}
-                    canvasHeight={containerSize.height / zoom}
+                    canvasWidth={containerSize.width / canvasScale}
+                    canvasHeight={containerSize.height / canvasScale}
                 />
             </Stage>
+
+            {uploadedPlan && <button type="button" onClick={() => setShowDrawing((visible) => !visible)} style={{ position: 'absolute', top: 12, left: 12, zIndex: 6, padding: '7px 10px', border: '1px solid #bfdbfe', borderRadius: 7, background: '#fff', color: '#17406d', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{showDrawing ? 'Hide drawing' : 'Show drawing'}</button>}
 
             {/* North indicator overlay */}
             <div style={{
