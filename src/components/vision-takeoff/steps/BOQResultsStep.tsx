@@ -527,7 +527,7 @@ export default function BOQResultsStep({
                       const isEnablement = item.calculationNote.startsWith(ENABLEMENT_ITEM_TAG);
                       return (
                       <tr key={item.id} className={`${item.isEdited ? 'edited' : ''} ${isEnablement ? 'enablement' : ''}`.trim()}>
-                        <td>
+                        <td className="col-material">
                           <div className="material-cell">
                             {editingState.itemId === item.id && editingState.field === 'materialName' ? (
                               <div className="edit-cell wide">
@@ -554,7 +554,7 @@ export default function BOQResultsStep({
                             )}
                           </div>
                         </td>
-                        <td className="col-qty">
+                        <td className="col-qty" data-label="Quantity">
                           {editingState.itemId === item.id && editingState.field === 'quantity' ? (
                             <div className="edit-cell">
                               <input
@@ -564,24 +564,26 @@ export default function BOQResultsStep({
                                 onKeyDown={handleKeyDown}
                                 autoFocus
                               />
-                              <button onClick={saveEditing} className="edit-action save">
+                              <button onClick={saveEditing} className="edit-action save" aria-label={`Save quantity for ${item.materialName}`}>
                                 <Check size={14} weight="bold" />
                               </button>
-                              <button onClick={cancelEditing} className="edit-action cancel">
+                              <button onClick={cancelEditing} className="edit-action cancel" aria-label="Cancel quantity edit">
                                 <X size={14} weight="bold" />
                               </button>
                             </div>
                           ) : (
-                            <span
+                            <button
+                              type="button"
                               className="editable"
                               onClick={() => startEditing(item.id, 'quantity', item.quantity)}
+                              aria-label={`Edit quantity for ${item.materialName}`}
                             >
                               {item.quantity.toLocaleString()}
                               <PencilSimple size={12} className="edit-icon" />
-                            </span>
+                            </button>
                           )}
                         </td>
-                        <td className="col-unit">
+                        <td className="col-unit" data-label="Unit">
                           {editingState.itemId === item.id && editingState.field === 'unit' ? (
                             <div className="edit-cell">
                               <input type="text" value={editingState.value} onChange={(e) => setEditingState({ ...editingState, value: e.target.value })} onKeyDown={handleKeyDown} autoFocus />
@@ -594,7 +596,7 @@ export default function BOQResultsStep({
                             </button>
                           )}
                         </td>
-                        <td className="col-price">
+                        <td className="col-price" data-label="Unit price">
                           {editingState.itemId === item.id && editingState.field === 'unitPriceUsd' ? (
                             <div className="edit-cell">
                               <input
@@ -605,27 +607,29 @@ export default function BOQResultsStep({
                                 onKeyDown={handleKeyDown}
                                 autoFocus
                               />
-                              <button onClick={saveEditing} className="edit-action save">
+                              <button onClick={saveEditing} className="edit-action save" aria-label={`Save unit price for ${item.materialName}`}>
                                 <Check size={14} weight="bold" />
                               </button>
-                              <button onClick={cancelEditing} className="edit-action cancel">
+                              <button onClick={cancelEditing} className="edit-action cancel" aria-label="Cancel unit price edit">
                                 <X size={14} weight="bold" />
                               </button>
                             </div>
                           ) : (
                             <div className="price-cell">
-                              <span
+                              <button
+                                type="button"
                                 className="editable"
                                 onClick={() => startEditing(item.id, 'unitPriceUsd', item.unitPriceUsd)}
+                                aria-label={`Edit unit price for ${item.materialName}`}
                               >
                                 {formatPrice(item.unitPriceUsd, item.unitPriceZwg)}
                                 <PencilSimple size={12} className="edit-icon" />
-                              </span>
+                              </button>
                               <span className="price-basis">{priceBasis(item)}</span>
                             </div>
                           )}
                         </td>
-                        <td className="col-total">
+                        <td className="col-total" data-label="Line total">
                           {formatPrice(item.totalUsd, item.totalZwg)}
                         </td>
                         <td className="col-actions">
@@ -633,6 +637,7 @@ export default function BOQResultsStep({
                             className="remove-btn"
                             onClick={() => onItemRemove(item.id)}
                             title={isEnablement ? 'Remove suggested enablement cost' : 'Remove item'}
+                            aria-label={`Remove ${item.materialName}`}
                           >
                             <Trash size={16} weight="light" />
                           </button>
@@ -1006,6 +1011,12 @@ export default function BOQResultsStep({
           background: rgba(6, 20, 47, 0.04);
         }
 
+        .editable:focus-visible,
+        .remove-btn:focus-visible {
+          outline: 2px solid var(--color-accent);
+          outline-offset: 2px;
+        }
+
         .editable .edit-icon {
           opacity: 0;
           color: var(--color-text-muted);
@@ -1198,6 +1209,70 @@ export default function BOQResultsStep({
             border-top: 1px solid var(--color-border-light);
             width: 100%;
           }
+
+          .table-container { overflow: visible; }
+          .category-section { padding-bottom: 10px; }
+          .category-header { min-height: 52px; }
+          .boq-table, .boq-table tbody { display: block; width: 100%; }
+          .boq-table thead { display: none; }
+          .boq-table tr {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin: 10px;
+            overflow: hidden;
+            border: 1px solid var(--color-border-light);
+            border-left: 3px solid var(--color-accent);
+            border-radius: 11px;
+            background: var(--color-background);
+            box-shadow: 0 2px 8px rgba(6, 20, 47, 0.04);
+          }
+          .boq-table tr.edited { border-left-color: var(--color-warning); }
+          .boq-table tr.enablement { border-left-color: #0284c7; }
+          .boq-table td {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            min-width: 0;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--color-border-light);
+            white-space: normal;
+            text-align: left;
+          }
+          .boq-table td::before {
+            content: attr(data-label);
+            color: var(--color-text-muted);
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+          }
+          .boq-table .col-material {
+            grid-column: 1 / -1;
+            background: rgba(6, 20, 47, 0.025);
+          }
+          .boq-table .col-material::before, .boq-table .col-actions::before { content: none; }
+          .boq-table .col-price { grid-column: 1 / -1; }
+          .boq-table .col-total {
+            justify-content: center;
+            color: var(--color-accent);
+            font-weight: 700;
+            font-size: 1rem;
+            border-bottom: 0;
+          }
+          .boq-table .col-actions {
+            width: auto;
+            align-items: flex-end;
+            justify-content: center;
+            border-bottom: 0;
+          }
+          .boq-table .col-actions .remove-btn { width: 40px; height: 40px; }
+          .boq-table .editable { min-height: 36px; }
+          .boq-table .editable .edit-icon { opacity: 1; }
+          .boq-table .edit-cell { flex-wrap: wrap; }
+          .boq-table .edit-cell input { width: min(120px, 100%); min-height: 38px; }
+          .boq-table .edit-action { width: 36px; height: 36px; }
+          .boq-table .price-basis { line-height: 1.35; }
 
           .footer-actions {
             flex-direction: column;

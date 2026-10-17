@@ -25,6 +25,7 @@ Extract and return the following information in this exact JSON format:
       "y": 15,
       "w": 30,
       "h": 25,
+      "dimensionSource": "printed",
       "wallType": "external"
     }
   ],
@@ -36,11 +37,12 @@ Extract and return the following information in this exact JSON format:
 Rules for extraction:
 1. "name" - Identify room types: Living Room, Bedroom 1/2/3, Kitchen, Bathroom, Toilet, Corridor, Garage, etc.
 2. "width" and "length" - Dimensions in METERS. Prefer printed dimensions or a visible scale. If neither exists, estimate from the plan geometry, keep the rooms proportionally consistent, and lower the confidence score. Never replace a visible dimension with a typical room size.
-3. "x", "y", "w", "h" - Position and size as PERCENTAGE of the image (0-100). This is for overlay rendering.
-4. "wallType" - "external" for perimeter walls, "internal" for partition walls.
-5. "doors" - Count all door symbols/openings.
-6. "windows" - Count all window symbols.
-7. "confidence" - Your confidence in the accuracy (0-100):
+3. "dimensionSource" - For EACH room, use "printed" only when its numerical dimensions are printed on the plan, "scaled" when derived using a visible scale, and "estimated" when inferred from geometry without a scale. Never call an inferred size printed.
+4. "x", "y", "w", "h" - Position and size as PERCENTAGE of the image (0-100). This is for overlay rendering.
+5. "wallType" - "external" for perimeter walls, "internal" for partition walls.
+6. "doors" - Count all door symbols/openings.
+7. "windows" - Count all window symbols.
+8. "confidence" - Your confidence in the accuracy (0-100):
    - 90-100: Clear technical drawing with dimensions marked
    - 70-89: Clear layout but some dimensions estimated
    - 50-69: Blurry or partial plan, significant estimation
@@ -58,6 +60,7 @@ function parseGeminiResponse(text: string): {
     y: number;
     w: number;
     h: number;
+    dimensionSource?: string;
     wallType: 'external' | 'internal';
   }>;
   doors: number;
@@ -218,6 +221,7 @@ export function analysisFromLabels(labelled: LabelledRoom[]): VisionAnalysisResu
       },
       wallType: 'internal',
       isEdited: false,
+      dimensionSource: 'printed',
     };
   });
 
@@ -236,7 +240,7 @@ export function analysisFromLabels(labelled: LabelledRoom[]): VisionAnalysisResu
   };
 }
 
-function toAnalysisResult(text: string): VisionAnalysisResult {
+export function toAnalysisResult(text: string): VisionAnalysisResult {
   const parsed = parseGeminiResponse(text);
 
   if (parsed.error) {
@@ -258,10 +262,10 @@ function toAnalysisResult(text: string): VisionAnalysisResult {
     id: generateId(),
     name: room.name || `Room ${index + 1}`,
     dimensions: {
-      width: room.width || 4,
-      length: room.length || 4,
+      width: Number.isFinite(room.width) && room.width > 0 ? room.width : 0,
+      length: Number.isFinite(room.length) && room.length > 0 ? room.length : 0,
     },
-    area: (room.width || 4) * (room.length || 4),
+    area: (Number.isFinite(room.width) && room.width > 0 ? room.width : 0) * (Number.isFinite(room.length) && room.length > 0 ? room.length : 0),
     position: {
       x: room.x || 10 + index * 15,
       y: room.y || 10 + index * 10,
@@ -270,6 +274,8 @@ function toAnalysisResult(text: string): VisionAnalysisResult {
     },
     wallType: room.wallType || 'internal',
     isEdited: false,
+    dimensionSource: room.dimensionSource === 'printed' || room.dimensionSource === 'scaled' || room.dimensionSource === 'estimated'
+      ? room.dimensionSource : 'unknown',
   }));
 
   // Generate walls from room perimeters

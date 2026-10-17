@@ -218,6 +218,7 @@ export function useVisionTakeoff() {
                 updates.dimensions
                   ? updates.dimensions.width * updates.dimensions.length
                   : room.area,
+              dimensionSource: updates.dimensions ? 'user' : room.dimensionSource,
               isEdited: true,
             }
           : room

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { classifyGeminiError, isUsablePlanResponse } from './gemini-client';
+import { classifyGeminiError, isUsablePlanResponse, toAnalysisResult } from './gemini-client';
+import { dimensionNeedsReview, dimensionSourceLabel } from './dimensionSource';
 
 /**
  * The bug these guard: errors were classified by searching the message for
@@ -53,5 +54,23 @@ describe('accepting a plan reader reply', () => {
     expect(isUsablePlanResponse('{"rooms":[{"name":"Kitchen","width":3.6,"length":4.5}]}')).toBe(true);
     expect(isUsablePlanResponse('{"rooms":[{"name":"Kitchen"}]}')).toBe(false);
     expect(isUsablePlanResponse('{"rooms":[{"name":"Kitchen","width":0,"length":4.5}]}')).toBe(false);
+  });
+
+  it('keeps each room dimension origin visible and treats an omitted origin as unconfirmed', () => {
+    const result = toAnalysisResult(JSON.stringify({ rooms: [
+      { name: 'Kitchen', width: 3.6, length: 4.5, dimensionSource: 'printed' },
+      { name: 'Lounge', width: 5, length: 4, dimensionSource: 'estimated' },
+      { name: 'Bedroom', width: 3, length: 3 },
+    ] }));
+    expect(result.rooms.map((room) => room.dimensionSource)).toEqual(['printed', 'estimated', 'unknown']);
+    expect(dimensionNeedsReview(result.rooms[0].dimensionSource)).toBe(false);
+    expect(dimensionNeedsReview(result.rooms[1].dimensionSource)).toBe(true);
+    expect(dimensionSourceLabel(result.rooms[2].dimensionSource)).toBe('Source unconfirmed');
+  });
+
+  it('does not silently turn a missing measurement into a 4 m room', () => {
+    const reply = '{"rooms":[{"name":"Kitchen","length":4.5}]}';
+    expect(isUsablePlanResponse(reply)).toBe(false);
+    expect(toAnalysisResult(reply).rooms[0].dimensions.width).toBe(0);
   });
 });

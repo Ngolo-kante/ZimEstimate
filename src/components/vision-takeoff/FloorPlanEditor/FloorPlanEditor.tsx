@@ -17,6 +17,7 @@ import {
 } from '@phosphor-icons/react';
 import { DetectedRoom, DetectedWall } from '@/lib/vision/types';
 import { assessPlanReview } from '@/lib/vision/planReview';
+import { dimensionNeedsReview, dimensionSourceLabel } from '@/lib/vision/dimensionSource';
 
 interface FloorPlanEditorProps {
   rooms: DetectedRoom[];
@@ -105,6 +106,7 @@ export default function FloorPlanEditor({
       // than placing a made-up rectangle over the uploaded drawing.
       position: { x: 0, y: 0, width: 0, height: 0 },
       wallType: 'internal', isEdited: true,
+      dimensionSource: 'user',
     });
     setSelectedRoomId(id);
     setNewRoom({ name: '', width: '', length: '' });
@@ -190,6 +192,7 @@ export default function FloorPlanEditor({
           ) : (
             <Card className="rooms-list-card">
               <div className="rooms-list-heading"><h3>Rooms in this estimate</h3><button type="button" className="add-room-button" onClick={() => setAddingRoom((value) => !value)}><Plus size={16} /> Add missing room</button></div>
+              <p className="source-guidance">The scan reports how it got each size. Check against your drawing, especially estimates and unconfirmed readings.</p>
               {addingRoom && <form className="add-room-form" onSubmit={handleAddRoom}>
                 <label>Room name<input type="text" value={newRoom.name} onChange={(event) => setNewRoom((room) => ({ ...room, name: event.target.value }))} placeholder="e.g. Bedroom 3" required /></label>
                 <div className="add-room-dimensions"><label>Width (m)<input type="number" inputMode="decimal" min="0.1" step="0.1" value={newRoom.width} onChange={(event) => setNewRoom((room) => ({ ...room, width: event.target.value }))} required /></label><label>Length (m)<input type="number" inputMode="decimal" min="0.1" step="0.1" value={newRoom.length} onChange={(event) => setNewRoom((room) => ({ ...room, length: event.target.value }))} required /></label></div>
@@ -209,6 +212,9 @@ export default function FloorPlanEditor({
                       {(room.dimensions.width <= 0 || room.dimensions.length <= 0) && <span className="manual-badge">Dimensions needed</span>}
                       <span className="room-dims">
                         {room.dimensions.width.toFixed(1)} x {room.dimensions.length.toFixed(1)}m
+                      </span>
+                      <span className={`source-badge ${dimensionNeedsReview(room.dimensionSource) ? 'needs-review' : ''}`}>
+                        {dimensionSourceLabel(room.dimensionSource)}
                       </span>
                     </div>
                     <span className="room-area">{room.area.toFixed(1)}m²</span>
@@ -260,6 +266,9 @@ export default function FloorPlanEditor({
         .add-room-dimensions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
         .manual-badge { color: #9a5a05; font-size: .68rem; font-weight: 700; }
         .manual-room-note { margin: 0; color: #526985; font-size: .75rem; line-height: 1.4; }
+        .source-guidance { margin: 0 0 12px; color: #526985; font-size: .75rem; line-height: 1.45; }
+        .source-badge { display: inline-block; width: fit-content; border-radius: 5px; padding: 2px 6px; background: #e8f5f0; color: #17624a; font-size: .68rem; font-weight: 700; }
+        .source-badge.needs-review { background: #fff2d6; color: #85510a; }
         .openings-review { margin-top: 16px; padding-top: 14px; border-top: 1px solid #d9e3ef; }
         .openings-review h4 { margin: 0 0 4px; color: #10243d; font-size: .9rem; }
         .openings-review p { margin: 0 0 10px; color: #526985; font-size: .75rem; line-height: 1.4; }

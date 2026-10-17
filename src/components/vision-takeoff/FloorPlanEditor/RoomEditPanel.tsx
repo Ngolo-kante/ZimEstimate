@@ -9,6 +9,7 @@ import {
   Wall,
 } from '@phosphor-icons/react';
 import { DetectedRoom } from '@/lib/vision/types';
+import { dimensionNeedsReview, dimensionSourceLabel } from '@/lib/vision/dimensionSource';
 
 interface RoomEditPanelProps {
   room: DetectedRoom;
@@ -80,6 +81,9 @@ export default function RoomEditPanel({
             <ArrowsOutSimple size={16} weight="light" />
             Dimensions
           </div>
+          <p className={`dimension-source ${dimensionNeedsReview(room.dimensionSource) ? 'needs-review' : ''}`}>
+            {dimensionSourceLabel(room.dimensionSource)}. Compare with the original plan before confirming.
+          </p>
           <div className="dimension-inputs">
             <div className="input-with-unit">
               <input
@@ -225,6 +229,15 @@ export default function RoomEditPanel({
           letter-spacing: 0.05em;
           color: var(--color-text-muted);
         }
+
+        .dimension-source {
+          margin: 0;
+          color: #17624a;
+          font-size: 0.75rem;
+          line-height: 1.4;
+        }
+
+        .dimension-source.needs-review { color: #85510a; }
 
         input {
           padding: var(--spacing-sm) var(--spacing-md);

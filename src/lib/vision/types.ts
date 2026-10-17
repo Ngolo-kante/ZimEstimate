@@ -25,6 +25,8 @@ export interface DetectedRoom {
   };
   wallType: 'external' | 'internal';
   isEdited: boolean;
+  /** Where these dimensions came from; older saved scans may omit this. */
+  dimensionSource?: 'printed' | 'scaled' | 'estimated' | 'unknown' | 'user';
 }
 
 export interface DetectedWall {
