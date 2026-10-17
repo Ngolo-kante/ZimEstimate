@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { DetectedRoom, DetectedWall } from '@/lib/vision/types';
+import { DetectedRoom, DetectedWall, PlanBox } from '@/lib/vision/types';
 
 /**
  * Draws the detected rooms over the plan they were detected from.
@@ -29,6 +29,9 @@ interface FloorPlanCanvasProps {
   showOverlay: boolean;
   showWalls: boolean;
   zoom: number;
+  floorBoundary: PlanBox | null;
+  drawMode: 'room' | 'boundary' | null;
+  onBoxDrawn: (box: PlanBox) => void;
 }
 
 /* One hue, three tints. The previous palette cycled blue, amber, green, pink,
@@ -63,6 +66,9 @@ export default function FloorPlanCanvas({
   showOverlay,
   showWalls,
   zoom,
+  floorBoundary,
+  drawMode,
+  onBoxDrawn,
 }: FloorPlanCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -72,6 +78,8 @@ export default function FloorPlanCanvas({
      so the effect never has to set state synchronously to clear it. */
   const [loaded, setLoaded] = useState<{ url: string; img: HTMLImageElement } | null>(null);
   const [hoveredRoomId, setHoveredRoomId] = useState<string | null>(null);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [draftBox, setDraftBox] = useState<PlanBox | null>(null);
 
   const plan = loaded && loaded.url === imageUrl ? loaded.img : null;
 
@@ -177,6 +185,8 @@ export default function FloorPlanCanvas({
 
       ctx.strokeStyle = isSelected
         ? ACCENT
+        : room.manuallyPlaced
+          ? '#B45309'
         : room.wallType === 'external'
           ? ROOM_STROKE_EXTERNAL
           : ROOM_STROKE;
@@ -251,7 +261,36 @@ export default function FloorPlanCanvas({
         ctx.stroke();
       });
     }
-  }, [rooms, walls, width, height, plan, selectedRoomId, hoveredRoomId, showOverlay, showWalls]);
+
+    if (floorBoundary) {
+      ctx.save();
+      ctx.setLineDash([8, 5]);
+      ctx.strokeStyle = '#15803d';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(floorBoundary.x / 100 * width, floorBoundary.y / 100 * height, floorBoundary.width / 100 * width, floorBoundary.height / 100 * height);
+      ctx.restore();
+    }
+    if (draftBox) {
+      ctx.fillStyle = drawMode === 'boundary' ? 'rgba(21, 128, 61, .12)' : 'rgba(180, 83, 9, .18)';
+      ctx.fillRect(draftBox.x / 100 * width, draftBox.y / 100 * height, draftBox.width / 100 * width, draftBox.height / 100 * height);
+      ctx.strokeStyle = drawMode === 'boundary' ? '#15803d' : '#B45309';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(draftBox.x / 100 * width, draftBox.y / 100 * height, draftBox.width / 100 * width, draftBox.height / 100 * height);
+    }
+  }, [rooms, walls, width, height, plan, selectedRoomId, hoveredRoomId, showOverlay, showWalls, floorBoundary, draftBox, drawMode]);
+
+  const pointerPercent = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return {
+      x: Math.max(0, Math.min(100, (e.clientX - rect.left) / rect.width * 100)),
+      y: Math.max(0, Math.min(100, (e.clientY - rect.top) / rect.height * 100)),
+    };
+  };
+
+  const boxFrom = (start: { x: number; y: number }, end: { x: number; y: number }): PlanBox => ({
+    x: Math.min(start.x, end.x), y: Math.min(start.y, end.y),
+    width: Math.abs(end.x - start.x), height: Math.abs(end.y - start.y),
+  });
 
   /* Hit testing stays in percentage space, so it is unaffected by the aspect
      ratio change. */
@@ -275,13 +314,31 @@ export default function FloorPlanCanvas({
     <div ref={containerRef} className="canvas-wrapper">
       <canvas
         ref={canvasRef}
-        onMouseMove={(e) => setHoveredRoomId(roomAt(e)?.id ?? null)}
+        onPointerDown={(e) => {
+          if (!drawMode) return;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          setDragStart(pointerPercent(e));
+          setDraftBox(null);
+        }}
+        onPointerMove={(e) => {
+          if (drawMode && dragStart) setDraftBox(boxFrom(dragStart, pointerPercent(e)));
+          else if (!drawMode) setHoveredRoomId(roomAt(e)?.id ?? null);
+        }}
+        onPointerUp={(e) => {
+          if (!drawMode || !dragStart) return;
+          const box = boxFrom(dragStart, pointerPercent(e));
+          setDragStart(null);
+          setDraftBox(null);
+          if (box.width >= 2 && box.height >= 2) onBoxDrawn(box);
+        }}
+        onPointerCancel={() => { setDragStart(null); setDraftBox(null); }}
         onMouseLeave={() => setHoveredRoomId(null)}
         onClick={(e) => {
-      const room = roomAt(e);
+          if (drawMode) return;
+          const room = roomAt(e);
           if (room && showOverlay) onRoomSelect(room.id);
         }}
-        style={{ cursor: hoveredRoomId && showOverlay ? 'pointer' : 'default', width: `${zoom * 100}%` }}
+        style={{ cursor: drawMode ? 'crosshair' : hoveredRoomId && showOverlay ? 'pointer' : 'default', width: `${zoom * 100}%`, touchAction: drawMode ? 'none' : 'auto' }}
       />
 
       <style jsx>{`

@@ -1,11 +1,9 @@
 'use client';
 
 import Card from '@/components/ui/Card';
-import PlanReviewCheckpoint from '@/components/boq/PlanReviewCheckpoint';
-import { estimateVisionWallDimensions } from '@/lib/calculations';
-import { isPlanReviewBlocked } from '@/lib/vision/planReview';
 import { ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
 import RoofProfileIcon from '@/components/ui/RoofProfileIcon';
+import RoofCoveringGuide from '@/components/ui/RoofCoveringGuide';
 import { LABOR_STAGES, MAX_LABOR_PERCENTAGE, STAGE_LABOR_PERCENTAGES, stageLaborPercentage } from '@/lib/calculations/laborSubstages';
 import {
   ArrowLeft,
@@ -24,64 +22,28 @@ import {
   BRICK_INFO,
   CEMENT_INFO,
   SCOPE_INFO,
-  type DetectedRoom,
-  type DetectedWall,
 } from '@/lib/vision/types';
 
 interface ConfigurationStepProps {
   config: VisionConfig;
-  totalArea: number;
-  rooms: DetectedRoom[];
-  walls: DetectedWall[];
-  doors: number;
-  windows: number;
-  confidence: number;
-  /** The rooms came from the plan's printed labels, not an AI reading. */
-  readFromLabels?: boolean;
   onUpdate: (config: Partial<VisionConfig>) => void;
-  onUpdateOpenings: (openings: { doors?: number; windows?: number }) => void;
-  onEditPlan: () => void;
   onConfirm: () => void;
   onBack: () => void;
 }
 
 export default function ConfigurationStep({
   config,
-  totalArea,
-  rooms,
-  walls,
-  doors,
-  windows,
-  confidence,
-  readFromLabels = false,
   onUpdate,
-  onUpdateOpenings,
-  onEditPlan,
   onConfirm,
   onBack,
 }: ConfigurationStepProps) {
   const scopes: ProjectScope[] = ['full_house', 'substructure', 'superstructure', 'roofing', 'finishing', 'exterior'];
   const brickTypes: BrickType[] = ['common', 'farm', 'blocks_6inch', 'blocks_8inch', 'face_brick'];
   const cementTypes: CementType[] = ['cement_325', 'cement_425'];
-  const wallAssumptions = estimateVisionWallDimensions(rooms, walls);
   const selectedScopes = Array.isArray(config.scope) ? config.scope : [config.scope];
   const includedScopes: ProjectScope[] = selectedScopes.includes('full_house')
     ? ['substructure', 'superstructure', 'roofing', 'finishing', 'exterior']
     : selectedScopes;
-  const reviewInput = {
-    area: totalArea,
-    rooms: rooms.map((room) => ({ name: room.name, length: room.dimensions.length, width: room.dimensions.width })),
-    doors,
-    windows,
-    externalWallLength: wallAssumptions.perimeter,
-    internalWallLength: wallAssumptions.internalWallLength,
-    noExternalWallsDetected: wallAssumptions.noExternalWallsDetected,
-    confidence,
-    readFromLabels,
-    stages: includedScopes.map((scope) => SCOPE_INFO[scope].name),
-    includeLabor: config.includeLabor,
-  };
-  const planBlocked = isPlanReviewBlocked(reviewInput);
 
   // Helper to check if a scope is selected
   const isScopeSelected = (scope: ProjectScope): boolean => {
@@ -162,7 +124,7 @@ export default function ConfigurationStep({
     <div className="config-step">
       <div className="step-header">
         <h1>Configure Estimate</h1>
-        <p>Select materials and scope for your {totalArea.toFixed(0)}m² floor plan</p>
+        <p>Select materials and scope for your reviewed floor plan</p>
       </div>
 
       <div className="config-sections">
@@ -286,6 +248,7 @@ export default function ConfigurationStep({
               </button>
             ))}
           </div>
+          <RoofCoveringGuide />
           {config.roofCovering === 'concrete_tile' && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">Concrete tiles need a roof structure designed for their weight. Confirm timber sizes, spacing, fixings and ridge pieces with a local roof designer and supplier.</p>}
         </Card>}
 
@@ -353,24 +316,14 @@ export default function ConfigurationStep({
         </Card>}
       </div>
 
-      <div className="review-checkpoint">
-        <PlanReviewCheckpoint
-          input={reviewInput}
-          onDoorsChange={(value) => onUpdateOpenings({ doors: value })}
-          onWindowsChange={(value) => onUpdateOpenings({ windows: value })}
-          onEditRooms={onEditPlan}
-          onEditStages={() => document.getElementById('vision-scope-selection')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-        />
-      </div>
-
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onBack}>
           <ArrowLeft size={18} weight="bold" />
           Back
         </button>
 
-        <button className="btn btn-primary" onClick={onConfirm} disabled={planBlocked} title={planBlocked ? 'Fix the plan summary above first' : undefined}>
-          {planBlocked ? 'Fix the plan first' : 'Numbers look right, generate BOQ'}
+        <button className="btn btn-primary" onClick={onConfirm}>
+          Generate BOQ
           <ArrowRight size={18} weight="bold" />
         </button>
       </div>

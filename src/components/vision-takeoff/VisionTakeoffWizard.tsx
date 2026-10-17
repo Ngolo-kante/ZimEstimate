@@ -6,7 +6,6 @@ import { useVisionTakeoff } from '@/hooks/useVisionTakeoff';
 import { useAuth } from '@/components/providers/AuthProvider';
 import UploadStep from './steps/UploadStep';
 import AnalysisProgress from './steps/AnalysisProgress';
-import ConfidenceWarning from './steps/ConfidenceWarning';
 import FloorPlanEditor from './FloorPlanEditor/FloorPlanEditor';
 import ProjectInfoStep from './steps/ProjectInfoStep';
 import ConfigurationStep from './steps/ConfigurationStep';
@@ -26,7 +25,6 @@ const VISION_STEPS = [
 const VISION_STEP_INDEX = {
   upload: 0,
   analyzing: 0,
-  warning: 1,
   editing: 1,
   project_info: 2,
   config: 3,
@@ -115,23 +113,15 @@ export default function VisionTakeoffWizard() {
           <AnalysisProgress onCancel={wizard.cancelAnalysis} />
         )}
 
-        {/* Low Confidence Warning */}
-        {state.step === 'warning' && (
-          <ConfidenceWarning
-            confidence={wizard.confidence}
-            readFromLabels={wizard.readFromLabels}
-            roomCount={state.editedRooms.length}
-            onRetry={wizard.clearFile}
-            onContinue={wizard.continueFromWarning}
-            onManualEntry={wizard.goToManualEntry}
-          />
-        )}
-
         {/* Floor Plan Editor */}
         {state.step === 'editing' && (
           <FloorPlanEditor
             rooms={state.editedRooms}
             walls={state.editedWalls}
+            floorBoundary={state.floorBoundary}
+            verifiedTotalAreaM2={state.verifiedTotalAreaM2}
+            onFloorBoundaryChange={wizard.setFloorBoundary}
+            onVerifiedTotalAreaChange={wizard.setVerifiedTotalArea}
             imageUrl={state.previewUrl}
             confidence={wizard.confidence}
             readFromLabels={wizard.readFromLabels}
@@ -148,6 +138,14 @@ export default function VisionTakeoffWizard() {
             canRedo={wizard.canRedoPlanEdit}
             planRevision={wizard.planRevision}
             error={state.error}
+            onRescan={wizard.rescanPlan}
+            onCancelRescan={wizard.cancelRescan}
+            rescanCandidate={wizard.rescanCandidate}
+            isRescanning={wizard.isRescanning}
+            rescanError={wizard.rescanError}
+            onUseRescan={wizard.useRescanCandidate}
+            onKeepCurrent={wizard.keepCurrentScan}
+            onManualEntry={wizard.goToManualEntry}
             onConfirm={wizard.confirmDimensions}
             onBack={wizard.clearFile}
           />
@@ -167,16 +165,7 @@ export default function VisionTakeoffWizard() {
         {state.step === 'config' && (
           <ConfigurationStep
             config={state.config}
-            totalArea={wizard.totalArea}
-            rooms={state.editedRooms}
-            walls={state.editedWalls}
-            doors={state.analysisResult?.doors ?? 0}
-            windows={state.analysisResult?.windows ?? 0}
-            confidence={wizard.confidence}
-            readFromLabels={wizard.readFromLabels}
             onUpdate={wizard.updateConfig}
-            onUpdateOpenings={wizard.updatePlanOpenings}
-            onEditPlan={() => wizard.goToStep('editing')}
             onConfirm={wizard.confirmConfig}
             onBack={() => wizard.goToStep('project_info')}
           />

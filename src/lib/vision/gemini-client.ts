@@ -180,7 +180,7 @@ export async function analyzeFloorPlan(
       accept: isUsablePlanResponse,
     });
     console.info('Plan read', { provider, model });
-    return { ...toAnalysisResult(text), source: 'ai' };
+    return { ...toAnalysisResult(text), source: 'ai', reader: { provider, model } };
   } catch (error) {
     throw classifyGeminiError(error);
   }

@@ -16,6 +16,7 @@ interface RoomEditPanelProps {
   onUpdate: (updates: Partial<DetectedRoom>) => void;
   onRemove: () => void;
   onClose: () => void;
+  onVerifyDimensions: () => void;
 }
 
 export default function RoomEditPanel({
@@ -23,6 +24,7 @@ export default function RoomEditPanel({
   onUpdate,
   onRemove,
   onClose,
+  onVerifyDimensions,
 }: RoomEditPanelProps) {
   const [name, setName] = useState(room.name);
   const [width, setWidth] = useState(room.dimensions.width.toString());
@@ -84,6 +86,7 @@ export default function RoomEditPanel({
           <p className={`dimension-source ${dimensionNeedsReview(room.dimensionSource) ? 'needs-review' : ''}`}>
             {dimensionSourceLabel(room.dimensionSource)}. Compare with the original plan before confirming.
           </p>
+          {room.dimensionsVerified ? <p className="dimension-source">Size checked by you.</p> : <button type="button" className="verify-size" onClick={onVerifyDimensions} disabled={room.dimensions.width <= 0 || room.dimensions.length <= 0}>I checked these dimensions</button>}
           <div className="dimension-inputs">
             <div className="input-with-unit">
               <input
@@ -121,7 +124,7 @@ export default function RoomEditPanel({
         </div>
 
         {/* Only scanned rooms have wall segments that this control can change. */}
-        {room.position.width > 0 && <div className="form-group">
+        {room.position.width > 0 && !room.manuallyPlaced && <div className="form-group">
           <div className="input-heading">
             <Wall size={16} weight="light" />
             Wall Type
@@ -148,7 +151,7 @@ export default function RoomEditPanel({
             External walls are thicker (230mm) and use more materials
           </span>
         </div>}
-        {room.position.width === 0 && <p className="manual-room-hint">Added manually. The BOQ estimates wall length from the corrected floor area and room count.</p>}
+        {(room.position.width === 0 || room.manuallyPlaced) && <p className="manual-room-hint">Added manually. The BOQ estimates wall length from the corrected floor area and room count.</p>}
 
         {/* Status indicator */}
         {room.isEdited && (
@@ -238,6 +241,9 @@ export default function RoomEditPanel({
         }
 
         .dimension-source.needs-review { color: #85510a; }
+
+        .verify-size { width: fit-content; min-height: 36px; border: 1px solid #b7cae1; border-radius: 8px; padding: 6px 10px; background: #edf5ff; color: #0f4b91; font-size: .78rem; font-weight: 700; cursor: pointer; }
+        .verify-size:disabled { opacity: .5; cursor: not-allowed; }
 
         input {
           padding: var(--spacing-sm) var(--spacing-md);

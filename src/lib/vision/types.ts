@@ -27,7 +27,12 @@ export interface DetectedRoom {
   isEdited: boolean;
   /** Where these dimensions came from; older saved scans may omit this. */
   dimensionSource?: 'printed' | 'scaled' | 'estimated' | 'unknown' | 'user';
+  /** Set only after a person checks the dimensions against their drawing. */
+  dimensionsVerified?: boolean;
+  manuallyPlaced?: boolean;
 }
+
+export type PlanBox = DetectedRoom['position'];
 
 export interface DetectedWall {
   id: string;
@@ -52,6 +57,8 @@ export interface VisionAnalysisResult {
   /** 'labels' when the AI readers were all busy and the rooms were read from
    *  the names and sizes printed on the plan; positions are then approximate. */
   source?: 'ai' | 'labels';
+  /** Reader that produced the scan; used for comparing retries, not an accuracy claim. */
+  reader?: { provider: 'gemini' | 'nvidia' | 'openrouter'; model: string };
 }
 
 // ============================================
@@ -137,7 +144,6 @@ export interface GeneratedBOQItem {
 export type WizardStep =
   | 'upload'
   | 'analyzing'
-  | 'warning'
   | 'editing'
   | 'project_info'
   | 'config'
@@ -161,6 +167,8 @@ export interface VisionTakeoffState {
   analysisResult: VisionAnalysisResult | null;
   editedRooms: DetectedRoom[];
   editedWalls: DetectedWall[];
+  floorBoundary: PlanBox | null;
+  verifiedTotalAreaM2: number | null;
   projectInfo: ProjectInfo;
   config: VisionConfig;
   generatedBOQ: GeneratedBOQItem[];
@@ -175,6 +183,8 @@ export const INITIAL_STATE: VisionTakeoffState = {
   analysisResult: null,
   editedRooms: [],
   editedWalls: [],
+  floorBoundary: null,
+  verifiedTotalAreaM2: null,
   projectInfo: {
     name: '',
     location: '',

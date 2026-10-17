@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import Card from '@/components/ui/Card';
 import FloorPlanCanvas from './FloorPlanCanvas';
 import RoomEditPanel from './RoomEditPanel';
@@ -15,13 +15,17 @@ import {
   MagnifyingGlassMinus,
   Warning,
 } from '@phosphor-icons/react';
-import { DetectedRoom, DetectedWall } from '@/lib/vision/types';
+import { DetectedRoom, DetectedWall, type PlanBox, type VisionAnalysisResult } from '@/lib/vision/types';
 import { assessPlanReview } from '@/lib/vision/planReview';
 import { dimensionNeedsReview, dimensionSourceLabel } from '@/lib/vision/dimensionSource';
 
 interface FloorPlanEditorProps {
   rooms: DetectedRoom[];
   walls: DetectedWall[];
+  floorBoundary: PlanBox | null;
+  verifiedTotalAreaM2: number | null;
+  onFloorBoundaryChange: (box: PlanBox | null) => void;
+  onVerifiedTotalAreaChange: (area: number | null) => void;
   imageUrl: string | null;
   confidence: number;
   readFromLabels: boolean;
@@ -38,6 +42,14 @@ interface FloorPlanEditorProps {
   canRedo: boolean;
   planRevision: number;
   error: string | null;
+  onRescan: () => void;
+  onCancelRescan: () => void;
+  rescanCandidate: VisionAnalysisResult | null;
+  isRescanning: boolean;
+  rescanError: string | null;
+  onUseRescan: () => void;
+  onKeepCurrent: () => void;
+  onManualEntry: () => void;
   onConfirm: () => void;
   onBack: () => void;
 }
@@ -45,6 +57,10 @@ interface FloorPlanEditorProps {
 export default function FloorPlanEditor({
   rooms,
   walls,
+  floorBoundary,
+  verifiedTotalAreaM2,
+  onFloorBoundaryChange,
+  onVerifiedTotalAreaChange,
   imageUrl,
   confidence,
   readFromLabels,
@@ -61,6 +77,14 @@ export default function FloorPlanEditor({
   canRedo,
   planRevision,
   error,
+  onRescan,
+  onCancelRescan,
+  rescanCandidate,
+  isRescanning,
+  rescanError,
+  onUseRescan,
+  onKeepCurrent,
+  onManualEntry,
   onConfirm,
   onBack,
 }: FloorPlanEditorProps) {
@@ -70,8 +94,17 @@ export default function FloorPlanEditor({
   const [zoom, setZoom] = useState(1);
   const [addingRoom, setAddingRoom] = useState(false);
   const [newRoom, setNewRoom] = useState({ name: '', width: '', length: '' });
+  const [drawMode, setDrawMode] = useState<'room' | 'boundary' | null>(null);
+  const [pendingBox, setPendingBox] = useState<PlanBox | null>(null);
+  const addRoomFormRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (pendingBox) addRoomFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [pendingBox]);
 
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
+  const verifiedMappedArea = rooms.reduce((sum, room) => sum + (room.dimensionsVerified && room.area > 0 ? room.area : 0), 0);
+  const remainingArea = verifiedTotalAreaM2 === null ? null : verifiedTotalAreaM2 - verifiedMappedArea;
   const reviewFindings = assessPlanReview({
     area: totalArea,
     rooms: rooms.map((room) => ({ name: room.name, width: room.dimensions.width, length: room.dimensions.length })),
@@ -94,6 +127,16 @@ export default function FloorPlanEditor({
     setSelectedRoomId(roomId === selectedRoomId ? null : roomId);
   };
 
+  const handleBoxDrawn = (box: PlanBox) => {
+    if (drawMode === 'boundary') onFloorBoundaryChange(box);
+    if (drawMode === 'room') {
+      setPendingBox(box);
+      setAddingRoom(true);
+      setSelectedRoomId(null);
+    }
+    setDrawMode(null);
+  };
+
   const handleAddRoom = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const width = Number(newRoom.width);
@@ -102,15 +145,17 @@ export default function FloorPlanEditor({
     const id = `manual-${crypto.randomUUID()}`;
     onRoomAdd({
       id, name: newRoom.name.trim(), dimensions: { width, length }, area: width * length,
-      // An added room has no location from the scan. Keep it in the list rather
-      // than placing a made-up rectangle over the uploaded drawing.
-      position: { x: 0, y: 0, width: 0, height: 0 },
+      // A room without a drawn box stays in the list; never invent its location.
+      position: pendingBox ?? { x: 0, y: 0, width: 0, height: 0 },
       wallType: 'internal', isEdited: true,
       dimensionSource: 'user',
+      dimensionsVerified: true,
+      manuallyPlaced: pendingBox !== null,
     });
     setSelectedRoomId(id);
     setNewRoom({ name: '', width: '', length: '' });
     setAddingRoom(false);
+    setPendingBox(null);
   };
 
   return (
@@ -128,7 +173,7 @@ export default function FloorPlanEditor({
           </div>
           <div className="stat">
             <span className="stat-value">{totalArea.toFixed(0)}m²</span>
-            <span className="stat-label">Total Area</span>
+            <span className="stat-label">Room total</span>
           </div>
           <div className={`stat confidence ${confidence >= 90 ? 'high' : confidence >= 70 ? 'medium' : 'low'}`}>
             <span className="stat-value">{confidence}%</span>
@@ -142,8 +187,41 @@ export default function FloorPlanEditor({
         <ul>{reviewFindings.map((finding) => <li key={finding.id}>{finding.text}</li>)}</ul>
       </section>}
 
+      <section className="rescan-panel" aria-label="Scan quality and retry">
+        <p>The {confidence}% score is reported by the plan reader, not a guarantee of accuracy. Compare the rooms with your drawing before continuing.</p>
+        <div className="rescan-actions">
+          <button type="button" className="tool-button" onClick={onRescan} disabled={isRescanning}><ArrowClockwise size={16} /> {isRescanning ? 'Scanning again…' : 'Scan this plan again'}</button>
+          {isRescanning && <button type="button" className="tool-button" onClick={onCancelRescan}>Cancel retry</button>}
+          <button type="button" className="tool-button" onClick={onManualEntry}>Use manual builder</button>
+        </div>
+        {rescanError && <p role="alert" className="review-error">{rescanError} Your current rooms are unchanged.</p>}
+        {rescanCandidate && <div className="rescan-compare" role="status">
+          <strong>Compare both readings</strong>
+          <p>Current: {rooms.length} rooms, {totalArea.toFixed(1)} m², {confidence}% reported confidence.</p>
+          <p>New: {rescanCandidate.rooms.length} rooms, {rescanCandidate.totalArea.toFixed(1)} m², {rescanCandidate.confidence}% reported confidence.</p>
+          <p>A higher score does not prove the dimensions are correct. Replacing the scan discards your room corrections.</p>
+          <div className="rescan-actions"><button type="button" className="tool-button" onClick={onKeepCurrent}>Keep current review</button><button type="button" className="tool-button active" onClick={onUseRescan}>Use new scan</button></div>
+        </div>}
+      </section>
+
+      <section className="coverage-panel" aria-label="Checked room area">
+        <label htmlFor="verified-total-area">Total floor area confirmed from your drawing (m²)</label>
+        <input id="verified-total-area" type="number" inputMode="decimal" min="0.1" step="0.1" value={verifiedTotalAreaM2 ?? ''} onChange={(event) => onVerifiedTotalAreaChange(event.target.value === '' ? null : Number(event.target.value))} placeholder="Enter the stated total, if known" />
+        <p>Only enter a total you can verify on the plan or from your architect. This does not measure pixels.</p>
+        {verifiedTotalAreaM2 !== null && <div className="coverage-figures">
+          <span>Verified whole area <strong>{verifiedTotalAreaM2.toFixed(1)} m²</strong></span>
+          <span>Checked rooms <strong>{verifiedMappedArea.toFixed(1)} m²</strong></span>
+          <span>{remainingArea !== null && remainingArea < 0 ? 'Over by' : 'Still to map or reconcile'} <strong>{Math.abs(remainingArea ?? 0).toFixed(1)} m²</strong></span>
+        </div>}
+        {remainingArea !== null && remainingArea < 0 && <p role="alert">Checked room areas exceed the total. Recheck the room sizes, overlaps, and whether the total includes walls.</p>}
+        {remainingArea !== null && remainingArea >= 0 && <p>The difference may include walls or circulation. It is an area reconciliation, not a measured outline of uncovered space.</p>}
+        {floorBoundary && <p>The green outline marks the whole floor area visually. It does not set the m² figure.</p>}
+      </section>
+
       <div className="review-toolbar" aria-label="Plan review controls">
         <div className="toolbar-group">
+          <button type="button" className={`tool-button ${drawMode === 'boundary' ? 'active' : ''}`} aria-pressed={drawMode === 'boundary'} onClick={() => { setDrawMode(drawMode === 'boundary' ? null : 'boundary'); setShowOverlay(true); }}>Draw whole-area box</button>
+          <button type="button" className={`tool-button ${drawMode === 'room' ? 'active' : ''}`} aria-pressed={drawMode === 'room'} onClick={() => { setDrawMode(drawMode === 'room' ? null : 'room'); setShowOverlay(true); }}>Draw missing room</button>
           <button type="button" className={`tool-button ${showOverlay ? 'active' : ''}`} aria-pressed={showOverlay} onClick={() => setShowOverlay((value) => !value)}>{showOverlay ? 'AI scan visible' : 'Original plan only'}</button>
           <button type="button" className={`tool-button ${showWalls ? 'active' : ''}`} aria-pressed={showWalls} disabled={!showOverlay || walls.length === 0} onClick={() => setShowWalls((value) => !value)}>Wall lines</button>
         </div>
@@ -155,6 +233,7 @@ export default function FloorPlanEditor({
           <button type="button" className="tool-button icon-button" aria-label="Redo correction" disabled={!canRedo} onClick={onRedo}><ArrowClockwise size={18} /></button>
         </div>
       </div>
+      {drawMode && <p className="draw-instruction" role="status">Drag a box over the {drawMode === 'room' ? 'missing room' : 'whole floor area'} on the plan. This marks its location; enter real dimensions separately.</p>}
 
       <div className="editor-body">
         <div className="canvas-container">
@@ -168,12 +247,15 @@ export default function FloorPlanEditor({
               showOverlay={showOverlay}
               showWalls={showWalls}
               zoom={zoom}
+              floorBoundary={floorBoundary}
+              drawMode={drawMode}
+              onBoxDrawn={handleBoxDrawn}
             />
           </Card>
 
           <div className="tip-box">
             <Info size={16} weight="light" />
-            <span>Tap a highlighted room or choose one from the list. New rooms are listed below without a guessed position on the drawing.</span>
+            <span>Tap a highlighted room to edit it. Draw boxes to place missing rooms or outline the whole floor area; boxes do not measure metres.</span>
           </div>
         </div>
 
@@ -188,16 +270,19 @@ export default function FloorPlanEditor({
                 setSelectedRoomId(null);
               }}
               onClose={() => setSelectedRoomId(null)}
+              onVerifyDimensions={() => onRoomUpdate(selectedRoom.id, { dimensionsVerified: true })}
             />
           ) : (
             <Card className="rooms-list-card">
               <div className="rooms-list-heading"><h3>Rooms in this estimate</h3><button type="button" className="add-room-button" onClick={() => setAddingRoom((value) => !value)}><Plus size={16} /> Add missing room</button></div>
               <p className="source-guidance">The scan reports how it got each size. Check against your drawing, especially estimates and unconfirmed readings.</p>
-              {addingRoom && <form className="add-room-form" onSubmit={handleAddRoom}>
+              {addingRoom && <form ref={addRoomFormRef} className="add-room-form" onSubmit={handleAddRoom}>
+                {pendingBox && <p className="manual-room-note">Box placed on the drawing. Enter the room&apos;s real dimensions below.</p>}
                 <label>Room name<input type="text" value={newRoom.name} onChange={(event) => setNewRoom((room) => ({ ...room, name: event.target.value }))} placeholder="e.g. Bedroom 3" required /></label>
                 <div className="add-room-dimensions"><label>Width (m)<input type="number" inputMode="decimal" min="0.1" step="0.1" value={newRoom.width} onChange={(event) => setNewRoom((room) => ({ ...room, width: event.target.value }))} required /></label><label>Length (m)<input type="number" inputMode="decimal" min="0.1" step="0.1" value={newRoom.length} onChange={(event) => setNewRoom((room) => ({ ...room, length: event.target.value }))} required /></label></div>
                 <p className="manual-room-note">Wall length will be estimated from the corrected floor area and room count.</p>
                 <button type="submit" className="btn btn-primary">Add room to estimate</button>
+                <button type="button" className="tool-button" onClick={() => { setAddingRoom(false); setPendingBox(null); }}>Cancel</button>
               </form>}
               <div className="rooms-list">
                 {rooms.map((room) => (
@@ -208,7 +293,8 @@ export default function FloorPlanEditor({
                   >
                     <div className="room-info">
                       <span className="room-name">{room.name}</span>
-                      {room.position.width === 0 && <span className="manual-badge">Added manually</span>}
+                      {room.manuallyPlaced && <span className="manual-badge">Placed by you</span>}
+                      {room.position.width === 0 && <span className="manual-badge">Added without a box</span>}
                       {(room.dimensions.width <= 0 || room.dimensions.length <= 0) && <span className="manual-badge">Dimensions needed</span>}
                       <span className="room-dims">
                         {room.dimensions.width.toFixed(1)} x {room.dimensions.length.toFixed(1)}m
@@ -216,6 +302,7 @@ export default function FloorPlanEditor({
                       <span className={`source-badge ${dimensionNeedsReview(room.dimensionSource) ? 'needs-review' : ''}`}>
                         {dimensionSourceLabel(room.dimensionSource)}
                       </span>
+                      <span className={`source-badge ${room.dimensionsVerified ? '' : 'needs-review'}`}>{room.dimensionsVerified ? 'Size checked' : 'Check size'}</span>
                     </div>
                     <span className="room-area">{room.area.toFixed(1)}m²</span>
                   </button>
@@ -246,10 +333,25 @@ export default function FloorPlanEditor({
       </div>
 
       <style jsx>{`
+        .coverage-panel { display: grid; gap: 8px; border: 1px solid #c6d9eb; border-radius: 12px; background: #f7fbff; padding: 14px 16px; }
+        .coverage-panel label { color: #10243d; font-size: .85rem; font-weight: 700; }
+        .coverage-panel input { width: min(100%, 280px); min-height: 42px; padding: 8px 10px; border: 1px solid #a9c2dd; border-radius: 8px; background: white; font-size: 1rem; }
+        .coverage-panel p { margin: 0; color: #526985; font-size: .75rem; line-height: 1.45; }
+        .coverage-figures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+        .coverage-figures span { display: grid; gap: 3px; border-radius: 8px; background: white; padding: 9px; color: #526985; font-size: .7rem; }
+        .coverage-figures strong { color: #10243d; font-size: .95rem; }
+        .draw-instruction { margin: 0; border-radius: 8px; background: #fff2d6; padding: 10px 12px; color: #85510a; font-size: .8rem; }
         .scan-review { border: 1px solid #e7c46a; border-radius: 12px; background: #fff9e9; padding: 14px 16px; color: #694408; }
         .scan-review h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: .95rem; font-weight: 700; }
         .scan-review ul { margin: 0; padding-left: 22px; font-size: .82rem; line-height: 1.5; }
         .scan-review li + li { margin-top: 4px; }
+        .rescan-panel { border: 1px solid #d9e3ef; border-radius: 12px; background: #f5f8fc; padding: 12px 16px; }
+        .rescan-panel p { margin: 0; color: #314c69; font-size: .8rem; line-height: 1.5; }
+        .rescan-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .rescan-actions .tool-button { display: inline-flex; align-items: center; gap: 6px; }
+        .rescan-compare { margin-top: 12px; padding: 12px; border: 1px solid #b7cae1; border-radius: 9px; background: white; }
+        .rescan-compare strong { color: #10243d; }
+        .rescan-compare p { margin-top: 4px; }
         .review-toolbar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 10px; border: 1px solid #d9e3ef; border-radius: 12px; background: #f5f8fc; }
         .toolbar-group { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
         .tool-button { min-height: 40px; padding: 8px 12px; border: 1px solid #cbd8e6; border-radius: 8px; background: white; color: #173557; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
@@ -507,6 +609,7 @@ export default function FloorPlanEditor({
         }
 
         @media (max-width: 900px) {
+          .coverage-figures { grid-template-columns: 1fr; }
           .editor-body {
             display: flex;
             flex-direction: column;

@@ -8,6 +8,7 @@ import {
   VisionConfig,
   DetectedRoom,
   DetectedWall,
+  PlanBox,
   ProjectInfo,
   VisionAnalysisResult,
   GeneratedBOQItem,
@@ -25,6 +26,7 @@ type PlanSnapshot = {
   walls: DetectedWall[];
   doors: number;
   windows: number;
+  floorBoundary: PlanBox | null;
 };
 
 // API call to analyze floor plan
@@ -81,13 +83,17 @@ export function useVisionTakeoff() {
   const analysisControllerRef = useRef<AbortController | null>(null);
   const [planHistory, setPlanHistory] = useState<{ past: PlanSnapshot[]; future: PlanSnapshot[] }>({ past: [], future: [] });
   const [planRevision, setPlanRevision] = useState(0);
+  const [rescanCandidate, setRescanCandidate] = useState<VisionAnalysisResult | null>(null);
+  const [isRescanning, setIsRescanning] = useState(false);
+  const [rescanError, setRescanError] = useState<string | null>(null);
 
   const snapshot = useCallback((): PlanSnapshot => ({
     rooms: state.editedRooms,
     walls: state.editedWalls,
     doors: state.analysisResult?.doors ?? 0,
     windows: state.analysisResult?.windows ?? 0,
-  }), [state.editedRooms, state.editedWalls, state.analysisResult]);
+    floorBoundary: state.floorBoundary,
+  }), [state.editedRooms, state.editedWalls, state.analysisResult, state.floorBoundary]);
 
   const recordPlanEdit = useCallback(() => {
     const current = snapshot();
@@ -109,9 +115,12 @@ export function useVisionTakeoff() {
   }, []);
 
   const reset = useCallback(() => {
+    analysisControllerRef.current?.abort();
     setState(INITIAL_STATE);
     setPlanHistory({ past: [], future: [] });
     setPlanRevision(0);
+    setRescanCandidate(null);
+    setRescanError(null);
   }, []);
 
   // ============================================
@@ -122,6 +131,8 @@ export function useVisionTakeoff() {
     analysisControllerRef.current?.abort();
     const controller = new AbortController();
     analysisControllerRef.current = controller;
+    setRescanCandidate(null);
+    setRescanError(null);
 
     // Create preview URL
     const previewUrl = URL.createObjectURL(file);
@@ -130,6 +141,8 @@ export function useVisionTakeoff() {
       ...prev,
       uploadedFile: file,
       previewUrl,
+      floorBoundary: null,
+      verifiedTotalAreaM2: null,
       step: 'analyzing',
       error: null,
       isProcessing: true,
@@ -141,8 +154,6 @@ export function useVisionTakeoff() {
         setState((prev) => ({ ...prev, previewUrl: imageUrl }));
       });
 
-      // Determine next step based on confidence
-      const nextStep: WizardStep = result.confidence < 90 ? 'warning' : 'editing';
       captureProductEvent('ai_scan_used', { tool: 'vision_takeoff', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'success', rooms: result.rooms.length });
 
       setState((prev) => ({
@@ -150,7 +161,7 @@ export function useVisionTakeoff() {
         analysisResult: result,
         editedRooms: result.rooms,
         editedWalls: result.walls,
-        step: nextStep,
+        step: 'editing',
         isProcessing: false,
       }));
       setPlanHistory({ past: [], future: [] });
@@ -173,6 +184,7 @@ export function useVisionTakeoff() {
   }, []);
 
   const clearFile = useCallback(() => {
+    analysisControllerRef.current?.abort();
     setState((prev) => ({
       ...prev,
       uploadedFile: null,
@@ -180,20 +192,57 @@ export function useVisionTakeoff() {
       analysisResult: null,
       editedRooms: [],
       editedWalls: [],
+      floorBoundary: null,
+      verifiedTotalAreaM2: null,
       step: 'upload',
       error: null,
     }));
     setPlanHistory({ past: [], future: [] });
     setPlanRevision(0);
+    setRescanCandidate(null);
+    setRescanError(null);
+    setIsRescanning(false);
   }, []);
 
-  // ============================================
-  // LOW CONFIDENCE HANDLING
-  // ============================================
+  const rescanPlan = useCallback(async () => {
+    const file = state.uploadedFile;
+    if (!file || isRescanning) return;
+    const controller = new AbortController();
+    analysisControllerRef.current = controller;
+    setIsRescanning(true);
+    setRescanError(null);
+    setRescanCandidate(null);
+    try {
+      // Keep the current rooms and corrections until the user compares both reads.
+      const result = await analyzeFloorPlanAPI(file, controller.signal, () => {});
+      if (controller.signal.aborted) return;
+      setRescanCandidate(result);
+      captureProductEvent('ai_scan_used', { tool: 'vision_takeoff_rescan', outcome: 'success', rooms: result.rooms.length, confidence: result.confidence, model: result.reader?.model });
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        setRescanError(error instanceof Error ? error.message : 'The new scan failed. Your current review is unchanged.');
+        captureProductEvent('ai_scan_used', { tool: 'vision_takeoff_rescan', outcome: 'failed' });
+      }
+    } finally {
+      if (analysisControllerRef.current === controller) analysisControllerRef.current = null;
+      setIsRescanning(false);
+    }
+  }, [state.uploadedFile, isRescanning]);
 
-  const continueFromWarning = useCallback(() => {
-    setState((prev) => ({ ...prev, step: 'editing' }));
-  }, []);
+  const useRescanCandidate = useCallback(() => {
+    if (!rescanCandidate) return;
+    setState((prev) => ({ ...prev, analysisResult: rescanCandidate, editedRooms: rescanCandidate.rooms, editedWalls: rescanCandidate.walls, floorBoundary: null, error: null }));
+    setPlanHistory({ past: [], future: [] });
+    setPlanRevision((revision) => revision + 1);
+    setRescanCandidate(null);
+  }, [rescanCandidate]);
+
+  const keepCurrentScan = useCallback(() => setRescanCandidate(null), []);
+  const cancelRescan = useCallback(() => analysisControllerRef.current?.abort(), []);
+
+  // ============================================
+  // MANUAL ENTRY
+  // ============================================
 
   const goToManualEntry = useCallback(() => {
     router.push('/boq/new');
@@ -219,6 +268,7 @@ export function useVisionTakeoff() {
                   ? updates.dimensions.width * updates.dimensions.length
                   : room.area,
               dimensionSource: updates.dimensions ? 'user' : room.dimensionSource,
+              dimensionsVerified: updates.dimensions ? false : room.dimensionsVerified,
               isEdited: true,
             }
           : room
@@ -259,6 +309,15 @@ export function useVisionTakeoff() {
     }));
   }, [recordPlanEdit]);
 
+  const setFloorBoundary = useCallback((box: PlanBox | null) => {
+    recordPlanEdit();
+    setState((prev) => ({ ...prev, floorBoundary: box }));
+  }, [recordPlanEdit]);
+
+  const setVerifiedTotalArea = useCallback((area: number | null) => {
+    setState((prev) => ({ ...prev, verifiedTotalAreaM2: area && Number.isFinite(area) && area > 0 ? area : null }));
+  }, []);
+
   const removeRoom = useCallback((roomId: string) => {
     recordPlanEdit();
     setState((prev) => ({
@@ -273,7 +332,7 @@ export function useVisionTakeoff() {
     const previous = planHistory.past.at(-1);
     if (!previous) return;
     const current = snapshot();
-    setState((prev) => ({ ...prev, editedRooms: previous.rooms, editedWalls: previous.walls,
+    setState((prev) => ({ ...prev, editedRooms: previous.rooms, editedWalls: previous.walls, floorBoundary: previous.floorBoundary,
       analysisResult: prev.analysisResult ? { ...prev.analysisResult, doors: previous.doors, windows: previous.windows } : null }));
     setPlanHistory((history) => ({ past: history.past.slice(0, -1), future: [current, ...history.future] }));
     setPlanRevision((revision) => revision + 1);
@@ -283,7 +342,7 @@ export function useVisionTakeoff() {
     const next = planHistory.future[0];
     if (!next) return;
     const current = snapshot();
-    setState((prev) => ({ ...prev, editedRooms: next.rooms, editedWalls: next.walls,
+    setState((prev) => ({ ...prev, editedRooms: next.rooms, editedWalls: next.walls, floorBoundary: next.floorBoundary,
       analysisResult: prev.analysisResult ? { ...prev.analysisResult, doors: next.doors, windows: next.windows } : null }));
     setPlanHistory((history) => ({ past: [...history.past, current], future: history.future.slice(1) }));
     setPlanRevision((revision) => revision + 1);
@@ -450,15 +509,23 @@ export function useVisionTakeoff() {
     handleFileUpload,
     cancelAnalysis,
     clearFile,
+    rescanPlan,
+    rescanCandidate,
+    isRescanning,
+    rescanError,
+    useRescanCandidate,
+    keepCurrentScan,
+    cancelRescan,
 
-    // Warning handling
-    continueFromWarning,
+    // Manual entry
     goToManualEntry,
 
     // Editing
     updateRoom,
     updateWall,
     addRoom,
+    setFloorBoundary,
+    setVerifiedTotalArea,
     removeRoom,
     undoPlanEdit,
     redoPlanEdit,
