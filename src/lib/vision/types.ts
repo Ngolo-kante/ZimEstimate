@@ -1,6 +1,7 @@
 import type { ProjectSoilType, SiteSlopeType } from '@/lib/database.types';
 import type { RoofCovering } from '@/lib/calculations/roofingOptions';
 import type { LaborRates } from '@/lib/calculations/laborSubstages';
+import type { PrintedSizes } from './planCheck';
 
 // Vision Takeoff Types
 // TypeScript interfaces for floor plan analysis and BOQ generation
@@ -59,6 +60,8 @@ export interface VisionAnalysisResult {
   source?: 'ai' | 'labels';
   /** Reader that produced the scan; used for comparing retries, not an accuracy claim. */
   reader?: { provider: 'gemini' | 'nvidia' | 'openrouter'; model: string };
+  /** Room sizes printed on the plan, for checking the scan (planCheck.ts). */
+  printed?: PrintedSizes;
 }
 
 // ============================================

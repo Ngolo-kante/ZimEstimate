@@ -86,6 +86,22 @@ function metres(raw: string, unit?: string): number | null {
 
 const DIMENSION = /(\d{1,5}(?:[.,]\d{1,3})?)\s*(mm|m)?\s*[x×X*]\s*(\d{1,5}(?:[.,]\d{1,3})?)\s*(mm|m)?/g;
 
+/**
+ * True when words start..end sit in a run of more than six closely spaced
+ * words: a sentence in the drawing's notes ("New 2.400 x 1.900 ensuite in
+ * the north-east corner…"), not a room's label. Labels on one baseline are
+ * far apart, so a row of rooms' sizes is not mistaken for prose.
+ */
+function inProse(line: Line, start: number, end: number): boolean {
+  const ws = line.words;
+  const close = (i: number) => ws[i + 1].x0 - ws[i].x1 < (ws[i].y1 - ws[i].y0) * 1.5;
+  let first = start;
+  while (first > 0 && close(first - 1)) first--;
+  let last = end;
+  while (last < ws.length - 1 && close(last)) last++;
+  return last - first + 1 > 6;
+}
+
 /** Sizes in one line, with the words they came from. */
 function dimensionsIn(line: Line): Array<Span & { width: number; length: number }> {
   // Rebuild the line's text, remembering which word each character came from,
@@ -105,6 +121,11 @@ function dimensionsIn(line: Line): Array<Span & { width: number; length: number 
     if (a === null || b === null) continue;
     const start = owner[match.index ?? 0];
     const end = owner[(match.index ?? 0) + match[0].length - 1];
+    if (inProse(line, start, end)) continue;
+    // A door's size (0.9 x 2.1 m, the standard 900 x 2100) printed by a
+    // room name is not that room's size.
+    const [short, long] = [a, b].sort((p, q) => p - q);
+    if (short <= 1.0 && long >= 2.0 && long <= 2.4) continue;
     found.push({ text: match[0], box: box(line.words.slice(start, end + 1)), width: a, length: b });
   }
   return found;
@@ -135,10 +156,52 @@ const titleCase = (s: string) =>
   s.toLowerCase().replace(/\b([a-z])/g, (c) => c.toUpperCase()).replace(/\bWc\b/, 'WC').replace(/\bTv\b/, 'TV');
 
 export function roomsFromWords(words: OcrWord[], image: { width: number; height: number }): LabelledRoom[] {
-  const usable = words.filter((w) => w.text.trim() && w.x1 > w.x0 && w.y1 > w.y0);
-  const lines = toLines(usable);
-  const names = lines.flatMap(namesIn);
-  const sizes = lines.flatMap(dimensionsIn);
+  const lines = toLines(words.filter((w) => w.text.trim() && w.x1 > w.x0 && w.y1 > w.y0));
+  return pairWithNames(lines.flatMap(namesIn), lines.flatMap(dimensionsIn), lines)
+    .map(({ name, size }) => ({
+      name: titleCase(name.text),
+      width: size.width,
+      length: size.length,
+      at: { x: cx(name.box) / image.width, y: cy(name.box) / image.height },
+    }))
+    .sort((a, b) => a.at.y - b.at.y || a.at.x - b.at.x);
+}
+
+const AREA = /^(\d{1,3}(?:[.,]\d{1,3})?)\s*(?:m²|m2|sqm|sq\.?\s?m)$/i;
+
+/** Floor areas in one line: "11,972m²", "17.5 m2". A drawing program's room stamp. */
+function areasIn(line: Line): Array<Span & { area: number }> {
+  const found: Array<Span & { area: number }> = [];
+  line.words.forEach((w, i) => {
+    // The unit is sometimes its own word: "17.5" "m²".
+    const next = line.words[i + 1];
+    const joined = next && /^(m²|m2|sqm)$/i.test(next.text.trim()) ? `${w.text}${next.text}` : w.text;
+    const match = joined.trim().match(AREA);
+    if (!match || inProse(line, i, joined !== w.text ? i + 1 : i)) return;
+    // A comma here is a decimal comma: no room is thousands of square metres.
+    const area = Number(match[1].replace(',', '.'));
+    if (area >= 1 && area <= 150) found.push({ text: joined, box: next && joined !== w.text ? box([w, next]) : w, area });
+  });
+  return found;
+}
+
+export type LabelledArea = { name: string; area: number; at: { x: number; y: number } };
+
+/**
+ * Room names with a printed floor area instead of a size — how ArchiCAD and
+ * similar programs stamp rooms ("BEDROOM 2 / 11,97 m²"). Most of the PDF plans
+ * uploaded in October 2026 were labelled this way. Used to check a scan, not
+ * to make rooms: an area alone does not say the room's shape.
+ */
+export function areasFromWords(words: OcrWord[], image: { width: number; height: number }): LabelledArea[] {
+  const lines = toLines(words.filter((w) => w.text.trim() && w.x1 > w.x0 && w.y1 > w.y0));
+  return pairWithNames(lines.flatMap(namesIn), lines.flatMap(areasIn), lines)
+    .map(({ name, size }) => ({ name: titleCase(name.text), area: size.area, at: { x: cx(name.box) / image.width, y: cy(name.box) / image.height } }))
+    .sort((a, b) => a.at.y - b.at.y || a.at.x - b.at.x);
+}
+
+/** Each printed figure goes to the room name just above it, or beside it on its line. */
+function pairWithNames<T extends Span>(names: Span[], sizes: T[], lines: Line[]): Array<{ name: Span; size: T }> {
   // The height of the label text itself. Averaging every line let the specks
   // a reader picks out of walls and hatching shrink it, and a size printed a
   // normal line below its name then looked too far away to belong to it.
@@ -148,9 +211,8 @@ export function roomsFromWords(words: OcrWord[], image: { width: number; height:
     : lines.length ? lines.reduce((s, l) => s + l.h, 0) / lines.length : 20;
 
   const used = new Set<number>();
-  const rooms: LabelledRoom[] = [];
-  // Each size goes to the name just above it (or beside it on its line).
-  for (const size of sizes.sort((a, b) => cy(a.box) - cy(b.box))) {
+  const pairs: Array<{ name: Span; size: T }> = [];
+  for (const size of [...sizes].sort((a, b) => cy(a.box) - cy(b.box))) {
     let best = -1;
     let bestScore = Infinity;
     names.forEach((name, i) => {
@@ -165,13 +227,7 @@ export function roomsFromWords(words: OcrWord[], image: { width: number; height:
     });
     if (best < 0) continue;
     used.add(best);
-    const name = names[best];
-    rooms.push({
-      name: titleCase(name.text),
-      width: size.width,
-      length: size.length,
-      at: { x: cx(name.box) / image.width, y: cy(name.box) / image.height },
-    });
+    pairs.push({ name: names[best], size });
   }
-  return rooms.sort((a, b) => a.at.y - b.at.y || a.at.x - b.at.x);
+  return pairs;
 }

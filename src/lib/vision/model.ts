@@ -32,7 +32,7 @@ export type GeminiModelChoice = {
 };
 
 const FAST: GeminiModelChoice[] = [
-  { model: process.env.GEMINI_PLAN_MODEL?.trim() || 'gemini-3.1-flash-lite', thinking: { thinkingBudget: 0 }, timeoutMs: 22_000 },
+  { model: 'gemini-3.1-flash-lite', thinking: { thinkingBudget: 0 }, timeoutMs: 22_000 },
   { model: 'gemini-3.1-flash-lite-preview', thinking: { thinkingBudget: 0 }, timeoutMs: 22_000 },
   { model: 'gemini-3-flash-preview', thinking: { thinkingLevel: 'low' }, timeoutMs: 26_000 },
   { model: 'gemini-3.5-flash', thinking: { thinkingLevel: 'low' }, timeoutMs: 26_000 },
@@ -41,5 +41,39 @@ const FAST: GeminiModelChoice[] = [
   { model: 'gemini-3.7-flash', thinking: { thinkingLevel: 'low' }, timeoutMs: 26_000 },
 ];
 
+/**
+ * Extra capacity: each model has its own free-tier allowance, so a model at
+ * the end of the list is a second chance when the ones before it are busy.
+ * 3.5-flash-lite thinks for a minute unless told `minimal`; with it, it read
+ * plans in 2 s (2026-10-18).
+ */
+const MORE: GeminiModelChoice[] = [
+  { model: 'gemini-3.5-flash-lite', thinking: { thinkingLevel: 'minimal' }, timeoutMs: 18_000 },
+  { model: 'gemini-3.8-flash', thinking: { thinkingLevel: 'low' }, timeoutMs: 26_000 },
+];
+
 /** Models tried, in order, by every AI feature. */
-export const GEMINI_MODELS: GeminiModelChoice[] = FAST;
+export const GEMINI_MODELS: GeminiModelChoice[] = [...FAST, ...MORE];
+
+/**
+ * The plan reader's own order, from a benchmark of 72 readings on 2026-10-18
+ * (four drawn plans and two phone photos, room sizes checked to 15 cm):
+ *   gemini-3.5-flash       44/44 sizes right, 6/6 answered, ~10 s
+ *   gemini-3.8-flash       35/36, 5/6 answered (one timeout), ~20 s
+ *   gemini-3.5-flash-lite  42/44, 6/6, ~2 s
+ *   gemini-3.1-flash-lite  42/44, 6/6, ~3 s
+ * Accuracy first, then the fast Lite models for when 3.5 Flash is busy (a busy
+ * model refuses within a second, so trying several costs little). Retired or
+ * blocked for this key: gemini-2.5-flash (404), gemma-4-31b-it (timed out).
+ */
+export const PLAN_READER_MODELS: GeminiModelChoice[] = [
+  { model: process.env.GEMINI_PLAN_MODEL?.trim() || 'gemini-3.5-flash', thinking: { thinkingLevel: 'low' }, timeoutMs: 24_000 },
+  { model: 'gemini-3.5-flash-lite', thinking: { thinkingLevel: 'minimal' }, timeoutMs: 15_000 },
+  { model: 'gemini-3.1-flash-lite', thinking: { thinkingBudget: 0 }, timeoutMs: 15_000 },
+  { model: 'gemini-3.8-flash', thinking: { thinkingLevel: 'low' }, timeoutMs: 26_000 },
+  { model: 'gemini-3-flash-preview', thinking: { thinkingLevel: 'low' }, timeoutMs: 22_000 },
+  { model: 'gemini-3.1-flash-lite-preview', thinking: { thinkingBudget: 0 }, timeoutMs: 15_000 },
+  { model: 'gemini-flash-latest', thinking: { thinkingLevel: 'low' }, timeoutMs: 22_000 },
+  { model: 'gemini-3.6-flash', thinking: { thinkingLevel: 'low' }, timeoutMs: 22_000 },
+  { model: 'gemini-3.7-flash', thinking: { thinkingLevel: 'low' }, timeoutMs: 22_000 },
+];

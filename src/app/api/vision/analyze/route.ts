@@ -6,6 +6,11 @@ import { after, NextRequest, NextResponse } from 'next/server';
 import { analyzeFloorPlan, analysisFromLabels } from '@/lib/vision/gemini-client';
 import { makeReadingCopy, type ReadingCopy } from '@/lib/vision/readingCopy';
 import { readPlanLabels } from '@/lib/vision/ocrPlan';
+import { isIdentity, toSourceBox, toSourcePoint, type PlanTransform } from '@/lib/vision/planImage';
+import { parsePdfWords } from '@/lib/vision/pdfWords';
+import { areasFromWords, roomsFromWords, type LabelledRoom } from '@/lib/vision/roomLabels';
+import type { PrintedSizes } from '@/lib/vision/planCheck';
+import type { VisionAnalysisResult } from '@/lib/vision/types';
 import { enforceCsrf, enforceRateLimit } from '@/lib/server/security';
 import { keepPlanSample } from '@/lib/server/planSamples';
 
@@ -14,6 +19,18 @@ import { keepPlanSample } from '@/lib/server/planSamples';
    could wait on a request the reader had already abandoned. */
 export const maxDuration = 60;
 export const runtime = 'nodejs';
+
+/** Positions on the prepared reading copy, put back on the uploaded image. */
+function onSourceImage(result: VisionAnalysisResult, t: PlanTransform): VisionAnalysisResult {
+  return {
+    ...result,
+    rooms: result.rooms.map((room) => ({ ...room, position: toSourceBox(room.position, t) })),
+    walls: result.walls.map((wall) => ({ ...wall, startPoint: toSourcePoint(wall.startPoint, t), endPoint: toSourcePoint(wall.endPoint, t) })),
+  };
+}
+
+/** How long the answer may wait for the label reader once a reader has answered. */
+const LABELS_GRACE_MS = 3_000;
 
 export async function POST(request: NextRequest) {
   // Held for keeping a copy of the plan once the response has gone — see
@@ -75,17 +92,36 @@ export async function POST(request: NextRequest) {
     if (file.type !== 'application/pdf') copy = await makeReadingCopy(arrayBuffer);
     else if (sentCopy instanceof File && sentCopy.size > 0 && sentCopy.size < 8 * 1024 * 1024) copy = await makeReadingCopy(await sentCopy.arrayBuffer());
 
-    // The printed labels are read at the same time, in case no AI reader answers.
-    const labels = copy
-      ? readPlanLabels(copy).catch((error) => { console.error('Label reading failed', error instanceof Error ? error.message : error); return []; })
-      : Promise.resolve([]);
+    if (copy?.steps.length) console.info('Plan image prepared', { steps: copy.steps });
+    // A cropped or straightened copy is what every reader reads, the main one
+    // included; positions then come back to the uploaded image (planImage.ts).
+    const transform = copy && !isIdentity(copy.transform) ? copy.transform : null;
+    const mainReadsCopy = file.type !== 'application/pdf' && transform !== null;
 
-    let result;
+    // A PDF's own words, sent by the browser: exact, and no reading needed.
+    const pdfWords = file.type === 'application/pdf' ? parsePdfWords(formData.get('pdfText')) : null;
+
+    // The printed labels are read at the same time: to check the scan's sizes,
+    // and in case no AI reader answers.
+    const pdfRooms = pdfWords ? roomsFromWords(pdfWords.words, pdfWords) : [];
+    const pdfAreas = pdfWords ? areasFromWords(pdfWords.words, pdfWords) : [];
+    const labels: Promise<LabelledRoom[]> = pdfRooms.length > 0
+      ? Promise.resolve(pdfRooms)
+      : copy
+        ? readPlanLabels(copy)
+          .then((found) => transform
+            ? found.map((room) => { const at = toSourcePoint({ x: room.at.x * 100, y: room.at.y * 100 }, transform); return { ...room, at: { x: at.x / 100, y: at.y / 100 } }; })
+            : found)
+          .catch((error) => { console.error('Label reading failed', error instanceof Error ? error.message : error); return []; })
+        : Promise.resolve([]);
+
+    let result: VisionAnalysisResult;
     try {
       result = await analyzeFloorPlan(
-        { mimeType: file.type, base64 },
+        mainReadsCopy && copy ? { mimeType: copy.mimeType, base64: copy.base64 } : { mimeType: file.type, base64 },
         copy ? { mimeType: copy.mimeType, base64: copy.base64 } : undefined,
       );
+      if (transform && (mainReadsCopy || result.reader?.provider !== 'gemini')) result = onSourceImage(result, transform);
     } catch (readError) {
       // Every AI reader busy or failed: use the names and sizes printed on
       // the plan if there are enough of them to be worth reviewing.
@@ -94,6 +130,14 @@ export async function POST(request: NextRequest) {
       console.info('Plan read from its labels', { rooms: fromLabels.length });
       result = analysisFromLabels(fromLabels);
     }
+    const printed: PrintedSizes['rooms'] = (await Promise.race([
+      labels,
+      new Promise<LabelledRoom[]>((resolve) => setTimeout(() => resolve([]), LABELS_GRACE_MS)),
+    ])).map((room) => ({ name: room.name, width: room.width, length: room.length, at: { x: room.at.x * 100, y: room.at.y * 100 } }));
+    // Drawing programs stamp rooms with an area, not a size: checked too.
+    for (const room of pdfAreas) printed.push({ name: room.name, area: room.area, at: { x: room.at.x * 100, y: room.at.y * 100 } });
+    if (printed.length > 0) result.printed = { source: pdfRooms.length > 0 || pdfAreas.length > 0 ? 'pdf-text' : 'ocr', rooms: printed };
+
     const { rawResponse: _rawResponse, ...data } = result;
     void _rawResponse;
 

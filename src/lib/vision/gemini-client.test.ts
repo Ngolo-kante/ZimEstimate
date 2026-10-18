@@ -74,3 +74,24 @@ describe('accepting a plan reader reply', () => {
     expect(toAnalysisResult(reply).rooms[0].dimensions.width).toBe(0);
   });
 });
+
+describe('room positions on the wrong scale', () => {
+  it('reads 0–1000 boxes as percentages', () => {
+    const result = toAnalysisResult(JSON.stringify({
+      rooms: [
+        { name: 'Bedroom 2', width: 4, length: 3.5, x: 692, y: 281, w: 140, h: 105 },
+        { name: 'Kitchen', width: 4, length: 3.5, x: 139, y: 202, w: 130, h: 105 },
+      ],
+      doors: 4, windows: 6, confidence: 90,
+    }));
+    expect(result.rooms[0].position).toEqual({ x: 69.2, y: 28.1, width: 14, height: 10.5 });
+  });
+
+  it('leaves percentages alone', () => {
+    const result = toAnalysisResult(JSON.stringify({
+      rooms: [{ name: 'Lounge', width: 5, length: 4.5, x: 6, y: 6, w: 42, h: 44 }],
+      doors: 1, windows: 1, confidence: 90,
+    }));
+    expect(result.rooms[0].position).toEqual({ x: 6, y: 6, width: 42, height: 44 });
+  });
+});

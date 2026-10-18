@@ -15,7 +15,7 @@ const ANALYSIS_STEPS = [
   { id: 'structure', label: 'Analyzing building structure', icon: House },
 ];
 
-export default function AnalysisProgress({ onCancel }: { onCancel: () => void }) {
+export default function AnalysisProgress({ onCancel, retrying = false }: { onCancel: () => void; retrying?: boolean }) {
   const [elapsed, setElapsed] = useState(0);
 
   // Derived from the clock rather than set from inside the timer's state
@@ -89,10 +89,27 @@ export default function AnalysisProgress({ onCancel }: { onCancel: () => void })
           })}
         </div>
 
+        {retrying && (
+          <p className="retry-note" role="status">
+            The plan reader was busy, so we&apos;re trying again. This can take up to a minute.
+          </p>
+        )}
+
         <button type="button" className="cancel-button" onClick={onCancel}>Cancel and choose another file</button>
       </Card>
 
       <style jsx>{`
+        .retry-note {
+          margin: 12px 0 0;
+          border-radius: 10px;
+          background: #fff7e6;
+          padding: 10px 12px;
+          color: #8a5300;
+          font-size: 0.85rem;
+          line-height: 1.45;
+          text-align: center;
+        }
+
         .analysis-progress {
           max-width: 500px;
           margin: 0 auto;

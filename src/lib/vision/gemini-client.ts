@@ -278,6 +278,17 @@ export function toAnalysisResult(text: string): VisionAnalysisResult {
       ? room.dimensionSource : 'unknown',
   }));
 
+  // Asked for percentages, a reader sometimes answers in its own 0–1000 box
+  // scale (Gemini's native one; seen on a PDF on 2026-10-18), and the boxes
+  // then sat off the drawing. Put them back on a 0–100 scale.
+  const extent = Math.max(0, ...rooms.map((room) => Math.max(room.position.x + room.position.width, room.position.y + room.position.height)));
+  if (extent > 105) {
+    const divisor = extent <= 1_050 ? 10 : extent / 100;
+    for (const room of rooms) {
+      room.position = { x: room.position.x / divisor, y: room.position.y / divisor, width: room.position.width / divisor, height: room.position.height / divisor };
+    }
+  }
+
   // Generate walls from room perimeters
   const walls: DetectedWall[] = generateWallsFromRooms(rooms);
 

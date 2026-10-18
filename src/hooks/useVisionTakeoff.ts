@@ -36,10 +36,10 @@ type PlanSnapshot = {
 // against cost abuse is IP-based rate limiting (10/min), not auth, so nothing
 // is given up by letting an anonymous visitor try the tool before signing up
 // for it.
-async function analyzeFloorPlanAPI(file: File, signal: AbortSignal, onPreviewImage: (image: Blob) => void): Promise<VisionAnalysisResult> {
+async function analyzeFloorPlanAPI(file: File, signal: AbortSignal, onPreviewImage: (image: Blob) => void, onRetry?: () => void): Promise<VisionAnalysisResult> {
   const { data } = await supabase.auth.getSession();
   const accessToken = data.session?.access_token;
-  return analyzePlanFile(file, { accessToken, signal, onPreviewImage });
+  return analyzePlanFile(file, { accessToken, signal, onPreviewImage, onRetry });
 }
 
 function addTemporaryEnablementItems(items: GeneratedBOQItem[], config: VisionConfig): GeneratedBOQItem[] {
@@ -83,6 +83,8 @@ export function useVisionTakeoff() {
   const analysisControllerRef = useRef<AbortController | null>(null);
   const [planHistory, setPlanHistory] = useState<{ past: PlanSnapshot[]; future: PlanSnapshot[] }>({ past: [], future: [] });
   const [planRevision, setPlanRevision] = useState(0);
+  /** The readers were busy and the plan is being read a second time. */
+  const [analysisRetrying, setAnalysisRetrying] = useState(false);
   const [rescanCandidate, setRescanCandidate] = useState<VisionAnalysisResult | null>(null);
   const [isRescanning, setIsRescanning] = useState(false);
   const [rescanError, setRescanError] = useState<string | null>(null);
@@ -149,10 +151,12 @@ export function useVisionTakeoff() {
     }));
 
     try {
+      setAnalysisRetrying(false);
       const result = await analyzeFloorPlanAPI(file, controller.signal, (image) => {
         const imageUrl = URL.createObjectURL(image);
         setState((prev) => ({ ...prev, previewUrl: imageUrl }));
-      });
+      }, () => setAnalysisRetrying(true));
+      setAnalysisRetrying(false);
 
       captureProductEvent('ai_scan_used', { tool: 'vision_takeoff', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'success', rooms: result.rooms.length });
 
@@ -167,6 +171,7 @@ export function useVisionTakeoff() {
       setPlanHistory({ past: [], future: [] });
       setPlanRevision(0);
     } catch (error) {
+      setAnalysisRetrying(false);
       captureProductEvent('ai_scan_used', { tool: 'vision_takeoff', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'failed' });
       setState((prev) => ({
         ...prev,
@@ -267,8 +272,10 @@ export function useVisionTakeoff() {
                 updates.dimensions
                   ? updates.dimensions.width * updates.dimensions.length
                   : room.area,
-              dimensionSource: updates.dimensions ? 'user' : room.dimensionSource,
-              dimensionsVerified: updates.dimensions ? false : room.dimensionsVerified,
+              // A typed size is the person's; one taken from the plan's
+              // printed sizes (planCheck.ts) says so and counts as checked.
+              dimensionSource: updates.dimensions ? (updates.dimensionSource === 'printed' ? 'printed' : 'user') : room.dimensionSource,
+              dimensionsVerified: updates.dimensions ? updates.dimensionSource === 'printed' && updates.dimensionsVerified === true : room.dimensionsVerified,
               isEdited: true,
             }
           : room
@@ -489,6 +496,7 @@ export function useVisionTakeoff() {
   // ============================================
 
   return {
+    analysisRetrying,
     // State
     state,
 

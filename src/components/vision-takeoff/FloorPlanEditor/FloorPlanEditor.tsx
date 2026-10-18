@@ -17,6 +17,7 @@ import {
 } from '@phosphor-icons/react';
 import { DetectedRoom, DetectedWall, type PlanBox, type VisionAnalysisResult } from '@/lib/vision/types';
 import { assessPlanReview } from '@/lib/vision/planReview';
+import { boxForMissing, checkAgainstPrinted, printedSizeFor, type PrintedRoom, type PrintedSizes } from '@/lib/vision/planCheck';
 import { dimensionNeedsReview, dimensionSourceLabel } from '@/lib/vision/dimensionSource';
 
 interface FloorPlanEditorProps {
@@ -28,6 +29,8 @@ interface FloorPlanEditorProps {
   onVerifiedTotalAreaChange: (area: number | null) => void;
   imageUrl: string | null;
   confidence: number;
+  /** Room sizes printed on the plan, to check the scan against. */
+  printed: PrintedSizes | null;
   readFromLabels: boolean;
   totalArea: number;
   onRoomUpdate: (roomId: string, updates: Partial<DetectedRoom>) => void;
@@ -63,6 +66,7 @@ export default function FloorPlanEditor({
   onVerifiedTotalAreaChange,
   imageUrl,
   confidence,
+  printed,
   readFromLabels,
   totalArea,
   onRoomUpdate,
@@ -96,6 +100,9 @@ export default function FloorPlanEditor({
   const [newRoom, setNewRoom] = useState({ name: '', width: '', length: '' });
   const [drawMode, setDrawMode] = useState<'room' | 'boundary' | null>(null);
   const [pendingBox, setPendingBox] = useState<PlanBox | null>(null);
+  // Bumped when a size is set from outside the room panel, so an open panel
+  // shows the new figures instead of what was typed in it.
+  const [panelVersion, setPanelVersion] = useState(0);
   const addRoomFormRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -103,6 +110,9 @@ export default function FloorPlanEditor({
   }, [pendingBox]);
 
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
+  // Measured against the plan's own printed sizes; worth showing from two up.
+  const printedCheck = checkAgainstPrinted(rooms, printed);
+  const measured = printedCheck !== null && printedCheck.printed >= 2 ? printedCheck : null;
   const verifiedMappedArea = rooms.reduce((sum, room) => sum + (room.dimensionsVerified && room.area > 0 ? room.area : 0), 0);
   const remainingArea = verifiedTotalAreaM2 === null ? null : verifiedTotalAreaM2 - verifiedMappedArea;
   const reviewFindings = assessPlanReview({
@@ -113,18 +123,52 @@ export default function FloorPlanEditor({
     externalWallLength: walls.filter((wall) => wall.type === 'external').reduce((sum, wall) => sum + wall.length, 0),
     internalWallLength: walls.filter((wall) => wall.type === 'internal').reduce((sum, wall) => sum + wall.length, 0),
     noExternalWallsDetected: !walls.some((wall) => wall.type === 'external'),
-    confidence,
+    // The reader's own score only when there is nothing printed to measure by.
+    confidence: measured ? null : confidence,
     readFromLabels,
     // Construction stages are chosen later; this screen checks only the scan.
     stages: ['scan review'],
     includeLabor: false,
   });
-  if (!readFromLabels && confidence >= 70 && confidence < 90) {
+  if (!measured && !readFromLabels && confidence >= 70 && confidence < 90) {
     reviewFindings.push({ id: 'estimated-dimensions', text: 'Some dimensions may have been estimated. Compare each room with the original plan.', severity: 'check' });
   }
 
   const handleRoomSelect = (roomId: string) => {
     setSelectedRoomId(roomId === selectedRoomId ? null : roomId);
+  };
+
+  const fmt = (n: number) => n.toFixed(Math.abs(Math.round(n * 10) - n * 10) < 1e-6 ? 1 : 2);
+  const printedText = (label: PrintedRoom) =>
+    label.width !== undefined && label.length !== undefined ? `${fmt(label.width)} × ${fmt(label.length)} m` : `${fmt(label.area ?? 0)} m²`;
+
+  const applyPrintedSize = (room: DetectedRoom, label: PrintedRoom) => {
+    const size = printedSizeFor(room, label);
+    if (!size) return;
+    onRoomUpdate(room.id, { dimensions: size, area: size.width * size.length, dimensionSource: 'printed', dimensionsVerified: true, isEdited: true });
+    setPanelVersion((version) => version + 1);
+  };
+
+  const addPrintedRoom = (label: PrintedRoom) => {
+    if (label.width === undefined || label.length === undefined || !printed) {
+      // Only an area is printed: the shape is the person's to give.
+      setNewRoom({ name: label.name, width: '', length: '' });
+      setPendingBox(null);
+      setAddingRoom(true);
+      setSelectedRoomId(null);
+      return;
+    }
+    const box = boxForMissing(label, rooms, printed);
+    const id = `printed-${crypto.randomUUID()}`;
+    onRoomAdd({
+      id, name: label.name, dimensions: { width: label.width, length: label.length }, area: label.width * label.length,
+      position: box ?? { x: 0, y: 0, width: 0, height: 0 },
+      wallType: 'internal', isEdited: true,
+      dimensionSource: 'printed',
+      dimensionsVerified: true,
+      manuallyPlaced: box !== null,
+    });
+    setSelectedRoomId(id);
   };
 
   const handleBoxDrawn = (box: PlanBox) => {
@@ -175,10 +219,17 @@ export default function FloorPlanEditor({
             <span className="stat-value">{totalArea.toFixed(0)}m²</span>
             <span className="stat-label">Room total</span>
           </div>
-          <div className={`stat confidence ${confidence >= 90 ? 'high' : confidence >= 70 ? 'medium' : 'low'}`}>
-            <span className="stat-value">{confidence}%</span>
-            <span className="stat-label">Confidence</span>
-          </div>
+          {measured ? (
+            <div className={`stat confidence ${measured.matched === measured.printed ? 'high' : measured.matched >= measured.printed * 0.7 ? 'medium' : 'low'}`}>
+              <span className="stat-value">{measured.matched}/{measured.printed}</span>
+              <span className="stat-label">Match plan</span>
+            </div>
+          ) : (
+            <div className={`stat confidence ${confidence >= 90 ? 'high' : confidence >= 70 ? 'medium' : 'low'}`}>
+              <span className="stat-value">{confidence}%</span>
+              <span className="stat-label">Confidence</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -187,8 +238,31 @@ export default function FloorPlanEditor({
         <ul>{reviewFindings.map((finding) => <li key={finding.id}>{finding.text}</li>)}</ul>
       </section>}
 
+      {measured && (measured.differences.length > 0 || measured.missing.length > 0) && <section className="printed-check" aria-labelledby="printed-check-heading">
+        <h2 id="printed-check-heading">Sizes printed on your plan</h2>
+        <p>{measured.matched} of {measured.printed} rooms match the {printed?.source === 'pdf-text' ? 'sizes in your PDF' : 'sizes we read off your plan'}.{printed?.source === 'ocr' ? ' Those were read from the picture, so check any that look wrong.' : ''}</p>
+        <ul>
+          {measured.differences.map(({ room, printed: label }) => (
+            <li key={room.id}>
+              <span><strong>{room.name}</strong>: plan says {printedText(label)}, this estimate has {label.area !== undefined && label.width === undefined ? `${fmt(room.dimensions.width * room.dimensions.length)} m²` : `${fmt(room.dimensions.width)} × ${fmt(room.dimensions.length)} m`}.</span>
+              {printedSizeFor(room, label)
+                ? <button type="button" className="tool-button" onClick={() => applyPrintedSize(room, label)}>Use {printedText(label)}</button>
+                : <button type="button" className="tool-button" onClick={() => setSelectedRoomId(room.id)}>Edit room</button>}
+            </li>
+          ))}
+          {measured.missing.map((label) => (
+            <li key={`${label.name}-${label.at.x}-${label.at.y}`}>
+              <span><strong>{label.name}</strong> ({printedText(label)}) is on the plan but not in the scan.</span>
+              <button type="button" className="tool-button" onClick={() => addPrintedRoom(label)}><Plus size={14} /> Add it</button>
+            </li>
+          ))}
+        </ul>
+      </section>}
+
       <section className="rescan-panel" aria-label="Scan quality and retry">
-        <p>The {confidence}% score is reported by the plan reader, not a guarantee of accuracy. Compare the rooms with your drawing before continuing.</p>
+        {measured
+          ? measured.matched === measured.printed && <p>All {measured.printed} room sizes printed on your plan match the scan. Rooms without a printed size still need checking against your drawing.</p>
+          : <p>The {confidence}% score is reported by the plan reader, not a guarantee of accuracy. Compare the rooms with your drawing before continuing.</p>}
         <div className="rescan-actions">
           <button type="button" className="tool-button" onClick={onRescan} disabled={isRescanning}><ArrowClockwise size={16} /> {isRescanning ? 'Scanning again…' : 'Scan this plan again'}</button>
           {isRescanning && <button type="button" className="tool-button" onClick={onCancelRescan}>Cancel retry</button>}
@@ -262,7 +336,7 @@ export default function FloorPlanEditor({
         <div className="panel-container">
           {selectedRoom ? (
             <RoomEditPanel
-              key={`${selectedRoom.id}-${planRevision}`}
+              key={`${selectedRoom.id}-${planRevision}-${panelVersion}`}
               room={selectedRoom}
               onUpdate={(updates) => onRoomUpdate(selectedRoom.id, updates)}
               onRemove={() => {
@@ -302,7 +376,11 @@ export default function FloorPlanEditor({
                       <span className={`source-badge ${dimensionNeedsReview(room.dimensionSource) ? 'needs-review' : ''}`}>
                         {dimensionSourceLabel(room.dimensionSource)}
                       </span>
-                      <span className={`source-badge ${room.dimensionsVerified ? '' : 'needs-review'}`}>{room.dimensionsVerified ? 'Size checked' : 'Check size'}</span>
+                      {room.dimensionsVerified
+                        ? <span className="source-badge">Size checked</span>
+                        : printedCheck?.matchedRoomIds.includes(room.id)
+                          ? <span className="source-badge">Matches plan</span>
+                          : <span className="source-badge needs-review">Check size</span>}
                     </div>
                     <span className="room-area">{room.area.toFixed(1)}m²</span>
                   </button>
@@ -345,6 +423,13 @@ export default function FloorPlanEditor({
         .scan-review h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: .95rem; font-weight: 700; }
         .scan-review ul { margin: 0; padding-left: 22px; font-size: .82rem; line-height: 1.5; }
         .scan-review li + li { margin-top: 4px; }
+        .printed-check { border: 1px solid #e7c46a; border-radius: 12px; background: #fff9e9; padding: 14px 16px; color: #694408; }
+        .printed-check h2 { margin: 0 0 4px; font-size: .95rem; font-weight: 700; }
+        .printed-check p { margin: 0 0 8px; font-size: .82rem; line-height: 1.5; }
+        .printed-check ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+        .printed-check li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: .82rem; line-height: 1.45; }
+        .printed-check li span { flex: 1 1 220px; }
+        .printed-check .tool-button { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; }
         .rescan-panel { border: 1px solid #d9e3ef; border-radius: 12px; background: #f5f8fc; padding: 12px 16px; }
         .rescan-panel p { margin: 0; color: #314c69; font-size: .8rem; line-height: 1.5; }
         .rescan-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }

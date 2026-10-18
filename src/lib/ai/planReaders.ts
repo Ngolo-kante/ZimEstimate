@@ -15,6 +15,7 @@
 // (lib/vision/readingCopy.ts). Each joins only when its key is set.
 
 import { generateWithFailover, GeminiCallError, type GeminiPart } from './gemini';
+import { PLAN_READER_MODELS } from '@/lib/vision/model';
 import { visionChat } from './openaiCompatible';
 
 export type ImageInput = { mimeType: string; base64: string };
@@ -34,8 +35,11 @@ export type ReadResult = { text: string; provider: 'gemini' | 'nvidia' | 'openro
 
 const NVIDIA_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const NVIDIA_MODELS = ['google/gemma-4-31b-it'];
-const OPENROUTER_MODELS = ['google/gemma-4-31b-it:free', 'google/gemma-4-26b-a4b-it:free'];
+// Slow (about a minute) but accurate when they answer, per the 2026-10-18
+// benchmark; they mostly matter when every Gemini model is busy. NVIDIA's
+// Nemotron VL failed every request there; on OpenRouter it worked.
+const NVIDIA_MODELS = ['google/gemma-4-31b-it', 'meta/llama-3.2-90b-vision-instruct'];
+const OPENROUTER_MODELS = ['nvidia/nemotron-3.5-super-vl:free', 'dots-studio/dots-3-note-preview:free', 'google/gemma-4-31b-it:free'];
 const OPENROUTER_JOINS_AFTER_MS = 8_000;
 
 const sleep = (ms: number, signal: AbortSignal) => new Promise<void>((resolve) => {
@@ -63,6 +67,7 @@ export async function readWithFirstAvailable(request: ReadRequest): Promise<Read
       deadlineMs: request.deadlineMs,
       accept: request.accept,
       signal: done.signal,
+      models: PLAN_READER_MODELS,
     }).then((r) => ({ text: r.text, provider: 'gemini' as const, model: r.model })),
   );
 

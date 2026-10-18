@@ -110,7 +110,7 @@ export default function VisionTakeoffWizard() {
 
         {/* Analysis Progress */}
         {state.step === 'analyzing' && (
-          <AnalysisProgress onCancel={wizard.cancelAnalysis} />
+          <AnalysisProgress onCancel={wizard.cancelAnalysis} retrying={wizard.analysisRetrying} />
         )}
 
         {/* Floor Plan Editor */}
@@ -124,6 +124,7 @@ export default function VisionTakeoffWizard() {
             onVerifiedTotalAreaChange={wizard.setVerifiedTotalArea}
             imageUrl={state.previewUrl}
             confidence={wizard.confidence}
+            printed={state.analysisResult?.printed ?? null}
             readFromLabels={wizard.readFromLabels}
             totalArea={wizard.totalArea}
             onRoomUpdate={wizard.updateRoom}
