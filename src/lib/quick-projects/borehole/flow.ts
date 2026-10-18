@@ -483,27 +483,6 @@ export const boreholeFlow: QuestionFlow = {
           recommendation: () =>
             'To apply you\'ll need: a site survey report, proof of land ownership (title deed or utility bill), a national ID, and the ZINWA application fee (~$60).',
         },
-        // ── Site distance (optional for mobilization calc) ──────────────
-        {
-          id: 'site_distance_km',
-          type: 'number',
-          title: 'How far is the site from the nearest town?',
-          description:
-            'Helps calculate transport costs accurately. Leave empty or use "Not sure" for an automatic estimate based on your area type.',
-          unit: 'km',
-          min: 0,
-          max: 500,
-          notSureOption: true,
-          notSureFollowUp: [
-            {
-              id: 'site_distance_km',
-              type: 'number',
-              title: 'We\'ll estimate based on your area type',
-              unit: 'km',
-              defaultValue: 0,
-            },
-          ],
-        },
       ],
     },
 

@@ -41,13 +41,13 @@ const config = (extra: Partial<Answers> = {}): Answers =>
 
 describe('the BOQ honours the configuration it is given', () => {
   it('quotes the casing grade the user picked, not one of its own', () => {
-    const casing = calculateBoreholeBOQ(config({ casing_class: 'class_6' })).find((i) => i.id === 'bg_casing');
+    const casing = calculateBoreholeBOQ(config({ casing_class: 'class_6' })).find((i) => i.id === 'bg_casing_extra');
     expect(casing?.description).toContain(getCasingLabel('class_6'));
     expect(casing?.description).not.toContain('Class 10');
   });
 
   it.each(['class_6', 'class_9', 'class_10'] as const)('carries %s through', (grade) => {
-    const casing = calculateBoreholeBOQ(config({ casing_class: grade })).find((i) => i.id === 'bg_casing');
+    const casing = calculateBoreholeBOQ(config({ casing_class: grade })).find((i) => i.id === 'bg_casing_extra');
     expect(casing?.description).toContain(getCasingLabel(grade));
   });
 
@@ -65,11 +65,11 @@ describe('the BOQ honours the configuration it is given', () => {
 describe('switching a component off removes it', () => {
   it.each([
     ['include_drilling', 'bg_drilling'],
-    ['include_casing', 'bg_casing'],
+    ['include_casing', 'bg_casing_extra'],
     ['include_pump', 'bg_pump'],
     ['include_tank', 'bg_tank'],
     ['include_permits', 'bg_zinwa'],
-    ['include_transport', 'bg_mobilization'],
+    ['include_transport', 'bg_transport'],
     ['include_services', 'bg_survey'],
   ])('%s = false drops %s', (flag, itemId) => {
     const items = calculateBoreholeBOQ(config({ [flag]: false }));

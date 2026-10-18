@@ -17,6 +17,7 @@ const fit = (budget: number, over: Partial<Parameters<typeof fitBoreholeToBudget
     purpose: 'domestic',
     areaType: 'peri_urban',
     councilFee: 50,
+    location: 'other',
     ...over,
   });
 
@@ -29,8 +30,10 @@ describe('the configuration responds to the budget', () => {
   });
 
   it('buys better casing with more money', () => {
+    // Upgrading the package's 20 m costs little, so only a budget that barely
+    // covers the hole keeps the standard Class 6.
     expect(getCasingPrice(fit(15000).casingGrade, '140mm'))
-      .toBeGreaterThan(getCasingPrice(fit(2000).casingGrade, '140mm'));
+      .toBeGreaterThan(getCasingPrice(fit(1300).casingGrade, '140mm'));
   });
 
   it('never returns the same configuration across the whole budget range', () => {
@@ -97,8 +100,10 @@ describe('depth is an input, not something to solve for', () => {
   });
 
   it('downgrades components rather than the hole when depth eats the budget', () => {
-    const deep = fit(6000, { depth: 150 });
-    const shallow = fit(6000, { depth: 30 });
+    // 150 m costs $4,310 before the pump: $850 for 40 m, 110 m at $28, permits,
+    // survey and transport. $4,500 leaves almost nothing for the rest.
+    const deep = fit(4500, { depth: 150 });
+    const shallow = fit(4500, { depth: 30 });
     expect(getPumpPrice(deep.pumpType, 150).price)
       .toBeLessThanOrEqual(getPumpPrice(shallow.pumpType, 30).price * 3);
     expect(deep.budgetTooLow || deep.tankSize === 'none').toBe(true);

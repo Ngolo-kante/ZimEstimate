@@ -112,6 +112,7 @@ function summariseBorehole(params: URLSearchParams): SharedEstimateSummary | nul
         purpose,
         areaType: boreholeAreaType(location),
         councilFee: (LOCATION_DEFAULTS[location] ?? LOCATION_DEFAULTS.other).councilFee,
+        location,
       });
 
   return {

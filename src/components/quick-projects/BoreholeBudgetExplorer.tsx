@@ -24,19 +24,23 @@ import {
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { gateSaveBehindSignIn } from '@/lib/services/quickBoq';
-import { BOREHOLE_PRICES as P, LOCATION_DEFAULTS, boreholeAreaType } from '@/lib/quick-projects/borehole/catalog';
+import { BOREHOLE_PRICES as P, LOCATION_DEFAULTS, boreholeAreaType, inHarareArea } from '@/lib/quick-projects/borehole/catalog';
 import { calculateBoreholeBOQ } from '@/lib/quick-projects/borehole/calculations';
 // Shared with calculations.ts. These used to be defined here as well, and the
 // two copies drifted — the explorer showed one casing grade and the BOQ quoted
 // another.
 import {
   fitBoreholeToBudget,
+  getCasingExtras,
   getCasingLabel,
-  getCasingPrice,
-  getMobilisationCost,
+  getDrillingCost,
+  getExtraDrillingMetres,
   getPumpPrice,
+  getPumpSetCost,
   getSurveyCost,
   getTankCost,
+  getTransportCost,
+  TRANSPORT_NOTE,
   type CasingGrade,
   type PumpType,
   type TankSize,
@@ -166,8 +170,8 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
   // allocated whether the budget was $15,000 or $2,000 — a maxed-out bar and
   // "$3,495 over" that no amount of typing would change.
   const fit = useMemo(
-    () => fitBoreholeToBudget({ budget, depth, purpose, areaType, councilFee: locMeta.councilFee }),
-    [budget, depth, purpose, areaType, locMeta.councilFee],
+    () => fitBoreholeToBudget({ budget, depth, purpose, areaType, councilFee: locMeta.councilFee, location }),
+    [budget, depth, purpose, areaType, locMeta.councilFee, location],
   );
 
   useEffect(() => {
@@ -209,15 +213,13 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
 
   // ── Costs ─────────────────────────────────────────────────────────────────
   const costs = useMemo(() => {
-    const drillingCost = enabledCards.drilling ? depth * P.drilling_per_m : 0;
-
-    const casingPerM = getCasingPrice(casingGrade, diameter);
-    const casingCost = enabledCards.casing ? depth * casingPerM : 0;
-    const gravelCost = enabledCards.casing ? +(depth * 0.03).toFixed(1) * P.gravel_pack_per_m3 + P.wellhead_assembly : 0;
+    // The 40 m package carries 20 m of Class 6 casing, the gravel and seal;
+    // the casing card is only what a better grade adds.
+    const drillingCost = enabledCards.drilling ? getDrillingCost(depth) : 0;
+    const casingCost = enabledCards.casing ? getCasingExtras(casingGrade, diameter).total : 0;
 
     const pump = getPumpPrice(pumpType, depth);
-    const risingMain = pumpType !== 'hand' ? (depth + 5) * (purpose === 'domestic' ? P.rising_hdpe_25mm : P.rising_hdpe_32mm) : 0;
-    const pumpCost = enabledCards.pump ? pump.price + risingMain + P.pump_installation : 0;
+    const pumpCost = enabledCards.pump ? getPumpSetCost(pumpType, depth, purpose) : 0;
 
     const tank = getTankCost(tankSize, useCombo);
     const tankCost = enabledCards.tank ? tank.cost : 0;
@@ -229,11 +231,11 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
 
     const permitsCost = enabledCards.permits ? P.zinwa_permit_gw1 + locMeta.councilFee : 0;
 
-    const transportCost = enabledCards.transport ? getMobilisationCost(areaType) : 0;
+    const transportCost = enabledCards.transport ? getTransportCost(location) : 0;
 
     return {
       drilling: drillingCost,
-      casing: casingCost + gravelCost,
+      casing: casingCost,
       pump: pumpCost,
       tank: tankCost,
       services: servicesCost,
@@ -243,7 +245,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
       tankDesc: tank.desc,
       casingLabel: getCasingLabel(casingGrade),
     };
-  }, [enabledCards, depth, pumpType, casingGrade, tankSize, useCombo, purpose, diameter, areaType, locMeta]);
+  }, [enabledCards, depth, pumpType, casingGrade, tankSize, useCombo, purpose, diameter, areaType, locMeta, location]);
 
   const totalAllocated = Object.entries(costs)
     .filter(([k]) => !['pumpDesc', 'tankDesc', 'casingLabel'].includes(k))
@@ -396,15 +398,19 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
       icon: <Gauge size={22} weight="duotone" />,
       enabled: enabledCards.drilling,
       cost: costs.drilling,
-      description: `${depth}m depth × $${P.drilling_per_m}/m — standard rotary drilling`,
+      description: getExtraDrillingMetres(depth) > 0
+        ? `First ${P.drilling_package_depth_m} m package ($${P.drilling_package_40m}) + ${getExtraDrillingMetres(depth)} m × $${P.extra_drilling_per_m}/m. Includes ${P.drilling_package_casing_m} m casing, gravel pack, seal and the driller's fees`
+        : `First ${P.drilling_package_depth_m} m package ($${P.drilling_package_40m}). Includes ${P.drilling_package_casing_m} m casing, gravel pack, seal and the driller's fees`,
     },
     {
       id: 'casing',
-      label: 'Casing & Wellhead',
+      label: 'Casing upgrade',
       icon: <Funnel size={22} weight="duotone" />,
       enabled: enabledCards.casing,
       cost: costs.casing,
-      description: `PVC ${diameter} ${costs.casingLabel} + gravel pack + wellhead`,
+      description: costs.casing > 0
+        ? `The package's ${P.drilling_package_casing_m} m upgraded to PVC ${diameter} ${costs.casingLabel}`
+        : `${P.drilling_package_casing_m} m of PVC 140mm Class 6 is in the drilling package. Extra metres are $${P.casing_upvc_140_c6}/m`,
     },
     {
       id: 'pump',
@@ -412,7 +418,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
       icon: <Lightning size={22} weight="duotone" />,
       enabled: enabledCards.pump,
       cost: costs.pump,
-      description: costs.pumpDesc + ' + rising main + installation',
+      description: pumpType === 'solar' ? `${costs.pumpDesc}: panels, pipes, cable and installation included` : costs.pumpDesc + ' + rising main + installation',
     },
     {
       id: 'tank',
@@ -440,11 +446,11 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
     },
     {
       id: 'transport',
-      label: 'Mobilization',
+      label: 'Transport',
       icon: <Truck size={22} weight="duotone" />,
       enabled: enabledCards.transport,
       cost: costs.transport,
-      description: 'Drilling rig transport to site',
+      description: inHarareArea(location) ? 'Included in the drilling package in Harare' : TRANSPORT_NOTE,
     },
   ];
 
@@ -689,7 +695,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                             { id: 'electric' as PumpType, label: 'Electric', desc: 'Requires ZESA grid or generator power', tier: 'budget' },
                             { id: 'hand' as PumpType, label: 'Hand Pump', desc: 'Afridev — no electricity needed', tier: 'basic' },
                           ]).map((opt) => {
-                            const p = getPumpPrice(opt.id, depth);
+                            const p = { price: getPumpSetCost(opt.id, depth, purpose) };
                             return (
                               <button
                                 key={opt.id}
@@ -720,7 +726,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                             { id: 'class_9' as CasingGrade, label: 'Class 9', desc: 'Mid-grade durability' },
                             { id: 'class_10' as CasingGrade, label: 'Class 10', desc: 'Premium / deep wells' },
                           ]).map((opt) => {
-                            const price = getCasingPrice(opt.id, diameter);
+                            const price = getCasingExtras(opt.id, diameter).total;
                             return (
                               <button
                                 key={opt.id}
@@ -731,7 +737,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                               >
                                 <span className="font-semibold text-[var(--color-text)]">{opt.label}</span>
                                 <span className="text-xs text-[var(--color-text-secondary)]">{opt.desc}</span>
-                                <span className="text-xs font-medium text-[var(--color-text-secondary)] mt-1">${price.toFixed(2)}/m × {depth}m = ${Math.round(price * depth)}</span>
+                                <span className="text-xs font-medium text-[var(--color-text-secondary)] mt-1">{price > 0 ? `+$${Math.round(price)} on the ${P.drilling_package_casing_m} m` : 'In the package'}</span>
                               </button>
                             );
                           })}
@@ -813,10 +819,12 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
         <div className="mt-4 p-3 rounded-lg bg-[var(--color-accent-muted)]/50 border border-blue-100/50">
           <p className="text-xs font-semibold text-blue-800 mb-1">Assumptions</p>
           <ul className="text-xs text-[var(--color-accent-dark)] space-y-0.5">
-            <li>Prices: Zimbabwe Q1 2026 mid-range market rates</li>
-            <li>Drilling: Standard rotary at ${P.drilling_per_m}/m</li>
-            <li>Solar kits: Includes pump + panels + controller + mounting frame</li>
-            <li>Rising main: HDPE {purpose === 'domestic' ? '25mm' : '32mm'} pipe to surface</li>
+            <li>Prices: Zimbabwe market, October 2026</li>
+            <li>Drilling: ${P.drilling_package_40m} for the first {P.drilling_package_depth_m} m (drillers quote $700–1,000), then ${P.extra_drilling_per_m}/m. Includes {P.drilling_package_casing_m} m of casing and the driller&apos;s fees</li>
+            <li>Extra casing: ${P.casing_upvc_140_c6}/m or more beyond the {P.drilling_package_casing_m} m included</li>
+            <li>Outside Harare: usually $100–200 more, mostly transport</li>
+            <li>Solar packages: pump, panels, controller, pipes, cable and installation</li>
+            <li>Every price can be changed in the full BOQ</li>
             {!enabledCards.permits && <li className="text-amber-700 font-semibold">Permits disabled — ZINWA permit is legally required</li>}
           </ul>
         </div>

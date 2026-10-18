@@ -10,7 +10,7 @@
 //
 // Both sides import from here now. Change a price and both move together.
 
-import { BOREHOLE_PRICES as P } from './catalog';
+import { BOREHOLE_PRICES as P, inHarareArea } from './catalog';
 
 export type PumpType = 'solar' | 'hybrid' | 'electric' | 'hand';
 export type CasingGrade = 'class_6' | 'class_9' | 'class_10';
@@ -18,12 +18,12 @@ export type TankSize = '2000' | '2500' | '5000' | '10000' | 'none';
 export type CasingDiameter = '140mm' | '180mm';
 
 export function getSolarKitPrice(depth: number): { price: number; desc: string } {
-  if (depth > 120) return { price: P.solar_kit_3hp, desc: '3.0 HP solar kit (deep/commercial)' };
-  if (depth > 100) return { price: P.solar_kit_2hp, desc: '2.0 HP solar kit' };
-  if (depth > 80) return { price: P.solar_kit_15hp, desc: '1.5 HP solar kit (high yield)' };
-  if (depth > 50) return { price: P.solar_kit_1hp, desc: '1.0 HP solar kit' };
-  if (depth > 30) return { price: P.solar_kit_075hp, desc: '0.75 HP solar kit' };
-  return { price: P.solar_kit_05hp, desc: '0.5 HP solar kit' };
+  if (depth > 120) return { price: P.solar_kit_3hp, desc: '3.0 HP solar pump package (deep/commercial)' };
+  if (depth > 100) return { price: P.solar_kit_2hp, desc: '2.0 HP solar pump package' };
+  if (depth > 80) return { price: P.solar_kit_15hp, desc: '1.5 HP solar pump package (high yield)' };
+  if (depth > 50) return { price: P.solar_kit_1hp, desc: '1.0 HP solar pump package' };
+  if (depth > 30) return { price: P.solar_kit_075hp, desc: '0.75 HP solar pump package' };
+  return { price: P.solar_kit_05hp, desc: '0.5 HP solar pump package' };
 }
 
 export function getHybridKitPrice(depth: number): { price: number; desc: string } {
@@ -53,6 +53,69 @@ export function getCasingPrice(grade: CasingGrade, diameter: CasingDiameter): nu
   const c = grade === 'class_10' ? 'c10' : grade === 'class_9' ? 'c9' : 'c6';
   const key = `casing_upvc_${d}_${c}` as keyof typeof P;
   return (P[key] as number) ?? P.casing_upvc_140_c6;
+}
+
+/**
+ * Drilling to a depth as drillers sell it: the first 40 m as one package —
+ * with 20 m of casing, the gravel pack and seal, their fees and a Harare site
+ * visit — then each metre beyond. A shallower hole still costs the package.
+ */
+export function getDrillingCost(depth: number): number {
+  return P.drilling_package_40m + getExtraDrillingMetres(depth) * P.extra_drilling_per_m;
+}
+
+export function getExtraDrillingMetres(depth: number): number {
+  return Math.max(0, Math.round(depth) - P.drilling_package_depth_m);
+}
+
+export interface CasingExtras {
+  /** Metres of the package's casing upgraded to a better grade or size, and the extra per metre. */
+  upgradeM: number;
+  upgradePerM: number;
+  /** Metres cased beyond the package's 20 m, and their price per metre. */
+  extraM: number;
+  extraPerM: number;
+  total: number;
+}
+
+/**
+ * Casing on top of the package. Its 20 m are 140 mm Class 6; a better grade
+ * or the wider 180 mm pipe costs the difference on those metres, and casing
+ * deeper than 20 m costs the full rate per metre. By default only the
+ * package's 20 m are cased (the owner's choice, 2026-10-18): the driller
+ * decides on site whether the ground needs more, and the estimate lets the
+ * person add it.
+ */
+export function getCasingExtras(grade: CasingGrade, diameter: CasingDiameter, casedM: number = P.drilling_package_casing_m): CasingExtras {
+  const included = P.drilling_package_casing_m;
+  const extraPerM = getCasingPrice(grade, diameter);
+  const upgradePerM = Math.max(0, extraPerM - P.casing_upvc_140_c6);
+  const upgradeM = upgradePerM > 0 ? Math.min(Math.max(0, casedM), included) : 0;
+  const extraM = Math.max(0, Math.round(casedM) - included);
+  return { upgradeM, upgradePerM, extraM, extraPerM, total: upgradeM * upgradePerM + extraM * extraPerM };
+}
+
+/** Getting the rig to site: in the package in Harare, usually $100–200 more elsewhere. */
+export function getTransportCost(location: string): number {
+  return inHarareArea(location) ? 0 : P.transport_outside_harare;
+}
+
+export const TRANSPORT_NOTE =
+  `Outside Harare, drillers usually charge $${P.transport_outside_harare_low}–${P.transport_outside_harare_high} more, mostly to bring the rig. Change this to your driller's figure.`;
+
+export const PACKAGE_NOTE =
+  `Drillers quote the first ${P.drilling_package_depth_m} m as one price, usually $700–1,000 in Harare. It includes ${P.drilling_package_casing_m} m of 140 mm Class 6 casing, the gravel pack and seal, and their professional fees. Change it to your driller's quote.`;
+
+/**
+ * A pump with what it needs to work. Solar packages already include the
+ * pipes, cable and installation; other pumps add a rising main and labour.
+ */
+export function getPumpSetCost(type: PumpType, depth: number, purpose: 'domestic' | 'commercial' | string): number {
+  const pump = getPumpPrice(type, depth).price;
+  if (type === 'solar') return pump;
+  if (type === 'hand') return pump + P.pump_installation;
+  const risingRate = purpose === 'domestic' ? P.rising_hdpe_25mm : P.rising_hdpe_32mm;
+  return pump + (depth + 5) * risingRate + P.pump_installation;
 }
 
 export function getCasingLabel(grade: CasingGrade): string {
@@ -112,8 +175,10 @@ export function fitBoreholeToBudget(params: {
   purpose: 'domestic' | 'commercial';
   areaType: string;
   councilFee: number;
+  /** For transport: included in Harare, extra elsewhere. */
+  location: string;
 }): BoreholeFit {
-  const { budget, depth, purpose, areaType, councilFee } = params;
+  const { budget, depth, purpose, areaType, councilFee, location } = params;
   const diameter: CasingDiameter = purpose === 'domestic' ? '140mm' : '180mm';
 
   // Non-negotiables first — permit, council, transport, survey, drilling. A
@@ -121,25 +186,23 @@ export function fitBoreholeToBudget(params: {
   const fixed =
     P.zinwa_permit_gw1 +
     councilFee +
-    getMobilisationCost(areaType) +
+    getTransportCost(location) +
     getSurveyCost(areaType) +
-    depth * P.drilling_per_m +
-    +(depth * 0.03).toFixed(1) * P.gravel_pack_per_m3 +
-    P.wellhead_assembly;
+    getDrillingCost(depth);
 
   let remaining = budget - fixed;
 
-  // Casing: best grade fitting inside 30% of what is left, cheapest as floor.
-  // Class 6 is not optional — it is the minimum that holds a hole open.
+  // Casing: the package's 20 m, upgraded to the best grade fitting inside 30%
+  // of what is left. Class 6 is the floor and comes with the package.
   const casingGrades: CasingGrade[] = ['class_10', 'class_9', 'class_6'];
   let casingGrade: CasingGrade = 'class_6';
   for (const grade of casingGrades) {
-    if (getCasingPrice(grade, diameter) * depth <= remaining * 0.3) {
+    if (getCasingExtras(grade, diameter).total <= remaining * 0.3) {
       casingGrade = grade;
       break;
     }
   }
-  remaining -= getCasingPrice(casingGrade, diameter) * depth;
+  remaining -= getCasingExtras(casingGrade, diameter).total;
 
   // Pump: richest option fitting inside 70%, leaving room for storage. A hand
   // pump is the floor rather than "no pump" — a borehole you cannot draw from
@@ -147,16 +210,12 @@ export function fitBoreholeToBudget(params: {
   const pumpTypes: PumpType[] = ['solar', 'hybrid', 'electric', 'hand'];
   let pumpType: PumpType = 'hand';
   for (const type of pumpTypes) {
-    if (getPumpPrice(type, depth).price <= remaining * 0.7) {
+    if (getPumpSetCost(type, depth, purpose) <= remaining * 0.7) {
       pumpType = type;
       break;
     }
   }
-  remaining -= getPumpPrice(pumpType, depth).price;
-  if (pumpType !== 'hand') {
-    const risingRate = purpose === 'domestic' ? P.rising_hdpe_25mm : P.rising_hdpe_32mm;
-    remaining -= (depth + 5) * risingRate + P.pump_installation;
-  }
+  remaining -= getPumpSetCost(pumpType, depth, purpose);
 
   // Storage: largest that fits, else none. getTankCost always includes a stand,
   // so this never proposes a tank with nothing to raise it on.
@@ -191,11 +250,6 @@ export function fitBoreholeToBudget(params: {
     budgetTooLow: fittedCostUsd > budget,
     fittedCostUsd,
   };
-}
-
-export function getMobilisationCost(areaType: string): number {
-  const extraKm = areaType === 'urban' ? 0 : 15;
-  return P.mobilization_base + Math.max(0, extraKm) * P.mobilization_per_km;
 }
 
 export function getSurveyCost(areaType: string): number {

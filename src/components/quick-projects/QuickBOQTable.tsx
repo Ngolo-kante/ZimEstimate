@@ -537,7 +537,9 @@ export default function QuickBOQTable({
           This estimate is based on typical Zimbabwe market rates and may vary based on
           site-specific conditions, ground composition, and material availability. Final
           costs are subject to a professional site assessment and hydrogeologist&apos;s
-          report. Prices are indicative as of Q1 2026 and subject to change.
+          report. {projectType === 'borehole'
+            ? 'Drilling and solar pump prices follow drillers’ and installers’ published packages, October 2026. Outside Harare, drilling usually costs $100–200 more, mostly for transport. Change any quantity or price to match the quotes you get.'
+            : 'Prices are indicative as of Q1 2026 and subject to change.'}
         </p>
         {/* Users spot bad prices before we do — a face brick was priced per
             thousand against a per-brick count for a long time before anyone

@@ -1,12 +1,14 @@
 import { makeItem, type Answers, type BOQItem } from '../engine/types';
-import { BOREHOLE_PRICES as P, LOCATION_DEFAULTS } from './catalog';
+import { BOREHOLE_PRICES as P, LOCATION_DEFAULTS, inHarareArea } from './catalog';
 import {
-  getCasingLabel,
-  getCasingPrice,
-  getMobilisationCost,
+  getCasingExtras,
+  getExtraDrillingMetres,
   getPumpPrice,
   getSurveyCost,
   getTankCost,
+  getTransportCost,
+  PACKAGE_NOTE,
+  TRANSPORT_NOTE,
   type CasingDiameter,
   type CasingGrade,
   type PumpType,
@@ -22,12 +24,67 @@ function needsWork(a: Answers, work: string): boolean {
 
 /** Match solar kit to depth using TSG Projects pump-to-depth matrix. */
 function getSolarKit(depth: number): { key: keyof typeof P; desc: string } {
-  if (depth > 120) return { key: 'solar_kit_3hp', desc: 'Solar pump kit — 3.0 HP (deep / commercial borehole)' };
-  if (depth > 100) return { key: 'solar_kit_2hp', desc: 'Solar pump kit — 2.0 HP (deep borehole)' };
-  if (depth > 80)  return { key: 'solar_kit_15hp', desc: 'Solar pump kit — 1.5 HP (high yield)' };
-  if (depth > 50)  return { key: 'solar_kit_1hp', desc: 'Solar pump kit — 1.0 HP' };
-  if (depth > 30)  return { key: 'solar_kit_075hp', desc: 'Solar pump kit — 0.75 HP' };
-  return { key: 'solar_kit_05hp', desc: 'Solar pump kit — 0.5 HP' };
+  if (depth > 120) return { key: 'solar_kit_3hp', desc: 'Solar pump package — 3.0 HP (deep / commercial borehole)' };
+  if (depth > 100) return { key: 'solar_kit_2hp', desc: 'Solar pump package — 2.0 HP (deep borehole)' };
+  if (depth > 80)  return { key: 'solar_kit_15hp', desc: 'Solar pump package — 1.5 HP (high yield)' };
+  if (depth > 50)  return { key: 'solar_kit_1hp', desc: 'Solar pump package — 1.0 HP' };
+  if (depth > 30)  return { key: 'solar_kit_075hp', desc: 'Solar pump package — 0.75 HP' };
+  return { key: 'solar_kit_05hp', desc: 'Solar pump package — 0.5 HP' };
+}
+
+const SOLAR_PACKAGE_NOTE = 'Pump, solar panels, controller, pipes, cable and installation, as installers sell it. The tank and stand are priced separately.';
+
+// ─── Drilling, casing and transport, as drillers quote them ─────────────────
+// Shared by every new-borehole estimate so they all price a hole the same way.
+
+/** The 40 m package and any metres beyond it. Returns what they cost. */
+function addDrillingItems(items: BOQItem[], depth: number, prefix: string): number {
+  items.push(makeItem(`${prefix}drilling`, 'Drilling', `Drilling & casing package — first ${P.drilling_package_depth_m} m`, 1, 'each', P.drilling_package_40m, { notes: PACKAGE_NOTE }));
+  const extra = getExtraDrillingMetres(depth);
+  if (extra > 0) {
+    items.push(makeItem(`${prefix}extra_drilling`, 'Drilling', `Extra drilling beyond ${P.drilling_package_depth_m} m`, extra, 'm', P.extra_drilling_per_m, {
+      notes: 'Drillers charge each metre beyond the package, usually $25–35.',
+    }));
+  }
+  return P.drilling_package_40m + extra * P.extra_drilling_per_m;
+}
+
+/**
+ * Casing on top of the package: an upgrade of its 20 m when a better grade or
+ * size is chosen, a line for extra metres (none unless the person adds them),
+ * and double casing for sandy ground. Returns what they cost.
+ */
+function addCasingItems(items: BOQItem[], o: { material: string; grade: CasingGrade; diameter: CasingDiameter; prefix: string; doubleCasing?: boolean }): number {
+  const desc = formatCasingDesc(o.material, o.grade, o.diameter);
+  const extras = o.material === 'steel'
+    ? (() => {
+        const perM = resolveCasingPrice('steel', o.grade, o.diameter);
+        return { upgradeM: P.drilling_package_casing_m, upgradePerM: Math.max(0, perM - P.casing_upvc_140_c6), extraM: 0, extraPerM: perM, total: P.drilling_package_casing_m * Math.max(0, perM - P.casing_upvc_140_c6) };
+      })()
+    : getCasingExtras(o.grade, o.diameter);
+  let total = extras.total;
+  if (extras.upgradeM > 0) {
+    items.push(makeItem(`${o.prefix}casing_upgrade`, 'Casing', `Casing upgrade — the package's ${extras.upgradeM} m to ${desc}`, extras.upgradeM, 'm', extras.upgradePerM, {
+      notes: `The package includes ${P.drilling_package_casing_m} m of 140 mm Class 6 casing; this is the difference for the casing chosen.`,
+    }));
+  }
+  items.push(makeItem(`${o.prefix}casing_extra`, 'Casing', `Extra casing beyond the ${P.drilling_package_casing_m} m included — ${desc}`, extras.extraM, 'm', extras.extraPerM, {
+    optional: true,
+    notes: `Your driller decides on site whether the ground needs more than ${P.drilling_package_casing_m} m of casing. Enter the metres they add.`,
+  }));
+  if (o.doubleCasing) {
+    items.push(makeItem(`${o.prefix}double_casing`, 'Casing', 'Double casing — top section (sandy or collapsing ground)', P.double_casing_default_m, 'm', P.double_casing_per_m, {
+      notes: 'Usually $25–28 a metre. Change the metres to your driller\'s figure.',
+    }));
+    total += P.double_casing_default_m * P.double_casing_per_m;
+  }
+  return total;
+}
+
+/** Transport outside Harare: drillers usually charge $100–200 more. */
+function addTransportItem(items: BOQItem[], location: string, prefix: string): void {
+  if (inHarareArea(location)) return;
+  items.push(makeItem(`${prefix}transport`, 'Transport & Logistics', 'Transport outside Harare — rig to site', 1, 'each', getTransportCost(location), { notes: TRANSPORT_NOTE }));
 }
 
 /** Match hybrid kit to depth. */
@@ -114,31 +171,26 @@ function calculateConfiguredBoreholeBOQ(answers: Answers): BOQItem[] {
     items.push(makeItem('bg_council', 'Permits & Compliance', 'Local council approval fee', 1, 'each', locMeta.councilFee));
   }
 
-  if (on('include_transport')) {
-    items.push(makeItem('bg_mobilization', 'Transport & Logistics', 'Drilling rig transport to site', 1, 'each', getMobilisationCost(areaType)));
-  }
+  if (on('include_transport')) addTransportItem(items, location, 'bg_');
 
-  if (on('include_drilling')) {
-    items.push(makeItem('bg_drilling', 'Drilling', 'Borehole drilling', depth, 'm', P.drilling_per_m));
-  }
+  if (on('include_drilling')) addDrillingItems(items, depth, 'bg_');
 
   if (on('include_casing')) {
-    const casingPerM = getCasingPrice(casingGrade, diameter);
-    items.push(makeItem('bg_casing', 'Casing', `PVC casing ${diameter} (${getCasingLabel(casingGrade)})`, depth, 'm', casingPerM));
-    const gravelM3 = +(depth * 0.03).toFixed(1);
-    items.push(makeItem('bg_gravel', 'Casing', 'Gravel pack (filter)', gravelM3, 'm³', P.gravel_pack_per_m3));
-    items.push(makeItem('bg_wellhead', 'Wellhead', 'Wellhead assembly & sanitary seal', 1, 'each', P.wellhead_assembly));
+    addCasingItems(items, { material: 'upvc', grade: casingGrade, diameter, prefix: 'bg_' });
   }
 
   if (on('include_pump')) {
     const pump = getPumpPrice(pumpType, depth);
-    items.push(makeItem('bg_pump', 'Pump & Power', pump.desc, 1, pumpType === 'hand' ? 'each' : 'kit', pump.price));
-    if (pumpType !== 'hand') {
+    items.push(makeItem('bg_pump', 'Pump & Power', pump.desc, 1, pumpType === 'hand' ? 'each' : 'kit', pump.price,
+      pumpType === 'solar' ? { notes: SOLAR_PACKAGE_NOTE } : undefined));
+    if (pumpType !== 'hand' && pumpType !== 'solar') {
       const risingRate = purpose === 'domestic' ? P.rising_hdpe_25mm : P.rising_hdpe_32mm;
       const risingDia = purpose === 'domestic' ? '25mm' : '32mm';
       items.push(makeItem('bg_rising', 'Pipework', `HDPE rising main — ${risingDia}`, depth + 5, 'm', risingRate));
     }
-    items.push(makeItem('bg_pump_install', 'Transport & Logistics', 'Pump installation labour', 1, 'each', P.pump_installation));
+    if (pumpType !== 'solar') {
+      items.push(makeItem('bg_pump_install', 'Transport & Logistics', 'Pump installation labour', 1, 'each', P.pump_installation));
+    }
   }
 
   if (on('include_tank') && tankSize !== 'none') {
@@ -196,9 +248,6 @@ function calculateNewBoreholeBOQ(answers: Answers): BOQItem[] {
   const standChoice = isQuick ? 'combo' : (answers.include_tank_stand as string) || 'standard';
   const customStandHeight = parseInt(answers.tank_stand_height as string) || 4;
 
-  // ── Resolve site distance ──────────────────────────────────────────────
-  const siteDistance = parseInt(answers.site_distance_km as string) || 0;
-
   // ── Resolve services ───────────────────────────────────────────────────
   const includeSiteSurvey = isQuick
     ? true
@@ -234,32 +283,19 @@ function calculateNewBoreholeBOQ(answers: Answers): BOQItem[] {
 
   const items: BOQItem[] = [];
 
-  // ── 1. Drilling ──────────────────────────────────────────────────────────
-  const useMudDrilling = isSandy;
-  const drillingRate = useMudDrilling ? P.mud_drilling_per_m : P.drilling_per_m;
-  items.push(
-    makeItem(
-      'bh_drilling', 'Drilling',
-      useMudDrilling ? 'Borehole drilling — mud drilling (sandy soil)' : 'Borehole drilling',
-      depth, 'm', drillingRate,
-    ),
-  );
+  // ── 1. Drilling: the 40 m package, then each metre beyond ───────────────
+  addDrillingItems(items, depth, 'bh_');
 
-  // ── 2. Casing ────────────────────────────────────────────────────────────
-  const casingPricePerM = resolveCasingPrice(casingMaterial, casingClass, casingDiameter);
-  const casingDesc = formatCasingDesc(casingMaterial, casingClass, casingDiameter);
-  items.push(makeItem('bh_casing', 'Casing', casingDesc, depth, 'm', casingPricePerM));
-
-  if (doubleCasing || (isSandy && !isQuick)) {
-    items.push(
-      makeItem('bh_double_casing', 'Casing', 'Double casing — top section (sandy soil protection)', 10, 'm', P.double_casing_per_m),
-    );
-  }
-
-  // ── 3. Gravel pack & wellhead ────────────────────────────────────────────
-  const gravelM3 = +(depth * 0.03).toFixed(1);
-  items.push(makeItem('bh_gravel', 'Casing', 'Gravel pack (filter)', gravelM3, 'm³', P.gravel_pack_per_m3));
-  items.push(makeItem('bh_wellhead', 'Wellhead', 'Wellhead assembly & sanitary seal', 1, 'each', P.wellhead_assembly));
+  // ── 2. Casing beyond the package ─────────────────────────────────────────
+  // Sandy or collapsing ground gets double casing over the top section, as
+  // drillers price it ($25–28/m), not mud drilling the whole hole at $90/m.
+  addCasingItems(items, {
+    material: casingMaterial,
+    grade: casingClass as CasingGrade,
+    diameter: casingDiameter as CasingDiameter,
+    prefix: 'bh_',
+    doubleCasing: doubleCasing || (isSandy && !isQuick),
+  });
 
   // ── 4. Pump ──────────────────────────────────────────────────────────────
   if (systemScope !== 'drilling_only') {
@@ -307,20 +343,11 @@ function calculateNewBoreholeBOQ(answers: Answers): BOQItem[] {
     items.push(makeItem('bh_council', 'Permits & Compliance', `Local council approval fee (${locLabel})`, 1, 'each', councilFee, { optional: true }));
   }
 
-  // ── 9. Mobilization & labour ───────────────────────────────────────────
-  if (includeMobilization) {
-    const mobilizationCost = getMobilizationCost(areaType, siteDistance);
-    const distNote = siteDistance > 0
-      ? `${siteDistance} km from depot — ${Math.max(0, siteDistance - P.mobilization_free_radius_km)} km beyond free radius`
-      : areaType === 'urban' ? `Within ${P.mobilization_free_radius_km} km — base rate` : `Estimated transport to ${areaType.replace('_', '-')} site`;
-    items.push(
-      makeItem('bh_mobilization', 'Transport & Logistics', 'Drilling rig transport to site', 1, 'each', mobilizationCost, {
-        optional: true,
-        notes: distNote,
-      }),
-    );
-  }
-  if (includePumpInstall && systemScope !== 'drilling_only') {
+  // ── 9. Transport & labour ──────────────────────────────────────────────
+  // In Harare the package includes getting the rig to site.
+  if (includeMobilization) addTransportItem(items, location, 'bh_');
+  // A solar package already includes installation.
+  if (includePumpInstall && systemScope !== 'drilling_only' && pumpPower !== 'solar') {
     items.push(makeItem('bh_pump_install', 'Transport & Logistics', 'Pump installation labour', 1, 'each', P.pump_installation, { optional: true }));
   }
 
@@ -343,7 +370,7 @@ function calculateExistingBoreholeBOQ(answers: Answers): BOQItem[] {
   if (needsWork(answers, 'additional_drilling')) {
     const extraMetres = parseInt(answers.additional_metres as string) || 20;
     items.push(
-      makeItem('ex_drilling', 'Drilling', 'Additional drilling — deepening existing borehole', extraMetres, 'm', P.drilling_per_m),
+      makeItem('ex_drilling', 'Drilling', 'Additional drilling — deepening existing borehole', extraMetres, 'm', P.extra_drilling_per_m),
     );
     // Extra casing for the new section
     const casingPricePerM = isQuick
@@ -532,10 +559,9 @@ function calculateBudgetBOQ(answers: Answers): BOQItem[] {
   items.push(makeItem('bg_council', 'Permits & Compliance', `Local council approval fee`, 1, 'each', locMeta.councilFee));
   remaining -= locMeta.councilFee;
 
-  // ── 3. Mandatory: Mobilization ─────────────────────────────────────────
-  const mobilCost = getMobilizationCost(areaType);
-  items.push(makeItem('bg_mobilization', 'Transport & Logistics', 'Drilling rig transport to site', 1, 'each', mobilCost));
-  remaining -= mobilCost;
+  // ── 3. Transport: in the package in Harare, extra elsewhere ────────────
+  addTransportItem(items, location, 'bg_');
+  remaining -= getTransportCost(location);
 
   // ── 4. Mandatory: Site survey ──────────────────────────────────────────
   const surveyKey = `site_survey_${areaType}` as keyof typeof P;
@@ -543,39 +569,15 @@ function calculateBudgetBOQ(answers: Answers): BOQItem[] {
   items.push(makeItem('bg_survey', 'Professional Services', 'Site survey', 1, 'each', surveyCost));
   remaining -= surveyCost;
 
-  // ── 5. Drilling — use user-selected depth (default 40m) ─────────────────
+  // ── 5. Drilling — the 40 m package, then each metre beyond ─────────────
   const depth = parseInt(answers.budget_depth as string) || 40;
-  const drillingCost = depth * P.drilling_per_m;
-  items.push(makeItem('bg_drilling', 'Drilling', 'Borehole drilling', depth, 'm', P.drilling_per_m));
-  remaining -= drillingCost;
+  remaining -= addDrillingItems(items, depth, 'bg_');
 
-  // ── 6. Casing — pick best grade that fits ──────────────────────────────
-  const casingDiameter = purpose === 'domestic' ? '140mm' : '180mm';
-  // Try from premium down
-  const casingOptions: Array<{ cls: string; label: string }> = [
-    { cls: 'class_10', label: 'Class 10 — premium' },
-    { cls: 'class_9', label: 'Class 9 — mid-grade' },
-    { cls: 'class_6', label: 'Class 6 — standard' },
-  ];
-  let chosenCasing = casingOptions[2]; // default to Class 6
-  for (const opt of casingOptions) {
-    const price = resolveCasingPrice('upvc', opt.cls, casingDiameter);
-    if (price * depth <= remaining * 0.3) { // allocate up to 30% remaining for casing
-      chosenCasing = opt;
-      break;
-    }
-  }
-  const casingPrice = resolveCasingPrice('upvc', chosenCasing.cls, casingDiameter);
-  const casingCost = casingPrice * depth;
-  items.push(makeItem('bg_casing', 'Casing', `PVC casing ${casingDiameter} (${chosenCasing.label})`, depth, 'm', casingPrice));
-  remaining -= casingCost;
-
-  // ── 7. Gravel pack & wellhead ──────────────────────────────────────────
-  const gravelM3 = +(depth * 0.03).toFixed(1);
-  const gravelCost = gravelM3 * P.gravel_pack_per_m3;
-  items.push(makeItem('bg_gravel', 'Casing', 'Gravel pack (filter)', gravelM3, 'm³', P.gravel_pack_per_m3));
-  items.push(makeItem('bg_wellhead', 'Wellhead', 'Wellhead assembly & sanitary seal', 1, 'each', P.wellhead_assembly));
-  remaining -= gravelCost + P.wellhead_assembly;
+  // ── 6. Casing — the package's 20 m, upgraded to the best grade that fits ─
+  const casingDiameter: CasingDiameter = purpose === 'domestic' ? '140mm' : '180mm';
+  const grades: CasingGrade[] = ['class_10', 'class_9', 'class_6'];
+  const chosenGrade = grades.find((grade) => getCasingExtras(grade, casingDiameter).total <= remaining * 0.3) ?? 'class_6';
+  remaining -= addCasingItems(items, { material: 'upvc', grade: chosenGrade, diameter: casingDiameter, prefix: 'bg_' });
 
   // ── 8. Pump — pick best type within remaining budget ───────────────────
   // Try solar first, then hybrid, then electric, then hand pump
@@ -605,13 +607,13 @@ function calculateBudgetBOQ(answers: Answers): BOQItem[] {
   if (pumpChosen) {
     const pumpCost = P[pumpChosen.key] as number;
     items.push(makeItem('bg_pump', 'Pump & Power', pumpChosen.desc, 1, pumpChosen.type === 'hand' ? 'each' : 'kit', pumpCost, {
-      notes: pumpChosen.type === 'solar' ? 'Includes submersible pump, solar panels, controller, and mounting frame' :
+      notes: pumpChosen.type === 'solar' ? SOLAR_PACKAGE_NOTE :
              pumpChosen.type === 'hybrid' ? 'Auto-switches between solar and ZESA grid power' : undefined,
     }));
     remaining -= pumpCost;
 
-    // Rising main (not for hand pumps)
-    if (pumpChosen.type !== 'hand') {
+    // Rising main and installation: a solar package already includes both.
+    if (pumpChosen.type !== 'hand' && pumpChosen.type !== 'solar') {
       const risingDia = purpose === 'domestic' ? '25mm' : '32mm';
       const risingKey = `rising_hdpe_${risingDia}` as keyof typeof P;
       const risingRate = (P[risingKey] as number) || P.rising_hdpe_32mm;
@@ -620,9 +622,10 @@ function calculateBudgetBOQ(answers: Answers): BOQItem[] {
       remaining -= risingCost;
     }
 
-    // Installation
-    items.push(makeItem('bg_pump_install', 'Transport & Logistics', 'Pump installation labour', 1, 'each', P.pump_installation));
-    remaining -= P.pump_installation;
+    if (pumpChosen.type !== 'solar') {
+      items.push(makeItem('bg_pump_install', 'Transport & Logistics', 'Pump installation labour', 1, 'each', P.pump_installation));
+      remaining -= P.pump_installation;
+    }
   }
 
   // ── 9. Tank + stand — try combo first, then separate, then skip ────────
@@ -715,11 +718,9 @@ function formatCasingDesc(material: string, cls: string, diameter: string): stri
 function addPumpItems(items: BOQItem[], pumpPower: string, depth: number, purpose: string, prefix = 'bh_'): void {
   if (pumpPower === 'solar') {
     const { key, desc } = getSolarKit(depth);
-    items.push(
-      makeItem(`${prefix}pump`, 'Pump & Power', desc, 1, 'kit', P[key] as number, {
-        notes: `Includes submersible pump, solar panels, controller, and mounting frame. Solar array: ${Math.ceil((P[key] as number) * 0.4)}W+ recommended.`,
-      }),
-    );
+    items.push(makeItem(`${prefix}pump`, 'Pump & Power', desc, 1, 'kit', P[key] as number, { notes: SOLAR_PACKAGE_NOTE }));
+    // The package includes its pipes, cable and installation.
+    return;
   } else if (pumpPower === 'hybrid') {
     const { key, desc } = getHybridKit(depth);
     items.push(

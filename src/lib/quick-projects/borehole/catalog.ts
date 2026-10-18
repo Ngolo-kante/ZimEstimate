@@ -1,28 +1,46 @@
-// ─── Borehole Drilling Price Catalog — Zimbabwe Market Q1 2026 ─────────────
-// Sources: Sona Solar, Borehole Experts Zim, DrillCorp, Halsteds, LAMASAT,
-//          ZINWA tariff guide, Mutare Boreholes, Arete World, Gokwe South RDC,
-//          Masvingo & Insiza by-laws, Nakiso Borehole Drilling, TSG Projects,
-//          HYBSUN Solar Pump, Sizabantu Piping, strategic analysis.
+// ─── Borehole Drilling Price Catalog — Zimbabwe Market, October 2026 ────────
+// Drilling and solar pumps updated 2026-10-18 from the owner's figures and
+// drillers' published offers: Harare 40 m packages advertised at $750, $850,
+// $890, $950 and $1,000 (Sona Solar, Borehole Experts, social media adverts),
+// extra metres at $25–35 (most often $28), double casing $25–28/m; Sona Solar
+// solar borehole packages, September 2026.
+// Earlier sources: DrillCorp, Halsteds, LAMASAT, ZINWA tariff guide, Mutare
+// Boreholes, Arete World, Gokwe South RDC, Masvingo & Insiza by-laws, Nakiso
+// Borehole Drilling, TSG Projects, HYBSUN Solar Pump, Sizabantu Piping.
 
 export const BOREHOLE_PRICES = {
-  // ── Drilling ──────────────────────────────────────────────────────────────
-  drilling_per_m: 30.0,              // standard rate (all-in)
-  mud_drilling_per_m: 90.0,          // bentonite mud drilling — sandy / unstable soil
+  // ── Drilling — sold as a package, then by the metre ──────────────────────
+  // Drillers quote the first 40 m as one price ($700–1,000 in Harare) that
+  // includes 18–20 m of casing, the gravel pack and seal, their professional
+  // fees and getting the rig to a Harare site. Beyond 40 m they charge per
+  // metre drilled, and extra casing per metre on top.
+  drilling_package_40m: 850.0,       // middle of the $700–1,000 range
+  drilling_package_depth_m: 40,
+  drilling_package_casing_m: 20,     // 140 mm Class 6 PVC
+  extra_drilling_per_m: 28.0,        // beyond 40 m
 
-  // ── Casing (per metre installed) ──────────────────────────────────────────
+  // ── Casing beyond the package (per metre, supplied and installed) ────────
   // PVC — 140 mm
-  casing_upvc_140_c6: 5.80,          // Class 6 — standard residential (~$35/6m)
-  casing_upvc_140_c9: 7.00,          // Class 9 — mid-grade durability
-  casing_upvc_140_c10: 7.60,         // Class 10 — premium / deep (~$46/6m)
-  // PVC — 180 mm
-  casing_upvc_180_c6: 10.00,         // Class 6 — higher yield (~$60/6m)
-  casing_upvc_180_c9: 11.00,         // Class 9 — mid-grade higher yield
-  casing_upvc_180_c10: 12.00,        // Class 10 — premium (~$72/6m)
-  // Steel casing
-  casing_steel_140: 14.0,
-  casing_steel_180: 22.0,
-  // Double-casing surcharge (top 6–20 m for sandy soil)
-  double_casing_per_m: 25.0,
+  casing_upvc_140_c6: 9.0,           // Class 6 — standard residential ($9 or more)
+  casing_upvc_140_c9: 13.0,          // Class 9 — mid-grade (estimate)
+  casing_upvc_140_c10: 17.0,         // Class 10 — premium / deep (estimate)
+  // PVC — 180 mm (estimates)
+  casing_upvc_180_c6: 15.0,          // Class 6 — higher yield
+  casing_upvc_180_c9: 19.0,          // Class 9 — mid-grade higher yield
+  casing_upvc_180_c10: 23.0,         // Class 10 — premium
+  // Steel casing (estimates)
+  casing_steel_140: 20.0,
+  casing_steel_180: 28.0,
+  // Double casing for sandy or collapsing ground, over the top section
+  double_casing_per_m: 28.0,
+  double_casing_default_m: 10,
+
+  // ── Transport ─────────────────────────────────────────────────────────────
+  // Included in the package in Harare. Elsewhere drillers usually charge
+  // $100–200 more, mostly for moving the rig.
+  transport_outside_harare: 150.0,
+  transport_outside_harare_low: 100,
+  transport_outside_harare_high: 200,
 
   // ── Gravel & Wellhead ─────────────────────────────────────────────────────
   gravel_pack_per_m3: 35.0,
@@ -34,14 +52,18 @@ export const BOREHOLE_PRICES = {
   pump_sub_15kw: 380.0,              // submersible 1.5 kW  (up to 100 m)
   pump_hand_afridev: 320.0,          // Afridev hand pump
 
-  // ── Solar Pump Kits (pump + panels + controller + frame) ─────────────────
+  // ── Solar Pump Packages (pump + panels + controller + pipes, cable, rope ─
+  // and installation; the tank and stand are priced separately). Sona Solar's
+  // September 2026 packages with a 5,000 L tank on a stand were $1,800 (0.75
+  // HP), $2,000 (1 HP), $2,200 (1.5 HP) and $2,400 (2 HP); less the ~$950 tank
+  // and stand, these. 0.5 HP and 3 HP are estimates on the same steps.
   // Depth matrix (TSG Projects): 0.75HP→50m, 1HP→100m, 1.5HP→100m+, 2HP→120m, 3HP→160m
-  solar_kit_05hp: 1500.0,            // ≤ 30 m depth
-  solar_kit_075hp: 1600.0,           // 30–50 m
-  solar_kit_1hp: 1700.0,             // 50–100 m
-  solar_kit_15hp: 2100.0,            // 80–100 m (high yield)
-  solar_kit_2hp: 2800.0,             // 100–120 m
-  solar_kit_3hp: 3500.0,             // 120–160 m (deep / commercial)
+  solar_kit_05hp: 750.0,             // ≤ 30 m depth
+  solar_kit_075hp: 850.0,            // 30–50 m
+  solar_kit_1hp: 1000.0,             // 50–100 m
+  solar_kit_15hp: 1200.0,            // 80–100 m (high yield)
+  solar_kit_2hp: 1400.0,             // 100–120 m
+  solar_kit_3hp: 1900.0,             // 120–160 m (deep / commercial)
 
   // ── Hybrid Pump Kits (AC/DC VSD — auto-switches between solar & grid) ────
   hybrid_kit_1hp: 1850.0,            // 1HP hybrid AC/DC VSD (Nakiso)
@@ -124,8 +146,13 @@ export const LOCATION_DEFAULTS: Record<string, { depth: number; councilFee: numb
   other:       { depth: 60,  councilFee: 50 },
 };
 
-/* Which locations are priced as urban for survey and mobilisation. Shared by
-   the explorer and the link preview so the two price a site the same way. */
+/* Which locations are priced as urban for the site survey. Shared by the
+   explorer and the link preview so the two price a site the same way. */
 const URBAN_BOREHOLE_LOCATIONS = ['harare', 'bulawayo', 'chitungwiza'];
 export const boreholeAreaType = (location: string): 'urban' | 'peri_urban' =>
   URBAN_BOREHOLE_LOCATIONS.includes(location) ? 'urban' : 'peri_urban';
+
+/* Where the drilling package includes getting the rig to site. Chitungwiza is
+   served by the same Harare drillers without a transport charge. */
+const HARARE_AREA = ['harare', 'chitungwiza'];
+export const inHarareArea = (location: string): boolean => HARARE_AREA.includes(location);
