@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import Card from '@/components/ui/Card';
-import FloorPlanCanvas from './FloorPlanCanvas';
+import FloorPlanCanvas, { type Measured } from './FloorPlanCanvas';
 import RoomEditPanel from './RoomEditPanel';
 import {
   ArrowLeft,
@@ -17,7 +17,10 @@ import {
 } from '@phosphor-icons/react';
 import { DetectedRoom, DetectedWall, type PlanBox, type VisionAnalysisResult } from '@/lib/vision/types';
 import { assessPlanReview } from '@/lib/vision/planReview';
-import { boxForMissing, checkAgainstPrinted, printedSizeFor, type PrintedRoom, type PrintedSizes } from '@/lib/vision/planCheck';
+import { boxForMissing, checkAgainstPrinted, printedSizeFor, sameName, sameSize, type PrintedRoom, type PrintedSizes } from '@/lib/vision/planCheck';
+
+/** The rooms most plans have, offered as one tap when adding a room. */
+const ROOM_NAMES = ['Bedroom', 'Bathroom', 'Toilet', 'Kitchen', 'Lounge', 'Dining', 'Passage', 'Store', 'Veranda', 'Garage'];
 import { dimensionNeedsReview, dimensionSourceLabel } from '@/lib/vision/dimensionSource';
 
 interface FloorPlanEditorProps {
@@ -36,6 +39,7 @@ interface FloorPlanEditorProps {
   onRoomUpdate: (roomId: string, updates: Partial<DetectedRoom>) => void;
   onRoomRemove: (roomId: string) => void;
   onRoomAdd: (room: DetectedRoom) => void;
+  onRoomsPlaced: (positions: Record<string, PlanBox>) => void;
   doors: number;
   windows: number;
   onOpeningsChange: (openings: { doors?: number; windows?: number }) => void;
@@ -72,6 +76,7 @@ export default function FloorPlanEditor({
   onRoomUpdate,
   onRoomRemove,
   onRoomAdd,
+  onRoomsPlaced,
   doors,
   windows,
   onOpeningsChange,
@@ -103,6 +108,19 @@ export default function FloorPlanEditor({
   // Bumped when a size is set from outside the room panel, so an open panel
   // shows the new figures instead of what was typed in it.
   const [panelVersion, setPanelVersion] = useState(0);
+  const [scaleKnown, setScaleKnown] = useState(false);
+  const onScaleKnown = useCallback((known: boolean) => setScaleKnown(known), []);
+  /* A room with a printed or checked size whose box was resized to another
+     size: the printed size stays until the person chooses. */
+  const [resizeQuestion, setResizeQuestion] = useState<{ roomId: string; measured: Measured } | null>(null);
+  const [tapNote, setTapNote] = useState<string | null>(null);
+  const [placedCount, setPlacedCount] = useState(0);
+  const handleRoomsPlaced = useCallback((positions: Record<string, PlanBox>) => {
+    onRoomsPlaced(positions);
+    setPlacedCount(Object.keys(positions).length);
+  }, [onRoomsPlaced]);
+  /** Where a tapped room's prefilled size came from, while it is unchanged. */
+  const [prefill, setPrefill] = useState<{ source: 'printed' | 'scaled'; width: string; length: string } | null>(null);
   const addRoomFormRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -171,9 +189,68 @@ export default function FloorPlanEditor({
     setSelectedRoomId(id);
   };
 
+  // Each printed name that belongs to exactly one scan room, and that room to no other name.
+  const anchors = (() => {
+    const pairs = (printed?.rooms ?? []).flatMap((label) => {
+      const named = rooms.filter((room) => sameName(room.name, label.name));
+      // A room the person has moved or changed is theirs; it is never re-placed.
+      return named.length === 1 && !named[0].isEdited ? [{ roomId: named[0].id, at: label.at }] : [];
+    });
+    return pairs.filter((pair) => pairs.filter((other) => other.roomId === pair.roomId).length === 1);
+  })();
+
+  // Rooms whose size the plan or the person vouches for set the plan's scale.
+  const knownSizeIds = rooms
+    .filter((room) => room.dimensionSource === 'printed' || room.dimensionsVerified || printedCheck?.matchedRoomIds.includes(room.id))
+    .map((room) => room.id);
+  const keepsItsSize = (room: DetectedRoom) =>
+    room.dimensionSource === 'printed' || room.dimensionsVerified === true || (printedCheck?.matchedRoomIds.includes(room.id) ?? false);
+
+  const handleRoomBoxChange = (roomId: string, box: PlanBox, measured: Measured | null) => {
+    const room = rooms.find((r) => r.id === roomId);
+    if (!room) return;
+    setResizeQuestion(null);
+    if (!measured || measured.width <= 0 || measured.length <= 0 || sameSize(measured, room.dimensions)) {
+      onRoomUpdate(roomId, { position: box });
+    } else if (keepsItsSize(room)) {
+      onRoomUpdate(roomId, { position: box });
+      setResizeQuestion({ roomId, measured });
+    } else {
+      onRoomUpdate(roomId, { position: box, dimensions: measured, dimensionSource: 'scaled' });
+      setPanelVersion((version) => version + 1);
+    }
+  };
+
+  const applyMeasuredSize = () => {
+    if (!resizeQuestion) return;
+    onRoomUpdate(resizeQuestion.roomId, { dimensions: resizeQuestion.measured });
+    setPanelVersion((version) => version + 1);
+    setResizeQuestion(null);
+  };
+
+  const handleEmptyTap = (box: PlanBox | null, measured: Measured | null) => {
+    setTapNote(null);
+    // With a room open, a tap elsewhere closes it.
+    if (selectedRoomId) { setSelectedRoomId(null); return; }
+    if (!box) {
+      setTapNote('No walls were found around that spot. Use “Draw missing room” to mark it by hand.');
+      return;
+    }
+    // A printed label inside the box names the room and gives its size.
+    const label = printed?.rooms.find((p) => p.at.x >= box.x && p.at.x <= box.x + box.width && p.at.y >= box.y && p.at.y <= box.y + box.height);
+    const size = label?.width !== undefined && label.length !== undefined ? { width: label.width, length: label.length } : measured;
+    const width = size ? String(size.width) : '';
+    const length = size ? String(size.length) : '';
+    setNewRoom({ name: label?.name ?? '', width, length });
+    setPrefill(size ? { source: label?.width !== undefined ? 'printed' : 'scaled', width, length } : null);
+    setPendingBox(box);
+    setAddingRoom(true);
+  };
+
   const handleBoxDrawn = (box: PlanBox) => {
     if (drawMode === 'boundary') onFloorBoundaryChange(box);
     if (drawMode === 'room') {
+      setPrefill(null);
       setPendingBox(box);
       setAddingRoom(true);
       setSelectedRoomId(null);
@@ -187,15 +264,19 @@ export default function FloorPlanEditor({
     const length = Number(newRoom.length);
     if (!newRoom.name.trim() || !Number.isFinite(width) || !Number.isFinite(length) || width <= 0 || length <= 0) return;
     const id = `manual-${crypto.randomUUID()}`;
+    // A size measured off the plan and left as it was is still a measurement
+    // to check; one the person typed is theirs.
+    const kept = prefill && prefill.width === newRoom.width && prefill.length === newRoom.length ? prefill.source : null;
     onRoomAdd({
       id, name: newRoom.name.trim(), dimensions: { width, length }, area: width * length,
       // A room without a drawn box stays in the list; never invent its location.
       position: pendingBox ?? { x: 0, y: 0, width: 0, height: 0 },
       wallType: 'internal', isEdited: true,
-      dimensionSource: 'user',
-      dimensionsVerified: true,
+      dimensionSource: kept ?? 'user',
+      dimensionsVerified: kept !== 'scaled',
       manuallyPlaced: pendingBox !== null,
     });
+    setPrefill(null);
     setSelectedRoomId(id);
     setNewRoom({ name: '', width: '', length: '' });
     setAddingRoom(false);
@@ -307,6 +388,7 @@ export default function FloorPlanEditor({
           <button type="button" className="tool-button icon-button" aria-label="Redo correction" disabled={!canRedo} onClick={onRedo}><ArrowClockwise size={18} /></button>
         </div>
       </div>
+      {placedCount > 0 && <p className="placed-note" role="status">{placedCount} {placedCount === 1 ? 'room was' : 'rooms were'} lined up with the walls around {placedCount === 1 ? 'its' : 'their'} printed name. Drag any that still look off.</p>}
       {drawMode && <p className="draw-instruction" role="status">Drag a box over the {drawMode === 'room' ? 'missing room' : 'whole floor area'} on the plan. This marks its location; enter real dimensions separately.</p>}
 
       <div className="editor-body">
@@ -324,12 +406,35 @@ export default function FloorPlanEditor({
               floorBoundary={floorBoundary}
               drawMode={drawMode}
               onBoxDrawn={handleBoxDrawn}
+              knownSizeIds={knownSizeIds}
+              onRoomBoxChange={handleRoomBoxChange}
+              onEmptyTap={handleEmptyTap}
+              onScaleKnown={onScaleKnown}
+              anchors={anchors}
+              onRoomsPlaced={handleRoomsPlaced}
             />
           </Card>
 
+          {resizeQuestion && (() => {
+            const room = rooms.find((r) => r.id === resizeQuestion.roomId);
+            if (!room) return null;
+            const size = (d: { width: number; length: number }) => `${fmt(d.width)} × ${fmt(d.length)} m`;
+            return <div className="resize-question" role="status">
+              <p><strong>{room.name}</strong> is {room.dimensionSource === 'printed' ? 'printed' : 'confirmed'} as {size(room.dimensions)}. The box you drew measures {size(resizeQuestion.measured)}.</p>
+              <div className="rescan-actions">
+                <button type="button" className="tool-button" onClick={() => setResizeQuestion(null)}>Keep {size(room.dimensions)}</button>
+                <button type="button" className="tool-button active" onClick={applyMeasuredSize}>Use {size(resizeQuestion.measured)}</button>
+              </div>
+            </div>;
+          })()}
+          {tapNote && <p className="draw-instruction" role="status">{tapNote}</p>}
           <div className="tip-box">
             <Info size={16} weight="light" />
-            <span>Tap a highlighted room to edit it. Draw boxes to place missing rooms or outline the whole floor area; boxes do not measure metres.</span>
+            <span>{selectedRoom
+              ? scaleKnown
+                ? 'Drag the room or its edges to fit the walls; edges snap to walls and the size updates as you drag.'
+                : 'Drag the room or its edges to line it up with the plan. Sizes follow the box once two room sizes are confirmed.'
+              : 'Tap a room to edit it, or tap an empty room on the plan to add it.'}</span>
           </div>
         </div>
 
@@ -351,12 +456,25 @@ export default function FloorPlanEditor({
               <div className="rooms-list-heading"><h3>Rooms in this estimate</h3><button type="button" className="add-room-button" onClick={() => setAddingRoom((value) => !value)}><Plus size={16} /> Add missing room</button></div>
               <p className="source-guidance">The scan reports how it got each size. Check against your drawing, especially estimates and unconfirmed readings.</p>
               {addingRoom && <form ref={addRoomFormRef} className="add-room-form" onSubmit={handleAddRoom}>
-                {pendingBox && <p className="manual-room-note">Box placed on the drawing. Enter the room&apos;s real dimensions below.</p>}
+                {pendingBox && <p className="manual-room-note">{prefill?.source === 'scaled'
+                  ? 'Box placed on the drawing, sized from the plan’s scale. Check the size against your drawing.'
+                  : prefill?.source === 'printed'
+                    ? 'Box placed on the drawing, with the size printed in it.'
+                    : 'Box placed on the drawing. Enter the room’s real dimensions below.'}</p>}
                 <label>Room name<input type="text" value={newRoom.name} onChange={(event) => setNewRoom((room) => ({ ...room, name: event.target.value }))} placeholder="e.g. Bedroom 3" required /></label>
+                <div className="name-chips" aria-label="Common room names">
+                  {ROOM_NAMES.map((name) => {
+                    // "Bedroom" becomes the next free number: Bedroom 4 after three.
+                    const numbered = name === 'Bedroom' || name === 'Bathroom' || name === 'Toilet'
+                      ? `${name} ${rooms.filter((r) => r.name.toLowerCase().startsWith(name.toLowerCase())).length + 1}`
+                      : name;
+                    return <button key={name} type="button" className={`name-chip ${newRoom.name === numbered ? 'active' : ''}`} onClick={() => setNewRoom((room) => ({ ...room, name: numbered }))}>{numbered}</button>;
+                  })}
+                </div>
                 <div className="add-room-dimensions"><label>Width (m)<input type="number" inputMode="decimal" min="0.1" step="0.1" value={newRoom.width} onChange={(event) => setNewRoom((room) => ({ ...room, width: event.target.value }))} required /></label><label>Length (m)<input type="number" inputMode="decimal" min="0.1" step="0.1" value={newRoom.length} onChange={(event) => setNewRoom((room) => ({ ...room, length: event.target.value }))} required /></label></div>
                 <p className="manual-room-note">Wall length will be estimated from the corrected floor area and room count.</p>
                 <button type="submit" className="btn btn-primary">Add room to estimate</button>
-                <button type="button" className="tool-button" onClick={() => { setAddingRoom(false); setPendingBox(null); }}>Cancel</button>
+                <button type="button" className="tool-button" onClick={() => { setAddingRoom(false); setPendingBox(null); setPrefill(null); }}>Cancel</button>
               </form>}
               <div className="rooms-list">
                 {rooms.map((room) => (
@@ -418,6 +536,12 @@ export default function FloorPlanEditor({
         .coverage-figures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
         .coverage-figures span { display: grid; gap: 3px; border-radius: 8px; background: white; padding: 9px; color: #526985; font-size: .7rem; }
         .coverage-figures strong { color: #10243d; font-size: .95rem; }
+        .placed-note { margin: 0; color: #314c69; font-size: .8rem; }
+        .resize-question { border: 1px solid #e7c46a; border-radius: 12px; background: #fff9e9; padding: 12px 16px; color: #694408; }
+        .resize-question p { margin: 0; font-size: .82rem; line-height: 1.5; }
+        .name-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .name-chip { min-height: 32px; padding: 4px 10px; border: 1px solid #cbd8e6; border-radius: 999px; background: white; color: #173557; font-size: .75rem; font-weight: 600; cursor: pointer; }
+        .name-chip.active { background: #0f294b; border-color: #0f294b; color: white; }
         .draw-instruction { margin: 0; border-radius: 8px; background: #fff2d6; padding: 10px 12px; color: #85510a; font-size: .8rem; }
         .scan-review { border: 1px solid #e7c46a; border-radius: 12px; background: #fff9e9; padding: 14px 16px; color: #694408; }
         .scan-review h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: .95rem; font-weight: 700; }

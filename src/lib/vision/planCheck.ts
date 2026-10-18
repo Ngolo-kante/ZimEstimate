@@ -41,7 +41,7 @@ export interface PrintedSizeCheck {
 
 const normalise = (name: string) => name.toUpperCase().replace(/[^A-Z0-9]/g, '');
 /** "Ensuite 2" and "Ensuite 2 (Bedroom 2)" are the same room. */
-const sameName = (a: string, b: string) => {
+export const sameName = (a: string, b: string) => {
   const x = normalise(a);
   const y = normalise(b);
   return x.length > 0 && y.length > 0 && (x.startsWith(y) || y.startsWith(x));

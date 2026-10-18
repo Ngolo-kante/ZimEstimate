@@ -130,6 +130,7 @@ export default function VisionTakeoffWizard() {
             onRoomUpdate={wizard.updateRoom}
             onRoomRemove={wizard.removeRoom}
             onRoomAdd={wizard.addRoom}
+            onRoomsPlaced={wizard.placeRooms}
             doors={state.analysisResult?.doors ?? 0}
             windows={state.analysisResult?.windows ?? 0}
             onOpeningsChange={wizard.updatePlanOpenings}

@@ -272,9 +272,12 @@ export function useVisionTakeoff() {
                 updates.dimensions
                   ? updates.dimensions.width * updates.dimensions.length
                   : room.area,
-              // A typed size is the person's; one taken from the plan's
-              // printed sizes (planCheck.ts) says so and counts as checked.
-              dimensionSource: updates.dimensions ? (updates.dimensionSource === 'printed' ? 'printed' : 'user') : room.dimensionSource,
+              // A typed size is the person's. One taken from the plan's printed
+              // sizes (planCheck.ts) says so and counts as checked; one measured
+              // off the plan to its scale (planWalls.ts) says so, unchecked.
+              dimensionSource: updates.dimensions
+                ? (updates.dimensionSource === 'printed' || updates.dimensionSource === 'scaled' ? updates.dimensionSource : 'user')
+                : room.dimensionSource,
               dimensionsVerified: updates.dimensions ? updates.dimensionSource === 'printed' && updates.dimensionsVerified === true : room.dimensionsVerified,
               isEdited: true,
             }
@@ -315,6 +318,16 @@ export function useVisionTakeoff() {
       error: null,
     }));
   }, [recordPlanEdit]);
+
+  /* Boxes lined up with the walls around each room's printed name, as part
+     of reading the plan (FloorPlanCanvas). Not an edit: no undo step, and
+     the rooms are not marked as changed by the person. */
+  const placeRooms = useCallback((positions: Record<string, PlanBox>) => {
+    setState((prev) => ({
+      ...prev,
+      editedRooms: prev.editedRooms.map((room) => positions[room.id] ? { ...room, position: positions[room.id] } : room),
+    }));
+  }, []);
 
   const setFloorBoundary = useCallback((box: PlanBox | null) => {
     recordPlanEdit();
@@ -532,6 +545,7 @@ export function useVisionTakeoff() {
     updateRoom,
     updateWall,
     addRoom,
+    placeRooms,
     setFloorBoundary,
     setVerifiedTotalArea,
     removeRoom,
