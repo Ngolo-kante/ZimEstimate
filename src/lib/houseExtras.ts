@@ -64,7 +64,7 @@ export const HOUSE_EXTRAS_INFO: Record<HouseExtraId, { label: string; descriptio
   water_tank: { label: 'Water tank & pump', description: 'A storage tank on a stand, with a booster pump.' },
   borehole: { label: 'Borehole', description: 'Drilling, casing and a pump, priced like the borehole estimate.' },
   solar: { label: 'Solar backup', description: 'Panels, inverter and batteries, sized for what you want to keep running.' },
-  solar_geyser: { label: 'Solar geyser', description: 'Replaces the 150 L electric geyser already in Finishing.' },
+  solar_geyser: { label: 'Solar geyser', description: 'Replaces the 150 L electric geyser already in Plumbing & Electrical.' },
   gate_motor: { label: 'Gate motor', description: 'Automates the vehicle gate already in Exterior works.' },
   security: { label: 'Security', description: 'Burglar bars, security gates, alarm and electric fence.' },
   power_connection: { label: 'Power to the road', description: 'ZESA connection and the cable from the house to the road.' },
@@ -111,7 +111,7 @@ export interface ExtrasContext {
   zwgRate?: number;
 }
 
-type Line = { key: string; name: string; quantity: number; unit: string; priceUsd: number; note: string; category?: 'exterior' | 'substructure' | 'finishing' };
+type Line = { key: string; name: string; quantity: number; unit: string; priceUsd: number; note: string; category?: 'exterior' | 'substructure' | 'finishing' | 'services' };
 
 const QUOTE = 'Add your quote — no published Zimbabwe price.';
 
@@ -272,7 +272,7 @@ export function buildExtraItems(extras: HouseExtras, context: ExtrasContext): BO
   if (extras.solar.enabled) add('solar', solarLines(extras.solar.size, context));
 
   if (extras.solar_geyser.enabled) {
-    add('solar_geyser', [{ key: 'geyser', name: 'Solar pressure geyser 200 L', quantity: 1, unit: 'each', priceUsd: SOLAR_GEYSER_PRICE_USD, note: 'Halsteds listing; replaces the 150 L electric geyser', category: 'finishing' }]);
+    add('solar_geyser', [{ key: 'geyser', name: 'Solar pressure geyser 200 L', quantity: 1, unit: 'each', priceUsd: SOLAR_GEYSER_PRICE_USD, note: 'Halsteds listing; replaces the 150 L electric geyser', category: 'services' }]);
   }
 
   if (extras.gate_motor.enabled) {

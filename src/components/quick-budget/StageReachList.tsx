@@ -36,7 +36,8 @@ const STAGE_SUMMARY: Record<string, string> = {
   substructure: 'Hardcore, foundation concrete and walls, DPC and slab mesh',
   superstructure: 'Wall bricks and mortar, brickforce and ring-beam steel',
   roofing: 'Roof covering, roof timber, fixings and fascia',
-  finishing: 'Plaster, paint, tiles, ceiling, doors, windows, wiring and plumbing',
+  finishing: 'Plaster, paint, tiles, ceiling, doors and windows',
+  services: 'Wiring, pipes, toilets, basins and taps',
   exterior: 'Boundary wall, gates and paving',
 };
 

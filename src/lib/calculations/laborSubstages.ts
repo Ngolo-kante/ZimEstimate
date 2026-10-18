@@ -10,8 +10,9 @@ export const LABOR_SUBSTAGES = [
   { id: 'paint', stage: 'finishing', label: 'Painting' },
   { id: 'tiles', stage: 'finishing', label: 'Floor & wall tiling' },
   { id: 'joinery', stage: 'finishing', label: 'Ceilings, doors & windows' },
-  { id: 'electrical', stage: 'finishing', label: 'Electrical' },
-  { id: 'plumbing', stage: 'finishing', label: 'Plumbing' },
+  // Separate trades with their own quotes: the Plumbing & Electrical stage.
+  { id: 'electrical', stage: 'services', label: 'Electrical' },
+  { id: 'plumbing', stage: 'services', label: 'Plumbing' },
   { id: 'boundary', stage: 'exterior', label: 'Boundary works' },
   { id: 'paving', stage: 'exterior', label: 'Paving & external surfaces' },
 ] as const;
@@ -28,6 +29,7 @@ export const STAGE_LABOR_PERCENTAGES: Record<LaborStage, number> = {
   superstructure: 35,
   roofing: 35,
   finishing: 35,
+  services: 35,
   exterior: 35,
 };
 
@@ -46,13 +48,16 @@ export function laborSubstageFor(item: { category: string; materialId: string; m
     case 'superstructure':
       return /rebar|brickforce|ring beam|stirrup/.test(id + name) ? 'ring_beam' : 'walling';
     case 'roofing':
-      return /timber|fascia/.test(id) ? 'roof_frame' : 'roof_cover';
+      return /timber|fascia|hoop|nails/.test(id) ? 'roof_frame' : 'roof_cover';
+    case 'services':
+      return /cable|conduit|socket|switch|db-|mcb|light-/.test(id) ? 'electrical' : 'plumbing';
     case 'finishing':
-      if (/cable|conduit|socket|switch|db-/.test(id)) return 'electrical';
-      if (/pipe|tap|toilet|bath|basin|sink/.test(id)) return 'plumbing';
+      // Saved before Plumbing & Electrical had its own stage.
+      if (/cable|conduit|socket|switch|db-|mcb|light-/.test(id)) return 'electrical';
+      if (/pipe|tap|toilet|bath|basin|sink|wc-|mixer|stopcock|copper|gully|geyser/.test(id)) return 'plumbing';
       if (/paint/.test(id)) return 'paint';
       if (/tile|grout|adhesive/.test(id)) return 'tiles';
-      if (/door|window|hinge|lock|ceiling|cornice/.test(id)) return 'joinery';
+      if (/door|window|hinge|lock|ceiling|cornice|glass|burglar|kitchen/.test(id)) return 'joinery';
       return 'plaster';
     case 'exterior':
       return /pav|driveway/.test(id + name) ? 'paving' : 'boundary';

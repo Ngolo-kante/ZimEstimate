@@ -66,7 +66,7 @@ describe('link preview for a shared estimate', () => {
   });
 
   it('says so when the budget covers the whole build, rather than "100% of"', () => {
-    const summary = summariseSharedEstimate(new URLSearchParams('budget=25000&area=120&loc=rural&profile=economy'));
+    const summary = summariseSharedEstimate(new URLSearchParams('budget=60000&area=120&loc=rural&profile=economy'));
     expect(summary?.lines[1]).toMatch(/^Covers the full build/);
   });
 

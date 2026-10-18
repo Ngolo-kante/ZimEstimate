@@ -165,10 +165,10 @@ export default function ProjectUsageView({
   // with quantity and what is left — 99 lines of bare names repeated "DPC
   // Roll" and "Standard Cement 32.5N" with nothing to tell them apart.
   const materialOptionGroups = useMemo(() => {
-    const STAGE_ORDER = ['substructure', 'superstructure', 'roofing', 'finishing', 'exterior', 'labor'];
+    const STAGE_ORDER = ['substructure', 'superstructure', 'roofing', 'finishing', 'services', 'exterior', 'labor'];
     const STAGE_NAMES: Record<string, string> = {
       substructure: 'Foundations', superstructure: 'Walls & frame', roofing: 'Roofing',
-      finishing: 'Finishes', exterior: 'Outside works', labor: 'Labour',
+      finishing: 'Finishes', services: 'Plumbing & electrical', exterior: 'Outside works', labor: 'Labour',
     };
     const fmt = (n: number) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
     const unitOf = (unit: string) => unit.replace(/^per\s+/i, '').replace(/^each$/i, '').trim();

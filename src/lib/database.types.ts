@@ -22,6 +22,7 @@ export type MilestoneType =
     | 'superstructure'
     | 'roofing'
     | 'finishing'
+    | 'services'
     | 'exterior';
 
 export type AccessLevel = 'view' | 'edit';
@@ -32,7 +33,8 @@ export type QuickProjectType = 'septic' | 'solar' | 'water' | 'borehole' | 'fenc
 
 export type StageStatus = 'planning' | 'pending_approval' | 'in_progress' | 'on_hold' | 'completed';
 
-export type BOQCategory = 'substructure' | 'superstructure' | 'roofing' | 'finishing' | 'exterior';
+/** 'services' is Plumbing & Electrical (migration 065). */
+export type BOQCategory = 'substructure' | 'superstructure' | 'roofing' | 'finishing' | 'services' | 'exterior';
 
 export type DocumentCategory = 'plan' | 'permit' | 'receipt' | 'contract' | 'photo' | 'general';
 

@@ -1,5 +1,5 @@
 import { generateBOQFromBasics } from '@/lib/calculations';
-import type { RoofCovering } from '@/lib/calculations/roofingOptions';
+import type { RoofCovering, RoofShape } from '@/lib/calculations/roofingOptions';
 import { stageLaborPercentage, type LaborRates } from '@/lib/calculations/laborSubstages';
 import type { LocationType } from '@/lib/calculations/assumptions';
 import type { BrickType, CementType } from '@/lib/vision/types';
@@ -9,6 +9,7 @@ const STAGE_ORDER = [
   { id: 'superstructure', label: 'Structural Walls & Frame' },
   { id: 'roofing', label: 'Roofing' },
   { id: 'finishing', label: 'Interior & Finishing' },
+  { id: 'services', label: 'Plumbing & Electrical' },
   { id: 'exterior', label: 'External Work' },
 ] as const;
 
@@ -26,7 +27,8 @@ const STAGE_WEIGHT_FALLBACK: Record<StageId, number> = {
   substructure: 0.22,
   superstructure: 0.30,
   roofing: 0.20,
-  finishing: 0.20,
+  finishing: 0.14,
+  services: 0.06,
   exterior: 0.08,
 };
 
@@ -39,6 +41,7 @@ export type StageReachInput = {
   cementTypes?: CementType[];
   locationType?: LocationType;
   roofCovering?: RoofCovering;
+  roofShape?: RoofShape;
   /** Adds each stage's fixed labour percentage (laborSubstages.ts) to its cost. */
   includeLabor?: boolean;
   /** The user's own labour percentages by stage; defaults to 35% each. */
@@ -93,6 +96,7 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     includeLabor: false,
     locationType,
     roofCovering: input.roofCovering,
+    roofShape: input.roofShape,
   });
 
   const stageCosts: Record<StageId, number> = {
@@ -100,6 +104,7 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     superstructure: 0,
     roofing: 0,
     finishing: 0,
+    services: 0,
     exterior: 0,
   };
 

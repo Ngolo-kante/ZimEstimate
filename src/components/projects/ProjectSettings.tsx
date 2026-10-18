@@ -59,6 +59,7 @@ const STAGE_CATEGORIES: { id: BOQCategory; label: string; description: string }[
     { id: 'superstructure', label: 'Structural Walls & Frame', description: 'Brickwork, lintels, and beams up to roof level.' },
     { id: 'roofing', label: 'Roofing', description: 'Trusses, sheets, tiles, and ceiling.' },
     { id: 'finishing', label: 'Interior & Finishing', description: 'Plastering, painting, tiling, and glazing.' },
+    { id: 'services', label: 'Plumbing & Electrical', description: 'Pipes, sanitaryware, wiring and fittings.' },
     { id: 'exterior', label: 'External Work', description: 'Landscaping, paving, and boundary walls.' },
 ];
 

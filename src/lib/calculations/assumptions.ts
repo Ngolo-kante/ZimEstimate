@@ -9,8 +9,10 @@ const CSV_ASSUMPTION_VALUES = {
   Concrete_Cement_Bags_per_m3_Economy: 6.5,
   Mortar_Cement_Bags_per_m3_Standard: 5,
   Mortar_Cement_Bags_per_m3_Economy: 4.5,
-  Plaster_Cement_Bags_per_m3_Standard: 6,
-  Plaster_Cement_Bags_per_m3_Economy: 5,
+  // 1:4 by volume is about 365 kg of cement a cubic metre (7.3 bags), 1:5
+  // about 305 kg (6.1). These were 6 and 5, the rates for weaker mixes.
+  Plaster_Cement_Bags_per_m3_Standard: 7.3,
+  Plaster_Cement_Bags_per_m3_Economy: 6.1,
   Bricks_per_m2_Clay: 50,
   Blocks_per_m2_Cement: 12.5,
   // A 3m IBR sheet covers 3m x 0.686m = 2.06m2. 686mm is the standard IBR

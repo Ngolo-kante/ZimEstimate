@@ -36,6 +36,7 @@ const COST_CATEGORY_LABELS: Record<string, string> = {
   superstructure: 'Walls & frame',
   roofing: 'Roofing',
   finishing: 'Finishing',
+  services: 'Plumbing & electrical',
   exterior: 'Exterior',
   labor: 'Labour',
   project_fees: 'Professional & council fees',

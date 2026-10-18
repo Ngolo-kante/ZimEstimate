@@ -36,6 +36,7 @@ const STAGE_SHORT_LABELS: Record<string, string> = {
   superstructure: 'Walls & Frame',
   roofing: 'Roofing',
   finishing: 'Finishing',
+  services: 'Plumbing & Electrical',
   exterior: 'External Works',
 };
 

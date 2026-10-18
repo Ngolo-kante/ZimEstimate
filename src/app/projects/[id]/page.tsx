@@ -85,13 +85,14 @@ import {
 import { ProjectDetailSkeleton } from '@/components/ui/Skeleton';
 
 // Stage categories in order
-const STAGE_CATEGORIES: BOQCategory[] = ['substructure', 'superstructure', 'roofing', 'finishing', 'exterior'];
+const STAGE_CATEGORIES: BOQCategory[] = ['substructure', 'superstructure', 'roofing', 'finishing', 'services', 'exterior'];
 
 const categoryLabels: Record<BOQCategory, string> = {
     substructure: 'Site Preparation & Foundation',
     superstructure: 'Structural Walls & Frame',
     roofing: 'Roofing',
     finishing: 'Interior & Finishing',
+    services: 'Plumbing & Electrical',
     exterior: 'External Work',
 };
 
@@ -100,6 +101,7 @@ const categoryShortLabels: Record<BOQCategory, string> = {
     superstructure: 'Structure',
     roofing: 'Roof',
     finishing: 'Finishes',
+    services: 'Plumbing & Electrical',
     exterior: 'External',
 };
 

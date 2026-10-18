@@ -44,6 +44,7 @@ const STAGE_LABELS: Record<string, string> = {
   superstructure: 'walls up to roof level',
   roofing: 'roof',
   finishing: 'finishes inside the house',
+  services: 'plumbing and electrical work',
   exterior: 'outside works',
   labor: 'labour',
 };

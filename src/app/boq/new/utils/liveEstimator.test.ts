@@ -15,7 +15,7 @@ describe('uploaded plan in the BOQ builder', () => {
         locationCity: 'Harare', specificLocation: '', soilType: '' as const, siteSlope: '' as const,
         floorPlanSize: '120', standSize: '', buildingType: 'single_storey', wallHeight: '2.7',
         brickTypes: ['common'] as BrickType[], cementTypes: ['cement_325'] as CementType[],
-        finishLevel: 'standard' as const, roofCovering: 'ibr_05' as const, residentialDensity: 'low' as const,
+        finishLevel: 'standard' as const, roofCovering: 'ibr_05' as const, roofShape: 'hipped' as const, residentialDensity: 'low' as const,
         roomInputs: { ...DEFAULT_ROOM_INPUTS },
       },
       geometryMode: 'quick' as const, detailedRooms: [], totalWindows: 0, totalDoors: 0,
@@ -76,7 +76,7 @@ describe('uploaded plan in the BOQ builder', () => {
         locationCity: 'Harare', specificLocation: '', soilType: '' as const, siteSlope: '' as const,
         floorPlanSize: '120', standSize: '', buildingType: 'single_storey', wallHeight: '2.7',
         brickTypes: ['common'] as BrickType[], cementTypes: ['cement_325'] as CementType[],
-        finishLevel: 'standard' as const, roofCovering: 'ibr_05' as const, residentialDensity: 'low' as const,
+        finishLevel: 'standard' as const, roofCovering: 'ibr_05' as const, roofShape: 'hipped' as const, residentialDensity: 'low' as const,
         houseExtras: extras,
         roomInputs: { ...DEFAULT_ROOM_INPUTS },
       },
@@ -149,7 +149,7 @@ describe('uploaded plan in the BOQ builder', () => {
         locationCity: '', specificLocation: '', soilType: '', siteSlope: '',
         floorPlanSize: '178', standSize: '', buildingType: 'single_storey',
         wallHeight: '2.7', brickTypes: ['common'], cementTypes: ['cement_325'],
-        finishLevel: 'standard', roofCovering: 'ibr_05', residentialDensity: 'low', roomInputs: { ...DEFAULT_ROOM_INPUTS },
+        finishLevel: 'standard', roofCovering: 'ibr_05', roofShape: 'hipped', residentialDensity: 'low', roomInputs: { ...DEFAULT_ROOM_INPUTS },
       },
       geometryMode: 'upload', detailedRooms: rooms, totalWindows: 7, totalDoors: 4,
       projectScope: 'entire', selectedStages: [], laborType: 'materials_only',
@@ -173,7 +173,7 @@ describe('uploaded plan in the BOQ builder', () => {
       locationCity: '', specificLocation: '', soilType: '' as const, siteSlope: '' as const,
       floorPlanSize: '120', standSize: '', buildingType: 'single_storey',
       wallHeight: '2.7', brickTypes: ['common'] as const, cementTypes: ['cement_325'] as const,
-      finishLevel: 'standard' as const, roofCovering: 'ibr_05' as const, residentialDensity: 'low' as const,
+      finishLevel: 'standard' as const, roofCovering: 'ibr_05' as const, roofShape: 'hipped' as const, residentialDensity: 'low' as const,
       roomInputs: { ...DEFAULT_ROOM_INPUTS },
     };
     const params = {
@@ -192,7 +192,7 @@ describe('uploaded plan in the BOQ builder', () => {
     const refreshed = buildLiveMilestones({ ...params, previousMilestones: repriced });
     const repricedCover = refreshed.find((milestone) => milestone.id === 'labor')!.items.find((item) => item.materialId === 'labor-roof_cover')!;
     const refreshedRoofing = refreshed.find((milestone) => milestone.id === 'roofing')!.items;
-    const refreshedCoverMaterials = refreshedRoofing.filter((item) => !/timber|fascia/.test(item.materialId));
+    const refreshedCoverMaterials = refreshedRoofing.filter((item) => !/timber|fascia|hoop|nails/.test(item.materialId));
     expect(repricedCover.actualPriceUsd).toBeCloseTo(refreshedCoverMaterials.reduce((sum, item) => sum + (item.quantity || 0) * item.actualPriceUsd, 0) * STAGE_LABOR_PERCENTAGES.roofing / 100, 2);
     const changed = buildLiveMilestones({
       ...params,
@@ -203,7 +203,7 @@ describe('uploaded plan in the BOQ builder', () => {
     expect(roofing.some((item) => item.materialId === 'roof-tile-concrete')).toBe(true);
     expect(roofing.some((item) => item.materialId === 'ibr-05-3m')).toBe(false);
     const roofCover = changed.find((milestone) => milestone.id === 'labor')!.items.find((item) => item.materialId === 'labor-roof_cover')!;
-    const coverMaterials = roofing.filter((item) => item.materialId !== 'timber-50x76' && item.materialId !== 'timber-38x38' && item.materialId !== 'fascia-pvc');
+    const coverMaterials = roofing.filter((item) => !/timber|fascia|hoop|nails/.test(item.materialId));
     expect(roofCover.actualPriceUsd).toBeCloseTo(coverMaterials.reduce((sum, item) => sum + (item.quantity || 0) * item.actualPriceUsd, 0) * STAGE_LABOR_PERCENTAGES.roofing / 100, 2);
   });
 });

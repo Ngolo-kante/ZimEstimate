@@ -157,7 +157,9 @@ export function useProjectAutoSave(
         try {
             // Determine scope enum value
             let scope: ProjectScope = 'entire_house';
-            if (projectScope === 'stage' && selectedStages.length === 1) {
+            // The projects.scope enum predates Plumbing & Electrical
+            // ('services'); selected_stages carries that stage instead.
+            if (projectScope === 'stage' && selectedStages.length === 1 && selectedStages[0] !== 'services') {
                 scope = selectedStages[0] as ProjectScope;
             }
             const selectedStagesForSave = projectScope === 'stage' ? selectedStages : [];
@@ -254,7 +256,9 @@ export function useProjectAutoSave(
 
         try {
             let scope: ProjectScope = 'entire_house';
-            if (projectScope === 'stage' && selectedStages.length === 1) {
+            // The projects.scope enum predates Plumbing & Electrical
+            // ('services'); selected_stages carries that stage instead.
+            if (projectScope === 'stage' && selectedStages.length === 1 && selectedStages[0] !== 'services') {
                 scope = selectedStages[0] as ProjectScope;
             }
             const selectedStagesForSave = projectScope === 'stage' ? selectedStages : [];

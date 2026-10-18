@@ -1,6 +1,6 @@
 import { allocateBudget } from '@/lib/quick-projects/solar/allocateBudget';
 import { LABOR_STAGES, type LaborRates } from '@/lib/calculations/laborSubstages';
-import { ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
+import { ROOF_COVERINGS, ROOF_SHAPES, type RoofCovering, type RoofShape } from '@/lib/calculations/roofingOptions';
 import { BACKUP_LOADS, backupHours, describeBackup } from '@/lib/quick-projects/solar/backupHours';
 import { BATTERY_BRANDS, INVERTER_BRANDS, PANEL_BRANDS } from '@/lib/quick-projects/solar/catalog';
 import { decodeSolarExplorerState, SOLAR_EXPLORER_DEFAULTS } from '@/lib/quick-projects/solar/explorerUrl';
@@ -154,6 +154,7 @@ function summariseHouse(params: URLSearchParams): SharedEstimateSummary | null {
     wallHeightM: config.wallHeightM,
     cementTypes: [config.cementType],
     roofCovering: roof && roof in ROOF_COVERINGS ? (roof as RoofCovering) : undefined,
+    roofShape: (() => { const shape = params.get('shape'); return shape && shape in ROOF_SHAPES ? (shape as RoofShape) : undefined; })(),
     includeLabor: params.get('labour') !== '0',
     laborRates: labourRatesFromParam(params.get('labourPct')),
     stageStatus: stageStatusFromParams(params),

@@ -181,8 +181,8 @@ https://zimestimate.com/quick-budget`;
                 What goes into an estimate
               </p>
               <p className="text-xs sm:text-sm text-[var(--color-text)] leading-relaxed">
-                Every build is costed in five stages — foundation, walls and frame,
-                roofing, finishing, and external works. Boundary walls, gates and paving
+                Every build is costed in six stages — foundation, walls and frame,
+                roofing, finishing, plumbing and electrical, and external works. Boundary walls, gates and paving
                 sit in that last stage, and most published &ldquo;cost to build a
                 house&rdquo; figures leave them out, so compare like with like.
               </p>

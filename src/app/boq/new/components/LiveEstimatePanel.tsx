@@ -45,7 +45,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
 
   const health = useMemo(() => {
     const healthMilestones = visibleMilestones.filter(
-      (milestone): milestone is typeof milestone & { id: 'substructure' | 'superstructure' | 'roofing' | 'finishing' | 'exterior' } =>
+      (milestone): milestone is typeof milestone & { id: 'substructure' | 'superstructure' | 'roofing' | 'finishing' | 'services' | 'exterior' } =>
         milestone.id !== 'labor' && milestone.id !== 'project_fees'
     );
 

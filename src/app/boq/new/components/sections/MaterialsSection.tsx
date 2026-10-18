@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Wall, CheckCircle, Info, Truck, Question, HardHat, Package } from '@phosphor-icons/react';
 import { BRICK_INFO, CEMENT_INFO, type BrickType, type CementType } from '@/lib/vision/types';
 import type { FinishLevel } from '@/lib/calculations';
-import { ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
+import { DEFAULT_ROOF_SHAPE, ROOF_COVERINGS, ROOF_SHAPES, type RoofCovering, type RoofShape } from '@/lib/calculations/roofingOptions';
 import RoofProfileIcon from '@/components/ui/RoofProfileIcon';
+import RoofShapeIcon from '@/components/ui/RoofShapeIcon';
 import { useBoqWizardStore } from '@/store/boqWizardStore';
 
 const BRICK_OPTIONS = Object.entries(BRICK_INFO).map(([key, val]) => ({
@@ -119,6 +120,26 @@ export default function MaterialsSection() {
 
       <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div>
+          <h3 className="text-lg font-bold wiz-text-primary">Roof shape</h3>
+          <p className="mt-1 text-sm wiz-text-muted">A hipped roof needs hip rafters and capping, and gutters right round.</p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {(Object.entries(ROOF_SHAPES) as [RoofShape, (typeof ROOF_SHAPES)[RoofShape]][]).map(([id, option]) => (
+            <button key={id} type="button" onClick={() => updateProjectDetails({ roofShape: id })}
+              aria-pressed={(projectDetails.roofShape || DEFAULT_ROOF_SHAPE) === id}
+              className={`flex items-start gap-3 rounded-xl border p-3 text-left transition ${((projectDetails.roofShape || DEFAULT_ROOF_SHAPE) === id) ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-slate-200 hover:border-blue-300'}`}>
+              <RoofShapeIcon shape={id} className="mt-0.5 h-6 w-12 shrink-0 text-slate-700" />
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-slate-900">{option.label}</span>
+                <span className="mt-1 block text-xs text-slate-600">{option.description}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+        <div>
           <h3 className="text-lg font-bold wiz-text-primary">Roof covering</h3>
           <p className="mt-1 text-sm wiz-text-muted">Choose the covering used for the roofing BOQ. Quantities and prices change with this choice.</p>
         </div>
@@ -136,7 +157,7 @@ export default function MaterialsSection() {
           ))}
         </div>
         {projectDetails.roofCovering === 'concrete_tile' && <p className="rounded-lg bg-amber-50 p-3 text-xs text-amber-900">Concrete tiles are heavier than sheets. The frame is a preliminary allowance; have a roof designer confirm timber sizes, spacing, pitch and fixings. Fixings and ridge pieces need a local quote.</p>}
-        <p className="text-xs text-slate-500">Roof shape, pitch and sheet lengths are estimated from floor area; verify them against the roof plan and supplier quote.</p>
+        <p className="text-xs text-slate-500">Pitch and sheet lengths are estimated from floor area and the roof shape; verify them against the roof plan and supplier quote.</p>
       </div>
 
       {/* ── Materials Only vs Materials + Labour ─────────────────── */}

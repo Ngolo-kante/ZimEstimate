@@ -21,3 +21,18 @@ export const ROOF_COVERINGS: Record<RoofCovering, {
   qtile: { label: 'QTile profile', description: 'Painted tile-effect steel, priced by linear metre', materialId: 'qtile-04-lm', materialName: 'QTile 0.4mm Roofing', coverage: 0.8, unit: 'per metre', fixingRate: 3 },
   concrete_tile: { label: 'Concrete roof tiles', description: 'Double Roman profile; roof structure needs engineer review', materialId: 'roof-tile-concrete', materialName: 'Double Roman Concrete Roof Tile', coverage: 1 / 10.5, unit: 'each', fixingRate: 0 },
 };
+
+// ─── Roof shape ───────────────────────────────────────────────────────────────
+// Added 2026-10-18: every roof had been priced as a gable. A hipped roof —
+// the commonest on Zimbabwe houses — slopes on all four sides, so it needs hip
+// rafters, hip capping, and fascia and gutters right round; a lean-to slopes
+// one way, for cottages and outbuildings.
+export type RoofShape = 'hipped' | 'gable' | 'lean_to';
+
+export const DEFAULT_ROOF_SHAPE: RoofShape = 'hipped';
+
+export const ROOF_SHAPES: Record<RoofShape, { label: string; description: string }> = {
+  hipped: { label: 'Hipped', description: 'Slopes on all four sides; the usual Zimbabwe house roof' },
+  gable: { label: 'Gable', description: 'Two slopes, with triangular gable walls at the ends' },
+  lean_to: { label: 'Lean-to', description: 'One slope; cottages, extensions and outbuildings' },
+};

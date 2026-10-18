@@ -24,6 +24,7 @@ const MILESTONE_LABELS: Record<string, string> = {
   superstructure: 'Superstructure & Masonry',
   roofing: 'Roofing & Truss Work',
   finishing: 'Finishing & Internal Works',
+  services: 'Plumbing & Electrical',
   exterior: 'Exterior & Site Works',
   labor: 'Labor & Construction Crew',
   project_fees: 'Professional & Statutory Fees',

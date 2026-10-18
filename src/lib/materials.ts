@@ -146,17 +146,17 @@ export const materials: Material[] = [
     { id: 'timber-50x228', name: 'Timber 50x228mm (Beams)', category: 'timber', subcategory: 'Structural', unit: 'per 6m length', specifications: 'Treated pine 50x228mm', milestones: ['roofing'] },
 
     // ELECTRICAL
-    { id: 'cable-25', name: 'Cable 2.5mm T&E', category: 'electrical', subcategory: 'Wiring', unit: 'per 100m roll', specifications: '2.5mm² twin & earth', milestones: ['finishing'] },
-    { id: 'cable-4', name: 'Cable 4mm T&E', category: 'electrical', subcategory: 'Wiring', unit: 'per 100m roll', specifications: '4mm² twin & earth', milestones: ['finishing'] },
-    { id: 'cable-6', name: 'Cable 6mm T&E', category: 'electrical', subcategory: 'Wiring', unit: 'per 100m roll', specifications: '6mm² twin & earth', milestones: ['finishing'] },
-    { id: 'db-8way', name: 'Distribution Board 8-Way', category: 'electrical', subcategory: 'Distribution', unit: 'each', specifications: '8-way consumer unit', milestones: ['finishing'] },
-    { id: 'conduit-20', name: 'PVC Conduit 20mm', category: 'electrical', subcategory: 'Conduit', unit: 'per 4m length', specifications: '20mm rigid PVC conduit', milestones: ['finishing'] },
+    { id: 'cable-25', name: 'Cable 2.5mm T&E', category: 'electrical', subcategory: 'Wiring', unit: 'per 100m roll', specifications: '2.5mm² twin & earth', milestones: ['services'] },
+    { id: 'cable-4', name: 'Cable 4mm T&E', category: 'electrical', subcategory: 'Wiring', unit: 'per 100m roll', specifications: '4mm² twin & earth', milestones: ['services'] },
+    { id: 'cable-6', name: 'Cable 6mm T&E', category: 'electrical', subcategory: 'Wiring', unit: 'per 100m roll', specifications: '6mm² twin & earth', milestones: ['services'] },
+    { id: 'db-8way', name: 'Distribution Board 8-Way', category: 'electrical', subcategory: 'Distribution', unit: 'each', specifications: '8-way consumer unit', milestones: ['services'] },
+    { id: 'conduit-20', name: 'PVC Conduit 20mm', category: 'electrical', subcategory: 'Conduit', unit: 'per 4m length', specifications: '20mm rigid PVC conduit', milestones: ['services'] },
 
     // PLUMBING
-    { id: 'pipe-40-pvc', name: 'PVC Pipe 40mm', category: 'plumbing', subcategory: 'Drainage', unit: 'per 6m length', specifications: '40mm PVC waste pipe', milestones: ['finishing'] },
+    { id: 'pipe-40-pvc', name: 'PVC Pipe 40mm', category: 'plumbing', subcategory: 'Drainage', unit: 'per 6m length', specifications: '40mm PVC waste pipe', milestones: ['services'] },
     { id: 'pipe-110-pvc', name: 'PVC Pipe 110mm', category: 'plumbing', subcategory: 'Drainage', unit: 'per 6m length', specifications: '110mm PVC soil pipe', milestones: ['substructure', 'finishing'] },
-    { id: 'pipe-15-copper', name: 'Copper Pipe 15mm', category: 'plumbing', subcategory: 'Water Supply', unit: 'per 5.5m length', specifications: '15mm copper pipe', milestones: ['finishing'] },
-    { id: 'geyser-150', name: 'Geyser 150L', category: 'plumbing', subcategory: 'Hot Water', unit: 'each', specifications: '150 litre electric geyser', milestones: ['finishing'] },
+    { id: 'pipe-15-copper', name: 'Copper Pipe 15mm', category: 'plumbing', subcategory: 'Water Supply', unit: 'per 5.5m length', specifications: '15mm copper pipe', milestones: ['services'] },
+    { id: 'geyser-150', name: 'Geyser 150L', category: 'plumbing', subcategory: 'Hot Water', unit: 'each', specifications: '150 litre electric geyser', milestones: ['services'] },
 
     // FINISHES
     { id: 'paint-pva', name: 'PVA Paint (White)', category: 'finishes', subcategory: 'Paint', unit: 'per 20L', specifications: 'Interior PVA emulsion', milestones: ['finishing'] },
@@ -206,6 +206,32 @@ export const materials: Material[] = [
     { id: 'labor-foreman', name: 'Foreman (Daily Rate)', category: 'labor', subcategory: 'Labor', unit: 'per day', specifications: 'Site foreman supervision', milestones: ['substructure', 'superstructure'] },
     { id: 'service-food', name: 'Builder\'s Food Allowance', category: 'labor', subcategory: 'Services', unit: 'per day', specifications: 'Daily food allowance per person', milestones: ['substructure', 'superstructure', 'finishing'] },
     { id: 'service-transport', name: 'Transport/Logistics', category: 'labor', subcategory: 'Services', unit: 'per trip', specifications: 'Material transport trip', milestones: ['substructure', 'superstructure'] },
+
+    // Added 2026-10-18 when a BOQ audit found whole trades missing from the
+    // house estimate: sanitaryware, wiring accessories, glazing, kitchen units
+    // and roof fittings. Prices are in materialPrices below, with sources.
+    { id: 'wc-suite-cc', name: 'Close-Coupled WC Suite', category: 'plumbing', subcategory: 'Sanitaryware', unit: 'each', specifications: 'Pan, cistern and seat', milestones: ['services'] },
+    { id: 'basin-pedestal', name: 'Wash Basin & Pedestal', category: 'plumbing', subcategory: 'Sanitaryware', unit: 'each', specifications: 'Ceramic basin on pedestal', milestones: ['services'] },
+    { id: 'bath-skirted', name: 'Bath (Skirted)', category: 'plumbing', subcategory: 'Sanitaryware', unit: 'each', specifications: '1.7m skirted bath', milestones: ['services'] },
+    { id: 'shower-mixer', name: 'Shower Mixer Set', category: 'plumbing', subcategory: 'Tapware', unit: 'each', specifications: 'Shower mixer with head', milestones: ['services'] },
+    { id: 'mixer-basin', name: 'Basin Mixer', category: 'plumbing', subcategory: 'Tapware', unit: 'each', specifications: 'Single-lever basin mixer', milestones: ['services'] },
+    { id: 'mixer-bath', name: 'Bath Mixer with Hand Shower', category: 'plumbing', subcategory: 'Tapware', unit: 'each', specifications: 'Bath mixer and hose', milestones: ['services'] },
+    { id: 'mixer-sink', name: 'Sink Mixer', category: 'plumbing', subcategory: 'Tapware', unit: 'each', specifications: 'Kitchen sink mixer', milestones: ['services'] },
+    { id: 'sink-kitchen', name: 'Kitchen Sink (Single Bowl)', category: 'plumbing', subcategory: 'Sanitaryware', unit: 'each', specifications: 'Single-bowl sink', milestones: ['services'] },
+    { id: 'tap-garden', name: 'Garden Tap 20mm', category: 'plumbing', subcategory: 'Tapware', unit: 'each', specifications: '20mm bib tap', milestones: ['services'] },
+    { id: 'stopcock-15', name: 'Stopcock 15mm', category: 'plumbing', subcategory: 'Fittings', unit: 'each', specifications: 'Main water shut-off', milestones: ['services'] },
+    { id: 'copper-fitting-15', name: 'Copper Fitting 15mm', category: 'plumbing', subcategory: 'Fittings', unit: 'each', specifications: 'Elbows and tees, 15mm capillary', milestones: ['services'] },
+    { id: 'gully-110', name: 'Gully Trap 110mm', category: 'plumbing', subcategory: 'Drainage', unit: 'each', specifications: '110mm PVC gully', milestones: ['services'] },
+    { id: 'socket-double', name: 'Double Socket 13A', category: 'electrical', subcategory: 'Accessories', unit: 'each', specifications: '13A 2-gang flush socket', milestones: ['services'] },
+    { id: 'switch-1g', name: 'Light Switch 1-Gang', category: 'electrical', subcategory: 'Accessories', unit: 'each', specifications: '10A 1-gang switch', milestones: ['services'] },
+    { id: 'light-led-4ft', name: 'LED Light Fitting 4ft', category: 'electrical', subcategory: 'Lighting', unit: 'each', specifications: 'Single 4ft LED fitting', milestones: ['services'] },
+    { id: 'mcb-sp', name: 'Circuit Breaker (MCB)', category: 'electrical', subcategory: 'Protection', unit: 'each', specifications: 'Single-pole MCB', milestones: ['services'] },
+    { id: 'cable-15', name: 'House Wire 1.5mm', category: 'electrical', subcategory: 'Wiring', unit: 'per 100m roll', specifications: '1.5mm single core, for lighting', milestones: ['services'] },
+    { id: 'glass-4mm', name: 'Clear Glass 4mm', category: 'finishes', subcategory: 'Glazing', unit: 'per m²', specifications: '4mm clear float glass, cut to size', milestones: ['finishing'] },
+    { id: 'burglar-bars', name: 'Burglar Bars', category: 'hardware', subcategory: 'Security', unit: 'per window', specifications: 'Steel burglar bars, made to fit', milestones: ['finishing'] },
+    { id: 'kitchen-units', name: 'Kitchen Units', category: 'finishes', subcategory: 'Joinery', unit: 'per metre', specifications: 'Laminate base and wall units with worktop and sink', milestones: ['finishing'] },
+    { id: 'ridge-ibr', name: 'IBR Ridge Capping 2.4m', category: 'roofing', subcategory: 'Accessories', unit: 'each', specifications: '0.4mm roll-top ridge, 2.4m', milestones: ['roofing'] },
+    { id: 'hoop-iron', name: 'Hoop Iron Strap', category: 'roofing', subcategory: 'Accessories', unit: 'each', specifications: 'Ties the roof timbers to the walls', milestones: ['roofing'] },
 ];
 
 // Price sources. Not suppliers anyone can call: earlier versions listed real
@@ -328,6 +354,56 @@ export const materialPrices: MaterialPrice[] = [
     { materialId: 'gate-vehicle', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 450, priceZwg: 13500, lastUpdated: '2026-07-29', inStock: true },
     { materialId: 'gate-pedestrian', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 120, priceZwg: 3600, lastUpdated: '2026-07-29', inStock: true },
     { materialId: 'paving-brick', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 14, priceZwg: 420, lastUpdated: '2026-07-29', inStock: true },
+
+    // Trades the house estimate had left out (BOQ audit, 2026-10-18). ZBMS
+    // prices read from its online store that day; the rest from the named
+    // Harare listing or the Propzone 2026 Harare cost model, as noted.
+    // Close-coupled suites at ZBMS: $70, $80, $101.90, $200.72, $236.57 — median.
+    { materialId: 'wc-suite-cc', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 101.9, priceZwg: 3057, lastUpdated: '2026-10-18', inStock: true },
+    // Bathroom Boutique Harare: Crescent basin $34.99 + universal pedestal $24.28.
+    { materialId: 'basin-pedestal', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 59.27, priceZwg: 1778, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS: Wirquin skirted bath.
+    { materialId: 'bath-skirted', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 114.82, priceZwg: 3445, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS: Mes Onex shower.
+    { materialId: 'shower-mixer', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 76.66, priceZwg: 2300, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS: HC House Proud single-lever basin mixer.
+    { materialId: 'mixer-basin', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 28.98, priceZwg: 869, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS: HC bath mixer with hose.
+    { materialId: 'mixer-bath', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 50.78, priceZwg: 1523, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS: MJ 9123 mixer.
+    { materialId: 'mixer-sink', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 34.81, priceZwg: 1044, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS: Wirquin Espace single sink.
+    { materialId: 'sink-kitchen', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 30.24, priceZwg: 907, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS: 20mm garden tap.
+    { materialId: 'tap-garden', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 18.54, priceZwg: 556, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS: Cobra 15mm stopcock.
+    { materialId: 'stopcock-15', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 15.13, priceZwg: 454, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS 15mm elbows: $0.54, $1.00, $1.29, $1.76 — median.
+    { materialId: 'copper-fitting-15', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 1.15, priceZwg: 35, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS: 110mm gully.
+    { materialId: 'gully-110', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 5.6, priceZwg: 168, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS: MK 13A 2-gang flush socket.
+    { materialId: 'socket-double', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 7.76, priceZwg: 233, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS: MK 10A 1-gang switch.
+    { materialId: 'switch-1g', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 1.78, priceZwg: 53, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS: 4ft single LED fitting.
+    { materialId: 'light-led-4ft', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 12.24, priceZwg: 367, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS: Schneider single-pole MCBs, $4.43–4.75.
+    { materialId: 'mcb-sp', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 4.43, priceZwg: 133, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS 1.5mm house wire, 100 m: $18, $24, $24, $32.33 — median.
+    { materialId: 'cable-15', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 24, priceZwg: 720, lastUpdated: '2026-10-18', inStock: true },
+    // Halsteds lists clear glass at $5.60–9.60 per m² by branch — midpoint.
+    { materialId: 'glass-4mm', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 7.6, priceZwg: 228, lastUpdated: '2026-10-18', inStock: true },
+    // Propzone 2026 Harare model: burglar bars $40–70 a window — midpoint.
+    { materialId: 'burglar-bars', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 55, priceZwg: 1650, lastUpdated: '2026-10-18', inStock: true },
+    // Propzone 2026 Harare model: about 3 m of base and 2.5 m of wall units
+    // with worktop, sink and fitting, $3,500–5,500. Less the labour the BOQ
+    // adds by percentage, about $545 a metre for the units themselves.
+    { materialId: 'kitchen-units', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 545, priceZwg: 16350, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS: IBR roll-top ridge, 2.4 m.
+    { materialId: 'ridge-ibr', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 10, priceZwg: 300, lastUpdated: '2026-10-18', inStock: true },
+    // ZBMS: hoop iron strap / wall tie.
+    { materialId: 'hoop-iron', supplierId: REFERENCE_SUPPLIER_ID, priceUsd: 4, priceZwg: 120, lastUpdated: '2026-10-18', inStock: true },
 ];
 
 // Helper functions

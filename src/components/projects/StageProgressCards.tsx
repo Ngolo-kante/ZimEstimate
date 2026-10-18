@@ -8,6 +8,7 @@ import {
     Wall,
     House,
     PaintBrush,
+    Plug,
     Tree,
 } from '@phosphor-icons/react';
 import { ProjectStageWithTasks, BOQCategory, StageStatus } from '@/lib/database.types';
@@ -26,6 +27,7 @@ const stageIcons: Record<BOQCategory, React.ComponentType<{ size: number; weight
     superstructure: Wall,
     roofing: House,
     finishing: PaintBrush,
+    services: Plug,
     exterior: Tree,
 };
 
@@ -34,6 +36,7 @@ const stageLabels: Record<BOQCategory, { short: string; full: string }> = {
     superstructure: { short: 'Walls', full: 'Structural Walls' },
     roofing: { short: 'Roof', full: 'Roofing' },
     finishing: { short: 'Interior', full: 'Interior Finishing' },
+    services: { short: 'Services', full: 'Plumbing & Electrical' },
     exterior: { short: 'Exterior', full: 'External Work' },
 };
 

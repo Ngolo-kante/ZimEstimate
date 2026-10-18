@@ -30,11 +30,11 @@ export const DEFAULT_MILESTONES: Record<MaterialCategory, string[]> = {
   steel: ['substructure', 'superstructure'],
   roofing: ['roofing'],
   timber: ['roofing', 'finishing'],
-  electrical: ['finishing'],
-  plumbing: ['finishing', 'exterior'],
+  electrical: ['services'],
+  plumbing: ['services', 'exterior'],
   finishes: ['finishing'],
   hardware: ['superstructure', 'roofing', 'finishing'],
-  labor: ['substructure', 'superstructure', 'roofing', 'finishing', 'exterior'],
+  labor: ['substructure', 'superstructure', 'roofing', 'finishing', 'services', 'exterior'],
 };
 
 const text = (value: string | null | undefined) => (value && value.trim() ? value.trim() : null);

@@ -1,8 +1,9 @@
 'use client';
 
 import Card from '@/components/ui/Card';
-import { ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
+import { DEFAULT_ROOF_SHAPE, ROOF_COVERINGS, ROOF_SHAPES, type RoofCovering, type RoofShape } from '@/lib/calculations/roofingOptions';
 import RoofProfileIcon from '@/components/ui/RoofProfileIcon';
+import RoofShapeIcon from '@/components/ui/RoofShapeIcon';
 import { LABOR_STAGES, MAX_LABOR_PERCENTAGE, STAGE_LABOR_PERCENTAGES, stageLaborPercentage } from '@/lib/calculations/laborSubstages';
 import {
   ArrowLeft,
@@ -36,12 +37,12 @@ export default function ConfigurationStep({
   onConfirm,
   onBack,
 }: ConfigurationStepProps) {
-  const scopes: ProjectScope[] = ['full_house', 'substructure', 'superstructure', 'roofing', 'finishing', 'exterior'];
+  const scopes: ProjectScope[] = ['full_house', 'substructure', 'superstructure', 'roofing', 'finishing', 'services', 'exterior'];
   const brickTypes: BrickType[] = ['common', 'farm', 'blocks_6inch', 'blocks_8inch', 'face_brick'];
   const cementTypes: CementType[] = ['cement_325', 'cement_425'];
   const selectedScopes = Array.isArray(config.scope) ? config.scope : [config.scope];
   const includedScopes: ProjectScope[] = selectedScopes.includes('full_house')
-    ? ['substructure', 'superstructure', 'roofing', 'finishing', 'exterior']
+    ? ['substructure', 'superstructure', 'roofing', 'finishing', 'services', 'exterior']
     : selectedScopes;
 
   // Helper to check if a scope is selected
@@ -233,8 +234,21 @@ export default function ConfigurationStep({
         </Card>
 
         {includedScopes.includes('roofing') && <Card>
-          <div className="section-header"><House size={22} weight="light" /><div><h3>Roof covering</h3><p>Select the roof material to cost</p></div></div>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="section-header"><House size={22} weight="light" /><div><h3>Roof</h3><p>Choose the shape and the covering to cost</p></div></div>
+          <div className="mb-3 grid gap-2 sm:grid-cols-3" role="group" aria-label="Roof shape">
+            {(Object.entries(ROOF_SHAPES) as [RoofShape, (typeof ROOF_SHAPES)[RoofShape]][]).map(([id, option]) => (
+              <button key={id} type="button" onClick={() => onUpdate({ roofShape: id })}
+                aria-pressed={(config.roofShape || DEFAULT_ROOF_SHAPE) === id}
+                className={`flex items-start gap-3 rounded-xl border p-3 text-left ${(config.roofShape || DEFAULT_ROOF_SHAPE) === id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'}`}>
+                <RoofShapeIcon shape={id} className="mt-0.5 h-6 w-12 shrink-0 text-slate-700" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-slate-900">{option.label}</span>
+                  <span className="mt-1 block text-xs text-slate-600">{option.description}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label="Roof covering">
             {(Object.entries(ROOF_COVERINGS) as [RoofCovering, (typeof ROOF_COVERINGS)[RoofCovering]][]).map(([id, option]) => (
               <button key={id} type="button" onClick={() => onUpdate({ roofCovering: id })}
                 aria-pressed={(config.roofCovering || 'ibr_05') === id}

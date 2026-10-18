@@ -8,6 +8,7 @@ const STAGES = [
   { id: 'superstructure', label: 'Superstructure' },
   { id: 'roofing', label: 'Roofing' },
   { id: 'finishing', label: 'Finishing' },
+  { id: 'services', label: 'Plumbing & electrical' },
   { id: 'exterior', label: 'Exterior works' },
 ] as const;
 

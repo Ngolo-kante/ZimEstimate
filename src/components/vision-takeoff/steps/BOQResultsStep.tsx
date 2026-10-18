@@ -296,7 +296,9 @@ export default function BOQResultsStep({
         const { scopes } = normalizeConfigToArrays(config);
         const hasFullHouse = scopes.includes('full_house');
         const selectedStages = scopes.filter(scope => scope !== 'full_house');
-        const projectScope = hasFullHouse || selectedStages.length !== 1
+        // The projects.scope enum has no 'services' (Plumbing & Electrical
+        // came later); selected_stages carries it instead.
+        const projectScope = hasFullHouse || selectedStages.length !== 1 || selectedStages[0] === 'services'
           ? 'entire_house'
           : selectedStages[0];
 

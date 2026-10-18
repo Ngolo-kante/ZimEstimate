@@ -52,6 +52,7 @@ import {
   Wall,
   House,
   PaintBrush,
+  Plug,
   Tree,
 } from '@phosphor-icons/react';
 
@@ -59,7 +60,7 @@ type ProcurementStage = 'boq' | 'rfq' | 'history';
 type ItemStatus = 'pending' | 'in_progress' | 'purchased' | 'over_purchased';
 type StatusFilter = ItemStatus | 'all' | 'outstanding' | 'fulfilled';
 type GroupByOption = 'stage' | 'category' | 'none';
-type BOQStage = 'substructure' | 'superstructure' | 'roofing' | 'finishing' | 'exterior';
+type BOQStage = 'substructure' | 'superstructure' | 'roofing' | 'finishing' | 'services' | 'exterior';
 
 // Consistent naming with BOQ wizard milestones
 const STAGE_CONFIG: Record<BOQStage, { label: string; icon: typeof Cube; color: string; description: string }> = {
@@ -85,7 +86,13 @@ const STAGE_CONFIG: Record<BOQStage, { label: string; icon: typeof Cube; color: 
     label: 'Interior & Finishing',
     icon: PaintBrush,
     color: 'var(--color-accent)',
-    description: 'Plastering, painting, fittings'
+    description: 'Plastering, painting, doors and windows'
+  },
+  services: {
+    label: 'Plumbing & Electrical',
+    icon: Plug,
+    color: 'var(--color-accent)',
+    description: 'Pipes, sanitaryware, wiring and fittings'
   },
   exterior: {
     label: 'External Work',
@@ -263,7 +270,7 @@ export default function UnifiedProcurementView({
     });
 
     if (groupBy === 'stage') {
-      const stageOrder: BOQStage[] = ['substructure', 'superstructure', 'roofing', 'finishing', 'exterior'];
+      const stageOrder: BOQStage[] = ['substructure', 'superstructure', 'roofing', 'finishing', 'services', 'exterior'];
       const sortedGroups: Record<string, ItemWithPurchases[]> = {};
 
       stageOrder.forEach((stage) => {

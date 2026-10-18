@@ -8,12 +8,13 @@ describe('estimateStageReach', () => {
       floorAreaM2: 120,
     });
 
-    expect(result.rows).toHaveLength(5);
+    expect(result.rows).toHaveLength(6);
     expect(result.rows.map((row) => row.id)).toEqual([
       'substructure',
       'superstructure',
       'roofing',
       'finishing',
+      'services',
       'exterior',
     ]);
     expect(result.estimatedTotalUsd).toBeGreaterThan(0);
@@ -49,7 +50,7 @@ describe('estimateStageReach', () => {
     });
 
     expect(result.estimatedTotalUsd).toBeGreaterThan(0);
-    expect(result.rows).toHaveLength(5);
+    expect(result.rows).toHaveLength(6);
   });
 });
 
@@ -73,7 +74,7 @@ describe('stages already built or left for later', () => {
     const all = estimateStageReach(base);
     const fromRoof = estimateStageReach({ ...base, stageStatus: { substructure: 'built', superstructure: 'built' } });
     const cost = (id: string) => all.rows.find((row) => row.id === id)!.stageCostUsd;
-    expect(fromRoof.estimatedTotalUsd).toBeCloseTo(cost('roofing') + cost('finishing') + cost('exterior'), 6);
+    expect(fromRoof.estimatedTotalUsd).toBeCloseTo(cost('roofing') + cost('finishing') + cost('services') + cost('exterior'), 6);
     // The roof is now the first thing the money pays for.
     const roof = fromRoof.rows.find((row) => row.id === 'roofing')!;
     expect(roof.coveragePercent).toBeCloseTo(Math.min(100, (6000 / cost('roofing')) * 100), 6);
@@ -95,7 +96,7 @@ describe('stages already built or left for later', () => {
     const result = estimateStageReach({
       ...base,
       budgetUsd: 1_000_000,
-      stageStatus: { substructure: 'built', superstructure: 'built', roofing: 'built', finishing: 'built' },
+      stageStatus: { substructure: 'built', superstructure: 'built', roofing: 'built', finishing: 'built', services: 'built' },
     });
     expect(result.coveragePercent).toBe(100);
     expect(result.reachableStageId).toBe('exterior');
@@ -108,7 +109,7 @@ describe('stage choices in links', () => {
     const params = new URLSearchParams(stageStatusToParams(status));
     expect(params.toString()).toBe('done=substructure%2Csuperstructure&later=exterior');
     expect(stageStatusFromParams(params)).toEqual(status);
-    expect(stageStatusFromParams(new URLSearchParams('done=substructure,superstructure,roofing,finishing,exterior'))).toEqual({});
+    expect(stageStatusFromParams(new URLSearchParams('done=substructure,superstructure,roofing,finishing,services,exterior'))).toEqual({});
     expect(stageStatusFromParams(new URLSearchParams('done=garden'))).toEqual({});
   });
 });
@@ -116,7 +117,7 @@ describe('stage choices in links', () => {
 describe('a labour rate of the user’s own', () => {
   it('replaces the 35% default', () => {
     const base = { budgetUsd: 10000, floorAreaM2: 120, locationType: 'urban' as const, includeLabor: true };
-    const result = estimateStageReach({ ...base, laborRates: { substructure: 20, superstructure: 20, roofing: 20, finishing: 20, exterior: 20 } });
+    const result = estimateStageReach({ ...base, laborRates: { substructure: 20, superstructure: 20, roofing: 20, finishing: 20, services: 20, exterior: 20 } });
     expect(result.laborUsd).toBeCloseTo(result.materialsUsd * 0.2, 6);
   });
 });

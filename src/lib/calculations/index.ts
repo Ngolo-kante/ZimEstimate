@@ -11,7 +11,7 @@ import {
   ProjectScope,
 } from '@/lib/vision/types';
 import { getBestPrice } from '@/lib/materials';
-import { DEFAULT_ROOF_COVERING, ROOF_COVERINGS, type RoofCovering } from './roofingOptions';
+import { DEFAULT_ROOF_COVERING, DEFAULT_ROOF_SHAPE, ROOF_COVERINGS, ROOF_SHAPES, type RoofCovering, type RoofShape } from './roofingOptions';
 import { LABOR_SUBSTAGES, laborPercentageFor, laborSubstageFor, type LaborRates } from './laborSubstages';
 import {
   BOQ_ASSUMPTIONS,
@@ -67,6 +67,7 @@ export interface ManualBuilderConfig {
   totalWindows?: number;     // Plan total, when individual rooms lack opening counts
   totalDoors?: number;       // Uploaded plan total, including entrance doors
   roofCovering?: RoofCovering;
+  roofShape?: RoofShape;
   /** The user's own labour percentages by stage; defaults to 35% each. */
   laborRates?: LaborRates;
 }
@@ -130,7 +131,14 @@ function calculateSuperstructureFromRooms(
   if (!rooms || rooms.length === 0) return items;
 
   const totalFloorArea = config.floorArea || rooms.reduce((sum, r) => sum + (r.length * r.width), 0);
-  const totalWallArea = perimeter * Math.max(1, wallHeight - 1) + internalWallLength * wallHeight;
+  // Walls stand on the slab, full height; the foundation walls are below it.
+  const openings = wallOpenings(
+    config.totalWindows || rooms.reduce((sum, r) => sum + (r.windows || 0), 0) || Math.ceil(totalFloorArea / 15),
+    config.totalDoors,
+    rooms.length,
+  );
+  const externalWallArea = Math.max(0, perimeter * wallHeight - openings.external);
+  const internalWallArea = Math.max(0, internalWallLength * wallHeight - openings.internal);
 
   // Group rooms by material
   const materialGroups: Record<string, number> = {};
@@ -149,27 +157,20 @@ function calculateSuperstructureFromRooms(
   // Calculate items for each material
   Object.entries(materialGroups).forEach(([materialId, groupArea]) => {
     const ratio = groupArea / totalFloorArea;
-    // Only the external wall has a metre already counted in foundation walls;
-    // partitions run from floor level to ceiling height.
-    const wallArea = totalWallArea * ratio;
-
-    // Get info
     const info = getBrickInfoById(materialId);
 
-    // Calculate bricks
-    const bricks = Math.ceil(wallArea * info.bricksPerSqm * masonryWasteMultiplier);
-
-    items.push(createBOQItem(
-      info.materialId,
-      info.name,
-      'superstructure',
-      bricks,
-      'each',
-      `Walls (${(ratio * 100).toFixed(0)}% of plan): ${wallArea.toFixed(1)}m²`
-    ));
-
-    mortarVolumeTotal += (bricks / 1000) * MORTAR_M3_PER_1000_BRICKS;
-    mortarFor.push(`${bricks.toLocaleString('en-US')} ${info.name.toLowerCase()}`);
+    for (const unit of wallUnitsFor(info, externalWallArea * ratio, internalWallArea * ratio, masonryWasteMultiplier)) {
+      items.push(createBOQItem(
+        unit.info.materialId,
+        unit.info.name,
+        'superstructure',
+        unit.count,
+        'each',
+        `Walls (${(ratio * 100).toFixed(0)}% of plan) — ${unit.note}, less windows and doors`
+      ));
+      mortarVolumeTotal += (unit.count / 1000) * MORTAR_M3_PER_1000_BRICKS;
+      mortarFor.push(`${unit.count.toLocaleString('en-US')} ${unit.info.name.toLowerCase()}`);
+    }
   });
 
   if (mortarVolumeTotal > 0) {
@@ -204,43 +205,13 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   const masonryWasteMultiplier = getMasonryWasteMultiplier(locationType);
   const brickInfo = BRICK_INFO[brickType];
   const cementInfo = CEMENT_INFO[cementType];
-  const concreteCementBagsPerM3 = getConcreteCementBagsPerM3(cementType);
   const mortarCementBagsPerM3 = getMortarCementBagsPerM3(cementType);
 
   // ============================================
   // SUBSTRUCTURE
   // ============================================
   if (hasScope('substructure')) {
-    const hardcoreM3 = floorArea * HARDCORE_M3_PER_SQM;
-    items.push(createBOQItem('hardcore', 'Hardcore (Filling)', 'substructure', hardcoreM3, 'per cube', `${floorArea}m² floor`));
-
-    const dpcRolls = Math.max(1, Math.ceil(perimeter / DPC_ROLL_LENGTH_M));
-    items.push(createBOQItem('dpc', 'DPC Roll', 'substructure', dpcRolls, 'per roll', `DPC for ${perimeter.toFixed(1)}m perimeter`));
-
-    items.push(createBOQItem('dpm', 'DPM 500 Gauge', 'substructure', Math.ceil(floorArea * DPM_SHEETS_PER_SQM / 50), 'per roll', 'Floor membrane'));
-
-    const termitePoisonLitres = floorArea * TERMITE_POISON_L_PER_SQM;
-    items.push(createBOQItem('termite-poison', 'Termite Poison', 'substructure', termitePoisonLitres, 'per litre', 'Soil treatment for foundation and slab'));
-
-    const conc = calculateFoundationConcreteVolume(perimeter, locationType);
-    const footingWidthMm = BOQ_ASSUMPTIONS.stripFooting.widthMm[locationType];
-    const footingDepthMm = BOQ_ASSUMPTIONS.stripFooting.depthMm;
-    // Cement appears twice in this stage — concrete and mortar are different
-    // jobs with different mixes — so each line is named for its job, as the
-    // finishing stage already does ("Cement (Plaster)", "Cement (Floor Screed)").
-    items.push(createBOQItem(cementInfo.materialId, `${cementInfo.name} (Foundation Concrete)`, 'substructure', Math.ceil(conc * concreteCementBagsPerM3), 'per 50kg bag', `Concrete for the strip footing (${footingWidthMm}mm x ${footingDepthMm}mm)`));
-    items.push(createBOQItem('sand-river', 'River Sand', 'substructure', conc * 0.5, 'per cube', 'Foundation concrete'));
-    items.push(createBOQItem('stone-19mm', 'Crushed Stone 19mm', 'substructure', conc * 0.8, 'per cube', 'Foundation concrete'));
-
-    const subWallArea = perimeter * 1.0;
-    const subBricks = Math.ceil(subWallArea * brickInfo.bricksPerSqm * masonryWasteMultiplier);
-    items.push(createBOQItem(brickInfo.materialId, `${brickInfo.name} (Foundation Walls)`, 'substructure', subBricks, 'each', 'Foundation walls, from the footing up to floor level'));
-
-    const subMortar = (subBricks / 1000) * MORTAR_M3_PER_1000_BRICKS;
-    items.push(createBOQItem(cementInfo.materialId, `${cementInfo.name} (Foundation Mortar)`, 'substructure', Math.ceil(subMortar * mortarCementBagsPerM3 * masonryWasteMultiplier), 'per 50kg bag', 'Mortar for laying the foundation bricks'));
-    items.push(createBOQItem('sand-bricks', 'Brick Sand (Foundation Mortar)', 'substructure', subMortar * SAND_M3_PER_M3_MORTAR * masonryWasteMultiplier, 'per cube', 'Mortar for laying the foundation bricks'));
-
-    items.push(createBOQItem('mesh-ref193', 'Welded Mesh Ref 193', 'substructure', Math.ceil(floorArea * MESH_SHEETS_PER_SQM), 'per sheet', 'Slab reinforcement'));
+    items.push(...substructureItems({ floorArea, perimeter, internalWallLength, brickType, cementType, locationType }));
   }
 
   // ============================================
@@ -254,30 +225,24 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
       // Add Global Items (Lintel, Reinforcement)
       const totalWallLen = perimeter + internalWallLength;
 
-      // BrickforceateBOQItem('brickforce', 'Brickforce', 'superstructure', Math.ceil(totalWallLen / 15), 'per roll', 'Wall reinforcement'));
-      items.push(createBOQItem('brickforce', 'Brickforce', 'superstructure', Math.ceil(totalWallLen / 15), 'per roll', 'Wall reinforcement'));
-      items.push(createBOQItem('rebar-12', 'Rebar Y12', 'superstructure', Math.ceil(totalWallLen * REBAR_Y12_PER_LM_RINGBEAM / 6), 'per length', 'Ring beam'));
-      items.push(createBOQItem('rebar-10', 'Rebar Y10', 'superstructure', Math.ceil(totalWallLen * STIRRUPS_PER_LM / 6), 'per length', 'Stirrups'));
+      items.push(...ringBeamItems(totalWallLen, wallHeight, cementType, locationType));
 
     } else {
-      const superH = wallHeight - 1.0;
-      const extBricks = Math.ceil(perimeter * superH * brickInfo.bricksPerSqm * masonryWasteMultiplier);
-      const intBricks = Math.ceil(internalWallLength * wallHeight * brickInfo.bricksPerSqm * masonryWasteMultiplier);
-      // One line: the same brick, bought together. The split stays in the note.
-      items.push(createBOQItem(
-        brickInfo.materialId, `${brickInfo.name} (Walls)`, 'superstructure', extBricks + intBricks, 'each',
-        `External walls ${extBricks.toLocaleString('en-US')} + internal walls ${intBricks.toLocaleString('en-US')}`,
-      ));
+      // Walls stand on the slab, full height; the foundation walls are below it.
+      const openings = wallOpenings(config.totalWindows || Math.ceil(floorArea / 15), config.totalDoors, roomCount);
+      const units = wallUnitsFor(brickInfo, perimeter * wallHeight - openings.external, internalWallLength * wallHeight - openings.internal, masonryWasteMultiplier);
+      // One line per brick: the same brick for inside and outside walls is bought together.
+      for (const unit of units) {
+        items.push(createBOQItem(unit.info.materialId, `${unit.info.name} (Walls)`, 'superstructure', unit.count, 'each', `${unit.note}, less windows and doors`));
+      }
 
-      const totalB = extBricks + intBricks;
+      const totalB = units.reduce((sum, unit) => sum + unit.count, 0);
       const mort = (totalB / 1000) * MORTAR_M3_PER_1000_BRICKS;
       items.push(createBOQItem(cementInfo.materialId, `${cementInfo.name} (Wall Mortar)`, 'superstructure', Math.ceil(mort * mortarCementBagsPerM3 * masonryWasteMultiplier), 'per 50kg bag', 'Mortar for laying the wall bricks'));
       items.push(createBOQItem('sand-bricks', 'Brick Sand (Wall Mortar)', 'superstructure', mort * SAND_M3_PER_M3_MORTAR * masonryWasteMultiplier, 'per cube', 'Mortar for laying the wall bricks'));
 
       const totalLen = perimeter + internalWallLength;
-      items.push(createBOQItem('brickforce', 'Brickforce', 'superstructure', Math.ceil(totalLen / 15), 'per roll', 'Wall reinforcement laid in the brickwork'));
-      items.push(createBOQItem('rebar-12', 'Rebar Y12', 'superstructure', Math.ceil(totalLen * 4 / 6), 'per length', 'Ring beam'));
-      items.push(createBOQItem('rebar-10', 'Rebar Y10', 'superstructure', Math.ceil(totalLen * STIRRUPS_PER_LM / 6), 'per length', 'Ring beam stirrups'));
+      items.push(...ringBeamItems(totalLen, wallHeight, cementType, locationType));
     }
   }
 
@@ -285,7 +250,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   // ROOFING (Simple Area based)
   // ============================================
   if (hasScope('roofing')) {
-    items.push(...calculateRoofing(floorArea, locationType, config.roofCovering));
+    items.push(...calculateRoofing(floorArea, locationType, config.roofCovering, config.roofShape));
   }
 
   // ============================================
@@ -315,6 +280,10 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
       cementType: getFirstValue(cementTypes) as CementType,
       finishLevel: normalizeFinishLevel(config.finishLevel),
     }));
+  }
+
+  if (hasScope('services')) {
+    items.push(...calculateServices({ floorArea, roomCount }));
   }
 
   if (hasScope('exterior')) {
@@ -349,7 +318,181 @@ const REBAR_Y12_PER_LM_RINGBEAM = 4;
 const STIRRUPS_PER_LM = 4;
 const MESH_SHEETS_PER_SQM = 0.07;
 
-const ROOF_PITCH_FACTOR = 1.15;
+const ROOF_PITCH_FACTOR = 1.06;
+// Sheeted roofs here are pitched about 20° (1/cos 20° ≈ 1.06), tiled ones
+// about 30° (1.15), a lean-to about 10° (1.02).
+const TILE_PITCH_FACTOR = 1.15;
+const LEAN_TO_PITCH_FACTOR = 1.02;
+const HIP_CUTTING_WASTE = 1.05;
+const ROOF_OVERHANG_M = 0.6;
+const TRUSS_SPACING_M = 1.2;
+/** Web members of a fink truss, as a share of its span. */
+const TRUSS_WEB_FACTOR = 0.8;
+const PURLIN_SPACING_M = 1.0;
+const TILE_BATTEN_GAUGE_M = 0.32;
+const BRANDERING_SPACING_M = 0.4;
+const TIMBER_LENGTH_M = 6;
+const ROOF_NAILS_KG_PER_SQM = 0.1;
+
+// ============================================
+// WALLING AND FOUNDATIONS — ZIMBABWE PRACTICE
+// ============================================
+// Audited 2026-10-18 against Harare cost models and the owner's building
+// guide. The estimate had been pricing every wall half a brick thick (115 mm),
+// foundations under the outside walls only, a metre less outside wall than
+// the house has, and no concrete floor slab at all: a 120 m² house came to
+// about 10,000 bricks and $2,500 to slab level, against 16,000–20,000 bricks
+// and roughly $60–90/m² in published 2026 models.
+//
+// As houses are built here: every wall stands on a concrete strip footing
+// (600 mm wide outside, 450 mm under the lighter inside walls) and one-brick
+// (230 mm) foundation brickwork up to floor level; the floor is a 100 mm
+// concrete slab on hardcore; above it, outside walls are one brick (230 mm)
+// and inside walls half a brick (115 mm). A block wall is one block thick.
+
+/** Footing to floor level: trench depth plus the rise to slab level. */
+const FOUNDATION_WALL_HEIGHT_M = 1.0;
+const INTERNAL_FOOTING_WIDTH_MM = 450;
+/** A standard 813 x 2032 mm door leaf in its frame. */
+const DOOR_OPENING_M2 = 1.89;
+const WINDOW_OPENING_M2 = 1.44;
+const EXTERIOR_DOOR_COUNT = 2;
+
+const isBlockUnit = (materialId: string) => materialId.startsWith('block');
+
+/** Units per m² of a one-brick (230 mm) wall. A block is already a full-thickness wall. */
+function oneBrickUnitsPerSqm(info: { materialId: string; bricksPerSqm: number }): number {
+  return isBlockUnit(info.materialId) ? info.bricksPerSqm : info.bricksPerSqm * 2;
+}
+
+type WallUnits = { info: { name: string; materialId: string; bricksPerSqm: number }; count: number; note: string };
+
+/**
+ * Bricks for walls of the given areas: outside walls one brick thick, inside
+ * walls half a brick. A face-brick outside wall is a face skin backed by a
+ * common-brick skin, so it buys some of each.
+ */
+function wallUnitsFor(
+  info: { name: string; materialId: string; bricksPerSqm: number },
+  externalArea: number,
+  internalArea: number,
+  wasteMultiplier: number,
+): WallUnits[] {
+  const ext = Math.max(0, externalArea);
+  const int = Math.max(0, internalArea);
+  if (info.materialId === BRICK_INFO.face_brick.materialId) {
+    const common = BRICK_INFO.common;
+    return [
+      { info, count: Math.ceil(ext * info.bricksPerSqm * wasteMultiplier), note: `Outside face skin: ${ext.toFixed(1)}m²` },
+      { info: common, count: Math.ceil((ext * common.bricksPerSqm + int * common.bricksPerSqm) * wasteMultiplier), note: `Inner skin of the outside walls ${ext.toFixed(1)}m² + inside walls ${int.toFixed(1)}m²` },
+    ].filter((u) => u.count > 0);
+  }
+  const extCount = Math.ceil(ext * oneBrickUnitsPerSqm(info) * wasteMultiplier);
+  const intCount = Math.ceil(int * info.bricksPerSqm * wasteMultiplier);
+  const thick = isBlockUnit(info.materialId) ? '' : ' (230mm)';
+  const thin = isBlockUnit(info.materialId) ? '' : ' (115mm)';
+  return [{
+    info,
+    count: extCount + intCount,
+    note: `Outside walls${thick} ${ext.toFixed(1)}m²: ${extCount.toLocaleString('en-US')} + inside walls${thin} ${int.toFixed(1)}m²: ${intCount.toLocaleString('en-US')}`,
+  }];
+}
+
+/** Window and door openings, taken out of the wall areas they sit in. */
+function wallOpenings(totalWindows: number, totalDoors: number | undefined, roomCount: number): { external: number; internal: number } {
+  const interiorDoors = totalDoors && totalDoors > 0 ? Math.max(0, totalDoors - EXTERIOR_DOOR_COUNT) : Math.max(1, roomCount);
+  return {
+    external: Math.max(0, totalWindows) * WINDOW_OPENING_M2 + EXTERIOR_DOOR_COUNT * DOOR_OPENING_M2,
+    internal: interiorDoors * DOOR_OPENING_M2,
+  };
+}
+
+/** A brick course with its mortar joint. */
+const COURSE_HEIGHT_M = 0.085;
+/** Brickforce in every fourth course. */
+const BRICKFORCE_EVERY_COURSES = 4;
+const BRICKFORCE_ROLL_M = 20;
+
+/**
+ * The reinforced concrete ring beam on top of every wall — 230 mm wide, four
+ * Y12 bars with Y10 stirrups — and brickforce in every fourth course. The
+ * beam had its steel but no concrete; brickforce was one 20 m roll for every
+ * 15 m of wall, a single layer where a 2.7 m wall has about eight.
+ */
+function ringBeamItems(allWalls: number, wallHeight: number, cementType: CementType, locationType: LocationType): GeneratedBOQItem[] {
+  const items: GeneratedBOQItem[] = [];
+  const cement = CEMENT_INFO[cementType];
+  const depthMm = BOQ_ASSUMPTIONS.ringBeam.depthMm[getBuildQuality(cementType)];
+  const beamM3 = allWalls * (BOQ_ASSUMPTIONS.ringBeam.widthMm / 1000) * (depthMm / 1000) * (1 + BOQ_ASSUMPTIONS.concrete.waste[locationType]);
+  const beamNote = `Ring beam ${allWalls.toFixed(1)}m @ ${BOQ_ASSUMPTIONS.ringBeam.widthMm}x${depthMm}mm (${beamM3.toFixed(1)}m³)`;
+  items.push(createBOQItem(cement.materialId, `${cement.name} (Ring Beam)`, 'superstructure', Math.ceil(beamM3 * getConcreteCementBagsPerM3(cementType)), 'per 50kg bag', beamNote));
+  items.push(createBOQItem('sand-river', 'River Sand (Ring Beam)', 'superstructure', beamM3 * 0.5, 'per cube', beamNote));
+  items.push(createBOQItem('stone-19mm', 'Crushed Stone 19mm (Ring Beam)', 'superstructure', beamM3 * 0.8, 'per cube', beamNote));
+  items.push(createBOQItem('rebar-12', 'Rebar Y12', 'superstructure', Math.ceil(allWalls * REBAR_Y12_PER_LM_RINGBEAM / 6), 'per length', `Ring beam: ${allWalls.toFixed(1)}m @ 4 bars`));
+  items.push(createBOQItem('rebar-10', 'Rebar Y10', 'superstructure', Math.ceil(allWalls * STIRRUPS_PER_LM / 6), 'per length', 'Ring beam stirrups @ 250mm spacing'));
+  const layers = Math.max(1, Math.floor(wallHeight / COURSE_HEIGHT_M / BRICKFORCE_EVERY_COURSES));
+  items.push(createBOQItem('brickforce', 'Brickforce', 'superstructure', Math.ceil(allWalls * layers / BRICKFORCE_ROLL_M), 'per roll', `Every ${BRICKFORCE_EVERY_COURSES}th course: ${layers} layers x ${allWalls.toFixed(1)}m of wall`));
+  return items;
+}
+
+/**
+ * Everything to slab level: hardcore, damp proofing, termite treatment, strip
+ * footings under every wall, one-brick foundation walls, and the floor slab.
+ */
+function substructureItems(input: {
+  floorArea: number;
+  perimeter: number;
+  internalWallLength: number;
+  brickType: BrickType;
+  cementType: CementType;
+  locationType: LocationType;
+}): GeneratedBOQItem[] {
+  const { floorArea, perimeter, internalWallLength, brickType, cementType, locationType } = input;
+  const items: GeneratedBOQItem[] = [];
+  const cement = CEMENT_INFO[cementType];
+  const allWalls = perimeter + internalWallLength;
+  const masonryWaste = getMasonryWasteMultiplier(locationType);
+  const concreteBags = getConcreteCementBagsPerM3(cementType);
+
+  items.push(createBOQItem('hardcore', 'Hardcore (Filling)', 'substructure', floorArea * HARDCORE_M3_PER_SQM, 'per cube', `${floorArea}m² floor @ 150mm thick`));
+  items.push(createBOQItem('dpc', 'DPC Roll', 'substructure', Math.max(1, Math.ceil(allWalls / DPC_ROLL_LENGTH_M)), 'per roll', `Under every wall: ${allWalls.toFixed(1)}m`));
+  items.push(createBOQItem('dpm', 'DPM 500 Gauge', 'substructure', Math.ceil(floorArea * DPM_SHEETS_PER_SQM / 50), 'per roll', `${floorArea}m² under the slab, with overlaps`));
+  items.push(createBOQItem('termite-poison', 'Termite Poison', 'substructure', floorArea * TERMITE_POISON_L_PER_SQM, 'per litre', 'Soil treatment for foundation and slab'));
+
+  // Strip footings: 600 mm under outside walls, 450 mm under inside walls.
+  const footingDepthM = BOQ_ASSUMPTIONS.stripFooting.depthMm / 1000;
+  const extWidthMm = BOQ_ASSUMPTIONS.stripFooting.widthMm[locationType];
+  const footingM3 = (perimeter * (extWidthMm / 1000) + internalWallLength * (INTERNAL_FOOTING_WIDTH_MM / 1000)) * footingDepthM
+    * getFoundationConcreteWasteMultiplier(locationType);
+  const footingNote = `Strip footings ${BOQ_ASSUMPTIONS.stripFooting.depthMm}mm deep: ${perimeter.toFixed(1)}m outside @ ${extWidthMm}mm + ${internalWallLength.toFixed(1)}m inside @ ${INTERNAL_FOOTING_WIDTH_MM}mm (${footingM3.toFixed(1)}m³)`;
+  items.push(createBOQItem(cement.materialId, `${cement.name} (Foundation Concrete)`, 'substructure', Math.ceil(footingM3 * concreteBags), 'per 50kg bag', footingNote));
+  items.push(createBOQItem('sand-river', 'River Sand (Foundation Concrete)', 'substructure', footingM3 * 0.5, 'per cube', 'Strip footing concrete'));
+  items.push(createBOQItem('stone-19mm', 'Crushed Stone 19mm (Foundation Concrete)', 'substructure', footingM3 * 0.8, 'per cube', 'Strip footing concrete'));
+
+  // One-brick foundation walls under every wall, footing to floor level.
+  // Common bricks: face brick is for what shows.
+  const foundationBrick = brickType === 'face_brick' ? BRICK_INFO.common : BRICK_INFO[brickType];
+  const foundationArea = allWalls * FOUNDATION_WALL_HEIGHT_M;
+  const subBricks = Math.ceil(foundationArea * oneBrickUnitsPerSqm(foundationBrick) * masonryWaste);
+  items.push(createBOQItem(foundationBrick.materialId, `${foundationBrick.name} (Foundation Walls)`, 'substructure', subBricks, 'each',
+    `Foundation walls${isBlockUnit(foundationBrick.materialId) ? '' : ' (230mm)'} under every wall, footing to floor level: ${allWalls.toFixed(1)}m x ${FOUNDATION_WALL_HEIGHT_M}m`));
+  const { cement: subCement, sand: subSand } = calculateMortar(subBricks, cementType, locationType);
+  items.push(createBOQItem(cement.materialId, `${cement.name} (Foundation Mortar)`, 'substructure', subCement, 'per 50kg bag', `Mortar for laying ${subBricks.toLocaleString('en-US')} foundation bricks`));
+  items.push(createBOQItem('sand-bricks', 'Brick Sand (Foundation Mortar)', 'substructure', subSand, 'per cube', 'Mortar for laying the foundation bricks'));
+
+  // The floor slab: concrete over the hardcore and membrane, on mesh.
+  // 100 mm whichever cement: the 85 mm "economy" slab was being chosen for
+  // every build on 32.5 cement, which is most of them.
+  const slabMm = BOQ_ASSUMPTIONS.slab.thicknessMm.standard;
+  const slabM3 = floorArea * (slabMm / 1000) * (1 + BOQ_ASSUMPTIONS.concrete.waste[locationType]);
+  const slabNote = `Floor slab ${floorArea}m² @ ${slabMm}mm (${slabM3.toFixed(1)}m³)`;
+  items.push(createBOQItem(cement.materialId, `${cement.name} (Floor Slab)`, 'substructure', Math.ceil(slabM3 * concreteBags), 'per 50kg bag', slabNote));
+  items.push(createBOQItem('sand-river', 'River Sand (Floor Slab)', 'substructure', slabM3 * 0.5, 'per cube', slabNote));
+  items.push(createBOQItem('stone-19mm', 'Crushed Stone 19mm (Floor Slab)', 'substructure', slabM3 * 0.8, 'per cube', slabNote));
+  items.push(createBOQItem('mesh-ref193', 'Welded Mesh Ref 193', 'substructure', Math.ceil(floorArea * MESH_SHEETS_PER_SQM), 'per sheet', `Floor slab reinforcement: ${floorArea}m²`));
+
+  return items;
+}
 
 // ============================================
 // HELPER FUNCTIONS
@@ -385,16 +528,6 @@ function getMortarCementBagsPerM3(cementType: CementType): number {
 function getConcreteCementBagsPerM3(cementType: CementType): number {
   const profile = getConcreteProfile(cementType);
   return BOQ_ASSUMPTIONS.concrete.cementBagsPerM3[profile];
-}
-
-function calculateFoundationConcreteVolume(
-  perimeterLength: number,
-  locationType: LocationType
-): number {
-  const widthM = BOQ_ASSUMPTIONS.stripFooting.widthMm[locationType] / 1000;
-  const depthM = BOQ_ASSUMPTIONS.stripFooting.depthMm / 1000;
-  const concreteVolume = perimeterLength * widthM * depthM;
-  return concreteVolume * getFoundationConcreteWasteMultiplier(locationType);
 }
 
 let itemIdCounter = 0;
@@ -505,48 +638,19 @@ export function calculateMortar(
 function calculateSubstructure(
   totalArea: number,
   perimeterLength: number,
+  internalWallLength: number,
   config: VisionConfig,
   locationType: LocationType = DEFAULT_LOCATION_TYPE
 ): GeneratedBOQItem[] {
-  const items: GeneratedBOQItem[] = [];
   const cfg = normalizeConfig(config);
-
-  const hardcoreM3 = totalArea * HARDCORE_M3_PER_SQM;
-  items.push(createBOQItem('hardcore', 'Hardcore', 'substructure', hardcoreM3, 'per cube', `${totalArea}m² floor @ 150mm thick`));
-
-  const dpcRolls = Math.max(1, Math.ceil(perimeterLength / DPC_ROLL_LENGTH_M));
-  items.push(createBOQItem('dpc', 'DPC Roll', 'substructure', dpcRolls, 'per roll', `DPC for ${perimeterLength.toFixed(1)}m perimeter`));
-
-  const dpmSheets = Math.ceil(totalArea * DPM_SHEETS_PER_SQM / 50);
-  items.push(createBOQItem('dpm', 'DPM 500 Gauge', 'substructure', dpmSheets, 'per roll', `${totalArea}m² coverage with overlaps`));
-
-  const termitePoisonLitres = totalArea * TERMITE_POISON_L_PER_SQM;
-  items.push(createBOQItem('termite-poison', 'Termite Poison', 'substructure', termitePoisonLitres, 'per litre', 'Soil treatment for foundation and slab'));
-
-  const concreteM3 = calculateFoundationConcreteVolume(perimeterLength, locationType);
-  const footingWidthMm = BOQ_ASSUMPTIONS.stripFooting.widthMm[locationType];
-  const footingDepthMm = BOQ_ASSUMPTIONS.stripFooting.depthMm;
-  const concreteCement = Math.ceil(concreteM3 * getConcreteCementBagsPerM3(cfg.cementType));
-  items.push(createBOQItem(cfg.cementType === 'cement_425' ? 'cement-425' : 'cement-325', `${CEMENT_INFO[cfg.cementType].name} (Foundation Concrete)`, 'substructure', concreteCement, 'per 50kg bag', `Concrete for the strip footing: ${perimeterLength.toFixed(1)}m perimeter (${footingWidthMm}mm x ${footingDepthMm}mm)`));
-
-  const foundationSand = Math.ceil(concreteM3 * 0.5 * 10) / 10;
-  items.push(createBOQItem('sand-river', 'River Sand', 'substructure', foundationSand, 'per cube', 'Foundation concrete mix'));
-
-  const foundationStone = Math.ceil(concreteM3 * 0.8 * 10) / 10;
-  items.push(createBOQItem('stone-19mm', 'Crushed Stone 19mm', 'substructure', foundationStone, 'per cube', 'Foundation concrete mix'));
-
-  const masonryWasteMultiplier = getMasonryWasteMultiplier(locationType);
-  const { bricks: subBricks, note: brickNote } = calculateWallBricks(perimeterLength, 1.0, cfg.brickType, masonryWasteMultiplier);
-  items.push(createBOQItem(BRICK_INFO[cfg.brickType].materialId, `${BRICK_INFO[cfg.brickType].name} (Foundation Walls)`, 'substructure', subBricks, 'each', `Foundation walls up to floor level: ${brickNote}`));
-
-  const { cement: subCement, sand: subSand } = calculateMortar(subBricks, cfg.cementType, locationType);
-  items.push(createBOQItem(cfg.cementType === 'cement_425' ? 'cement-425' : 'cement-325', `${CEMENT_INFO[cfg.cementType].name} (Foundation Mortar)`, 'substructure', subCement, 'per 50kg bag', `Mortar for laying ${subBricks.toLocaleString('en-US')} foundation bricks`));
-  items.push(createBOQItem('sand-bricks', 'Bricklaying Sand (Foundation Mortar)', 'substructure', subSand, 'per cube', 'Mortar for laying the foundation bricks'));
-
-  const meshSheets = Math.ceil(totalArea * MESH_SHEETS_PER_SQM);
-  items.push(createBOQItem('mesh-ref193', 'Welded Mesh Ref 193', 'substructure', meshSheets, 'per sheet', `Floor slab: ${totalArea}m²`));
-
-  return items;
+  return substructureItems({
+    floorArea: totalArea,
+    perimeter: perimeterLength,
+    internalWallLength,
+    brickType: cfg.brickType,
+    cementType: cfg.cementType,
+    locationType,
+  });
 }
 
 // ============================================
@@ -557,40 +661,31 @@ function calculateSuperstructure(
   externalWallLength: number,
   internalWallLength: number,
   config: VisionConfig,
+  openings: { external: number; internal: number },
   locationType: LocationType = DEFAULT_LOCATION_TYPE
 ): GeneratedBOQItem[] {
   const items: GeneratedBOQItem[] = [];
   const cfg = normalizeConfig(config);
   const masonryWasteMultiplier = getMasonryWasteMultiplier(locationType);
 
-  const superWallHeight = cfg.wallHeight - 1.0;
-  const { bricks: extBricks } = calculateWallBricks(externalWallLength, superWallHeight, cfg.brickType, masonryWasteMultiplier);
-  const intBricks = internalWallLength > 0
-    ? calculateWallBricks(internalWallLength, cfg.wallHeight, cfg.brickType, masonryWasteMultiplier).bricks
-    : 0;
-  // One line: the same brick for inside and outside walls, bought together.
-  items.push(createBOQItem(
-    BRICK_INFO[cfg.brickType].materialId, `${BRICK_INFO[cfg.brickType].name} (Walls)`, 'superstructure', extBricks + intBricks, 'each',
-    intBricks > 0
-      ? `External walls ${extBricks.toLocaleString('en-US')} (${externalWallLength.toFixed(1)}m x ${superWallHeight}m) + internal walls ${intBricks.toLocaleString('en-US')} (${internalWallLength.toFixed(1)}m x ${cfg.wallHeight}m)`
-      : `External walls: ${externalWallLength.toFixed(1)}m x ${superWallHeight}m`,
-  ));
+  // Walls stand on the slab, full height; the foundation walls are below it.
+  const units = wallUnitsFor(
+    BRICK_INFO[cfg.brickType],
+    externalWallLength * cfg.wallHeight - openings.external,
+    internalWallLength * cfg.wallHeight - openings.internal,
+    masonryWasteMultiplier,
+  );
+  for (const unit of units) {
+    items.push(createBOQItem(unit.info.materialId, `${unit.info.name} (Walls)`, 'superstructure', unit.count, 'each', `${unit.note}, less windows and doors`));
+  }
 
-  const totalSuperBricks = extBricks + intBricks;
+  const totalSuperBricks = units.reduce((sum, unit) => sum + unit.count, 0);
 
   const { cement, sand } = calculateMortar(totalSuperBricks, cfg.cementType, locationType);
   items.push(createBOQItem(cfg.cementType === 'cement_425' ? 'cement-425' : 'cement-325', `${CEMENT_INFO[cfg.cementType].name} (Wall Mortar)`, 'superstructure', cement, 'per 50kg bag', 'Mortar for laying the wall bricks'));
   items.push(createBOQItem('sand-bricks', 'Bricklaying Sand (Wall Mortar)', 'superstructure', sand, 'per cube', 'Mortar for laying the wall bricks'));
 
-  const totalWallLength = externalWallLength + internalWallLength;
-  const rebarY12 = Math.ceil((totalWallLength * REBAR_Y12_PER_LM_RINGBEAM) / 6);
-  items.push(createBOQItem('rebar-12', 'Rebar Y12', 'superstructure', rebarY12, 'per 6m length', `Ring beam: ${totalWallLength.toFixed(1)}m @ 4 bars`));
-
-  const stirrupsY10 = Math.ceil((totalWallLength * STIRRUPS_PER_LM) / 6);
-  items.push(createBOQItem('rebar-10', 'Rebar Y10', 'superstructure', stirrupsY10, 'per 6m length', `Ring beam stirrups @ 250mm spacing`));
-
-  const brickforceRolls = Math.ceil(totalWallLength / 15);
-  items.push(createBOQItem('brickforce', 'Brickforce', 'superstructure', brickforceRolls, 'per roll', `Wall reinforcement every 3rd course`));
+  items.push(...ringBeamItems(externalWallLength + internalWallLength, cfg.wallHeight, cfg.cementType, locationType));
 
   return items;
 }
@@ -602,30 +697,91 @@ function calculateSuperstructure(
 function calculateRoofing(
   totalArea: number,
   locationType: LocationType = DEFAULT_LOCATION_TYPE,
-  roofCovering: RoofCovering = DEFAULT_ROOF_COVERING
+  roofCovering: RoofCovering = DEFAULT_ROOF_COVERING,
+  roofShape: RoofShape = DEFAULT_ROOF_SHAPE,
 ): GeneratedBOQItem[] {
   const items: GeneratedBOQItem[] = [];
+  const shape = ROOF_SHAPES[roofShape] ? roofShape : DEFAULT_ROOF_SHAPE;
+  const tileRoof = roofCovering === 'concrete_tile';
 
-  const roofArea = totalArea * ROOF_PITCH_FACTOR;
-  const roofAreaWithWaste = roofArea * getRoofingWasteMultiplier(locationType);
+  // Plan shape as estimateDimensions assumes it, 1.4:1, with the eaves
+  // overhanging 600 mm all round. The roof covers the overhang too: the area
+  // had been the floor area times the pitch, about 20% short.
+  const length = Math.sqrt(totalArea * 1.4);
+  const width = totalArea / length;
+  const planLength = length + ROOF_OVERHANG_M * 2;
+  const planWidth = width + ROOF_OVERHANG_M * 2;
+  // Sheeted roofs are pitched about 20°, tiled ones about 30°, a lean-to less.
+  const pitch = shape === 'lean_to' ? LEAN_TO_PITCH_FACTOR : tileRoof ? TILE_PITCH_FACTOR : ROOF_PITCH_FACTOR;
+  const roofArea = planLength * planWidth * pitch;
+  // A hipped roof's sheets are cut at every hip.
+  const cuttingWaste = shape === 'hipped' ? HIP_CUTTING_WASTE : 1;
+  const roofAreaWithWaste = roofArea * getRoofingWasteMultiplier(locationType) * cuttingWaste;
   const covering = ROOF_COVERINGS[roofCovering] ?? ROOF_COVERINGS[DEFAULT_ROOF_COVERING];
   const coveringQuantity = Math.ceil(roofAreaWithWaste / covering.coverage);
-  items.push(createBOQItem(covering.materialId, covering.materialName, 'roofing', coveringQuantity, covering.unit, `Roof area: ${roofArea.toFixed(1)}m² + location waste; ${covering.coverage.toFixed(2)}m² effective cover per ${covering.unit.replace('per ', '')}. Confirm laps and pitch with supplier.${roofCovering === 'concrete_tile' ? ' Fixings and ridge pieces require a separate quote.' : ''}`));
+  items.push(createBOQItem(covering.materialId, covering.materialName, 'roofing', coveringQuantity, covering.unit,
+    `${ROOF_SHAPES[shape].label} roof: ${roofArea.toFixed(1)}m² including 600mm eaves, + ${shape === 'hipped' ? 'hip cutting and ' : ''}location waste; ${covering.coverage.toFixed(2)}m² effective cover per ${covering.unit.replace('per ', '')}. Confirm laps and pitch with supplier.${tileRoof ? ' Fixings and ridge pieces require a separate quote.' : ''}`));
 
   if (covering.fixingRate > 0) {
     const screwBoxes = Math.ceil((coveringQuantity * covering.fixingRate) / 100);
     items.push(createBOQItem('screws-roof', 'Roof Screws 65mm', 'roofing', screwBoxes, 'per 100', `${coveringQuantity} ${covering.unit.replace('per ', '')} @ ${covering.fixingRate} screws each`));
   }
 
-  const rafterCount = Math.ceil(roofArea / 6);
-  const tileRoof = roofCovering === 'concrete_tile';
-  items.push(createBOQItem('timber-50x76', 'Timber 50x76mm', 'roofing', rafterCount, 'per 6m length', tileRoof ? 'Preliminary rafter allowance only; concrete tile weight requires a designed roof structure' : 'Roof rafters @ 600mm spacing'));
+  // The structure, as a Zimbabwe roof is built: timber trusses at 1.2 m on a
+  // wall plate, tied down with hoop iron, then purlins at about 1 m for metal
+  // sheeting or battens at the tile gauge. A lean-to has single rafters.
+  const lengthsOf = (metres: number) => Math.ceil((metres * 1.05) / TIMBER_LENGTH_M);
+  const wallPlateM = 2 * (length + width);
+  const frames = Math.ceil(length / TRUSS_SPACING_M) + 1;
+  let frameM: number;
+  let frameNote: string;
+  if (shape === 'lean_to') {
+    const rafter = planWidth * pitch;
+    frameM = frames * rafter;
+    frameNote = `${frames} rafters @ ${TRUSS_SPACING_M}m, ${rafter.toFixed(1)}m each`;
+  } else {
+    const rafter = (planWidth / 2) * pitch;
+    // Each truss: two rafters, the tie beam across the span, and its webs.
+    frameM = frames * (rafter * 2 + planWidth + width * TRUSS_WEB_FACTOR);
+    frameNote = `${frames} trusses @ ${TRUSS_SPACING_M}m`;
+    if (shape === 'hipped') {
+      // Four hip rafters, and the jack rafters running up to them, which
+      // take about as much timber again as the hips.
+      const hip = Math.hypot(rafter, planWidth / 2);
+      frameM += 4 * hip * 2;
+      frameNote += ` + 4 hips with jack rafters (${hip.toFixed(1)}m each)`;
+    }
+  }
+  items.push(createBOQItem('timber-50x76', 'Timber 50x76mm (Roof Frame & Wall Plate)', 'roofing', lengthsOf(frameM + wallPlateM), 'per 6m length',
+    `${frameNote} (${Math.round(frameM)}m) + wall plate ${Math.round(wallPlateM)}m${tileRoof ? '. Concrete tiles are heavy: have the roof design checked by an engineer' : ''}`));
 
-  const branderingCount = Math.ceil(roofArea / (tileRoof ? 3.2 : 4));
-  items.push(createBOQItem('timber-38x38', 'Timber 38x38mm', 'roofing', branderingCount, 'per 6m length', tileRoof ? 'Tile battens @ approximately 320mm gauge; confirm tile specification' : 'Brandering @ 400mm spacing'));
+  // Purlins or battens run across the whole slope area, whatever the shape.
+  const slopeArea = planLength * planWidth * pitch;
+  if (tileRoof) {
+    items.push(createBOQItem('timber-38x38', 'Timber 38x38mm (Tile Battens)', 'roofing', lengthsOf(slopeArea / TILE_BATTEN_GAUGE_M), 'per 6m length', `Battens @ ${TILE_BATTEN_GAUGE_M * 1000}mm gauge; confirm with the tile specification`));
+  } else {
+    items.push(createBOQItem('timber-50x76', 'Timber 50x76mm (Purlins)', 'roofing', lengthsOf(slopeArea / PURLIN_SPACING_M), 'per 6m length', `Purlins @ ${PURLIN_SPACING_M}m over ${slopeArea.toFixed(0)}m² of roof`));
+  }
 
-  const fasciaLength = Math.ceil(Math.sqrt(roofArea) * 4 / 6);
-  items.push(createBOQItem('fascia-pvc', 'Fascia Board 228mm', 'roofing', fasciaLength, 'per 6m length', 'Perimeter fascia'));
+  // Ceiling brandering, which every roof needs whatever covers it.
+  items.push(createBOQItem('timber-38x38', 'Timber 38x38mm (Ceiling Brandering)', 'roofing', lengthsOf(totalArea / BRANDERING_SPACING_M), 'per 6m length', `Brandering @ ${BRANDERING_SPACING_M * 1000}mm under ${totalArea}m² of ceiling`));
+  items.push(createBOQItem('hoop-iron', 'Hoop Iron Straps', 'roofing', frames * 2, 'each', `Each ${shape === 'lean_to' ? 'rafter' : 'truss'} tied down at both walls`));
+  items.push(createBOQItem('nails-100', 'Wire Nails 100mm', 'roofing', Math.ceil(roofArea * ROOF_NAILS_KG_PER_SQM), 'per kg', 'Frame, purlin and brandering joints'));
+
+  // Ridge and hips are capped; a lean-to has a flashing at its top edge instead.
+  const ridgeM = shape === 'hipped' ? Math.max(0, length - width) : shape === 'gable' ? planLength : 0;
+  const hipsM = shape === 'hipped' ? 4 * Math.hypot((planWidth / 2) * pitch, planWidth / 2) : 0;
+  if (!tileRoof && ridgeM + hipsM > 0) {
+    items.push(createBOQItem('ridge-ibr', shape === 'hipped' ? 'Ridge & Hip Capping 2.4m' : 'Ridge Capping 2.4m', 'roofing', Math.ceil((ridgeM + hipsM) / 2.2), 'each',
+      shape === 'hipped' ? `Ridge ${ridgeM.toFixed(1)}m + 4 hips ${hipsM.toFixed(1)}m, lapped` : `Ridge ${ridgeM.toFixed(1)}m, lapped`));
+  }
+
+  // Fascia round the eaves (and up the gable or lean-to ends); gutters on every eave.
+  const eavesM = shape === 'hipped' ? 2 * (planLength + planWidth) : shape === 'gable' ? 2 * planLength : planLength;
+  const vergeM = shape === 'gable' ? 4 * (planWidth / 2) * pitch : shape === 'lean_to' ? 2 * planWidth * pitch + planLength : 0;
+  items.push(createBOQItem('fascia-pvc', 'Fascia Board 228mm', 'roofing', Math.ceil((eavesM + vergeM) / 6), 'per 6m length', shape === 'hipped' ? 'Right round the eaves' : 'Eaves and the sloping ends'));
+  items.push(createBOQItem('gutter-pvc', 'PVC Gutter', 'roofing', Math.ceil(eavesM / 6), 'per 6m length',
+    `${shape === 'hipped' ? 'All four eaves' : shape === 'gable' ? 'Both long eaves' : 'The low eave'}: ${eavesM.toFixed(1)}m. Downpipes and brackets: add from your supplier's quote`));
 
   return items;
 }
@@ -667,8 +823,21 @@ const CEILING_COVERAGE_RATIO = 0.95;
 const CORNICE_LENGTH_M = 4;
 const WINDOW_AREA_M2 = 1.44;
 const CABLE_ROLL_LENGTH_M = 100;
-const CABLE_M_PER_SQM = 1.6;
-const CONDUIT_LENGTH_M = 4;
+const GLAZED_SHARE = 0.85;
+const SOCKETS_PER_ROOM = 3;
+const KITCHEN_EXTRA_SOCKETS = 4;
+const EXTRA_LIGHT_POINTS = 3;
+const CABLE_M_PER_SOCKET = 8;
+const CABLE_M_PER_LIGHT = 8;
+const CONDUIT_LENGTHS_PER_POINT = 2;
+const CIRCUIT_BREAKERS = 6;
+const FLOOR_M2_PER_BATHROOM = 60;
+const COPPER_M_PER_POINT = 12;
+const FITTINGS_PER_POINT = 6;
+const WASTE_M_PER_FITTING = 3;
+const SOIL_M_PER_WC = 6;
+const SOIL_RUN_TO_SEWER_M = 18;
+const KITCHEN_UNITS_M: Record<FinishLevel, number> = { economy: 0, standard: 5.5, premium: 7.5 };
 const SOIL_PIPE_LENGTH_M = 6;
 const WASTE_PIPE_LENGTH_M = 6;
 const COPPER_PIPE_LENGTH_M = 5.5;
@@ -753,17 +922,76 @@ function calculateFinishes(input: {
   items.push(createBOQItem('hinges-door', 'Door Hinges', 'finishing', interiorDoors + spec.exteriorDoors, 'per pair', 'One pair per door'));
   items.push(createBOQItem('lock-mortice', 'Mortice Lock', 'finishing', interiorDoors + spec.exteriorDoors, 'each', 'One per door'));
   items.push(createBOQItem('window-steel', 'Steel Window Frames', 'finishing', roundTo(totalWindows * WINDOW_AREA_M2, 1), 'per m²', `${totalWindows} windows`));
+  // Steel frames are sold unglazed; most Zimbabwe houses also bar every window.
+  items.push(createBOQItem('glass-4mm', 'Clear Glass 4mm', 'finishing', roundTo(totalWindows * WINDOW_AREA_M2 * GLAZED_SHARE, 1), 'per m²', `Glazing for ${totalWindows} windows`));
+  items.push(createBOQItem('burglar-bars', 'Burglar Bars', 'finishing', totalWindows, 'per window', 'One set per window'));
 
-  // First-fix electrical and plumbing.
-  const cableRolls = Math.max(1, Math.ceil((floorArea * CABLE_M_PER_SQM) / CABLE_ROLL_LENGTH_M));
-  items.push(createBOQItem('cable-25', 'Cable 2.5mm T&E', 'finishing', cableRolls, 'per 100m roll', `${floorArea}m² wiring`));
-  items.push(createBOQItem('conduit-20', 'PVC Conduit 20mm', 'finishing', Math.ceil((floorArea * 0.5) / CONDUIT_LENGTH_M), 'per 4m length', 'Wiring conduit'));
-  items.push(createBOQItem('db-8way', 'Distribution Board', 'finishing', 1, 'each', 'Consumer unit'));
+  // ── Kitchen units ────────────────────────────────────────────────────────
+  // Propzone's standard Harare spec: about 3 m of base and 2.5 m of wall
+  // units with worktop and sink. An economy kitchen starts with a sink unit.
+  const kitchenM = KITCHEN_UNITS_M[finishLevel];
+  if (kitchenM > 0) {
+    items.push(createBOQItem('kitchen-units', 'Kitchen Units', 'finishing', kitchenM, 'per metre', `${kitchenM}m of base and wall units, worktop and sink. Replace with your joiner's quote`));
+  } else {
+    items.push(createBOQItem('sink-kitchen', 'Kitchen Sink', 'finishing', 1, 'each', 'Sink only; units added later'));
+  }
 
-  items.push(createBOQItem('pipe-110-pvc', 'PVC Soil Pipe 110mm', 'finishing', Math.max(1, Math.ceil((perimeter * 0.4) / SOIL_PIPE_LENGTH_M)), 'per 6m length', 'Soil drainage'));
-  items.push(createBOQItem('pipe-40-pvc', 'PVC Waste Pipe 40mm', 'finishing', Math.max(1, Math.ceil((floorArea * 0.15) / WASTE_PIPE_LENGTH_M)), 'per 6m length', 'Waste runs'));
-  items.push(createBOQItem('pipe-15-copper', 'Copper Pipe 15mm', 'finishing', Math.max(1, Math.ceil((floorArea * 0.25) / COPPER_PIPE_LENGTH_M)), 'per 5.5m length', 'Water supply'));
-  items.push(createBOQItem('geyser-150', 'Geyser 150L', 'finishing', 1, 'each', 'Hot water'));
+  return items;
+}
+
+/**
+ * Plumbing & Electrical: separate trades, quoted and paid separately from the
+ * builder, so their own stage (owner's decision, 2026-10-18).
+ */
+function calculateServices(input: { floorArea: number; roomCount: number }): GeneratedBOQItem[] {
+  const { floorArea, roomCount } = input;
+  const items: GeneratedBOQItem[] = [];
+
+  // ── Electrical: counted per room, as an electrician lays it out ──────────
+  // About three double sockets a room and four more in the kitchen, a light
+  // and its switch in each room plus the passage and two outside — 25–30
+  // points and 10–12 lights on a 3-bedroom house, as the Propzone 2026 Harare
+  // model has. The estimate had been two rolls of cable and a board.
+  const sockets = roomCount * SOCKETS_PER_ROOM + KITCHEN_EXTRA_SOCKETS;
+  const lights = roomCount + EXTRA_LIGHT_POINTS;
+  const points = sockets + lights;
+  items.push(createBOQItem('socket-double', 'Double Socket 13A', 'services', sockets, 'each', `${SOCKETS_PER_ROOM} a room + ${KITCHEN_EXTRA_SOCKETS} in the kitchen`));
+  items.push(createBOQItem('switch-1g', 'Light Switch', 'services', lights, 'each', 'One per light'));
+  items.push(createBOQItem('light-led-4ft', 'Light Fitting (LED)', 'services', lights, 'each', `${roomCount} rooms + passage and outside lights`));
+  items.push(createBOQItem('cable-25', 'Cable 2.5mm T&E (Sockets)', 'services', Math.max(1, Math.ceil((sockets * CABLE_M_PER_SOCKET) / CABLE_ROLL_LENGTH_M)), 'per 100m roll', `${sockets} sockets @ ${CABLE_M_PER_SOCKET}m`));
+  // Lighting is run in single-core wire: live, neutral and earth.
+  items.push(createBOQItem('cable-15', 'House Wire 1.5mm (Lights)', 'services', Math.max(3, Math.ceil((lights * CABLE_M_PER_LIGHT * 3) / CABLE_ROLL_LENGTH_M)), 'per 100m roll', `${lights} lights @ ${CABLE_M_PER_LIGHT}m, three cores`));
+  items.push(createBOQItem('conduit-20', 'PVC Conduit 20mm', 'services', Math.ceil(points * CONDUIT_LENGTHS_PER_POINT), 'per 4m length', `${points} points`));
+  items.push(createBOQItem('db-8way', 'Distribution Board 8-Way', 'services', 1, 'each', 'Consumer unit'));
+  items.push(createBOQItem('mcb-sp', 'Circuit Breakers', 'services', CIRCUIT_BREAKERS, 'each', 'Lights, sockets, geyser and stove circuits. Not yet priced: the 6mm geyser and stove cable and an earth leakage unit — add them from your electrician\'s quote'));
+
+  // ── Plumbing and sanitaryware, per bathroom ──────────────────────────────
+  // A bathroom for about every 60 m²: two on a 3-bedroom house (main and
+  // en-suite). The main one has a bath, the others a shower. The estimate had
+  // pipes and a geyser and nothing to connect them to.
+  const bathrooms = Math.max(1, Math.round(floorArea / FLOOR_M2_PER_BATHROOM));
+  const showers = bathrooms - 1;
+  items.push(createBOQItem('wc-suite-cc', 'WC Suite (Close-Coupled)', 'services', bathrooms, 'each', `${bathrooms} bathroom${bathrooms === 1 ? '' : 's'}`));
+  items.push(createBOQItem('basin-pedestal', 'Wash Basin & Pedestal', 'services', bathrooms, 'each', 'One per bathroom'));
+  items.push(createBOQItem('mixer-basin', 'Basin Mixer', 'services', bathrooms, 'each', 'One per basin'));
+  items.push(createBOQItem('bath-skirted', 'Bath', 'services', 1, 'each', 'Main bathroom'));
+  items.push(createBOQItem('mixer-bath', 'Bath Mixer with Hand Shower', 'services', 1, 'each', 'Main bathroom'));
+  if (showers > 0) items.push(createBOQItem('shower-mixer', 'Shower Mixer Set', 'services', showers, 'each', 'Other bathrooms: tiled shower'));
+  items.push(createBOQItem('mixer-sink', 'Sink Mixer', 'services', 1, 'each', 'Kitchen'));
+  items.push(createBOQItem('tap-garden', 'Garden Taps', 'services', 2, 'each', 'Front and back'));
+  items.push(createBOQItem('stopcock-15', 'Stopcock 15mm', 'services', 1, 'each', 'Main water shut-off'));
+
+  // Hot and cold to each fitting, wastes to each wet fitting, soil from each
+  // WC, and a run to the sewer or septic tank.
+  const waterPoints = bathrooms * 3 + 1 /* sink */ + 1 /* washing machine */ + 2 /* garden taps */ + 1 /* geyser */;
+  const copperM = waterPoints * COPPER_M_PER_POINT;
+  items.push(createBOQItem('pipe-15-copper', 'Copper Pipe 15mm', 'services', Math.ceil(copperM / COPPER_PIPE_LENGTH_M), 'per 5.5m length', `${waterPoints} water points @ ${COPPER_M_PER_POINT}m, hot and cold`));
+  items.push(createBOQItem('copper-fitting-15', 'Copper Fittings 15mm', 'services', waterPoints * FITTINGS_PER_POINT, 'each', `Elbows and tees: ${FITTINGS_PER_POINT} a point`));
+  const wetFittings = bathrooms * 2 + 2; // basins, baths/showers, sink, washing machine
+  items.push(createBOQItem('pipe-40-pvc', 'PVC Waste Pipe 40mm', 'services', Math.max(1, Math.ceil((wetFittings * WASTE_M_PER_FITTING) / WASTE_PIPE_LENGTH_M)), 'per 6m length', `${wetFittings} wet fittings @ ${WASTE_M_PER_FITTING}m`));
+  items.push(createBOQItem('pipe-110-pvc', 'PVC Soil Pipe 110mm', 'services', Math.ceil((bathrooms * SOIL_M_PER_WC + SOIL_RUN_TO_SEWER_M) / SOIL_PIPE_LENGTH_M), 'per 6m length', `${bathrooms} WC${bathrooms === 1 ? '' : 's'} + ${SOIL_RUN_TO_SEWER_M}m to the sewer or septic tank`));
+  items.push(createBOQItem('gully-110', 'Gully Trap 110mm', 'services', bathrooms + 1, 'each', 'Bathrooms and kitchen'));
+  items.push(createBOQItem('geyser-150', 'Geyser 150L', 'services', 1, 'each', 'Hot water'));
 
   return items;
 }
@@ -891,15 +1119,16 @@ export function generateBOQ(
   const locationType = DEFAULT_LOCATION_TYPE;
 
   if (hasScope('substructure')) {
-    allItems.push(...calculateSubstructure(totalArea, perimeterLength, config, locationType));
+    allItems.push(...calculateSubstructure(totalArea, perimeterLength, internalWallLength, config, locationType));
   }
 
   if (hasScope('superstructure')) {
-    allItems.push(...calculateSuperstructure(perimeterLength, internalWallLength, config, locationType));
+    const windows = detectedWindows && detectedWindows > 0 ? detectedWindows : Math.ceil(totalArea / 15);
+    allItems.push(...calculateSuperstructure(perimeterLength, internalWallLength, config, wallOpenings(windows, detectedDoors, rooms.length), locationType));
   }
 
   if (hasScope('roofing')) {
-    allItems.push(...calculateRoofing(totalArea, locationType, config.roofCovering));
+    allItems.push(...calculateRoofing(totalArea, locationType, config.roofCovering, config.roofShape));
   }
 
   if (hasScope('finishing')) {
@@ -916,6 +1145,10 @@ export function generateBOQ(
       cementType: getFirstValue(config.cementType),
       finishLevel: DEFAULT_FINISH_LEVEL,
     }));
+  }
+
+  if (hasScope('services')) {
+    allItems.push(...calculateServices({ floorArea: totalArea, roomCount: rooms.length }));
   }
 
   if (hasScope('exterior')) {

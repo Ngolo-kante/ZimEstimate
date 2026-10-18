@@ -5,7 +5,7 @@ import { calculateBoqHealth, type BoqHealthCategoryInput, type BoqHealthResult }
 import { STAGE_COMPLIANCE_REQUIREMENTS } from '@/lib/compliance';
 import { BrickType, CementType } from '@/lib/vision/types';
 import type { FinishLevel } from '@/lib/calculations';
-import type { RoofCovering } from '@/lib/calculations/roofingOptions';
+import type { RoofCovering, RoofShape } from '@/lib/calculations/roofingOptions';
 import { OWN_FIGURE_NOTE, type ResidentialDensity } from '@/lib/projectFees';
 import { DEFAULT_HOUSE_EXTRAS, type HouseExtras } from '@/lib/houseExtras';
 import type { LaborRates } from '@/lib/calculations/laborSubstages';
@@ -21,6 +21,7 @@ export const BOQ_MILESTONE_IDS = [
   'superstructure',
   'roofing',
   'finishing',
+  'services',
   'exterior',
   'labor',
   'project_fees',
@@ -68,6 +69,7 @@ export interface ProjectDetailsState {
   // 'not_sure' is an answer: use the default, but record that it was not chosen.
   finishLevel: FinishLevel | 'not_sure' | null;
   roofCovering: RoofCovering;
+  roofShape: RoofShape;
   /** Prices the council fee lines (plan approval, inspections, certificate). */
   residentialDensity: ResidentialDensity;
   /** Septic, borehole, solar, site setup… (lib/houseExtras.ts). Optional for older saved state. */
@@ -218,6 +220,7 @@ const initialProjectDetails: ProjectDetailsState = {
   cementTypes: ['cement_325'],
   finishLevel: null,
   roofCovering: 'ibr_05',
+  roofShape: 'hipped',
   residentialDensity: 'low',
   houseExtras: DEFAULT_HOUSE_EXTRAS,
   roomInputs: { ...DEFAULT_ROOM_INPUTS },
@@ -228,6 +231,7 @@ const milestoneLabels: Record<BoqMilestoneId, string> = {
   superstructure: 'Superstructure',
   roofing: 'Roofing',
   finishing: 'Finishing',
+  services: 'Plumbing & Electrical',
   exterior: 'Exterior Works',
   labor: 'Labor',
   project_fees: 'Professional & Statutory Fees',

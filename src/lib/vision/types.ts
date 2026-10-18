@@ -1,5 +1,5 @@
 import type { ProjectSoilType, SiteSlopeType } from '@/lib/database.types';
-import type { RoofCovering } from '@/lib/calculations/roofingOptions';
+import type { RoofCovering, RoofShape } from '@/lib/calculations/roofingOptions';
 import type { LaborRates } from '@/lib/calculations/laborSubstages';
 import type { PrintedSizes } from './planCheck';
 
@@ -74,6 +74,7 @@ export type ProjectScope =
   | 'superstructure'
   | 'roofing'
   | 'finishing'
+  | 'services'
   | 'exterior';
 
 export type BrickType =
@@ -94,6 +95,7 @@ export interface VisionConfig {
   wallHeight: number; // default 2.7m
   foundationDepth: number; // default 0.6m
   roofCovering?: RoofCovering;
+  roofShape?: RoofShape;
   /** The user's own labour percentages by stage; defaults to 35% each. */
   laborRates?: LaborRates;
 }
@@ -106,6 +108,7 @@ export const DEFAULT_CONFIG: VisionConfig = {
   wallHeight: 2.7,
   foundationDepth: 0.6,
   roofCovering: 'ibr_05',
+  roofShape: 'hipped',
 };
 
 // Helper to normalize config values to arrays
@@ -292,7 +295,7 @@ export const SCOPE_INFO: Record<ProjectScope, {
   full_house: {
     name: 'Full House',
     description: 'Complete construction from foundation to finishing',
-    milestones: ['substructure', 'superstructure', 'roofing', 'finishing', 'exterior'],
+    milestones: ['substructure', 'superstructure', 'roofing', 'finishing', 'services', 'exterior'],
   },
   substructure: {
     name: 'Site Preparation & Foundation',
@@ -311,8 +314,13 @@ export const SCOPE_INFO: Record<ProjectScope, {
   },
   finishing: {
     name: 'Interior & Finishing',
-    description: 'Plastering, painting, tiling, and fittings',
+    description: 'Plastering, painting, tiling, doors and windows',
     milestones: ['finishing'],
+  },
+  services: {
+    name: 'Plumbing & Electrical',
+    description: 'Water supply, drainage, sanitaryware and wiring',
+    milestones: ['services'],
   },
   exterior: {
     name: 'External Work',

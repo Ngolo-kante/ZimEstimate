@@ -23,6 +23,7 @@ const ESTIMATOR_STAGES: Array<Exclude<VisionProjectScope, 'full_house'>> = [
   'superstructure',
   'roofing',
   'finishing',
+  'services',
   'exterior',
 ];
 
@@ -338,6 +339,7 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
     includeLabor: laborType === 'materials_labor',
     laborRates: projectDetails.laborRates,
     roofCovering: projectDetails.roofCovering,
+    roofShape: projectDetails.roofShape,
     locationType: (projectDetails.locationType || 'urban') as 'urban' | 'peri-urban' | 'rural',
     // 'not_sure' and unanswered both price as standard — the estimate has to
     // produce a number either way. The difference is that the answer is now

@@ -9,6 +9,7 @@ import {
   Columns,
   HouseSimple,
   PaintRoller,
+  Plug,
   Tree,
   Hammer,
   CheckCircle,
@@ -35,6 +36,7 @@ const STAGE_ICONS: Record<string, ComponentType<{ size?: number; className?: str
   buildings: Columns,
   'house-simple': HouseSimple,
   'paint-roller': PaintRoller,
+  plug: Plug,
   tree: Tree,
   hammer: Hammer,
 };
@@ -140,7 +142,7 @@ export default function ProjectTypeSection() {
           >
             <div className="wiz-alert wiz-alert--info">
               <Info size={14} weight="fill" className="wiz-alert__icon" />
-              <p>All 5 building stages will be included: Substructure, Superstructure, Roofing, Internal Finishes, and External Works.</p>
+              <p>All {MANUAL_BUILDER_STAGES.length} building stages will be included: {MANUAL_BUILDER_STAGES.map((stage) => stage.label).join(', ').replace(/, ([^,]*)$/, ' and $1')}.</p>
             </div>
           </motion.div>
         )}

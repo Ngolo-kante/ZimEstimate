@@ -56,6 +56,12 @@ export const MANUAL_BUILDER_STAGES: {
     iconKey: 'paint-roller',
   },
   {
+    id: 'services',
+    label: 'Plumbing & Electrical',
+    description: 'Pipes, sanitaryware, wiring & fittings',
+    iconKey: 'plug',
+  },
+  {
     id: 'exterior',
     label: 'External Works',
     description: 'Boundary wall, paving, gate & landscaping',

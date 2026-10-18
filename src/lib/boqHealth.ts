@@ -3,6 +3,7 @@ export type BoqHealthCategory =
   | 'superstructure'
   | 'roofing'
   | 'finishing'
+  | 'services'
   | 'exterior';
 
 export type BoqHealthStatus = 'high_risk' | 'work_in_progress' | 'ready_for_procurement';
@@ -32,10 +33,11 @@ export interface BoqHealthResult {
 }
 
 export const BOQ_HEALTH_WEIGHTS: Record<BoqHealthCategory, number> = {
-  substructure: 35,
+  substructure: 30,
   superstructure: 25,
   roofing: 15,
-  finishing: 15,
+  finishing: 10,
+  services: 10,
   exterior: 10,
 };
 
@@ -70,8 +72,11 @@ export const BOQ_HEALTH_CRITICAL_REQUIREMENTS: Record<BoqHealthCategory, string[
     ['paint-pva', 'paint-acrylic'],
     ['tiles-floor-ceramic', 'tiles-wall-ceramic'],
     ['tile-adhesive'],
+  ],
+  services: [
     ['conduit-20', 'cable-25', 'db-8way'],
     ['pipe-110-pvc', 'pipe-40-pvc', 'geyser-150'],
+    ['wc-suite-cc'],
   ],
   exterior: [
     ['durawall-panel', 'block-6inch', 'block-8inch'],

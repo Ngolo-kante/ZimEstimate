@@ -62,6 +62,7 @@ const STAGE_LABELS: Record<BOQCategory, string> = {
   superstructure: 'Structural Walls & Frame',
   roofing: 'Roofing',
   finishing: 'Interior & Finishing',
+  services: 'Plumbing & Electrical',
   exterior: 'External Work',
 };
 

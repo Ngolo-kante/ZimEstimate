@@ -7,6 +7,7 @@ function withAllCategories(overrides: Partial<Record<string, string[]>>): BoqHea
     { category: 'superstructure', itemIdsWithQty: overrides.superstructure || [] },
     { category: 'roofing', itemIdsWithQty: overrides.roofing || [] },
     { category: 'finishing', itemIdsWithQty: overrides.finishing || [] },
+    { category: 'services', itemIdsWithQty: overrides.services || [] },
     { category: 'exterior', itemIdsWithQty: overrides.exterior || [] },
   ];
 }
@@ -36,7 +37,7 @@ describe('calculateBoqHealth', () => {
       substructure: ['cement-325', 'hardcore', 'sand-river', 'stone-19mm', 'mesh-ref193', 'dpc', 'dpm', 'termite-poison', 'brick-common'],
     }));
 
-    expect(result.weightedScorePct).toBe(35);
+    expect(result.weightedScorePct).toBe(30);
     expect(result.status).toBe('high_risk');
   });
 
@@ -46,7 +47,8 @@ describe('calculateBoqHealth', () => {
       roofing: ['ibr-05-3m', 'timber-50x76', 'timber-38x38', 'screws-roof', 'fascia-pvc'],
     }));
 
-    expect(result.weightedScorePct).toBe(50);
+    // Substructure 30 + roofing 15.
+    expect(result.weightedScorePct).toBe(45);
     expect(result.status).toBe('work_in_progress');
   });
 
@@ -55,7 +57,8 @@ describe('calculateBoqHealth', () => {
       substructure: ['cement-325', 'hardcore', 'sand-river', 'stone-19mm', 'mesh-ref193', 'dpc', 'dpm', 'termite-poison', 'brick-common'],
       superstructure: ['brick-common', 'cement-325', 'sand-bricks', 'rebar-12', 'rebar-10', 'brickforce'],
       roofing: ['ibr-05-3m', 'timber-50x76', 'timber-38x38', 'screws-roof', 'fascia-pvc'],
-      finishing: ['paint-pva', 'tiles-floor-ceramic', 'tile-adhesive', 'conduit-20', 'pipe-110-pvc'],
+      finishing: ['paint-pva', 'tiles-floor-ceramic', 'tile-adhesive'],
+      services: ['conduit-20', 'pipe-110-pvc', 'wc-suite-cc'],
       exterior: ['durawall-panel', 'cement-325', 'sand-river'],
     }));
 

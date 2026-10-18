@@ -19,7 +19,7 @@ import ProjectLocationSection from './components/sections/ProjectLocationSection
 import BuildingDesignSection from './components/sections/BuildingDesignSection';
 import MaterialsSection from './components/sections/MaterialsSection';
 import LaborSection from './components/sections/LaborSection';
-import { ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
+import { ROOF_COVERINGS, ROOF_SHAPES, type RoofCovering, type RoofShape } from '@/lib/calculations/roofingOptions';
 import SiteConditionsSection from './components/sections/SiteConditionsSection';
 import { InteractiveRoomBuilder, type RoomInstance } from './components/InteractiveRoomBuilder';
 import { buildLiveMilestones } from './utils/liveEstimator';
@@ -61,6 +61,7 @@ function normalizeMilestone(category: string | null | undefined): BoqMilestoneId
     category === 'superstructure' ||
     category === 'roofing' ||
     category === 'finishing' ||
+    category === 'services' ||
     category === 'exterior' ||
     category === 'labor' ||
     category === 'project_fees'
@@ -427,6 +428,12 @@ function BoqNewPageContent() {
       onLoadComplete: (loadedProject: Project, items: DbBOQItem[]) => {
         const savedRoofCovering = (Object.entries(ROOF_COVERINGS) as [RoofCovering, (typeof ROOF_COVERINGS)[RoofCovering]][])
           .find(([, option]) => items.some((item) => item.material_id === option.materialId))?.[0];
+        // The covering line's note starts with the roof shape. Projects saved
+        // before shapes existed were priced as gables, and stay so.
+        const coveringNote = items.find((item) => item.material_id === (savedRoofCovering ? ROOF_COVERINGS[savedRoofCovering].materialId : ''))?.notes || '';
+        const savedRoofShape: RoofShape | undefined = savedRoofCovering
+          ? (Object.entries(ROOF_SHAPES) as [RoofShape, (typeof ROOF_SHAPES)[RoofShape]][]).find(([, option]) => coveringNote.startsWith(`${option.label} roof`))?.[0] ?? 'gable'
+          : undefined;
         const savedDensity = densityFromNotes(items.filter((item) => item.category === 'project_fees').map((item) => item.notes));
         const locationParts = (loadedProject.location || '').split(' - ');
         const locationType = normalizeLocationType(locationParts[0] || '');
@@ -445,6 +452,7 @@ function BoqNewPageContent() {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           siteSlope: (loadedProject.site_slope || '') as any,
           ...(savedRoofCovering ? { roofCovering: savedRoofCovering } : {}),
+          ...(savedRoofShape ? { roofShape: savedRoofShape } : {}),
           ...(savedDensity ? { residentialDensity: savedDensity } : {}),
           houseExtras: normalizeHouseExtras(loadedProject.house_extras),
           laborRates: laborRatesFromNotes(items.map((item) => ({ materialId: item.material_id, note: item.notes }))),

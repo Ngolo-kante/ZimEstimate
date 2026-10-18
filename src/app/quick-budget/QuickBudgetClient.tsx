@@ -23,9 +23,10 @@ import BoreholeBudgetExplorer from '@/components/quick-projects/BoreholeBudgetEx
 import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 import CostDonut, { COST_COLORS } from '@/components/ui/CostDonut';
 import RoofProfileIcon from '@/components/ui/RoofProfileIcon';
+import RoofShapeIcon from '@/components/ui/RoofShapeIcon';
 import { LABOR_STAGES, LABOR_SUBSTAGES, MAX_LABOR_PERCENTAGE, STAGE_LABOR_PERCENTAGES, type LaborRates } from '@/lib/calculations/laborSubstages';
 import { COUNCIL_TARIFF, councilFeesTotal } from '@/lib/projectFees';
-import { DEFAULT_ROOF_COVERING, ROOF_COVERINGS, type RoofCovering } from '@/lib/calculations/roofingOptions';
+import { DEFAULT_ROOF_COVERING, DEFAULT_ROOF_SHAPE, ROOF_COVERINGS, ROOF_SHAPES, type RoofCovering, type RoofShape } from '@/lib/calculations/roofingOptions';
 import { captureProductEvent, getBudgetBand, recordSharedLinkArrival } from '@/lib/productAnalytics';
 import {
   House,
@@ -82,6 +83,7 @@ const stageCategoryLabels: Record<string, string> = {
   superstructure: 'Structural Walls & Frame',
   roofing: 'Roofing',
   finishing: 'Interior & Finishing',
+  services: 'Plumbing & Electrical',
   exterior: 'External Work',
 };
 
@@ -93,6 +95,7 @@ export default function QuickBudgetPage() {
   const [floorAreaInput, setFloorAreaInput] = useState(String(HOUSE_DEFAULTS.area));
   const [locationType, setLocationType] = useState<(typeof locationOptions)[number]['id']>(HOUSE_DEFAULTS.location);
   const [roofCovering, setRoofCovering] = useState<RoofCovering>(DEFAULT_ROOF_COVERING);
+  const [roofShape, setRoofShape] = useState<RoofShape>(DEFAULT_ROOF_SHAPE);
   // On by default: a house needs builders, and a materials-only figure made
   // budgets look further along than they are.
   const [includeLabor, setIncludeLabor] = useState(true);
@@ -142,6 +145,8 @@ export default function QuickBudgetPage() {
 
     const roof = params.get('roof');
     if (roof && roof in ROOF_COVERINGS) setRoofCovering(roof as RoofCovering);
+    const shape = params.get('shape');
+    if (shape && shape in ROOF_SHAPES) setRoofShape(shape as RoofShape);
     if (params.get('labour') === '0') setIncludeLabor(false);
     const pctRaw = Number(params.get('labourPct'));
     if (params.get('labourPct') && Number.isFinite(pctRaw)) setLaborPct(Math.min(MAX_LABOR_PERCENTAGE, Math.max(0, pctRaw)));
@@ -197,8 +202,9 @@ export default function QuickBudgetPage() {
       laborRates,
       locationType,
       roofCovering,
+      roofShape,
     };
-  }, [estimatorErrors.area, estimatorErrors.budget, locationType, roofCovering, includeLabor, laborRates, parsedArea, selectedProfile.config.cementType, selectedProfile.config.wallHeightM]);
+  }, [estimatorErrors.area, estimatorErrors.budget, locationType, roofCovering, roofShape, includeLabor, laborRates, parsedArea, selectedProfile.config.cementType, selectedProfile.config.wallHeightM]);
 
   const detailedItems = useMemo(() => {
     if (!manualBuilderConfig) return [];
@@ -239,6 +245,7 @@ export default function QuickBudgetPage() {
         floorAreaM2: parsedArea,
         locationType,
         roofCovering,
+        roofShape,
         includeLabor,
         laborRates,
         stageStatus,
@@ -255,6 +262,7 @@ export default function QuickBudgetPage() {
     estimatorErrors.budget,
     locationType,
     roofCovering,
+    roofShape,
     includeLabor,
     laborRates,
     stageStatus,
@@ -321,6 +329,7 @@ export default function QuickBudgetPage() {
         area: String(parsedArea),
         loc: locationType,
         roof: roofCovering,
+        shape: roofShape,
         labour: includeLabor ? '1' : '0',
         ...(laborPct !== STAGE_LABOR_PERCENTAGES.substructure ? { labourPct: String(laborPct) } : {}),
         profile: buildProfile,
@@ -427,6 +436,7 @@ export default function QuickBudgetPage() {
       area: String(parsedArea),
       loc: locationType,
       roof: roofCovering,
+      shape: roofShape,
       labour: includeLabor ? '1' : '0',
       ...(laborPct !== STAGE_LABOR_PERCENTAGES.substructure ? { labourPct: String(laborPct) } : {}),
       profile: buildProfile,
@@ -671,7 +681,22 @@ export default function QuickBudgetPage() {
             <div className="panel-card">
               <div className="section-head">
                 <h2>Roof</h2>
-                <span>{ROOF_COVERINGS[roofCovering].label}</span>
+                <span>{ROOF_SHAPES[roofShape].label}, {ROOF_COVERINGS[roofCovering].label}</span>
+              </div>
+              <div className="roof-grid roof-shapes" role="group" aria-label="Roof shape">
+                {(Object.entries(ROOF_SHAPES) as [RoofShape, (typeof ROOF_SHAPES)[RoofShape]][]).map(([id, option]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    aria-pressed={roofShape === id}
+                    className={`roof-choice ${roofShape === id ? 'selected' : ''}`}
+                    onClick={() => setRoofShape(id)}
+                    title={option.description}
+                  >
+                    <RoofShapeIcon shape={id} className="roof-icon" />
+                    <span>{option.label}</span>
+                  </button>
+                ))}
               </div>
               <div className="roof-grid" role="group" aria-label="Roof covering">
                 {(Object.entries(ROOF_COVERINGS) as [RoofCovering, (typeof ROOF_COVERINGS)[RoofCovering]][]).map(([id, option]) => (
@@ -1322,6 +1347,9 @@ export default function QuickBudgetPage() {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
           gap: 8px;
+        }
+        .roof-shapes {
+          margin-bottom: 10px;
         }
         .roof-choice {
           display: flex;

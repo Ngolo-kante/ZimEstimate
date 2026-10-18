@@ -25,12 +25,12 @@ describe('generateBOQFromBasics assumptions', () => {
     const urban = generateBOQFromBasics({ ...base, locationType: 'urban' });
     const rural = generateBOQFromBasics({ ...base, locationType: 'rural' });
 
-    const urbanFoundationCement = getItemQuantity(urban, 'Foundation concrete');
-    const ruralFoundationCement = getItemQuantity(rural, 'Foundation concrete');
+    const urbanFoundationCement = getItemQuantity(urban, 'Strip footings');
+    const ruralFoundationCement = getItemQuantity(rural, 'Strip footings');
     expect(urbanFoundationCement).toBeGreaterThan(ruralFoundationCement);
 
-    const urbanRoofSheets = getItemQuantity(urban, 'Roof area');
-    const ruralRoofSheets = getItemQuantity(rural, 'Roof area');
+    const urbanRoofSheets = getItemQuantity(urban, 'Hipped roof');
+    const ruralRoofSheets = getItemQuantity(rural, 'Hipped roof');
     expect(ruralRoofSheets).toBeGreaterThan(urbanRoofSheets);
   });
 
@@ -122,11 +122,12 @@ describe('roofing sheet coverage', () => {
       locationType: 'urban',
     });
 
-    const sheets = getItemQuantity(items, 'Roof area');
+    const sheets = getItemQuantity(items, 'Hipped roof');
 
-    // 120m2 x 1.15 pitch = 138m2, +10% urban waste = 151.8m2.
-    // A 3m sheet covers 3 x 0.686 = 2.06m2, so ~74 sheets.
-    const roofAreaWithWaste = 120 * 1.15 * 1.1;
+    // 120m² on a 1.4:1 plan is 12.96 x 9.26m; with 600mm eaves 14.16 x 10.46
+    // = 148.1m², x 1.06 for a 20° pitch = 157m², +10% urban waste and +5%
+    // for cutting at the hips = 181.3m². A 3m sheet covers 3 x 0.686 = 2.06m².
+    const roofAreaWithWaste = 148.1 * 1.06 * 1.1 * 1.05;
     const expected = roofAreaWithWaste / 2.06;
 
     expect(sheets).toBeGreaterThan(expected * 0.9);
@@ -146,8 +147,8 @@ describe('labour sizing', () => {
       brickTypes: ['common'], cementTypes: ['cement_325'],
       scope: 'roofing', includeLabor: true, locationType: 'urban',
     });
-    const frame = items.filter((item) => item.category === 'roofing' && /timber|fascia/.test(item.materialId));
-    const cover = items.filter((item) => item.category === 'roofing' && !/timber|fascia/.test(item.materialId));
+    const frame = items.filter((item) => item.category === 'roofing' && /timber|fascia|hoop|nails/.test(item.materialId));
+    const cover = items.filter((item) => item.category === 'roofing' && !/timber|fascia|hoop|nails/.test(item.materialId));
     const frameMaterials = frame.reduce((sum, item) => sum + item.totalUsd, 0);
     const coverMaterials = cover.reduce((sum, item) => sum + item.totalUsd, 0);
     expect(items.find((item) => item.materialId === 'labor-roof_frame')?.totalUsd).toBeCloseTo(frameMaterials * STAGE_LABOR_PERCENTAGES.roofing / 100, 2);
@@ -243,7 +244,7 @@ describe('reading a BOQ line by line', () => {
   it('lists the wall bricks once, with the inside/outside split in the note', () => {
     const walls = items.filter((i) => i.category === 'superstructure' && i.materialId.startsWith('brick-') && i.materialId !== 'brickforce');
     expect(walls).toHaveLength(1);
-    expect(walls[0].calculationNote).toMatch(/^External walls [\d,]+ \+ internal walls [\d,]+$/);
+    expect(walls[0].calculationNote).toMatch(/^Outside walls \(230mm\) [\d.]+m²: [\d,]+ \+ inside walls \(115mm\) [\d.]+m²: [\d,]+, less windows and doors$/);
   });
 
   it('leaves no line without a note', () => {
@@ -278,7 +279,7 @@ describe('uploaded plan costing', () => {
     const uploaded = generateBOQ(rooms, walls, config);
     const manual = generateBOQFromBasics({ floorArea: 178, roomCount: 10, wallHeight: 2.7, brickTypes: ['common'], cementTypes: ['cement_325'], scope: 'full_house', includeLabor: true });
 
-    expect(new Set(uploaded.map((item) => item.category))).toEqual(new Set(['substructure', 'superstructure', 'roofing', 'finishing', 'exterior', 'labor']));
+    expect(new Set(uploaded.map((item) => item.category))).toEqual(new Set(['substructure', 'superstructure', 'roofing', 'finishing', 'services', 'exterior', 'labor']));
     expect(uploaded.find((item) => item.materialName.includes('Foundation Walls'))?.quantity).toBeGreaterThan(0);
     expect(uploaded.find((item) => item.materialName.includes('(Walls)'))?.quantity).toBeGreaterThan(0);
     expect(uploaded.filter((item) => item.quantity > 0 && item.unitPriceUsd <= 0).map((item) => item.materialId)).toEqual([]);
