@@ -140,6 +140,8 @@ export function laborSubstageFor(item: { category: string; materialId: string; m
       if (/door|window|hinge|lock|glass|burglar|kitchen/.test(id)) return null;
       return 'plastering';
     case 'exterior':
+      // Gates go with the wall; the vehicle gate's note says "driveway".
+      if (id.startsWith('gate-')) return 'boundary_wall';
       return /pav|driveway/.test(id + name) ? 'paving' : 'boundary_wall';
     default:
       return null;

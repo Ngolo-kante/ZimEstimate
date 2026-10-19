@@ -1,6 +1,7 @@
-import { generateBOQFromBasics } from '@/lib/calculations';
+import { generateBOQFromBasics, laborQuantitiesFor } from '@/lib/calculations';
+import { ADD_LATER_ITEMS, type AddLaterId } from './addLater';
 import type { RoofCovering, RoofShape } from '@/lib/calculations/roofingOptions';
-import { LABOR_SUBSTAGES, formatLaborRate, isLaborCategory, laborRateFor, stageOfLaborCategory, type LaborRates, type LaborSubstageId } from '@/lib/calculations/laborSubstages';
+import { LABOR_SUBSTAGES, formatLaborRate, isLaborCategory, laborLines, laborRateFor, stageOfLaborCategory, type LaborRates, type LaborSubstageId } from '@/lib/calculations/laborSubstages';
 import type { LocationType } from '@/lib/calculations/assumptions';
 import type { BrickType, CementType } from '@/lib/vision/types';
 
@@ -49,6 +50,11 @@ export type StageReachInput = {
   laborRates?: LaborRates;
   /** Stages left out of the budget. Missing means 'build'. */
   stageStatus?: Partial<Record<StageId, StageStatus>>;
+  /**
+   * "Add later" items (addLater.ts) the person has ticked to count now. The
+   * rest are left out of the totals, labour included, and listed separately.
+   */
+  addLater?: AddLaterId[];
 };
 
 export type StageReachRow = {
@@ -75,6 +81,10 @@ export type StageReachResult = {
   rows: StageReachRow[];
   /** Labour by trade, for explaining the labour figure: its rate as people read it ("$7.40/m² of floor"), cost and cost per m² of floor. */
   laborByTrade: Array<{ id: LaborSubstageId; label: string; rate: number; rateLabel: string; usd: number; perM2: number }>;
+  /** Parts people often add after moving in, each with its cost (labour included) and whether it is counted. */
+  addLater: Array<{ id: AddLaterId; label: string; why: string; usd: number; included: boolean }>;
+  /** What the unticked "add later" items would add to the total. */
+  addLaterUsd: number;
 };
 
 function clampPositive(value: number, fallback: number): number {
@@ -159,6 +169,50 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
   }
 
   const statusOf = (id: StageId): StageStatus => input.stageStatus?.[id] ?? 'build';
+
+  // "Add later" items: each with its own labour (the boundary wall's, a share
+  // of plumbing for the bath), so ticking one puts back exactly what leaving
+  // it out took away. Items in a stage already built or left for later are
+  // not offered.
+  const ticked = new Set(input.addLater ?? []);
+  const addLaterAll = ADD_LATER_ITEMS.flatMap((entry) => {
+    const materials = generatedItems.filter((item) => !isLaborCategory(item.category) && entry.matches(item));
+    if (materials.length === 0) return [];
+    const isServices = materials[0].category === 'services';
+    const stage = (isServices ? 'finishing' : materials[0].category) as StageId;
+    if (!(stage in stageCosts) || statusOf(stage) !== 'build') return [];
+    const materialsUsd = materials.reduce((sum, item) => sum + (item.totalUsd || 0), 0);
+    const labor = input.includeLabor ? laborLines(materials, laborQuantitiesFor(materials, floorAreaM2), input.laborRates) : [];
+    const laborUsd = labor.reduce((sum, line) => sum + line.usd, 0);
+    return [{ entry, stage, isServices, materialsUsd, labor, laborUsd, included: ticked.has(entry.id) }];
+  });
+  for (const item of addLaterAll) {
+    if (item.included) continue;
+    stageCosts[item.stage] = Math.max(0, stageCosts[item.stage] - item.materialsUsd);
+    stageLabor[item.stage] = Math.max(0, stageLabor[item.stage] - item.laborUsd);
+    if (item.isServices) {
+      servicesCost.materials = Math.max(0, servicesCost.materials - item.materialsUsd);
+      servicesCost.labor = Math.max(0, servicesCost.labor - item.laborUsd);
+    }
+    for (const line of item.labor) {
+      const trade = laborByTradeAll.find((entry) => entry.id === line.id);
+      if (trade) {
+        trade.usd = Math.max(0, trade.usd - line.usd);
+        trade.perM2 = trade.usd / floorAreaM2;
+      }
+    }
+  }
+  // Pennies left by rounding are not a stage still to build.
+  for (const stage of STAGE_ORDER) {
+    if (stageCosts[stage.id] < 0.5) stageCosts[stage.id] = 0;
+    if (stageLabor[stage.id] < 0.5) stageLabor[stage.id] = 0;
+  }
+  const addLater = addLaterAll.map((item) => ({
+    id: item.entry.id, label: item.entry.label, why: item.entry.why,
+    usd: item.materialsUsd + item.laborUsd, included: item.included,
+  }));
+  const addLaterUsd = addLater.filter((item) => !item.included).reduce((sum, item) => sum + item.usd, 0);
+
   const counted = STAGE_ORDER.filter((stage) => statusOf(stage.id) === 'build');
 
   let materialsUsd = 0;
@@ -216,9 +270,10 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     cumulative += stageCostUsd;
     const affordable = budgetUsd >= cumulative;
     if (affordable) reachableStageId = stage.id;
+    // A stage with nothing left in it (all of it ticked "add later") is done.
     const coveragePercentForStage = stageCostUsd > 0
       ? Math.min(100, Math.max(0, ((budgetUsd - start) / stageCostUsd) * 100))
-      : 0;
+      : 100;
 
     return {
       id: stage.id,
@@ -246,6 +301,8 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     reachableStageLabel,
     rows,
     laborByTrade,
+    addLater,
+    addLaterUsd,
   };
 }
 

@@ -72,8 +72,10 @@ export default function StageReachList({ rows, lines, onStatusChange }: {
   return (
     <ol className="stages">
       {rows.map((row) => {
+        const leftToAddLater = row.status === 'build' && row.stageCostUsd === 0;
         const pct = Math.max(0, Math.min(100, Math.round(row.coveragePercent)));
-        const state = row.status === 'built' ? 'built' : row.status === 'skip' ? 'later' : row.affordable ? 'covered' : pct > 0 ? 'partial' : 'short';
+        // An emptied stage has nothing to cover, so it gets no coverage badge.
+        const state = row.status === 'built' ? 'built' : row.status === 'skip' || leftToAddLater ? 'later' : row.affordable ? 'covered' : pct > 0 ? 'partial' : 'short';
         const stageLines = lines
           // The interior row carries the plumbing and electrical lines too.
           .filter((line) => (line.category === row.id || (row.id === 'finishing' && line.category === 'services')) && line.totalUsd > 0)
@@ -92,10 +94,10 @@ export default function StageReachList({ rows, lines, onStatusChange }: {
                 <span className="summary">{STAGE_SUMMARY[row.id] ?? ''}</span>
               </span>
               <span className="figures">
-                <span className="cost">{usd(row.stageCostUsd)}</span>
-                <span className={`pill ${state}`}>
+                <span className={`cost${leftToAddLater ? ' deferred-cost' : ''}`}>{leftToAddLater ? 'Left to add later' : usd(row.stageCostUsd)}</span>
+                {!leftToAddLater && <span className={`pill ${state}`}>
                   {state === 'built' ? 'Already built' : state === 'later' ? 'Not now' : state === 'covered' ? 'Covered' : state === 'partial' ? `${pct}% covered` : 'Not covered'}
-                </span>
+                </span>}
               </span>
               <CaretDown size={16} weight="bold" className={`caret ${isOpen ? 'up' : ''}`} aria-hidden="true" />
             </button>
@@ -198,6 +200,8 @@ export default function StageReachList({ rows, lines, onStatusChange }: {
         .summary { font-size: 0.76rem; color: var(--color-text-muted); line-height: 1.4; }
         .figures { display: grid; justify-items: end; gap: 4px; }
         .cost { font-size: 0.95rem; font-weight: 800; color: var(--color-primary); font-variant-numeric: tabular-nums; }
+        .cost, .price, .parts strong { white-space: nowrap; }
+        .cost.deferred-cost { color: #64748b; font-size: 0.75rem; font-weight: 500; }
         .pill { font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
         .pill.covered { color: #15803d; background: #dcfce7; }
         .pill.partial { color: #b45309; background: #fef3c7; }

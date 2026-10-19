@@ -6,6 +6,7 @@ import { decodeSolarExplorerState, SOLAR_EXPLORER_DEFAULTS } from '@/lib/quick-p
 import { decodeBoreholeExplorerState } from '@/lib/quick-projects/borehole/explorerUrl';
 import { fitBoreholeToBudget, getCasingLabel, type PumpType } from '@/lib/quick-projects/borehole/pricing';
 import { LOCATION_DEFAULTS, boreholeAreaType } from '@/lib/quick-projects/borehole/catalog';
+import { addLaterFromParam } from '@/lib/estimators/addLater';
 import { estimateStageReach, stageStatusFromParams } from '@/lib/estimators/stageBudgetEstimator';
 import {
   HOUSE_DEFAULTS,
@@ -151,6 +152,7 @@ function summariseHouse(params: URLSearchParams): SharedEstimateSummary | null {
     // Old links may carry labourPct, a percentage from before labour was
     // priced by trade; it is ignored and today's trade rates apply.
     stageStatus: stageStatusFromParams(params),
+    addLater: addLaterFromParam(params.get('add')),
   });
   const coverage = Math.round(result.coveragePercent);
 
@@ -163,14 +165,14 @@ function summariseHouse(params: URLSearchParams): SharedEstimateSummary | null {
       // "100% of an estimated $17,187 build" beside a $25,000 budget reads as
       // a mistake; when it covers everything, say that.
       coverage >= 100
-        ? `Covers the full build — estimated ${usd(result.estimatedTotalUsd)} · ${HOUSE_LOCATION_LABELS[location]}`
-        : `${coverage}% of an estimated ${usd(result.estimatedTotalUsd)} build · ${HOUSE_LOCATION_LABELS[location]}`,
+        ? `Covers the full build — estimated ${usd(result.estimatedTotalUsd)} to move in · ${HOUSE_LOCATION_LABELS[location]}`
+        : `${coverage}% of an estimated ${usd(result.estimatedTotalUsd)} to move in · ${HOUSE_LOCATION_LABELS[location]}`,
     ],
     description: result.reachableStageId
       ? coverage >= 100
-        ? `${usd(budget)} covers the whole of a ${area} m² ${HOUSE_LOCATION_LABELS[location].toLowerCase()} house, estimated at ${usd(result.estimatedTotalUsd)}. Open it and change anything.`
+        ? `${usd(budget)} covers the whole of a ${area} m² ${HOUSE_LOCATION_LABELS[location].toLowerCase()} house, estimated at ${usd(result.estimatedTotalUsd)} to move in. Open it and change anything.`
         : `${usd(budget)} covers about ${coverage}% of a ${area} m² ${HOUSE_LOCATION_LABELS[location].toLowerCase()} house — through ${result.reachableStageLabel.toLowerCase()}. Open it and change anything.`
-      : `${usd(budget)} is about ${coverage}% of what a ${area} m² house costs — not yet enough for the foundation. Open it to see what it takes.`,
+      : `${usd(budget)} is about ${coverage}% of what a ${area} m² house costs to move in — not yet enough for the foundation. Open it to see what it takes.`,
   };
 }
 

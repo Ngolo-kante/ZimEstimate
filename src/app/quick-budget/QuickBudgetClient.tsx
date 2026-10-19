@@ -6,6 +6,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { estimateStageReach, stageStatusFromParams, stageStatusToParams, type StageId, type StageStatus } from '@/lib/estimators/stageBudgetEstimator';
+import { addLaterFromParam, type AddLaterId } from '@/lib/estimators/addLater';
 import { HOUSE_DEFAULTS, HOUSE_PROFILES } from '@/lib/estimators/houseBudgetOptions';
 import { generateBOQFromBasics, ManualBuilderConfig } from '@/lib/calculations';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -95,6 +96,7 @@ export default function QuickBudgetPage() {
   const [includeLabor, setIncludeLabor] = useState(true);
   const laborRates = useMemo<LaborRates>(() => ({}), []);
   // Stages already built, or left for later, are not paid for from this budget.
+  const [addLater, setAddLater] = useState<AddLaterId[]>([]);
   const [stageStatus, setStageStatus] = useState<Partial<Record<StageId, StageStatus>>>({});
   const [buildProfile, setBuildProfile] = useState<(typeof profileOptions)[number]['id']>(HOUSE_DEFAULTS.profile);
   const [stageEstimate, setStageEstimate] = useState<ReturnType<typeof estimateStageReach> | null>(null);
@@ -138,6 +140,7 @@ export default function QuickBudgetPage() {
     if (shape && shape in ROOF_SHAPES) setRoofShape(shape as RoofShape);
     if (params.get('labour') === '0') setIncludeLabor(false);
     setStageStatus(stageStatusFromParams(params));
+    setAddLater(addLaterFromParam(params.get('add')));
 
     const profile = params.get('profile');
     if (profileOptions.some((option) => option.id === profile)) {
@@ -235,6 +238,7 @@ export default function QuickBudgetPage() {
         includeLabor,
         laborRates,
         stageStatus,
+        addLater,
         wallHeightM: selectedProfile.config.wallHeightM,
         cementTypes: [selectedProfile.config.cementType],
       });
@@ -252,6 +256,7 @@ export default function QuickBudgetPage() {
     includeLabor,
     laborRates,
     stageStatus,
+    addLater,
     parsedArea,
     parsedBudget,
     selectedProfile.config.cementType,
@@ -319,6 +324,7 @@ export default function QuickBudgetPage() {
         labour: includeLabor ? '1' : '0',
         profile: buildProfile,
         ...stageStatusToParams(stageStatus),
+        ...(addLater.length ? { add: addLater.join(',') } : {}),
       });
       showInfo('Please sign in to save this project.');
       router.push(`/auth/login?redirect=${encodeURIComponent(`/quick-budget?${restore}`)}`);
@@ -425,6 +431,7 @@ export default function QuickBudgetPage() {
       labour: includeLabor ? '1' : '0',
       profile: buildProfile,
       ...stageStatusToParams(stageStatus),
+      ...(addLater.length ? { add: addLater.join(',') } : {}),
       // Marks an arrival from a share, so it can be counted when opened.
       src: 'share',
     }).toString()}`;
@@ -808,8 +815,11 @@ export default function QuickBudgetPage() {
 
                   <div className="result-stats">
                     <article>
-                      <span>{buildStageCount < 5 ? 'Still to build' : 'Full build'}</span>
+                      <span>To move in</span>
                       <strong>{formatUsd(stageEstimate.estimatedTotalUsd)}</strong>
+                      {stageEstimate.addLaterUsd > 0 && (
+                        <small className="add-later-total">+ {formatUsd(stageEstimate.addLaterUsd)} to add later</small>
+                      )}
                     </article>
                     <article>
                       <span>Stages covered</span>
@@ -827,9 +837,46 @@ export default function QuickBudgetPage() {
                     covered three quarters of it. */}
                 <div className="guidance">
                   {nextLockedStage
-                    ? <>Your budget covers {affordableStageCount} of the {buildStageCount}{buildStageCount < 5 ? ' stages still to build' : ' stages'}. About <strong>{formatUsd(nextLockedStage.stageCostUsd * (1 - Math.min(100, nextLockedStage.coveragePercent) / 100))}</strong> more finishes {nextLockedStage.label}{stageEstimate.estimatedTotalUsd - stageEstimate.budgetUsd > nextLockedStage.stageCostUsd * (1 - Math.min(100, nextLockedStage.coveragePercent) / 100) + 1 ? <>, and {formatUsd(stageEstimate.estimatedTotalUsd - stageEstimate.budgetUsd)} the whole house</> : ''}.</>
+                    ? <>Your budget covers {affordableStageCount} of the {buildStageCount}{buildStageCount < 5 ? ' stages still to build' : ' stages'}. About <strong>{formatUsd(nextLockedStage.stageCostUsd * (1 - Math.min(100, nextLockedStage.coveragePercent) / 100))}</strong> more finishes {nextLockedStage.label}{stageEstimate.estimatedTotalUsd - stageEstimate.budgetUsd > nextLockedStage.stageCostUsd * (1 - Math.min(100, nextLockedStage.coveragePercent) / 100) + 1 ? <>, and {formatUsd(stageEstimate.estimatedTotalUsd - stageEstimate.budgetUsd)} to move in</> : ''}.</>
                     : <>Your budget covers every stage{stageEstimate.budgetUsd > stageEstimate.estimatedTotalUsd ? <>, with about <strong>{formatUsd(stageEstimate.budgetUsd - stageEstimate.estimatedTotalUsd)}</strong> to spare</> : ''}.</>}
                 </div>
+
+                <StageReachList rows={stageEstimate.rows} lines={detailedItems} onStatusChange={setStatus} />
+
+                <section className="panel-card add-later" aria-labelledby="add-later-heading">
+                  <div className="section-head"><h2 id="add-later-heading">ADD LATER</h2></div>
+                  <p className="add-later-intro">
+                    Often added after moving in. Tick any you want counted now.
+                    {includeLabor && ' Prices include their labour.'}
+                  </p>
+                  <div className="add-later-items">
+                    {stageEstimate.addLater.map(({ id, label, why, usd }) => (
+                      <label key={id} className="add-later-row">
+                        <span className="add-later-check">
+                          <input
+                            type="checkbox"
+                            checked={addLater.includes(id)}
+                            onChange={(event) => {
+                              const checked = event.target.checked;
+                              setAddLater((current) => checked ? [...current, id] : current.filter((item) => item !== id));
+                            }}
+                            aria-describedby={`add-later-${id}-why`}
+                          />
+                        </span>
+                        <span className="add-later-copy">
+                          <strong>{label}</strong>
+                          <small id={`add-later-${id}-why`}>{why}</small>
+                        </span>
+                        <strong className="add-later-price">{formatUsd(usd)}</strong>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="add-later-footer">
+                    {stageEstimate.addLater.some((item) => !item.included)
+                      ? `Add later: ${formatUsd(stageEstimate.addLaterUsd)}`
+                      : 'Everything is counted.'}
+                  </p>
+                </section>
 
                 <div className="budget-split">
                   <h3>Where the money goes</h3>
@@ -850,8 +897,6 @@ export default function QuickBudgetPage() {
                     </p>
                   )}
                 </div>
-
-                <StageReachList rows={stageEstimate.rows} lines={detailedItems} onStatusChange={setStatus} />
 
                 <p className="note">Indicative only: prices, design and your builder&apos;s rates will move the final figure.</p>
 
@@ -1165,6 +1210,31 @@ export default function QuickBudgetPage() {
           background: rgba(248, 250, 252, 0.86);
           padding: 12px;
         }
+
+        .add-later { margin: 12px 0; }
+        .add-later-intro, .add-later-copy small, .add-later-total {
+          font-size: 0.75rem;
+          line-height: 1.5;
+          color: var(--color-text-muted);
+        }
+        .add-later-intro { margin: 0 0 8px; }
+        .add-later-row {
+          display: grid;
+          grid-template-columns: 40px minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 0;
+          cursor: pointer;
+        }
+        .add-later-row + .add-later-row { border-top: 1px solid #e2e8f0; }
+        .add-later-check { display: grid; place-items: center; min-height: 40px; }
+        .add-later-check input { width: 20px; height: 20px; margin: 0; accent-color: #2e6cf6; cursor: pointer; }
+        .add-later-check input:focus-visible { outline: 2px solid #2e6cf6; outline-offset: 3px; }
+        .add-later-copy { display: grid; gap: 3px; min-width: 0; }
+        .add-later-copy strong, .add-later-price { font-size: 0.84rem; color: var(--color-primary); }
+        .add-later-price, .result-stats strong { white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .add-later-total { display: block; margin-top: 5px; }
+        .add-later-footer { margin: 0; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: 0.8rem; font-weight: 600; }
 
         .section-head {
           display: flex;

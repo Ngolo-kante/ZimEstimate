@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ADD_LATER_IDS } from './addLater';
 import { estimateStageReach, stageStatusFromParams, stageStatusToParams } from './stageBudgetEstimator';
 
 describe('estimateStageReach', () => {
@@ -93,8 +94,9 @@ describe('stages already built or left for later', () => {
   });
 
   it('leaves a stage for later out of the total but keeps its cost on show', () => {
-    const all = estimateStageReach(base);
-    const noExterior = estimateStageReach({ ...base, stageStatus: { exterior: 'skip' } });
+    // The whole house, "add later" items ticked, so the exterior has its wall and paving.
+    const all = estimateStageReach({ ...base, addLater: ADD_LATER_IDS });
+    const noExterior = estimateStageReach({ ...base, addLater: ADD_LATER_IDS, stageStatus: { exterior: 'skip' } });
     const exterior = noExterior.rows.find((row) => row.id === 'exterior')!;
     expect(exterior).toMatchObject({ status: 'skip', affordable: false, coveragePercent: 0 });
     expect(exterior.stageCostUsd).toBeCloseTo(all.rows.find((row) => row.id === 'exterior')!.stageCostUsd, 6);
@@ -130,5 +132,46 @@ describe('a labour rate of the user’s own', () => {
     const standard = estimateStageReach(base);
     const own = estimateStageReach({ ...base, laborRates: { plastering: 10 } });
     expect(own.laborUsd - standard.laborUsd).toBeCloseTo((10 - 7.4) * 120, 2);
+  });
+});
+
+describe('parts people add later', () => {
+  const base = { budgetUsd: 20000, floorAreaM2: 120, locationType: 'urban' as const, includeLabor: true };
+  const everything = ADD_LATER_IDS;
+
+  it('leaves them out of the headline, with their labour, and lists what they cost', () => {
+    const moveIn = estimateStageReach(base);
+    const full = estimateStageReach({ ...base, addLater: everything });
+    expect(moveIn.addLater.map((item) => item.id)).toEqual(['kitchen', 'boundary', 'paving', 'geyser', 'bath', 'outside_paint']);
+    expect(moveIn.addLater.every((item) => !item.included && item.usd > 0)).toBe(true);
+    // Ticking everything puts back exactly what was left out, labour included.
+    expect(moveIn.estimatedTotalUsd + moveIn.addLaterUsd).toBeCloseTo(full.estimatedTotalUsd, 0);
+    expect(full.addLaterUsd).toBe(0);
+    // The boundary wall takes its own labour with it.
+    const boundary = moveIn.addLater.find((item) => item.id === 'boundary')!;
+    expect(boundary.usd).toBeGreaterThan(full.laborByTrade.find((trade) => trade.id === 'boundary_wall')!.usd);
+    expect(moveIn.laborByTrade.some((trade) => trade.id === 'boundary_wall')).toBe(false);
+    expect(moveIn.laborByTrade.reduce((sum, trade) => sum + trade.usd, 0)).toBeCloseTo(moveIn.laborUsd, 1);
+    // Floor tiles and ceilings stay in.
+    expect(moveIn.laborByTrade.some((trade) => trade.id === 'tiling')).toBe(true);
+    expect(moveIn.laborByTrade.some((trade) => trade.id === 'ceilings')).toBe(true);
+  });
+
+  it('counts a ticked item and only that one', () => {
+    const moveIn = estimateStageReach(base);
+    const withKitchen = estimateStageReach({ ...base, addLater: ['kitchen'] });
+    const kitchen = moveIn.addLater.find((item) => item.id === 'kitchen')!.usd;
+    expect(withKitchen.estimatedTotalUsd - moveIn.estimatedTotalUsd).toBeCloseTo(kitchen, 1);
+    expect(withKitchen.addLater.find((item) => item.id === 'kitchen')!.included).toBe(true);
+    expect(moveIn.addLaterUsd - withKitchen.addLaterUsd).toBeCloseTo(kitchen, 1);
+  });
+
+  it('treats an emptied stage as done, and offers nothing in a stage already built', () => {
+    const moveIn = estimateStageReach({ ...base, budgetUsd: 1e6 });
+    const exterior = moveIn.rows.find((row) => row.id === 'exterior')!;
+    expect(exterior.stageCostUsd).toBe(0);
+    expect(exterior.coveragePercent).toBe(100);
+    const built = estimateStageReach({ ...base, stageStatus: { exterior: 'built' } });
+    expect(built.addLater.some((item) => item.id === 'boundary' || item.id === 'paving')).toBe(false);
   });
 });
