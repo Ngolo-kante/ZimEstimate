@@ -3,6 +3,7 @@
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import CostDonut, { SERIES_COLORS } from '@/components/ui/CostDonut';
+import '@/styles/budget-explorer.css';
 import { useMemo, useState } from 'react';
 import { ArrowLeft, Warning, CheckCircle } from '@phosphor-icons/react';
 import { fitQuantityToBudget, totalOf } from '@/lib/quick-projects/fitQuantityToBudget';
@@ -260,11 +261,6 @@ export default function BudgetFitExplorer({
           Save this estimate
         </Button>
       )}
-      <style jsx global>{`
-        .budget-fit-explorer .input-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; }
-        .budget-fit-explorer button { min-height: 40px; }
-        .budget-fit-explorer td, .budget-fit-explorer th { padding-left: 8px; padding-right: 8px; }
-      `}</style>
     </div>
   );
 }

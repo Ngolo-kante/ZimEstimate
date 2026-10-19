@@ -193,11 +193,15 @@ export function fitBoreholeToBudget(params: {
   let remaining = budget - fixed;
 
   // Casing: the package's 20 m, upgraded to the best grade fitting inside 30%
-  // of what is left. Class 6 is the floor and comes with the package.
+  // of what is left. Class 6 is the floor and comes with the package. An
+  // upgrade must still leave enough for the cheapest pump, or a budget that
+  // buys a working borehole would be spent on better pipe and come up short.
+  const cheapestPump = Math.min(...(['solar', 'hybrid', 'electric', 'hand'] as PumpType[]).map((type) => getPumpSetCost(type, depth, purpose)));
   const casingGrades: CasingGrade[] = ['class_10', 'class_9', 'class_6'];
   let casingGrade: CasingGrade = 'class_6';
   for (const grade of casingGrades) {
-    if (getCasingExtras(grade, diameter).total <= remaining * 0.3) {
+    const upgrade = getCasingExtras(grade, diameter).total;
+    if (upgrade <= remaining * 0.3 && remaining - upgrade >= cheapestPump) {
       casingGrade = grade;
       break;
     }

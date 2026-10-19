@@ -1,0 +1,76 @@
+/* Shared explorer overrides. Keep these scoped: this stylesheet persists across routes. */
+/* Beat Input's scoped label styles regardless of stylesheet load order. */
+.budget-explorer label.input-label,
+.budget-fit-explorer label.input-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+}
+
+.budget-explorer button,
+.budget-explorer select,
+.budget-explorer input,
+.budget-fit-explorer button {
+  min-height: 40px;
+}
+
+.budget-explorer .component-toggle {
+  min-width: 44px;
+}
+
+.budget-explorer .component-toggle-knob {
+  top: 10px;
+}
+
+.budget-explorer .explorer-card,
+.budget-explorer .stat-box {
+  border-radius: 14px;
+  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(248, 250, 252, 0.86);
+  box-shadow: none;
+}
+
+.budget-explorer .choice-btn {
+  border-radius: 12px;
+  border-color: #e2e8f0;
+  background: white;
+  box-shadow: none;
+}
+
+/* Combo actions previously matched the highlight rule through their hover class. */
+.budget-explorer .choice-btn.is-selected,
+.budget-explorer .choice-btn--combo {
+  border-color: #2e6cf6;
+  background: #eff6ff;
+  box-shadow: 0 0 0 1px #2e6cf6;
+}
+
+.budget-explorer h4 {
+  font-size: 0.88rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.budget-explorer .explorer-grid > * {
+  min-width: 0;
+}
+
+.budget-explorer .explorer-grid strong {
+  overflow-wrap: anywhere;
+}
+
+.budget-fit-explorer td,
+.budget-fit-explorer th {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+@media (max-width: 400px) {
+  .budget-explorer .explorer-summary-grid > div {
+    flex-direction: column;
+    gap: 4px;
+  }
+}

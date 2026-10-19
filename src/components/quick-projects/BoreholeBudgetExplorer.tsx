@@ -1,5 +1,6 @@
 'use client';
 
+import '@/styles/budget-explorer.css';
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -486,7 +487,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
             />
 
           {budget > 0 && (
-            <div className="grid grid-cols-2 gap-2 my-3 text-xs text-slate-600 [&>span]:rounded-xl [&>span]:border [&>span]:border-slate-200 [&>span]:bg-white [&>span]:p-3 [&_strong]:block [&_strong]:text-base [&_strong]:text-[var(--color-primary)]">
+            <div className="explorer-grid grid grid-cols-2 gap-2 my-3 text-xs text-slate-600 [&>span]:rounded-xl [&>span]:border [&>span]:border-slate-200 [&>span]:bg-white [&>span]:p-3 [&_strong]:block [&_strong]:text-base [&_strong]:text-[var(--color-primary)]">
               <span>
                 <strong>${totalAllocated.toLocaleString()}</strong> allocated
               </span>
@@ -523,9 +524,9 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
       </div>
 
       {/* ── Config Row: Depth + Purpose + Location ───────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="explorer-grid grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {/* Depth slider */}
-        <div className="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+        <div className="explorer-card p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
           <label className="block text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">Drilling Depth</label>
           <div className="text-3xl font-extrabold text-[var(--color-text)] mb-2">{depth}m</div>
           <input
@@ -547,7 +548,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
         </div>
 
         {/* Purpose */}
-        <div className="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+        <div className="explorer-card p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
           <label className="block text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">Purpose</label>
           <div className="flex flex-col gap-2">
             {[
@@ -557,8 +558,8 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
               <button
                 key={opt.id}
                 onClick={() => setPurpose(opt.id)}
-                className={`text-left p-2.5 rounded-lg border text-sm transition-colors ${
-                  purpose === opt.id ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] text-blue-800' : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-blue-300'
+                className={`choice-btn text-left p-2.5 rounded-lg border text-sm transition-colors ${
+                  purpose === opt.id ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-muted)] text-blue-800' : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-blue-300'
                 }`}
               >
                 <span className="font-semibold">{opt.label}</span>
@@ -569,7 +570,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
         </div>
 
         {/* Location */}
-        <div className="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+        <div className="explorer-card p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
           <label className="block text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">Location</label>
           <select
             value={location}
@@ -618,12 +619,12 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
         </div>
       </div>
 
-      <div className="p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm mb-6">
+      <div className="explorer-card p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm mb-6">
         <h4 className="font-bold text-[var(--color-text)] mb-4 flex items-center gap-2">
           <CheckCircle size={20} weight="fill" className="text-[var(--color-accent)]" />
           Your Borehole Summary
         </h4>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+        <div className="explorer-grid explorer-summary-grid grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
           {[
             { label: 'Depth', value: `${depth}m`, show: enabledCards.drilling },
             { label: 'Casing', value: `${diameter} ${getCasingLabel(casingGrade).split(' — ')[0]}`, show: enabledCards.casing },
@@ -670,7 +671,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
           return (
             <div
               key={card.id}
-              className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+              className={`explorer-card rounded-2xl border transition-all duration-200 overflow-hidden ${
                 card.enabled ? 'border-blue-200 bg-[var(--color-surface)] shadow-sm' : 'border-[var(--color-border)] bg-slate-50/50 opacity-60'
               }`}
             >
@@ -678,9 +679,9 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
               <div className="flex items-center gap-3 p-4">
                 <button
                   onClick={() => toggleCard(card.id)}
-                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${card.enabled ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border-dark)]'}`}
+                  className={`component-toggle relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${card.enabled ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border-dark)]'}`}
                 >
-                  <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-[var(--color-surface)] shadow transition-transform ${card.enabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+                  <div className={`component-toggle-knob absolute top-0.5 w-5 h-5 rounded-full bg-[var(--color-surface)] shadow transition-transform ${card.enabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
                 </button>
                 <div className={`flex-shrink-0 ${card.enabled ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}`}>{card.icon}</div>
                 <div className="flex-1 min-w-0">
@@ -712,7 +713,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                     <div className="px-4 pb-4 pt-1 border-t border-[var(--color-border-light)]">
                       {/* Pump picker */}
                       {card.id === 'pump' && (
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="explorer-grid grid grid-cols-2 gap-2">
                           {([
                             { id: 'solar' as PumpType, label: 'Solar', desc: 'Pump + panels + controller + frame', tier: 'recommended' },
                             { id: 'hybrid' as PumpType, label: 'Hybrid AC/DC', desc: 'Auto-switches between solar & ZESA grid', tier: 'mid' },
@@ -724,8 +725,8 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                               <button
                                 key={opt.id}
                                 onClick={() => { setUserPickedComponents(true); setPumpType(opt.id); }}
-                                className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
-                                  pumpType === opt.id ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
+                                className={`choice-btn flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
+                                  pumpType === opt.id ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
                                 }`}
                               >
                                 <div className="flex w-full items-center justify-between">
@@ -744,7 +745,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
 
                       {/* Casing picker */}
                       {card.id === 'casing' && (
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="explorer-grid grid grid-cols-3 gap-2">
                           {([
                             { id: 'class_6' as CasingGrade, label: 'Class 6', desc: 'Standard residential' },
                             { id: 'class_9' as CasingGrade, label: 'Class 9', desc: 'Mid-grade durability' },
@@ -755,8 +756,8 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                               <button
                                 key={opt.id}
                                 onClick={() => { setUserPickedComponents(true); setCasingGrade(opt.id); }}
-                                className={`flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
-                                  casingGrade === opt.id ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
+                                className={`choice-btn flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
+                                  casingGrade === opt.id ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
                                 }`}
                               >
                                 <span className="font-semibold text-[var(--color-text)]">{opt.label}</span>
@@ -771,7 +772,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                       {/* Tank picker */}
                       {card.id === 'tank' && (
                         <div className="space-y-3">
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <div className="explorer-grid grid grid-cols-2 sm:grid-cols-4 gap-2">
                             {([
                               { id: '2000' as TankSize, label: '2,000L' },
                               { id: '2500' as TankSize, label: '2,500L' },
@@ -783,8 +784,8 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                                 <button
                                   key={opt.id}
                                   onClick={() => { setUserPickedComponents(true); setTankSize(opt.id); }}
-                                  className={`flex flex-col items-center p-3 rounded-xl border text-sm transition-colors ${
-                                    tankSize === opt.id ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
+                                  className={`choice-btn flex flex-col items-center p-3 rounded-xl border text-sm transition-colors ${
+                                    tankSize === opt.id ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
                                   }`}
                                 >
                                   <span className="font-semibold text-[var(--color-text)]">{opt.label}</span>
@@ -882,19 +883,6 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
         </Button>
       </div>
 
-      <style jsx global>{`
-        .budget-explorer .input-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; }
-        .budget-explorer button, .budget-explorer select, .budget-explorer input { min-height: 40px; }
-        .budget-explorer button.relative { min-width: 44px; }
-        .budget-explorer button.relative > div { top: 10px; }
-        .budget-explorer .rounded-2xl.border, .budget-explorer .rounded-xl.border { border-radius: 14px; border-color: rgba(148,163,184,0.22); background: rgba(248,250,252,0.86); box-shadow: none; }
-        .budget-explorer button.rounded-xl.border, .budget-explorer button.rounded-lg.border { border-radius: 12px; border-color: #e2e8f0; background: white; }
-        .budget-explorer button.border[class*="bg-[var(--color-accent-muted)]"], .budget-explorer button.border[class*="bg-blue-50"] { border-color: #2e6cf6; background: #eff6ff; box-shadow: 0 0 0 1px #2e6cf6; }
-        .budget-explorer h4 { font-size: 0.88rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 800; color: var(--color-primary); }
-        .budget-explorer .grid > * { min-width: 0; }
-        .budget-explorer .grid strong { overflow-wrap: anywhere; }
-        @media (max-width: 400px) { .budget-explorer .grid-cols-2.text-sm > div { flex-direction: column; gap: 4px; } }
-      `}</style>
     </div>
   );
 }
