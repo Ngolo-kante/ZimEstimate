@@ -96,6 +96,8 @@ export interface VisionConfig {
   foundationDepth: number; // default 0.6m
   roofCovering?: RoofCovering;
   roofShape?: RoofShape;
+  /** Inside walls one brick thick (Harare and Bulawayo council rule). */
+  fullBrickInternalWalls?: boolean;
   /** The user's own labour percentages by stage; defaults to 35% each. */
   laborRates?: LaborRates;
 }

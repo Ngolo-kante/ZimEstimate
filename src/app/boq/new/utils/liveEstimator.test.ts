@@ -4,7 +4,7 @@ import { BOQ_MILESTONE_IDS, DEFAULT_ROOM_INPUTS, type BOQItem, type MilestoneDat
 import type { BrickType, CementType } from '@/lib/vision/types';
 import type { RoomInstance } from '@/app/boq/new/components/room-builder/types';
 import { densityFromNotes, getCostBreakdown, OWN_FIGURE_NOTE, PROJECT_FEES, tariffLine } from '@/lib/projectFees';
-import { STAGE_LABOR_PERCENTAGES } from '@/lib/calculations/laborSubstages';
+import { STAGE_LABOR_PERCENTAGES, laborPercentageFor } from '@/lib/calculations/laborSubstages';
 import { normalizeHouseExtras } from '@/lib/houseExtras';
 
 describe('uploaded plan in the BOQ builder', () => {
@@ -193,7 +193,7 @@ describe('uploaded plan in the BOQ builder', () => {
     const repricedCover = refreshed.find((milestone) => milestone.id === 'labor')!.items.find((item) => item.materialId === 'labor-roof_cover')!;
     const refreshedRoofing = refreshed.find((milestone) => milestone.id === 'roofing')!.items;
     const refreshedCoverMaterials = refreshedRoofing.filter((item) => !/timber|fascia|hoop|nails/.test(item.materialId));
-    expect(repricedCover.actualPriceUsd).toBeCloseTo(refreshedCoverMaterials.reduce((sum, item) => sum + (item.quantity || 0) * item.actualPriceUsd, 0) * STAGE_LABOR_PERCENTAGES.roofing / 100, 2);
+    expect(repricedCover.actualPriceUsd).toBeCloseTo(refreshedCoverMaterials.reduce((sum, item) => sum + (item.quantity || 0) * item.actualPriceUsd, 0) * laborPercentageFor('roof_cover') / 100, 2);
     const changed = buildLiveMilestones({
       ...params,
       projectDetails: { ...params.projectDetails, roofCovering: 'concrete_tile' },
@@ -204,6 +204,6 @@ describe('uploaded plan in the BOQ builder', () => {
     expect(roofing.some((item) => item.materialId === 'ibr-05-3m')).toBe(false);
     const roofCover = changed.find((milestone) => milestone.id === 'labor')!.items.find((item) => item.materialId === 'labor-roof_cover')!;
     const coverMaterials = roofing.filter((item) => !/timber|fascia|hoop|nails/.test(item.materialId));
-    expect(roofCover.actualPriceUsd).toBeCloseTo(coverMaterials.reduce((sum, item) => sum + (item.quantity || 0) * item.actualPriceUsd, 0) * STAGE_LABOR_PERCENTAGES.roofing / 100, 2);
+    expect(roofCover.actualPriceUsd).toBeCloseTo(coverMaterials.reduce((sum, item) => sum + (item.quantity || 0) * item.actualPriceUsd, 0) * laborPercentageFor('roof_cover') / 100, 2);
   });
 });

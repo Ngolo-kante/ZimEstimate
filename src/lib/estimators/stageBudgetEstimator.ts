@@ -1,6 +1,6 @@
 import { generateBOQFromBasics } from '@/lib/calculations';
 import type { RoofCovering, RoofShape } from '@/lib/calculations/roofingOptions';
-import { stageLaborPercentage, type LaborRates } from '@/lib/calculations/laborSubstages';
+import { LABOR_SUBSTAGES, laborPercentageFor, laborSubstageFor, stageLaborPercentage, type LaborRates, type LaborSubstageId } from '@/lib/calculations/laborSubstages';
 import type { LocationType } from '@/lib/calculations/assumptions';
 import type { BrickType, CementType } from '@/lib/vision/types';
 
@@ -8,8 +8,10 @@ const STAGE_ORDER = [
   { id: 'substructure', label: 'Site Preparation & Foundation' },
   { id: 'superstructure', label: 'Structural Walls & Frame' },
   { id: 'roofing', label: 'Roofing' },
+  // Plumbing & Electrical is its own stage in the full BOQ; on this quick
+  // check it is part of the interior, shown as a line inside it (owner's
+  // choice, 2026-10-18), so the list stays short.
   { id: 'finishing', label: 'Interior & Finishing' },
-  { id: 'services', label: 'Plumbing & Electrical' },
   { id: 'exterior', label: 'External Work' },
 ] as const;
 
@@ -27,8 +29,7 @@ const STAGE_WEIGHT_FALLBACK: Record<StageId, number> = {
   substructure: 0.22,
   superstructure: 0.30,
   roofing: 0.20,
-  finishing: 0.14,
-  services: 0.06,
+  finishing: 0.20,
   exterior: 0.08,
 };
 
@@ -53,6 +54,8 @@ export type StageReachInput = {
 export type StageReachRow = {
   id: StageId;
   label: string;
+  /** What the stage is made of, where it has distinct parts (the interior's plumbing and electrical). */
+  parts?: Array<{ label: string; usd: number }>;
   stageCostUsd: number;
   cumulativeCostUsd: number;
   affordable: boolean;
@@ -70,6 +73,8 @@ export type StageReachResult = {
   reachableStageId: StageId | null;
   reachableStageLabel: string;
   rows: StageReachRow[];
+  /** Labour by trade, for explaining the labour figure: its rate, cost and cost per m² of floor. */
+  laborByTrade: Array<{ id: LaborSubstageId; label: string; percent: number; usd: number; perM2: number }>;
 };
 
 function clampPositive(value: number, fallback: number): number {
@@ -104,14 +109,28 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     superstructure: 0,
     roofing: 0,
     finishing: 0,
-    services: 0,
     exterior: 0,
   };
 
+  // Labour at each trade's own rate (plastering and boundary walls differ
+  // from the 35% rule), kept per stage for stages priced from the BOQ.
+  const stageLabor: Record<StageId, number> = { substructure: 0, superstructure: 0, roofing: 0, finishing: 0, exterior: 0 };
+  const servicesCost = { materials: 0, labor: 0 };
+  const tradeTotals = new Map<LaborSubstageId, { materials: number; stage: StageId }>();
   generatedItems.forEach((item) => {
-    const category = item.category as StageId;
+    const isServices = item.category === 'services';
+    const category = (isServices ? 'finishing' : item.category) as StageId;
     if (category in stageCosts) {
       stageCosts[category] += item.totalUsd || 0;
+      const trade = laborSubstageFor(item);
+      const labor = trade ? (item.totalUsd || 0) * laborPercentageFor(trade, input.laborRates) / 100 : 0;
+      stageLabor[category] += labor;
+      if (isServices) { servicesCost.materials += item.totalUsd || 0; servicesCost.labor += labor; }
+      if (trade) {
+        const entry = tradeTotals.get(trade) ?? { materials: 0, stage: category };
+        entry.materials += item.totalUsd || 0;
+        tradeTotals.set(trade, entry);
+      }
     }
   });
 
@@ -139,7 +158,8 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     const counts = statusOf(stage.id) === 'build';
     if (counts) materialsUsd += stageCosts[stage.id];
     if (input.includeLabor) {
-      const labor = stageCosts[stage.id] * stageLaborPercentage(stage.id, input.laborRates) / 100;
+      // A stage filled in from the fallback weights has no lines to price by trade.
+      const labor = stageLabor[stage.id] > 0 ? stageLabor[stage.id] : stageCosts[stage.id] * stageLaborPercentage(stage.id, input.laborRates) / 100;
       stageCosts[stage.id] += labor;
       if (counts) laborUsd += labor;
     }
@@ -152,6 +172,23 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     ? 100
     : Math.min(100, normalizedTotal > 0 ? (budgetUsd / normalizedTotal) * 100 : 0);
 
+  // The interior's plumbing and electrical, shown as a line inside it.
+  const servicesUsd = servicesCost.materials + (input.includeLabor ? servicesCost.labor : 0);
+  const partsOf = (id: StageId): { parts?: StageReachRow['parts'] } =>
+    id === 'finishing' && servicesUsd > 0
+      ? { parts: [{ label: 'Finishes', usd: stageCosts.finishing - servicesUsd }, { label: 'Plumbing & electrical', usd: servicesUsd }] }
+      : {};
+
+  const laborByTrade = input.includeLabor
+    ? LABOR_SUBSTAGES.flatMap((substage) => {
+      const totals = tradeTotals.get(substage.id);
+      if (!totals || statusOf(totals.stage) !== 'build') return [];
+      const percent = laborPercentageFor(substage.id, input.laborRates);
+      const usd = totals.materials * percent / 100;
+      return usd > 0 ? [{ id: substage.id, label: substage.label, percent, usd, perM2: usd / floorAreaM2 }] : [];
+    })
+    : [];
+
   let cumulative = 0;
   let reachableStageId: StageId | null = null;
 
@@ -163,6 +200,7 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
       return {
         id: stage.id,
         label: stage.label,
+        ...partsOf(stage.id),
         stageCostUsd,
         cumulativeCostUsd: cumulative,
         affordable: status === 'built',
@@ -181,6 +219,7 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     return {
       id: stage.id,
       label: stage.label,
+      ...partsOf(stage.id),
       stageCostUsd,
       cumulativeCostUsd: cumulative,
       affordable,
@@ -202,6 +241,7 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     reachableStageId,
     reachableStageLabel,
     rows,
+    laborByTrade,
   };
 }
 

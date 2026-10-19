@@ -13,7 +13,7 @@ import {
   VisionAnalysisResult,
   GeneratedBOQItem,
 } from '@/lib/vision/types';
-import { generateBOQ } from '@/lib/calculations';
+import { councilRequiresFullBrickWalls, generateBOQ } from '@/lib/calculations';
 import { materials, getBestPrice } from '@/lib/materials';
 import { TEMPORARY_WORKS_SUGGESTIONS } from '@/lib/buildFlowRules';
 import { supabase } from '@/lib/supabase';
@@ -419,7 +419,8 @@ export function useVisionTakeoff() {
     // Small delay for animation, then generate BOQ
     setTimeout(() => {
       setState((prev) => {
-        const boqItems = generateBOQ(prev.editedRooms, prev.editedWalls, prev.config, prev.analysisResult?.windows, prev.analysisResult?.doors);
+        const config = { ...prev.config, fullBrickInternalWalls: councilRequiresFullBrickWalls(prev.projectInfo?.location) };
+        const boqItems = generateBOQ(prev.editedRooms, prev.editedWalls, config, prev.analysisResult?.windows, prev.analysisResult?.doors);
         const boqItemsWithEnablement = addTemporaryEnablementItems(boqItems, prev.config);
         return {
           ...prev,

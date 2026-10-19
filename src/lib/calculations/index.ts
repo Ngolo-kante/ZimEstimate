@@ -68,6 +68,8 @@ export interface ManualBuilderConfig {
   totalDoors?: number;       // Uploaded plan total, including entrance doors
   roofCovering?: RoofCovering;
   roofShape?: RoofShape;
+  /** Inside walls one brick thick, as Harare and Bulawayo require: councilRequiresFullBrickWalls. */
+  fullBrickInternalWalls?: boolean;
   /** The user's own labour percentages by stage; defaults to 35% each. */
   laborRates?: LaborRates;
 }
@@ -159,7 +161,7 @@ function calculateSuperstructureFromRooms(
     const ratio = groupArea / totalFloorArea;
     const info = getBrickInfoById(materialId);
 
-    for (const unit of wallUnitsFor(info, externalWallArea * ratio, internalWallArea * ratio, masonryWasteMultiplier)) {
+    for (const unit of wallUnitsFor(info, externalWallArea * ratio, internalWallArea * ratio, masonryWasteMultiplier, config.fullBrickInternalWalls)) {
       items.push(createBOQItem(
         unit.info.materialId,
         unit.info.name,
@@ -230,7 +232,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
     } else {
       // Walls stand on the slab, full height; the foundation walls are below it.
       const openings = wallOpenings(config.totalWindows || Math.ceil(floorArea / 15), config.totalDoors, roomCount);
-      const units = wallUnitsFor(brickInfo, perimeter * wallHeight - openings.external, internalWallLength * wallHeight - openings.internal, masonryWasteMultiplier);
+      const units = wallUnitsFor(brickInfo, perimeter * wallHeight - openings.external, internalWallLength * wallHeight - openings.internal, masonryWasteMultiplier, config.fullBrickInternalWalls);
       // One line per brick: the same brick for inside and outside walls is bought together.
       for (const unit of units) {
         items.push(createBOQItem(unit.info.materialId, `${unit.info.name} (Walls)`, 'superstructure', unit.count, 'each', `${unit.note}, less windows and doors`));
@@ -377,6 +379,7 @@ function wallUnitsFor(
   externalArea: number,
   internalArea: number,
   wasteMultiplier: number,
+  internalFullBrick = false,
 ): WallUnits[] {
   const ext = Math.max(0, externalArea);
   const int = Math.max(0, internalArea);
@@ -384,18 +387,28 @@ function wallUnitsFor(
     const common = BRICK_INFO.common;
     return [
       { info, count: Math.ceil(ext * info.bricksPerSqm * wasteMultiplier), note: `Outside face skin: ${ext.toFixed(1)}m²` },
-      { info: common, count: Math.ceil((ext * common.bricksPerSqm + int * common.bricksPerSqm) * wasteMultiplier), note: `Inner skin of the outside walls ${ext.toFixed(1)}m² + inside walls ${int.toFixed(1)}m²` },
+      { info: common, count: Math.ceil((ext * common.bricksPerSqm + int * (internalFullBrick ? oneBrickUnitsPerSqm(common) : common.bricksPerSqm)) * wasteMultiplier), note: `Inner skin of the outside walls ${ext.toFixed(1)}m² + inside walls ${int.toFixed(1)}m²` },
     ].filter((u) => u.count > 0);
   }
   const extCount = Math.ceil(ext * oneBrickUnitsPerSqm(info) * wasteMultiplier);
-  const intCount = Math.ceil(int * info.bricksPerSqm * wasteMultiplier);
+  const intCount = Math.ceil(int * (internalFullBrick ? oneBrickUnitsPerSqm(info) : info.bricksPerSqm) * wasteMultiplier);
   const thick = isBlockUnit(info.materialId) ? '' : ' (230mm)';
-  const thin = isBlockUnit(info.materialId) ? '' : ' (115mm)';
+  const thin = isBlockUnit(info.materialId) ? '' : internalFullBrick ? ' (230mm, council rule)' : ' (115mm)';
   return [{
     info,
     count: extCount + intCount,
     note: `Outside walls${thick} ${ext.toFixed(1)}m²: ${extCount.toLocaleString('en-US')} + inside walls${thin} ${int.toFixed(1)}m²: ${intCount.toLocaleString('en-US')}`,
   }];
+}
+
+/**
+ * Since 1 July 2026 Harare and Bulawayo councils accept no 115 mm walls from
+ * foundation to wall plate (confirmed by the owner, 2026-10-18), so inside
+ * walls there are one brick too. Elsewhere they stay half a brick until each
+ * council is checked. The city is free text: "Harare - Borrowdale" counts.
+ */
+export function councilRequiresFullBrickWalls(city?: string | null): boolean {
+  return /harare|bulawayo/i.test(city ?? '');
 }
 
 /** Window and door openings, taken out of the wall areas they sit in. */
@@ -674,6 +687,7 @@ function calculateSuperstructure(
     externalWallLength * cfg.wallHeight - openings.external,
     internalWallLength * cfg.wallHeight - openings.internal,
     masonryWasteMultiplier,
+    config.fullBrickInternalWalls,
   );
   for (const unit of units) {
     items.push(createBOQItem(unit.info.materialId, `${unit.info.name} (Walls)`, 'superstructure', unit.count, 'each', `${unit.note}, less windows and doors`));

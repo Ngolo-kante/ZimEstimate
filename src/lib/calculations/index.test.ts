@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { estimateVisionWallDimensions, generateBOQ, generateBOQFromBasics, ManualBuilderConfig } from './index';
+import { councilRequiresFullBrickWalls, estimateVisionWallDimensions, generateBOQ, generateBOQFromBasics, ManualBuilderConfig } from './index';
 import { getBestPrice } from '../materials';
-import { STAGE_LABOR_PERCENTAGES, laborRatesFromNotes } from './laborSubstages';
+import { laborPercentageFor, laborRatesFromNotes } from './laborSubstages';
 import type { DetectedRoom, DetectedWall } from '../vision/types';
 
 function getItemQuantity(items: ReturnType<typeof generateBOQFromBasics>, notePrefix: string): number {
@@ -141,7 +141,7 @@ describe('roofing sheet coverage', () => {
 });
 
 describe('labour sizing', () => {
-  it('applies the fixed roofing-stage percentage to each roofing sub-stage', () => {
+  it('applies the roofing trades percentage to each roofing sub-stage', () => {
     const items = generateBOQFromBasics({
       floorArea: 120, roomCount: 5, wallHeight: 2.7,
       brickTypes: ['common'], cementTypes: ['cement_325'],
@@ -151,8 +151,8 @@ describe('labour sizing', () => {
     const cover = items.filter((item) => item.category === 'roofing' && !/timber|fascia|hoop|nails/.test(item.materialId));
     const frameMaterials = frame.reduce((sum, item) => sum + item.totalUsd, 0);
     const coverMaterials = cover.reduce((sum, item) => sum + item.totalUsd, 0);
-    expect(items.find((item) => item.materialId === 'labor-roof_frame')?.totalUsd).toBeCloseTo(frameMaterials * STAGE_LABOR_PERCENTAGES.roofing / 100, 2);
-    expect(items.find((item) => item.materialId === 'labor-roof_cover')?.totalUsd).toBeCloseTo(coverMaterials * STAGE_LABOR_PERCENTAGES.roofing / 100, 2);
+    expect(items.find((item) => item.materialId === 'labor-roof_frame')?.totalUsd).toBeCloseTo(frameMaterials * laborPercentageFor('roof_cover') / 100, 2);
+    expect(items.find((item) => item.materialId === 'labor-roof_cover')?.totalUsd).toBeCloseTo(coverMaterials * laborPercentageFor('roof_cover') / 100, 2);
   });
 
   it('keeps labour within the Zimbabwe market share of material cost', () => {
@@ -176,9 +176,16 @@ describe('labour sizing', () => {
     }
 
     expect(materials).toBeGreaterThan(0);
-    // The default is 35% of each priced work sub-stage's material subtotal.
+    // Each trade's labour is its own percentage of that trade's materials:
+    // 35% for most, 200% for plastering, 90% for boundary walls.
+    for (const item of items.filter((i) => i.category === 'labor')) {
+      const trade = item.materialId.replace('labor-', '') as Parameters<typeof laborPercentageFor>[0];
+      expect(item.calculationNote.startsWith(`${laborPercentageFor(trade)}% of `)).toBe(true);
+    }
+    // Overall, a little above 35% because of plastering and boundary walls.
     const share = labour / materials;
-    expect(share).toBeCloseTo(0.35, 2);
+    expect(share).toBeGreaterThan(0.35);
+    expect(share).toBeLessThan(0.6);
   });
 });
 
@@ -364,9 +371,49 @@ describe('labour rates set by the user', () => {
 
   it('reads saved rates back from labour line notes', () => {
     expect(laborRatesFromNotes([
-      { materialId: 'labor-roof_cover', note: '20% of roofing materials ($100.00)' },
+      { materialId: 'labor-roof_cover', note: '25% of roofing materials ($100.00)' },
       { materialId: 'labor-walling', note: '35% of superstructure materials ($900.00)' },
       { materialId: 'cement-325', note: '40% of something' },
-    ])).toEqual({ roofing: 20, superstructure: 35 });
+    ])).toEqual({ roof_cover: 25 });
+  });
+});
+
+describe('council wall rule (Harare and Bulawayo, from 1 July 2026)', () => {
+  const base = { floorArea: 120, roomCount: 7, wallHeight: 2.7, brickTypes: ['common' as const], cementTypes: ['cement_325' as const], scope: 'superstructure' as const, includeLabor: false, locationType: 'urban' as const };
+  const wallBricks = (items: ReturnType<typeof generateBOQFromBasics>) => items.find((i) => i.materialName.endsWith('(Walls)'))!;
+
+  it('recognises the two cities, suburbs included', () => {
+    expect(councilRequiresFullBrickWalls('Harare - Borrowdale')).toBe(true);
+    expect(councilRequiresFullBrickWalls('bulawayo')).toBe(true);
+    expect(councilRequiresFullBrickWalls('Gweru')).toBe(false);
+    expect(councilRequiresFullBrickWalls(undefined)).toBe(false);
+  });
+
+  it('builds inside walls one brick thick there, half a brick elsewhere', () => {
+    const elsewhere = wallBricks(generateBOQFromBasics(base));
+    const harare = wallBricks(generateBOQFromBasics({ ...base, fullBrickInternalWalls: true }));
+    expect(elsewhere.calculationNote).toContain('inside walls (115mm)');
+    expect(harare.calculationNote).toContain('inside walls (230mm, council rule)');
+    expect(harare.quantity).toBeGreaterThan(elsewhere.quantity);
+  });
+});
+
+describe('labour by trade', () => {
+  it('prices plastering and boundary walls at their own rates, the rest at 35%', () => {
+    expect(laborPercentageFor('plaster')).toBe(200);
+    expect(laborPercentageFor('boundary')).toBe(90);
+    expect(laborPercentageFor('walling')).toBe(35);
+  });
+
+  it('lets a trade rate beat a stage rate, and a stage rate beat the default', () => {
+    expect(laborPercentageFor('plaster', { finishing: 40 })).toBe(40);
+    expect(laborPercentageFor('plaster', { finishing: 40, plaster: 150 })).toBe(150);
+  });
+
+  it('reads trade rates back from saved labour lines', () => {
+    expect(laborRatesFromNotes([
+      { materialId: 'labor-plaster', note: '200% of finishing materials ($500.00)' },
+      { materialId: 'labor-tiles', note: '50% of finishing materials ($900.00)' },
+    ])).toEqual({ tiles: 50 });
   });
 });

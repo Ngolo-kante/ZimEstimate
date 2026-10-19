@@ -299,7 +299,7 @@ export default function ConfigurationStep({
           </div>
         </Card>
         {config.includeLabor && <Card>
-          <div className="section-header"><Users size={22} weight="light" /><div><h3>Labour by stage</h3><p>A share of each stage&apos;s material cost</p></div></div>
+          <div className="section-header"><Users size={22} weight="light" /><div><h3>Labour by stage</h3><p>A share of each stage&apos;s material cost. Plastering (200%), roofing (20%) and boundary walls (90%) use their own rates unless you change that stage here.</p></div></div>
           <div className="grid gap-2 sm:grid-cols-2">
             {LABOR_STAGES.filter((stage) => includedScopes.includes(stage as ProjectScope)).map((stage) => (
               <label key={stage} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 text-sm text-slate-800">

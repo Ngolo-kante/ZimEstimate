@@ -24,7 +24,7 @@ import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 import CostDonut, { COST_COLORS } from '@/components/ui/CostDonut';
 import RoofProfileIcon from '@/components/ui/RoofProfileIcon';
 import RoofShapeIcon from '@/components/ui/RoofShapeIcon';
-import { LABOR_STAGES, LABOR_SUBSTAGES, MAX_LABOR_PERCENTAGE, STAGE_LABOR_PERCENTAGES, type LaborRates } from '@/lib/calculations/laborSubstages';
+import { LABOR_STAGES, LABOR_SUBSTAGES, MAX_LABOR_PERCENTAGE, STAGE_LABOR_PERCENTAGES, defaultLaborPercentage, type LaborRates } from '@/lib/calculations/laborSubstages';
 import { COUNCIL_TARIFF, councilFeesTotal } from '@/lib/projectFees';
 import { DEFAULT_ROOF_COVERING, DEFAULT_ROOF_SHAPE, ROOF_COVERINGS, ROOF_SHAPES, type RoofCovering, type RoofShape } from '@/lib/calculations/roofingOptions';
 import { captureProductEvent, getBudgetBand, recordSharedLinkArrival } from '@/lib/productAnalytics';
@@ -91,7 +91,10 @@ export default function QuickBudgetPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const { success: showSuccess, error: showError, info: showInfo } = useToast();
-  const [budgetInput, setBudgetInput] = useState(String(HOUSE_DEFAULTS.budget));
+  // Starts empty: a budget arrives from the link (the home page passes what
+  // was typed there) or the person types or taps one. A pre-filled $15,000
+  // looked like an answer nobody had given.
+  const [budgetInput, setBudgetInput] = useState('');
   const [floorAreaInput, setFloorAreaInput] = useState(String(HOUSE_DEFAULTS.area));
   const [locationType, setLocationType] = useState<(typeof locationOptions)[number]['id']>(HOUSE_DEFAULTS.location);
   const [roofCovering, setRoofCovering] = useState<RoofCovering>(DEFAULT_ROOF_COVERING);
@@ -102,7 +105,9 @@ export default function QuickBudgetPage() {
   // One rate for every stage here; the full BOQ lets each stage differ.
   const [laborPct, setLaborPct] = useState(STAGE_LABOR_PERCENTAGES.substructure);
   const laborRates = useMemo(
-    () => Object.fromEntries(LABOR_STAGES.map((stage) => [stage, laborPct])) as LaborRates,
+    // Left at the default, each trade uses its own rate (plastering and
+    // boundary walls are not 35%); a rate the user types applies to all.
+    () => (laborPct === STAGE_LABOR_PERCENTAGES.substructure ? {} : Object.fromEntries(LABOR_STAGES.map((stage) => [stage, laborPct]))) as LaborRates,
     [laborPct],
   );
   // Stages already built, or left for later, are not paid for from this budget.
@@ -547,45 +552,6 @@ export default function QuickBudgetPage() {
     router.push(boq ? `/projects?saved=${boq.id}` : '/projects');
   };
 
-  // Solar and borehole have their own budget explorers, previously reachable
-  // only from inside their quick-project wizards. Rendering them here keeps one
-  // page answering "how far does my money go" whatever is being built.
-  if (budgetMode !== 'house') {
-    return (
-      <MainLayout title="Budget Estimator">
-        <div className="mx-auto max-w-4xl px-4 py-8">
-          {budgetMode === 'solar' ? (
-            <SolarBudgetExplorer
-              onBack={() => setBudgetMode('house')}
-              backLabel="Back to budget options"
-              onSave={(output) =>
-                saveQuickBudget('solar', output.boqItems ?? [], output.answers as unknown as Record<string, unknown>, {
-                  enabled: false,
-                  method: 'percentage',
-                  percentage: 25,
-                })
-              }
-            />
-          ) : budgetMode === 'borehole' ? (
-            <BoreholeBudgetExplorer
-              onBack={() => setBudgetMode('house')}
-              backLabel="Back to budget options"
-              onSave={(items, answers, labor) => saveQuickBudget('borehole', items, answers, labor)}
-            />
-          ) : (
-            <BudgetFitExplorer
-              config={budgetMode === 'fencing' ? fencingBudgetFit : pavingBudgetFit}
-              initialBudget={budgetInput}
-              onBack={() => setBudgetMode('house')}
-              backLabel="Back to budget options"
-              onSave={(items, answers, labor) => saveQuickBudget(budgetMode, items, answers, labor)}
-            />
-          )}
-        </div>
-      </MainLayout>
-    );
-  }
-
   return (
     <MainLayout fullWidth title="Budget Estimator">
       <div className="budget-checker-page">
@@ -628,7 +594,33 @@ export default function QuickBudgetPage() {
           </div>
         </nav>
 
-
+        {/* Every kind of budget sits on this one page under the same tabs, so
+            switching between them never leaves the page or needs a "back". */}
+        {budgetMode !== 'house' ? (
+          <section className="explorer-panel">
+            {budgetMode === 'solar' ? (
+              <SolarBudgetExplorer
+                onSave={(output) =>
+                  saveQuickBudget('solar', output.boqItems ?? [], output.answers as unknown as Record<string, unknown>, {
+                    enabled: false,
+                    method: 'percentage',
+                    percentage: 25,
+                  })
+                }
+              />
+            ) : budgetMode === 'borehole' ? (
+              <BoreholeBudgetExplorer
+                onSave={(items, answers, labor) => saveQuickBudget('borehole', items, answers, labor)}
+              />
+            ) : (
+              <BudgetFitExplorer
+                config={budgetMode === 'fencing' ? fencingBudgetFit : pavingBudgetFit}
+                initialBudget={budgetInput}
+                onSave={(items, answers, labor) => saveQuickBudget(budgetMode, items, answers, labor)}
+              />
+            )}
+          </section>
+        ) : (
         <section className="workspace-grid">
           <div className="control-panel">
             <div className="panel-card">
@@ -683,6 +675,7 @@ export default function QuickBudgetPage() {
                 <h2>Roof</h2>
                 <span>{ROOF_SHAPES[roofShape].label}, {ROOF_COVERINGS[roofCovering].label}</span>
               </div>
+              <p className="roof-sub">Roof shape</p>
               <div className="roof-grid roof-shapes" role="group" aria-label="Roof shape">
                 {(Object.entries(ROOF_SHAPES) as [RoofShape, (typeof ROOF_SHAPES)[RoofShape]][]).map(([id, option]) => (
                   <button
@@ -698,6 +691,7 @@ export default function QuickBudgetPage() {
                   </button>
                 ))}
               </div>
+              <p className="roof-sub">Roof covering</p>
               <div className="roof-grid" role="group" aria-label="Roof covering">
                 {(Object.entries(ROOF_COVERINGS) as [RoofCovering, (typeof ROOF_COVERINGS)[RoofCovering]][]).map(([id, option]) => (
                   <button
@@ -751,6 +745,33 @@ export default function QuickBudgetPage() {
                     <span className="labour-off">Materials only</span>
                   )}
                 </div>
+                {includeLabor && laborPct === STAGE_LABOR_PERCENTAGES.substructure && (
+                  <details className="labour-explain">
+                    <summary>How labour is worked out</summary>
+                    <p>
+                      Builders here price labour as a share of the materials, or per square metre for plastering and tiling.
+                      We use rates from builders&apos; quotes in Zimbabwe building groups (October 2026): most trades at {STAGE_LABOR_PERCENTAGES.substructure}% of their
+                      materials; plastering, where the materials are cheap and the work is not, at {defaultLaborPercentage('plaster')}% (about $3 a m² of wall);
+                      roofing at {defaultLaborPercentage('roof_cover')}%; boundary walls at {defaultLaborPercentage('boundary')}% (about $20 a metre).
+                    </p>
+                    {stageEstimate && stageEstimate.laborByTrade.length > 0 && (
+                      <table>
+                        <thead><tr><th scope="col">Trade</th><th scope="col">Rate</th><th scope="col">Labour</th><th scope="col">Per m² of floor</th></tr></thead>
+                        <tbody>
+                          {stageEstimate.laborByTrade.map((trade) => (
+                            <tr key={trade.id}>
+                              <th scope="row">{trade.label}</th>
+                              <td>{trade.percent}%</td>
+                              <td>{formatUsd(trade.usd)}</td>
+                              <td>${trade.perM2.toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                    <p>Typing one rate above applies it to every trade. Builders&apos; quotes vary widely: compare two or three.</p>
+                  </details>
+                )}
                 {includeLabor && laborPct !== STAGE_LABOR_PERCENTAGES.substructure && (
                   <button type="button" className="link-button" onClick={() => setLaborPct(STAGE_LABOR_PERCENTAGES.substructure)}>
                     Back to {STAGE_LABOR_PERCENTAGES.substructure}%, the Zimbabwe rule of thumb
@@ -916,9 +937,16 @@ export default function QuickBudgetPage() {
             )}
           </div>
         </section>
+        )}
       </div>
 
       <style jsx>{`
+        .explorer-panel {
+          position: relative;
+          max-width: 920px;
+          margin: 0 auto;
+          padding: 0 16px 48px;
+        }
         .budget-checker-page {
           position: relative;
           max-width: 1260px;
@@ -1377,6 +1405,61 @@ export default function QuickBudgetPage() {
         .roof-choice :global(.roof-icon) {
           width: 48px;
           height: 24px;
+        }
+        .roof-sub {
+          margin: 10px 0 6px;
+          font-size: 0.72rem;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+        .roof-sub:first-of-type {
+          margin-top: 0;
+        }
+        .labour-explain {
+          margin-top: 8px;
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          padding: 8px 12px;
+          background: #f8fafc;
+          font-size: 0.78rem;
+          line-height: 1.5;
+          color: #475569;
+        }
+        .labour-explain summary {
+          cursor: pointer;
+          font-weight: 700;
+          color: #1e3a8a;
+        }
+        .labour-explain p {
+          margin: 6px 0;
+        }
+        .labour-explain table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 6px 0;
+        }
+        .labour-explain th,
+        .labour-explain td {
+          padding: 3px 4px;
+          text-align: right;
+          border-bottom: 1px solid #e2e8f0;
+          font-weight: 500;
+        }
+        .labour-explain th[scope='row'],
+        .labour-explain thead th:first-child {
+          text-align: left;
+        }
+        .labour-explain thead th {
+          font-weight: 700;
+          color: #334155;
+        }
+        .labour-note {
+          margin: 6px 0 0;
+          font-size: 0.75rem;
+          line-height: 1.4;
+          color: #64748b;
         }
         .labour-switch {
           display: inline-flex;

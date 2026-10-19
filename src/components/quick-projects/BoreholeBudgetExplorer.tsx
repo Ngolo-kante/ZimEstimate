@@ -75,7 +75,8 @@ const numberInputStyle: CSSProperties = {
 // ─── Props ─────────────────────────────────────────────────────────────────────
 
 interface BoreholeBudgetExplorerProps {
-  onBack: () => void;
+  /** Omitted where the page already shows how to get elsewhere (the budget page's tabs). */
+  onBack?: () => void;
   /** Names the destination; the default matches the wizard these came from. */
   backLabel?: string;
   isContractor?: boolean;
@@ -457,9 +458,11 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
   return (
     <div className="w-full max-w-4xl mx-auto pb-24">
       {/* Back */}
-      <button onClick={onBack} className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors mb-6">
-        <ArrowLeft size={16} /> {backLabel}
-      </button>
+      {onBack && (
+        <button onClick={onBack} className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors mb-6">
+          <ArrowLeft size={16} /> {backLabel}
+        </button>
+      )}
 
       {/* Header */}
       <div className="mb-8">

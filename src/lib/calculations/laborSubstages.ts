@@ -66,27 +66,65 @@ export function laborSubstageFor(item: { category: string; materialId: string; m
   }
 }
 
-/** A user's own labour percentages by stage. A missing stage uses the default. */
-export type LaborRates = Partial<Record<LaborStage, number>>;
+/**
+ * Where a trade's labour is a very different share of its materials from the
+ * 35% rule of thumb, it starts at its own rate. Set 2026-10-18 from builders'
+ * rates in the "Let's Build Our Homes - Zimbabwe" group
+ * (research/facebook-building-market):
+ *   - plastering ~$3/m² (replies quoted $1.60–4.00) on a 425 m² job is about
+ *     twice the plaster's cement and sand — plaster is cheap, the work is not;
+ *   - a boundary wall at ~$20 a metre is about 90% of its materials.
+ *   - roofing: a 300 m² hipped roof for $2,000 (~$6.70 per m² of floor) and
+ *     one real build's roof at 12.5% of its materials put roof labour nearer
+ *     20% of our roof materials than 35%.
+ * Foundations and walling stay at 35%: on a 120 m² house that gives $2,415
+ * from setting out to wall plate, where Chitungwiza builders quoted
+ * $2,400–2,500 ("Lets Build Our Homes ZW", same day).
+ */
+export const SUBSTAGE_LABOR_PERCENTAGES: Partial<Record<LaborSubstageId, number>> = {
+  plaster: 200,
+  boundary: 90,
+  roof_frame: 20,
+  roof_cover: 20,
+};
+
+/**
+ * A user's own labour percentages: by trade (LaborSubstageId), or for a whole
+ * stage (LaborStage), which is how older projects and the budget page set
+ * them. A trade rate beats a stage rate; a missing one uses the default.
+ */
+export type LaborRates = Partial<Record<LaborStage | LaborSubstageId, number>>;
 
 export const LABOR_STAGES = Object.keys(STAGE_LABOR_PERCENTAGES) as LaborStage[];
-export const MAX_LABOR_PERCENTAGE = 100;
+export const MAX_LABOR_PERCENTAGE = 300;
 
+const clampRate = (value: number) => Math.min(MAX_LABOR_PERCENTAGE, Math.max(0, value));
+
+/** A trade's starting rate, before any the user sets. */
+export function defaultLaborPercentage(id: LaborSubstageId): number {
+  const substage = LABOR_SUBSTAGES.find((entry) => entry.id === id);
+  return SUBSTAGE_LABOR_PERCENTAGES[id] ?? (substage ? STAGE_LABOR_PERCENTAGES[substage.stage] : 0);
+}
+
+/** A stage-wide rate the user set, or the stage default (35%). Trades may differ: see laborPercentageFor. */
 export function stageLaborPercentage(stage: LaborStage, rates?: LaborRates): number {
   const value = rates?.[stage];
-  return typeof value === 'number' && Number.isFinite(value)
-    ? Math.min(MAX_LABOR_PERCENTAGE, Math.max(0, value))
-    : STAGE_LABOR_PERCENTAGES[stage];
+  return typeof value === 'number' && Number.isFinite(value) ? clampRate(value) : STAGE_LABOR_PERCENTAGES[stage];
 }
 
 export function laborPercentageFor(id: LaborSubstageId, rates?: LaborRates): number {
   const substage = LABOR_SUBSTAGES.find((entry) => entry.id === id);
-  return substage ? stageLaborPercentage(substage.stage, rates) : 0;
+  if (!substage) return 0;
+  const own = rates?.[id];
+  if (typeof own === 'number' && Number.isFinite(own)) return clampRate(own);
+  const stage = rates?.[substage.stage];
+  if (typeof stage === 'number' && Number.isFinite(stage)) return clampRate(stage);
+  return defaultLaborPercentage(id);
 }
 
-/** True when any stage differs from the default. */
+/** True when any trade differs from its default. */
 export function hasCustomLaborRates(rates?: LaborRates): boolean {
-  return LABOR_STAGES.some((stage) => stageLaborPercentage(stage, rates) !== STAGE_LABOR_PERCENTAGES[stage]);
+  return LABOR_SUBSTAGES.some((substage) => laborPercentageFor(substage.id, rates) !== defaultLaborPercentage(substage.id));
 }
 
 /**
@@ -98,7 +136,7 @@ export function laborRatesFromNotes(lines: { materialId: string; note?: string |
   for (const line of lines) {
     const substage = LABOR_SUBSTAGES.find((entry) => `labor-${entry.id}` === line.materialId);
     const pct = line.note?.match(/^(\d+(?:\.\d+)?)% of /)?.[1];
-    if (substage && pct !== undefined && rates[substage.stage] === undefined) rates[substage.stage] = Number(pct);
+    if (substage && pct !== undefined && Number(pct) !== defaultLaborPercentage(substage.id)) rates[substage.id] = Number(pct);
   }
   return rates;
 }

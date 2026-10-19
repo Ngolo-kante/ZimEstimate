@@ -362,7 +362,7 @@ export default function HeroBudgetWidget() {
             </p>
           </div>
           <Link
-            href={hasValidBudget ? `/quick-budget?budget=${parsedBudget}` : '/quick-budget'}
+            href={hasValidBudget ? `/quick-budget?budget=${parsedBudget}&area=${PLAN_AREA_M2}` : '/quick-budget'}
             onClick={() => captureProductEvent('calculator_customized', {
               source: 'home_budget_widget',
               budget_band: hasValidBudget ? getBudgetBand(parsedBudget) : 'not_entered',

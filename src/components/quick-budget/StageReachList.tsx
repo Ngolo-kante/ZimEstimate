@@ -36,8 +36,7 @@ const STAGE_SUMMARY: Record<string, string> = {
   substructure: 'Hardcore, foundation concrete and walls, DPC and slab mesh',
   superstructure: 'Wall bricks and mortar, brickforce and ring-beam steel',
   roofing: 'Roof covering, roof timber, fixings and fascia',
-  finishing: 'Plaster, paint, tiles, ceiling, doors and windows',
-  services: 'Wiring, pipes, toilets, basins and taps',
+  finishing: 'Plaster, paint, tiles, ceiling, doors and windows, plus plumbing and electrical',
   exterior: 'Boundary wall, gates and paving',
 };
 
@@ -76,7 +75,8 @@ export default function StageReachList({ rows, lines, onStatusChange }: {
         const pct = Math.max(0, Math.min(100, Math.round(row.coveragePercent)));
         const state = row.status === 'built' ? 'built' : row.status === 'skip' ? 'later' : row.affordable ? 'covered' : pct > 0 ? 'partial' : 'short';
         const stageLines = lines
-          .filter((line) => line.category === row.id && line.totalUsd > 0)
+          // The interior row carries the plumbing and electrical lines too.
+          .filter((line) => (line.category === row.id || (row.id === 'finishing' && line.category === 'services')) && line.totalUsd > 0)
           .sort((a, b) => b.totalUsd - a.totalUsd);
         const isOpen = open.has(row.id);
         const panelId = `stage-panel-${row.id}`;
@@ -102,6 +102,14 @@ export default function StageReachList({ rows, lines, onStatusChange }: {
 
             {state === 'partial' && (
               <div className="track" aria-hidden="true"><span style={{ width: `${pct}%` }} /></div>
+            )}
+
+            {row.parts && (
+              <ul className="parts" aria-label={`${row.label} is made up of`}>
+                {row.parts.map((part) => (
+                  <li key={part.label}><span>{part.label}</span><strong>{usd(part.usd)}</strong></li>
+                ))}
+              </ul>
             )}
 
             {onStatusChange && (
@@ -155,6 +163,24 @@ export default function StageReachList({ rows, lines, onStatusChange }: {
       })}
 
       <style jsx>{`
+        .parts {
+          list-style: none;
+          margin: 0 0 8px;
+          padding: 0 16px 0 46px;
+          display: grid;
+          gap: 4px;
+        }
+        .parts li {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          font-size: 0.8rem;
+          color: #475569;
+        }
+        .parts strong {
+          color: #0f172a;
+          font-weight: 600;
+        }
         .stages { list-style: none; margin: 0; padding: 0; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; overflow: hidden; }
         .stage + .stage { border-top: 1px solid #edf1f6; }
         .head {

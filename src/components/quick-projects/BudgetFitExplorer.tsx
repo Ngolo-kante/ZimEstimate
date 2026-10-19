@@ -46,7 +46,8 @@ export interface BudgetFitConfig {
 interface BudgetFitExplorerProps {
   config: BudgetFitConfig;
   initialBudget?: string;
-  onBack: () => void;
+  /** Omitted where the page already shows how to get elsewhere (the budget page's tabs). */
+  onBack?: () => void;
   backLabel?: string;
   onSave?: (items: BOQItem[], answers: Answers, labor: LaborConfig) => void;
 }
@@ -93,14 +94,16 @@ export default function BudgetFitExplorer({
 
   return (
     <div className="space-y-6">
-      <button
-        type="button"
-        onClick={onBack}
-        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-blue-700"
-      >
-        <ArrowLeft size={16} />
-        {backLabel}
-      </button>
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-blue-700"
+        >
+          <ArrowLeft size={16} />
+          {backLabel}
+        </button>
+      )}
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <label className="block">

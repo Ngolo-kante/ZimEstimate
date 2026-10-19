@@ -1,5 +1,5 @@
 import { allocateBudget } from '@/lib/quick-projects/solar/allocateBudget';
-import { LABOR_STAGES, type LaborRates } from '@/lib/calculations/laborSubstages';
+import { LABOR_STAGES, MAX_LABOR_PERCENTAGE, type LaborRates } from '@/lib/calculations/laborSubstages';
 import { ROOF_COVERINGS, ROOF_SHAPES, type RoofCovering, type RoofShape } from '@/lib/calculations/roofingOptions';
 import { BACKUP_LOADS, backupHours, describeBackup } from '@/lib/quick-projects/solar/backupHours';
 import { BATTERY_BRANDS, INVERTER_BRANDS, PANEL_BRANDS } from '@/lib/quick-projects/solar/catalog';
@@ -130,7 +130,7 @@ function summariseBorehole(params: URLSearchParams): SharedEstimateSummary | nul
 function labourRatesFromParam(raw: string | null): LaborRates | undefined {
   const pct = Number(raw);
   if (!raw || !Number.isFinite(pct)) return undefined;
-  return Object.fromEntries(LABOR_STAGES.map((stage) => [stage, Math.min(100, Math.max(0, pct))])) as LaborRates;
+  return Object.fromEntries(LABOR_STAGES.map((stage) => [stage, Math.min(MAX_LABOR_PERCENTAGE, Math.max(0, pct))])) as LaborRates;
 }
 
 function summariseHouse(params: URLSearchParams): SharedEstimateSummary | null {

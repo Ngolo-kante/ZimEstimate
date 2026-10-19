@@ -1,4 +1,4 @@
-import { generateBOQFromBasics, DEFAULT_FINISH_LEVEL } from '@/lib/calculations';
+import { councilRequiresFullBrickWalls, generateBOQFromBasics, DEFAULT_FINISH_LEVEL } from '@/lib/calculations';
 import { LABOR_SUBSTAGES, laborPercentageFor, laborSubstageFor } from '@/lib/calculations/laborSubstages';
 import { getBestPrice, materials } from '@/lib/materials';
 import { buildProjectFeeItems, isTariffPriced, OWN_FIGURE_NOTE } from '@/lib/projectFees';
@@ -340,6 +340,7 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
     laborRates: projectDetails.laborRates,
     roofCovering: projectDetails.roofCovering,
     roofShape: projectDetails.roofShape,
+    fullBrickInternalWalls: councilRequiresFullBrickWalls(projectDetails.locationCity),
     locationType: (projectDetails.locationType || 'urban') as 'urban' | 'peri-urban' | 'rural',
     // 'not_sure' and unanswered both price as standard — the estimate has to
     // produce a number either way. The difference is that the answer is now
