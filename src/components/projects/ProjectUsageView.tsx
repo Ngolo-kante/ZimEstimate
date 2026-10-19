@@ -1,5 +1,7 @@
 'use client';
 
+import { boqStage, materialsBeforeLabor } from '@/lib/boqPresentation';
+import { isLaborCategory } from '@/lib/calculations/laborSubstages';
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -168,13 +170,13 @@ export default function ProjectUsageView({
     const STAGE_ORDER = ['substructure', 'superstructure', 'roofing', 'finishing', 'services', 'exterior', 'labor'];
     const STAGE_NAMES: Record<string, string> = {
       substructure: 'Foundations', superstructure: 'Walls & frame', roofing: 'Roofing',
-      finishing: 'Finishes', services: 'Plumbing & electrical', exterior: 'Outside works', labor: 'Labour',
+      finishing: 'Finishes', services: 'Plumbing & electrical', exterior: 'Outside works', labor: 'Other labour',
     };
     const fmt = (n: number) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
     const unitOf = (unit: string) => unit.replace(/^per\s+/i, '').replace(/^each$/i, '').trim();
     const groups = new Map<string, typeof items>();
     for (const item of items) {
-      const key = item.category || 'other';
+      const key = boqStage(item.category);
       groups.set(key, [...(groups.get(key) ?? []), item]);
     }
     return [...groups.entries()]
@@ -185,14 +187,14 @@ export default function ProjectUsageView({
         return {
           key,
           label: STAGE_NAMES[key] ?? key.replace(/_/g, ' '),
-          options: stageItems.map((item) => {
+          options: materialsBeforeLabor(stageItems).map((item) => {
             const total = Number(item.actual_quantity ?? item.quantity ?? 0);
             const left = Math.max(0, total - (usageByItem[item.id] || 0));
             const unit = unitOf(item.unit);
             const purpose = nameCount.get(item.material_name)! > 1 && item.notes ? ` (${item.notes.replace(/\[Enablement Cost\]\s*/g, '').trim()})` : '';
             return {
               id: item.id,
-              label: `${item.material_name}${purpose} · ${fmt(total)}${unit ? ` ${unit}` : ''} · ${fmt(left)} left`,
+              label: `${isLaborCategory(item.category) ? 'Labour · ' : ''}${item.material_name}${purpose} · ${fmt(total)}${unit ? ` ${unit}` : ''} · ${fmt(left)} left`,
             };
           }),
         };

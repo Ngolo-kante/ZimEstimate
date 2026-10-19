@@ -1,5 +1,6 @@
 'use client';
 
+import { isLaborCategory } from '@/lib/calculations/laborSubstages';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
@@ -185,7 +186,7 @@ export default function MarketInsightsPage() {
   }, []);
 
   const filteredMaterials = marketPrices
-    .filter((m) => selectedCategory === 'all' || m.category === selectedCategory)
+    .filter((m) => selectedCategory === 'all' || (isLaborCategory(selectedCategory) ? isLaborCategory(m.category) : m.category === selectedCategory))
     .filter((m) => focus === 'none'
       || (focus === 'movers' ? m.trend === 'up' || m.trend === 'down' : m.priceUsd === null || m.priceUsd <= 0))
     .filter((m) => m.name.toLowerCase().includes(searchQuery.toLowerCase()))

@@ -24,7 +24,7 @@ import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 import CostDonut, { COST_COLORS } from '@/components/ui/CostDonut';
 import RoofProfileIcon from '@/components/ui/RoofProfileIcon';
 import RoofShapeIcon from '@/components/ui/RoofShapeIcon';
-import { LABOR_STAGES, LABOR_SUBSTAGES, MAX_LABOR_PERCENTAGE, STAGE_LABOR_PERCENTAGES, defaultLaborPercentage, type LaborRates } from '@/lib/calculations/laborSubstages';
+import { stageOfLaborCategory, type LaborRates } from '@/lib/calculations/laborSubstages';
 import { COUNCIL_TARIFF, councilFeesTotal } from '@/lib/projectFees';
 import { DEFAULT_ROOF_COVERING, DEFAULT_ROOF_SHAPE, ROOF_COVERINGS, ROOF_SHAPES, type RoofCovering, type RoofShape } from '@/lib/calculations/roofingOptions';
 import { captureProductEvent, getBudgetBand, recordSharedLinkArrival } from '@/lib/productAnalytics';
@@ -78,15 +78,6 @@ const profileOptions = [
   },
 ] as const;
 
-const stageCategoryLabels: Record<string, string> = {
-  substructure: 'Site Preparation & Foundation',
-  superstructure: 'Structural Walls & Frame',
-  roofing: 'Roofing',
-  finishing: 'Interior & Finishing',
-  services: 'Plumbing & Electrical',
-  exterior: 'External Work',
-};
-
 export default function QuickBudgetPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
@@ -102,14 +93,7 @@ export default function QuickBudgetPage() {
   // On by default: a house needs builders, and a materials-only figure made
   // budgets look further along than they are.
   const [includeLabor, setIncludeLabor] = useState(true);
-  // One rate for every stage here; the full BOQ lets each stage differ.
-  const [laborPct, setLaborPct] = useState(STAGE_LABOR_PERCENTAGES.substructure);
-  const laborRates = useMemo(
-    // Left at the default, each trade uses its own rate (plastering and
-    // boundary walls are not 35%); a rate the user types applies to all.
-    () => (laborPct === STAGE_LABOR_PERCENTAGES.substructure ? {} : Object.fromEntries(LABOR_STAGES.map((stage) => [stage, laborPct]))) as LaborRates,
-    [laborPct],
-  );
+  const laborRates = useMemo<LaborRates>(() => ({}), []);
   // Stages already built, or left for later, are not paid for from this budget.
   const [stageStatus, setStageStatus] = useState<Partial<Record<StageId, StageStatus>>>({});
   const [buildProfile, setBuildProfile] = useState<(typeof profileOptions)[number]['id']>(HOUSE_DEFAULTS.profile);
@@ -153,8 +137,6 @@ export default function QuickBudgetPage() {
     const shape = params.get('shape');
     if (shape && shape in ROOF_SHAPES) setRoofShape(shape as RoofShape);
     if (params.get('labour') === '0') setIncludeLabor(false);
-    const pctRaw = Number(params.get('labourPct'));
-    if (params.get('labourPct') && Number.isFinite(pctRaw)) setLaborPct(Math.min(MAX_LABOR_PERCENTAGE, Math.max(0, pctRaw)));
     setStageStatus(stageStatusFromParams(params));
 
     const profile = params.get('profile');
@@ -219,9 +201,8 @@ export default function QuickBudgetPage() {
   // The lines this budget pays for: stages already built or left for later are
   // dropped, and so is their labour (a labour line names its sub-stage).
   const countedItems = useMemo(() => detailedItems.filter((item) => {
-    const stage = item.category === 'labor'
-      ? LABOR_SUBSTAGES.find((substage) => `labor-${substage.id}` === item.materialId)?.stage
-      : item.category;
+    const laborStage = stageOfLaborCategory(item.category);
+    const stage = (laborStage ?? item.category) === 'services' ? 'finishing' : (laborStage ?? item.category);
     return !stage || (stageStatus[stage as StageId] ?? 'build') === 'build';
   }), [detailedItems, stageStatus]);
 
@@ -336,7 +317,6 @@ export default function QuickBudgetPage() {
         roof: roofCovering,
         shape: roofShape,
         labour: includeLabor ? '1' : '0',
-        ...(laborPct !== STAGE_LABOR_PERCENTAGES.substructure ? { labourPct: String(laborPct) } : {}),
         profile: buildProfile,
         ...stageStatusToParams(stageStatus),
       });
@@ -443,7 +423,6 @@ export default function QuickBudgetPage() {
       roof: roofCovering,
       shape: roofShape,
       labour: includeLabor ? '1' : '0',
-      ...(laborPct !== STAGE_LABOR_PERCENTAGES.substructure ? { labourPct: String(laborPct) } : {}),
       profile: buildProfile,
       ...stageStatusToParams(stageStatus),
       // Marks an arrival from a share, so it can be counted when opened.
@@ -492,7 +471,7 @@ export default function QuickBudgetPage() {
           totalArea: parsedArea,
           items: countedItems.map((item) => ({
             material_name: item.materialName,
-            category: stageCategoryLabels[item.category] || item.category,
+            category: item.category,
             quantity: item.quantity,
             unit: item.unit,
             unit_price_usd: item.unitPriceUsd,
@@ -730,32 +709,13 @@ export default function QuickBudgetPage() {
                   >
                     <span className="knob" aria-hidden="true" />
                   </button>
-                  {includeLabor ? (
-                    <label className="labour-pct">
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        min={0}
-                        max={MAX_LABOR_PERCENTAGE}
-                        step={1}
-                        value={laborPct}
-                        onChange={(event) => setLaborPct(Math.min(MAX_LABOR_PERCENTAGE, Math.max(0, Number(event.target.value) || 0)))}
-                        aria-label="Labour as a percentage of materials"
-                      />
-                      <span>% of materials</span>
-                    </label>
-                  ) : (
-                    <span className="labour-off">Materials only</span>
-                  )}
+                  <span className="labour-off">{includeLabor ? 'Labour included' : 'Materials only'}</span>
                 </div>
-                {includeLabor && laborPct === STAGE_LABOR_PERCENTAGES.substructure && (
+                {includeLabor && (
                   <details className="labour-explain">
                     <summary>How labour is worked out</summary>
                     <p>
-                      Builders here price labour as a share of the materials, or per square metre for plastering and tiling.
-                      We use rates from builders&apos; quotes in Zimbabwe building groups (October 2026): most trades at {STAGE_LABOR_PERCENTAGES.substructure}% of their
-                      materials; plastering, where the materials are cheap and the work is not, at {defaultLaborPercentage('plaster')}% (about $3 a m² of wall);
-                      roofing at {defaultLaborPercentage('roof_cover')}%; boundary walls at {defaultLaborPercentage('boundary')}% (about $20 a metre).
+                      Priced the way builders quote: per m² of floor for building, plastering and roofing, per m² tiled, per metre of boundary wall; plumbing, electrical, painting and paving as a share of their materials.
                     </p>
                     {stageEstimate && stageEstimate.laborByTrade.length > 0 && (
                       <table>
@@ -764,7 +724,7 @@ export default function QuickBudgetPage() {
                           {stageEstimate.laborByTrade.map((trade) => (
                             <tr key={trade.id}>
                               <th scope="row">{trade.label}</th>
-                              <td>{trade.percent}%</td>
+                              <td>{trade.rateLabel}</td>
                               <td>{formatUsd(trade.usd)}</td>
                               <td>${trade.perM2.toFixed(2)}</td>
                             </tr>
@@ -772,13 +732,8 @@ export default function QuickBudgetPage() {
                         </tbody>
                       </table>
                     )}
-                    <p>Typing one rate above applies it to every trade. Builders&apos; quotes vary widely: compare two or three.</p>
+                    <p>Builders&apos; quotes vary widely: compare two or three.</p>
                   </details>
-                )}
-                {includeLabor && laborPct !== STAGE_LABOR_PERCENTAGES.substructure && (
-                  <button type="button" className="link-button" onClick={() => setLaborPct(STAGE_LABOR_PERCENTAGES.substructure)}>
-                    Back to {STAGE_LABOR_PERCENTAGES.substructure}%, the Zimbabwe rule of thumb
-                  </button>
                 )}
               </div>
 
@@ -1129,32 +1084,6 @@ export default function QuickBudgetPage() {
           display: flex;
           align-items: center;
           gap: 12px;
-        }
-
-        .labour-pct {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 0.85rem;
-          color: #334155;
-        }
-
-        .labour-pct input {
-          width: 64px;
-          min-height: 40px;
-          border: 1px solid #cbd5e1;
-          border-radius: 10px;
-          padding: 6px 8px;
-          text-align: right;
-          font: inherit;
-          font-weight: 700;
-          color: #0f172a;
-        }
-
-        .labour-pct input:focus {
-          outline: none;
-          border-color: #2e6cf6;
-          box-shadow: 0 0 0 3px rgba(46, 108, 246, 0.15);
         }
 
         .labour-off {

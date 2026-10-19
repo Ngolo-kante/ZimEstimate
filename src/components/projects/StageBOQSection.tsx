@@ -1,5 +1,6 @@
 'use client';
 
+import { isLaborCategory } from '@/lib/calculations/laborSubstages';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import InlineEdit from '@/components/ui/InlineEdit';
 import Button from '@/components/ui/Button';
@@ -169,8 +170,8 @@ export default function StageBOQSection({
     }, [isColumnsOpen]);
 
     const availableMaterials = useMemo(() => {
-        if (category === 'labor') {
-            const laborItems = materials.filter(m => m.category === 'labor');
+        if (isLaborCategory(category)) {
+            const laborItems = materials.filter(m => isLaborCategory(m.category));
             if (stageScope) {
                 return laborItems.filter(m => m.milestones.includes(stageScope));
             }
@@ -240,7 +241,7 @@ export default function StageBOQSection({
 
     const handleAddItem = async () => {
         if (!newMaterialId) {
-            showError(category === 'labor' ? 'Please select a labor item' : 'Please select a material');
+            showError(isLaborCategory(category) ? 'Please select a labor item' : 'Please select a material');
             return;
         }
 
@@ -252,7 +253,7 @@ export default function StageBOQSection({
 
         const material = materials.find(m => m.id === newMaterialId);
         if (!material) {
-            showError(category === 'labor' ? 'Labor item not found' : 'Material not found');
+            showError(isLaborCategory(category) ? 'Labor item not found' : 'Material not found');
             return;
         }
 
@@ -265,7 +266,7 @@ export default function StageBOQSection({
         }
 
         setIsAdding(true);
-        const categoryValue = category === 'labor' && stageScope ? `labor_${stageScope}` : category;
+        const categoryValue = isLaborCategory(category) && stageScope ? `labor_${stageScope}` : category;
         const { item, error } = await addBOQItem({
             project_id: projectId,
             material_id: material.id,
@@ -293,12 +294,12 @@ export default function StageBOQSection({
         setIsAdding(false);
     };
 
-    const addLabel = category === 'labor' ? 'Add Labor' : 'Add Item';
-    const selectLabel = category === 'labor' ? 'Labor/Service' : 'Material';
-    const emptyTitle = category === 'labor'
+    const addLabel = isLaborCategory(category) ? 'Add Labor' : 'Add Item';
+    const selectLabel = isLaborCategory(category) ? 'Labor/Service' : 'Material';
+    const emptyTitle = isLaborCategory(category)
         ? 'No labor items yet'
         : 'No items in this section';
-    const emptyHint = category === 'labor'
+    const emptyHint = isLaborCategory(category)
         ? 'Add labor or service items to start tracking'
         : 'Use the builder or add items manually';
 
@@ -332,7 +333,7 @@ export default function StageBOQSection({
                                             value={newMaterialId}
                                             onChange={(e) => setNewMaterialId(e.target.value)}
                                         >
-                                            <option value="">{category === 'labor' ? 'Select labor or service...' : 'Select material...'}</option>
+                                            <option value="">{isLaborCategory(category) ? 'Select labor or service...' : 'Select material...'}</option>
                                             {availableMaterials.map((material) => (
                                                 <option key={material.id} value={material.id}>
                                                     {material.name}
@@ -644,7 +645,7 @@ export default function StageBOQSection({
                                                 value={newMaterialId}
                                                 onChange={(e) => setNewMaterialId(e.target.value)}
                                             >
-                                                <option value="">{category === 'labor' ? 'Select labor or service...' : 'Select material...'}</option>
+                                                <option value="">{isLaborCategory(category) ? 'Select labor or service...' : 'Select material...'}</option>
                                                 {availableMaterials.map((material) => (
                                                     <option key={material.id} value={material.id}>
                                                         {material.name}

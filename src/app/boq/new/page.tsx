@@ -27,7 +27,7 @@ import { estimateDimensions } from '@/lib/calculations';
 import { isPlanReviewBlocked, planIdentityKey } from '@/lib/vision/planReview';
 import { densityFromNotes } from '@/lib/projectFees';
 import { normalizeHouseExtras } from '@/lib/houseExtras';
-import { laborRatesFromNotes } from '@/lib/calculations/laborSubstages';
+import { cleanLaborRates, laborRatesFromNotes, stageOfLaborCategory } from '@/lib/calculations/laborSubstages';
 import PlanReviewCheckpoint from '@/components/boq/PlanReviewCheckpoint';
 import { validateBOQWizardStep, type BOQWizardValidationState } from './wizardValidation';
 import { FULL_HOUSE_STAGES, MANUAL_BUILDER_STAGES, inferProjectType } from './projectTypes';
@@ -56,6 +56,8 @@ function normalizeLocationType(raw: string): 'urban' | 'peri-urban' | 'rural' | 
 }
 
 function normalizeMilestone(category: string | null | undefined): BoqMilestoneId {
+  const laborStage = stageOfLaborCategory(category ?? '');
+  if (laborStage) return laborStage;
   if (
     category === 'substructure' ||
     category === 'superstructure' ||
@@ -63,7 +65,7 @@ function normalizeMilestone(category: string | null | undefined): BoqMilestoneId
     category === 'finishing' ||
     category === 'services' ||
     category === 'exterior' ||
-    category === 'labor' ||
+    category === 'labor' || // Legacy / hand-added labour section.
     category === 'project_fees'
   ) {
     return category;
@@ -101,7 +103,7 @@ function mapLoadedItemsToMilestones(items: DbBOQItem[], previous: MilestoneData[
       actualPriceUsd: item.unit_price_usd,
       actualPriceZwg: item.unit_price_zwg,
       description: item.notes || undefined,
-      category: milestoneId,
+      category: item.category || milestoneId,
       isOverridden: false,
       isEnablementCost: Boolean(item.notes?.includes('[Enablement Cost]')),
     });
@@ -163,7 +165,7 @@ const WIZARD_STEPS = [
     id: 'labor',
     label: 'Labour',
     title: 'Labour costs',
-    subtitle: 'A share of each stage’s material cost — set it to what your builder charges.',
+    subtitle: 'Set each trade’s rate in the units your builder quotes.',
   },
   {
     id: 'extras',
@@ -306,7 +308,7 @@ function BoqNewPageContent() {
   const reviewBoq = useMemo(() => {
     const visible = milestonesState.filter((m) => {
       if (m.id === 'project_fees') return true;
-      if (m.id === 'labor') return laborType === 'materials_labor';
+      if (m.id === 'labor') return m.items.length > 0 && laborType === 'materials_labor'; // Legacy / hand-added labour section.
       if (projectScope === 'stage') return selectedStages.includes(m.id);
       return true;
     });
@@ -315,7 +317,7 @@ function BoqNewPageContent() {
       m.items.map((item) => ({
         material_name: item.materialName,
         material_id: item.materialId,
-        category: m.label ?? m.id,
+        category: item.category || m.id,
         quantity: item.quantity || 0,
         unit: item.unit,
         unit_price_usd: item.actualPriceUsd,
@@ -455,7 +457,7 @@ function BoqNewPageContent() {
           ...(savedRoofShape ? { roofShape: savedRoofShape } : {}),
           ...(savedDensity ? { residentialDensity: savedDensity } : {}),
           houseExtras: normalizeHouseExtras(loadedProject.house_extras),
-          laborRates: laborRatesFromNotes(items.map((item) => ({ materialId: item.material_id, note: item.notes }))),
+          laborRates: cleanLaborRates(laborRatesFromNotes(items.map((item) => ({ materialId: item.material_id, note: item.notes })))),
         });
 
         const scopeRaw = loadedProject.scope;

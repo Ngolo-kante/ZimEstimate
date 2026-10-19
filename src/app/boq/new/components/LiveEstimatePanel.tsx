@@ -1,5 +1,6 @@
 'use client';
 
+import { isLaborCategory } from '@/lib/calculations/laborSubstages';
 import { useMemo } from 'react';
 import { CaretDown, DownloadSimple, ShareNetwork, WarningCircle } from '@phosphor-icons/react';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
@@ -25,8 +26,8 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
   const visibleMilestones = useMemo(() => {
     return milestonesState.filter((milestone) => {
       if (milestone.id === 'project_fees') return true;
-      if (milestone.id === 'labor') {
-        return laborType === 'materials_labor';
+      if (milestone.id === 'labor') { // Legacy / hand-added labour section.
+        return milestone.items.length > 0 && laborType === 'materials_labor';
       }
 
       if (projectScope === 'stage') {
@@ -53,7 +54,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
       .map((milestone) => ({
         category: milestone.id,
         itemIdsWithQty: milestone.items
-          .filter((item) => (item.quantity || 0) > 0)
+          .filter((item) => !isLaborCategory(item.category) && (item.quantity || 0) > 0)
           .map((item) => item.materialId),
       }));
 
@@ -65,7 +66,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
       const total = milestone.items.reduce((sum, item) => sum + ((item.quantity || 0) * item.actualPriceUsd), 0);
       return {
         id: milestone.id,
-        label: milestone.label || milestone.id,
+        label: milestone.id === 'labor' ? 'Other labour' : milestone.label || milestone.id, // Legacy section.
         total,
         expanded: milestone.expanded,
         items: milestone.items,
@@ -182,15 +183,22 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
             </button>
             {row.expanded && (
               <div className="space-y-1 border-t border-slate-200 px-3 py-2">
-                {row.items.slice(0, 5).map((item) => (
+                {row.items.filter((item) => !isLaborCategory(item.category)).slice(0, 5).map((item) => (
                   <div key={item.id} className="flex items-center justify-between text-xs text-slate-600">
                     <span className="truncate pr-3">{item.materialName}</span>
                     <span>{formatAmount((item.quantity || 0) * item.actualPriceUsd, currency, exchangeRate)}</span>
                   </div>
                 ))}
-                {row.items.length > 5 && (
-                  <p className="text-[11px] wiz-text-muted">+{row.items.length - 5} more items</p>
+                {row.items.filter((item) => !isLaborCategory(item.category)).length > 5 && (
+                  <p className="text-[11px] wiz-text-muted">+{row.items.filter((item) => !isLaborCategory(item.category)).length - 5} more items</p>
                 )}
+                {row.items.some((item) => isLaborCategory(item.category)) && <p className="pt-2 text-xs font-semibold text-slate-500">Labour</p>}
+                {row.items.filter((item) => isLaborCategory(item.category)).map((item) => (
+                  <div key={item.id} className="flex items-center justify-between text-xs text-slate-600">
+                    <span className="truncate pr-3">{item.materialName}</span>
+                    <span>{formatAmount((item.quantity || 0) * item.actualPriceUsd, currency, exchangeRate)}</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>

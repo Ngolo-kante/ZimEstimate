@@ -85,7 +85,7 @@ export default function StageTab({
         if (!showLabor) return [];
         return items.filter(item => {
             const stageLaborKey = `labor_${stage.boq_category}`;
-            const isLegacyLabor = item.category === 'labor';
+            const isLegacyLabor = item.category === 'labor'; // Only legacy / hand-added lines use this branch.
             const isStageLabor = item.category === stageLaborKey;
 
             if (isStageLabor) return true;

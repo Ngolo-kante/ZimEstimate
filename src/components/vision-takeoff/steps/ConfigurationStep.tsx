@@ -4,7 +4,6 @@ import Card from '@/components/ui/Card';
 import { DEFAULT_ROOF_SHAPE, ROOF_COVERINGS, ROOF_SHAPES, type RoofCovering, type RoofShape } from '@/lib/calculations/roofingOptions';
 import RoofProfileIcon from '@/components/ui/RoofProfileIcon';
 import RoofShapeIcon from '@/components/ui/RoofShapeIcon';
-import { LABOR_STAGES, MAX_LABOR_PERCENTAGE, STAGE_LABOR_PERCENTAGES, stageLaborPercentage } from '@/lib/calculations/laborSubstages';
 import {
   ArrowLeft,
   ArrowRight,
@@ -44,6 +43,7 @@ export default function ConfigurationStep({
   const includedScopes: ProjectScope[] = selectedScopes.includes('full_house')
     ? ['substructure', 'superstructure', 'roofing', 'finishing', 'services', 'exterior']
     : selectedScopes;
+
 
   // Helper to check if a scope is selected
   const isScopeSelected = (scope: ProjectScope): boolean => {
@@ -299,32 +299,7 @@ export default function ConfigurationStep({
           </div>
         </Card>
         {config.includeLabor && <Card>
-          <div className="section-header"><Users size={22} weight="light" /><div><h3>Labour by stage</h3><p>A share of each stage&apos;s material cost. Plastering (200%), roofing (20%) and boundary walls (90%) use their own rates unless you change that stage here.</p></div></div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {LABOR_STAGES.filter((stage) => includedScopes.includes(stage as ProjectScope)).map((stage) => (
-              <label key={stage} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 text-sm text-slate-800">
-                <span>{SCOPE_INFO[stage as ProjectScope].name}</span>
-                <span className="flex items-center gap-1">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    max={MAX_LABOR_PERCENTAGE}
-                    step={1}
-                    value={stageLaborPercentage(stage, config.laborRates)}
-                    onChange={(event) => {
-                      const value = Math.min(MAX_LABOR_PERCENTAGE, Math.max(0, Number(event.target.value) || 0));
-                      onUpdate({ laborRates: { ...(config.laborRates ?? {}), [stage]: value } });
-                    }}
-                    aria-label={`${SCOPE_INFO[stage as ProjectScope].name} labour percentage`}
-                    className="w-16 rounded-lg border border-slate-300 px-2 py-1.5 text-right text-sm font-semibold text-slate-900"
-                  />
-                  %
-                </span>
-              </label>
-            ))}
-          </div>
-          <p className="mt-3 text-xs text-slate-600">{STAGE_LABOR_PERCENTAGES.substructure}% is a Zimbabwe planning rule of thumb. Set each stage to what your builder charges.</p>
+          <div className="section-header"><Users size={22} weight="light" /><div><h3>Labour by trade</h3><p>Priced the way builders quote: per m² of floor for building, plastering and roofing, per m² tiled, per metre of boundary wall; plumbing, electrical, painting and paving as a share of their materials. Change any rate in the BOQ.</p></div></div>
         </Card>}
       </div>
 

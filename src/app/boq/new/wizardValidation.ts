@@ -130,11 +130,14 @@ export function validateBOQWizardStep(state: BOQWizardValidationState): BOQWizar
     }
   }
 
-  if (currentSection === 'labor') {
-    if (!laborType) {
-      errors.laborType = 'Please select a labor option.';
-      message = 'Choose a labor option to continue.';
-    }
+  // This is a wizard step, independent of the BOQ's labour categories.
+  switch (currentSection) {
+    case 'labor':
+      if (!laborType) {
+        errors.laborType = 'Please select a labor option.';
+        message = 'Choose a labor option to continue.';
+      }
+      break;
   }
 
   return { errors, message };

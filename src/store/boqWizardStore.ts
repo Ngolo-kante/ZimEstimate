@@ -8,7 +8,7 @@ import type { FinishLevel } from '@/lib/calculations';
 import type { RoofCovering, RoofShape } from '@/lib/calculations/roofingOptions';
 import { OWN_FIGURE_NOTE, type ResidentialDensity } from '@/lib/projectFees';
 import { DEFAULT_HOUSE_EXTRAS, type HouseExtras } from '@/lib/houseExtras';
-import type { LaborRates } from '@/lib/calculations/laborSubstages';
+import { cleanLaborRates, isLaborCategory, type LaborRates } from '@/lib/calculations/laborSubstages';
 import type { RoomInstance } from '@/app/boq/new/components/room-builder/types';
 
 export type SiteSlopeType = 'flat' | 'gentle' | 'moderate' | 'steep';
@@ -233,7 +233,7 @@ const milestoneLabels: Record<BoqMilestoneId, string> = {
   finishing: 'Finishing',
   services: 'Plumbing & Electrical',
   exterior: 'Exterior Works',
-  labor: 'Labor',
+  labor: 'Other labour',
   project_fees: 'Professional & Statutory Fees',
 };
 
@@ -317,8 +317,8 @@ function getInitialState(): Omit<BoqWizardState,
 function calculateVisibleMilestones(state: Pick<BoqWizardState, 'projectScope' | 'selectedStages' | 'laborType' | 'milestonesState'>): MilestoneData[] {
   return state.milestonesState.filter((milestone) => {
     if (milestone.id === 'project_fees') return true;
-    if (milestone.id === 'labor') {
-      return state.laborType === 'materials_labor';
+    if (milestone.id === 'labor') { // Legacy / hand-added labour section.
+      return milestone.items.length > 0 && state.laborType === 'materials_labor';
     }
 
     if (state.projectScope === 'stage') {
@@ -530,7 +530,7 @@ export const useBoqWizardStore = create<BoqWizardState>()(
     const healthInputs = visibleMilestones.map((milestone) => ({
       category: milestone.id,
       itemIdsWithQty: milestone.items
-        .filter((item) => (item.quantity || 0) > 0)
+        .filter((item) => !isLaborCategory(item.category) && (item.quantity || 0) > 0)
         .map((item) => item.materialId),
     })) as BoqHealthCategoryInput[];
 
@@ -550,6 +550,13 @@ export const useBoqWizardStore = create<BoqWizardState>()(
       // Rehydrate explicitly on mount so the server-rendered markup and the
       // first client render agree.
       skipHydration: true,
+      merge: (persisted, current) => {
+        const saved = (persisted ?? {}) as Partial<BoqWizardState>;
+        return { ...current, ...saved, projectDetails: {
+          ...current.projectDetails, ...saved.projectDetails,
+          laborRates: cleanLaborRates(saved.projectDetails?.laborRates ?? current.projectDetails.laborRates),
+        } };
+      },
       partialize: (state) => ({
         projectDetails: state.projectDetails,
         currentStep: state.currentStep,

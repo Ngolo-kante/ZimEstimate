@@ -4,6 +4,7 @@
 // from the survey and the rig's transport. Everything else is materials and
 // works (pipes, tanks, panels, drilling).
 
+import { isLaborCategory } from '@/lib/calculations/laborSubstages';
 import type { CostSlice } from '@/components/ui/CostDonut';
 import { SERIES_COLORS } from '@/components/ui/CostDonut';
 
@@ -20,7 +21,7 @@ export type QuickCostGroup = (typeof QUICK_COST_GROUPS)[number]['id'];
 
 export function quickCostGroup(category: string | null | undefined): QuickCostGroup {
   const name = (category ?? '').trim().toLowerCase();
-  if (name === 'labor' || name === 'labour') return 'labour';
+  if (isLaborCategory(name) || name === 'labour') return 'labour';
   if (name.startsWith('permit') || name.includes('compliance')) return 'permits';
   if (name.startsWith('professional')) return 'professional';
   if (name.startsWith('transport')) return 'transport';

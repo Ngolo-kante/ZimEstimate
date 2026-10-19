@@ -1,3 +1,5 @@
+import { isLaborCategory } from '@/lib/calculations/laborSubstages';
+import { groupBoqByStage } from '@/lib/boqPresentation';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Project, BOQItem } from './database.types';
@@ -58,18 +60,6 @@ const defaultOptions: ExportOptions = {
     includeSupplierInfo: false,
 };
 
-// Group items by category
-function groupItemsByCategory(items: BOQItem[]): Record<string, BOQItem[]> {
-    return items.reduce((acc, item) => {
-        const category = item.category || 'Other';
-        if (!acc[category]) {
-            acc[category] = [];
-        }
-        acc[category].push(item);
-        return acc;
-    }, {} as Record<string, BOQItem[]>);
-}
-
 // Category display names
 const categoryLabels: Record<string, string> = {
     substructure: 'Site Preparation & Foundation',
@@ -78,7 +68,7 @@ const categoryLabels: Record<string, string> = {
     finishing: 'Interior & Finishing',
     services: 'Plumbing & Electrical',
     exterior: 'External Work',
-    labor: 'Labor & Services',
+    labor: 'Other labour',
     project_fees: 'Professional & Council Fees',
 };
 
@@ -88,7 +78,7 @@ type PdfSlice = { label: string; value: number; color: [number, number, number] 
 function costSplitSlices(rows: { category?: string | null; materialId?: string | null; total: number }[]): PdfSlice[] {
     const split = { materials: 0, labor: 0, fees: 0 };
     for (const row of rows) {
-        if (row.category === 'labor' || (row.materialId?.startsWith('extra-') && row.materialId.endsWith('--labour'))) split.labor += row.total;
+        if (isLaborCategory(row.category) || (row.materialId?.startsWith('extra-') && row.materialId.endsWith('--labour'))) split.labor += row.total;
         else if (row.category === 'project_fees') split.fees += row.total;
         else split.materials += row.total;
     }
@@ -372,7 +362,7 @@ export function generateBOQPDF(
     }))), opts.currency);
 
     // ===== BOQ ITEMS BY CATEGORY =====
-    const groupedItems = groupItemsByCategory(items);
+    const groupedItems = groupBoqByStage(items);
     const categories = Object.keys(groupedItems);
 
     for (const category of categories) {
@@ -401,16 +391,18 @@ export function generateBOQPDF(
         yPos += 10;
 
         // Category items table
-        const tableData = categoryItems.map((item) => {
+        const tableData = categoryItems.flatMap((item, index) => {
             const unitPrice = opts.currency === 'USD' ? Number(item.unit_price_usd) : Number(item.unit_price_zwg);
             const total = opts.currency === 'USD' ? Number(item.total_usd) : Number(item.total_zwg);
 
-            return [
+            const row = [
                 materialCell(item.material_name, item.notes),
                 `${Number(item.quantity).toLocaleString()} ${item.unit}`,
                 formatCurrency(unitPrice, opts.currency),
                 formatCurrency(total, opts.currency),
             ];
+            return isLaborCategory(item.category) && (index === 0 || !isLaborCategory(categoryItems[index - 1].category))
+                ? [[{ content: 'Labour', colSpan: 4, styles: { fontStyle: 'bold' as const, textColor: [100, 100, 100] as [number, number, number] } }], row] : [row];
         });
 
         autoTable(doc, {
@@ -689,12 +681,7 @@ function buildBOQDocument(data: VisionBOQData, currency: 'USD' | 'ZWG'): jsPDF {
         total: item.quantity * (currency === 'USD' ? item.unit_price_usd : item.unit_price_zwg),
     }))), currency);
 
-    // Group items by category
-    const grouped: Record<string, typeof data.items> = {};
-    data.items.forEach((item) => {
-        if (!grouped[item.category]) grouped[item.category] = [];
-        grouped[item.category].push(item);
-    });
+    const grouped = groupBoqByStage(data.items);
 
     // Items by category
     for (const category of Object.keys(grouped)) {
@@ -721,16 +708,18 @@ function buildBOQDocument(data: VisionBOQData, currency: 'USD' | 'ZWG'): jsPDF {
 
         yPos += 10;
 
-        const tableData = categoryItems.map((item) => {
+        const tableData = categoryItems.flatMap((item, index) => {
             const unitPrice = currency === 'USD' ? item.unit_price_usd : item.unit_price_zwg;
             const total = item.quantity * unitPrice;
 
-            return [
+            const row = [
                 materialCell(item.material_name, item.note),
                 `${item.quantity.toLocaleString()} ${item.unit}`,
                 formatCurrency(unitPrice, currency),
                 formatCurrency(total, currency),
             ];
+            return isLaborCategory(item.category) && (index === 0 || !isLaborCategory(categoryItems[index - 1].category))
+                ? [[{ content: 'Labour', colSpan: 4, styles: { fontStyle: 'bold' as const, textColor: [100, 100, 100] as [number, number, number] } }], row] : [row];
         });
 
         autoTable(doc, {

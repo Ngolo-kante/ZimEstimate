@@ -1,5 +1,7 @@
 'use client';
 
+import { isLaborCategory } from '@/lib/calculations/laborSubstages';
+import { materialsBeforeLabor } from '@/lib/boqPresentation';
 import { Fragment, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -26,7 +28,7 @@ const MILESTONE_LABELS: Record<string, string> = {
   finishing: 'Finishing & Internal Works',
   services: 'Plumbing & Electrical',
   exterior: 'Exterior & Site Works',
-  labor: 'Labor & Construction Crew',
+  labor: 'Other labour',
   project_fees: 'Professional & Statutory Fees',
 };
 
@@ -66,8 +68,8 @@ export default function BOQTable() {
   const visibleMilestones = useMemo(() => {
     return milestonesState.filter((milestone) => {
       if (milestone.id === 'project_fees') return true;
-      if (milestone.id === 'labor') {
-        return laborType === 'materials_labor';
+      if (milestone.id === 'labor') { // Legacy / hand-added labour section.
+        return milestone.items.length > 0 && laborType === 'materials_labor';
       }
       if (projectScope === 'stage') {
         return selectedStages.includes(milestone.id);
@@ -283,7 +285,7 @@ export default function BOQTable() {
           const subtotal = milestoneTotals[milestone.id] || 0;
 
           // Apply search and override filters
-          const filteredItems = milestone.items.filter((item) => {
+          const filteredItems = materialsBeforeLabor(milestone.items).filter((item) => {
             const matchesSearch =
               !searchQuery.trim() ||
               item.materialName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -366,7 +368,7 @@ export default function BOQTable() {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-[var(--color-border-light)]">
-                              {filteredItems.map((item) => {
+                              {filteredItems.map((item, index) => {
                                 const qty = item.quantity || 0;
                                 const isFeeAllowance = milestone.id === 'project_fees' && item.materialId.startsWith('project-fee-');
                                 const lineTotal = qty * item.actualPriceUsd;
@@ -376,6 +378,9 @@ export default function BOQTable() {
 
                                 return (
                                   <Fragment key={item.id}>
+                                    {isLaborCategory(item.category) && (index === 0 || !isLaborCategory(filteredItems[index - 1].category)) && (
+                                      <tr><th colSpan={7} scope="colgroup" className="px-5 py-2 text-left text-xs font-semibold text-slate-500">Labour</th></tr>
+                                    )}
                                   <tr
                                     className={`transition hover:bg-[var(--color-background)] ${
                                       isModified ? 'bg-[var(--color-accent-bg)]/30' : ''
@@ -536,7 +541,7 @@ export default function BOQTable() {
 
                         {/* Mobile Card List View (< md / 375px display) */}
                         <div className="block md:hidden divide-y divide-[var(--color-border-light)]">
-                          {filteredItems.map((item) => {
+                          {filteredItems.map((item, index) => {
                             const qty = item.quantity || 0;
                             const isFeeAllowance = milestone.id === 'project_fees' && item.materialId.startsWith('project-fee-');
                             const lineTotal = qty * item.actualPriceUsd;
@@ -546,6 +551,7 @@ export default function BOQTable() {
 
                             return (
                               <div key={item.id} className="p-4 space-y-3 bg-[var(--color-surface)]">
+                                {isLaborCategory(item.category) && (index === 0 || !isLaborCategory(filteredItems[index - 1].category)) && <h4 className="text-xs font-semibold text-slate-500">Labour</h4>}
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex-1">
                                     <input

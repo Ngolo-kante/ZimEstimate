@@ -1,6 +1,6 @@
 import { generateBOQFromBasics } from '@/lib/calculations';
 import type { RoofCovering, RoofShape } from '@/lib/calculations/roofingOptions';
-import { LABOR_SUBSTAGES, laborPercentageFor, laborSubstageFor, stageLaborPercentage, type LaborRates, type LaborSubstageId } from '@/lib/calculations/laborSubstages';
+import { LABOR_SUBSTAGES, formatLaborRate, isLaborCategory, laborRateFor, stageOfLaborCategory, type LaborRates, type LaborSubstageId } from '@/lib/calculations/laborSubstages';
 import type { LocationType } from '@/lib/calculations/assumptions';
 import type { BrickType, CementType } from '@/lib/vision/types';
 
@@ -43,9 +43,9 @@ export type StageReachInput = {
   locationType?: LocationType;
   roofCovering?: RoofCovering;
   roofShape?: RoofShape;
-  /** Adds each stage's fixed labour percentage (laborSubstages.ts) to its cost. */
+  /** Adds each stage's labour, priced by trade (laborSubstages.ts), to its cost. */
   includeLabor?: boolean;
-  /** The user's own labour percentages by stage; defaults to 35% each. */
+  /** The user's own labour rates by trade; missing ones use the defaults. */
   laborRates?: LaborRates;
   /** Stages left out of the budget. Missing means 'build'. */
   stageStatus?: Partial<Record<StageId, StageStatus>>;
@@ -73,8 +73,8 @@ export type StageReachResult = {
   reachableStageId: StageId | null;
   reachableStageLabel: string;
   rows: StageReachRow[];
-  /** Labour by trade, for explaining the labour figure: its rate, cost and cost per m² of floor. */
-  laborByTrade: Array<{ id: LaborSubstageId; label: string; percent: number; usd: number; perM2: number }>;
+  /** Labour by trade, for explaining the labour figure: its rate as people read it ("$7.40/m² of floor"), cost and cost per m² of floor. */
+  laborByTrade: Array<{ id: LaborSubstageId; label: string; rate: number; rateLabel: string; usd: number; perM2: number }>;
 };
 
 function clampPositive(value: number, fallback: number): number {
@@ -98,7 +98,8 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     brickTypes: [brickType],
     cementTypes: [cementType],
     scope: 'full_house',
-    includeLabor: false,
+    includeLabor: Boolean(input.includeLabor),
+    laborRates: input.laborRates,
     locationType,
     roofCovering: input.roofCovering,
     roofShape: input.roofShape,
@@ -112,25 +113,33 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     exterior: 0,
   };
 
-  // Labour at each trade's own rate (plastering and boundary walls differ
-  // from the 35% rule), kept per stage for stages priced from the BOQ.
+  // Labour lines sit inside their stage (labor_<stage>); Plumbing &
+  // Electrical folds into the interior here, as its materials do.
   const stageLabor: Record<StageId, number> = { substructure: 0, superstructure: 0, roofing: 0, finishing: 0, exterior: 0 };
   const servicesCost = { materials: 0, labor: 0 };
-  const tradeTotals = new Map<LaborSubstageId, { materials: number; stage: StageId }>();
+  const laborByTradeAll: StageReachResult['laborByTrade'] = [];
+  const laborStageOfTrade = new Map<LaborSubstageId, StageId>();
   generatedItems.forEach((item) => {
+    if (isLaborCategory(item.category)) {
+      const laborStage = stageOfLaborCategory(item.category);
+      const isServices = laborStage === 'services';
+      const stage = (isServices ? 'finishing' : laborStage) as StageId | null;
+      if (!stage || !(stage in stageLabor)) return;
+      stageLabor[stage] += item.totalUsd || 0;
+      if (isServices) servicesCost.labor += item.totalUsd || 0;
+      const trade = LABOR_SUBSTAGES.find((entry) => `labor-${entry.id}` === item.materialId);
+      if (trade) {
+        const rate = laborRateFor(trade.id, input.laborRates);
+        laborByTradeAll.push({ id: trade.id, label: trade.label, rate, rateLabel: formatLaborRate(trade.id, rate), usd: item.totalUsd || 0, perM2: (item.totalUsd || 0) / floorAreaM2 });
+        laborStageOfTrade.set(trade.id, stage);
+      }
+      return;
+    }
     const isServices = item.category === 'services';
     const category = (isServices ? 'finishing' : item.category) as StageId;
     if (category in stageCosts) {
       stageCosts[category] += item.totalUsd || 0;
-      const trade = laborSubstageFor(item);
-      const labor = trade ? (item.totalUsd || 0) * laborPercentageFor(trade, input.laborRates) / 100 : 0;
-      stageLabor[category] += labor;
-      if (isServices) { servicesCost.materials += item.totalUsd || 0; servicesCost.labor += labor; }
-      if (trade) {
-        const entry = tradeTotals.get(trade) ?? { materials: 0, stage: category };
-        entry.materials += item.totalUsd || 0;
-        tradeTotals.set(trade, entry);
-      }
+      if (isServices) servicesCost.materials += item.totalUsd || 0;
     }
   });
 
@@ -158,8 +167,9 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
     const counts = statusOf(stage.id) === 'build';
     if (counts) materialsUsd += stageCosts[stage.id];
     if (input.includeLabor) {
-      // A stage filled in from the fallback weights has no lines to price by trade.
-      const labor = stageLabor[stage.id] > 0 ? stageLabor[stage.id] : stageCosts[stage.id] * stageLaborPercentage(stage.id, input.laborRates) / 100;
+      // A stage filled in from the fallback weights has no lines to price by
+      // trade, so it takes the general 35% rule of thumb.
+      const labor = stageLabor[stage.id] > 0 ? stageLabor[stage.id] : stageCosts[stage.id] * 0.35;
       stageCosts[stage.id] += labor;
       if (counts) laborUsd += labor;
     }
@@ -180,13 +190,7 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
       : {};
 
   const laborByTrade = input.includeLabor
-    ? LABOR_SUBSTAGES.flatMap((substage) => {
-      const totals = tradeTotals.get(substage.id);
-      if (!totals || statusOf(totals.stage) !== 'build') return [];
-      const percent = laborPercentageFor(substage.id, input.laborRates);
-      const usd = totals.materials * percent / 100;
-      return usd > 0 ? [{ id: substage.id, label: substage.label, percent, usd, perM2: usd / floorAreaM2 }] : [];
-    })
+    ? laborByTradeAll.filter((trade) => statusOf(laborStageOfTrade.get(trade.id)!) === 'build' && trade.usd > 0)
     : [];
 
   let cumulative = 0;

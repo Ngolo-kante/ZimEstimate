@@ -1,5 +1,7 @@
 'use client';
 
+import { isExtrasLabourLine } from '@/lib/projectFees';
+import { isLaborCategory } from '@/lib/calculations/laborSubstages';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -153,7 +155,7 @@ function ProjectDetailContent() {
     const [project, setProject] = useState<Project | null>(null);
     const [items, setItems] = useState<BOQItem[]>([]);
     const feeItems = useMemo(() => items.filter((item) => item.category === 'project_fees'), [items]);
-    const materialItems = useMemo(() => items.filter((item) => item.category !== 'project_fees' && item.category !== 'labor'), [items]);
+    const materialItems = useMemo(() => items.filter((item) => item.category !== 'project_fees' && !isLaborCategory(item.category) && !isExtrasLabourLine(item.material_id)), [items]);
     const [stages, setStages] = useState<ProjectStageWithTasks[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);

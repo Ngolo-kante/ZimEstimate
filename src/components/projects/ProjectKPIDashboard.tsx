@@ -1,5 +1,7 @@
 'use client';
 
+import { isExtrasLabourLine } from '@/lib/projectFees';
+import { isLaborCategory } from '@/lib/calculations/laborSubstages';
 import { useMemo } from 'react';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { BOQItem, PurchaseRecord } from '@/lib/database.types';
@@ -44,7 +46,7 @@ export default function ProjectKPIDashboard({
   onNavigate,
 }: ProjectKPIDashboardProps) {
   const { formatPrice, exchangeRate } = useCurrency();
-  const materialItems = useMemo(() => items.filter((item) => item.category !== 'labor' && item.category !== 'project_fees'), [items]);
+  const materialItems = useMemo(() => items.filter((item) => !isLaborCategory(item.category) && !isExtrasLabourLine(item.material_id) && item.category !== 'project_fees'), [items]);
 
   // Calculate comprehensive statistics
   const stats = useMemo(() => {

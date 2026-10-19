@@ -24,7 +24,8 @@ export default function CostOverview() {
 
   const visible = useMemo(() => milestones.filter((milestone) =>
     milestone.id === 'project_fees' ||
-    (milestone.id === 'labor' ? laborType === 'materials_labor' : scope === 'entire' || selectedStages.includes(milestone.id))
+    // Legacy / hand-added labour section is only shown when populated.
+    (milestone.id === 'labor' ? milestone.items.length > 0 && laborType === 'materials_labor' : scope === 'entire' || selectedStages.includes(milestone.id))
   ), [milestones, scope, selectedStages, laborType]);
   const costs = useMemo(() => getCostBreakdown(visible), [visible]);
   const feeItems = milestones.find((milestone) => milestone.id === 'project_fees')?.items || [];

@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { isLaborCategory } from '@/lib/calculations/laborSubstages';
+import { groupBoqByStage } from '@/lib/boqPresentation';
+import { Fragment, useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import SavingOverlay from '@/components/ui/SavingOverlay';
@@ -91,7 +93,7 @@ const stripEnablementTag = (note: string) =>
 
 const priceBasis = (item: GeneratedBOQItem): string => {
   if (item.unitPriceUsd <= 0) return 'Price needed';
-  if (item.category === 'labor') return 'Labour allowance';
+  if (isLaborCategory(item.category)) return 'Labour allowance';
   if (item.calculationNote.startsWith(ENABLEMENT_ITEM_TAG)) return 'Planning allowance';
   const cataloguePrice = getBestPrice(item.materialId);
   if (!cataloguePrice || Math.abs(cataloguePrice.priceUsd - item.unitPriceUsd) >= 0.005) {
@@ -158,17 +160,8 @@ export default function BOQResultsStep({
   }, [projectInfo, totalArea, updateProjectDetails]);
 
   // Group items by category
-  const groupedItems = useMemo(() => {
-    const groups: Record<string, GeneratedBOQItem[]> = {};
-    items.forEach((item) => {
-      if (!groups[item.category]) {
-        groups[item.category] = [];
-      }
-      groups[item.category].push(item);
-    });
-    return groups;
-  }, [items]);
-  const laborTotals = useMemo(() => items.filter((item) => item.category === 'labor').reduce(
+  const groupedItems = useMemo(() => groupBoqByStage(items), [items]);
+  const laborTotals = useMemo(() => items.filter((item) => isLaborCategory(item.category)).reduce(
     (sum, item) => ({ usd: sum.usd + item.totalUsd, zwg: sum.zwg + item.totalZwg }),
     { usd: 0, zwg: 0 },
   ), [items]);
@@ -508,8 +501,8 @@ export default function BOQResultsStep({
                 ) : (
                   <CaretRight size={18} weight="bold" />
                 )}
-                <span className="category-name">{category}</span>
-                <span className="category-count">{groupedItems[category].length} items</span>
+                <span className="category-name">{category === 'labor' ? 'Other labour' : category.replace(/_/g, ' ')}</span>{/* Legacy section. */}
+                <span className="category-count">{groupedItems[category].length} items · {formatPrice(groupedItems[category].reduce((sum, item) => sum + item.totalUsd, 0), groupedItems[category].reduce((sum, item) => sum + item.totalZwg, 0))}</span>
               </button>
 
               {expandedCategories.has(category) && (
@@ -525,10 +518,12 @@ export default function BOQResultsStep({
                     </tr>
                   </thead>
                   <tbody>
-                    {groupedItems[category].map((item) => {
+                    {groupedItems[category].map((item, index) => {
                       const isEnablement = item.calculationNote.startsWith(ENABLEMENT_ITEM_TAG);
                       return (
-                      <tr key={item.id} className={`${item.isEdited ? 'edited' : ''} ${isEnablement ? 'enablement' : ''}`.trim()}>
+                      <Fragment key={item.id}>
+                      {isLaborCategory(item.category) && (index === 0 || !isLaborCategory(groupedItems[category][index - 1].category)) && <tr><th colSpan={6} scope="colgroup" className="text-left text-xs text-slate-500">Labour</th></tr>}
+                      <tr className={`${item.isEdited ? 'edited' : ''} ${isEnablement ? 'enablement' : ''}`.trim()}>
                         <td className="col-material">
                           <div className="material-cell">
                             {editingState.itemId === item.id && editingState.field === 'materialName' ? (
@@ -645,6 +640,7 @@ export default function BOQResultsStep({
                           </button>
                         </td>
                       </tr>
+                      </Fragment>
                     )})}
                   </tbody>
                 </table>

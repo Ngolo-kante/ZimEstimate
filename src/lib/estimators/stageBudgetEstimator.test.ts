@@ -58,20 +58,19 @@ describe('estimateStageReach', () => {
 });
 
 describe('labour in the stage estimate', () => {
-  it('adds each trade’s labour percentage on top of its materials', () => {
+  it('adds each trade’s labour, priced the way builders quote it, on top of its materials', () => {
     const base = { budgetUsd: 10000, floorAreaM2: 120, locationType: 'urban' as const };
     const materialsOnly = estimateStageReach(base);
     const withLabour = estimateStageReach({ ...base, includeLabor: true });
     expect(materialsOnly.laborUsd).toBe(0);
     expect(withLabour.materialsUsd).toBeCloseTo(materialsOnly.materialsUsd, 6);
-    // Most trades 35%; plastering and boundary walls more, so a little above.
-    expect(withLabour.laborUsd).toBeGreaterThan(withLabour.materialsUsd * 0.35);
-    expect(withLabour.laborUsd).toBeLessThan(withLabour.materialsUsd * 0.6);
-    // A rate the user sets applies to every trade.
-    const flat = estimateStageReach({ ...base, includeLabor: true, laborRates: { substructure: 35, superstructure: 35, roofing: 35, finishing: 35, services: 35, exterior: 35 } });
-    expect(flat.laborUsd).toBeCloseTo(flat.materialsUsd * 0.35, 6);
-    // And the labour is explained trade by trade, adding up to the total.
-    expect(withLabour.laborByTrade.find((trade) => trade.id === 'plaster')?.percent).toBe(200);
+    expect(withLabour.laborUsd).toBeGreaterThan(withLabour.materialsUsd * 0.25);
+    expect(withLabour.laborUsd).toBeLessThan(withLabour.materialsUsd * 0.45);
+    // Explained trade by trade, in each trade's own unit, adding up to the total.
+    const plastering = withLabour.laborByTrade.find((trade) => trade.id === 'plastering')!;
+    expect(plastering.rateLabel).toBe('$7.40/m² of floor');
+    expect(plastering.usd).toBeCloseTo(7.4 * 120, 2);
+    expect(withLabour.laborByTrade.find((trade) => trade.id === 'plumbing')!.rateLabel).toBe('35% of materials');
     expect(withLabour.laborByTrade.reduce((sum, trade) => sum + trade.usd, 0)).toBeCloseTo(withLabour.laborUsd, 6);
     expect(withLabour.estimatedTotalUsd).toBeCloseTo(withLabour.materialsUsd + withLabour.laborUsd, 6);
     expect(withLabour.coveragePercent).toBeLessThan(materialsOnly.coveragePercent);
@@ -126,9 +125,10 @@ describe('stage choices in links', () => {
 });
 
 describe('a labour rate of the user’s own', () => {
-  it('replaces the 35% default', () => {
+  it('replaces that trade’s default and leaves the others', () => {
     const base = { budgetUsd: 10000, floorAreaM2: 120, locationType: 'urban' as const, includeLabor: true };
-    const result = estimateStageReach({ ...base, laborRates: { substructure: 20, superstructure: 20, roofing: 20, finishing: 20, services: 20, exterior: 20 } });
-    expect(result.laborUsd).toBeCloseTo(result.materialsUsd * 0.2, 6);
+    const standard = estimateStageReach(base);
+    const own = estimateStageReach({ ...base, laborRates: { plastering: 10 } });
+    expect(own.laborUsd - standard.laborUsd).toBeCloseTo((10 - 7.4) * 120, 2);
   });
 });

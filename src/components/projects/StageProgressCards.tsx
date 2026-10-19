@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { stageOfLaborCategory } from '@/lib/calculations/laborSubstages';
 import {
     CheckCircle,
     HourglassSimple,
@@ -58,7 +59,7 @@ export function StageProgressCards({
 
     // Calculate stats per stage
     const stageStats = stages.reduce((acc, stage) => {
-        const stageItems = items.filter(i => i.category === stage.boq_category);
+        const stageItems = items.filter(i => (stageOfLaborCategory(i.category || '') ?? i.category) === stage.boq_category);
         const totalCost = stageItems.reduce((sum, item) => {
             return sum + (Number(item.quantity) * Number(item.unit_price_usd));
         }, 0);

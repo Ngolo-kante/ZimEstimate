@@ -1,5 +1,6 @@
 'use client';
 
+import { isLaborCategory } from '@/lib/calculations/laborSubstages';
 import { useMemo } from 'react';
 import { ChartPieSlice } from '@phosphor-icons/react';
 import CostDonut, { COST_COLORS } from '@/components/ui/CostDonut';
@@ -12,7 +13,7 @@ export function splitProjectCosts(items: Pick<BOQItem, 'category' | 'quantity' |
   const split = { materials: 0, labor: 0, fees: 0 };
   for (const item of items) {
     const amount = (Number(item.quantity) || 0) * (Number(item.unit_price_usd) || 0);
-    if (item.category === 'labor' || isExtrasLabourLine(item.material_id)) split.labor += amount;
+    if (isLaborCategory(item.category) || isExtrasLabourLine(item.material_id)) split.labor += amount;
     else if (item.category === 'project_fees') split.fees += amount;
     else split.materials += amount;
   }

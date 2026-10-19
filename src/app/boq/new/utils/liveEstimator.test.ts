@@ -4,7 +4,6 @@ import { BOQ_MILESTONE_IDS, DEFAULT_ROOM_INPUTS, type BOQItem, type MilestoneDat
 import type { BrickType, CementType } from '@/lib/vision/types';
 import type { RoomInstance } from '@/app/boq/new/components/room-builder/types';
 import { densityFromNotes, getCostBreakdown, OWN_FIGURE_NOTE, PROJECT_FEES, tariffLine } from '@/lib/projectFees';
-import { STAGE_LABOR_PERCENTAGES, laborPercentageFor } from '@/lib/calculations/laborSubstages';
 import { normalizeHouseExtras } from '@/lib/houseExtras';
 
 describe('uploaded plan in the BOQ builder', () => {
@@ -59,8 +58,8 @@ describe('uploaded plan in the BOQ builder', () => {
     expect(lineTotal(fee(bigger, 'occupation-certificate'))).toBe(150);
     expect(bigger.find((milestone) => milestone.id === 'project_fees')!.items).toHaveLength(PROJECT_FEES.length);
 
-    // Fees are never counted as materials for labour.
-    expect(bigger.find((milestone) => milestone.id === 'labor')!.items.every((item) => !/fee/i.test(item.description || ''))).toBe(true);
+    // Fees are never counted as materials for labour, and carry no labour.
+    expect(bigger.find((milestone) => milestone.id === 'project_fees')!.items.every((item) => !item.materialId.startsWith('labor-'))).toBe(true);
   });
 
   it('adds extras to a whole-house BOQ without stage labour or a second geyser, and drops them when switched off', () => {
@@ -97,14 +96,14 @@ describe('uploaded plan in the BOQ builder', () => {
     // Stage labour ignores the septic, borehole and security lines…
     const noExtras = buildLiveMilestones({ ...params, projectDetails: { ...params.projectDetails, houseExtras: normalizeHouseExtras({}) } });
     const geyserOnly = buildLiveMilestones({ ...params, projectDetails: { ...params.projectDetails, houseExtras: normalizeHouseExtras({ solar_geyser: { enabled: true } }) } });
-    const stageLabour = (milestones: MilestoneData[]) =>
-      milestones.find((milestone) => milestone.id === 'labor')!.items.reduce((sum, item) => sum + item.actualPriceUsd, 0);
+    const stageLabour = (milestones: MilestoneData[]) => milestones.flatMap((milestone) => milestone.items)
+      .filter((item) => item.materialId.startsWith('labor-')).reduce((sum, item) => sum + item.actualPriceUsd, 0);
     expect(stageLabour(withExtras)).toBeCloseTo(stageLabour(geyserOnly), 2);
     // …while the solar geyser is fitted like the geyser it replaces.
     const solarGeyser = all.find((item) => item.materialId === 'extra-solar_geyser--geyser')!;
     const electricGeyser = noExtras.flatMap((milestone) => milestone.items).find((item) => item.materialId === 'geyser-150')!;
     expect(stageLabour(geyserOnly) - stageLabour(noExtras))
-      .toBeCloseTo((solarGeyser.actualPriceUsd - electricGeyser.actualPriceUsd) * STAGE_LABOR_PERCENTAGES.finishing / 100, 0);
+      .toBeCloseTo((solarGeyser.actualPriceUsd - electricGeyser.actualPriceUsd) * 0.35, 0);
 
     // The septic labour line counts as labour in the cost split.
     const septicLabour = all.find((item) => item.materialId === 'extra-septic--labour')!.actualPriceUsd;
@@ -167,7 +166,7 @@ describe('uploaded plan in the BOQ builder', () => {
     expect(finishes.find((item) => item.materialId === 'hinges-door')?.quantity).toBe(4);
   });
 
-  it('replaces a changed roof covering and recalculates labour from current material prices', () => {
+  it('replaces a changed roof covering and keeps labour inside each stage', () => {
     const projectDetails = {
       projectType: 'new_build', name: 'Roof change', locationType: 'urban',
       locationCity: '', specificLocation: '', soilType: '' as const, siteSlope: '' as const,
@@ -184,16 +183,19 @@ describe('uploaded plan in the BOQ builder', () => {
       septicDimensions: { length: '', width: '', height: '', unitPriceUsd: '' },
       previousMilestones: BOQ_MILESTONE_IDS.map((id) => ({ id, items: [], expanded: true })),
     };
+    const roofLabour = (milestones: MilestoneData[]) => milestones.find((milestone) => milestone.id === 'roofing')!.items.filter((item) => item.materialId.startsWith('labor-'));
     const first = buildLiveMilestones(params);
+    // Roof labour sits in the roofing stage, priced per m² of floor.
+    expect(roofLabour(first).map((item) => [item.materialId, item.category, item.actualPriceUsd])).toEqual([['labor-roof_work', 'labor_roofing', 6.7 * 120]]);
+    expect(first.find((milestone) => milestone.id === 'labor')!.items).toEqual([]);
+    // Dearer sheets do not change what the roofer charges per m².
     const repriced = first.map((milestone) => milestone.id === 'roofing' ? {
       ...milestone,
       items: milestone.items.map((item) => item.materialId === 'ibr-05-3m' ? { ...item, actualPriceUsd: item.actualPriceUsd * 2 } : item),
     } : milestone);
     const refreshed = buildLiveMilestones({ ...params, previousMilestones: repriced });
-    const repricedCover = refreshed.find((milestone) => milestone.id === 'labor')!.items.find((item) => item.materialId === 'labor-roof_cover')!;
-    const refreshedRoofing = refreshed.find((milestone) => milestone.id === 'roofing')!.items;
-    const refreshedCoverMaterials = refreshedRoofing.filter((item) => !/timber|fascia|hoop|nails/.test(item.materialId));
-    expect(repricedCover.actualPriceUsd).toBeCloseTo(refreshedCoverMaterials.reduce((sum, item) => sum + (item.quantity || 0) * item.actualPriceUsd, 0) * laborPercentageFor('roof_cover') / 100, 2);
+    expect(roofLabour(refreshed)).toHaveLength(1);
+    expect(roofLabour(refreshed)[0].actualPriceUsd).toBeCloseTo(6.7 * 120, 2);
     const changed = buildLiveMilestones({
       ...params,
       projectDetails: { ...params.projectDetails, roofCovering: 'concrete_tile' },
@@ -202,8 +204,38 @@ describe('uploaded plan in the BOQ builder', () => {
     const roofing = changed.find((milestone) => milestone.id === 'roofing')!.items;
     expect(roofing.some((item) => item.materialId === 'roof-tile-concrete')).toBe(true);
     expect(roofing.some((item) => item.materialId === 'ibr-05-3m')).toBe(false);
-    const roofCover = changed.find((milestone) => milestone.id === 'labor')!.items.find((item) => item.materialId === 'labor-roof_cover')!;
-    const coverMaterials = roofing.filter((item) => !/timber|fascia|hoop|nails/.test(item.materialId));
-    expect(roofCover.actualPriceUsd).toBeCloseTo(coverMaterials.reduce((sum, item) => sum + (item.quantity || 0) * item.actualPriceUsd, 0) * laborPercentageFor('roof_cover') / 100, 2);
+    expect(roofLabour(changed)).toHaveLength(1);
+  });
+
+  it('recalculates percentage labour from current material prices', () => {
+    const params = {
+      projectDetails: {
+        projectType: 'new_build', name: 'House', locationType: 'urban',
+        locationCity: 'Harare', specificLocation: '', soilType: '' as const, siteSlope: '' as const,
+        floorPlanSize: '120', standSize: '', buildingType: 'single_storey', wallHeight: '2.7',
+        brickTypes: ['common'] as BrickType[], cementTypes: ['cement_325'] as CementType[],
+        finishLevel: 'standard' as const, roofCovering: 'ibr_05' as const, roofShape: 'hipped' as const, residentialDensity: 'low' as const,
+        roomInputs: { ...DEFAULT_ROOM_INPUTS },
+      },
+      geometryMode: 'quick' as const, detailedRooms: [], totalWindows: 0, totalDoors: 0,
+      projectScope: 'entire' as const, selectedStages: [], laborType: 'materials_labor' as const,
+      temporaryWorksSelections: [], includeSepticTank: false,
+      septicDimensions: { length: '', width: '', height: '', unitPriceUsd: '' },
+      previousMilestones: BOQ_MILESTONE_IDS.map((id) => ({ id, items: [], expanded: true })),
+    };
+    const isElectrical = (id: string) => /cable|conduit|socket|switch|db-|mcb|light-/.test(id);
+    const plumbing = (milestones: MilestoneData[]) => milestones.find((milestone) => milestone.id === 'services')!.items;
+    const first = buildLiveMilestones(params);
+    const doubled = first.map((milestone) => milestone.id === 'services' ? {
+      ...milestone,
+      items: milestone.items.map((item) => !item.materialId.startsWith('labor-') && !isElectrical(item.materialId) ? { ...item, actualPriceUsd: item.actualPriceUsd * 2 } : item),
+    } : milestone);
+    const refreshed = buildLiveMilestones({ ...params, previousMilestones: doubled });
+    const materials = plumbing(refreshed).filter((item) => !item.materialId.startsWith('labor-') && !isElectrical(item.materialId))
+      .reduce((sum, item) => sum + (item.quantity || 0) * item.actualPriceUsd, 0);
+    const labour = plumbing(refreshed).find((item) => item.materialId === 'labor-plumbing')!;
+    expect(labour.category).toBe('labor_services');
+    expect(labour.actualPriceUsd).toBeCloseTo(materials * 0.35, 1);
+    expect(getCostBreakdown(refreshed).labor).toBeGreaterThan(0);
   });
 });

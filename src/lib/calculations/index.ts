@@ -12,7 +12,7 @@ import {
 } from '@/lib/vision/types';
 import { getBestPrice } from '@/lib/materials';
 import { DEFAULT_ROOF_COVERING, DEFAULT_ROOF_SHAPE, ROOF_COVERINGS, ROOF_SHAPES, type RoofCovering, type RoofShape } from './roofingOptions';
-import { LABOR_SUBSTAGES, laborPercentageFor, laborSubstageFor, type LaborRates } from './laborSubstages';
+import { laborCategoryFor, laborLines, type LaborQuantities, type LaborRates } from './laborSubstages';
 import {
   BOQ_ASSUMPTIONS,
   DEFAULT_LOCATION_TYPE,
@@ -298,7 +298,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   }
 
   if (includeLabor) {
-    items.push(...calculateLabor(items, config.laborRates));
+    items.push(...calculateLabor(items, floorArea, config.laborRates));
   }
 
   return items;
@@ -1084,29 +1084,46 @@ function calculateExteriorWorks(input: {
 // LABOR CALCULATIONS
 // ============================================
 
-function calculateLabor(materialItems: GeneratedBOQItem[], rates?: LaborRates): GeneratedBOQItem[] {
-  return LABOR_SUBSTAGES.flatMap((substage) => {
-    const materials = materialItems.filter((item) => laborSubstageFor(item) === substage.id);
-    if (materials.length === 0) return [];
-    const materialUsd = materials.reduce((sum, item) => sum + item.totalUsd, 0);
-    const materialZwg = materials.reduce((sum, item) => sum + item.totalZwg, 0);
-    const percentage = laborPercentageFor(substage.id, rates);
-    const usd = roundTo(materialUsd * percentage / 100, 2);
-    const zwg = roundTo(materialZwg * percentage / 100, 2);
-    return [{
+/** What each trade's labour is measured in, read from the BOQ's own lines. */
+export function laborQuantitiesFor(materialItems: Array<{ materialId: string; unit: string; quantity: number }>, floorAreaM2: number): LaborQuantities {
+  const quantityOf = (test: (id: string) => boolean) => materialItems
+    .filter((item) => test(item.materialId) && /m²|m2/.test(item.unit))
+    .reduce((sum, item) => sum + item.quantity, 0);
+  const durawallPanels = materialItems.filter((item) => item.materialId === 'durawall-panel').reduce((sum, item) => sum + item.quantity, 0);
+  return {
+    floor_m2: floorAreaM2,
+    tiled_m2: quantityOf((id) => id.startsWith('tiles-')),
+    ceiling_m2: quantityOf((id) => id.startsWith('ceiling-board')),
+    boundary_m: (durawallPanels / DURAWALL_PANELS_PER_BAY) * DURAWALL_PANEL_LENGTH_M,
+  };
+}
+
+/**
+ * One labour line per trade, inside its stage (category labor_<stage>), priced
+ * in the trade's own unit: see laborSubstages.ts.
+ */
+function calculateLabor(materialItems: GeneratedBOQItem[], floorAreaM2: number, rates?: LaborRates): GeneratedBOQItem[] {
+  const materialUsd = materialItems.reduce((sum, item) => sum + item.totalUsd, 0);
+  const materialZwg = materialItems.reduce((sum, item) => sum + item.totalZwg, 0);
+  // ZWG at the rate the materials were priced at.
+  const zwgPerUsd = materialUsd > 0 ? materialZwg / materialUsd : 0;
+  return laborLines(materialItems, laborQuantitiesFor(materialItems, floorAreaM2), rates).map((line) => {
+    const usd = roundTo(line.usd, 2);
+    const zwg = roundTo(usd * zwgPerUsd, 2);
+    return {
       id: generateItemId(),
-      materialId: `labor-${substage.id}`,
-      materialName: `Labour — ${substage.label}`,
-      category: 'labor',
+      materialId: `labor-${line.id}`,
+      materialName: `Labour — ${line.label}`,
+      category: laborCategoryFor(line.stage),
       quantity: 1,
       unit: 'allowance',
       unitPriceUsd: usd,
       unitPriceZwg: zwg,
       totalUsd: usd,
       totalZwg: zwg,
-      calculationNote: `${percentage}% of ${substage.stage} materials ($${materialUsd.toFixed(2)})`,
+      calculationNote: line.note,
       isEdited: false,
-    }];
+    };
   });
 }
 
@@ -1174,7 +1191,7 @@ export function generateBOQ(
   }
 
   if (includeLabor) {
-    allItems.push(...calculateLabor(allItems, config.laborRates));
+    allItems.push(...calculateLabor(allItems, totalArea, config.laborRates));
   }
 
   return allItems;

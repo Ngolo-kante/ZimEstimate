@@ -1,4 +1,5 @@
 import type { BOQItem, MilestoneData } from '@/store/boqWizardStore';
+import { isLaborCategory } from '@/lib/calculations/laborSubstages';
 
 // ─── Professional and council fees ───────────────────────────────────────────
 //
@@ -136,7 +137,8 @@ export function getCostBreakdown(milestones: MilestoneData[]) {
   for (const milestone of milestones) {
     for (const item of milestone.items) {
       const amount = (item.quantity || 0) * item.actualPriceUsd;
-      if (milestone.id === 'labor' || isExtrasLabourLine(item.materialId)) result.labor += amount;
+      // Trade labour sits inside each stage (labor_<stage>); extras carry their own.
+      if (milestone.id === 'labor' || isLaborCategory(item.category) || isExtrasLabourLine(item.materialId)) result.labor += amount;
       else if (milestone.id === 'project_fees') result.fees += amount;
       else result.materials += amount;
       result.total += amount;

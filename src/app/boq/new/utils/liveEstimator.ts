@@ -1,5 +1,5 @@
-import { councilRequiresFullBrickWalls, generateBOQFromBasics, DEFAULT_FINISH_LEVEL } from '@/lib/calculations';
-import { LABOR_SUBSTAGES, laborPercentageFor, laborSubstageFor } from '@/lib/calculations/laborSubstages';
+import { councilRequiresFullBrickWalls, generateBOQFromBasics, laborQuantitiesFor, DEFAULT_FINISH_LEVEL } from '@/lib/calculations';
+import { isLaborCategory, isTradeLaborLine, laborCategoryFor, laborLines, stageOfLaborCategory } from '@/lib/calculations/laborSubstages';
 import { getBestPrice, materials } from '@/lib/materials';
 import { buildProjectFeeItems, isTariffPriced, OWN_FIGURE_NOTE } from '@/lib/projectFees';
 import { buildExtraItems, isExtraLine, normalizeHouseExtras } from '@/lib/houseExtras';
@@ -120,6 +120,9 @@ function normalizeCategory(value: string): BoqMilestoneId {
   if (MILESTONE_SET.has(value as BoqMilestoneId)) {
     return value as BoqMilestoneId;
   }
+  // A stage's labour (labor_<stage>) sits inside that stage.
+  const laborStage = stageOfLaborCategory(value);
+  if (laborStage && MILESTONE_SET.has(laborStage)) return laborStage;
 
   return 'substructure';
 }
@@ -453,10 +456,10 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
       quantity,
       calculatedQuantity: item.quantity ?? 0,
       isOverridden: matchedExisting?.isOverridden || false,
-      // Percentage labour is calculated from the current material subtotal.
+      // Labour is recalculated below from the current materials and rates.
       // Retaining yesterday's generated amount would ignore a changed rate.
-      actualPriceUsd: category === 'labor' ? item.actualPriceUsd : matchedExisting?.actualPriceUsd ?? item.actualPriceUsd,
-      actualPriceZwg: category === 'labor' ? item.actualPriceZwg : matchedExisting?.actualPriceZwg ?? item.actualPriceZwg,
+      actualPriceUsd: isTradeLaborLine(item.materialId) ? item.actualPriceUsd : matchedExisting?.actualPriceUsd ?? item.actualPriceUsd,
+      actualPriceZwg: isTradeLaborLine(item.materialId) ? item.actualPriceZwg : matchedExisting?.actualPriceZwg ?? item.actualPriceZwg,
     };
 
     const current = outputByMilestone.get(category) || [];
@@ -468,7 +471,7 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
     // belong to a roof covering the user has just replaced, or an old labour
     // percentage; keeping them would double-count both options.
     // Extras are rebuilt from the choices on every pass, so one switched off goes.
-    const carryForward = items.filter((item) => !usedExistingIds.has(item.id) && !item.id.startsWith('auto-') && !item.materialId.startsWith('labor-') && !isExtraLine(item.materialId) && !(milestoneId === 'labor' && item.materialId === 'service-food'));
+    const carryForward = items.filter((item) => !usedExistingIds.has(item.id) && !item.id.startsWith('auto-') && !isTradeLaborLine(item.materialId) && !isExtraLine(item.materialId) && !(milestoneId === 'labor' && item.materialId === 'service-food'));
     if (carryForward.length === 0) {
       return;
     }
@@ -477,32 +480,44 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
     outputByMilestone.set(milestoneId, [...current, ...carryForward]);
   });
 
+  // Labour by trade, inside each stage, from the materials as they now stand
+  // (prices the user changed included). Generated trade lines are dropped
+  // and rebuilt, including ones saved in the old separate Labour section;
+  // labour a person added (a foreman, say) stays where they put it.
+  const previousLaborIds = new Map<string, string>();
+  for (const [stage, stageItems] of outputByMilestone) {
+    const kept = stageItems.filter((item) => {
+      if (!isTradeLaborLine(item.materialId)) return true;
+      previousLaborIds.set(item.materialId, item.id);
+      return false;
+    });
+    outputByMilestone.set(stage, kept);
+  }
   if (laborType === 'materials_labor') {
-    const materialTotals = new Map<string, { usd: number; zwg: number }>();
-    for (const [stage, stageItems] of outputByMilestone) {
-      if (stage === 'labor') continue;
-      for (const item of stageItems) {
-        const id = laborSubstageFor({ category: stage, materialId: item.materialId, materialName: item.materialName, calculationNote: item.description });
-        if (!id) continue;
-        const current = materialTotals.get(id) || { usd: 0, zwg: 0 };
-        materialTotals.set(id, {
-          usd: current.usd + (item.quantity || 0) * item.actualPriceUsd,
-          zwg: current.zwg + (item.quantity || 0) * item.actualPriceZwg,
-        });
-      }
-    }
-    const previousLabor = outputByMilestone.get('labor') || [];
-    outputByMilestone.set('labor', LABOR_SUBSTAGES.flatMap((substage) => {
-      const total = materialTotals.get(substage.id);
-      if (!total) return [];
-      const percentage = laborPercentageFor(substage.id, projectDetails.laborRates);
-      const priceUsd = roundTo(total.usd * percentage / 100);
-      const priceZwg = roundTo(total.zwg * percentage / 100);
-      const existing = previousLabor.find((item) => item.materialId === `labor-${substage.id}`);
-      return [{
-        id: existing?.id || `auto-labor-${substage.id}`,
-        materialId: `labor-${substage.id}`,
-        materialName: `Labour — ${substage.label}`,
+    const materialItems = [...outputByMilestone].flatMap(([stage, stageItems]) =>
+      stage === 'labor' || stage === 'project_fees' ? [] : stageItems
+        // Labour someone added to a stage is not material to charge labour on.
+        .filter((item) => !isLaborCategory(item.category) && !item.materialId.startsWith('labor-'))
+        .map((item) => ({
+        category: stage,
+        materialId: item.materialId,
+        materialName: item.materialName,
+        calculationNote: item.description,
+        unit: item.unit,
+        quantity: item.quantity || 0,
+        totalUsd: (item.quantity || 0) * item.actualPriceUsd,
+        totalZwg: (item.quantity || 0) * item.actualPriceZwg,
+      })));
+    const materialUsd = materialItems.reduce((sum, item) => sum + item.totalUsd, 0);
+    const zwgPerUsd = materialUsd > 0 ? materialItems.reduce((sum, item) => sum + item.totalZwg, 0) / materialUsd : 0;
+    for (const line of laborLines(materialItems, laborQuantitiesFor(materialItems, floorArea), projectDetails.laborRates)) {
+      const priceUsd = roundTo(line.usd);
+      const priceZwg = roundTo(line.usd * zwgPerUsd);
+      const materialId = `labor-${line.id}`;
+      const labourItem = {
+        id: previousLaborIds.get(materialId) || `auto-labor-${line.id}`,
+        materialId,
+        materialName: `Labour — ${line.label}`,
         quantity: 1,
         calculatedQuantity: 1,
         unit: 'allowance',
@@ -510,11 +525,12 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
         averagePriceZwg: priceZwg,
         actualPriceUsd: priceUsd,
         actualPriceZwg: priceZwg,
-        category: 'labor',
-        description: `${percentage}% of ${substage.stage} materials ($${total.usd.toFixed(2)})`,
+        category: laborCategoryFor(line.stage),
+        description: line.note,
         isOverridden: false,
-      } satisfies BOQItem];
-    }));
+      } satisfies BOQItem;
+      outputByMilestone.set(line.stage, [...(outputByMilestone.get(line.stage) || []), labourItem]);
+    }
   }
 
   return fallbackMilestones.map((milestone) => ({
