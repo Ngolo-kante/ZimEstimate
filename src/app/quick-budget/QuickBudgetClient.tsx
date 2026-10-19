@@ -614,6 +614,9 @@ export default function QuickBudgetPage() {
               />
             ) : (
               <BudgetFitExplorer
+                // Fencing and paving share this component; without a key the
+                // fence type carries over to paving, which has no such type.
+                key={budgetMode}
                 config={budgetMode === 'fencing' ? fencingBudgetFit : pavingBudgetFit}
                 initialBudget={budgetInput}
                 onSave={(items, answers, labor) => saveQuickBudget(budgetMode, items, answers, labor)}
@@ -638,7 +641,7 @@ export default function QuickBudgetPage() {
                   value={budgetInput}
                   onChange={(event) => setBudgetInput(event.target.value)}
                   placeholder="e.g. 15000"
-                  error={estimatorErrors.budget || undefined}
+                  error={(budgetInput && estimatorErrors.budget) || undefined}
                 />
               </div>
 
@@ -943,9 +946,13 @@ export default function QuickBudgetPage() {
       <style jsx>{`
         .explorer-panel {
           position: relative;
+          /* An auto margin in this flex column turns off stretching, so the
+             width has to be set or the panel grows to fit its content. */
+          width: 100%;
+          min-width: 0;
           max-width: 920px;
           margin: 0 auto;
-          padding: 0 16px 48px;
+          padding: 0 0 48px;
         }
         .budget-checker-page {
           position: relative;

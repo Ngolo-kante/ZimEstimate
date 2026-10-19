@@ -4,6 +4,8 @@ import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState }
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import CostDonut, { SERIES_COLORS } from '@/components/ui/CostDonut';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { gateSaveBehindSignIn } from '@/lib/services/quickBoq';
@@ -754,17 +756,10 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
   /* Colours for the allocation bar, keyed by card so the bar and the rows
      below it can never fall out of step. */
-  const BAND_BAR_COLOUR: Record<string, string> = {
-    panels: 'bg-amber-400',
-    inverter: 'bg-blue-500',
-    battery: 'bg-emerald-500',
-    protection: 'bg-slate-400',
-    installation: 'bg-slate-300',
-    transport: 'bg-slate-200',
-  };
+
 
   return (
-    <div className="w-full max-w-4xl mx-auto pb-24">
+    <div className="budget-explorer w-full min-w-0 max-w-4xl mx-auto pb-24">
       {/* Back button */}
       {onBack && (
         <button
@@ -775,22 +770,67 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
         </button>
       )}
 
-      {/* Header */}
-      <div className="mb-8">
-        <span className="budget-eyebrow">
-          SOLAR BUDGET EXPLORER
-        </span>
-        <h2 className="budget-display">
-          What can your budget buy?
-        </h2>
-        <p className="budget-lede">
-          Enter your budget below. Toggle components on/off and change brands to see what fits.
-        </p>
+      {/* Budget and allocation */}
+      <div ref={budgetRef} className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3 mb-6">
+
+        <div className="min-w-0">
+          <h2 className="text-[0.88rem] tracking-[0.08em] uppercase font-extrabold text-[var(--color-primary)] mb-3">Your budget</h2>
+            <Input
+              id="solar-budget"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              step={100}
+              placeholder="0"
+              value={budgetInput}
+              onChange={(e) => setBudgetInput(e.target.value.replace(/[^0-9]/g, ''))}
+              aria-describedby="solar-budget-notice"
+              label="AVAILABLE BUDGET (USD)"
+              icon={<span>$</span>}
+              style={{ MozAppearance: 'textfield' } as CSSProperties}
+            />
+
+
+          {budget > 0 && (
+            <div className="grid grid-cols-2 gap-2 my-3 text-xs text-slate-600 [&>span]:rounded-xl [&>span]:border [&>span]:border-slate-200 [&>span]:bg-white [&>span]:p-3 [&_strong]:block [&_strong]:text-base [&_strong]:text-[var(--color-primary)]">
+              <span>
+                <strong>{usd(totalAllocated)}</strong> allocated
+              </span>
+              <span className={remaining >= 0 ? 'is-good' : 'is-over'}>
+                <strong>{usd(Math.abs(remaining))}</strong>{' '}
+                {remaining >= 0 ? 'left' : 'over'}
+              </span>
+            </div>
+          )}
+
+          {budgetNotice && (
+            <p
+              id="solar-budget-notice"
+              className={`my-3 text-xs ${budgetNotice.tone === 'warn' ? 'text-amber-700' : 'text-slate-500'}`}
+            >
+              {budgetNotice.text}
+            </p>
+          )}
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {[500, 1000, 1500, 2500, 3500, 5000, 7500].map((amt) => (
+              <button
+                key={amt}
+                type="button"
+                onClick={() => setBudget(amt)}
+                aria-pressed={budget === amt}
+                className={`min-h-10 rounded-full border px-2.5 py-1.5 text-[0.72rem] font-bold text-[var(--color-primary)] ${budget === amt ? 'border-blue-500/65 bg-blue-100/75' : 'border-slate-400/40 bg-white'}`}
+              >
+                ${amt.toLocaleString()}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* ── Objective Selector ───────────────────────────────────────────────── */}
-      <div className="mb-6">
-        <p className="text-sm font-semibold text-slate-700 mb-3">What&apos;s your priority?</p>
+      <div className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3 mb-4">
+        <p className="text-[0.88rem] tracking-[0.08em] uppercase font-extrabold text-[var(--color-primary)] mb-3">What&apos;s your priority?</p>
         <div className="grid grid-cols-3 gap-2">
           {([
             { key: 'economy',  label: 'Economy',  sub: 'Best value, proven brands', icon: <Coins size={18} /> },
@@ -812,82 +852,6 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
               <span className="text-[11px] text-[var(--color-text-secondary)] leading-tight">{sub}</span>
             </button>
           ))}
-        </div>
-      </div>
-
-      {/* ── Budget instrument ───────────────────────────────────────────────
-          The moment of truth on this page is a single number, so it is treated
-          as one: a dark panel that lifts it off the white page, the figure set
-          in tabular mono so digits do not jitter as you type, and an allocation
-          meter directly beneath answering "how much of it is spoken for". */}
-      <div ref={budgetRef} className="budget-instrument mb-6">
-        <div className="budget-instrument__grid" aria-hidden />
-
-        <div className="budget-instrument__body">
-          <label htmlFor="solar-budget" className="budget-instrument__label">
-            Your budget
-          </label>
-
-          <div className="budget-instrument__figure">
-            <span className="budget-instrument__currency">$</span>
-            <input
-              id="solar-budget"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step={100}
-              placeholder="0"
-              value={budgetInput}
-              onChange={(e) => setBudgetInput(e.target.value.replace(/[^0-9]/g, ''))}
-              aria-describedby="solar-budget-notice"
-              className="budget-instrument__input"
-              style={{ MozAppearance: 'textfield' } as CSSProperties}
-            />
-          </div>
-
-
-          {budget > 0 && (
-            <div className="budget-instrument__meter" aria-hidden>
-              <div
-                className={`budget-instrument__fill${remaining < 0 ? ' is-over' : ''}`}
-                style={{ width: `${Math.min(100, (totalAllocated / budget) * 100)}%` }}
-              />
-            </div>
-          )}
-
-          {budget > 0 && (
-            <div className="budget-instrument__readout">
-              <span>
-                <strong>{usd(totalAllocated)}</strong> allocated
-              </span>
-              <span className={remaining >= 0 ? 'is-good' : 'is-over'}>
-                <strong>{usd(Math.abs(remaining))}</strong>{' '}
-                {remaining >= 0 ? 'left' : 'over'}
-              </span>
-            </div>
-          )}
-
-          {budgetNotice && (
-            <p
-              id="solar-budget-notice"
-              className={`budget-instrument__notice${budgetNotice.tone === 'warn' ? ' is-warn' : ''}`}
-            >
-              {budgetNotice.text}
-            </p>
-          )}
-
-          <div className="budget-instrument__presets">
-            {[500, 1000, 1500, 2500, 3500, 5000, 7500].map((amt) => (
-              <button
-                key={amt}
-                type="button"
-                onClick={() => setBudget(amt)}
-                className={`budget-chip${budget === amt ? ' is-active' : ''}`}
-              >
-                ${amt.toLocaleString()}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -995,17 +959,81 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
             </div>
           )}
 
-          {/* ── Where the money went ───────────────────────────────────────────
-              A stacked bar before the rows, because the proportions are the
-              finding. At a small budget, protection and installation take most
-              of it before any solar is bought — that reads as a mistake in a
-              plain list and as the point here. */}
+          {/* ── System Summary Card ────────────────────────────────────────────── */}
+          {totalAllocated > 0 && (
+            <div className="p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm mb-6">
+              <h4 className="font-bold text-[var(--color-text)] mb-4 flex items-center gap-2">
+                <CheckCircle size={20} weight="fill" className="text-[var(--color-accent)]" />
+                Your System Summary
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                {[
+                  { label: 'Solar Array', value: `${systemKw} kW`, show: enabledCards.panels && allocation.panels.count > 0 },
+                  { label: 'Panels', value: `${allocation.panels.count}x ${pBrand.watt}W`, show: enabledCards.panels && allocation.panels.count > 0 },
+                  { label: 'Inverter', value: `${allocation.inverter.kva} kVA`, show: enabledCards.inverter },
+                  { label: 'Battery', value: `${storageKwh} kWh`, show: enabledCards.battery && allocation.battery.units > 0 },
+                  {
+                    label: 'Load-shedding',
+                    value: backupWithFridge >= 24 ? '24 h+' : `~${backupWithFridge} h with fridge`,
+                    show: enabledCards.battery && allocation.battery.units > 0,
+                  },
+                  {
+                    label: 'Wiring & essentials',
+                    /* "Included" was shown whenever the toggle was on, even when
+                       the budget never reached it. */
+                    value: allocation.protection.cost > 0
+                      ? 'Included'
+                      : allocation.protection.droppedForBudget
+                        ? 'Over budget'
+                        : 'Not included',
+                    show: true,
+                  },
+                  { label: 'ZERA Tier', value: zeraTier, show: enabledCards.panels && allocation.panels.count > 0 },
+                ]
+                  .filter((r) => r.show)
+                  .map((row) => (
+                    <div key={row.label} className="flex justify-between p-2.5 rounded-lg bg-slate-50">
+                      <span className="text-[var(--color-text-secondary)]">{row.label}</span>
+                      <strong className="text-[var(--color-text)]">{row.value}</strong>
+                    </div>
+                  ))}
+              </div>
+
+              <div className="mt-4 p-3 rounded-lg bg-[var(--color-accent-muted)]/50 border border-blue-100/50">
+                <p className="text-xs font-semibold text-blue-800 mb-1">Assumptions</p>
+                <ul className="text-xs text-[var(--color-accent-dark)] space-y-0.5">
+                  <li>Prices: Zimbabwe Q1 2026 mid-range market rates</li>
+                  <li>Sun hours: 5.5h/day average (Zimbabwe)</li>
+                  <li>
+                    Installation:{' '}
+                    {allocation.installation.isCustom
+                      ? "your installer's quoted amount"
+                      : `${allocation.installation.pct}% of hardware cost`}
+                  </li>
+                  <li>Battery: LiFePO4 with 90-95% depth of discharge</li>
+                  <li>
+                    Load-shedding hours: 6 LED lights, TV, WiFi, phone charging and a fridge
+                    ({BACKUP_LOADS[1].watts}W average), using 81% of the battery after inverter losses.
+                    Rounded down.
+                  </li>
+                  {!enabledCards.transport && (
+                    <li className="text-[var(--color-text-secondary)]">Transport not included — enable if your supplier charges separately</li>
+                  )}
+                  {!enabledCards.protection && (
+                    <li className="text-amber-700 font-semibold">
+                      Wiring &amp; essentials switched off — not recommended
+                    </li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Cost split */}
           {allocatedUsd > 0 && (
             <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="text-sm font-bold text-[var(--color-text)]">
-                  How your {usd(budget)} is split
-                </span>
+                <h4>Where the money goes</h4>
                 <span className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
                   <span className="tabular-nums">
                     {usd(allocatedUsd)} allocated
@@ -1021,27 +1049,8 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                 </span>
               </div>
 
-              <div className="mt-3 flex h-3 w-full overflow-hidden rounded-full bg-[var(--color-border-light)]">
-                {fundedCards.map((card) => (
-                  <div
-                    key={card.id}
-                    className={BAND_BAR_COLOUR[card.id] ?? 'bg-slate-400'}
-                    style={{ width: `${(card.cost / allocatedUsd) * 100}%` }}
-                    title={`${card.label}: $${Math.round(card.cost).toLocaleString()}`}
-                  />
-                ))}
-              </div>
-
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
-                {fundedCards.map((card) => (
-                  <span key={card.id} className="inline-flex items-center gap-1.5 text-[11px] text-[var(--color-text-secondary)]">
-                    <span className={`h-2 w-2 rounded-full ${BAND_BAR_COLOUR[card.id] ?? 'bg-slate-400'}`} />
-                    {card.label}
-                    <span className="font-bold tabular-nums text-[var(--color-text)]">
-                      {Math.round((card.cost / allocatedUsd) * 100)}%
-                    </span>
-                  </span>
-                ))}
+              <div className="mt-4">
+                <CostDonut slices={fundedCards.map((card, index) => ({ label: card.label, value: card.cost, color: SERIES_COLORS[index % SERIES_COLORS.length] }))} />
               </div>
             </div>
           )}
@@ -1360,76 +1369,6 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
             })}
           </div>
 
-          {/* ── System Summary Card ────────────────────────────────────────────── */}
-          {totalAllocated > 0 && (
-            <div className="p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm mb-6">
-              <h4 className="font-bold text-[var(--color-text)] mb-4 flex items-center gap-2">
-                <CheckCircle size={20} weight="fill" className="text-[var(--color-accent)]" />
-                Your System Summary
-              </h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-                {[
-                  { label: 'Solar Array', value: `${systemKw} kW`, show: enabledCards.panels && allocation.panels.count > 0 },
-                  { label: 'Panels', value: `${allocation.panels.count}x ${pBrand.watt}W`, show: enabledCards.panels && allocation.panels.count > 0 },
-                  { label: 'Inverter', value: `${allocation.inverter.kva} kVA`, show: enabledCards.inverter },
-                  { label: 'Battery', value: `${storageKwh} kWh`, show: enabledCards.battery && allocation.battery.units > 0 },
-                  {
-                    label: 'Load-shedding',
-                    value: backupWithFridge >= 24 ? '24 h+' : `~${backupWithFridge} h with fridge`,
-                    show: enabledCards.battery && allocation.battery.units > 0,
-                  },
-                  {
-                    label: 'Wiring & essentials',
-                    /* "Included" was shown whenever the toggle was on, even when
-                       the budget never reached it. */
-                    value: allocation.protection.cost > 0
-                      ? 'Included'
-                      : allocation.protection.droppedForBudget
-                        ? 'Over budget'
-                        : 'Not included',
-                    show: true,
-                  },
-                  { label: 'ZERA Tier', value: zeraTier, show: enabledCards.panels && allocation.panels.count > 0 },
-                ]
-                  .filter((r) => r.show)
-                  .map((row) => (
-                    <div key={row.label} className="flex justify-between p-2.5 rounded-lg bg-slate-50">
-                      <span className="text-[var(--color-text-secondary)]">{row.label}</span>
-                      <strong className="text-[var(--color-text)]">{row.value}</strong>
-                    </div>
-                  ))}
-              </div>
-
-              <div className="mt-4 p-3 rounded-lg bg-[var(--color-accent-muted)]/50 border border-blue-100/50">
-                <p className="text-xs font-semibold text-blue-800 mb-1">Assumptions</p>
-                <ul className="text-xs text-[var(--color-accent-dark)] space-y-0.5">
-                  <li>Prices: Zimbabwe Q1 2026 mid-range market rates</li>
-                  <li>Sun hours: 5.5h/day average (Zimbabwe)</li>
-                  <li>
-                    Installation:{' '}
-                    {allocation.installation.isCustom
-                      ? "your installer's quoted amount"
-                      : `${allocation.installation.pct}% of hardware cost`}
-                  </li>
-                  <li>Battery: LiFePO4 with 90-95% depth of discharge</li>
-                  <li>
-                    Load-shedding hours: 6 LED lights, TV, WiFi, phone charging and a fridge
-                    ({BACKUP_LOADS[1].watts}W average), using 81% of the battery after inverter losses.
-                    Rounded down.
-                  </li>
-                  {!enabledCards.transport && (
-                    <li className="text-[var(--color-text-secondary)]">Transport not included — enable if your supplier charges separately</li>
-                  )}
-                  {!enabledCards.protection && (
-                    <li className="text-amber-700 font-semibold">
-                      Wiring &amp; essentials switched off — not recommended
-                    </li>
-                  )}
-                </ul>
-              </div>
-            </div>
-          )}
-
           {/* ── Matching Packages (grouped by kVA) ──────────────────────────────
               Below the user's own estimate, not above it. On a phone this list
               sat between the budget and the answer, five or six cards deep, so
@@ -1626,6 +1565,20 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
           </div>
         </>
       )}
+
+      <style jsx global>{`
+        .budget-explorer .input-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; }
+        .budget-explorer button, .budget-explorer select, .budget-explorer input { min-height: 40px; }
+        .budget-explorer button.relative { min-width: 44px; }
+        .budget-explorer button.relative > div { top: 10px; }
+        .budget-explorer .rounded-2xl.border, .budget-explorer .rounded-xl.border { border-radius: 14px; border-color: rgba(148,163,184,0.22); background: rgba(248,250,252,0.86); box-shadow: none; }
+        .budget-explorer button.rounded-xl.border, .budget-explorer button.rounded-lg.border { border-radius: 12px; border-color: #e2e8f0; background: white; }
+        .budget-explorer button.border[class*="bg-[var(--color-accent-muted)]"], .budget-explorer button.border[class*="bg-blue-50"] { border-color: #2e6cf6; background: #eff6ff; box-shadow: 0 0 0 1px #2e6cf6; }
+        .budget-explorer h4 { font-size: 0.88rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 800; color: var(--color-primary); }
+        .budget-explorer .grid > * { min-width: 0; }
+        .budget-explorer .grid strong { overflow-wrap: anywhere; }
+        @media (max-width: 400px) { .budget-explorer .grid-cols-2.text-sm > div { flex-direction: column; gap: 4px; } }
+      `}</style>
     </div>
   );
 }

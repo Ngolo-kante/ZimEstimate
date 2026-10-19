@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'r
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import CostDonut, { SERIES_COLORS } from '@/components/ui/CostDonut';
 import {
   Drop,
   Lightning,
@@ -456,7 +458,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
   ];
 
   return (
-    <div className="w-full max-w-4xl mx-auto pb-24">
+    <div className="budget-explorer w-full min-w-0 max-w-4xl mx-auto pb-24">
       {/* Back */}
       {onBack && (
         <button onClick={onBack} className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors mb-6">
@@ -464,27 +466,12 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
         </button>
       )}
 
-      {/* Header */}
-      <div className="mb-8">
-        <span className="budget-eyebrow">BOREHOLE BUDGET EXPLORER</span>
-        <h2 className="budget-display">What can your budget buy?</h2>
-        <p className="budget-lede">Enter your budget, adjust depth and options. Toggle components on/off to see what fits.</p>
-      </div>
+      {/* Budget and allocation */}
+      <div className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3 mb-6">
 
-      {/* ── Budget instrument ───────────────────────────────────────────────
-          Shares the solar explorer's panel so both budget tools read as one
-          product rather than two separately-built pages. */}
-      <div className="budget-instrument mb-6">
-        <div className="budget-instrument__grid" aria-hidden />
-
-        <div className="budget-instrument__body">
-          <label htmlFor="borehole-budget" className="budget-instrument__label">
-            Your budget
-          </label>
-
-          <div className="budget-instrument__figure">
-            <span className="budget-instrument__currency">$</span>
-            <input
+        <div className="min-w-0">
+          <h2 className="text-[0.88rem] tracking-[0.08em] uppercase font-extrabold text-[var(--color-primary)] mb-3">Your budget</h2>
+            <Input
               id="borehole-budget"
               type="number"
               inputMode="numeric"
@@ -493,23 +480,13 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
               value={budgetInput}
               onChange={(e) => setBudgetInput(e.target.value.replace(/[^0-9]/g, ''))}
               aria-describedby="borehole-budget-notice"
-              className="budget-instrument__input"
+              label="AVAILABLE BUDGET (USD)"
+              icon={<span>$</span>}
               style={numberInputStyle}
             />
-          </div>
 
           {budget > 0 && (
-            <div className="budget-instrument__meter" aria-hidden>
-              <div
-                className={`budget-instrument__fill${remaining < 0 ? ' is-over' : ''}`}
-                style={{ width: `${Math.min(100, (totalAllocated / budget) * 100)}%` }}
-              />
-            </div>
-          )}
-
-
-          {budget > 0 && (
-            <div className="budget-instrument__readout">
+            <div className="grid grid-cols-2 gap-2 my-3 text-xs text-slate-600 [&>span]:rounded-xl [&>span]:border [&>span]:border-slate-200 [&>span]:bg-white [&>span]:p-3 [&_strong]:block [&_strong]:text-base [&_strong]:text-[var(--color-primary)]">
               <span>
                 <strong>${totalAllocated.toLocaleString()}</strong> allocated
               </span>
@@ -523,19 +500,20 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
           {budgetNotice && (
             <p
               id="borehole-budget-notice"
-              className={`budget-instrument__notice${budgetNotice.tone === 'warn' ? ' is-warn' : ''}`}
+              className={`my-3 text-xs ${budgetNotice.tone === 'warn' ? 'text-amber-700' : 'text-slate-500'}`}
             >
               {budgetNotice.text}
             </p>
           )}
 
-          <div className="budget-instrument__presets">
+          <div className="mt-3 flex flex-wrap gap-2">
             {[2000, 3000, 5000, 7500, 10000, 15000].map((amt) => (
               <button
                 key={amt}
                 type="button"
                 onClick={() => setBudget(amt)}
-                className={`budget-chip${budget === amt ? ' is-active' : ''}`}
+                aria-pressed={budget === amt}
+                className={`min-h-10 rounded-full border px-2.5 py-1.5 text-[0.72rem] font-bold text-[var(--color-primary)] ${budget === amt ? 'border-blue-500/65 bg-blue-100/75' : 'border-slate-400/40 bg-white'}`}
               >
                 ${amt.toLocaleString()}
               </button>
@@ -638,6 +616,49 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
           <span>$0</span>
           <span>${budget.toLocaleString()}</span>
         </div>
+      </div>
+
+      <div className="p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm mb-6">
+        <h4 className="font-bold text-[var(--color-text)] mb-4 flex items-center gap-2">
+          <CheckCircle size={20} weight="fill" className="text-[var(--color-accent)]" />
+          Your Borehole Summary
+        </h4>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+          {[
+            { label: 'Depth', value: `${depth}m`, show: enabledCards.drilling },
+            { label: 'Casing', value: `${diameter} ${getCasingLabel(casingGrade).split(' — ')[0]}`, show: enabledCards.casing },
+            { label: 'Pump', value: pumpType.charAt(0).toUpperCase() + pumpType.slice(1), show: enabledCards.pump },
+            { label: 'Tank', value: tankSize === 'none' ? 'None' : `${Number(tankSize).toLocaleString()}L`, show: enabledCards.tank },
+            { label: 'Location', value: location.charAt(0).toUpperCase() + location.slice(1), show: true },
+            { label: 'Purpose', value: purpose.charAt(0).toUpperCase() + purpose.slice(1), show: true },
+          ]
+            .filter((r) => r.show)
+            .map((row) => (
+              <div key={row.label} className="flex justify-between p-2.5 rounded-lg bg-slate-50">
+                <span className="text-[var(--color-text-secondary)]">{row.label}</span>
+                <strong className="text-[var(--color-text)]">{row.value}</strong>
+              </div>
+            ))}
+        </div>
+
+        {/* Assumptions */}
+        <div className="mt-4 p-3 rounded-lg bg-[var(--color-accent-muted)]/50 border border-blue-100/50">
+          <p className="text-xs font-semibold text-blue-800 mb-1">Assumptions</p>
+          <ul className="text-xs text-[var(--color-accent-dark)] space-y-0.5">
+            <li>Prices: Zimbabwe market, October 2026</li>
+            <li>Drilling: ${P.drilling_package_40m} for the first {P.drilling_package_depth_m} m (drillers quote $700–1,000), then ${P.extra_drilling_per_m}/m. Includes {P.drilling_package_casing_m} m of casing and the driller&apos;s fees</li>
+            <li>Extra casing: ${P.casing_upvc_140_c6}/m or more beyond the {P.drilling_package_casing_m} m included</li>
+            <li>Outside Harare: usually $100–200 more, mostly transport</li>
+            <li>Solar packages: pump, panels, controller, pipes, cable and installation</li>
+            <li>Every price can be changed in the full BOQ</li>
+            {!enabledCards.permits && <li className="text-amber-700 font-semibold">Permits disabled — ZINWA permit is legally required</li>}
+          </ul>
+        </div>
+      </div>
+
+      <div className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3 mb-6">
+        <h2 className="text-[0.88rem] tracking-[0.08em] uppercase font-extrabold text-[var(--color-primary)] mb-4">Where the money goes</h2>
+        <CostDonut hideEmpty slices={cards.filter((card) => card.enabled).map((card, index) => ({ label: card.label, value: card.cost, color: SERIES_COLORS[index % SERIES_COLORS.length] }))} />
       </div>
 
       {/* ── Component Cards ──────────────────────────────────────────────────── */}
@@ -795,43 +816,6 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
       </div>
 
       {/* ── System Summary ───────────────────────────────────────────────────── */}
-      <div className="p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm mb-6">
-        <h4 className="font-bold text-[var(--color-text)] mb-4 flex items-center gap-2">
-          <CheckCircle size={20} weight="fill" className="text-[var(--color-accent)]" />
-          Your Borehole Summary
-        </h4>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-          {[
-            { label: 'Depth', value: `${depth}m`, show: enabledCards.drilling },
-            { label: 'Casing', value: `${diameter} ${getCasingLabel(casingGrade).split(' — ')[0]}`, show: enabledCards.casing },
-            { label: 'Pump', value: pumpType.charAt(0).toUpperCase() + pumpType.slice(1), show: enabledCards.pump },
-            { label: 'Tank', value: tankSize === 'none' ? 'None' : `${Number(tankSize).toLocaleString()}L`, show: enabledCards.tank },
-            { label: 'Location', value: location.charAt(0).toUpperCase() + location.slice(1), show: true },
-            { label: 'Purpose', value: purpose.charAt(0).toUpperCase() + purpose.slice(1), show: true },
-          ]
-            .filter((r) => r.show)
-            .map((row) => (
-              <div key={row.label} className="flex justify-between p-2.5 rounded-lg bg-slate-50">
-                <span className="text-[var(--color-text-secondary)]">{row.label}</span>
-                <strong className="text-[var(--color-text)]">{row.value}</strong>
-              </div>
-            ))}
-        </div>
-
-        {/* Assumptions */}
-        <div className="mt-4 p-3 rounded-lg bg-[var(--color-accent-muted)]/50 border border-blue-100/50">
-          <p className="text-xs font-semibold text-blue-800 mb-1">Assumptions</p>
-          <ul className="text-xs text-[var(--color-accent-dark)] space-y-0.5">
-            <li>Prices: Zimbabwe market, October 2026</li>
-            <li>Drilling: ${P.drilling_package_40m} for the first {P.drilling_package_depth_m} m (drillers quote $700–1,000), then ${P.extra_drilling_per_m}/m. Includes {P.drilling_package_casing_m} m of casing and the driller&apos;s fees</li>
-            <li>Extra casing: ${P.casing_upvc_140_c6}/m or more beyond the {P.drilling_package_casing_m} m included</li>
-            <li>Outside Harare: usually $100–200 more, mostly transport</li>
-            <li>Solar packages: pump, panels, controller, pipes, cable and installation</li>
-            <li>Every price can be changed in the full BOQ</li>
-            {!enabledCards.permits && <li className="text-amber-700 font-semibold">Permits disabled — ZINWA permit is legally required</li>}
-          </ul>
-        </div>
-      </div>
 
       {/* ── Warnings ─────────────────────────────────────────────────────────── */}
       {depth < 40 && (
@@ -897,6 +881,20 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
           Generate BOQ
         </Button>
       </div>
+
+      <style jsx global>{`
+        .budget-explorer .input-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; }
+        .budget-explorer button, .budget-explorer select, .budget-explorer input { min-height: 40px; }
+        .budget-explorer button.relative { min-width: 44px; }
+        .budget-explorer button.relative > div { top: 10px; }
+        .budget-explorer .rounded-2xl.border, .budget-explorer .rounded-xl.border { border-radius: 14px; border-color: rgba(148,163,184,0.22); background: rgba(248,250,252,0.86); box-shadow: none; }
+        .budget-explorer button.rounded-xl.border, .budget-explorer button.rounded-lg.border { border-radius: 12px; border-color: #e2e8f0; background: white; }
+        .budget-explorer button.border[class*="bg-[var(--color-accent-muted)]"], .budget-explorer button.border[class*="bg-blue-50"] { border-color: #2e6cf6; background: #eff6ff; box-shadow: 0 0 0 1px #2e6cf6; }
+        .budget-explorer h4 { font-size: 0.88rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 800; color: var(--color-primary); }
+        .budget-explorer .grid > * { min-width: 0; }
+        .budget-explorer .grid strong { overflow-wrap: anywhere; }
+        @media (max-width: 400px) { .budget-explorer .grid-cols-2.text-sm > div { flex-direction: column; gap: 4px; } }
+      `}</style>
     </div>
   );
 }

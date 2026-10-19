@@ -1,5 +1,8 @@
 'use client';
 
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import CostDonut, { SERIES_COLORS } from '@/components/ui/CostDonut';
 import { useMemo, useState } from 'react';
 import { ArrowLeft, Warning, CheckCircle } from '@phosphor-icons/react';
 import { fitQuantityToBudget, totalOf } from '@/lib/quick-projects/fitQuantityToBudget';
@@ -93,7 +96,7 @@ export default function BudgetFitExplorer({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="budget-fit-explorer min-w-0 space-y-4">
       {onBack && (
         <button
           type="button"
@@ -105,26 +108,27 @@ export default function BudgetFitExplorer({
         </button>
       )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-        <label className="block">
-          <span className="text-sm font-bold text-slate-900">What can you spend?</span>
-          <div className="mt-2 flex items-center gap-1 rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-400/20">
-            <span className="text-xl font-extrabold text-slate-400">$</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={budgetUsd ? budgetUsd.toLocaleString('en-US') : ''}
-              onChange={(event) => setBudgetInput(event.target.value)}
-              placeholder="Enter amount"
-              aria-label="Your budget in US dollars"
-              className="w-full bg-transparent text-xl font-extrabold tabular-nums text-slate-900 outline-none placeholder:text-slate-300"
-            />
-            <span className="shrink-0 text-xs font-bold uppercase tracking-wide text-slate-400">USD</span>
+      <div className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3">
+        <h2 className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-primary)] mb-3">Your budget</h2>
+        <Input
+          label="AVAILABLE BUDGET (USD)"
+          icon={<span>$</span>}
+          type="text"
+          inputMode="numeric"
+          value={budgetUsd ? budgetUsd.toLocaleString('en-US') : ''}
+          onChange={(event) => setBudgetInput(event.target.value)}
+          placeholder="Enter amount"
+        />
+        {budgetUsd > 0 && (
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500">
+            <div className="rounded-xl border border-slate-200 bg-white p-3"><strong className="block text-base text-[var(--color-primary)]">{money(fit.totalUsd)}</strong>Allocated</div>
+            <div className="rounded-xl border border-slate-200 bg-white p-3"><strong className="block text-base text-[var(--color-primary)]">{money(Math.abs(fit.remainingUsd))}</strong>{fit.remainingUsd >= 0 ? 'Remaining' : 'Over budget'}</div>
           </div>
-        </label>
-
-        <fieldset className="mt-5">
-          <legend className="text-sm font-bold text-slate-900">{config.variantLabel}</legend>
+        )}
+      </div>
+      <div className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3">
+        <fieldset>
+          <legend className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-primary)]">{config.variantLabel}</legend>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
             {config.variants.map((option) => {
               const active = option.value === variant;
@@ -152,7 +156,7 @@ export default function BudgetFitExplorer({
       </div>
 
       {/* ── The answer ─────────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+      <div className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3">
         {fit.belowMinimum ? (
           <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
             <Warning size={18} weight="fill" className="mt-0.5 shrink-0 text-amber-600" />
@@ -169,7 +173,7 @@ export default function BudgetFitExplorer({
         ) : (
           <>
             <p className="text-sm font-semibold text-slate-500">Your budget covers</p>
-            <p className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900">
+            <p className="mt-1 text-xl font-extrabold tracking-tight text-slate-900">
               {config.quantityLabel(fit.quantity)}
             </p>
             <p className="mt-2 text-sm text-slate-600">
@@ -185,18 +189,30 @@ export default function BudgetFitExplorer({
             )}
 
             <p className="mt-3 text-xs leading-relaxed text-slate-500">
-              Materials only, at current Zimbabwe prices. Labour, transport and gates are priced
+              Materials only, at current Zimbabwe prices. Labour and transport are priced
               separately in the full {config.noun} wizard.
             </p>
           </>
         )}
       </div>
 
+      {/* A split needs at least two parts; paving is often one. */}
+      {new Set(costedItems.map((item) => item.category)).size > 1 && (
+        <div className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3">
+          <h2 className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-primary)] mb-4">Where the money goes</h2>
+          <CostDonut slices={Array.from(new Set(costedItems.map((item) => item.category))).map((category, index) => ({
+            label: category,
+            value: costedItems.filter((item) => item.category === category).reduce((sum, item) => sum + item.totalCostUsd, 0),
+            color: SERIES_COLORS[index % SERIES_COLORS.length],
+          }))} />
+        </div>
+      )}
+
       {/* ── What it buys ───────────────────────────────────────────────── */}
       {costedItems.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="overflow-hidden rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3">
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-            <h3 className="text-sm font-bold text-slate-900">What that includes</h3>
+            <h3 className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-primary)]">What that includes</h3>
             <span className="text-xs text-slate-500">{costedItems.length} items</span>
           </div>
           <div className="overflow-x-auto">
@@ -235,15 +251,20 @@ export default function BudgetFitExplorer({
       )}
 
       {onSave && !fit.belowMinimum && (
-        <button
-          type="button"
+        <Button
+          variant="primary"
           onClick={handleSave}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-800 sm:w-auto"
+          className="w-full sm:w-auto"
         >
           <CheckCircle size={16} weight="fill" />
           Save this estimate
-        </button>
+        </Button>
       )}
+      <style jsx global>{`
+        .budget-fit-explorer .input-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; }
+        .budget-fit-explorer button { min-height: 40px; }
+        .budget-fit-explorer td, .budget-fit-explorer th { padding-left: 8px; padding-right: 8px; }
+      `}</style>
     </div>
   );
 }
