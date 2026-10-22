@@ -2,29 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import Card from '@/components/ui/Card';
-import {
-  MagnifyingGlass,
-  Ruler,
-  House,
-  Check,
-} from '@phosphor-icons/react';
+import Link from 'next/link';
+import { analysisProgress, type AnalysisPhase } from '@/lib/vision/analyzePlan';
 
-const ANALYSIS_STEPS = [
-  { id: 'detect', label: 'Detecting floor plan elements', icon: MagnifyingGlass },
-  { id: 'measure', label: 'Measuring room dimensions', icon: Ruler },
-  { id: 'structure', label: 'Analyzing building structure', icon: House },
-];
-
-export default function AnalysisProgress({ onCancel, retrying = false }: { onCancel: () => void; retrying?: boolean }) {
+export default function AnalysisProgress({ onCancel, retrying = false, phase = 'preparing' }: {
+  onCancel: () => void;
+  retrying?: boolean;
+  phase?: AnalysisPhase;
+}) {
   const [elapsed, setElapsed] = useState(0);
 
-  // Derived from the clock rather than set from inside the timer's state
-  // update, which React expects to be free of side effects.
-  const currentStep = Math.min(Math.floor(elapsed / 10), ANALYSIS_STEPS.length - 1);
-  const progress = Math.min(92, 12 + elapsed * 2);
+  const progress = analysisProgress(elapsed);
+  const preparing = phase === 'preparing';
 
   useEffect(() => {
-    const timer = window.setInterval(() => setElapsed((seconds) => seconds + 1), 1000);
+    const started = Date.now();
+    const timer = window.setInterval(() => setElapsed((Date.now() - started) / 1000), 1000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -60,34 +53,13 @@ export default function AnalysisProgress({ onCancel, retrying = false }: { onCan
           </div>
         </div>
 
-        <h2>Analyzing Floor Plan</h2>
-        <p className="subtitle">Our AI is extracting room dimensions and building details</p>
-        <p className="time-note">{elapsed < 45 ? `Reading plan · ${elapsed}s elapsed` : 'Still working — complex PDFs can take longer'}</p>
-
-        <div className="steps-list">
-          {ANALYSIS_STEPS.map((step, index) => {
-            const IconComponent = step.icon;
-            const isComplete = index < currentStep;
-            const isCurrent = index === currentStep;
-
-            return (
-              <div
-                key={step.id}
-                className={`step-item ${isComplete ? 'complete' : ''} ${isCurrent ? 'current' : ''}`}
-              >
-                <div className="step-icon">
-                  {isComplete ? (
-                    <Check size={18} weight="bold" />
-                  ) : (
-                    <IconComponent size={18} weight="light" />
-                  )}
-                </div>
-                <span className="step-label">{step.label}</span>
-                {isCurrent && <div className="step-dots"><span /><span /><span /></div>}
-              </div>
-            );
-          })}
-        </div>
+        <h2>{preparing ? 'Preparing your plan…' : 'Reading your plan…'}</h2>
+        <p className="subtitle">{preparing ? 'Preparing your file for upload.' : 'Extracting room dimensions and building details.'}</p>
+        <p className="time-note" role="status">{elapsed >= 75
+          ? 'This is taking much longer than usual.'
+          : elapsed >= 45
+            ? 'Detailed plans can take up to a minute — still working.'
+            : `${preparing ? 'Preparing' : 'Reading'} plan · ${Math.floor(elapsed)}s elapsed`}</p>
 
         {retrying && (
           <p className="retry-note" role="status">
@@ -95,7 +67,8 @@ export default function AnalysisProgress({ onCancel, retrying = false }: { onCan
           </p>
         )}
 
-        <button type="button" className="cancel-button" onClick={onCancel}>Cancel and choose another file</button>
+        <button type="button" className="cancel-button" onClick={onCancel}>{elapsed >= 75 ? 'Cancel' : 'Cancel and choose another file'}</button>
+        {elapsed >= 75 && <Link href="/boq/new?method=manual" className="manual-button" onClick={onCancel}>Use the manual builder</Link>}
       </Card>
 
       <style jsx>{`
@@ -177,81 +150,17 @@ export default function AnalysisProgress({ onCancel, retrying = false }: { onCan
           font-size: 0.72rem;
         }
 
-        .steps-list {
-          display: flex;
-          flex-direction: column;
-          gap: var(--spacing-md);
-          text-align: left;
-        }
-
-        .step-item {
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-md);
-          padding: var(--spacing-sm) var(--spacing-md);
+        .analysis-progress :global(.manual-button) {
+          display: inline-block;
+          margin: 12px;
+          padding: 10px 14px;
           border-radius: var(--radius-md);
-          background: rgba(6, 20, 47, 0.02);
-          transition: all 0.3s ease;
-        }
-
-        .step-item.current {
-          background: rgba(78, 154, 247, 0.12);
-        }
-
-        .step-item.complete {
-          opacity: 0.7;
-        }
-
-        .step-icon {
-          width: 32px;
-          height: 32px;
-          border-radius: var(--radius-full);
-          background: #ffffff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--color-text-muted);
-          transition: all 0.3s ease;
-          border: 1px solid var(--color-border-light);
-        }
-
-        .step-item.current .step-icon {
           background: var(--color-accent);
           color: white;
-        }
-
-        .step-item.complete .step-icon {
-          background: var(--color-success);
-          color: white;
-        }
-
-        .step-label {
           font-size: 0.875rem;
-          color: var(--color-text-secondary);
-          flex: 1;
+          font-weight: 600;
+          text-decoration: none;
         }
-
-        .step-item.current .step-label {
-          color: var(--color-text);
-          font-weight: 500;
-        }
-
-        .step-dots {
-          display: flex;
-          gap: 4px;
-        }
-
-        .step-dots span {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: var(--color-accent);
-          animation: pulse 1.4s infinite ease-in-out;
-        }
-
-        .step-dots span:nth-child(1) { animation-delay: 0s; }
-        .step-dots span:nth-child(2) { animation-delay: 0.2s; }
-        .step-dots span:nth-child(3) { animation-delay: 0.4s; }
 
         .cancel-button {
           margin-top: var(--spacing-lg);
@@ -270,10 +179,6 @@ export default function AnalysisProgress({ onCancel, retrying = false }: { onCan
           border-bottom-color: var(--color-primary);
         }
 
-        @keyframes pulse {
-          0%, 80%, 100% { opacity: 0.3; }
-          40% { opacity: 1; }
-        }
       `}</style>
     </div>
   );

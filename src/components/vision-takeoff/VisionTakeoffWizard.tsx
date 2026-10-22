@@ -110,7 +110,7 @@ export default function VisionTakeoffWizard() {
 
         {/* Analysis Progress */}
         {state.step === 'analyzing' && (
-          <AnalysisProgress onCancel={wizard.cancelAnalysis} retrying={wizard.analysisRetrying} />
+          <AnalysisProgress onCancel={wizard.cancelAnalysis} retrying={wizard.analysisRetrying} phase={wizard.analysisPhase} />
         )}
 
         {/* Floor Plan Editor */}

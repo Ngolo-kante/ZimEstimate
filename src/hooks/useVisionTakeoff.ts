@@ -18,7 +18,7 @@ import { materials, getBestPrice } from '@/lib/materials';
 import { TEMPORARY_WORKS_SUGGESTIONS } from '@/lib/buildFlowRules';
 import { supabase } from '@/lib/supabase';
 import { captureProductEvent } from '@/lib/productAnalytics';
-import { analyzePlanFile } from '@/lib/vision/analyzePlan';
+import { analyzePlanFile, withTimeLimit, type AnalysisPhase } from '@/lib/vision/analyzePlan';
 
 const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
 type PlanSnapshot = {
@@ -36,10 +36,11 @@ type PlanSnapshot = {
 // against cost abuse is IP-based rate limiting (10/min), not auth, so nothing
 // is given up by letting an anonymous visitor try the tool before signing up
 // for it.
-async function analyzeFloorPlanAPI(file: File, signal: AbortSignal, onPreviewImage: (image: Blob) => void, onRetry?: () => void): Promise<VisionAnalysisResult> {
-  const { data } = await supabase.auth.getSession();
-  const accessToken = data.session?.access_token;
-  return analyzePlanFile(file, { accessToken, signal, onPreviewImage, onRetry });
+async function analyzeFloorPlanAPI(file: File, signal: AbortSignal, onPreviewImage: (image: Blob) => void, onRetry?: () => void, onPhase?: (phase: AnalysisPhase) => void): Promise<VisionAnalysisResult> {
+  // Reading is public: a stalled session refresh must not block an upload.
+  const session = await withTimeLimit(supabase.auth.getSession(), 2_000, signal).catch(() => null);
+  const accessToken = session?.data.session?.access_token;
+  return analyzePlanFile(file, { accessToken, signal, onPreviewImage, onRetry, onPhase });
 }
 
 function addTemporaryEnablementItems(items: GeneratedBOQItem[], config: VisionConfig): GeneratedBOQItem[] {
@@ -85,6 +86,7 @@ export function useVisionTakeoff() {
   const [planRevision, setPlanRevision] = useState(0);
   /** The readers were busy and the plan is being read a second time. */
   const [analysisRetrying, setAnalysisRetrying] = useState(false);
+  const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase>('preparing');
   const [rescanCandidate, setRescanCandidate] = useState<VisionAnalysisResult | null>(null);
   const [isRescanning, setIsRescanning] = useState(false);
   const [rescanError, setRescanError] = useState<string | null>(null);
@@ -135,6 +137,7 @@ export function useVisionTakeoff() {
     analysisControllerRef.current = controller;
     setRescanCandidate(null);
     setRescanError(null);
+    setAnalysisPhase('preparing');
 
     // Create preview URL
     const previewUrl = URL.createObjectURL(file);
@@ -155,7 +158,7 @@ export function useVisionTakeoff() {
       const result = await analyzeFloorPlanAPI(file, controller.signal, (image) => {
         const imageUrl = URL.createObjectURL(image);
         setState((prev) => ({ ...prev, previewUrl: imageUrl }));
-      }, () => setAnalysisRetrying(true));
+      }, () => setAnalysisRetrying(true), setAnalysisPhase);
       setAnalysisRetrying(false);
 
       captureProductEvent('ai_scan_used', { tool: 'vision_takeoff', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'success', rooms: result.rooms.length });
@@ -511,6 +514,7 @@ export function useVisionTakeoff() {
 
   return {
     analysisRetrying,
+    analysisPhase,
     // State
     state,
 
