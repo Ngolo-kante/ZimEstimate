@@ -134,6 +134,14 @@ export const VERIFIED_PRICES: VerifiedPrice[] = [
   { materialId: 'timber-50x76', priceUsd: 9.0, method: 'single source', sources: [
     { supplier: 'ZBMS', listing: '76mm by 50mm by 6m', priceUsd: 9.0 },
   ] },
+  // Truss sizes builders use (BOQ audit against real builds, 2026-10-28);
+  // ZBMS store prices read that day.
+  { materialId: 'timber-152x38', priceUsd: 17.0, method: 'single source', sources: [
+    { supplier: 'ZBMS', listing: '152 by 38 by 6m |Beam', priceUsd: 17.0 },
+  ] },
+  { materialId: 'timber-114x38', priceUsd: 13.0, method: 'single source', sources: [
+    { supplier: 'ZBMS', listing: '114 by 38 by 6m |Wallplate| Roof Timber', priceUsd: 13.0 },
+  ] },
   { materialId: 'timber-38x38', priceUsd: 4.8, method: 'single source', sources: [
     { supplier: 'ZBMS', listing: '38 by 38 by 6m (brandering)', priceUsd: 4.8 },
   ] },

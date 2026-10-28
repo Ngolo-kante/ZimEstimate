@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ADD_LATER_IDS } from './addLater';
-import { estimateStageReach, stageStatusFromParams, stageStatusToParams } from './stageBudgetEstimator';
+import { estimateStageReach, stageStatusFromParams, stageStatusToParams, typicalRoomCount } from './stageBudgetEstimator';
 
 describe('estimateStageReach', () => {
   it('returns all construction stages in order', () => {
@@ -173,5 +173,13 @@ describe('parts people add later', () => {
     expect(exterior.coveragePercent).toBe(100);
     const built = estimateStageReach({ ...base, stageStatus: { exterior: 'built' } });
     expect(built.addLater.some((item) => item.id === 'boundary' || item.id === 'paving')).toBe(false);
+  });
+});
+
+describe('rooms in a typical house', () => {
+  it('counts a 120 m² 3-bed as 7 rooms, and never fewer than 4', () => {
+    expect(typicalRoomCount(120)).toBe(7);
+    expect(typicalRoomCount(40)).toBe(4);
+    expect(typicalRoomCount(213)).toBe(13);
   });
 });

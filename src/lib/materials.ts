@@ -142,6 +142,8 @@ export const materials: Material[] = [
 
     // TIMBER
     { id: 'timber-50x76', name: 'Timber 50x76mm (Rafters)', category: 'timber', subcategory: 'Structural', unit: 'per 6m length', specifications: 'Treated pine 50x76mm', milestones: ['roofing'] },
+    { id: 'timber-152x38', name: 'Timber 152x38mm (Rafters & Tie Beams)', category: 'timber', subcategory: 'Structural', unit: 'per 6m length', specifications: 'Treated pine 152x38mm beam', milestones: ['roofing'] },
+    { id: 'timber-114x38', name: 'Timber 114x38mm (Wall Plate & Truss Webs)', category: 'timber', subcategory: 'Structural', unit: 'per 6m length', specifications: 'Treated pine 114x38mm', milestones: ['roofing'] },
     { id: 'timber-38x38', name: 'Timber 38x38mm (Brandering)', category: 'timber', subcategory: 'Structural', unit: 'per 6m length', specifications: 'Treated pine 38x38mm', milestones: ['roofing'] },
     { id: 'timber-50x228', name: 'Timber 50x228mm (Beams)', category: 'timber', subcategory: 'Structural', unit: 'per 6m length', specifications: 'Treated pine 50x228mm', milestones: ['roofing'] },
 

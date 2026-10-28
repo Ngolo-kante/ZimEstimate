@@ -87,6 +87,16 @@ export type StageReachResult = {
   addLaterUsd: number;
 };
 
+/**
+ * Rooms in a typical house of this size, when nobody has said: one per 17 m²
+ * (a 120 m² 3-bed has 3 bedrooms, lounge, kitchen, bathroom and toilet: 7).
+ * Inside walls are estimated from it, so too few rooms means too few walls;
+ * it was one per 28 m², 4 rooms and 12 m of inside wall for 120 m².
+ */
+export function typicalRoomCount(floorAreaM2: number): number {
+  return Math.max(4, Math.round(floorAreaM2 / 17));
+}
+
 function clampPositive(value: number, fallback: number): number {
   if (!Number.isFinite(value) || value <= 0) return fallback;
   return value;
@@ -95,7 +105,7 @@ function clampPositive(value: number, fallback: number): number {
 export function estimateStageReach(input: StageReachInput): StageReachResult {
   const budgetUsd = clampPositive(input.budgetUsd, 0);
   const floorAreaM2 = clampPositive(input.floorAreaM2, 120);
-  const roomCount = clampPositive(input.roomCount ?? Math.round(floorAreaM2 / 28), 4);
+  const roomCount = clampPositive(input.roomCount ?? typicalRoomCount(floorAreaM2), 4);
   const wallHeightM = clampPositive(input.wallHeightM ?? 2.7, 2.7);
   const brickType = (input.brickTypes && input.brickTypes.length > 0) ? input.brickTypes[0] : 'common';
   const cementType = (input.cementTypes && input.cementTypes.length > 0) ? input.cementTypes[0] : 'cement_325';

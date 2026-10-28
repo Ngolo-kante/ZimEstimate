@@ -151,8 +151,8 @@ describe('labour sizing', () => {
     const items = house();
     const line = (trade: string) => items.find((item) => item.materialId === `labor-${trade}`)!;
     // Per m² of floor for the builder's stages, per m² tiled, per metre of boundary.
-    expect(line('to_slab').totalUsd).toBeCloseTo(10 * 120, 2);
-    expect(line('to_wall_plate').totalUsd).toBeCloseTo(9 * 120, 2);
+    expect(line('to_slab').totalUsd).toBeCloseTo(12 * 120, 2);
+    expect(line('to_wall_plate').totalUsd).toBeCloseTo(14 * 120, 2);
     expect(line('roof_work').totalUsd).toBeCloseTo(6.7 * 120, 2);
     expect(line('plastering').totalUsd).toBeCloseTo(7.4 * 120, 2);
     expect(line('plastering').calculationNote).toBe('$7.40/m² of floor × 120 m² of floor');
@@ -360,7 +360,7 @@ describe('labour rates set by the user', () => {
     expect(items.find((item) => item.materialId === 'labor-plastering')!.totalUsd).toBeCloseTo(10 * 120, 2);
     const plumbingMaterials = items.filter((item) => item.category === 'services' && !/cable|conduit|socket|switch|db-|mcb|light-/.test(item.materialId)).reduce((sum, item) => sum + item.totalUsd, 0);
     expect(items.find((item) => item.materialId === 'labor-plumbing')!.totalUsd).toBeCloseTo(plumbingMaterials * 0.2, 1);
-    expect(items.find((item) => item.materialId === 'labor-to_slab')!.totalUsd).toBeCloseTo(10 * 120, 2);
+    expect(items.find((item) => item.materialId === 'labor-to_slab')!.totalUsd).toBeCloseTo(12 * 120, 2);
   });
 
   it('never reads a saved percentage as dollars per square metre', () => {
@@ -375,7 +375,7 @@ describe('labour rates set by the user', () => {
   it('reads saved rates back from labour line notes', () => {
     expect(laborRatesFromNotes([
       { materialId: 'labor-plastering', note: '$9.00/m² of floor × 120 m² of floor' },
-      { materialId: 'labor-to_slab', note: '$10.00/m² of floor × 120 m² of floor' },
+      { materialId: 'labor-to_slab', note: '$12.00/m² of floor × 120 m² of floor' },
       { materialId: 'labor-plumbing', note: '40% of plumbing materials ($900.00)' },
       // Lines saved under the percentage model come back at today's defaults.
       { materialId: 'labor-plaster', note: '200% of finishing materials ($500.00)' },
@@ -402,5 +402,29 @@ describe('council wall rule (Harare and Bulawayo, from 1 July 2026)', () => {
     expect(elsewhere.calculationNote).toContain('inside walls (115mm)');
     expect(harare.calculationNote).toContain('inside walls (230mm, council rule)');
     expect(harare.quantity).toBeGreaterThan(elsewhere.quantity);
+  });
+});
+
+describe('BOQ audit against real builds (2026-10-28)', () => {
+  const house = (overrides: Partial<ManualBuilderConfig> = {}) => generateBOQFromBasics({
+    floorArea: 120, roomCount: 7, wallHeight: 2.7,
+    brickTypes: ['common'], cementTypes: ['cement_325'],
+    scope: 'full_house', includeLabor: false, locationType: 'urban', ...overrides,
+  });
+
+  it('screeds the whole floor, under the tiles too', () => {
+    const screed = house().find((item) => item.materialName === 'Cement (Floor Screed)');
+    expect(screed?.quantity).toBeGreaterThan(20);
+    expect(screed?.calculationNote).toContain('under the tiles');
+  });
+
+  it('builds the roof frame from the timber builders use', () => {
+    const items = house({ scope: 'roofing' });
+    expect(items.find((item) => item.materialId === 'timber-152x38')?.calculationNote).toContain('rafters, tie beams and hips');
+    expect(items.find((item) => item.materialId === 'timber-114x38')?.calculationNote).toContain('wall plate');
+    expect(items.some((item) => item.materialName.includes('Roof Frame'))).toBe(false);
+    // A lean-to has rafters only: no webs.
+    const leanTo = house({ scope: 'roofing', roofShape: 'lean_to' });
+    expect(leanTo.find((item) => item.materialId === 'timber-114x38')?.calculationNote).toMatch(/^wall plate/);
   });
 });

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import { estimateStageReach, stageStatusFromParams, stageStatusToParams, type StageId, type StageStatus } from '@/lib/estimators/stageBudgetEstimator';
+import { estimateStageReach, stageStatusFromParams, stageStatusToParams, type StageId, type StageStatus, typicalRoomCount } from '@/lib/estimators/stageBudgetEstimator';
 import { addLaterFromParam, type AddLaterId } from '@/lib/estimators/addLater';
 import { HOUSE_DEFAULTS, HOUSE_PROFILES } from '@/lib/estimators/houseBudgetOptions';
 import { generateBOQFromBasics, ManualBuilderConfig } from '@/lib/calculations';
@@ -180,7 +180,7 @@ export default function QuickBudgetPage() {
 
   const manualBuilderConfig = useMemo<ManualBuilderConfig | null>(() => {
     if (estimatorErrors.budget || estimatorErrors.area) return null;
-    const roomCount = Math.max(4, Math.round(parsedArea / 28));
+    const roomCount = typicalRoomCount(parsedArea);
     return {
       floorArea: parsedArea,
       roomCount,

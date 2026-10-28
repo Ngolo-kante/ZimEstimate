@@ -63,7 +63,8 @@ export const BOQ_HEALTH_CRITICAL_REQUIREMENTS: Record<BoqHealthCategory, string[
   ],
   roofing: [
     ['ibr-05-3m', 'ibr-04-3m', 'ibr-chromadek-04-36m', 'corrugated-36m', 'qtile-04-lm', 'roof-tile-concrete'],
-    ['timber-50x76'],
+    // The frame: 152x38 beams since 2026-10-28; BOQs saved before then use 50x76.
+    ['timber-152x38', 'timber-50x76'],
     ['timber-38x38'],
     ['screws-roof', 'tile-fixings'],
     ['fascia-pvc', 'gutter-pvc'],

@@ -18,14 +18,14 @@ export type LaborBasis = 'floor_m2' | 'tiled_m2' | 'ceiling_m2' | 'boundary_m' |
 
 export const LABOR_SUBSTAGES = [
   {
-    id: 'to_slab', stage: 'substructure', label: 'Setting out to slab', basis: 'floor_m2', rate: 10,
+    id: 'to_slab', stage: 'substructure', label: 'Setting out to slab', basis: 'floor_m2', rate: 12,
     includes: 'Setting out, trenches, footings, foundation brickwork and the slab',
-    source: 'Builders’ bids: $1,200 to slab, $2,400–2,500 to wall plate (Chitungwiza)',
+    source: 'Real builds: $12–14 per m² of floor to slab (Bulawayo 300 m², Harare 103 m²)',
   },
   {
-    id: 'to_wall_plate', stage: 'superstructure', label: 'Slab to wall plate', basis: 'floor_m2', rate: 9,
+    id: 'to_wall_plate', stage: 'superstructure', label: 'Slab to wall plate', basis: 'floor_m2', rate: 14,
     includes: 'Brickwork, building in door and window frames, lintels and the ring beam',
-    source: 'Builders’ bids: $1,100 from slab to wall plate',
+    source: 'Real builds: $14–33 per m² of floor to wall plate in all, median about $26',
   },
   {
     id: 'roof_work', stage: 'roofing', label: 'Roof carpentry & covering', basis: 'floor_m2', rate: 6.7,

@@ -747,27 +747,36 @@ function calculateRoofing(
   const lengthsOf = (metres: number) => Math.ceil((metres * 1.05) / TIMBER_LENGTH_M);
   const wallPlateM = 2 * (length + width);
   const frames = Math.ceil(length / TRUSS_SPACING_M) + 1;
-  let frameM: number;
+  // Builders cut rafters, tie beams and hips from 152x38 beams and the webs
+  // and wall plate from 114x38 (real builds in the Facebook groups and ZBMS's
+  // own "Wallplate" listing, 2026-10-28); the old single 50x76 line priced the
+  // frame at about half what real roofs cost.
+  let mainM: number;
+  let websM = 0;
   let frameNote: string;
   if (shape === 'lean_to') {
     const rafter = planWidth * pitch;
-    frameM = frames * rafter;
+    mainM = frames * rafter;
     frameNote = `${frames} rafters @ ${TRUSS_SPACING_M}m, ${rafter.toFixed(1)}m each`;
   } else {
     const rafter = (planWidth / 2) * pitch;
-    // Each truss: two rafters, the tie beam across the span, and its webs.
-    frameM = frames * (rafter * 2 + planWidth + width * TRUSS_WEB_FACTOR);
+    // Each truss: two rafters and the tie beam across the span, plus its webs.
+    mainM = frames * (rafter * 2 + planWidth);
+    websM = frames * width * TRUSS_WEB_FACTOR;
     frameNote = `${frames} trusses @ ${TRUSS_SPACING_M}m`;
     if (shape === 'hipped') {
       // Four hip rafters, and the jack rafters running up to them, which
       // take about as much timber again as the hips.
       const hip = Math.hypot(rafter, planWidth / 2);
-      frameM += 4 * hip * 2;
+      mainM += 4 * hip * 2;
       frameNote += ` + 4 hips with jack rafters (${hip.toFixed(1)}m each)`;
     }
   }
-  items.push(createBOQItem('timber-50x76', 'Timber 50x76mm (Roof Frame & Wall Plate)', 'roofing', lengthsOf(frameM + wallPlateM), 'per 6m length',
-    `${frameNote} (${Math.round(frameM)}m) + wall plate ${Math.round(wallPlateM)}m${tileRoof ? '. Concrete tiles are heavy: have the roof design checked by an engineer' : ''}`));
+  const engineerNote = tileRoof ? '. Concrete tiles are heavy: have the roof design checked by an engineer' : '';
+  items.push(createBOQItem('timber-152x38', 'Timber 152x38mm (Rafters & Tie Beams)', 'roofing', lengthsOf(mainM), 'per 6m length',
+    `${frameNote}: rafters, tie beams${shape === 'hipped' ? ' and hips' : ''} (${Math.round(mainM)}m)${engineerNote}`));
+  items.push(createBOQItem('timber-114x38', 'Timber 114x38mm (Truss Webs & Wall Plate)', 'roofing', lengthsOf(websM + wallPlateM), 'per 6m length',
+    `${websM > 0 ? `Truss webs ${Math.round(websM)}m + ` : ''}wall plate ${Math.round(wallPlateM)}m`));
 
   // Purlins or battens run across the whole slope area, whatever the shape.
   const slopeArea = planLength * planWidth * pitch;
@@ -909,14 +918,16 @@ function calculateFinishes(input: {
 
   items.push(createBOQItem('tiles-floor-ceramic', 'Floor Tiles', 'finishing', roundTo(floorTileArea, 1), 'per m²', `${roundTo(tiledFloorArea, 1)}m² tiled (${Math.round(spec.floorTileCoverage * 100)}% of floor) + waste`));
 
-  // Whatever is not tiled still needs a finished surface, so screed the balance
-  // rather than leaving an economy build with a free floor.
-  const screedArea = floorArea - tiledFloorArea;
-  if (screedArea > 0) {
-    const screedVolume = screedArea * SCREED_THICKNESS_M;
-    items.push(createBOQItem('cement-325', 'Cement (Floor Screed)', 'finishing', Math.ceil(screedVolume * BOQ_ASSUMPTIONS.plaster.cementBagsPerM3[quality]), 'per 50kg bag', `${roundTo(screedArea, 1)}m² untiled floor`));
-    items.push(createBOQItem('sand-pit', 'Pit Sand (Screed)', 'finishing', roundTo(screedVolume * SAND_M3_PER_M3_MORTAR, 1), 'per cube', 'Screed sand'));
-  }
+  // The whole floor is screeded ("rough floors"): tiles are laid on the
+  // screed, and untiled floor is finished with it. Builders price it as its
+  // own stage before tiling (real builds, 2026-10-20); it used to be counted
+  // only where there were no tiles, so a fully tiled house had none.
+  const screedVolume = floorArea * SCREED_THICKNESS_M;
+  const screedNote = tiledFloorArea >= floorArea
+    ? `${roundTo(floorArea, 1)}m² floor @ ${SCREED_THICKNESS_M * 1000}mm, under the tiles`
+    : `${roundTo(floorArea, 1)}m² floor @ ${SCREED_THICKNESS_M * 1000}mm: under the tiles and as the finish elsewhere`;
+  items.push(createBOQItem('cement-325', 'Cement (Floor Screed)', 'finishing', Math.ceil(screedVolume * BOQ_ASSUMPTIONS.plaster.cementBagsPerM3[quality]), 'per 50kg bag', screedNote));
+  items.push(createBOQItem('sand-pit', 'Pit Sand (Screed)', 'finishing', roundTo(screedVolume * SAND_M3_PER_M3_MORTAR, 1), 'per cube', 'Screed sand'));
   items.push(createBOQItem('tiles-wall-ceramic', 'Wall Tiles (Wet Areas)', 'finishing', roundTo(wetRoomWallArea, 1), 'per m²', 'Bathroom and kitchen splashbacks'));
   items.push(createBOQItem('tile-adhesive', 'Tile Adhesive', 'finishing', adhesiveBags, 'per 20kg bag', 'Floor and wall tiling'));
   items.push(createBOQItem('grout', 'Tile Grout', 'finishing', Math.ceil(adhesiveBags / 4), 'per 5kg bag', 'Tile joints'));
