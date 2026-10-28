@@ -22,12 +22,16 @@ import {
   CEMENT_INFO,
   SCOPE_INFO,
 } from '@/lib/vision/types';
+import type { OptionalExtra } from '@/hooks/useVisionTakeoff';
 
 interface ConfigurationStepProps {
   config: VisionConfig;
   onUpdate: (config: Partial<VisionConfig>) => void;
   onConfirm: () => void;
   onBack: () => void;
+  /** Optional extras with their prices; unticked ones are left out of the BOQ. */
+  extras?: OptionalExtra[];
+  onToggleExtra?: (id: string) => void;
 }
 
 export default function ConfigurationStep({
@@ -35,7 +39,12 @@ export default function ConfigurationStep({
   onUpdate,
   onConfirm,
   onBack,
+  extras = [],
+  onToggleExtra,
 }: ConfigurationStepProps) {
+  const ticked = new Set(config.includeExtras ?? []);
+  const leftOutUsd = extras.filter((extra) => !ticked.has(extra.id)).reduce((sum, extra) => sum + extra.usd, 0);
+  const usd = (value: number) => `$${Math.round(value).toLocaleString('en-US')}`;
   const scopes: ProjectScope[] = ['full_house', 'substructure', 'superstructure', 'roofing', 'finishing', 'services', 'exterior'];
   const brickTypes: BrickType[] = ['common', 'farm', 'blocks_6inch', 'blocks_8inch', 'face_brick'];
   const cementTypes: CementType[] = ['cement_325', 'cement_425'];
@@ -298,6 +307,35 @@ export default function ConfigurationStep({
             </button>
           </div>
         </Card>
+        {extras.length > 0 && onToggleExtra && <Card>
+          <div className="section-header">
+            <Package size={22} weight="light" />
+            <div>
+              <h3>Already on your site, or for later?</h3>
+              <p>Plans often show a water tank, site toilet or kitchen you may already have, or will add later. Tick only what you want priced now{config.includeLabor ? ', labour included' : ''}.</p>
+            </div>
+          </div>
+          {(['site', 'house'] as const).map((group) => {
+            const rows = extras.filter((extra) => extra.group === group);
+            if (rows.length === 0) return null;
+            return (
+              <div key={group} className="extras-group">
+                <p className="extras-heading">{group === 'site' ? 'Site setup' : 'Extras in the house plan'}</p>
+                {rows.map((extra) => (
+                  <label key={extra.id} className="extra-row">
+                    <input type="checkbox" checked={ticked.has(extra.id)} onChange={() => onToggleExtra(extra.id)} />
+                    <span className="extra-text">
+                      <strong>{extra.label}</strong>
+                      <small>{extra.why}</small>
+                    </span>
+                    <span className="extra-price">{usd(extra.usd)}</span>
+                  </label>
+                ))}
+              </div>
+            );
+          })}
+          <p className="extras-total">{leftOutUsd > 0 ? `Left out of this BOQ: ${usd(leftOutUsd)}. You can still add any of it later.` : 'Everything is included.'}</p>
+        </Card>}
         {config.includeLabor && <Card>
           <div className="section-header"><Users size={22} weight="light" /><div><h3>Labour by trade</h3><p>Priced the way builders quote: per m² of floor for building, plastering and roofing, per m² tiled, per metre of boundary wall; plumbing, electrical, painting and paving as a share of their materials. Change any rate in the BOQ.</p></div></div>
         </Card>}
@@ -316,6 +354,15 @@ export default function ConfigurationStep({
       </div>
 
       <style jsx>{`
+        .extras-group { margin-top: 12px; }
+        .extras-heading { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #64748b; margin: 0 0 6px; }
+        .extra-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; min-height: 44px; padding: 10px 0; border-bottom: 1px solid #e2e8f0; cursor: pointer; }
+        .extra-row input { width: 20px; height: 20px; accent-color: #2e6cf6; }
+        .extra-text { display: grid; gap: 2px; min-width: 0; }
+        .extra-text strong { font-size: 0.9rem; color: var(--color-text); }
+        .extra-text small { font-size: 0.76rem; color: #64748b; line-height: 1.35; }
+        .extra-price { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--color-primary); }
+        .extras-total { margin: 12px 0 0; font-size: 0.82rem; font-weight: 600; color: #475569; }
         .config-step {
           max-width: 800px;
           margin: 0 auto;

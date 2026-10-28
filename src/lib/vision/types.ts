@@ -98,8 +98,15 @@ export interface VisionConfig {
   roofShape?: RoofShape;
   /** Inside walls one brick thick (Harare and Bulawayo council rule). */
   fullBrickInternalWalls?: boolean;
-  /** The user's own labour percentages by stage; defaults to 35% each. */
+  /** The user's own labour rates by trade; missing ones use the defaults. */
   laborRates?: LaborRates;
+  /**
+   * Optional extras the person has ticked to include: site setup
+   * (TEMPORARY_WORKS_SUGGESTIONS ids) and parts often done already or later
+   * (ADD_LATER_ITEMS ids). Unticked ones are left out with their labour.
+   * Undefined keeps everything, as BOQs did before 2026-10-28.
+   */
+  includeExtras?: string[];
 }
 
 export const DEFAULT_CONFIG: VisionConfig = {
@@ -111,6 +118,9 @@ export const DEFAULT_CONFIG: VisionConfig = {
   foundationDepth: 0.6,
   roofCovering: 'ibr_05',
   roofShape: 'hipped',
+  // Optional extras start unticked: most people already have water, a toilet
+  // and storage on the stand, or add the rest later (owner, 2026-10-28).
+  includeExtras: [],
 };
 
 // Helper to normalize config values to arrays

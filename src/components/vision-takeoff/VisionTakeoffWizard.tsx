@@ -170,6 +170,8 @@ export default function VisionTakeoffWizard() {
             onUpdate={wizard.updateConfig}
             onConfirm={wizard.confirmConfig}
             onBack={() => wizard.goToStep('project_info')}
+            extras={wizard.optionalExtras}
+            onToggleExtra={wizard.toggleExtra}
           />
         )}
 

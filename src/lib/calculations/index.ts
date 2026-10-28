@@ -13,6 +13,7 @@ import {
 import { getBestPrice } from '@/lib/materials';
 import { DEFAULT_ROOF_COVERING, DEFAULT_ROOF_SHAPE, ROOF_COVERINGS, ROOF_SHAPES, type RoofCovering, type RoofShape } from './roofingOptions';
 import { laborCategoryFor, laborLines, type LaborQuantities, type LaborRates } from './laborSubstages';
+import { addLaterItemFor } from '@/lib/estimators/addLater';
 import {
   BOQ_ASSUMPTIONS,
   DEFAULT_LOCATION_TYPE,
@@ -1199,6 +1200,16 @@ export function generateBOQ(
       perimeter: perimeterLength,
       cementType: getFirstValue(config.cementType),
     }));
+  }
+
+  // Parts the person has not ticked (kitchen units, boundary wall, …) are
+  // left out before labour is worked out, so their labour goes with them.
+  if (config.includeExtras) {
+    const keep = new Set(config.includeExtras);
+    for (let i = allItems.length - 1; i >= 0; i--) {
+      const extra = addLaterItemFor(allItems[i]);
+      if (extra && !keep.has(extra)) allItems.splice(i, 1);
+    }
   }
 
   if (includeLabor) {

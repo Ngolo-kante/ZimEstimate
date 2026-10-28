@@ -1,5 +1,5 @@
 // Vision Takeoff Wizard State Management Hook
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   VisionTakeoffState,
@@ -13,7 +13,9 @@ import {
   VisionAnalysisResult,
   GeneratedBOQItem,
 } from '@/lib/vision/types';
-import { councilRequiresFullBrickWalls, generateBOQ } from '@/lib/calculations';
+import { councilRequiresFullBrickWalls, generateBOQ, laborQuantitiesFor } from '@/lib/calculations';
+import { laborLines } from '@/lib/calculations/laborSubstages';
+import { ADD_LATER_ITEMS } from '@/lib/estimators/addLater';
 import { materials, getBestPrice } from '@/lib/materials';
 import { TEMPORARY_WORKS_SUGGESTIONS } from '@/lib/buildFlowRules';
 import { supabase } from '@/lib/supabase';
@@ -49,6 +51,8 @@ function addTemporaryEnablementItems(items: GeneratedBOQItem[], config: VisionCo
   if (!hasSubstructureScope) return items;
 
   const enablementItems = TEMPORARY_WORKS_SUGGESTIONS.flatMap((suggestion) => {
+    // Only what the person ticked; undefined is an older saved setup, which had them all.
+    if (config.includeExtras && !config.includeExtras.includes(suggestion.id)) return [];
     if (items.some((item) => item.materialId === suggestion.id)) return [];
     const material = materials.find((entry) => entry.id === suggestion.id);
     const bestPrice = getBestPrice(suggestion.id);
@@ -76,6 +80,34 @@ function addTemporaryEnablementItems(items: GeneratedBOQItem[], config: VisionCo
 
   if (enablementItems.length === 0) return items;
   return [...items, ...enablementItems];
+}
+
+export type OptionalExtra = { id: string; group: 'site' | 'house'; label: string; why: string; usd: number };
+
+/**
+ * The optional extras a plan's BOQ can include, each with its price: site
+ * setup from the catalogue, and the house's own extras (kitchen units,
+ * boundary wall, …) priced from this plan with their labour.
+ */
+function optionalExtrasFor(rooms: DetectedRoom[], walls: DetectedWall[], config: VisionConfig, windows?: number, doors?: number): OptionalExtra[] {
+  const scopes = Array.isArray(config.scope) ? config.scope : [config.scope];
+  const site: OptionalExtra[] = scopes.includes('full_house') || scopes.includes('substructure')
+    ? TEMPORARY_WORKS_SUGGESTIONS.flatMap((suggestion) => {
+      const price = getBestPrice(suggestion.id);
+      return price ? [{ id: suggestion.id, group: 'site' as const, label: suggestion.label, why: suggestion.description, usd: price.priceUsd * suggestion.defaultQty }] : [];
+    })
+    : [];
+  if (rooms.length === 0) return site;
+  const everything = generateBOQ(rooms, walls, { ...config, includeExtras: undefined, includeLabor: false }, windows, doors);
+  const area = rooms.reduce((sum, room) => sum + room.area, 0);
+  const house = ADD_LATER_ITEMS.flatMap((entry) => {
+    const lines = everything.filter((item) => entry.matches(item));
+    if (lines.length === 0) return [];
+    const materials = lines.reduce((sum, item) => sum + item.totalUsd, 0);
+    const labour = config.includeLabor ? laborLines(lines, laborQuantitiesFor(lines, area), config.laborRates).reduce((sum, line) => sum + line.usd, 0) : 0;
+    return [{ id: entry.id, group: 'house' as const, label: entry.label, why: entry.why, usd: materials + labour }];
+  });
+  return [...site, ...house];
 }
 
 export function useVisionTakeoff() {
@@ -408,6 +440,22 @@ export function useVisionTakeoff() {
     }));
   }, []);
 
+  // Priced only while the person is choosing them, on the settings step.
+  const optionalExtras = useMemo(
+    () => state.step === 'config'
+      ? optionalExtrasFor(state.editedRooms, state.editedWalls, { ...state.config, fullBrickInternalWalls: councilRequiresFullBrickWalls(state.projectInfo?.location) }, state.analysisResult?.windows, state.analysisResult?.doors)
+      : [],
+    [state.step, state.editedRooms, state.editedWalls, state.config, state.projectInfo?.location, state.analysisResult?.windows, state.analysisResult?.doors],
+  );
+
+  const toggleExtra = useCallback((id: string) => {
+    setState((prev) => {
+      const current = prev.config.includeExtras ?? [];
+      const includeExtras = current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id];
+      return { ...prev, config: { ...prev.config, includeExtras } };
+    });
+  }, []);
+
   const updatePlanOpenings = useCallback((openings: { doors?: number; windows?: number }) => {
     recordPlanEdit();
     setState((prev) => ({
@@ -515,6 +563,8 @@ export function useVisionTakeoff() {
   return {
     analysisRetrying,
     analysisPhase,
+    optionalExtras,
+    toggleExtra,
     // State
     state,
 

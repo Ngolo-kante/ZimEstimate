@@ -428,3 +428,27 @@ describe('BOQ audit against real builds (2026-10-28)', () => {
     expect(leanTo.find((item) => item.materialId === 'timber-114x38')?.calculationNote).toMatch(/^wall plate/);
   });
 });
+
+describe('optional extras on an uploaded plan (2026-10-28)', () => {
+  const rooms: DetectedRoom[] = [
+    { id: 'lounge', name: 'Lounge', dimensions: { width: 5, length: 6 }, area: 30, position: { x: 0, y: 0, width: 50, height: 60 }, wallType: 'external', isEdited: false },
+    { id: 'kitchen', name: 'Kitchen', dimensions: { width: 4, length: 4 }, area: 16, position: { x: 50, y: 0, width: 40, height: 40 }, wallType: 'external', isEdited: false },
+    { id: 'bed', name: 'Bedroom', dimensions: { width: 4, length: 4 }, area: 16, position: { x: 0, y: 60, width: 40, height: 40 }, wallType: 'external', isEdited: false },
+    { id: 'bath', name: 'Bathroom', dimensions: { width: 2.5, length: 3 }, area: 7.5, position: { x: 40, y: 60, width: 25, height: 30 }, wallType: 'internal', isEdited: false },
+  ];
+  const config = { scope: 'full_house' as const, brickType: 'common' as const, cementType: 'cement_325' as const, includeLabor: true, wallHeight: 2.7, foundationDepth: 0.6 };
+  const total = (items: ReturnType<typeof generateBOQ>) => items.reduce((sum, item) => sum + item.totalUsd, 0);
+
+  it('leaves unticked extras out with their labour, and keeps ticked ones', () => {
+    const everything = generateBOQ(rooms, [], config);
+    const none = generateBOQ(rooms, [], { ...config, includeExtras: [] });
+    const withKitchen = generateBOQ(rooms, [], { ...config, includeExtras: ['kitchen'] });
+    expect(everything.some((item) => item.materialId === 'kitchen-units')).toBe(true);
+    expect(none.some((item) => ['kitchen-units', 'durawall-panel', 'gate-vehicle', 'geyser-150', 'bath-skirted', 'paint-acrylic'].includes(item.materialId))).toBe(false);
+    // The boundary wall's labour goes with the wall.
+    expect(none.some((item) => item.materialId === 'labor-boundary_wall')).toBe(false);
+    expect(withKitchen.some((item) => item.materialId === 'kitchen-units')).toBe(true);
+    expect(total(none)).toBeLessThan(total(withKitchen));
+    expect(total(withKitchen)).toBeLessThan(total(everything));
+  });
+});
