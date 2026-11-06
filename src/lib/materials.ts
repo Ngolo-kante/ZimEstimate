@@ -139,6 +139,11 @@ export const materials: Material[] = [
     { id: 'truss-steel', name: 'Steel Roof Truss', category: 'roofing', subcategory: 'Trusses', unit: 'per running meter', specifications: 'Prefabricated steel truss', milestones: ['roofing'] },
     { id: 'fascia-pvc', name: 'PVC Fascia Board', category: 'roofing', subcategory: 'Accessories', unit: 'per 6m length', specifications: '150mm PVC fascia', milestones: ['roofing'] },
     { id: 'gutter-pvc', name: 'PVC Gutter', category: 'roofing', subcategory: 'Accessories', unit: 'per 6m length', specifications: '110mm PVC half-round gutter', milestones: ['roofing'] },
+    { id: 'gutter-bracket', name: 'PVC Gutter Bracket', category: 'roofing', subcategory: 'Accessories', unit: 'each', specifications: 'Bracket for half-round PVC gutter', milestones: ['roofing'] },
+    { id: 'gutter-corner', name: 'PVC Gutter External Corner', category: 'roofing', subcategory: 'Accessories', unit: 'each', specifications: 'External corner for half-round PVC gutter', milestones: ['roofing'] },
+    { id: 'gutter-stop-end', name: 'PVC Gutter Stop End', category: 'roofing', subcategory: 'Accessories', unit: 'each', specifications: 'Stop end for PVC gutter', milestones: ['roofing'] },
+    { id: 'downpipe-pvc', name: 'PVC Downpipe 3m', category: 'roofing', subcategory: 'Accessories', unit: 'per 3m length', specifications: 'Round PVC downpipe', milestones: ['roofing'] },
+    { id: 'downpipe-fittings', name: 'Downpipe Fittings Set', category: 'roofing', subcategory: 'Accessories', unit: 'per set', specifications: 'Gutter outlet, shoe, two offset bends and two downpipe brackets', milestones: ['roofing'] },
 
     // TIMBER
     { id: 'timber-50x76', name: 'Timber 50x76mm (Rafters)', category: 'timber', subcategory: 'Structural', unit: 'per 6m length', specifications: 'Treated pine 50x76mm', milestones: ['roofing'] },
@@ -151,6 +156,10 @@ export const materials: Material[] = [
     { id: 'cable-25', name: 'Cable 2.5mm T&E', category: 'electrical', subcategory: 'Wiring', unit: 'per 100m roll', specifications: '2.5mm² twin & earth', milestones: ['services'] },
     { id: 'cable-4', name: 'Cable 4mm T&E', category: 'electrical', subcategory: 'Wiring', unit: 'per 100m roll', specifications: '4mm² twin & earth', milestones: ['services'] },
     { id: 'cable-6', name: 'Cable 6mm T&E', category: 'electrical', subcategory: 'Wiring', unit: 'per 100m roll', specifications: '6mm² twin & earth', milestones: ['services'] },
+    { id: 'wire-6', name: 'House Wire 6mm', category: 'electrical', subcategory: 'Wiring', unit: 'per metre', specifications: '6mm² single-core house wire (red, black or green/yellow)', milestones: ['services'] },
+    { id: 'flush-box-3x3', name: 'PVC Flush Box 3x3', category: 'electrical', subcategory: 'Conduit', unit: 'each', specifications: 'Wall box for a light switch', milestones: ['services'] },
+    { id: 'flush-box-6x3', name: 'PVC Flush Box 6x3', category: 'electrical', subcategory: 'Conduit', unit: 'each', specifications: 'Wall box for a double socket', milestones: ['services'] },
+    { id: 'earth-rod', name: 'Copper Earth Rod 1.2m', category: 'electrical', subcategory: 'Earthing', unit: 'each', specifications: '1.2m x 16mm copper earth rod', milestones: ['services'] },
     { id: 'db-8way', name: 'Distribution Board 8-Way', category: 'electrical', subcategory: 'Distribution', unit: 'each', specifications: '8-way consumer unit', milestones: ['services'] },
     { id: 'conduit-20', name: 'PVC Conduit 20mm', category: 'electrical', subcategory: 'Conduit', unit: 'per 4m length', specifications: '20mm rigid PVC conduit', milestones: ['services'] },
 

@@ -50,7 +50,7 @@ describe('verified market prices', () => {
     for (const entry of VERIFIED_PRICES) {
       const best = getBestPrice(entry.materialId);
       expect(best?.priceUsd, entry.materialId).toBe(entry.priceUsd);
-      expect(best?.lastUpdated).toBe(VERIFIED_PRICES_CHECKED_ON);
+      expect(best?.lastUpdated).toBe(entry.checkedOn ?? VERIFIED_PRICES_CHECKED_ON);
     }
   });
 

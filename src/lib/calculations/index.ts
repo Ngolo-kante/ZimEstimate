@@ -320,7 +320,12 @@ const TERMITE_POISON_L_PER_SQM = 0.05;
 const REBAR_Y12_PER_LM_RINGBEAM = 4;
 const STIRRUPS_PER_LM = 4;
 const MESH_SHEETS_PER_SQM = 0.07;
+// Binding wire: the usual allowance of about 10 kg a tonne of bar steel.
+const BINDING_WIRE_KG_PER_TONNE = 10;
+const Y12_KG_PER_M = 0.888;
+const Y10_KG_PER_M = 0.617;
 
+const GUTTER_BRACKET_SPACING_M = 0.9;
 const ROOF_PITCH_FACTOR = 1.06;
 // Sheeted roofs here are pitched about 20° (1/cos 20° ≈ 1.06), tiled ones
 // about 30° (1.15), a lean-to about 10° (1.02).
@@ -442,8 +447,12 @@ function ringBeamItems(allWalls: number, wallHeight: number, cementType: CementT
   items.push(createBOQItem(cement.materialId, `${cement.name} (Ring Beam)`, 'superstructure', Math.ceil(beamM3 * getConcreteCementBagsPerM3(cementType)), 'per 50kg bag', beamNote));
   items.push(createBOQItem('sand-river', 'River Sand (Ring Beam)', 'superstructure', beamM3 * 0.5, 'per cube', beamNote));
   items.push(createBOQItem('stone-19mm', 'Crushed Stone 19mm (Ring Beam)', 'superstructure', beamM3 * 0.8, 'per cube', beamNote));
-  items.push(createBOQItem('rebar-12', 'Rebar Y12', 'superstructure', Math.ceil(allWalls * REBAR_Y12_PER_LM_RINGBEAM / 6), 'per length', `Ring beam: ${allWalls.toFixed(1)}m @ 4 bars`));
-  items.push(createBOQItem('rebar-10', 'Rebar Y10', 'superstructure', Math.ceil(allWalls * STIRRUPS_PER_LM / 6), 'per length', 'Ring beam stirrups @ 250mm spacing'));
+  const y12Lengths = Math.ceil(allWalls * REBAR_Y12_PER_LM_RINGBEAM / 6);
+  const y10Lengths = Math.ceil(allWalls * STIRRUPS_PER_LM / 6);
+  items.push(createBOQItem('rebar-12', 'Rebar Y12', 'superstructure', y12Lengths, 'per length', `Ring beam: ${allWalls.toFixed(1)}m @ 4 bars`));
+  items.push(createBOQItem('rebar-10', 'Rebar Y10', 'superstructure', y10Lengths, 'per length', 'Ring beam stirrups @ 250mm spacing'));
+  const steelKg = (y12Lengths * Y12_KG_PER_M + y10Lengths * Y10_KG_PER_M) * 6;
+  items.push(createBOQItem('bindwire', 'Binding Wire', 'superstructure', Math.max(1, Math.ceil(steelKg * BINDING_WIRE_KG_PER_TONNE / 1000)), 'per kg', `Tying the ring beam steel: about ${BINDING_WIRE_KG_PER_TONNE}kg a tonne of bars (${Math.round(steelKg)}kg)`));
   const layers = Math.max(1, Math.floor(wallHeight / COURSE_HEIGHT_M / BRICKFORCE_EVERY_COURSES));
   items.push(createBOQItem('brickforce', 'Brickforce', 'superstructure', Math.ceil(allWalls * layers / BRICKFORCE_ROLL_M), 'per roll', `Every ${BRICKFORCE_EVERY_COURSES}th course: ${layers} layers x ${allWalls.toFixed(1)}m of wall`));
   return items;
@@ -805,7 +814,18 @@ function calculateRoofing(
   const vergeM = shape === 'gable' ? 4 * (planWidth / 2) * pitch : shape === 'lean_to' ? 2 * planWidth * pitch + planLength : 0;
   items.push(createBOQItem('fascia-pvc', 'Fascia Board 228mm', 'roofing', Math.ceil((eavesM + vergeM) / 6), 'per 6m length', shape === 'hipped' ? 'Right round the eaves' : 'Eaves and the sloping ends'));
   items.push(createBOQItem('gutter-pvc', 'PVC Gutter', 'roofing', Math.ceil(eavesM / 6), 'per 6m length',
-    `${shape === 'hipped' ? 'All four eaves' : shape === 'gable' ? 'Both long eaves' : 'The low eave'}: ${eavesM.toFixed(1)}m. Downpipes and brackets: add from your supplier's quote`));
+    `${shape === 'hipped' ? 'All four eaves' : shape === 'gable' ? 'Both long eaves' : 'The low eave'}: ${eavesM.toFixed(1)}m`));
+  items.push(createBOQItem('gutter-bracket', 'Gutter Brackets', 'roofing', Math.ceil(eavesM / GUTTER_BRACKET_SPACING_M), 'each', `Every ${GUTTER_BRACKET_SPACING_M * 1000}mm along ${eavesM.toFixed(1)}m of gutter`));
+  if (shape === 'hipped') {
+    items.push(createBOQItem('gutter-corner', 'Gutter Corners', 'roofing', 4, 'each', 'One at each corner of the house'));
+  } else {
+    items.push(createBOQItem('gutter-stop-end', 'Gutter Stop Ends', 'roofing', shape === 'gable' ? 4 : 2, 'each', shape === 'gable' ? 'Both ends of both gutters' : 'Both ends of the gutter'));
+  }
+  // A downpipe at each end of every gutter run: four round a hipped or gable
+  // roof, two on a lean-to. One 3 m length reaches the ground from the eaves.
+  const downpipes = shape === 'lean_to' ? 2 : 4;
+  items.push(createBOQItem('downpipe-pvc', 'PVC Downpipes 3m', 'roofing', downpipes, 'per 3m length', `${downpipes} downpipes, one length each`));
+  items.push(createBOQItem('downpipe-fittings', 'Downpipe Fittings', 'roofing', downpipes, 'per set', 'Per downpipe: gutter outlet, shoe, two offset bends and two wall brackets'));
 
   return items;
 }
@@ -855,6 +875,9 @@ const CABLE_M_PER_SOCKET = 8;
 const CABLE_M_PER_LIGHT = 8;
 const CONDUIT_LENGTHS_PER_POINT = 2;
 const CIRCUIT_BREAKERS = 6;
+// Geyser and stove each get their own 6 mm circuit: live, neutral and earth.
+const HEAVY_CIRCUITS = 2;
+const HEAVY_CIRCUIT_RUN_M = 15;
 const FLOOR_M2_PER_BATHROOM = 60;
 const COPPER_M_PER_POINT = 12;
 const FITTINGS_PER_POINT = 6;
@@ -987,9 +1010,14 @@ function calculateServices(input: { floorArea: number; roomCount: number }): Gen
   items.push(createBOQItem('cable-25', 'Cable 2.5mm T&E (Sockets)', 'services', Math.max(1, Math.ceil((sockets * CABLE_M_PER_SOCKET) / CABLE_ROLL_LENGTH_M)), 'per 100m roll', `${sockets} sockets @ ${CABLE_M_PER_SOCKET}m`));
   // Lighting is run in single-core wire: live, neutral and earth.
   items.push(createBOQItem('cable-15', 'House Wire 1.5mm (Lights)', 'services', Math.max(3, Math.ceil((lights * CABLE_M_PER_LIGHT * 3) / CABLE_ROLL_LENGTH_M)), 'per 100m roll', `${lights} lights @ ${CABLE_M_PER_LIGHT}m, three cores`));
+  // Geyser and stove circuits, previously left for the electrician's quote.
+  items.push(createBOQItem('wire-6', 'House Wire 6mm (Geyser & Stove)', 'services', HEAVY_CIRCUITS * HEAVY_CIRCUIT_RUN_M * 3, 'per metre', `${HEAVY_CIRCUITS} circuits @ ${HEAVY_CIRCUIT_RUN_M}m, red, black and earth`));
   items.push(createBOQItem('conduit-20', 'PVC Conduit 20mm', 'services', Math.ceil(points * CONDUIT_LENGTHS_PER_POINT), 'per 4m length', `${points} points`));
+  items.push(createBOQItem('flush-box-6x3', 'Flush Boxes 6x3 (Sockets)', 'services', sockets, 'each', 'One per double socket'));
+  items.push(createBOQItem('flush-box-3x3', 'Flush Boxes 3x3 (Switches)', 'services', lights, 'each', 'One per light switch'));
+  items.push(createBOQItem('earth-rod', 'Copper Earth Rod 1.2m', 'services', 1, 'each', 'Earthing for the distribution board'));
   items.push(createBOQItem('db-8way', 'Distribution Board 8-Way', 'services', 1, 'each', 'Consumer unit'));
-  items.push(createBOQItem('mcb-sp', 'Circuit Breakers', 'services', CIRCUIT_BREAKERS, 'each', 'Lights, sockets, geyser and stove circuits. Not yet priced: the 6mm geyser and stove cable and an earth leakage unit — add them from your electrician\'s quote'));
+  items.push(createBOQItem('mcb-sp', 'Circuit Breakers', 'services', CIRCUIT_BREAKERS, 'each', 'Lights, sockets, geyser and stove circuits. Not yet priced: the earth leakage unit — add it from your electrician\'s quote'));
 
   // ── Plumbing and sanitaryware, per bathroom ──────────────────────────────
   // A bathroom for about every 60 m²: two on a 3-bedroom house (main and
@@ -1016,8 +1044,8 @@ function calculateServices(input: { floorArea: number; roomCount: number }): Gen
   const wetFittings = bathrooms * 2 + 2; // basins, baths/showers, sink, washing machine
   items.push(createBOQItem('pipe-40-pvc', 'PVC Waste Pipe 40mm', 'services', Math.max(1, Math.ceil((wetFittings * WASTE_M_PER_FITTING) / WASTE_PIPE_LENGTH_M)), 'per 6m length', `${wetFittings} wet fittings @ ${WASTE_M_PER_FITTING}m`));
   items.push(createBOQItem('pipe-110-pvc', 'PVC Soil Pipe 110mm', 'services', Math.ceil((bathrooms * SOIL_M_PER_WC + SOIL_RUN_TO_SEWER_M) / SOIL_PIPE_LENGTH_M), 'per 6m length', `${bathrooms} WC${bathrooms === 1 ? '' : 's'} + ${SOIL_RUN_TO_SEWER_M}m to the sewer or septic tank`));
-  items.push(createBOQItem('gully-110', 'Gully Trap 110mm', 'services', bathrooms + 1, 'each', 'Bathrooms and kitchen'));
-  items.push(createBOQItem('geyser-150', 'Geyser 150L', 'services', 1, 'each', 'Hot water'));
+  items.push(createBOQItem('gully-110', 'Gully Trap 110mm', 'services', bathrooms + 1, 'each', 'Bathrooms and kitchen. Not yet priced: inspection chambers on the drain run — add them from your builder\'s quote'));
+  items.push(createBOQItem('geyser-150', 'Geyser 150L', 'services', 1, 'each', 'Hot water. Not yet priced: the pressure control valve, vacuum breakers and drip tray — add them from your plumber\'s quote'));
 
   return items;
 }

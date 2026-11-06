@@ -59,3 +59,6 @@ next-env.d.ts
 # Playwright writes this on every run; a stale "failed" in it reads as a
 # real failure to the next person who opens the repo.
 /test-results
+
+# Owner drop folder for recordings, photos and documents (personal files)
+inbox/

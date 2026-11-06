@@ -32,7 +32,7 @@ function UpgradeContent() {
                     lineHeight: 1.6,
                     marginBottom: '32px',
                 }}>
-                    During our launch period, every feature on ZimEstimate is completely free.
+                    Every feature on ZimEstimate is free.
                     Unlimited projects, AI tools, all export formats, and the full material catalog
                     are available to all users.
                 </p>

@@ -28,7 +28,7 @@ export const VERIFIED_PRICES_CHECKED_ON = '2026-10-11';
 export const VERIFIED_SUPPLIER_ID = 'sup-market-check-2026-10';
 
 export interface PriceSource {
-  supplier: 'ZBMS' | 'Union Hardware' | 'Halsteds';
+  supplier: 'ZBMS' | 'Union Hardware' | 'Halsteds' | 'Voltman Hardware';
   listing: string;
   priceUsd: number;
 }
@@ -45,6 +45,8 @@ export interface VerifiedPrice {
    * be compared with priceUsd directly — only the converted priceUsd can.
    */
   sourcesInOtherUnits?: true;
+  /** When this item was read, if later than VERIFIED_PRICES_CHECKED_ON. */
+  checkedOn?: string;
 }
 
 export const VERIFIED_PRICES: VerifiedPrice[] = [
@@ -129,6 +131,26 @@ export const VERIFIED_PRICES: VerifiedPrice[] = [
   { materialId: 'gutter-pvc', priceUsd: 18.95, method: 'single source (6 m half-round)', sources: [
     { supplier: 'Union Hardware', listing: 'Gutter PVC 0.5 round 6M', priceUsd: 18.95 },
   ] },
+  // Gutter and downpipe parts, read from Union Hardware's store 2026-11-06
+  // (completeness audit: downpipes and brackets were unpriced).
+  { materialId: 'gutter-bracket', priceUsd: 0.42, method: 'single source', checkedOn: '2026-11-06', sources: [
+    { supplier: 'Union Hardware', listing: 'Gutter PVC round bracket 0.5 round', priceUsd: 0.42 },
+  ] },
+  { materialId: 'gutter-corner', priceUsd: 4.75, method: 'single source', checkedOn: '2026-11-06', sources: [
+    { supplier: 'Union Hardware', listing: 'Gutter PVC round external corner DA504', priceUsd: 4.75 },
+  ] },
+  { materialId: 'gutter-stop-end', priceUsd: 1.27, method: 'single source (a 110 D-shape stop end; no round one listed)', checkedOn: '2026-11-06', sources: [
+    { supplier: 'Union Hardware', listing: 'Gutter PVC D-shape GPESE 110 stop end', priceUsd: 1.27 },
+  ] },
+  { materialId: 'downpipe-pvc', priceUsd: 9.14, method: 'single source', checkedOn: '2026-11-06', sources: [
+    { supplier: 'Union Hardware', listing: 'Gutter PVC round downpipe 3M', priceUsd: 9.14 },
+  ] },
+  { materialId: 'downpipe-fittings', priceUsd: 15.88, method: 'sum of one set: outlet + shoe + 2 offset bends + 2 downpipe brackets', sourcesInOtherUnits: true, checkedOn: '2026-11-06', sources: [
+    { supplier: 'Union Hardware', listing: 'Gutter PVC round outlet', priceUsd: 9.36 },
+    { supplier: 'Union Hardware', listing: 'Gutter PVC round d-pipe shoe', priceUsd: 1.2 },
+    { supplier: 'Union Hardware', listing: 'Gutter PVC round d-pipe offset bend (x2)', priceUsd: 1.42 },
+    { supplier: 'Union Hardware', listing: 'Gutter PVC round d-pipe bracket (x2)', priceUsd: 1.24 },
+  ] },
 
   // ── Timber (per 6 m length) ─────────────────────────────────────────────
   { materialId: 'timber-50x76', priceUsd: 9.0, method: 'single source', sources: [
@@ -150,6 +172,22 @@ export const VERIFIED_PRICES: VerifiedPrice[] = [
   ] },
 
   // ── Electrical ──────────────────────────────────────────────────────────
+  // Read 2026-11-06. ZBMS lists 6.0 mm house wire without a length; at $1.10
+  // it can only be per metre (its 2.5 mm wire is $47.72 per 100 m).
+  { materialId: 'wire-6', priceUsd: 1.1, method: 'median of three colours, per metre', checkedOn: '2026-11-06', sources: [
+    { supplier: 'ZBMS', listing: 'CE01 House Wire 6.0mm Red', priceUsd: 1.1 },
+    { supplier: 'ZBMS', listing: 'CE02 House Wire 6.0mm Black', priceUsd: 1.1 },
+    { supplier: 'ZBMS', listing: 'CE03 House Wire 6.0mm Grn/Yel', priceUsd: 1.1 },
+  ] },
+  { materialId: 'flush-box-3x3', priceUsd: 0.85, method: 'single source', checkedOn: '2026-11-06', sources: [
+    { supplier: 'ZBMS', listing: '3x3 PVC Flush Box', priceUsd: 0.85 },
+  ] },
+  { materialId: 'flush-box-6x3', priceUsd: 1.4, method: 'single source', checkedOn: '2026-11-06', sources: [
+    { supplier: 'ZBMS', listing: '6x3 PVC Flush Box', priceUsd: 1.4 },
+  ] },
+  { materialId: 'earth-rod', priceUsd: 15.0, method: 'single source', checkedOn: '2026-11-06', sources: [
+    { supplier: 'Voltman Hardware', listing: 'Copper earth rod 1.2Mx16MM', priceUsd: 15.0 },
+  ] },
   { materialId: 'db-8way', priceUsd: 17.35, method: 'median of three 8-way boards', sources: [
     { supplier: 'Halsteds', listing: 'Himel dist board plastic surface 8 ways', priceUsd: 11.19 },
     { supplier: 'Halsteds', listing: 'Himel dist board steel flush 8 ways', priceUsd: 17.35 },
@@ -277,7 +315,7 @@ export function getVerifiedPrice(materialId: string) {
     // Same rate the rest of the static catalogue uses, so USD and ZWG stay
     // consistent with each other across the app.
     priceZwg: Number((verified.priceUsd * 30).toFixed(2)),
-    lastUpdated: VERIFIED_PRICES_CHECKED_ON,
+    lastUpdated: verified.checkedOn ?? VERIFIED_PRICES_CHECKED_ON,
     inStock: true,
   };
 }

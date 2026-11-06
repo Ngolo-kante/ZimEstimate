@@ -233,6 +233,8 @@ export default function MainLayout({
               <Link href="/privacy">Privacy Policy</Link>
               <Link href="/terms">Terms</Link>
               <Link href="/support">Contact support</Link>
+              <a href="https://www.facebook.com/profile.php?id=61593040225635" target="_blank" rel="noopener noreferrer">Facebook</a>
+              <a href="https://www.tiktok.com/@zimestimate" target="_blank" rel="noopener noreferrer">TikTok</a>
             </div>
           </div>
         </footer>
