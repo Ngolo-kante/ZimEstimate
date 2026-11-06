@@ -13,7 +13,7 @@ import {
   VisionAnalysisResult,
   GeneratedBOQItem,
 } from '@/lib/vision/types';
-import { councilRequiresFullBrickWalls, generateBOQ, laborQuantitiesFor } from '@/lib/calculations';
+import { councilRequiresFullBrickWalls, generateBOQ, laborQuantitiesFor, planFloorArea } from '@/lib/calculations';
 import { laborLines } from '@/lib/calculations/laborSubstages';
 import { ADD_LATER_ITEMS } from '@/lib/estimators/addLater';
 import { materials, getBestPrice } from '@/lib/materials';
@@ -99,7 +99,7 @@ function optionalExtrasFor(rooms: DetectedRoom[], walls: DetectedWall[], config:
     : [];
   if (rooms.length === 0) return site;
   const everything = generateBOQ(rooms, walls, { ...config, includeExtras: undefined, includeLabor: false }, windows, doors);
-  const area = rooms.reduce((sum, room) => sum + room.area, 0);
+  const area = planFloorArea(rooms, config).gross;
   const house = ADD_LATER_ITEMS.flatMap((entry) => {
     const lines = everything.filter((item) => entry.matches(item));
     if (lines.length === 0) return [];
@@ -200,6 +200,9 @@ export function useVisionTakeoff() {
         analysisResult: result,
         editedRooms: result.rooms,
         editedWalls: result.walls,
+        // A total printed on the plan fills the "confirmed total" box; the
+        // person can still change or clear it.
+        verifiedTotalAreaM2: result.statedTotalAreaM2 ?? null,
         step: 'editing',
         isProcessing: false,
       }));
@@ -443,9 +446,9 @@ export function useVisionTakeoff() {
   // Priced only while the person is choosing them, on the settings step.
   const optionalExtras = useMemo(
     () => state.step === 'config'
-      ? optionalExtrasFor(state.editedRooms, state.editedWalls, { ...state.config, fullBrickInternalWalls: councilRequiresFullBrickWalls(state.projectInfo?.location) }, state.analysisResult?.windows, state.analysisResult?.doors)
+      ? optionalExtrasFor(state.editedRooms, state.editedWalls, { ...state.config, fullBrickInternalWalls: councilRequiresFullBrickWalls(state.projectInfo?.location), statedFloorAreaM2: state.verifiedTotalAreaM2 ?? undefined }, state.analysisResult?.windows, state.analysisResult?.doors)
       : [],
-    [state.step, state.editedRooms, state.editedWalls, state.config, state.projectInfo?.location, state.analysisResult?.windows, state.analysisResult?.doors],
+    [state.step, state.editedRooms, state.editedWalls, state.config, state.projectInfo?.location, state.analysisResult?.windows, state.analysisResult?.doors, state.verifiedTotalAreaM2],
   );
 
   const toggleExtra = useCallback((id: string) => {
@@ -470,7 +473,7 @@ export function useVisionTakeoff() {
     // Small delay for animation, then generate BOQ
     setTimeout(() => {
       setState((prev) => {
-        const config = { ...prev.config, fullBrickInternalWalls: councilRequiresFullBrickWalls(prev.projectInfo?.location) };
+        const config = { ...prev.config, fullBrickInternalWalls: councilRequiresFullBrickWalls(prev.projectInfo?.location), statedFloorAreaM2: prev.verifiedTotalAreaM2 ?? undefined };
         const boqItems = generateBOQ(prev.editedRooms, prev.editedWalls, config, prev.analysisResult?.windows, prev.analysisResult?.doors);
         const boqItemsWithEnablement = addTemporaryEnablementItems(boqItems, prev.config);
         return {

@@ -28,6 +28,12 @@ describe('uploaded plan review', () => {
     expect(assessPlanReview(base)).toEqual([]);
   });
 
+  it('warns that a plan with a stair has more than the floor priced, without blocking it', () => {
+    const findings = assessPlanReview({ ...base, multiStorey: true });
+    expect(findings.map((finding) => finding.id)).toEqual(['storeys']);
+    expect(findings[0].severity).toBe('check');
+  });
+
   it('keeps a confirmation through door, window and stage edits but not a changed plan', () => {
     const confirmedKey = planIdentityKey(base);
     expect(planIdentityKey({ ...base, windows: 9, stages: ['Roofing'] })).toBe(confirmedKey);

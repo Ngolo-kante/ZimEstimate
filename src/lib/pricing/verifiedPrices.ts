@@ -117,6 +117,14 @@ export const VERIFIED_PRICES: VerifiedPrice[] = [
   { materialId: 'bindwire', priceUsd: 7.28, method: 'per kg, from a 500 g pack', sourcesInOtherUnits: true, sources: [
     { supplier: 'Halsteds', listing: 'Starline galv binding wire 1.60mm x 500g', priceUsd: 3.64 },
   ] },
+  // Precast lintels, read from ZBMS 2026-11-06. The listings give the wall
+  // width, not the length, so the BOQ asks people to check lengths.
+  { materialId: 'lintel-230', priceUsd: 18.0, method: 'single source', checkedOn: '2026-11-06', sources: [
+    { supplier: 'ZBMS', listing: '230mm beam (precast lintel)', priceUsd: 18.0 },
+  ] },
+  { materialId: 'lintel-115', priceUsd: 14.0, method: 'single source', checkedOn: '2026-11-06', sources: [
+    { supplier: 'ZBMS', listing: '115mm beam (precast lintel)', priceUsd: 14.0 },
+  ] },
   { materialId: 'brickforce', priceUsd: 1.88, method: 'median, per 20 m roll', sources: [
     { supplier: 'ZBMS', listing: 'Brickforce 230 (9 inch wall)', priceUsd: 1.7 },
     { supplier: 'ZBMS', listing: 'Brickforce 115mm (4.5 inch)', priceUsd: 1.8 },

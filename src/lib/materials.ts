@@ -125,6 +125,8 @@ export const materials: Material[] = [
     { id: 'rebar-12', name: 'Rebar Y12 (6m)', category: 'steel', subcategory: 'Reinforcement', unit: 'per length', specifications: '12mm deformed bar, 6m length', milestones: ['substructure', 'superstructure'] },
     { id: 'rebar-16', name: 'Rebar Y16 (6m)', category: 'steel', subcategory: 'Reinforcement', unit: 'per length', specifications: '16mm deformed bar, 6m length', milestones: ['substructure'] },
     { id: 'mesh-ref193', name: 'Mesh Ref 193', category: 'steel', subcategory: 'Mesh', unit: 'per sheet', specifications: '2.4m x 6m welded mesh', milestones: ['substructure'] },
+    { id: 'lintel-230', name: 'Precast Lintel 230mm', category: 'steel', subcategory: 'Precast', unit: 'each', specifications: 'Precast reinforced concrete lintel for a one-brick wall', milestones: ['superstructure'] },
+    { id: 'lintel-115', name: 'Precast Lintel 115mm', category: 'steel', subcategory: 'Precast', unit: 'each', specifications: 'Precast reinforced concrete lintel for a half-brick wall', milestones: ['superstructure'] },
     { id: 'bindwire', name: 'Binding Wire', category: 'steel', subcategory: 'Accessories', unit: 'per kg', specifications: '1.6mm annealed wire', milestones: ['substructure', 'superstructure'] },
 
     // ROOFING

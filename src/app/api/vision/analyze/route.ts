@@ -3,6 +3,7 @@
 // Accepts floor plan image and returns structured room data
 
 import { after, NextRequest, NextResponse } from 'next/server';
+import { looksMultiStorey, statedFloorArea } from '@/lib/vision/planFacts';
 import { analyzeFloorPlan, analysisFromLabels } from '@/lib/vision/gemini-client';
 import { makeReadingCopy, type ReadingCopy } from '@/lib/vision/readingCopy';
 import { readPlanLabels } from '@/lib/vision/ocrPlan';
@@ -137,6 +138,13 @@ export async function POST(request: NextRequest) {
     // Drawing programs stamp rooms with an area, not a size: checked too.
     for (const room of pdfAreas) printed.push({ name: room.name, area: room.area, at: { x: room.at.x * 100, y: room.at.y * 100 } });
     if (printed.length > 0) result.printed = { source: pdfRooms.length > 0 || pdfAreas.length > 0 ? 'pdf-text' : 'ocr', rooms: printed };
+
+    // What the plan says about itself: its total floor area, and whether it
+    // has a stair (more than one floor).
+    const planText = pdfWords ? pdfWords.words.map((word) => word.text).join(' ') : '';
+    const statedArea = statedFloorArea(planText, result.totalArea);
+    if (statedArea !== null) result.statedTotalAreaM2 = statedArea;
+    if (looksMultiStorey(planText, [...result.rooms.map((room) => room.name), ...printed.map((room) => room.name)])) result.multiStorey = true;
 
     const { rawResponse: _rawResponse, ...data } = result;
     void _rawResponse;

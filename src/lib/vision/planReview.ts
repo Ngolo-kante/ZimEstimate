@@ -16,6 +16,8 @@ export interface PlanReviewInput {
   confidence?: number | null;
   /** The AI readers were busy and only the plan's printed labels were read. */
   readFromLabels?: boolean;
+  /** The plan shows a stair or an upper floor (planFacts.ts). */
+  multiStorey?: boolean;
   stages: string[];
   includeLabor: boolean;
 }
@@ -44,6 +46,9 @@ export function assessPlanReview(input: PlanReviewInput): PlanReviewFinding[] {
   else if (input.rooms.length >= 4 && input.doors < Math.ceil(input.rooms.length / 2)) add('doors', 'Door count looks low compared with the number of rooms. Check the plan count.');
   if (input.windows === 0) add('windows', 'No windows were detected. Enter the plan count, or review the area-based allowance in the BOQ.');
   else if (input.area >= 80 && input.windows < Math.ceil(input.area / 45)) add('windows', 'Window count looks low for this floor area. Check the plan count.');
+  if (input.multiStorey) {
+    add('storeys', 'This plan looks like a double-storey house: it shows a stair. ZimEstimate prices one floor, so the BOQ covers only the floor read here. Add the upper floor\'s rooms, or ask a builder to price the first-floor slab and stairs.');
+  }
   if (input.noExternalWallsDetected) add('walls', 'No external wall segments were identified. External wall length is estimated from floor area.');
   if (input.readFromLabels) {
     add('labels', `Our AI plan readers were busy, so only the room names and sizes printed on the plan were read: ${input.rooms.length} ${input.rooms.length === 1 ? 'room' : 'rooms'}. Add any that are missing, or upload the plan again in a minute for a full reading.`);

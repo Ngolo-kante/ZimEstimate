@@ -62,6 +62,10 @@ export interface VisionAnalysisResult {
   reader?: { provider: 'gemini' | 'nvidia' | 'openrouter'; model: string };
   /** Room sizes printed on the plan, for checking the scan (planCheck.ts). */
   printed?: PrintedSizes;
+  /** The whole floor area the plan prints ("area=90sqm"), when it gives one (planFacts.ts). */
+  statedTotalAreaM2?: number;
+  /** The plan shows a stair or an upper floor; the BOQ prices one floor. */
+  multiStorey?: boolean;
 }
 
 // ============================================
@@ -107,6 +111,12 @@ export interface VisionConfig {
    * Undefined keeps everything, as BOQs did before 2026-10-28.
    */
   includeExtras?: string[];
+  /**
+   * The whole floor area from the drawing (printed on it, or typed in by the
+   * person). When it is larger than the rooms add up to, the slab, roof,
+   * services and labour use it: the rooms leave out the walls.
+   */
+  statedFloorAreaM2?: number;
 }
 
 export const DEFAULT_CONFIG: VisionConfig = {

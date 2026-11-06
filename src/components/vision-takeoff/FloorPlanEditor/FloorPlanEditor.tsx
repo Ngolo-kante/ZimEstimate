@@ -35,6 +35,8 @@ interface FloorPlanEditorProps {
   /** Room sizes printed on the plan, to check the scan against. */
   printed: PrintedSizes | null;
   readFromLabels: boolean;
+  /** The plan shows a stair or an upper floor. */
+  multiStorey?: boolean;
   totalArea: number;
   onRoomUpdate: (roomId: string, updates: Partial<DetectedRoom>) => void;
   onRoomRemove: (roomId: string) => void;
@@ -72,6 +74,7 @@ export default function FloorPlanEditor({
   confidence,
   printed,
   readFromLabels,
+  multiStorey,
   totalArea,
   onRoomUpdate,
   onRoomRemove,
@@ -144,6 +147,7 @@ export default function FloorPlanEditor({
     // The reader's own score only when there is nothing printed to measure by.
     confidence: measured ? null : confidence,
     readFromLabels,
+    multiStorey,
     // Construction stages are chosen later; this screen checks only the scan.
     stages: ['scan review'],
     includeLabor: false,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { councilRequiresFullBrickWalls, estimateVisionWallDimensions, generateBOQ, generateBOQFromBasics, ManualBuilderConfig } from './index';
+import { councilRequiresFullBrickWalls, estimateVisionWallDimensions, generateBOQ, generateBOQFromBasics, ManualBuilderConfig, planFloorArea } from './index';
 import { getBestPrice } from '../materials';
 import { cleanLaborRates, isLaborCategory, laborRateFor, laborRatesFromNotes } from './laborSubstages';
 import type { DetectedRoom, DetectedWall } from '../vision/types';
@@ -450,5 +450,42 @@ describe('optional extras on an uploaded plan (2026-10-28)', () => {
     expect(withKitchen.some((item) => item.materialId === 'kitchen-units')).toBe(true);
     expect(total(none)).toBeLessThan(total(withKitchen));
     expect(total(withKitchen)).toBeLessThan(total(everything));
+  });
+});
+
+describe('a floor area stated on the plan (2026-11-06)', () => {
+  // Rooms add up to 69.5 m²; the drawing says 90 m² (a real upload read as 69–87 m²).
+  const rooms: DetectedRoom[] = [
+    { id: 'lounge', name: 'Lounge', dimensions: { width: 5, length: 6 }, area: 30, position: { x: 0, y: 0, width: 50, height: 60 }, wallType: 'external', isEdited: false },
+    { id: 'kitchen', name: 'Kitchen', dimensions: { width: 4, length: 4 }, area: 16, position: { x: 50, y: 0, width: 40, height: 40 }, wallType: 'external', isEdited: false },
+    { id: 'bed', name: 'Bedroom', dimensions: { width: 4, length: 4 }, area: 16, position: { x: 0, y: 60, width: 40, height: 40 }, wallType: 'external', isEdited: false },
+    { id: 'bath', name: 'Bathroom', dimensions: { width: 2.5, length: 3 }, area: 7.5, position: { x: 40, y: 60, width: 25, height: 30 }, wallType: 'internal', isEdited: false },
+  ];
+  const config = { scope: 'full_house' as const, brickType: 'common' as const, cementType: 'cement_325' as const, includeLabor: true, wallHeight: 2.7, foundationDepth: 0.6, includeExtras: [] };
+  const line = (items: ReturnType<typeof generateBOQ>, id: string) => items.find((item) => item.materialId === id);
+
+  it('uses the stated total when it is larger than the rooms', () => {
+    expect(planFloorArea(rooms, { statedFloorAreaM2: 90 })).toEqual({ rooms: 69.5, gross: 90 });
+    expect(planFloorArea(rooms, { statedFloorAreaM2: 50 }).gross).toBe(69.5);
+    expect(planFloorArea(rooms, {}).gross).toBe(69.5);
+  });
+
+  it('prices the slab and roof on the whole floor, the finishes on the rooms', () => {
+    const fromRooms = generateBOQ(rooms, [], config);
+    const stated = generateBOQ(rooms, [], { ...config, statedFloorAreaM2: 90 });
+    expect(line(stated, 'mesh-ref193')!.quantity).toBeGreaterThan(line(fromRooms, 'mesh-ref193')!.quantity);
+    expect(line(stated, 'ceiling-board')!.quantity).toBe(line(fromRooms, 'ceiling-board')!.quantity);
+    const labour = (items: ReturnType<typeof generateBOQ>) => items.filter((item) => item.category.startsWith('labor_')).reduce((sum, item) => sum + item.totalUsd, 0);
+    expect(labour(stated)).toBeGreaterThan(labour(fromRooms));
+  });
+
+  it('puts a lintel over every window and door', () => {
+    const items = generateBOQ(rooms, [], { ...config, scope: 'superstructure' }, 6, 5);
+    // 6 windows + 2 outside doors in one-brick walls; 3 inside doors in half-brick.
+    expect(line(items, 'lintel-230')!.quantity).toBe(8);
+    expect(line(items, 'lintel-115')!.quantity).toBe(3);
+    const fullBrick = generateBOQ(rooms, [], { ...config, scope: 'superstructure', fullBrickInternalWalls: true }, 6, 5);
+    expect(line(fullBrick, 'lintel-230')!.quantity).toBe(11);
+    expect(line(fullBrick, 'lintel-115')).toBeUndefined();
   });
 });

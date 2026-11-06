@@ -225,10 +225,10 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
     if (rooms && rooms.length > 0) {
       items.push(...calculateSuperstructureFromRooms(config, perimeter, internalWallLength, locationType));
 
-      // Add Global Items (Lintel, Reinforcement)
       const totalWallLen = perimeter + internalWallLength;
 
       items.push(...ringBeamItems(totalWallLen, wallHeight, cementType, locationType));
+      items.push(...lintelItems(config.totalWindows || rooms.reduce((sum, r) => sum + (r.windows || 0), 0) || Math.ceil(floorArea / 15), config.totalDoors, roomCount, config.fullBrickInternalWalls));
 
     } else {
       // Walls stand on the slab, full height; the foundation walls are below it.
@@ -246,6 +246,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
 
       const totalLen = perimeter + internalWallLength;
       items.push(...ringBeamItems(totalLen, wallHeight, cementType, locationType));
+      items.push(...lintelItems(config.totalWindows || Math.ceil(floorArea / 15), config.totalDoors, roomCount, config.fullBrickInternalWalls));
     }
   }
 
@@ -424,6 +425,24 @@ function wallOpenings(totalWindows: number, totalDoors: number | undefined, room
     external: Math.max(0, totalWindows) * WINDOW_OPENING_M2 + EXTERIOR_DOOR_COUNT * DOOR_OPENING_M2,
     internal: interiorDoors * DOOR_OPENING_M2,
   };
+}
+
+/**
+ * A precast lintel over every window and door. Window heads sit at about
+ * 2.1 m, below the ring beam at the top of the wall, so the openings need
+ * their own lintels (Zimbabwe plan sections show "precast lintel" over each).
+ * Outside walls are one brick, so 230 mm lintels; inside doors take 115 mm
+ * unless the council wants inside walls a full brick too.
+ */
+function lintelItems(totalWindows: number, totalDoors: number | undefined, roomCount: number, fullBrickInternalWalls?: boolean): GeneratedBOQItem[] {
+  const interiorDoors = totalDoors && totalDoors > 0 ? Math.max(0, totalDoors - EXTERIOR_DOOR_COUNT) : Math.max(1, roomCount);
+  const outside = Math.max(0, totalWindows) + EXTERIOR_DOOR_COUNT;
+  const items = [createBOQItem('lintel-230', 'Precast Lintels 230mm', 'superstructure', outside + (fullBrickInternalWalls ? interiorDoors : 0), 'each',
+    `${totalWindows} windows and ${EXTERIOR_DOOR_COUNT} outside doors${fullBrickInternalWalls ? ` + ${interiorDoors} inside doors (full-brick inside walls)` : ''}. Check lengths with your supplier`)];
+  if (!fullBrickInternalWalls && interiorDoors > 0) {
+    items.push(createBOQItem('lintel-115', 'Precast Lintels 115mm', 'superstructure', interiorDoors, 'each', `${interiorDoors} inside doors. Check lengths with your supplier`));
+  }
+  return items;
 }
 
 /** A brick course with its mortar joint. */
@@ -1171,6 +1190,17 @@ function calculateLabor(materialItems: GeneratedBOQItem[], floorAreaM2: number, 
 // MAIN BOQ GENERATOR
 // ============================================
 
+/**
+ * The floor area a plan upload is priced on. The rooms leave out the walls
+ * (and any room the reader skipped), so a larger total stated on the drawing,
+ * or typed in from it, is used for the structure, roof, services and labour.
+ */
+export function planFloorArea(rooms: { area: number }[], config: Pick<VisionConfig, 'statedFloorAreaM2'>): { rooms: number; gross: number } {
+  const roomArea = rooms.reduce((sum, r) => sum + r.area, 0);
+  const stated = config.statedFloorAreaM2;
+  return { rooms: roomArea, gross: stated && Number.isFinite(stated) && stated > roomArea ? stated : roomArea };
+}
+
 export function generateBOQ(
   rooms: DetectedRoom[],
   walls: DetectedWall[],
@@ -1181,7 +1211,8 @@ export function generateBOQ(
   itemIdCounter = 0;
   const allItems: GeneratedBOQItem[] = [];
 
-  const totalArea = rooms.reduce((sum, r) => sum + r.area, 0);
+  // Slab, roof, services and labour on the whole floor; finishes on the rooms.
+  const { rooms: roomArea, gross: totalArea } = planFloorArea(rooms, config);
   const { perimeter: perimeterLength, internalWallLength } = estimateVisionWallDimensions(rooms, walls);
 
   const { includeLabor } = config;
@@ -1196,6 +1227,7 @@ export function generateBOQ(
   if (hasScope('superstructure')) {
     const windows = detectedWindows && detectedWindows > 0 ? detectedWindows : Math.ceil(totalArea / 15);
     allItems.push(...calculateSuperstructure(perimeterLength, internalWallLength, config, wallOpenings(windows, detectedDoors, rooms.length), locationType));
+    allItems.push(...lintelItems(windows, detectedDoors, rooms.length, config.fullBrickInternalWalls));
   }
 
   if (hasScope('roofing')) {
@@ -1206,7 +1238,7 @@ export function generateBOQ(
     const windows = detectedWindows && detectedWindows > 0 ? detectedWindows : Math.ceil(totalArea / 15);
     allItems.push(createBOQItem('window-sill-brick', 'Window Sill (Brick)', 'finishing', windows * 1.5, 'per meter', `${windows} windows`));
     allItems.push(...calculateFinishes({
-      floorArea: totalArea,
+      floorArea: roomArea,
       roomCount: rooms.length,
       wallHeight: config.wallHeight,
       perimeter: perimeterLength,

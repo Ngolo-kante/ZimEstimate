@@ -126,6 +126,7 @@ export default function VisionTakeoffWizard() {
             confidence={wizard.confidence}
             printed={state.analysisResult?.printed ?? null}
             readFromLabels={wizard.readFromLabels}
+            multiStorey={Boolean(state.analysisResult?.multiStorey)}
             totalArea={wizard.totalArea}
             onRoomUpdate={wizard.updateRoom}
             onRoomRemove={wizard.removeRoom}
