@@ -429,7 +429,13 @@ export function useVisionTakeoff() {
   }, []);
 
   const confirmProjectInfo = useCallback(() => {
-    setState((prev) => ({ ...prev, step: 'config' }));
+    setState((prev) => {
+      // Rural and peri-urban houses are mostly built in farm bricks: start
+      // there, shown ticked on the next screen. A brick already picked stays.
+      const outOfTown = prev.projectInfo?.locationType === 'rural' || prev.projectInfo?.locationType === 'peri-urban';
+      const brickType = outOfTown && prev.config.brickType === 'common' ? 'farm' : prev.config.brickType;
+      return { ...prev, step: 'config', config: { ...prev.config, brickType } };
+    });
   }, []);
 
   // ============================================
@@ -446,9 +452,9 @@ export function useVisionTakeoff() {
   // Priced only while the person is choosing them, on the settings step.
   const optionalExtras = useMemo(
     () => state.step === 'config'
-      ? optionalExtrasFor(state.editedRooms, state.editedWalls, { ...state.config, fullBrickInternalWalls: councilRequiresFullBrickWalls(state.projectInfo?.location), statedFloorAreaM2: state.verifiedTotalAreaM2 ?? undefined }, state.analysisResult?.windows, state.analysisResult?.doors)
+      ? optionalExtrasFor(state.editedRooms, state.editedWalls, { ...state.config, fullBrickInternalWalls: councilRequiresFullBrickWalls(state.projectInfo?.location), statedFloorAreaM2: state.verifiedTotalAreaM2 ?? undefined, locationType: state.projectInfo?.locationType || undefined }, state.analysisResult?.windows, state.analysisResult?.doors)
       : [],
-    [state.step, state.editedRooms, state.editedWalls, state.config, state.projectInfo?.location, state.analysisResult?.windows, state.analysisResult?.doors, state.verifiedTotalAreaM2],
+    [state.step, state.editedRooms, state.editedWalls, state.config, state.projectInfo?.location, state.analysisResult?.windows, state.analysisResult?.doors, state.verifiedTotalAreaM2, state.projectInfo?.locationType],
   );
 
   const toggleExtra = useCallback((id: string) => {
@@ -473,7 +479,7 @@ export function useVisionTakeoff() {
     // Small delay for animation, then generate BOQ
     setTimeout(() => {
       setState((prev) => {
-        const config = { ...prev.config, fullBrickInternalWalls: councilRequiresFullBrickWalls(prev.projectInfo?.location), statedFloorAreaM2: prev.verifiedTotalAreaM2 ?? undefined };
+        const config = { ...prev.config, fullBrickInternalWalls: councilRequiresFullBrickWalls(prev.projectInfo?.location), statedFloorAreaM2: prev.verifiedTotalAreaM2 ?? undefined, locationType: prev.projectInfo?.locationType || undefined };
         const boqItems = generateBOQ(prev.editedRooms, prev.editedWalls, config, prev.analysisResult?.windows, prev.analysisResult?.doors);
         const boqItemsWithEnablement = addTemporaryEnablementItems(boqItems, prev.config);
         return {

@@ -17,6 +17,28 @@ export const HOUSE_LOCATION_LABELS: Record<HouseLocation, string> = {
   rural: 'Rural',
 };
 
+/**
+ * Wall bricks. Farm bricks, burnt locally, are what most rural and peri-urban
+ * houses are built in, at about $45 per thousand delivered against the city's
+ * $110 common bricks; picking either of those areas starts on farm bricks.
+ */
+export const HOUSE_BRICKS = ['common', 'farm'] as const;
+export type HouseBrick = (typeof HOUSE_BRICKS)[number];
+
+export const HOUSE_BRICK_LABELS: Record<HouseBrick, string> = {
+  common: 'Common bricks',
+  farm: 'Farm bricks',
+};
+
+export function defaultBrickFor(location: HouseLocation): HouseBrick {
+  return location === 'urban' ? 'common' : 'farm';
+}
+
+/** The brick in a link, or the area's usual one when the link has none. */
+export function brickFromParam(raw: string | null | undefined, location: HouseLocation): HouseBrick {
+  return HOUSE_BRICKS.includes(raw as HouseBrick) ? (raw as HouseBrick) : defaultBrickFor(location);
+}
+
 export const HOUSE_PROFILES = {
   standard: { label: 'Standard Build', wallHeightM: 3.0, cementType: 'cement_425' as const },
   economy: { label: 'Economy Build', wallHeightM: 2.7, cementType: 'cement_325' as const },

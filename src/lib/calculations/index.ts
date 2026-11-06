@@ -1,3 +1,4 @@
+import { applyLocationPrices } from '@/lib/pricing/locationPrices';
 import {
   DetailedRoom,
   DetectedRoom,
@@ -298,6 +299,10 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
       cementType,
     }));
   }
+
+  // Delivered prices outside the cities, before labour: some trades' labour
+  // is a share of their materials.
+  applyLocationPrices(items, locationType);
 
   if (includeLabor) {
     items.push(...calculateLabor(items, floorArea, config.laborRates));
@@ -1218,7 +1223,8 @@ export function generateBOQ(
   const { includeLabor } = config;
   const scopes: ProjectScope[] = Array.isArray(config.scope) ? config.scope : [config.scope];
   const hasScope = (s: ProjectScope) => scopes.includes(s) || scopes.includes('full_house');
-  const locationType = DEFAULT_LOCATION_TYPE;
+  // Waste allowances and delivered prices follow the project's location.
+  const locationType = normalizeLocationType(config.locationType);
 
   if (hasScope('substructure')) {
     allItems.push(...calculateSubstructure(totalArea, perimeterLength, internalWallLength, config, locationType));
@@ -1271,6 +1277,8 @@ export function generateBOQ(
       if (extra && !keep.has(extra)) allItems.splice(i, 1);
     }
   }
+
+  applyLocationPrices(allItems, locationType);
 
   if (includeLabor) {
     allItems.push(...calculateLabor(allItems, totalArea, config.laborRates));

@@ -7,7 +7,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { estimateStageReach, stageStatusFromParams, stageStatusToParams, type StageId, type StageStatus, typicalRoomCount } from '@/lib/estimators/stageBudgetEstimator';
 import { addLaterFromParam, type AddLaterId } from '@/lib/estimators/addLater';
-import { HOUSE_DEFAULTS, HOUSE_PROFILES } from '@/lib/estimators/houseBudgetOptions';
+import { HOUSE_DEFAULTS, HOUSE_PROFILES, HOUSE_BRICKS, HOUSE_BRICK_LABELS, brickFromParam, defaultBrickFor, type HouseBrick, type HouseLocation } from '@/lib/estimators/houseBudgetOptions';
 import { generateBOQFromBasics, ManualBuilderConfig } from '@/lib/calculations';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
@@ -53,13 +53,13 @@ const locationOptions = [
   {
     id: 'peri-urban',
     label: 'Peri-Urban',
-    hint: 'Balanced transport and supplier availability.',
+    hint: 'Farm bricks are common; sand and stone at city prices.',
     icon: HouseLine,
   },
   {
     id: 'rural',
     label: 'Rural',
-    hint: 'Higher transport and waste assumptions.',
+    hint: 'Farm bricks, and sand, stone and cement at delivered rural prices (small loads cost 3–4 times city bulk).',
     icon: MapPin,
   },
 ] as const;
@@ -89,6 +89,9 @@ export default function QuickBudgetPage() {
   const [budgetInput, setBudgetInput] = useState('');
   const [floorAreaInput, setFloorAreaInput] = useState(String(HOUSE_DEFAULTS.area));
   const [locationType, setLocationType] = useState<(typeof locationOptions)[number]['id']>(HOUSE_DEFAULTS.location);
+  const [brickType, setBrickType] = useState<HouseBrick>(defaultBrickFor(HOUSE_DEFAULTS.location));
+  // Once someone picks a brick, changing the area no longer changes it.
+  const [brickChosen, setBrickChosen] = useState(false);
   const [roofCovering, setRoofCovering] = useState<RoofCovering>(DEFAULT_ROOF_COVERING);
   const [roofShape, setRoofShape] = useState<RoofShape>(DEFAULT_ROOF_SHAPE);
   // On by default: a house needs builders, and a materials-only figure made
@@ -133,6 +136,9 @@ export default function QuickBudgetPage() {
     if (locationOptions.some((option) => option.id === loc)) {
       setLocationType(loc as (typeof locationOptions)[number]['id']);
     }
+    const restoredLocation = (locationOptions.some((option) => option.id === loc) ? loc : HOUSE_DEFAULTS.location) as HouseLocation;
+    setBrickType(brickFromParam(params.get('brick'), restoredLocation));
+    if (params.get('brick')) setBrickChosen(true);
 
     const roof = params.get('roof');
     if (roof && roof in ROOF_COVERINGS) setRoofCovering(roof as RoofCovering);
@@ -185,7 +191,7 @@ export default function QuickBudgetPage() {
       floorArea: parsedArea,
       roomCount,
       wallHeight: selectedProfile.config.wallHeightM,
-      brickTypes: ['common'],
+      brickTypes: [brickType],
       cementTypes: [selectedProfile.config.cementType],
       scope: 'full_house',
       includeLabor,
@@ -194,7 +200,7 @@ export default function QuickBudgetPage() {
       roofCovering,
       roofShape,
     };
-  }, [estimatorErrors.area, estimatorErrors.budget, locationType, roofCovering, roofShape, includeLabor, laborRates, parsedArea, selectedProfile.config.cementType, selectedProfile.config.wallHeightM]);
+  }, [estimatorErrors.area, estimatorErrors.budget, locationType, brickType, roofCovering, roofShape, includeLabor, laborRates, parsedArea, selectedProfile.config.cementType, selectedProfile.config.wallHeightM]);
 
   const detailedItems = useMemo(() => {
     if (!manualBuilderConfig) return [];
@@ -233,6 +239,7 @@ export default function QuickBudgetPage() {
         budgetUsd: parsedBudget,
         floorAreaM2: parsedArea,
         locationType,
+        brickTypes: [brickType],
         roofCovering,
         roofShape,
         includeLabor,
@@ -251,6 +258,7 @@ export default function QuickBudgetPage() {
     estimatorErrors.area,
     estimatorErrors.budget,
     locationType,
+    brickType,
     roofCovering,
     roofShape,
     includeLabor,
@@ -319,6 +327,7 @@ export default function QuickBudgetPage() {
         budget: String(parsedBudget),
         area: String(parsedArea),
         loc: locationType,
+        brick: brickType,
         roof: roofCovering,
         shape: roofShape,
         labour: includeLabor ? '1' : '0',
@@ -426,6 +435,7 @@ export default function QuickBudgetPage() {
       budget: String(Math.round(parsedBudget)),
       area: String(parsedArea),
       loc: locationType,
+      brick: brickType,
       roof: roofCovering,
       shape: roofShape,
       labour: includeLabor ? '1' : '0',
@@ -753,7 +763,10 @@ export default function QuickBudgetPage() {
                       type="button"
                       aria-pressed={locationType === option.id}
                       className={locationType === option.id ? 'on' : ''}
-                      onClick={() => setLocationType(option.id)}
+                      onClick={() => {
+                        setLocationType(option.id);
+                        if (!brickChosen) setBrickType(defaultBrickFor(option.id));
+                      }}
                       title={option.hint}
                     >
                       {option.label}
@@ -761,6 +774,26 @@ export default function QuickBudgetPage() {
                   ))}
                 </div>
                 <small>{locationOptions.find((option) => option.id === locationType)?.hint}</small>
+              </div>
+
+              <div className="assumption">
+                <span className="assumption-label">Bricks</span>
+                <div className="segmented" role="group" aria-label="Wall bricks">
+                  {HOUSE_BRICKS.map((brick) => (
+                    <button
+                      key={brick}
+                      type="button"
+                      aria-pressed={brickType === brick}
+                      className={brickType === brick ? 'on' : ''}
+                      onClick={() => { setBrickType(brick); setBrickChosen(true); }}
+                    >
+                      {HOUSE_BRICK_LABELS[brick]}
+                    </button>
+                  ))}
+                </div>
+                <small>{brickType === 'farm'
+                  ? 'Burnt locally and cheaper, about $45 per 1,000 delivered outside town. Check your council accepts them.'
+                  : 'Fired clay bricks from city suppliers, what urban councils expect.'}</small>
               </div>
 
               <div className="assumption">

@@ -43,6 +43,8 @@ describe('link preview for a shared estimate', () => {
       budgetUsd: 12000,
       floorAreaM2: 120,
       locationType: 'rural',
+      // The page starts a rural house on farm bricks when the link names none.
+      brickTypes: ['farm'],
       wallHeightM: HOUSE_PROFILES.economy.wallHeightM,
       cementTypes: [HOUSE_PROFILES.economy.cementType],
       // Labour is on unless the link says labour=0, as on the page.
@@ -59,6 +61,8 @@ describe('link preview for a shared estimate', () => {
       budgetUsd: 12000,
       floorAreaM2: 120,
       locationType: 'rural',
+      // The page starts a rural house on farm bricks when the link names none.
+      brickTypes: ['farm'],
       wallHeightM: HOUSE_PROFILES.economy.wallHeightM,
       cementTypes: [HOUSE_PROFILES.economy.cementType],
     });

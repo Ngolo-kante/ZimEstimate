@@ -117,6 +117,8 @@ export interface VisionConfig {
    * services and labour use it: the rooms leave out the walls.
    */
   statedFloorAreaM2?: number;
+  /** Urban, peri-urban or rural, from the project details: sets delivered prices. */
+  locationType?: VisionLocationType;
 }
 
 export const DEFAULT_CONFIG: VisionConfig = {

@@ -15,6 +15,7 @@ import {
   HOUSE_PROFILES,
   type HouseLocation,
   type HouseProfile,
+  brickFromParam,
 } from '@/lib/estimators/houseBudgetOptions';
 
 /**
@@ -144,6 +145,7 @@ function summariseHouse(params: URLSearchParams): SharedEstimateSummary | null {
     budgetUsd: budget,
     floorAreaM2: area,
     locationType: location,
+    brickTypes: [brickFromParam(params.get('brick'), location)],
     wallHeightM: config.wallHeightM,
     cementTypes: [config.cementType],
     roofCovering: roof && roof in ROOF_COVERINGS ? (roof as RoofCovering) : undefined,
