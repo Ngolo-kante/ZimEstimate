@@ -8,7 +8,10 @@ export const PLAN_ANALYSIS_TIMEOUT_MS = 63_000;
 
 export const PDF_PREPARE_TIMEOUT_MS = 20_000;
 export type AnalysisPhase = 'preparing' | 'reading' | 'retrying';
-export const PLAN_TIMEOUT_MESSAGE = 'Reading the plan took too long. Try a clearer image, a smaller PDF, or the manual builder.';
+/** Enough of a sheet's text to tell what it is, and small enough to send. */
+const PLAIN_TEXT_LIMIT = 30_000;
+
+export const PLAN_TIMEOUT_MESSAGE = 'Reading the plan took too long. Check it is the floor plan, the page with the rooms (not a septic tank, column or elevation drawing), then try a clearer image, a smaller PDF, or the manual builder.';
 
 /** Bounds even operations that do not honour AbortSignal; always removes listeners. */
 export function withTimeLimit<T>(operation: Promise<T>, ms: number, signal?: AbortSignal): Promise<T> {
@@ -107,7 +110,7 @@ async function pageImageWithin(canvas: HTMLCanvasElement, budget: number): Promi
  * words printed on it, for checking the scan's sizes (pdfWords.ts). Either is
  * null if it cannot be had — the PDF is still read by the main reader.
  */
-async function readFirstPage(file: File, signal: AbortSignal): Promise<{ image: Blob | null; words: PdfWords | null }> {
+async function readFirstPage(file: File, signal: AbortSignal): Promise<{ image: Blob | null; words: PdfWords | null; text: string }> {
   const pdfjs = await import('pdfjs-dist');
   const data = new Uint8Array(await file.arrayBuffer());
   signal.throwIfAborted();
@@ -133,8 +136,13 @@ async function readFirstPage(file: File, signal: AbortSignal): Promise<{ image: 
     signal.throwIfAborted();
     const base = page.getViewport({ scale: 1 });
     let words: PdfWords | null = null;
+    // All the page's text, rotated or not, for what the sheet says about
+    // itself (planFacts.ts). AutoCAD sheets often store every label rotated or
+    // mirrored, which the positioned words below leave out.
+    let plainText = '';
     try {
       const text = await page.getTextContent();
+      plainText = text.items.map((item) => ('str' in item ? item.str : '')).filter(Boolean).join(' ').slice(0, PLAIN_TEXT_LIMIT);
       words = wordsFromTextItems(text.items.filter((item) => 'str' in item), {
         width: base.width,
         height: base.height,
@@ -149,14 +157,14 @@ async function readFirstPage(file: File, signal: AbortSignal): Promise<{ image: 
     canvas.width = Math.round(viewport.width);
     canvas.height = Math.round(viewport.height);
     const context = canvas.getContext('2d');
-    if (!context) return { image: null, words };
+    if (!context) return { image: null, words, text: plainText };
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, canvas.width, canvas.height);
     await page.render({ canvas, canvasContext: context, viewport }).promise;
     signal.throwIfAborted();
     const wordsBytes = words ? JSON.stringify(words).length : 0;
     const image = await pageImageWithin(canvas, UPLOAD_LIMIT_BYTES - file.size - wordsBytes);
-    return { image, words };
+    return { image, words, text: plainText };
   } finally {
     signal.removeEventListener('abort', cleanup);
     cleanup();
@@ -199,12 +207,13 @@ export async function analyzePlanFile(
     let upload = file;
     try {
       if (file.type === 'application/pdf') {
-        const { image, words } = await withTimeLimit(readFirstPage(file, preparation.signal), PDF_PREPARE_TIMEOUT_MS, signal);
+        const { image, words, text } = await withTimeLimit(readFirstPage(file, preparation.signal), PDF_PREPARE_TIMEOUT_MS, signal);
         if (image) {
           formData.append('readingCopy', image, 'page-1.jpg');
           onPreviewImage?.(image);
         }
         if (words?.words.length) formData.append('pdfText', JSON.stringify(words));
+        if (text) formData.append('pdfPlainText', text);
       } else if (file.type.startsWith('image/')) {
         upload = await withTimeLimit(preparePhoto(file, preparation.signal), PDF_PREPARE_TIMEOUT_MS, signal);
       }

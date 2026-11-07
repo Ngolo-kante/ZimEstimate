@@ -141,7 +141,7 @@ export function classifyGeminiError(error: unknown): PlanReadError {
   const message = error instanceof Error ? error.message : String(error);
 
   if (name === 'AbortError' || /\b(aborted|timed out|timeout)\b/i.test(message)) {
-    return new PlanReadError('The plan reader took too long. Try again, export only the floor-plan page, or use the room builder.', true);
+    return new PlanReadError('The plan reader took too long. Check it is the floor plan, the page with the rooms (not a septic tank, column or elevation drawing), then try again, or use the room builder.', true);
   }
   if (status === 429) {
     return new PlanReadError('The plan reader has reached its limit for now. Try again in a minute, or use the room builder.', true);

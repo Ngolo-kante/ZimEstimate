@@ -3,7 +3,7 @@
 // Accepts floor plan image and returns structured room data
 
 import { after, NextRequest, NextResponse } from 'next/server';
-import { looksMultiStorey, statedFloorArea } from '@/lib/vision/planFacts';
+import { looksMultiStorey, notAFloorPlan, statedFloorArea } from '@/lib/vision/planFacts';
 import { analyzeFloorPlan, analysisFromLabels } from '@/lib/vision/gemini-client';
 import { makeReadingCopy, type ReadingCopy } from '@/lib/vision/readingCopy';
 import { readPlanLabels } from '@/lib/vision/ocrPlan';
@@ -102,6 +102,20 @@ export async function POST(request: NextRequest) {
     // A PDF's own words, sent by the browser: exact, and no reading needed.
     const pdfWords = file.type === 'application/pdf' ? parsePdfWords(formData.get('pdfText')) : null;
 
+    // Another sheet of the drawing set (septic tank, columns, elevations):
+    // say so now rather than after the readers' 52 seconds.
+    // The sheet's whole text when the browser sent it; else its placed words.
+    const sentText = formData.get('pdfPlainText');
+    const planText = file.type !== 'application/pdf' ? ''
+      : typeof sentText === 'string' && sentText.trim() ? sentText.slice(0, 30_000)
+      : pdfWords ? pdfWords.words.map((word) => word.text).join(' ') : '';
+    const wrongSheet = planText ? notAFloorPlan(planText) : null;
+    if (wrongSheet) {
+      const kept = upload;
+      after(() => keepPlanSample(kept, { outcome: 'failed', error: wrongSheet }));
+      return NextResponse.json({ success: false, error: wrongSheet }, { status: 422 });
+    }
+
     // The printed labels are read at the same time: to check the scan's sizes,
     // and in case no AI reader answers.
     const pdfRooms = pdfWords ? roomsFromWords(pdfWords.words, pdfWords) : [];
@@ -141,7 +155,6 @@ export async function POST(request: NextRequest) {
 
     // What the plan says about itself: its total floor area, and whether it
     // has a stair (more than one floor).
-    const planText = pdfWords ? pdfWords.words.map((word) => word.text).join(' ') : '';
     const statedArea = statedFloorArea(planText, result.totalArea);
     if (statedArea !== null) result.statedTotalAreaM2 = statedArea;
     if (looksMultiStorey(planText, [...result.rooms.map((room) => room.name), ...printed.map((room) => room.name)])) result.multiStorey = true;

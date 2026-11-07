@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { looksMultiStorey, statedFloorArea } from './planFacts';
+import { looksMultiStorey, notAFloorPlan, statedFloorArea } from './planFacts';
 
 describe('statedFloorArea', () => {
   it('reads the area in a plan title', () => {
@@ -42,5 +42,28 @@ describe('looksMultiStorey', () => {
 
   it('does not flag a single-storey plan', () => {
     expect(looksMultiStorey('GROUND FLOOR PLAN (area=90sqm) LOUNGE KITCHEN +2.500 wallplate', ['Lounge', 'Kitchen', 'Bedroom 1'])).toBe(false);
+  });
+});
+
+describe('notAFloorPlan', () => {
+  const filler = 'NOTES 1. Read this drawing in conjunction with the architect. 2. Do not scale. Concrete grade 30MPa. DRAWN CHECKED DATE SCALE AS SHOWN REVISION A';
+
+  it('turns back a structural column sheet (a real first-night upload)', () => {
+    const text = `GROUND FLOOR LEVEL +3,500m +6.950m 4Y16-04 10Y10-03-200 LINKS COL C1 COL C4 COLUMNS R.C DETAIL ${filler}`;
+    expect(notAFloorPlan(text)).toMatch(/structural/);
+  });
+
+  it('turns back a septic tank drawing', () => {
+    expect(notAFloorPlan(`Septic Tank for 8 Persons Absorption Pit Soakaway Section AB Plan View Manhole Cover ${filler}`)).toMatch(/septic tank/);
+  });
+
+  it('turns back an elevations sheet', () => {
+    expect(notAFloorPlan(`FRONT ELEVATION SIDE ELEVATION SECTION X-X roof pitch 15 ${filler}`)).toMatch(/outside views/);
+  });
+
+  it('reads anything that names a room, or says too little to tell', () => {
+    expect(notAFloorPlan(`GROUND FLOOR PLAN LOUNGE KITCHEN BEDROOM 1 SECTION A-A ELEVATION ${filler}`)).toBeNull();
+    expect(notAFloorPlan('COL C1 COLUMNS R.C DETAIL')).toBeNull();
+    expect(notAFloorPlan(`4000 3200 2700 230 115 ${filler}`)).toBeNull();
   });
 });
