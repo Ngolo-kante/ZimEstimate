@@ -21,9 +21,9 @@ export default function PrivacyPage() {
     <MainLayout title="Privacy Policy">
       <div style={shellStyle}>
         <p style={introStyle}>
-          <strong>Effective date: 1 January 2025 · Last updated: 13 October 2026</strong>
+          <strong>Effective date: 1 January 2025 · Last updated: 8 November 2026</strong>
           <br /><br />
-          This Privacy Policy explains how <strong>ZimEstimate (Private) Limited</strong> (&ldquo;ZimEstimate&rdquo;,
+          This Privacy Policy explains how <strong>ZimEstimate</strong> (&ldquo;ZimEstimate&rdquo;,
           &ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) collects, uses, stores, and protects your personal
           data when you use the ZimEstimate platform (&ldquo;Platform&rdquo;). This policy is issued in compliance
           with the Zimbabwe <strong>Cyber and Data Protection Act (CDPA), Chapter 12:07 (2021)</strong>.
@@ -33,11 +33,10 @@ export default function PrivacyPage() {
         <section style={sectionStyle}>
           <h2 style={titleStyle}>1. Data Controller Identity</h2>
           <p style={bodyStyle}>
-            <strong>Data Controller:</strong> ZimEstimate (Private) Limited<br />
-            <strong>CIPA Registration:</strong> [To be inserted upon incorporation]<br />
-            <strong>Registered address:</strong> [Physical address, Harare, Zimbabwe]<br />
+            <strong>Data Controller:</strong> ZimEstimate, Harare, Zimbabwe<br />
+            <strong>Website:</strong> https://zimestimate.com<br />
             <strong>Data Protection Officer (DPO):</strong> privacy@zimestimate.com<br />
-            <strong>ZDPA Registration Number:</strong> [To be inserted upon registration with the Zimbabwe Data Protection Authority]
+            <strong>General contact:</strong> support@zimestimate.com
           </p>
           <p style={{ ...bodyStyle, marginTop: '10px' }}>
             We are registered (or in the process of registering) as a <strong>data controller</strong> with
@@ -350,7 +349,6 @@ export default function PrivacyPage() {
           <p style={bodyStyle}>
             <strong>Data Protection Officer:</strong> privacy@zimestimate.com<br />
             <strong>General support:</strong> support@zimestimate.com<br />
-            <strong>Postal:</strong> ZimEstimate (Private) Limited, [Registered address, Harare, Zimbabwe]<br />
             <br />
             To exercise your data subject rights or raise a privacy concern, please email
             privacy@zimestimate.com with &ldquo;Privacy Request&rdquo; in the subject line.

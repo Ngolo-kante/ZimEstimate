@@ -20,10 +20,10 @@ export default function TermsPage() {
     <MainLayout title="Terms of Service">
       <div style={shellStyle}>
         <p style={introStyle}>
-          <strong>Effective date: 1 January 2025 · Last updated: 26 March 2025</strong>
+          <strong>Effective date: 1 January 2025 · Last updated: 8 November 2026</strong>
           <br /><br />
           These Terms of Service (&ldquo;Terms&rdquo;) govern your access to and use of the ZimEstimate platform
-          (&ldquo;Platform&rdquo;, &ldquo;Service&rdquo;), operated by <strong>ZimEstimate (Private) Limited</strong>
+          (&ldquo;Platform&rdquo;, &ldquo;Service&rdquo;), operated by <strong>ZimEstimate</strong>
           (&ldquo;ZimEstimate&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;). By creating an account
           or using the Platform you agree to be bound by these Terms. If you do not agree, do not use the Platform.
         </p>
@@ -32,11 +32,9 @@ export default function TermsPage() {
         <section style={sectionStyle}>
           <h2 style={titleStyle}>1. Company Identity &amp; Contact</h2>
           <p style={bodyStyle}>
-            <strong>Legal name:</strong> ZimEstimate (Private) Limited<br />
-            <strong>CIPA registration:</strong> [Registration number — to be inserted upon incorporation]<br />
-            <strong>Registered address:</strong> [Physical address, Harare, Zimbabwe]<br />
+            <strong>Name:</strong> ZimEstimate, Harare, Zimbabwe<br />
+            <strong>Website:</strong> https://zimestimate.com<br />
             <strong>Primary email:</strong> support@zimestimate.com<br />
-            <strong>ZIMRA TIN:</strong> [Tax Identification Number — to be inserted upon registration]<br />
             <strong>Data Protection Officer:</strong> privacy@zimestimate.com
           </p>
         </section>
@@ -157,7 +155,7 @@ export default function TermsPage() {
           <h2 style={titleStyle}>7. Intellectual Property</h2>
           <p style={bodyStyle}>
             The Platform software, design, trademarks, and all ZimEstimate-authored content are owned by
-            ZimEstimate (Private) Limited and protected under Zimbabwe&rsquo;s Intellectual Property Act
+            ZimEstimate and protected under Zimbabwe&rsquo;s Intellectual Property Act
             (Chapter 26:04) and related legislation. You may not copy, reproduce, distribute, or create
             derivative works without our prior written consent.
           </p>
