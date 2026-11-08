@@ -484,6 +484,7 @@ export default function QuickBudgetPage() {
       pdf.exportBOQToPDF(
         {
           projectName: `Detailed BOQ - ${parsedArea}m2`,
+          source: 'Budget Estimator',
           location: locationLabel,
           totalArea: parsedArea,
           items: countedItems.map((item) => ({
@@ -501,7 +502,7 @@ export default function QuickBudgetPage() {
           },
           config: {
             scope: 'entire_house',
-            brickType: 'common',
+            brickType,
             cementType: selectedProfile.config.cementType,
             includeLabor,
           },

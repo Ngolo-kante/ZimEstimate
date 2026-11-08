@@ -347,6 +347,7 @@ function BoqNewPageContent() {
     pdf.exportBOQToPDF(
       {
         projectName: projectDetails.name || 'ZimEstimate BOQ',
+        source: 'BOQ Builder',
         location: projectDetails.locationType || '',
         totalArea: Number(projectDetails.floorPlanSize) || 0,
         items: reviewBoq.items,

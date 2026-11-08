@@ -491,6 +491,8 @@ export function printBOQPDF(project: Project, items: BOQItem[], options?: Partia
 // Vision Takeoff BOQ Export
 interface VisionBOQData {
     projectName: string;
+    /** Which tool made it, for the header; defaults to the plan upload. */
+    source?: string;
     location?: string;
     totalArea: number;
     items: Array<{
@@ -610,7 +612,7 @@ function buildBOQDocument(data: VisionBOQData, currency: 'USD' | 'ZWG'): jsPDF {
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('AI Vision Takeoff - Bill of Quantities', margin, 33);
+    doc.text(`${data.source ?? 'AI Vision Takeoff'} - Bill of Quantities`, margin, 33);
 
     doc.setFontSize(9);
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth - margin, 25, { align: 'right' });
