@@ -6,6 +6,97 @@ import type { RoomInstance } from '@/app/boq/new/components/room-builder/types';
 import { densityFromNotes, getCostBreakdown, OWN_FIGURE_NOTE, PROJECT_FEES, tariffLine } from '@/lib/projectFees';
 import { normalizeHouseExtras } from '@/lib/houseExtras';
 
+describe('storeys in the manual BOQ builder', () => {
+  const params = (geometryMode: 'quick' | 'detailed' | 'upload'): Parameters<typeof buildLiveMilestones>[0] => ({
+    projectDetails: {
+      projectType: 'new_build', name: '240 m² house', locationType: 'urban',
+      locationCity: 'Harare', specificLocation: '', soilType: '', siteSlope: '',
+      floorPlanSize: '240', standSize: '', buildingType: 'single_storey', wallHeight: '2.7',
+      brickTypes: ['common'], cementTypes: ['cement_325'],
+      finishLevel: 'standard', roofCovering: 'ibr_05', roofShape: 'hipped', residentialDensity: 'low',
+      roomInputs: { ...DEFAULT_ROOM_INPUTS, bedrooms: '4', bathrooms: '2', livingRoom: '1', kitchen: '1' },
+    },
+    geometryMode,
+    detailedRooms: geometryMode === 'quick' ? [] : Array.from({ length: 8 }, (_, index) => ({
+      id: `room-${index}`, type: 'bedrooms', label: `Room ${index + 1}`,
+      length: 6, width: 5, windows: 2, doors: 1, x: 0, y: 0, materialId: 'brick-common',
+    })),
+    totalWindows: 16, totalDoors: 8,
+    projectScope: 'entire', selectedStages: [], laborType: 'materials_only',
+    temporaryWorksSelections: [], includeSepticTank: false,
+    septicDimensions: { length: '', width: '', height: '', unitPriceUsd: '' },
+    previousMilestones: BOQ_MILESTONE_IDS.map((id) => ({ id, items: [], expanded: true })),
+  });
+
+  // Captured through liveEstimator before connecting the storeys answer.
+  it.each([
+    ['quick', 42714.59], ['detailed', 42561.31], ['upload', 42376.58],
+  ] as const)('preserves the single-storey materials total in %s mode', (mode, materialsTotal) => {
+    const milestones = buildLiveMilestones(params(mode));
+    expect(getCostBreakdown(milestones).materials).toBeCloseTo(materialsTotal, 2);
+    expect(milestones.flatMap((milestone) => milestone.items).some((item) =>
+      /First-floor Slab|Staircase|\(Upper floor\)/.test(item.materialName))).toBe(false);
+  });
+
+  it.each([
+    ['quick', 40563.41], ['detailed', 40408.53], ['upload', 40250.77],
+  ] as const)('prices both floors from the total area in %s mode', (mode, materialsTotal) => {
+    const input = params(mode);
+    const milestones = buildLiveMilestones({
+      ...input,
+      projectDetails: { ...input.projectDetails, buildingType: 'double_storey' },
+    });
+    const items = milestones.flatMap((milestone) => milestone.items);
+    const structure = milestones.find((milestone) => milestone.id === 'superstructure')!.items;
+    const slab = structure.find((item) => item.materialName === 'River Sand (First-floor Slab)');
+    expect(slab?.description).toContain('120m² @ 150mm');
+    expect(slab?.quantity).toBeGreaterThan(0);
+    expect(structure.find((item) => item.materialName === 'Rebar Y12 (Staircase)')?.quantity).toBeGreaterThan(0);
+    expect(structure.find((item) => item.materialName === 'Red Common Brick (Walls) (Upper floor)')?.quantity).toBeGreaterThan(0);
+    expect(structure.some((item) => item.materialName.includes('(Ring Beam) (Upper floor)'))).toBe(true);
+    expect(structure.some((item) => item.materialName.includes('Lintels') && item.materialName.endsWith('(Upper floor)'))).toBe(true);
+    expect(items.find((item) => item.materialId === 'ceiling-board')?.quantity).toBe(114);
+    expect(items.every((item) => Number.isFinite(item.quantity) && Number.isFinite(item.actualPriceUsd))).toBe(true);
+    const single = buildLiveMilestones(input);
+    expect(items.find((item) => item.materialId === 'ibr-05-3m')!.quantity)
+      .toBeLessThan(single.flatMap((milestone) => milestone.items).find((item) => item.materialId === 'ibr-05-3m')!.quantity!);
+    const structureTotal = (stages: MilestoneData[]) => stages.find((stage) => stage.id === 'superstructure')!.items
+      .reduce((sum, item) => sum + (item.quantity || 0) * item.actualPriceUsd, 0);
+    expect(structureTotal(milestones)).toBeGreaterThan(structureTotal(single));
+    expect(getCostBreakdown(milestones).materials).toBeCloseTo(materialsTotal, 2);
+
+    const backToSingle = buildLiveMilestones({ ...input, previousMilestones: milestones });
+    expect(getCostBreakdown(backToSingle).materials).toBeCloseTo(getCostBreakdown(single).materials, 2);
+    expect(backToSingle.flatMap((stage) => stage.items).some((item) =>
+      /First-floor Slab|Staircase|\(Upper floor\)/.test(item.materialName))).toBe(false);
+  });
+
+  it('charges roof labour on the one roof, not on both floors', () => {
+    const input = { ...params('quick'), laborType: 'materials_labor' as const };
+    const roofLabour = (stages: MilestoneData[]) => stages.flatMap((stage) => stage.items)
+      .find((item) => item.materialId === 'labor-roof_work')!.actualPriceUsd;
+    const single = roofLabour(buildLiveMilestones(input));
+    const double = roofLabour(buildLiveMilestones({
+      ...input,
+      projectDetails: { ...input.projectDetails, buildingType: 'double_storey' },
+    }));
+    expect(double).toBeCloseTo(single / 2, 0);
+  });
+
+  it.each(['detailed', 'upload'] as const)('uses the existing area source in %s mode', (mode) => {
+    const input = params(mode);
+    const milestones = buildLiveMilestones({
+      ...input,
+      // Detailed mode sums all rooms; an upload uses the editable total even
+      // when the drawing only supplied rooms for one floor.
+      projectDetails: { ...input.projectDetails, buildingType: 'double_storey', floorPlanSize: mode === 'detailed' ? '999' : '240' },
+      detailedRooms: input.detailedRooms.map((room) => ({ ...room, length: mode === 'upload' ? 3 : 6 })),
+    });
+    const slab = milestones.flatMap((stage) => stage.items).find((item) => item.materialName === 'River Sand (First-floor Slab)');
+    expect(slab?.description).toContain('120m² @ 150mm');
+  });
+});
+
 describe('uploaded plan in the BOQ builder', () => {
   it('prices council fees from the Harare tariff, keeps typed-in fees and follows the floor area', () => {
     const params = {

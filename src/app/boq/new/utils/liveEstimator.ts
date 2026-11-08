@@ -334,6 +334,7 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
   const scope = mapScopeForCalculator(projectScope, selectedStages);
   const generatedItems = generateBOQFromBasics({
     floorArea,
+    storeys: projectDetails.buildingType === 'double_storey' ? 2 : 1,
     roomCount,
     wallHeight,
     brickTypes: projectDetails.brickTypes,
@@ -510,7 +511,12 @@ export function buildLiveMilestones(params: BuildLiveMilestonesParams): Mileston
       })));
     const materialUsd = materialItems.reduce((sum, item) => sum + item.totalUsd, 0);
     const zwgPerUsd = materialUsd > 0 ? materialItems.reduce((sum, item) => sum + item.totalZwg, 0) / materialUsd : 0;
-    for (const line of laborLines(materialItems, laborQuantitiesFor(materialItems, floorArea), projectDetails.laborRates)) {
+    // Double storey: floorArea is both floors, so labour gets the ground floor
+    // plus an equal upper floor (one roof, over the ground floor).
+    const labourQuantities = projectDetails.buildingType === 'double_storey'
+      ? laborQuantitiesFor(materialItems, floorArea / 2, { storeys: 2, upperFloorAreaM2: floorArea / 2 })
+      : laborQuantitiesFor(materialItems, floorArea);
+    for (const line of laborLines(materialItems, labourQuantities, projectDetails.laborRates)) {
       const priceUsd = roundTo(line.usd);
       const priceZwg = roundTo(line.usd * zwgPerUsd);
       const materialId = `labor-${line.id}`;

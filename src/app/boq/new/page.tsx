@@ -346,7 +346,7 @@ function BoqNewPageContent() {
     }
     pdf.exportBOQToPDF(
       {
-        projectName: projectDetails.name || 'ZimEstimate BOQ',
+        projectName: `${projectDetails.name || 'ZimEstimate BOQ'}${projectDetails.buildingType === 'double_storey' ? ' (double storey)' : ''}`,
         source: 'BOQ Builder',
         location: projectDetails.locationType || '',
         totalArea: Number(projectDetails.floorPlanSize) || 0,
@@ -366,7 +366,7 @@ function BoqNewPageContent() {
   const handleShareEstimate = async () => {
     if (!requirePlanReview()) return;
     const text = [
-      `ZimEstimate — ${projectDetails.name || 'Construction estimate'}`,
+      `ZimEstimate — ${projectDetails.name || 'Construction estimate'}${projectDetails.buildingType === 'double_storey' ? ' (double storey)' : ''}`,
       projectDetails.floorPlanSize ? `Floor area: ${projectDetails.floorPlanSize} m2` : '',
       `Items: ${reviewBoq.items.length}`,
       `Estimated total: $${Math.round(reviewBoq.usd).toLocaleString()}`,
@@ -878,7 +878,7 @@ function BoqNewPageContent() {
         <div className="wiz-topbar border-b">
           <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-4 lg:px-8">
             <div className="flex items-center gap-3">
-              <span className="font-semibold" style={{color:'var(--wiz-text-primary)'}}>{projectDetails.name || 'Untitled Estimate'}</span>
+              <span className="font-semibold" style={{color:'var(--wiz-text-primary)'}}>{projectDetails.name || 'Untitled Estimate'}{projectDetails.buildingType === 'double_storey' ? ' (double storey)' : ''}</span>
               {isAutoSaving ? (
                 <span className="wiz-badge-saving inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
                   <CircleNotch weight="bold" className="animate-spin" /> Saving

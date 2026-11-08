@@ -340,7 +340,9 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
             >
               <Info size={15} weight="fill" className="wiz-alert__icon" />
               <p>
-                Double storey adds structural complexity — ring beams, upper floor slab, and staircase add approx. 25–35% to the superstructure cost.
+                We split your floor area evenly over two floors and add a 150 mm
+                first-floor slab, a staircase and the upper floor&apos;s walls. A suspended
+                slab needs an engineer&apos;s design.
               </p>
             </motion.div>
           )}
@@ -351,6 +353,9 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
       <div className="space-y-4">
         <div>
           <h3 className="text-lg font-bold wiz-text-primary mb-1">What is the total floor area?</h3>
+          {projectDetails.buildingType === 'double_storey' && (
+            <p className="text-sm wiz-text-muted">Both floors together.</p>
+          )}
           <p className="text-sm wiz-text-muted">
             Enter the total internal floor area in square metres. This is the single most important figure for your estimate accuracy.
           </p>
@@ -765,6 +770,11 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                   <dt className="wiz-text-muted">Windows</dt>
                   <dd className="text-right font-bold tabular-nums text-slate-800">{totalWindows > 0 ? totalWindows : 'Not detected'}</dd>
                 </dl>
+                {projectDetails.buildingType === 'double_storey' && (
+                  <p className="mt-3 text-xs leading-relaxed wiz-text-muted">
+                    If this plan shows one floor only, enter both floors&apos; total in the floor-area field above.
+                  </p>
+                )}
                 {/* Said plainly rather than hidden: the figures came off a
                     drawing, and the person checking them is the one who knows
                     what the building actually is. */}
