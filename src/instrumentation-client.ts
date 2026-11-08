@@ -1,4 +1,8 @@
 import { initProductAnalytics } from '@/lib/productAnalytics';
+import { isInstalledApp } from '@/lib/appMode';
+
+// Remember TWA launches even when the first route has no install banner.
+isInstalledApp();
 
 try {
   initProductAnalytics();

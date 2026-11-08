@@ -62,3 +62,14 @@ next-env.d.ts
 
 # Owner drop folder for recordings, photos and documents (personal files)
 inbox/
+
+# Android app (Bubblewrap TWA): build outputs; the signing key lives outside the repo
+/android/.gradle
+/android/build
+/android/app/build
+/android/*.aab
+/android/*.apk
+/android/*.idsig
+/android/local.properties
+*.keystore
+*.jks

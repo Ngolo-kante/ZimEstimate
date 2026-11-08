@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.zimestimate.app",
+      "sha256_cert_fingerprints": [
+        "FD:31:5E:8E:55:9C:62:55:38:26:BC:A1:BE:B8:82:F3:24:D1:55:77:C9:15:44:78:6B:DF:E6:F9:FF:C3:83:2C"
+      ]
+    }
+  }
+]

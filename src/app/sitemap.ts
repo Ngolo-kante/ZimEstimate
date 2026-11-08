@@ -12,6 +12,7 @@ const publicRoutes = [
   '/market-insights',
   '/quick-projects',
   '/privacy',
+  '/delete-account',
   '/terms',
   '/support',
 ];

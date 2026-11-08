@@ -1,4 +1,5 @@
 import MainLayout from '@/components/layout/MainLayout';
+import Link from 'next/link';
 
 const shellStyle = { maxWidth: '840px', margin: '0 auto', display: 'grid', gap: '24px' } as const;
 const introStyle = { color: 'var(--color-text-secondary)', lineHeight: 1.7 } as const;
@@ -266,6 +267,12 @@ export default function PrivacyPage() {
             and the right you wish to exercise. We may request proof of identity before processing the request.
             If you are not satisfied with our response, you may lodge a complaint with the
             <strong> Zimbabwe Data Protection Authority (ZDPA)</strong>.
+          </p>
+          <p style={{ ...bodyStyle, marginTop: '10px' }}>
+            <Link href="/delete-account" style={{ color: 'var(--color-accent)', textDecoration: 'underline' }}>
+              Delete account
+            </Link>{' '}
+            — request deletion of your ZimEstimate account and associated data.
           </p>
         </section>
 

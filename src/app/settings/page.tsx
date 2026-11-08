@@ -605,8 +605,8 @@ function SettingsContent() {
                                     <h4>Delete Account</h4>
                                     <p>Permanently delete your account and all data.</p>
                                 </div>
-                                <Link href="/support" className="request-delete-link">
-                                    Contact support
+                                <Link href="/delete-account" className="request-delete-link">
+                                    Request deletion
                                     <CaretRight size={15} weight="bold" />
                                 </Link>
                             </div>

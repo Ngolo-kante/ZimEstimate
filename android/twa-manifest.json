@@ -1,0 +1,66 @@
+{
+  "packageId": "com.zimestimate.app",
+  "host": "zimestimate.com",
+  "name": "ZimEstimate",
+  "launcherName": "ZimEstimate",
+  "display": "standalone",
+  "themeColor": "#14213D",
+  "themeColorDark": "#14213D",
+  "navigationColor": "#14213D",
+  "navigationColorDark": "#14213D",
+  "navigationDividerColor": "#000000",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#F5F5F5",
+  "enableNotifications": false,
+  "startUrl": "/home",
+  "iconUrl": "https://zimestimate.com/icons/app-icon-512.png",
+  "maskableIconUrl": "https://zimestimate.com/icons/app-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "/Users/audreytsoka/Documents/ZimEstimate-android-keys/upload.keystore",
+    "alias": "upload"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "New BOQ",
+      "shortName": "New BOQ",
+      "url": "https://zimestimate.com/boq/new?method=manual",
+      "chosenIconUrl": "https://zimestimate.com/icons/shortcut-boq.png"
+    },
+    {
+      "name": "Projects",
+      "shortName": "Projects",
+      "url": "https://zimestimate.com/projects",
+      "chosenIconUrl": "https://zimestimate.com/icons/shortcut-projects.png"
+    },
+    {
+      "name": "AI Tools",
+      "shortName": "AI",
+      "url": "https://zimestimate.com/ai",
+      "chosenIconUrl": "https://zimestimate.com/icons/shortcut-ai.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://zimestimate.com/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://zimestimate.com/",
+  "minSdkVersion": 24,
+  "orientation": "portrait-primary",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": [],
+  "appVersion": "1.0.0"
+}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Button from '@/components/ui/Button';
 import { DownloadSimple, X } from '@phosphor-icons/react';
+import { isInstalledApp } from '@/lib/appMode';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -14,8 +15,11 @@ export default function InstallPromptBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (isInstalledApp()) return;
+
     const handleBeforeInstall = (event: Event) => {
       event.preventDefault();
+      if (isInstalledApp()) return;
       setDeferredPrompt(event as BeforeInstallPromptEvent);
       setVisible(true);
     };
@@ -35,7 +39,7 @@ export default function InstallPromptBanner() {
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt || isInstalledApp()) return;
     await deferredPrompt.prompt();
     await deferredPrompt.userChoice;
     setVisible(false);
