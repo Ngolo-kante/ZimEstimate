@@ -39,9 +39,9 @@ export default function PrivacyPage() {
             <strong>General contact:</strong> support@zimestimate.com
           </p>
           <p style={{ ...bodyStyle, marginTop: '10px' }}>
-            We are registered (or in the process of registering) as a <strong>data controller</strong> with
-            the Zimbabwe Data Protection Authority (ZDPA) under the CDPA, as required before processing
-            personal data at scale.
+            ZimEstimate has not yet registered as a <strong>data controller</strong> with the Zimbabwe
+            Data Protection Authority (ZDPA). We intend to register as the CDPA requires and will add
+            the registration number to this page.
           </p>
         </section>
 
