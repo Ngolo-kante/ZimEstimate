@@ -7,7 +7,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { estimateStageReach, stageStatusFromParams, stageStatusToParams, type StageId, type StageStatus, typicalRoomCount } from '@/lib/estimators/stageBudgetEstimator';
 import { addLaterFromParam, type AddLaterId } from '@/lib/estimators/addLater';
-import { HOUSE_DEFAULTS, HOUSE_PROFILES, HOUSE_BRICKS, HOUSE_BRICK_LABELS, brickFromParam, defaultBrickFor, type HouseBrick, type HouseLocation } from '@/lib/estimators/houseBudgetOptions';
+import { HOUSE_DEFAULTS, HOUSE_PROFILES, HOUSE_BRICKS, HOUSE_BRICK_LABELS, HOUSE_FLOORS, HOUSE_FLOOR_LABELS, floorsFromParam, type HouseFloors, brickFromParam, defaultBrickFor, type HouseBrick, type HouseLocation } from '@/lib/estimators/houseBudgetOptions';
 import { generateBOQFromBasics, ManualBuilderConfig } from '@/lib/calculations';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
@@ -92,6 +92,7 @@ export default function QuickBudgetPage() {
   const [brickType, setBrickType] = useState<HouseBrick>(defaultBrickFor(HOUSE_DEFAULTS.location));
   // Once someone picks a brick, changing the area no longer changes it.
   const [brickChosen, setBrickChosen] = useState(false);
+  const [storeys, setStoreys] = useState<HouseFloors>(1);
   const [roofCovering, setRoofCovering] = useState<RoofCovering>(DEFAULT_ROOF_COVERING);
   const [roofShape, setRoofShape] = useState<RoofShape>(DEFAULT_ROOF_SHAPE);
   // On by default: a house needs builders, and a materials-only figure made
@@ -139,6 +140,7 @@ export default function QuickBudgetPage() {
     const restoredLocation = (locationOptions.some((option) => option.id === loc) ? loc : HOUSE_DEFAULTS.location) as HouseLocation;
     setBrickType(brickFromParam(params.get('brick'), restoredLocation));
     if (params.get('brick')) setBrickChosen(true);
+    setStoreys(floorsFromParam(params.get('floors')));
 
     const roof = params.get('roof');
     if (roof && roof in ROOF_COVERINGS) setRoofCovering(roof as RoofCovering);
@@ -189,6 +191,7 @@ export default function QuickBudgetPage() {
     const roomCount = typicalRoomCount(parsedArea);
     return {
       floorArea: parsedArea,
+      storeys,
       roomCount,
       wallHeight: selectedProfile.config.wallHeightM,
       brickTypes: [brickType],
@@ -200,7 +203,7 @@ export default function QuickBudgetPage() {
       roofCovering,
       roofShape,
     };
-  }, [estimatorErrors.area, estimatorErrors.budget, locationType, brickType, roofCovering, roofShape, includeLabor, laborRates, parsedArea, selectedProfile.config.cementType, selectedProfile.config.wallHeightM]);
+  }, [estimatorErrors.area, estimatorErrors.budget, locationType, brickType, storeys, roofCovering, roofShape, includeLabor, laborRates, parsedArea, selectedProfile.config.cementType, selectedProfile.config.wallHeightM]);
 
   const detailedItems = useMemo(() => {
     if (!manualBuilderConfig) return [];
@@ -238,6 +241,7 @@ export default function QuickBudgetPage() {
       const result = estimateStageReach({
         budgetUsd: parsedBudget,
         floorAreaM2: parsedArea,
+        storeys,
         locationType,
         brickTypes: [brickType],
         roofCovering,
@@ -259,6 +263,7 @@ export default function QuickBudgetPage() {
     estimatorErrors.budget,
     locationType,
     brickType,
+    storeys,
     roofCovering,
     roofShape,
     includeLabor,
@@ -283,10 +288,10 @@ export default function QuickBudgetPage() {
   const councilFees = useMemo(() => {
     const floorArea = Number(floorAreaInput) || 0;
     return {
-      low: councilFeesTotal({ floorArea, density: 'low', doubleStorey: false }),
-      high: councilFeesTotal({ floorArea, density: 'high', doubleStorey: false }),
+      low: councilFeesTotal({ floorArea, density: 'low', doubleStorey: storeys === 2 }),
+      high: councilFeesTotal({ floorArea, density: 'high', doubleStorey: storeys === 2 }),
     };
-  }, [floorAreaInput]);
+  }, [floorAreaInput, storeys]);
   const overallPercent = stageEstimate ? Math.round(stageEstimate.coveragePercent) : 0;
   const buildStageCount = stageEstimate?.rows.filter((stage) => stage.status === 'build').length ?? 0;
   const affordableStageCount = stageEstimate?.rows.filter((stage) => stage.status === 'build' && stage.affordable).length ?? 0;
@@ -332,6 +337,7 @@ export default function QuickBudgetPage() {
         shape: roofShape,
         labour: includeLabor ? '1' : '0',
         profile: buildProfile,
+        ...(storeys === 2 ? { floors: '2' } : {}),
         ...stageStatusToParams(stageStatus),
         ...(addLater.length ? { add: addLater.join(',') } : {}),
       });
@@ -440,6 +446,7 @@ export default function QuickBudgetPage() {
       shape: roofShape,
       labour: includeLabor ? '1' : '0',
       profile: buildProfile,
+      ...(storeys === 2 ? { floors: '2' } : {}),
       ...stageStatusToParams(stageStatus),
       ...(addLater.length ? { add: addLater.join(',') } : {}),
       // Marks an arrival from a share, so it can be counted when opened.
@@ -483,7 +490,7 @@ export default function QuickBudgetPage() {
       }
       pdf.exportBOQToPDF(
         {
-          projectName: `Detailed BOQ - ${parsedArea}m2`,
+          projectName: `Detailed BOQ - ${parsedArea}m2${storeys === 2 ? ', double storey' : ''}`,
           source: 'Budget Estimator',
           location: locationLabel,
           totalArea: parsedArea,
@@ -775,6 +782,26 @@ export default function QuickBudgetPage() {
                   ))}
                 </div>
                 <small>{locationOptions.find((option) => option.id === locationType)?.hint}</small>
+              </div>
+
+              <div className="assumption">
+                <span className="assumption-label">Floors</span>
+                <div className="segmented" role="group" aria-label="Floors">
+                  {HOUSE_FLOORS.map((floors) => (
+                    <button
+                      key={floors}
+                      type="button"
+                      aria-pressed={storeys === floors}
+                      className={storeys === floors ? 'on' : ''}
+                      onClick={() => setStoreys(floors)}
+                    >
+                      {HOUSE_FLOOR_LABELS[floors]}
+                    </button>
+                  ))}
+                </div>
+                {storeys === 2 && (
+                  <small>We split your house size evenly over two floors and add a 150 mm first-floor slab and a staircase.</small>
+                )}
               </div>
 
               <div className="assumption">

@@ -55,7 +55,8 @@ function getBrickInfoById(id: string) {
  * Configuration for manual builder (simplified input)
  */
 export interface ManualBuilderConfig {
-  floorArea: number;        // m²
+  floorArea: number;        // Total m² across all storeys
+  storeys?: 1 | 2;          // Omitted means single storey
   roomCount: number;        // total rooms for internal wall estimation
   wallHeight: number;       // meters (default 2.7)
   brickTypes: BrickType[];
@@ -196,7 +197,10 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   itemIdCounter = 0;
   const items: GeneratedBOQItem[] = [];
 
-  const { floorArea, roomCount, wallHeight, brickTypes, cementTypes, includeLabor, rooms } = config;
+  const { floorArea: totalFloorArea, roomCount: totalRoomCount, wallHeight, brickTypes, cementTypes, includeLabor, rooms } = config;
+  const doubleStorey = config.storeys === 2;
+  const floorArea = doubleStorey ? totalFloorArea / 2 : totalFloorArea;
+  const roomCount = doubleStorey ? totalRoomCount / 2 : totalRoomCount;
   const brickType = (brickTypes && brickTypes.length > 0) ? brickTypes[0] : 'common';
   const cementType = (cementTypes && cementTypes.length > 0) ? cementTypes[0] : 'cement_325';
   const { perimeter, internalWallLength } = estimateDimensions(floorArea, roomCount);
@@ -215,7 +219,9 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   // SUBSTRUCTURE
   // ============================================
   if (hasScope('substructure')) {
-    items.push(...substructureItems({ floorArea, perimeter, internalWallLength, brickType, cementType, locationType }));
+    const foundation = substructureItems({ floorArea, perimeter, internalWallLength, brickType, cementType, locationType });
+    if (doubleStorey) noteDoubleStoreyFoundation(foundation);
+    items.push(...foundation);
   }
 
   // ============================================
@@ -223,7 +229,14 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   // ============================================
   if (hasScope('superstructure')) {
     // Use Detailed logic if rooms exist, else Fallback
-    if (rooms && rooms.length > 0) {
+    if (doubleStorey) {
+      const wallConfig = { brickType, cementType, wallHeight, fullBrickInternalWalls: config.fullBrickInternalWalls };
+      const windows = Math.ceil((config.totalWindows || Math.ceil(totalFloorArea / 15)) / 2);
+      const doors = config.totalDoors ? Math.ceil(config.totalDoors / 2) : undefined;
+      items.push(...calculateSuperstructure(perimeter, internalWallLength, wallConfig, wallOpenings(windows, doors, roomCount), locationType));
+      items.push(...lintelItems(windows, doors, roomCount, config.fullBrickInternalWalls));
+      items.push(...upperFloorStructureItems({ area: floorArea, perimeter, internalWallLength, windows, doors, roomCount, config: wallConfig, locationType }));
+    } else if (rooms && rooms.length > 0) {
       items.push(...calculateSuperstructureFromRooms(config, perimeter, internalWallLength, locationType));
 
       const totalWallLen = perimeter + internalWallLength;
@@ -262,7 +275,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   // FINISHING (Add Windows Sills)
   // ============================================
   if (hasScope('finishing')) {
-    const totalWindows = config.totalWindows || (rooms ? rooms.reduce((sum, r) => sum + r.windows, 0) : Math.ceil(floorArea / 15));
+    const totalWindows = config.totalWindows || (rooms ? rooms.reduce((sum, r) => sum + r.windows, 0) : Math.ceil(totalFloorArea / 15));
     const sillLength = totalWindows * 1.5;
 
     items.push(createBOQItem(
@@ -275,20 +288,21 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
     ));
 
     items.push(...calculateFinishes({
-      floorArea,
-      roomCount,
+      floorArea: totalFloorArea,
+      roomCount: totalRoomCount,
       wallHeight,
-      perimeter,
-      internalWallLength,
+      perimeter: perimeter * (doubleStorey ? 2 : 1),
+      internalWallLength: internalWallLength * (doubleStorey ? 2 : 1),
       totalWindows,
       totalDoors: config.totalDoors,
       cementType: getFirstValue(cementTypes) as CementType,
       finishLevel: normalizeFinishLevel(config.finishLevel),
+      ...(doubleStorey ? { ceilingFloorAreaM2: floorArea } : {}),
     }));
   }
 
   if (hasScope('services')) {
-    items.push(...calculateServices({ floorArea, roomCount }));
+    items.push(...calculateServices({ floorArea: totalFloorArea, roomCount: totalRoomCount }));
   }
 
   if (hasScope('exterior')) {
@@ -305,7 +319,7 @@ export function generateBOQFromBasics(config: ManualBuilderConfig): GeneratedBOQ
   applyLocationPrices(items, locationType);
 
   if (includeLabor) {
-    items.push(...calculateLabor(items, floorArea, config.laborRates));
+    items.push(...calculateLabor(items, floorArea, config.laborRates, config));
   }
 
   return items;
@@ -482,7 +496,7 @@ function ringBeamItems(allWalls: number, wallHeight: number, cementType: CementT
   return items;
 }
 
-/** Suspended slab and a standard dog-leg stair, for plan uploads only. */
+/** Suspended slab and a standard dog-leg stair, shared by both BOQ entry points. */
 function upperFloorSlabItems(area: number, cementType: CementType, locationType: LocationType): GeneratedBOQItem[] {
   const cement = CEMENT_INFO[cementType];
   const waste = 1 + BOQ_ASSUMPTIONS.concrete.waste[locationType];
@@ -729,15 +743,17 @@ function calculateSubstructure(
 // SUPERSTRUCTURE CALCULATIONS
 // ============================================
 
+type WallConfig = Pick<VisionConfig, 'brickType' | 'cementType' | 'wallHeight' | 'fullBrickInternalWalls'>;
+
 function calculateSuperstructure(
   externalWallLength: number,
   internalWallLength: number,
-  config: VisionConfig,
+  config: WallConfig,
   openings: { external: number; internal: number },
   locationType: LocationType = DEFAULT_LOCATION_TYPE
 ): GeneratedBOQItem[] {
   const items: GeneratedBOQItem[] = [];
-  const cfg = normalizeConfig(config);
+  const cfg = { brickType: getFirstValue(config.brickType), cementType: getFirstValue(config.cementType), wallHeight: config.wallHeight };
   const masonryWasteMultiplier = getMasonryWasteMultiplier(locationType);
 
   // Walls stand on the slab, full height; the foundation walls are below it.
@@ -1242,6 +1258,35 @@ function upperFloorAreaFor(groundArea: number, config?: Pick<VisionConfig, 'stor
   return upper && Number.isFinite(upper) && upper > 0 ? upper : groundArea;
 }
 
+/** The upper slab, stair, walls, ring beam and lintels in their original BOQ order. */
+function upperFloorStructureItems(input: {
+  area: number;
+  perimeter: number;
+  internalWallLength: number;
+  windows: number;
+  doors: number | undefined;
+  roomCount: number;
+  config: WallConfig;
+  locationType: LocationType;
+}): GeneratedBOQItem[] {
+  const { area, perimeter, internalWallLength, windows, doors, roomCount, config, locationType } = input;
+  const slab = upperFloorSlabItems(area, getFirstValue(config.cementType), locationType);
+  const upperItems = [
+    ...calculateSuperstructure(perimeter, internalWallLength, config, wallOpenings(windows, doors, roomCount), locationType),
+    ...lintelItems(windows, doors, roomCount, config.fullBrickInternalWalls),
+  ];
+  for (const item of upperItems) {
+    item.materialName += ' (Upper floor)';
+    item.calculationNote += ' (Upper floor)';
+  }
+  return [...slab, ...upperItems];
+}
+
+function noteDoubleStoreyFoundation(foundation: GeneratedBOQItem[]): void {
+  const concrete = foundation.find((item) => item.materialName.endsWith('(Foundation Concrete)') && item.materialId.startsWith('cement-'));
+  if (concrete) concrete.calculationNote += ' Two storeys: the engineer may ask for wider or deeper footings.';
+}
+
 export function generateBOQ(
   rooms: DetectedRoom[],
   walls: DetectedWall[],
@@ -1273,10 +1318,7 @@ export function generateBOQ(
 
   if (hasScope('substructure')) {
     const foundation = calculateSubstructure(totalArea, perimeterLength, internalWallLength, config, locationType);
-    if (doubleStorey) {
-      const concrete = foundation.find((item) => item.materialName.endsWith('(Foundation Concrete)') && item.materialId.startsWith('cement-'));
-      if (concrete) concrete.calculationNote += ' Two storeys: the engineer may ask for wider or deeper footings.';
-    }
+    if (doubleStorey) noteDoubleStoreyFoundation(foundation);
     allItems.push(...foundation);
   }
 
@@ -1284,16 +1326,16 @@ export function generateBOQ(
     allItems.push(...calculateSuperstructure(perimeterLength, internalWallLength, config, wallOpenings(windows, detectedDoors, rooms.length), locationType));
     allItems.push(...lintelItems(windows, detectedDoors, rooms.length, config.fullBrickInternalWalls));
     if (doubleStorey) {
-      allItems.push(...upperFloorSlabItems(upperArea, getFirstValue(config.cementType), locationType));
-      const upperItems = [
-        ...calculateSuperstructure(perimeterLength * upperWallScale, internalWallLength * upperWallScale, config, wallOpenings(upperWindows, upperDoors, upperRoomCount), locationType),
-        ...lintelItems(upperWindows, upperDoors, upperRoomCount, config.fullBrickInternalWalls),
-      ];
-      for (const item of upperItems) {
-        item.materialName += ' (Upper floor)';
-        item.calculationNote += ' (Upper floor)';
-      }
-      allItems.push(...upperItems);
+      allItems.push(...upperFloorStructureItems({
+        area: upperArea,
+        perimeter: perimeterLength * upperWallScale,
+        internalWallLength: internalWallLength * upperWallScale,
+        windows: upperWindows,
+        doors: upperDoors,
+        roomCount: upperRoomCount,
+        config,
+        locationType,
+      }));
     }
   }
 

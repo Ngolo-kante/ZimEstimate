@@ -37,6 +37,7 @@ const STAGE_WEIGHT_FALLBACK: Record<StageId, number> = {
 export type StageReachInput = {
   budgetUsd: number;
   floorAreaM2: number;
+  storeys?: 1 | 2;
   roomCount?: number;
   wallHeightM?: number;
   brickTypes?: BrickType[];
@@ -113,6 +114,7 @@ export function estimateStageReach(input: StageReachInput): StageReachResult {
 
   const generatedItems = generateBOQFromBasics({
     floorArea: floorAreaM2,
+    storeys: input.storeys,
     roomCount,
     wallHeight: wallHeightM,
     brickTypes: [brickType],

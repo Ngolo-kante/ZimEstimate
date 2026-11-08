@@ -39,6 +39,18 @@ export function brickFromParam(raw: string | null | undefined, location: HouseLo
   return HOUSE_BRICKS.includes(raw as HouseBrick) ? (raw as HouseBrick) : defaultBrickFor(location);
 }
 
+export const HOUSE_FLOORS = [1, 2] as const;
+export type HouseFloors = (typeof HOUSE_FLOORS)[number];
+export const HOUSE_FLOOR_LABELS: Record<HouseFloors, string> = {
+  1: 'Single storey',
+  2: 'Double storey',
+};
+
+/** Missing or unrecognised floor choices keep existing single-storey links. */
+export function floorsFromParam(raw: string | null | undefined): HouseFloors {
+  return raw === '2' ? 2 : 1;
+}
+
 export const HOUSE_PROFILES = {
   standard: { label: 'Standard Build', wallHeightM: 3.0, cementType: 'cement_425' as const },
   economy: { label: 'Economy Build', wallHeightM: 2.7, cementType: 'cement_325' as const },

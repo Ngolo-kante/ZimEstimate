@@ -16,6 +16,7 @@ import {
   type HouseLocation,
   type HouseProfile,
   brickFromParam,
+  floorsFromParam,
 } from '@/lib/estimators/houseBudgetOptions';
 
 /**
@@ -144,6 +145,7 @@ function summariseHouse(params: URLSearchParams): SharedEstimateSummary | null {
   const result = estimateStageReach({
     budgetUsd: budget,
     floorAreaM2: area,
+    storeys: floorsFromParam(params.get('floors')),
     locationType: location,
     brickTypes: [brickFromParam(params.get('brick'), location)],
     wallHeightM: config.wallHeightM,

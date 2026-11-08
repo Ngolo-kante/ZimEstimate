@@ -5,7 +5,7 @@ import { encodeBoreholeExplorerState } from '@/lib/quick-projects/borehole/explo
 import { allocateBudget } from '@/lib/quick-projects/solar/allocateBudget';
 import { BATTERY_BRANDS, INVERTER_BRANDS, PANEL_BRANDS } from '@/lib/quick-projects/solar/catalog';
 import { estimateStageReach } from '@/lib/estimators/stageBudgetEstimator';
-import { HOUSE_PROFILES } from '@/lib/estimators/houseBudgetOptions';
+import { floorsFromParam, HOUSE_PROFILES } from '@/lib/estimators/houseBudgetOptions';
 
 /**
  * The preview card is the first thing a WhatsApp recipient sees. If it says
@@ -105,5 +105,34 @@ describe('link preview for a shared estimate', () => {
     expect(summariseSharedEstimate(new URLSearchParams('mode=solar'))).toBeNull();
     expect(summariseSharedEstimate(new URLSearchParams('mode=fencing&budget=2000'))).toBeNull();
     expect(summariseSharedEstimate(new URLSearchParams('budget=abc'))).toBeNull();
+  });
+});
+
+
+describe('house floors in shared links', () => {
+  it('shows the same double-storey figure as the page', () => {
+    const summary = summariseSharedEstimate(new URLSearchParams('budget=40000&area=240&loc=urban&profile=standard&floors=2'));
+    const page = estimateStageReach({
+      budgetUsd: 40000, floorAreaM2: 240, storeys: 2, locationType: 'urban',
+      brickTypes: ['common'], wallHeightM: HOUSE_PROFILES.standard.wallHeightM,
+      cementTypes: [HOUSE_PROFILES.standard.cementType], includeLabor: true,
+    });
+    expect(summary?.lines[0]).toBe(`Reaches: ${page.reachableStageLabel}`);
+    expect(summary?.lines[1]).toContain(`${Math.round(page.coveragePercent)}%`);
+    expect(summary?.lines[1]).toContain(`$${Math.round(page.estimatedTotalUsd).toLocaleString('en-US')} to move in`);
+    expect(summary).not.toEqual(summariseSharedEstimate(new URLSearchParams('budget=40000&area=240&loc=urban&profile=standard')));
+  });
+
+  it('defaults missing and invalid floors to single storey without changing old previews', () => {
+    expect(floorsFromParam('2')).toBe(2);
+    for (const raw of [undefined, null, '', '1', '0', '3', 'double']) {
+      expect(floorsFromParam(raw)).toBe(1);
+    }
+    const original = new URLSearchParams('budget=40000&area=240&loc=urban&profile=standard');
+    const summary = summariseSharedEstimate(original);
+    for (const raw of ['1', '3', 'double']) {
+      original.set('floors', raw);
+      expect(summariseSharedEstimate(original)).toEqual(summary);
+    }
   });
 });

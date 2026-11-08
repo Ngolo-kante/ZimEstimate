@@ -1,3 +1,5 @@
+import { generateBOQFromBasics } from '@/lib/calculations';
+import { HOUSE_PROFILES } from './houseBudgetOptions';
 import { describe, expect, it } from 'vitest';
 import { ADD_LATER_IDS } from './addLater';
 import { estimateStageReach, stageStatusFromParams, stageStatusToParams, typicalRoomCount } from './stageBudgetEstimator';
@@ -181,5 +183,49 @@ describe('rooms in a typical house', () => {
     expect(typicalRoomCount(120)).toBe(7);
     expect(typicalRoomCount(40)).toBe(4);
     expect(typicalRoomCount(213)).toBe(13);
+  });
+});
+
+
+describe('double-storey stage estimates', () => {
+  const input = {
+    budgetUsd: 40000, floorAreaM2: 240, storeys: 2 as const,
+    locationType: 'urban' as const, brickTypes: ['common' as const],
+    wallHeightM: HOUSE_PROFILES.standard.wallHeightM,
+    cementTypes: [HOUSE_PROFILES.standard.cementType],
+  };
+
+  it('passes storeys through and counts the slab and stair in Structural Walls & Frame', () => {
+    const result = estimateStageReach(input);
+    const items = generateBOQFromBasics({
+      floorArea: input.floorAreaM2, roomCount: typicalRoomCount(input.floorAreaM2),
+      storeys: 2, wallHeight: input.wallHeightM, brickTypes: input.brickTypes,
+      cementTypes: input.cementTypes, locationType: input.locationType,
+      scope: 'full_house', includeLabor: false,
+    });
+    const structure = items.filter((item) => item.category === 'superstructure');
+    const slabAndStair = structure.filter((item) => /First-floor Slab|Staircase/.test(item.materialName));
+    expect(slabAndStair.length).toBeGreaterThan(0);
+    const cost = (lines: typeof items) => lines.reduce((sum, item) => sum + item.totalUsd, 0);
+    const walls = result.rows.find((row) => row.id === 'superstructure')!;
+    expect(walls.label).toBe('Structural Walls & Frame');
+    expect(walls.stageCostUsd).toBeCloseTo(cost(structure), 6);
+    expect(walls.stageCostUsd - cost(structure.filter((item) => !slabAndStair.includes(item))))
+      .toBeCloseTo(cost(slabAndStair), 6);
+    const single = estimateStageReach({ ...input, storeys: 1 });
+    expect(walls.stageCostUsd).toBeGreaterThan(single.rows.find((row) => row.id === 'superstructure')!.stageCostUsd);
+    expect(result.rows.find((row) => row.id === 'roofing')!.stageCostUsd)
+      .toBeLessThan(single.rows.find((row) => row.id === 'roofing')!.stageCostUsd);
+  });
+
+  it('keeps default estimates unchanged and explains labour over both floors with one roof', () => {
+    expect(estimateStageReach({ ...input, storeys: undefined }))
+      .toEqual(estimateStageReach({ ...input, storeys: 1 }));
+    const result = estimateStageReach({ ...input, includeLabor: true });
+    const trade = (id: string) => result.laborByTrade.find((entry) => entry.id === id)!;
+    expect(trade('plastering').usd).toBeCloseTo(240 * 7.4, 2);
+    expect(trade('roof_work').usd).toBeCloseTo(120 * 6.7, 2);
+    expect(trade('ceilings').usd).toBeCloseTo(120 * 0.95 * 5, 2);
+    expect(result.laborByTrade.reduce((sum, entry) => sum + entry.usd, 0)).toBeCloseTo(result.laborUsd, 1);
   });
 });
