@@ -104,7 +104,7 @@ function optionalExtrasFor(rooms: DetectedRoom[], walls: DetectedWall[], config:
     const lines = everything.filter((item) => entry.matches(item));
     if (lines.length === 0) return [];
     const materials = lines.reduce((sum, item) => sum + item.totalUsd, 0);
-    const labour = config.includeLabor ? laborLines(lines, laborQuantitiesFor(lines, area), config.laborRates).reduce((sum, line) => sum + line.usd, 0) : 0;
+    const labour = config.includeLabor ? laborLines(lines, laborQuantitiesFor(lines, area, config), config.laborRates).reduce((sum, line) => sum + line.usd, 0) : 0;
     return [{ id: entry.id, group: 'house' as const, label: entry.label, why: entry.why, usd: materials + labour }];
   });
   return [...site, ...house];
@@ -200,6 +200,11 @@ export function useVisionTakeoff() {
         analysisResult: result,
         editedRooms: result.rooms,
         editedWalls: result.walls,
+        config: {
+          ...prev.config,
+          storeys: result.multiStorey ? 2 : 1,
+          upperFloorAreaM2: result.multiStorey ? Math.round(planFloorArea(result.rooms, { statedFloorAreaM2: result.statedTotalAreaM2 }).gross * 10) / 10 : undefined,
+        },
         // A total printed on the plan fills the "confirmed total" box; the
         // person can still change or clear it.
         verifiedTotalAreaM2: result.statedTotalAreaM2 ?? null,
@@ -274,7 +279,19 @@ export function useVisionTakeoff() {
 
   const useRescanCandidate = useCallback(() => {
     if (!rescanCandidate) return;
-    setState((prev) => ({ ...prev, analysisResult: rescanCandidate, editedRooms: rescanCandidate.rooms, editedWalls: rescanCandidate.walls, floorBoundary: null, error: null }));
+    setState((prev) => ({
+      ...prev,
+      analysisResult: rescanCandidate,
+      editedRooms: rescanCandidate.rooms,
+      editedWalls: rescanCandidate.walls,
+      config: {
+        ...prev.config,
+        storeys: rescanCandidate.multiStorey ? 2 : 1,
+        upperFloorAreaM2: rescanCandidate.multiStorey ? Math.round(planFloorArea(rescanCandidate.rooms, { statedFloorAreaM2: prev.verifiedTotalAreaM2 ?? rescanCandidate.statedTotalAreaM2 }).gross * 10) / 10 : undefined,
+      },
+      floorBoundary: null,
+      error: null,
+    }));
     setPlanHistory({ past: [], future: [] });
     setPlanRevision((revision) => revision + 1);
     setRescanCandidate(null);

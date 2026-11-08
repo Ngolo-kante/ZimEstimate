@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
 import { councilRequiresFullBrickWalls, estimateVisionWallDimensions, generateBOQ, generateBOQFromBasics, ManualBuilderConfig, planFloorArea } from './index';
-import { getBestPrice } from '../materials';
+import { getBestPrice, getMaterialById } from '../materials';
+import { BOQ_ASSUMPTIONS } from './assumptions';
 import { cleanLaborRates, isLaborCategory, laborRateFor, laborRatesFromNotes } from './laborSubstages';
 import type { DetectedRoom, DetectedWall } from '../vision/types';
 
@@ -487,5 +489,151 @@ describe('a floor area stated on the plan (2026-11-06)', () => {
     const fullBrick = generateBOQ(rooms, [], { ...config, scope: 'superstructure', fullBrickInternalWalls: true }, 6, 5);
     expect(line(fullBrick, 'lintel-230')!.quantity).toBe(11);
     expect(line(fullBrick, 'lintel-115')).toBeUndefined();
+  });
+});
+
+describe('double-storey plan uploads (2026-11-07)', () => {
+  const rooms: DetectedRoom[] = [
+    { id: 'lounge', name: 'Lounge', dimensions: { width: 5, length: 6 }, area: 30, position: { x: 0, y: 0, width: 50, height: 60 }, wallType: 'external', isEdited: false },
+    { id: 'kitchen', name: 'Kitchen', dimensions: { width: 4, length: 4 }, area: 16, position: { x: 50, y: 0, width: 40, height: 40 }, wallType: 'external', isEdited: false },
+    { id: 'bed', name: 'Bedroom', dimensions: { width: 4, length: 4 }, area: 16, position: { x: 0, y: 60, width: 40, height: 40 }, wallType: 'external', isEdited: false },
+    { id: 'bath', name: 'Bathroom', dimensions: { width: 2.5, length: 3 }, area: 7.5, position: { x: 40, y: 60, width: 25, height: 30 }, wallType: 'internal', isEdited: false },
+  ];
+  const config = { scope: 'full_house' as const, brickType: 'common' as const, cementType: 'cement_325' as const, includeLabor: true, wallHeight: 2.7, foundationDepth: 0.6, includeExtras: [] };
+
+  const withoutIds = (items: ReturnType<typeof generateBOQ>) => items.map((item) =>
+    Object.fromEntries(Object.entries(item).filter(([key]) => key !== 'id')));
+  const single = () => generateBOQ(rooms, [], { ...config, statedFloorAreaM2: 90 }, 6, 5);
+  const double = (upperFloorAreaM2?: number) => generateBOQ(rooms, [], {
+    ...config, statedFloorAreaM2: 90, storeys: 2, upperFloorAreaM2,
+  }, 6, 5);
+  const line = (items: ReturnType<typeof generateBOQ>, id: string) => items.find((item) => item.materialId === id)!;
+  const slab = (items: ReturnType<typeof generateBOQ>, id: string) => items.find((item) => item.materialId === id && item.calculationNote.startsWith('First-floor slab'))!;
+  const upper = (items: ReturnType<typeof generateBOQ>) => items.filter((item) => item.materialName.endsWith('(Upper floor)'));
+
+  it('keeps every single-storey line and total exactly as before, with omitted or explicit storeys', () => {
+    const before = generateBOQ(rooms, [], config, 6, 5);
+    const explicit = generateBOQ(rooms, [], { ...config, storeys: 1, upperFloorAreaM2: 130 }, 6, 5);
+    expect(withoutIds(explicit)).toEqual(withoutIds(before));
+    // Captured from generateBOQ before the double-storey changes, excluding only generated IDs.
+    expect(createHash('sha256').update(JSON.stringify(withoutIds(before))).digest('hex'))
+      .toBe('ec99bcff1e11b54ab0be132b8bee289fbd02e3046e420c5bfc11a377da1defe5');
+    expect(before.reduce((sum, item) => sum + item.totalUsd, 0)).toBeCloseTo(17693.69, 2);
+  });
+
+  it('adds a 150mm slab with both steel mats, binding wire and a concrete stair', () => {
+    const items = double(); // U defaults to the 90m² gross ground floor, rather than the 69.5m² room sum.
+    const volume = 90 * 0.15 * (1 + BOQ_ASSUMPTIONS.concrete.waste.urban);
+    expect(slab(items, 'cement-325').quantity).toBe(Math.ceil(volume * BOQ_ASSUMPTIONS.concrete.cementBagsPerM3.economy));
+    expect(slab(items, 'sand-river').quantity).toBeCloseTo(volume * 0.5, 1);
+    expect(slab(items, 'stone-19mm').quantity).toBeCloseTo(volume * 0.8, 1);
+    expect(slab(items, 'cement-325').calculationNote).toContain('150mm');
+    expect(slab(items, 'cement-325').calculationNote).toContain("Formwork and props are usually hired: add them from your builder's quote.");
+    expect(slab(items, 'cement-325').calculationNote).toContain("A suspended slab needs an engineer's design; it may change these sizes.");
+    expect(slab(items, 'rebar-12').quantity).toBe(Math.ceil(90 * 10 * 1.1 / 6));
+    expect(slab(items, 'rebar-10').quantity).toBe(Math.ceil(90 * 8 * 1.1 / 6));
+    const steelKg = (slab(items, 'rebar-12').quantity * 0.888 + slab(items, 'rebar-10').quantity * 0.617) * 6;
+    expect(slab(items, 'bindwire').quantity).toBe(Math.ceil(steelKg * 10 / 1000));
+    const stairs = items.filter((item) => item.materialName.endsWith('(Staircase)'));
+    expect(stairs.map((item) => item.materialId)).toEqual(['cement-325', 'sand-river', 'stone-19mm', 'rebar-12']);
+    expect(line(stairs, 'cement-325').quantity).toBe(Math.ceil(1.5 * 1.05 * 6.5));
+    expect(line(stairs, 'rebar-12').quantity).toBe(Math.ceil(120 / (0.888 * 6)));
+    expect(stairs.every((item) => item.category === 'superstructure' && item.calculationNote.includes('Not yet priced: the balustrade'))).toBe(true);
+    for (const item of items.filter((item) => !isLaborCategory(item.category))) {
+      expect(getMaterialById(item.materialId)).toBeDefined();
+      expect(getBestPrice(item.materialId)).toBeDefined();
+      expect(item.unitPriceUsd).toBeGreaterThan(0);
+    }
+  });
+
+  it('reuses upper walls, mortar, brickforce, lintels and a second ring beam', () => {
+    const ground = single().filter((item) => item.category === 'superstructure');
+    const upstairs = upper(double());
+    expect(upstairs).toHaveLength(ground.length);
+    for (let i = 0; i < ground.length; i++) {
+      expect(upstairs[i].materialId).toBe(ground[i].materialId);
+      expect(upstairs[i].quantity).toBe(ground[i].quantity);
+      expect(upstairs[i].materialName).toBe(`${ground[i].materialName} (Upper floor)`);
+    }
+    expect(upstairs.some((item) => item.materialName.includes('(Ring Beam)'))).toBe(true);
+    expect(upstairs.some((item) => item.materialId === 'brickforce')).toBe(true);
+    expect(line(upstairs, 'lintel-230').quantity).toBe(8);
+    expect(line(upstairs, 'lintel-115').quantity).toBe(3);
+  });
+
+  it('leaves the foundation quantities and one roof unchanged for an equal or smaller upper floor', () => {
+    const ground = single();
+    for (const upstairsArea of [90, 45]) {
+      const items = double(upstairsArea);
+      expect(withoutIds(items.filter((item) => item.category === 'roofing')))
+        .toEqual(withoutIds(ground.filter((item) => item.category === 'roofing')));
+      const foundation = items.filter((item) => item.category === 'substructure');
+      expect(foundation.map((item) => item.quantity)).toEqual(ground.filter((item) => item.category === 'substructure').map((item) => item.quantity));
+      expect(foundation.find((item) => item.materialName.includes('(Foundation Concrete)'))?.calculationNote)
+        .toContain('Two storeys: the engineer may ask for wider or deeper footings.');
+    }
+  });
+
+  it('tiles and services both gross floors but boards only the upper ceiling', () => {
+    const items = double();
+    expect(line(items, 'ceiling-board').quantity).toBe(90 * 0.95);
+    expect(line(items, 'ceiling-board').calculationNote).toContain('Ground floor ceiling is the slab underside (plastered); not priced here.');
+    expect(line(items, 'tiles-floor-ceramic').calculationNote).toContain('180m² tiled');
+    expect(line(items, 'tiles-floor-ceramic').quantity).toBe(207); // Both floors, with the existing 15% tile waste.
+    expect(line(items, 'door-interior').quantity + line(items, 'door-exterior').quantity).toBe(10);
+    expect(line(items, 'window-steel').quantity).toBe(17.3); // 12 windows × 1.44m², rounded once.
+    const servicesForBoth = generateBOQ(rooms, [], { ...config, scope: 'services', statedFloorAreaM2: 180 });
+    // Area-based bathroom count uses the combined 180m²; electrical points use both floors' rooms.
+    expect(line(items, 'wc-suite-cc').quantity).toBe(line(servicesForBoth, 'wc-suite-cc').quantity);
+    expect(line(items, 'socket-double').quantity).toBeGreaterThan(line(single(), 'socket-double').quantity);
+  });
+
+  it('doubles slab, wall-plate and plaster labour for equal floors while keeping roof labour on one footprint', () => {
+    const ground = single();
+    const items = double();
+    for (const trade of ['to_slab', 'to_wall_plate', 'plastering']) {
+      expect(line(items, `labor-${trade}`).totalUsd).toBeCloseTo(line(ground, `labor-${trade}`).totalUsd * 2, 2);
+    }
+    expect(line(items, 'labor-roof_work').totalUsd).toBe(line(ground, 'labor-roof_work').totalUsd);
+    expect(line(items, 'labor-ceilings').totalUsd).toBe(90 * 0.95 * 5);
+    const structureOnly = generateBOQ(rooms, [], { ...config, scope: 'superstructure', storeys: 2, statedFloorAreaM2: 90 });
+    expect(line(structureOnly, 'labor-to_slab').totalUsd).toBe(180 * 12);
+  });
+
+  it('scales smaller upper slabs, walls and opening counts, leaving the stair standard', () => {
+    const smaller = double(45);
+    const equal = double(90);
+    expect(slab(smaller, 'rebar-12').quantity).toBe(Math.ceil(45 * 10 * 1.1 / 6));
+    expect(slab(smaller, 'sand-river').quantity).toBeCloseTo(45 * 0.15 * 1.05 * 0.5, 1);
+    expect(line(upper(smaller), 'brick-common').quantity).toBeLessThan(line(upper(equal), 'brick-common').quantity);
+    const dimensions = estimateVisionWallDimensions(rooms, []);
+    const upperWallNote = line(upper(smaller), 'brick-common').calculationNote;
+    const extArea = dimensions.perimeter * Math.sqrt(0.5) * config.wallHeight - (3 * 1.44 + 2 * 1.89);
+    expect(upperWallNote).toContain(`${extArea.toFixed(1)}m²`);
+    expect(line(upper(smaller), 'lintel-230').quantity).toBe(5); // ceil(6 × 0.5) windows + 2 outside doors.
+    expect(line(upper(smaller), 'lintel-115').quantity).toBe(1); // ceil(5 × 0.5) doors less 2 outside.
+    expect(line(smaller, 'ceiling-board').quantity).toBeCloseTo(45 * 0.95, 1);
+    expect(line(smaller, 'labor-to_wall_plate').totalUsd).toBe(135 * 14);
+    expect(smaller.find((item) => item.materialName === 'Rebar Y12 (Staircase)')?.quantity)
+      .toBe(equal.find((item) => item.materialName === 'Rebar Y12 (Staircase)')?.quantity);
+  });
+
+  it('covers the larger upper footprint with one roof and uses its area for roof labour', () => {
+    const items = double(120);
+    const roofOnly = generateBOQ(rooms, [], { ...config, scope: 'roofing', statedFloorAreaM2: 120 });
+    expect(withoutIds(items.filter((item) => item.category === 'roofing')))
+      .toEqual(withoutIds(roofOnly.filter((item) => item.category === 'roofing')));
+    expect(line(items, 'labor-roof_work').totalUsd).toBe(120 * 6.7);
+  });
+
+  it.each(['urban', 'peri-urban', 'rural'] as const)('uses %s concrete waste and catalogue cement grades', (locationType) => {
+    const items = generateBOQ(rooms, [], { ...config, storeys: 2, upperFloorAreaM2: 45, cementType: 'cement_425', locationType });
+    const volume = 45 * 0.15 * (1 + BOQ_ASSUMPTIONS.concrete.waste[locationType]);
+    expect(slab(items, 'cement-425').quantity).toBe(Math.ceil(volume * BOQ_ASSUMPTIONS.concrete.cementBagsPerM3.structural));
+    expect(slab(items, 'sand-river').quantity).toBeCloseTo(volume * 0.5, 1);
+  });
+
+  it.each([0, -1, NaN, Infinity])('falls back to the ground floor for an invalid upper area (%s)', (area) => {
+    expect(withoutIds(double(area))).toEqual(withoutIds(double()));
   });
 });

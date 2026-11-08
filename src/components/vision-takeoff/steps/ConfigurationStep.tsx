@@ -26,6 +26,8 @@ import type { OptionalExtra } from '@/hooks/useVisionTakeoff';
 
 interface ConfigurationStepProps {
   config: VisionConfig;
+  groundFloorAreaM2: number;
+  multiStorey?: boolean;
   onUpdate: (config: Partial<VisionConfig>) => void;
   onConfirm: () => void;
   onBack: () => void;
@@ -36,6 +38,8 @@ interface ConfigurationStepProps {
 
 export default function ConfigurationStep({
   config,
+  groundFloorAreaM2,
+  multiStorey,
   onUpdate,
   onConfirm,
   onBack,
@@ -137,6 +141,39 @@ export default function ConfigurationStep({
       </div>
 
       <div className="config-sections">
+        <Card>
+          <div className="section-header">
+            <House size={22} weight="light" />
+            <div><h3>Floors</h3><p>Choose the number of floors to estimate</p></div>
+          </div>
+          <div className="option-grid cement-grid" role="group" aria-label="Floors">
+            {([1, 2] as const).map((storeys) => {
+              const selected = (config.storeys ?? 1) === storeys;
+              return (
+                <button key={storeys} type="button" aria-pressed={selected}
+                  className={`option-card ${selected ? 'selected' : ''}`}
+                  onClick={() => onUpdate({ storeys, ...(storeys === 2 ? { upperFloorAreaM2: config.upperFloorAreaM2 ?? groundFloorAreaM2 } : {}) })}>
+                  <div className="option-check">{selected && <Check size={16} weight="bold" />}</div>
+                  <span className="option-name">{storeys === 1 ? 'Single storey' : 'Double storey'}</span>
+                </button>
+              );
+            })}
+          </div>
+          {multiStorey && config.storeys === 2 && <p className="multi-select-hint">Your plan shows a stair, so we&apos;ve chosen Double storey.</p>}
+          {config.storeys === 2 && <div className="upper-floor-area">
+            <label htmlFor="upper-floor-area">Upper floor area (m²)</label>
+            <input id="upper-floor-area" type="number" min="0.1" step="0.1"
+              value={config.upperFloorAreaM2 ?? ''}
+              placeholder={String(groundFloorAreaM2)}
+              aria-describedby="upper-floor-hint"
+              onChange={(event) => {
+                const area = event.target.valueAsNumber;
+                onUpdate({ upperFloorAreaM2: Number.isFinite(area) && area > 0 ? area : undefined });
+              }} />
+            <p id="upper-floor-hint">Usually about the same as the ground floor. Change it if your plan says otherwise.</p>
+          </div>}
+        </Card>
+
         {/* Scope Selection */}
         <div id="vision-scope-selection" style={{ scrollMarginTop: 120 }}>
           <Card>
@@ -354,6 +391,11 @@ export default function ConfigurationStep({
       </div>
 
       <style jsx>{`
+        .upper-floor-area { display: grid; gap: 8px; margin-top: var(--spacing-md); }
+        .upper-floor-area label { font-size: 0.875rem; font-weight: 600; color: var(--color-text); }
+        .upper-floor-area input { width: 100%; max-width: 240px; min-height: 44px; padding: 10px 12px; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); background: #fff; color: var(--color-text); }
+        .upper-floor-area input:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+        .upper-floor-area p { margin: 0; font-size: 0.875rem; color: var(--color-text-secondary); }
         .extras-group { margin-top: 12px; }
         .extras-heading { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #64748b; margin: 0 0 6px; }
         .extra-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; min-height: 44px; padding: 10px 0; border-bottom: 1px solid #e2e8f0; cursor: pointer; }

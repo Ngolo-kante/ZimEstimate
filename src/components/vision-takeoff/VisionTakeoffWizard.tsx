@@ -12,6 +12,7 @@ import ConfigurationStep from './steps/ConfigurationStep';
 import CalculationAnimation from './steps/CalculationAnimation';
 import BOQResultsStep, { PENDING_VISION_SAVE_KEY } from './steps/BOQResultsStep';
 import { readEstimateHandoff } from '@/lib/estimateHandoff';
+import { planFloorArea } from '@/lib/calculations';
 import WorkflowProgress from '@/components/boq/WorkflowProgress';
 
 const VISION_STEPS = [
@@ -168,6 +169,8 @@ export default function VisionTakeoffWizard() {
         {state.step === 'config' && (
           <ConfigurationStep
             config={state.config}
+            multiStorey={state.analysisResult?.multiStorey}
+            groundFloorAreaM2={Math.round(planFloorArea(state.editedRooms, { statedFloorAreaM2: state.verifiedTotalAreaM2 ?? undefined }).gross * 10) / 10}
             onUpdate={wizard.updateConfig}
             onConfirm={wizard.confirmConfig}
             onBack={() => wizard.goToStep('project_info')}

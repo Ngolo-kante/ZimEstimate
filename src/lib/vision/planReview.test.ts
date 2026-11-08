@@ -28,10 +28,12 @@ describe('uploaded plan review', () => {
     expect(assessPlanReview(base)).toEqual([]);
   });
 
-  it('warns that a plan with a stair has more than the floor priced, without blocking it', () => {
+  it('offers Double storey on the next screen for a plan with a stair, without blocking it', () => {
     const findings = assessPlanReview({ ...base, multiStorey: true });
     expect(findings.map((finding) => finding.id)).toEqual(['storeys']);
     expect(findings[0].severity).toBe('check');
+    expect(findings[0].text).toBe('This plan looks like a double-storey house: it shows a stair. You can choose Double storey on the next screen and check the upper floor area.');
+    expect(isPlanReviewBlocked({ ...base, multiStorey: true })).toBe(false);
   });
 
   it('keeps a confirmation through door, window and stage edits but not a changed plan', () => {

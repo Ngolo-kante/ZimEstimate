@@ -123,6 +123,7 @@ export function laborSubstageFor(item: { category: string; materialId: string; m
     case 'substructure':
       return 'to_slab';
     case 'superstructure':
+      if (item.calculationNote?.startsWith('First-floor slab')) return 'to_slab';
       return 'to_wall_plate';
     case 'roofing':
       return 'roof_work';
@@ -215,7 +216,10 @@ export function laborRateUnit(id: LaborSubstageId): string {
   return basis === 'percent' ? '% of materials' : UNIT_LABEL[basis].per;
 }
 
-export type LaborQuantities = Record<Exclude<LaborBasis, 'percent'>, number>;
+export type LaborQuantities = Record<Exclude<LaborBasis, 'percent'>, number> & {
+  /** A roof may cover a smaller footprint than the combined floors. */
+  floor_m2_by_trade?: Partial<Record<LaborSubstageId, number>>;
+};
 
 export type LaborLine = {
   id: LaborSubstageId;
@@ -247,7 +251,10 @@ export function laborLines(materialItems: PricedItem[], quantities: LaborQuantit
       return [{ id: entry.id, stage: entry.stage, label: entry.label, basis: entry.basis, rate, quantity: materialUsd, usd,
         note: `${rate}% of ${entry.label.toLowerCase()} materials ($${materialUsd.toFixed(2)})` }];
     }
-    const quantity = Math.round(quantities[entry.basis] * 10) / 10;
+    const measured = entry.basis === 'floor_m2'
+      ? quantities.floor_m2_by_trade?.[entry.id] ?? quantities.floor_m2
+      : quantities[entry.basis];
+    const quantity = Math.round(measured * 10) / 10;
     if (!(quantity > 0)) return [];
     const usd = Math.round(rate * quantity * 100) / 100;
     return [{ id: entry.id, stage: entry.stage, label: entry.label, basis: entry.basis, rate, quantity, usd,

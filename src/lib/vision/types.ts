@@ -64,7 +64,7 @@ export interface VisionAnalysisResult {
   printed?: PrintedSizes;
   /** The whole floor area the plan prints ("area=90sqm"), when it gives one (planFacts.ts). */
   statedTotalAreaM2?: number;
-  /** The plan shows a stair or an upper floor; the BOQ prices one floor. */
+  /** The plan shows a stair or an upper floor. */
   multiStorey?: boolean;
 }
 
@@ -92,6 +92,10 @@ export type BrickType =
 export type CementType = 'cement_325' | 'cement_425';
 
 export interface VisionConfig {
+  /** Plan uploads only; omitted means single storey. */
+  storeys?: 1 | 2;
+  /** Upper floor footprint; defaults to the ground floor's gross area. */
+  upperFloorAreaM2?: number;
   scope: ProjectScope | ProjectScope[]; // Can be single or multi-select
   brickType: BrickType | BrickType[]; // Can be single or multi-select
   cementType: CementType | CementType[]; // Can be single or multi-select
@@ -122,6 +126,7 @@ export interface VisionConfig {
 }
 
 export const DEFAULT_CONFIG: VisionConfig = {
+  storeys: 1,
   scope: 'full_house',
   brickType: 'common',
   cementType: 'cement_325',

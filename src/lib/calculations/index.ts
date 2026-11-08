@@ -482,6 +482,31 @@ function ringBeamItems(allWalls: number, wallHeight: number, cementType: CementT
   return items;
 }
 
+/** Suspended slab and a standard dog-leg stair, for plan uploads only. */
+function upperFloorSlabItems(area: number, cementType: CementType, locationType: LocationType): GeneratedBOQItem[] {
+  const cement = CEMENT_INFO[cementType];
+  const waste = 1 + BOQ_ASSUMPTIONS.concrete.waste[locationType];
+  const concreteItems = (volume: number, label: string, note: string) => [
+    createBOQItem(cement.materialId, `${cement.name} (${label})`, 'superstructure', Math.ceil(volume * getConcreteCementBagsPerM3(cementType)), 'per 50kg bag', note),
+    createBOQItem('sand-river', `River Sand (${label})`, 'superstructure', volume * 0.5, 'per cube', note),
+    createBOQItem('stone-19mm', `Crushed Stone 19mm (${label})`, 'superstructure', volume * 0.8, 'per cube', note),
+  ];
+  const volume = area * 0.15 * waste;
+  const slabNote = `First-floor slab ${area}m² @ 150mm (${volume.toFixed(2)}m³ including waste). Formwork and props are usually hired: add them from your builder's quote. A suspended slab needs an engineer's design; it may change these sizes.`;
+  const items = concreteItems(volume, 'First-floor Slab', slabNote);
+  const y12Lengths = Math.ceil(area * 10 * 1.1 / 6);
+  const y10Lengths = Math.ceil(area * 8 * 1.1 / 6);
+  items.push(createBOQItem('rebar-12', 'Rebar Y12 (First-floor Slab)', 'superstructure', y12Lengths, 'per length', `First-floor slab bottom mat: Y12 @ 200mm both ways, ${area}m² × 10m of bar/m² + 10% laps, in 6m lengths`));
+  items.push(createBOQItem('rebar-10', 'Rebar Y10 (First-floor Slab)', 'superstructure', y10Lengths, 'per length', `First-floor slab top mat: Y10 @ 250mm both ways, ${area}m² × 8m of bar/m² + 10% laps, in 6m lengths`));
+  const steelKg = (y12Lengths * Y12_KG_PER_M + y10Lengths * Y10_KG_PER_M) * 6;
+  items.push(createBOQItem('bindwire', 'Binding Wire (First-floor Slab)', 'superstructure', Math.max(1, Math.ceil(steelKg * BINDING_WIRE_KG_PER_TONNE / 1000)), 'per kg', `First-floor slab: tying about ${Math.round(steelKg)}kg of bars @ ${BINDING_WIRE_KG_PER_TONNE}kg of wire per tonne`));
+
+  const stairNote = `Standard concrete stair. Not yet priced: the balustrade — add it from your quote. Dog-leg stair: 1.5m³ concrete + waste.`;
+  items.push(...concreteItems(1.5 * waste, 'Staircase', stairNote));
+  items.push(createBOQItem('rebar-12', 'Rebar Y12 (Staircase)', 'superstructure', Math.ceil(120 / (Y12_KG_PER_M * 6)), 'per length', `${stairNote} 120kg of Y12, in 6m lengths`));
+  return items;
+}
+
 /**
  * Everything to slab level: hardcore, damp proofing, termite treatment, strip
  * footings under every wall, one-brick foundation walls, and the floor slab.
@@ -930,6 +955,7 @@ function calculateFinishes(input: {
   totalDoors?: number;
   cementType: CementType;
   finishLevel: FinishLevel;
+  ceilingFloorAreaM2?: number;
 }): GeneratedBOQItem[] {
   const { floorArea, roomCount, wallHeight, perimeter, internalWallLength, totalWindows, totalDoors, cementType, finishLevel } = input;
   const items: GeneratedBOQItem[] = [];
@@ -981,19 +1007,21 @@ function calculateFinishes(input: {
   items.push(createBOQItem('grout', 'Tile Grout', 'finishing', Math.ceil(adhesiveBags / 4), 'per 5kg bag', 'Tile joints'));
 
   // Ceilings and cornice.
-  const ceilingArea = floorArea * CEILING_COVERAGE_RATIO;
+  const ceilingFloorArea = input.ceilingFloorAreaM2 ?? floorArea;
+  const ceilingArea = ceilingFloorArea * CEILING_COVERAGE_RATIO;
   const corniceLengths = Math.ceil((perimeter + internalWallLength * 2) / CORNICE_LENGTH_M);
 
-  items.push(createBOQItem('ceiling-board', 'Ceiling Board', 'finishing', roundTo(ceilingArea, 1), 'per m²', `${floorArea}m² ceiling`));
+  items.push(createBOQItem('ceiling-board', 'Ceiling Board', 'finishing', roundTo(ceilingArea, 1), 'per m²', `${ceilingFloorArea}m² ceiling${input.ceilingFloorAreaM2 !== undefined ? '. Ground floor ceiling is the slab underside (plastered); not priced here.' : ''}`));
   items.push(createBOQItem('cornice', 'Cornice', 'finishing', corniceLengths, 'per 4m length', 'Ceiling perimeter'));
 
   // Joinery — use the reviewed upload count when available; otherwise assume
   // one interior door per room plus front and back doors.
-  const interiorDoors = totalDoors && totalDoors > 0 ? Math.max(0, totalDoors - spec.exteriorDoors) : Math.max(1, roomCount);
-  items.push(createBOQItem('door-interior', 'Interior Door', 'finishing', interiorDoors, 'each', totalDoors && totalDoors > 0 ? `${totalDoors} doors detected, less ${spec.exteriorDoors} entrance doors` : `${roomCount} rooms`));
-  items.push(createBOQItem('door-exterior', 'Exterior Door', 'finishing', spec.exteriorDoors, 'each', 'Front and back'));
-  items.push(createBOQItem('hinges-door', 'Door Hinges', 'finishing', interiorDoors + spec.exteriorDoors, 'per pair', 'One pair per door'));
-  items.push(createBOQItem('lock-mortice', 'Mortice Lock', 'finishing', interiorDoors + spec.exteriorDoors, 'each', 'One per door'));
+  const exteriorDoors = spec.exteriorDoors;
+  const interiorDoors = totalDoors && totalDoors > 0 ? Math.max(0, totalDoors - exteriorDoors) : Math.max(1, roomCount);
+  items.push(createBOQItem('door-interior', 'Interior Door', 'finishing', interiorDoors, 'each', totalDoors && totalDoors > 0 ? `${totalDoors} doors detected, less ${exteriorDoors} entrance doors` : `${roomCount} rooms`));
+  items.push(createBOQItem('door-exterior', 'Exterior Door', 'finishing', exteriorDoors, 'each', 'Front and back'));
+  items.push(createBOQItem('hinges-door', 'Door Hinges', 'finishing', interiorDoors + exteriorDoors, 'per pair', 'One pair per door'));
+  items.push(createBOQItem('lock-mortice', 'Mortice Lock', 'finishing', interiorDoors + exteriorDoors, 'each', 'One per door'));
   items.push(createBOQItem('window-steel', 'Steel Window Frames', 'finishing', roundTo(totalWindows * WINDOW_AREA_M2, 1), 'per m²', `${totalWindows} windows`));
   // Steel frames are sold unglazed; most Zimbabwe houses also bar every window.
   items.push(createBOQItem('glass-4mm', 'Clear Glass 4mm', 'finishing', roundTo(totalWindows * WINDOW_AREA_M2 * GLAZED_SHARE, 1), 'per m²', `Glazing for ${totalWindows} windows`));
@@ -1149,13 +1177,15 @@ function calculateExteriorWorks(input: {
 // ============================================
 
 /** What each trade's labour is measured in, read from the BOQ's own lines. */
-export function laborQuantitiesFor(materialItems: Array<{ materialId: string; unit: string; quantity: number }>, floorAreaM2: number): LaborQuantities {
+export function laborQuantitiesFor(materialItems: Array<{ materialId: string; unit: string; quantity: number }>, floorAreaM2: number, config?: Pick<VisionConfig, 'storeys' | 'upperFloorAreaM2'>): LaborQuantities {
   const quantityOf = (test: (id: string) => boolean) => materialItems
     .filter((item) => test(item.materialId) && /m²|m2/.test(item.unit))
     .reduce((sum, item) => sum + item.quantity, 0);
   const durawallPanels = materialItems.filter((item) => item.materialId === 'durawall-panel').reduce((sum, item) => sum + item.quantity, 0);
+  const upperArea = upperFloorAreaFor(floorAreaM2, config);
   return {
-    floor_m2: floorAreaM2,
+    floor_m2: floorAreaM2 + upperArea,
+    ...(config?.storeys === 2 ? { floor_m2_by_trade: { roof_work: Math.max(floorAreaM2, upperArea) } } : {}),
     tiled_m2: quantityOf((id) => id.startsWith('tiles-')),
     ceiling_m2: quantityOf((id) => id.startsWith('ceiling-board')),
     boundary_m: (durawallPanels / DURAWALL_PANELS_PER_BAY) * DURAWALL_PANEL_LENGTH_M,
@@ -1166,12 +1196,12 @@ export function laborQuantitiesFor(materialItems: Array<{ materialId: string; un
  * One labour line per trade, inside its stage (category labor_<stage>), priced
  * in the trade's own unit: see laborSubstages.ts.
  */
-function calculateLabor(materialItems: GeneratedBOQItem[], floorAreaM2: number, rates?: LaborRates): GeneratedBOQItem[] {
+function calculateLabor(materialItems: GeneratedBOQItem[], floorAreaM2: number, rates?: LaborRates, config?: Pick<VisionConfig, 'storeys' | 'upperFloorAreaM2'>): GeneratedBOQItem[] {
   const materialUsd = materialItems.reduce((sum, item) => sum + item.totalUsd, 0);
   const materialZwg = materialItems.reduce((sum, item) => sum + item.totalZwg, 0);
   // ZWG at the rate the materials were priced at.
   const zwgPerUsd = materialUsd > 0 ? materialZwg / materialUsd : 0;
-  return laborLines(materialItems, laborQuantitiesFor(materialItems, floorAreaM2), rates).map((line) => {
+  return laborLines(materialItems, laborQuantitiesFor(materialItems, floorAreaM2, config), rates).map((line) => {
     const usd = roundTo(line.usd, 2);
     const zwg = roundTo(usd * zwgPerUsd, 2);
     return {
@@ -1206,6 +1236,12 @@ export function planFloorArea(rooms: { area: number }[], config: Pick<VisionConf
   return { rooms: roomArea, gross: stated && Number.isFinite(stated) && stated > roomArea ? stated : roomArea };
 }
 
+function upperFloorAreaFor(groundArea: number, config?: Pick<VisionConfig, 'storeys' | 'upperFloorAreaM2'>): number {
+  if (config?.storeys !== 2) return 0;
+  const upper = config.upperFloorAreaM2;
+  return upper && Number.isFinite(upper) && upper > 0 ? upper : groundArea;
+}
+
 export function generateBOQ(
   rooms: DetectedRoom[],
   walls: DetectedWall[],
@@ -1216,9 +1252,18 @@ export function generateBOQ(
   itemIdCounter = 0;
   const allItems: GeneratedBOQItem[] = [];
 
-  // Slab, roof, services and labour on the whole floor; finishes on the rooms.
+  // Single-storey finishes stay on the rooms; two storeys use both gross floors.
   const { rooms: roomArea, gross: totalArea } = planFloorArea(rooms, config);
   const { perimeter: perimeterLength, internalWallLength } = estimateVisionWallDimensions(rooms, walls);
+  const doubleStorey = config.storeys === 2;
+  const upperArea = upperFloorAreaFor(totalArea, config);
+  const upperRatio = totalArea > 0 ? upperArea / totalArea : 0;
+  const upperWallScale = Math.sqrt(upperRatio);
+  const upperRoomCount = Math.ceil(rooms.length * upperRatio);
+  const windows = detectedWindows && detectedWindows > 0 ? detectedWindows : Math.ceil(totalArea / 15);
+  const upperWindows = Math.ceil(windows * upperRatio);
+  const groundDoors = detectedDoors && detectedDoors > 0 ? detectedDoors : rooms.length + EXTERIOR_DOOR_COUNT;
+  const upperDoors = Math.ceil(groundDoors * upperRatio);
 
   const { includeLabor } = config;
   const scopes: ProjectScope[] = Array.isArray(config.scope) ? config.scope : [config.scope];
@@ -1227,37 +1272,55 @@ export function generateBOQ(
   const locationType = normalizeLocationType(config.locationType);
 
   if (hasScope('substructure')) {
-    allItems.push(...calculateSubstructure(totalArea, perimeterLength, internalWallLength, config, locationType));
+    const foundation = calculateSubstructure(totalArea, perimeterLength, internalWallLength, config, locationType);
+    if (doubleStorey) {
+      const concrete = foundation.find((item) => item.materialName.endsWith('(Foundation Concrete)') && item.materialId.startsWith('cement-'));
+      if (concrete) concrete.calculationNote += ' Two storeys: the engineer may ask for wider or deeper footings.';
+    }
+    allItems.push(...foundation);
   }
 
   if (hasScope('superstructure')) {
-    const windows = detectedWindows && detectedWindows > 0 ? detectedWindows : Math.ceil(totalArea / 15);
     allItems.push(...calculateSuperstructure(perimeterLength, internalWallLength, config, wallOpenings(windows, detectedDoors, rooms.length), locationType));
     allItems.push(...lintelItems(windows, detectedDoors, rooms.length, config.fullBrickInternalWalls));
+    if (doubleStorey) {
+      allItems.push(...upperFloorSlabItems(upperArea, getFirstValue(config.cementType), locationType));
+      const upperItems = [
+        ...calculateSuperstructure(perimeterLength * upperWallScale, internalWallLength * upperWallScale, config, wallOpenings(upperWindows, upperDoors, upperRoomCount), locationType),
+        ...lintelItems(upperWindows, upperDoors, upperRoomCount, config.fullBrickInternalWalls),
+      ];
+      for (const item of upperItems) {
+        item.materialName += ' (Upper floor)';
+        item.calculationNote += ' (Upper floor)';
+      }
+      allItems.push(...upperItems);
+    }
   }
 
   if (hasScope('roofing')) {
-    allItems.push(...calculateRoofing(totalArea, locationType, config.roofCovering, config.roofShape));
+    allItems.push(...calculateRoofing(Math.max(totalArea, upperArea), locationType, config.roofCovering, config.roofShape));
   }
 
   if (hasScope('finishing')) {
-    const windows = detectedWindows && detectedWindows > 0 ? detectedWindows : Math.ceil(totalArea / 15);
-    allItems.push(createBOQItem('window-sill-brick', 'Window Sill (Brick)', 'finishing', windows * 1.5, 'per meter', `${windows} windows`));
+    const allWindows = windows + upperWindows;
+    allItems.push(createBOQItem('window-sill-brick', 'Window Sill (Brick)', 'finishing', allWindows * 1.5, 'per meter', `${allWindows} windows`));
     allItems.push(...calculateFinishes({
-      floorArea: roomArea,
-      roomCount: rooms.length,
+      floorArea: doubleStorey ? totalArea + upperArea : roomArea,
+      roomCount: rooms.length + upperRoomCount,
       wallHeight: config.wallHeight,
-      perimeter: perimeterLength,
-      internalWallLength,
-      totalWindows: windows,
-      totalDoors: detectedDoors,
+      perimeter: perimeterLength * (1 + upperWallScale),
+      internalWallLength: internalWallLength * (1 + upperWallScale),
+      totalWindows: allWindows,
+      totalDoors: doubleStorey ? groundDoors + upperDoors : detectedDoors,
       cementType: getFirstValue(config.cementType),
       finishLevel: DEFAULT_FINISH_LEVEL,
+      // Still the front and back door: an upper floor's doors are inside doors.
+      ...(doubleStorey ? { ceilingFloorAreaM2: upperArea } : {}),
     }));
   }
 
   if (hasScope('services')) {
-    allItems.push(...calculateServices({ floorArea: totalArea, roomCount: rooms.length }));
+    allItems.push(...calculateServices({ floorArea: totalArea + upperArea, roomCount: rooms.length + upperRoomCount }));
   }
 
   if (hasScope('exterior')) {
@@ -1281,7 +1344,7 @@ export function generateBOQ(
   applyLocationPrices(allItems, locationType);
 
   if (includeLabor) {
-    allItems.push(...calculateLabor(allItems, totalArea, config.laborRates));
+    allItems.push(...calculateLabor(allItems, totalArea, config.laborRates, config));
   }
 
   return allItems;

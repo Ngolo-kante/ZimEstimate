@@ -47,7 +47,7 @@ export function assessPlanReview(input: PlanReviewInput): PlanReviewFinding[] {
   if (input.windows === 0) add('windows', 'No windows were detected. Enter the plan count, or review the area-based allowance in the BOQ.');
   else if (input.area >= 80 && input.windows < Math.ceil(input.area / 45)) add('windows', 'Window count looks low for this floor area. Check the plan count.');
   if (input.multiStorey) {
-    add('storeys', 'This plan looks like a double-storey house: it shows a stair. ZimEstimate prices one floor, so the BOQ covers only the floor read here. Add the upper floor\'s rooms, or ask a builder to price the first-floor slab and stairs.');
+    add('storeys', 'This plan looks like a double-storey house: it shows a stair. You can choose Double storey on the next screen and check the upper floor area.');
   }
   if (input.noExternalWallsDetected) add('walls', 'No external wall segments were identified. External wall length is estimated from floor area.');
   if (input.readFromLabels) {
