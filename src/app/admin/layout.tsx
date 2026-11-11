@@ -16,6 +16,7 @@ import {
   FileText,
   SquaresFour,
   ClipboardText,
+  UploadSimple,
   Robot,
   MagnifyingGlass,
   SignOut,
@@ -63,6 +64,8 @@ const navGroups = [
     items: [
       { label: 'Tickets', href: '/admin/tickets', icon: ChatCircle },
       { label: 'Audit logs', href: '/admin/logs', icon: ClipboardText },
+      // TEMPORARY: TM Data transfer; remove with /admin/transfer.
+      { label: 'Transfer', href: '/admin/transfer', icon: UploadSimple },
     ],
   },
 ];
