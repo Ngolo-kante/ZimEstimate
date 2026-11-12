@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boxForMissing, checkAgainstPrinted, printedSizeFor, sameSize, type PrintedSizes } from './planCheck';
+import { boxForMissing, checkAgainstPrinted, compareReadings, printedSizeFor, sameSize, summariseSecondReading, withPrintedSizes, type PrintedSizes } from './planCheck';
 import { areasFromWords, roomsFromWords, type OcrWord } from './roomLabels';
 import { parsePdfWords, wordsFromTextItems } from './pdfWords';
 import type { DetectedRoom } from './types';
@@ -121,5 +121,77 @@ describe('notes beside the drawing', () => {
     ];
     expect(areasFromWords(words, { width: 1000, height: 1000 })).toEqual([]);
     expect(roomsFromWords(words, { width: 1000, height: 1000 })).toEqual([]);
+  });
+});
+
+describe('putting the plan\'s printed sizes into the scan', () => {
+  it('gives a room the size printed beside its own name', () => {
+    const printed: PrintedSizes = { source: 'pdf-text', rooms: [
+      { name: 'Lounge', width: 4.5, length: 5.0, at: { x: 30, y: 25 } },
+      { name: 'Bedroom 2', width: 3.6, length: 4.0, at: { x: 22, y: 65 } },
+    ] };
+    const fitted = withPrintedSizes(rooms, printed);
+    // The lounge already had that size; only Bedroom 2 changed.
+    expect(fitted.applied).toBe(1);
+    expect(fitted.rooms[2]).toMatchObject({ dimensions: { width: 3.6, length: 4 }, area: 14.4, dimensionSource: 'printed' });
+    expect(fitted.rooms[0]).toMatchObject({ dimensions: { width: 5, length: 4.5 }, dimensionSource: 'printed' });
+    expect(fitted.rooms[1]).toBe(rooms[1]);
+  });
+
+  it('leaves alone a label that sits in a room of another name, a far-off one, and an area', () => {
+    const printed: PrintedSizes = { source: 'ocr', rooms: [
+      { name: 'Kitchen', width: 3, length: 3, at: { x: 65, y: 25 } },
+      { name: 'Bedroom 2', width: 6, length: 6, at: { x: 90, y: 95 } },
+      { name: 'Lounge', area: 30, at: { x: 30, y: 25 } },
+    ] };
+    const fitted = withPrintedSizes(rooms, printed);
+    expect(fitted.applied).toBe(0);
+    expect(fitted.rooms).toEqual(rooms);
+  });
+
+  it('does nothing without printed sizes', () => {
+    expect(withPrintedSizes(rooms, null)).toEqual({ rooms, applied: 0 });
+    expect(withPrintedSizes(rooms, { source: 'ocr', rooms: [] }).rooms).toBe(rooms);
+  });
+});
+
+describe('comparing two readings of one plan', () => {
+  const again = [
+    room('x', 'Lounge', 4.5, 5, { x: 12, y: 11, width: 38, height: 36 }),
+    room('y', 'Bedroom 1', 4, 4, { x: 51, y: 9, width: 30, height: 30 }),
+    // The same room, read to another size.
+    room('z', 'Bedroom 2', 3.4, 3.2, { x: 11, y: 52, width: 26, height: 28 }),
+    room('w', 'Passage', 1.2, 4, { x: 40, y: 50, width: 6, height: 30 }),
+  ];
+
+  it('counts rooms of the same size either way round as agreed', () => {
+    const comparison = compareReadings(rooms, again);
+    expect(comparison.agreed).toBe(2);
+    expect(comparison.differing).toEqual([{ name: 'Bedroom 2', current: { width: 3.4, length: 4 }, next: { width: 3.4, length: 3.2 } }]);
+    expect(comparison.onlyNext.map((r) => r.name)).toEqual(['Passage']);
+    expect(comparison.onlyCurrent).toEqual([]);
+  });
+
+  it('pairs a room under another name by where it is', () => {
+    const renamed = [room('x', 'Living Room', 5, 4.5, { x: 11, y: 11, width: 39, height: 34 })];
+    const comparison = compareReadings(rooms, renamed);
+    expect(comparison.agreed).toBe(1);
+    expect(comparison.onlyNext).toEqual([]);
+    expect(comparison.onlyCurrent.map((r) => r.id)).toEqual(['b', 'c']);
+  });
+
+  it('pairs each of two bedrooms with the nearer one', () => {
+    const swapped = [
+      room('p', 'Bedroom', 3.4, 4, { x: 10, y: 50, width: 26, height: 30 }),
+      room('q', 'Bedroom', 4, 4, { x: 50, y: 10, width: 30, height: 30 }),
+    ];
+    expect(compareReadings(rooms.slice(1), swapped)).toMatchObject({ agreed: 2, differing: [] });
+  });
+
+  it('summarises a second reading against the first reading\'s rooms', () => {
+    const summary = summariseSecondReading(rooms, again);
+    expect(summary.agreed).toBe(2);
+    expect(summary.differing).toEqual([{ roomId: 'c', other: { width: 3.4, length: 3.2 } }]);
+    expect(summary.missing).toEqual([{ name: 'Passage', width: 1.2, length: 4, position: { x: 40, y: 50, width: 6, height: 30 } }]);
   });
 });

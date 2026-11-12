@@ -16,6 +16,8 @@ export interface PlanReviewInput {
   confidence?: number | null;
   /** The AI readers were busy and only the plan's printed labels were read. */
   readFromLabels?: boolean;
+  /** The main reader was busy and a faster, less exact one read the plan. */
+  backupReader?: boolean;
   /** The plan shows a stair or an upper floor (planFacts.ts). */
   multiStorey?: boolean;
   stages: string[];
@@ -50,6 +52,9 @@ export function assessPlanReview(input: PlanReviewInput): PlanReviewFinding[] {
     add('storeys', 'This plan looks like a double-storey house: it shows a stair. You can choose Double storey on the next screen and check the upper floor area.');
   }
   if (input.noExternalWallsDetected) add('walls', 'No external wall segments were identified. External wall length is estimated from floor area.');
+  if (input.backupReader && !input.readFromLabels) {
+    add('backup-reader', 'Our main plan reader was busy, so a quicker, less exact one read your plan. Check every room size against your drawing, or read the plan again in a few minutes.');
+  }
   if (input.readFromLabels) {
     add('labels', `Our AI plan readers were busy, so only the room names and sizes printed on the plan were read: ${input.rooms.length} ${input.rooms.length === 1 ? 'room' : 'rooms'}. Add any that are missing, or upload the plan again in a minute for a full reading.`);
   } else if (input.confidence != null && input.confidence < 70) {

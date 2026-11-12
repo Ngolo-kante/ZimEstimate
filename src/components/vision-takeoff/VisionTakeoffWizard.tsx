@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useVisionTakeoff } from '@/hooks/useVisionTakeoff';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { motion, useReducedMotion } from 'framer-motion';
 import UploadStep from './steps/UploadStep';
+import PlanRecovery from './steps/PlanRecovery';
 import AnalysisProgress from './steps/AnalysisProgress';
 import FloorPlanEditor from './FloorPlanEditor/FloorPlanEditor';
 import ProjectInfoStep from './steps/ProjectInfoStep';
@@ -16,12 +18,15 @@ import { planFloorArea } from '@/lib/calculations';
 import WorkflowProgress from '@/components/boq/WorkflowProgress';
 
 const VISION_STEPS = [
-  { id: 'upload', label: 'Upload Plan' },
-  { id: 'verify', label: 'Verify Plan' },
-  { id: 'details', label: 'Project Details' },
+  { id: 'upload', label: 'Upload plan' },
+  { id: 'verify', label: 'Check rooms' },
+  { id: 'details', label: 'Project details' },
   { id: 'materials', label: 'Materials' },
-  { id: 'review', label: 'Review Estimate' },
+  { id: 'review', label: 'Your estimate' },
 ];
+
+/** Roughly how long each remaining step takes someone, in minutes; the reading itself is seconds. */
+const MINUTES_LEFT = [5, 4, 2, 1, 0];
 
 const VISION_STEP_INDEX = {
   upload: 0,
@@ -38,6 +43,25 @@ export default function VisionTakeoffWizard() {
   const { state } = wizard;
   const { isAuthenticated } = useAuth();
   const progressStep = VISION_STEP_INDEX[state.step];
+  const reduceMotion = useReducedMotion();
+  const recovering = state.step === 'upload' && wizard.failure !== null && state.uploadedFile !== null;
+  // One key per screen, so each change of screen is one transition.
+  const screen = recovering ? 'recovery' : state.step;
+
+  /* A new screen starts at its top with its heading in focus: a long verify
+     screen used to leave the next one scrolled halfway down, and a screen
+     reader was told nothing had changed. */
+  const contentRef = useRef<HTMLDivElement>(null);
+  const firstScreen = useRef(true);
+  useEffect(() => {
+    if (firstScreen.current) { firstScreen.current = false; return; }
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    const heading = contentRef.current?.querySelector<HTMLElement>('h1');
+    if (heading) {
+      if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+    }
+  }, [screen]);
 
   const handoffRead = useRef(false);
   useEffect(() => {
@@ -87,8 +111,8 @@ export default function VisionTakeoffWizard() {
       <div className="vision-workflow-header">
         <div className="workflow-title-row">
           <div>
-            <span>AI VISION BOQ</span>
-            <strong>{state.projectInfo.name || 'Floor Plan Estimate'}</strong>
+            <span>Estimate from your plan</span>
+            <strong>{state.projectInfo.name || 'Floor plan estimate'}</strong>
           </div>
           <Link href="/boq/new?method=manual">Use manual builder</Link>
         </div>
@@ -96,22 +120,51 @@ export default function VisionTakeoffWizard() {
           currentStep={progressStep}
           maxStepReached={progressStep}
           steps={VISION_STEPS}
-          minutesRemaining={Math.max(1, (VISION_STEPS.length - progressStep) * 2)}
+          minutesRemaining={MINUTES_LEFT[progressStep] || undefined}
         />
       </div>
 
-      <div className="vision-workflow-content">
+      <div className="vision-workflow-content" ref={contentRef}>
+        {/* Each screen eases in. The one before it leaves at once: holding
+            it back to fade out would keep a ready screen waiting, and the new
+            heading could not take focus until it had gone. */}
+        <motion.div
+          key={screen}
+          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+          animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+        >
+        {/* A read that failed: the file stays, with ways to carry on */}
+        {recovering && wizard.failure && state.uploadedFile && (
+          <PlanRecovery
+            failure={wizard.failure}
+            fileName={state.uploadedFile.name}
+            planImageUrl={wizard.canShowPlan ? state.previewUrl : null}
+            onRetry={wizard.retryUpload}
+            onChooseFile={wizard.chooseAnotherFile}
+            onMarkRooms={wizard.startManualMarking}
+            onEnterArea={wizard.continueInManualBuilder}
+          />
+        )}
+
         {/* Upload Step */}
-        {state.step === 'upload' && (
+        {state.step === 'upload' && !recovering && (
           <UploadStep
             onFileSelect={wizard.handleFileUpload}
             error={state.error}
+            onDismissError={wizard.dismissFailure}
           />
         )}
 
         {/* Analysis Progress */}
         {state.step === 'analyzing' && (
-          <AnalysisProgress onCancel={wizard.cancelAnalysis} retrying={wizard.analysisRetrying} phase={wizard.analysisPhase} />
+          <AnalysisProgress
+            onCancel={wizard.cancelAnalysis}
+            retrying={wizard.analysisRetrying}
+            phase={wizard.analysisPhase}
+            planImageUrl={wizard.canShowPlan ? state.previewUrl : null}
+            fileName={state.uploadedFile?.name}
+          />
         )}
 
         {/* Floor Plan Editor */}
@@ -127,6 +180,11 @@ export default function VisionTakeoffWizard() {
             confidence={wizard.confidence}
             printed={state.analysisResult?.printed ?? null}
             readFromLabels={wizard.readFromLabels}
+            backupReader={Boolean(state.analysisResult?.backupReader)}
+            pdfPages={wizard.pdfPages}
+            markedByHand={wizard.markedByHand}
+            secondReading={state.analysisResult?.secondReading ?? null}
+            statedTotalFromPicture={state.analysisResult?.statedTotalAreaSource === 'ocr'}
             multiStorey={Boolean(state.analysisResult?.multiStorey)}
             totalArea={wizard.totalArea}
             onRoomUpdate={wizard.updateRoom}
@@ -181,7 +239,11 @@ export default function VisionTakeoffWizard() {
 
         {/* Calculation Animation */}
         {state.step === 'calculating' && (
-          <CalculationAnimation />
+          <CalculationAnimation
+            rooms={state.editedRooms.length}
+            floorAreaM2={planFloorArea(state.editedRooms, { statedFloorAreaM2: state.verifiedTotalAreaM2 ?? undefined }).gross}
+            lines={state.generatedBOQ.length}
+          />
         )}
 
         {/* BOQ Results */}
@@ -200,6 +262,7 @@ export default function VisionTakeoffWizard() {
             autoSave={justResumed}
           />
         )}
+        </motion.div>
       </div>
 
       <style jsx>{`
@@ -232,8 +295,8 @@ export default function VisionTakeoffWizard() {
 
         .workflow-title-row span {
           color: #1d5fbf;
-          font-size: 0.68rem;
-          font-weight: 800;
+          font-size: 0.75rem;
+          font-weight: 700;
         }
 
         .workflow-title-row strong {
@@ -241,11 +304,13 @@ export default function VisionTakeoffWizard() {
           font-size: 0.95rem;
         }
 
-        .workflow-title-row a {
-          color: #526174;
-          font-size: 0.75rem;
-          font-weight: 700;
-          text-decoration: none;
+        .workflow-title-row :global(a) {
+          flex: none;
+          color: #3d4a5c;
+          font-size: 0.8125rem;
+          font-weight: 600;
+          text-decoration: underline;
+          text-underline-offset: 3px;
         }
 
         .vision-workflow-content {

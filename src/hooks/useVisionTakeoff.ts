@@ -21,6 +21,15 @@ import { TEMPORARY_WORKS_SUGGESTIONS } from '@/lib/buildFlowRules';
 import { supabase } from '@/lib/supabase';
 import { captureProductEvent } from '@/lib/productAnalytics';
 import { analyzePlanFile, withTimeLimit, type AnalysisPhase } from '@/lib/vision/analyzePlan';
+import { PlanReadFailure, type PlanFailureCode, type PlanPartial, type RecoveryAction, type WrongSheet } from '@/lib/vision/planFailure';
+import { manualBuilderPatch } from '@/lib/vision/planFallback';
+import { useBoqWizardStore } from '@/store/boqWizardStore';
+
+/** A read that failed, with what is needed to offer a way forward. */
+export type PlanFailure = { code: PlanFailureCode; message: string; sheet?: WrongSheet; partial?: PlanPartial };
+
+/** How long the "working it out" screen may hold a BOQ that is already made. */
+const RESULT_REVEAL_MS = 600;
 
 const ENABLEMENT_ITEM_TAG = '[Enablement Cost]';
 type PlanSnapshot = {
@@ -38,12 +47,14 @@ type PlanSnapshot = {
 // against cost abuse is IP-based rate limiting (10/min), not auth, so nothing
 // is given up by letting an anonymous visitor try the tool before signing up
 // for it.
-async function analyzeFloorPlanAPI(file: File, signal: AbortSignal, onPreviewImage: (image: Blob) => void, onRetry?: () => void, onPhase?: (phase: AnalysisPhase) => void): Promise<VisionAnalysisResult> {
+async function analyzeFloorPlanAPI(file: File, signal: AbortSignal, onPreviewImage: (image: Blob) => void, onRetry?: () => void, onPhase?: (phase: AnalysisPhase) => void, fresh = false, onPageCount?: (pages: number) => void): Promise<VisionAnalysisResult> {
   // Reading is public: a stalled session refresh must not block an upload.
   const session = await withTimeLimit(supabase.auth.getSession(), 2_000, signal).catch(() => null);
   const accessToken = session?.data.session?.access_token;
-  return analyzePlanFile(file, { accessToken, signal, onPreviewImage, onRetry, onPhase });
+  return analyzePlanFile(file, { accessToken, signal, onPreviewImage, onRetry, onPhase, fresh, onPageCount });
 }
+
+const fileKind = (file: File) => (file.type === 'application/pdf' ? 'pdf' : 'image');
 
 function addTemporaryEnablementItems(items: GeneratedBOQItem[], config: VisionConfig): GeneratedBOQItem[] {
   const scopes = Array.isArray(config.scope) ? config.scope : [config.scope];
@@ -122,6 +133,13 @@ export function useVisionTakeoff() {
   const [rescanCandidate, setRescanCandidate] = useState<VisionAnalysisResult | null>(null);
   const [isRescanning, setIsRescanning] = useState(false);
   const [rescanError, setRescanError] = useState<string | null>(null);
+  /** Why the last read failed; null once the person has moved on. */
+  const [failure, setFailure] = useState<PlanFailure | null>(null);
+  /** True when `previewUrl` is a picture the editor can draw (a PDF's page may not have rendered). */
+  const [canShowPlan, setCanShowPlan] = useState(false);
+  /** Pages in the uploaded PDF; 1 for a picture. */
+  const [pdfPages, setPdfPages] = useState(1);
+  const revealTimerRef = useRef<number | null>(null);
 
   const snapshot = useCallback((): PlanSnapshot => ({
     rooms: state.editedRooms,
@@ -136,7 +154,10 @@ export function useVisionTakeoff() {
     setPlanHistory((previous) => ({ past: [...previous.past, current].slice(-30), future: [] }));
   }, [snapshot]);
 
-  useEffect(() => () => analysisControllerRef.current?.abort(), []);
+  useEffect(() => () => {
+    analysisControllerRef.current?.abort();
+    if (revealTimerRef.current !== null) window.clearTimeout(revealTimerRef.current);
+  }, []);
   useEffect(() => {
     const url = state.previewUrl;
     return () => { if (url) URL.revokeObjectURL(url); };
@@ -157,6 +178,8 @@ export function useVisionTakeoff() {
     setPlanRevision(0);
     setRescanCandidate(null);
     setRescanError(null);
+    setFailure(null);
+    setCanShowPlan(false);
   }, []);
 
   // ============================================
@@ -169,6 +192,9 @@ export function useVisionTakeoff() {
     analysisControllerRef.current = controller;
     setRescanCandidate(null);
     setRescanError(null);
+    setFailure(null);
+    setCanShowPlan(file.type.startsWith('image/'));
+    setPdfPages(1);
     setAnalysisPhase('preparing');
 
     // Create preview URL
@@ -190,10 +216,11 @@ export function useVisionTakeoff() {
       const result = await analyzeFloorPlanAPI(file, controller.signal, (image) => {
         const imageUrl = URL.createObjectURL(image);
         setState((prev) => ({ ...prev, previewUrl: imageUrl }));
-      }, () => setAnalysisRetrying(true), setAnalysisPhase);
+        setCanShowPlan(true);
+      }, () => setAnalysisRetrying(true), setAnalysisPhase, false, setPdfPages);
       setAnalysisRetrying(false);
 
-      captureProductEvent('ai_scan_used', { tool: 'vision_takeoff', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'success', rooms: result.rooms.length });
+      captureProductEvent('ai_scan_used', { tool: 'vision_takeoff', file_kind: fileKind(file), outcome: 'success', rooms: result.rooms.length, model: result.reader?.model, printed_sizes: result.printed?.rooms.length ?? 0 });
 
       setState((prev) => ({
         ...prev,
@@ -215,13 +242,15 @@ export function useVisionTakeoff() {
       setPlanRevision(0);
     } catch (error) {
       setAnalysisRetrying(false);
-      captureProductEvent('ai_scan_used', { tool: 'vision_takeoff', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'failed' });
-      setState((prev) => ({
-        ...prev,
-        step: 'upload',
-        error: error instanceof Error ? error.message : 'Analysis failed. Please try again.',
-        isProcessing: false,
-      }));
+      const message = error instanceof Error ? error.message : 'Analysis failed. Please try again.';
+      const failed: PlanFailure = error instanceof PlanReadFailure
+        ? { code: error.code, message, sheet: error.sheet, partial: error.partial }
+        : { code: 'unreadable', message };
+      captureProductEvent('ai_scan_used', { tool: 'vision_takeoff', file_kind: fileKind(file), outcome: 'failed', reason: failed.code, sheet: failed.sheet });
+      // The file stays: the recovery screen offers to read it again, or to
+      // carry on with it another way (PlanRecovery.tsx).
+      setFailure(failed);
+      setState((prev) => ({ ...prev, step: 'upload', error: message, isProcessing: false }));
     } finally {
       if (analysisControllerRef.current === controller) analysisControllerRef.current = null;
     }
@@ -250,6 +279,90 @@ export function useVisionTakeoff() {
     setRescanCandidate(null);
     setRescanError(null);
     setIsRescanning(false);
+    setFailure(null);
+    setCanShowPlan(false);
+  }, []);
+
+  // ============================================
+  // AFTER A FAILED READ
+  // ============================================
+
+  const recordRecovery = useCallback((action: RecoveryAction) => {
+    captureProductEvent('plan_recovery_chosen', { tool: 'vision_takeoff', action, reason: failure?.code });
+  }, [failure?.code]);
+
+  /** The same file again, without choosing it a second time. */
+  const retryUpload = useCallback(() => {
+    if (!state.uploadedFile) return;
+    recordRecovery('retry');
+    void handleFileUpload(state.uploadedFile);
+  }, [state.uploadedFile, recordRecovery, handleFileUpload]);
+
+  /**
+   * The person's own plan with no rooms on it, for marking them by hand. Any
+   * room whose name and size were read off the plan before the read failed
+   * starts in the list, as printed; nothing else is filled in.
+   */
+  const startManualMarking = useCallback(() => {
+    recordRecovery('mark_rooms');
+    const rooms: DetectedRoom[] = (failure?.partial?.rooms ?? []).map((room, index) => ({
+      id: `printed-${index}-${crypto.randomUUID()}`,
+      name: room.name,
+      dimensions: { width: room.width, length: room.length },
+      area: room.width * room.length,
+      // Never an invented location: the room is in the list until it is placed.
+      position: { x: 0, y: 0, width: 0, height: 0 },
+      wallType: 'internal',
+      isEdited: false,
+      dimensionSource: 'printed',
+    }));
+    setState((prev) => ({
+      ...prev,
+      analysisResult: { rooms, walls: [], totalArea: rooms.reduce((sum, room) => sum + room.area, 0), doors: 0, windows: 0, confidence: 0, imageWidth: 100, imageHeight: 100, source: 'manual' },
+      editedRooms: rooms,
+      editedWalls: [],
+      floorBoundary: null,
+      verifiedTotalAreaM2: failure?.partial?.statedTotalAreaM2 ?? null,
+      step: 'editing',
+      error: null,
+    }));
+    setPlanHistory({ past: [], future: [] });
+    setPlanRevision(0);
+    setFailure(null);
+  }, [failure, recordRecovery]);
+
+  /**
+   * On to the manual builder with what is known: the project's name and
+   * place, and the floor area just typed. A draft already in the builder
+   * keeps everything this does not replace.
+   */
+  const continueInManualBuilder = useCallback(async (floorAreaM2?: number) => {
+    recordRecovery('enter_area');
+    try {
+      // The builder's draft lives in the browser; load it before adding to it,
+      // or the additions would be saved over it.
+      await useBoqWizardStore.persist.rehydrate();
+      const store = useBoqWizardStore.getState();
+      const patch = manualBuilderPatch(
+        { floorAreaM2, name: state.projectInfo.name, location: state.projectInfo.location },
+        { name: store.projectDetails.name, specificLocation: store.projectDetails.specificLocation },
+      );
+      if (Object.keys(patch).length > 0) store.updateProjectDetails(patch);
+    } catch (error) {
+      // Storage blocked: the builder still opens, just empty.
+      console.warn('Could not carry plan details to the manual builder.', error);
+    }
+    router.push('/boq/new?method=manual');
+  }, [recordRecovery, router, state.projectInfo.name, state.projectInfo.location]);
+
+  const chooseAnotherFile = useCallback(() => {
+    recordRecovery('choose_file');
+    clearFile();
+  }, [recordRecovery, clearFile]);
+
+  const dismissFailure = useCallback(() => {
+    setFailure(null);
+    setState((prev) => ({ ...prev, error: null }));
   }, []);
 
   const rescanPlan = useCallback(async () => {
@@ -262,7 +375,8 @@ export function useVisionTakeoff() {
     setRescanCandidate(null);
     try {
       // Keep the current rooms and corrections until the user compares both reads.
-      const result = await analyzeFloorPlanAPI(file, controller.signal, () => {});
+      // A new reading, not the one remembered for this file.
+      const result = await analyzeFloorPlanAPI(file, controller.signal, () => {}, undefined, undefined, true);
       if (controller.signal.aborted) return;
       setRescanCandidate(result);
       captureProductEvent('ai_scan_used', { tool: 'vision_takeoff_rescan', outcome: 'success', rooms: result.rooms.length, confidence: result.confidence, model: result.reader?.model });
@@ -305,7 +419,7 @@ export function useVisionTakeoff() {
   // ============================================
 
   const goToManualEntry = useCallback(() => {
-    router.push('/boq/new');
+    router.push('/boq/new?method=manual');
   }, [router]);
 
   // ============================================
@@ -490,22 +604,20 @@ export function useVisionTakeoff() {
     }));
   }, [recordPlanEdit]);
 
+  /* The BOQ is worked out at once. The next screen shows the plan's own
+     figures for a moment and then gives way to the results; it used to count
+     up invented numbers for two and a half seconds while nothing happened. */
   const confirmConfig = useCallback(() => {
-    setState((prev) => ({ ...prev, step: 'calculating' }));
-
-    // Small delay for animation, then generate BOQ
-    setTimeout(() => {
-      setState((prev) => {
-        const config = { ...prev.config, fullBrickInternalWalls: councilRequiresFullBrickWalls(prev.projectInfo?.location), statedFloorAreaM2: prev.verifiedTotalAreaM2 ?? undefined, locationType: prev.projectInfo?.locationType || undefined };
-        const boqItems = generateBOQ(prev.editedRooms, prev.editedWalls, config, prev.analysisResult?.windows, prev.analysisResult?.doors);
-        const boqItemsWithEnablement = addTemporaryEnablementItems(boqItems, prev.config);
-        return {
-          ...prev,
-          generatedBOQ: boqItemsWithEnablement,
-          step: 'results',
-        };
-      });
-    }, 2500); // 2.5 second calculation animation
+    setState((prev) => {
+      const config = { ...prev.config, fullBrickInternalWalls: councilRequiresFullBrickWalls(prev.projectInfo?.location), statedFloorAreaM2: prev.verifiedTotalAreaM2 ?? undefined, locationType: prev.projectInfo?.locationType || undefined };
+      const boqItems = generateBOQ(prev.editedRooms, prev.editedWalls, config, prev.analysisResult?.windows, prev.analysisResult?.doors);
+      return { ...prev, generatedBOQ: addTemporaryEnablementItems(boqItems, prev.config), step: 'calculating' };
+    });
+    if (revealTimerRef.current !== null) window.clearTimeout(revealTimerRef.current);
+    revealTimerRef.current = window.setTimeout(() => {
+      revealTimerRef.current = null;
+      setState((prev) => (prev.step === 'calculating' ? { ...prev, step: 'results' } : prev));
+    }, RESULT_REVEAL_MS);
   }, []);
 
   /**
@@ -589,6 +701,16 @@ export function useVisionTakeoff() {
   return {
     analysisRetrying,
     analysisPhase,
+    failure,
+    canShowPlan,
+    pdfPages,
+    retryUpload,
+    startManualMarking,
+    continueInManualBuilder,
+    chooseAnotherFile,
+    dismissFailure,
+    /** The person is marking the rooms themselves; nothing was scanned. */
+    markedByHand: state.analysisResult?.source === 'manual',
     optionalExtras,
     toggleExtra,
     // State

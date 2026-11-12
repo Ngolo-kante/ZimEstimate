@@ -17,7 +17,10 @@ import {
 } from '@phosphor-icons/react';
 import { DetectedRoom, DetectedWall, type PlanBox, type VisionAnalysisResult } from '@/lib/vision/types';
 import { assessPlanReview } from '@/lib/vision/planReview';
-import { boxForMissing, checkAgainstPrinted, printedSizeFor, sameName, sameSize, type PrintedRoom, type PrintedSizes } from '@/lib/vision/planCheck';
+import { boxForMissing, checkAgainstPrinted, compareReadings, printedSizeFor, sameName, sameSize, type PrintedRoom, type PrintedSizes, type SecondReading } from '@/lib/vision/planCheck';
+
+/** A second reading's differences are listed open up to this many rooms; beyond it they open on request. */
+const SECOND_READING_OPEN_UP_TO = 5;
 
 /** The rooms most plans have, offered as one tap when adding a room. */
 const ROOM_NAMES = ['Bedroom', 'Bathroom', 'Toilet', 'Kitchen', 'Lounge', 'Dining', 'Passage', 'Store', 'Veranda', 'Garage'];
@@ -35,6 +38,16 @@ interface FloorPlanEditorProps {
   /** Room sizes printed on the plan, to check the scan against. */
   printed: PrintedSizes | null;
   readFromLabels: boolean;
+  /** The main reader was busy and a faster, less exact one read the plan. */
+  backupReader?: boolean;
+  /** Pages in the uploaded PDF. */
+  pdfPages?: number;
+  /** Nothing was scanned: the person is marking the rooms on their plan. */
+  markedByHand?: boolean;
+  /** A second reading of the plan, compared with the first when it was read. */
+  secondReading?: SecondReading | null;
+  /** The confirmed total was read from the picture of the plan, not typed or taken from a PDF's text. */
+  statedTotalFromPicture?: boolean;
   /** The plan shows a stair or an upper floor. */
   multiStorey?: boolean;
   totalArea: number;
@@ -74,6 +87,11 @@ export default function FloorPlanEditor({
   confidence,
   printed,
   readFromLabels,
+  backupReader = false,
+  pdfPages = 1,
+  markedByHand = false,
+  secondReading = null,
+  statedTotalFromPicture = false,
   multiStorey,
   totalArea,
   onRoomUpdate,
@@ -147,14 +165,41 @@ export default function FloorPlanEditor({
     // The reader's own score only when there is nothing printed to measure by.
     confidence: measured ? null : confidence,
     readFromLabels,
+    backupReader,
     multiStorey,
     // Construction stages are chosen later; this screen checks only the scan.
     stages: ['scan review'],
     includeLabor: false,
   });
-  if (!measured && !readFromLabels && confidence >= 70 && confidence < 90) {
+  if (!measured && !readFromLabels && !markedByHand && confidence >= 70 && confidence < 90) {
     reviewFindings.push({ id: 'estimated-dimensions', text: 'Some dimensions may have been estimated. Compare each room with the original plan.', severity: 'check' });
   }
+  if (pdfPages > 1 && !markedByHand) {
+    reviewFindings.push({ id: 'pages', text: `Your PDF has ${pdfPages} pages. Only the first page is shown here and checked against its printed sizes. If these are not your rooms, upload the floor plan page on its own.`, severity: 'check' });
+  }
+  // Marking by hand, nothing was scanned: only what the person has entered is checked.
+  const findings = markedByHand
+    ? reviewFindings.filter((finding) => rooms.length > 0 && (finding.id === 'dimensions' || finding.id === 'storeys'))
+    : reviewFindings;
+  /* What the second reading still has to say: a room the person has since
+     changed, confirmed, or one the plan's own printed size bears out, is
+     settled; a room they have added under the same name is no longer missing. */
+  const second = secondReading ? {
+    agreed: secondReading.agreed,
+    differing: secondReading.differing.flatMap((entry) => {
+      const room = rooms.find((r) => r.id === entry.roomId);
+      return room && !room.isEdited && !room.dimensionsVerified && room.dimensionSource !== 'printed'
+        && !printedCheck?.matchedRoomIds.includes(room.id) && !sameSize(room.dimensions, entry.other)
+        ? [{ room, other: entry.other }] : [];
+    }),
+    missing: secondReading.missing.filter((entry) => !rooms.some((room) => sameName(room.name, entry.name))),
+  } : null;
+  const thingsToCheck = findings.length
+    + (measured ? measured.differences.length + measured.missing.length : 0)
+    + (second ? second.differing.length + second.missing.length : 0);
+  const checksRef = useRef<HTMLDivElement>(null);
+  const rescanDiff = rescanCandidate ? compareReadings(rooms, rescanCandidate.rooms) : null;
+  const sizeText = (d: { width: number; length: number }) => `${d.width.toFixed(1)} × ${d.length.toFixed(1)} m`;
 
   const handleRoomSelect = (roomId: string) => {
     setSelectedRoomId(roomId === selectedRoomId ? null : roomId);
@@ -189,6 +234,19 @@ export default function FloorPlanEditor({
       dimensionSource: 'printed',
       dimensionsVerified: true,
       manuallyPlaced: box !== null,
+    });
+    setSelectedRoomId(id);
+  };
+
+  const addFromSecondReading = (room: { name: string; width: number; length: number; position?: PlanBox }) => {
+    const id = `second-${crypto.randomUUID()}`;
+    onRoomAdd({
+      id, name: room.name, dimensions: { width: room.width, length: room.length }, area: room.width * room.length,
+      position: room.position ?? { x: 0, y: 0, width: 0, height: 0 },
+      wallType: 'internal', isEdited: true,
+      // One reading out of two found it: a size to check, not a confirmed one.
+      dimensionSource: 'estimated',
+      manuallyPlaced: false,
     });
     setSelectedRoomId(id);
   };
@@ -291,8 +349,17 @@ export default function FloorPlanEditor({
     <div className="floor-plan-editor">
       <div className="editor-header">
         <div className="header-content">
-          <h1>Edit Floor Plan</h1>
-          <p>Compare the scan with your plan. Correct rooms and openings before we price the build.</p>
+          <h1>{markedByHand ? 'Mark the rooms on your plan' : 'Check the rooms'}</h1>
+          <p>{markedByHand
+            ? imageUrl
+              ? 'Tap a room on your plan, or use Add room, then type its name and size. Use the sizes printed on the drawing.'
+              : 'Add each room with its name and size from your drawing.'
+            : 'Compare these rooms with your plan. Correct anything that is wrong before we price the build.'}</p>
+          {thingsToCheck > 0 && (
+            <button type="button" className="checks-link" onClick={() => checksRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+              <Warning size={16} weight="fill" aria-hidden="true" /> {thingsToCheck} {thingsToCheck === 1 ? 'thing' : 'things'} to check
+            </button>
+          )}
         </div>
 
         <div className="header-stats">
@@ -304,84 +371,22 @@ export default function FloorPlanEditor({
             <span className="stat-value">{totalArea.toFixed(0)}m²</span>
             <span className="stat-label">Room total</span>
           </div>
-          {measured ? (
+          {/* Only a measured check is shown as a figure. The reader's own
+              "85% confident" was a number it made up, so it is not shown. */}
+          {measured && (
             <div className={`stat confidence ${measured.matched === measured.printed ? 'high' : measured.matched >= measured.printed * 0.7 ? 'medium' : 'low'}`}>
               <span className="stat-value">{measured.matched}/{measured.printed}</span>
               <span className="stat-label">Match plan</span>
-            </div>
-          ) : (
-            <div className={`stat confidence ${confidence >= 90 ? 'high' : confidence >= 70 ? 'medium' : 'low'}`}>
-              <span className="stat-value">{confidence}%</span>
-              <span className="stat-label">Confidence</span>
             </div>
           )}
         </div>
       </div>
 
-      {reviewFindings.length > 0 && <section className="scan-review" aria-labelledby="scan-review-heading">
-        <h2 id="scan-review-heading"><Warning size={18} weight="fill" /> Check these scan results</h2>
-        <ul>{reviewFindings.map((finding) => <li key={finding.id}>{finding.text}</li>)}</ul>
-      </section>}
-
-      {measured && (measured.differences.length > 0 || measured.missing.length > 0) && <section className="printed-check" aria-labelledby="printed-check-heading">
-        <h2 id="printed-check-heading">Sizes printed on your plan</h2>
-        <p>{measured.matched} of {measured.printed} rooms match the {printed?.source === 'pdf-text' ? 'sizes in your PDF' : 'sizes we read off your plan'}.{printed?.source === 'ocr' ? ' Those were read from the picture, so check any that look wrong.' : ''}</p>
-        <ul>
-          {measured.differences.map(({ room, printed: label }) => (
-            <li key={room.id}>
-              <span><strong>{room.name}</strong>: plan says {printedText(label)}, this estimate has {label.area !== undefined && label.width === undefined ? `${fmt(room.dimensions.width * room.dimensions.length)} m²` : `${fmt(room.dimensions.width)} × ${fmt(room.dimensions.length)} m`}.</span>
-              {printedSizeFor(room, label)
-                ? <button type="button" className="tool-button" onClick={() => applyPrintedSize(room, label)}>Use {printedText(label)}</button>
-                : <button type="button" className="tool-button" onClick={() => setSelectedRoomId(room.id)}>Edit room</button>}
-            </li>
-          ))}
-          {measured.missing.map((label) => (
-            <li key={`${label.name}-${label.at.x}-${label.at.y}`}>
-              <span><strong>{label.name}</strong> ({printedText(label)}) is on the plan but not in the scan.</span>
-              <button type="button" className="tool-button" onClick={() => addPrintedRoom(label)}><Plus size={14} /> Add it</button>
-            </li>
-          ))}
-        </ul>
-      </section>}
-
-      <section className="rescan-panel" aria-label="Scan quality and retry">
-        {measured
-          ? measured.matched === measured.printed && <p>All {measured.printed} room sizes printed on your plan match the scan. Rooms without a printed size still need checking against your drawing.</p>
-          : <p>The {confidence}% score is reported by the plan reader, not a guarantee of accuracy. Compare the rooms with your drawing before continuing.</p>}
-        <div className="rescan-actions">
-          <button type="button" className="tool-button" onClick={onRescan} disabled={isRescanning}><ArrowClockwise size={16} /> {isRescanning ? 'Scanning again…' : 'Scan this plan again'}</button>
-          {isRescanning && <button type="button" className="tool-button" onClick={onCancelRescan}>Cancel retry</button>}
-          <button type="button" className="tool-button" onClick={onManualEntry}>Use manual builder</button>
-        </div>
-        {rescanError && <p role="alert" className="review-error">{rescanError} Your current rooms are unchanged.</p>}
-        {rescanCandidate && <div className="rescan-compare" role="status">
-          <strong>Compare both readings</strong>
-          <p>Current: {rooms.length} rooms, {totalArea.toFixed(1)} m², {confidence}% reported confidence.</p>
-          <p>New: {rescanCandidate.rooms.length} rooms, {rescanCandidate.totalArea.toFixed(1)} m², {rescanCandidate.confidence}% reported confidence.</p>
-          <p>A higher score does not prove the dimensions are correct. Replacing the scan discards your room corrections.</p>
-          <div className="rescan-actions"><button type="button" className="tool-button" onClick={onKeepCurrent}>Keep current review</button><button type="button" className="tool-button active" onClick={onUseRescan}>Use new scan</button></div>
-        </div>}
-      </section>
-
-      <section className="coverage-panel" aria-label="Checked room area">
-        <label htmlFor="verified-total-area">Total floor area confirmed from your drawing (m²)</label>
-        <input id="verified-total-area" type="number" inputMode="decimal" min="0.1" step="0.1" value={verifiedTotalAreaM2 ?? ''} onChange={(event) => onVerifiedTotalAreaChange(event.target.value === '' ? null : Number(event.target.value))} placeholder="Enter the stated total, if known" />
-        <p>Only enter a total you can verify on the plan or from your architect. This does not measure pixels.</p>
-        {verifiedTotalAreaM2 !== null && <div className="coverage-figures">
-          <span>Verified whole area <strong>{verifiedTotalAreaM2.toFixed(1)} m²</strong></span>
-          <span>Checked rooms <strong>{verifiedMappedArea.toFixed(1)} m²</strong></span>
-          <span>{remainingArea !== null && remainingArea < 0 ? 'Over by' : 'Still to map or reconcile'} <strong>{Math.abs(remainingArea ?? 0).toFixed(1)} m²</strong></span>
-        </div>}
-        {remainingArea !== null && remainingArea < 0 && <p role="alert">Checked room areas exceed the total. Recheck the room sizes, overlaps, and whether the total includes walls.</p>}
-        {remainingArea !== null && remainingArea >= 0 && <p>The difference may include walls or circulation. It is an area reconciliation, not a measured outline of uncovered space.</p>}
-        {floorBoundary && <p>The green outline marks the whole floor area visually. It does not set the m² figure.</p>}
-      </section>
-
       <div className="review-toolbar" aria-label="Plan review controls">
         <div className="toolbar-group">
           <button type="button" className={`tool-button ${drawMode === 'boundary' ? 'active' : ''}`} aria-pressed={drawMode === 'boundary'} onClick={() => { setDrawMode(drawMode === 'boundary' ? null : 'boundary'); setShowOverlay(true); }}>Draw whole-area box</button>
-          <button type="button" className={`tool-button ${drawMode === 'room' ? 'active' : ''}`} aria-pressed={drawMode === 'room'} onClick={() => { setDrawMode(drawMode === 'room' ? null : 'room'); setShowOverlay(true); }}>Draw missing room</button>
-          <button type="button" className={`tool-button ${showOverlay ? 'active' : ''}`} aria-pressed={showOverlay} onClick={() => setShowOverlay((value) => !value)}>{showOverlay ? 'AI scan visible' : 'Original plan only'}</button>
+          <button type="button" className={`tool-button ${drawMode === 'room' ? 'active' : ''}`} aria-pressed={drawMode === 'room'} onClick={() => { setDrawMode(drawMode === 'room' ? null : 'room'); setShowOverlay(true); }}>{markedByHand ? 'Draw a room' : 'Draw missing room'}</button>
+          <button type="button" className={`tool-button ${showOverlay ? 'active' : ''}`} aria-pressed={showOverlay} onClick={() => setShowOverlay((value) => !value)}>{showOverlay ? 'Rooms shown' : 'Plan only'}</button>
           <button type="button" className={`tool-button ${showWalls ? 'active' : ''}`} aria-pressed={showWalls} disabled={!showOverlay || walls.length === 0} onClick={() => setShowWalls((value) => !value)}>Wall lines</button>
         </div>
         <div className="toolbar-group">
@@ -442,7 +447,7 @@ export default function FloorPlanEditor({
           </div>
         </div>
 
-        <div className="panel-container">
+        <div className={`panel-container ${selectedRoom || addingRoom ? 'in-use' : ''}`}>
           {selectedRoom ? (
             <RoomEditPanel
               key={`${selectedRoom.id}-${planRevision}-${panelVersion}`}
@@ -457,8 +462,10 @@ export default function FloorPlanEditor({
             />
           ) : (
             <Card className="rooms-list-card">
-              <div className="rooms-list-heading"><h3>Rooms in this estimate</h3><button type="button" className="add-room-button" onClick={() => setAddingRoom((value) => !value)}><Plus size={16} /> Add missing room</button></div>
-              <p className="source-guidance">The scan reports how it got each size. Check against your drawing, especially estimates and unconfirmed readings.</p>
+              <div className="rooms-list-heading"><h2>Rooms in this estimate</h2><button type="button" className="add-room-button" onClick={() => setAddingRoom((value) => !value)}><Plus size={16} aria-hidden="true" /> {markedByHand ? 'Add room' : 'Add missing room'}</button></div>
+              <p className="source-guidance">{markedByHand
+                ? rooms.length === 0 ? 'No rooms yet. Add the first one to start your estimate.' : 'Each room you add is listed here. Tap one to change it.'
+                : 'Each size is labelled with where it came from. Check against your drawing, especially estimates and unconfirmed readings.'}</p>
               {addingRoom && <form ref={addRoomFormRef} className="add-room-form" onSubmit={handleAddRoom}>
                 {pendingBox && <p className="manual-room-note">{prefill?.source === 'scaled'
                   ? 'Box placed on the drawing, sized from the plan’s scale. Check the size against your drawing.'
@@ -509,7 +516,7 @@ export default function FloorPlanEditor({
                 ))}
               </div>
               <div className="openings-review">
-                <h4>Check openings</h4>
+                <h3>Check openings</h3>
                 <p>Use the total shown on your plan. If the count is 0, the BOQ uses its standard allowance for that opening.</p>
                 <div className="add-room-dimensions"><label>Doors<input type="number" inputMode="numeric" min="0" step="1" value={doors} onChange={(event) => onOpeningsChange({ doors: Math.max(0, Math.floor(Number(event.target.value) || 0)) })} /></label><label>Windows<input type="number" inputMode="numeric" min="0" step="1" value={windows} onChange={(event) => onOpeningsChange({ windows: Math.max(0, Math.floor(Number(event.target.value) || 0)) })} /></label></div>
               </div>
@@ -518,16 +525,113 @@ export default function FloorPlanEditor({
         </div>
       </div>
 
+      <div ref={checksRef} className="checks">
+      {findings.length > 0 && <section className="scan-review" aria-labelledby="scan-review-heading">
+        <h2 id="scan-review-heading"><Warning size={18} weight="fill" aria-hidden="true" /> {markedByHand ? 'Before you continue' : 'Check these before you continue'}</h2>
+        <ul>{findings.map((finding) => <li key={finding.id}>{finding.text}</li>)}</ul>
+      </section>}
+
+      {second && (second.differing.length > 0 || second.missing.length > 0) && <section className="printed-check" aria-labelledby="second-reading-heading">
+        <h2 id="second-reading-heading">A second reading of your plan</h2>
+        <p>We read your plan twice. {second.agreed > 0 ? `The two readings agree on ${second.agreed} of ${second.agreed + second.differing.length} room sizes. ` : ''}Check the rest against your drawing and keep the size that is printed there.</p>
+        {/* A hard plan can differ on most rooms: the list opens on request, so it does not bury the plan's other checks. */}
+        <details open={second.differing.length + second.missing.length <= SECOND_READING_OPEN_UP_TO}>
+        <summary>{second.differing.length + second.missing.length === 1 ? 'The room to check' : `The ${second.differing.length + second.missing.length} rooms to check`}</summary>
+        <ul>
+          {second.differing.map(({ room, other }) => (
+            <li key={room.id}>
+              <span><strong>{room.name}</strong>: {sizeText(room.dimensions)} here, {sizeText(other)} in the second reading.</span>
+              <span className="row-actions">
+                <button type="button" className="tool-button" onClick={() => { onRoomUpdate(room.id, { dimensions: other, area: other.width * other.length, isEdited: true }); onRoomUpdate(room.id, { dimensionsVerified: true }); setPanelVersion((version) => version + 1); }}>Use {sizeText(other)}</button>
+                <button type="button" className="tool-button" onClick={() => onRoomUpdate(room.id, { dimensionsVerified: true })}>Keep {sizeText(room.dimensions)}</button>
+              </span>
+            </li>
+          ))}
+          {second.missing.map((room, index) => (
+            <li key={`${room.name}-${index}`}>
+              <span><strong>{room.name}</strong> ({sizeText(room)}) is in the second reading only.</span>
+              <button type="button" className="tool-button" onClick={() => addFromSecondReading(room)}><Plus size={14} aria-hidden="true" /> Add it</button>
+            </li>
+          ))}
+        </ul>
+        </details>
+      </section>}
+
+      {measured && (measured.differences.length > 0 || measured.missing.length > 0) && <section className="printed-check" aria-labelledby="printed-check-heading">
+        <h2 id="printed-check-heading">Sizes printed on your plan</h2>
+        <p>{measured.matched} of {measured.printed} rooms match the {printed?.source === 'pdf-text' ? 'sizes in your PDF' : 'sizes we read off your plan'}.{printed?.source === 'ocr' ? ' Those were read from the picture, so check any that look wrong.' : ''}</p>
+        <ul>
+          {measured.differences.map(({ room, printed: label }) => (
+            <li key={room.id}>
+              <span><strong>{room.name}</strong>: plan says {printedText(label)}, this estimate has {label.area !== undefined && label.width === undefined ? `${fmt(room.dimensions.width * room.dimensions.length)} m²` : `${fmt(room.dimensions.width)} × ${fmt(room.dimensions.length)} m`}.</span>
+              {printedSizeFor(room, label)
+                ? <button type="button" className="tool-button" onClick={() => applyPrintedSize(room, label)}>Use {printedText(label)}</button>
+                : <button type="button" className="tool-button" onClick={() => setSelectedRoomId(room.id)}>Edit room</button>}
+            </li>
+          ))}
+          {measured.missing.map((label) => (
+            <li key={`${label.name}-${label.at.x}-${label.at.y}`}>
+              <span><strong>{label.name}</strong> ({printedText(label)}) is on the plan but not in the scan.</span>
+              <button type="button" className="tool-button" onClick={() => addPrintedRoom(label)}><Plus size={14} /> Add it</button>
+            </li>
+          ))}
+        </ul>
+      </section>}
+
+      <section className="rescan-panel" aria-label="Scan quality and retry">
+        {markedByHand
+          ? <p>We could not read this plan, so nothing here was scanned. You can ask for another reading at any time; your rooms stay until you choose to replace them.</p>
+          : measured
+            ? measured.matched === measured.printed && <p>All {measured.printed} room sizes printed on your plan match the scan. Rooms without a printed size still need checking against your drawing.</p>
+            : <p>Nothing printed on your plan could be used to check these sizes. Compare each room with your drawing before continuing.</p>}
+        <div className="rescan-actions">
+          <button type="button" className="tool-button" onClick={onRescan} disabled={isRescanning}><ArrowClockwise size={16} aria-hidden="true" /> {isRescanning ? 'Reading again…' : markedByHand ? 'Try reading this plan again' : 'Read this plan again'}</button>
+          {isRescanning && <button type="button" className="tool-button" onClick={onCancelRescan}>Cancel retry</button>}
+          <button type="button" className="tool-button" onClick={onManualEntry}>Use manual builder</button>
+        </div>
+        {rescanError && <p role="alert" className="review-error">{rescanError} Your current rooms are unchanged.</p>}
+        {rescanCandidate && rescanDiff && <div className="rescan-compare" role="status">
+          <strong>Compare both readings</strong>
+          <p>Now: {rooms.length} {rooms.length === 1 ? 'room' : 'rooms'}, {totalArea.toFixed(1)} m². New reading: {rescanCandidate.rooms.length} {rescanCandidate.rooms.length === 1 ? 'room' : 'rooms'}, {rescanCandidate.totalArea.toFixed(1)} m².</p>
+          {rescanDiff.differing.length === 0 && rescanDiff.onlyCurrent.length === 0 && rescanDiff.onlyNext.length === 0
+            ? <p>Both readings give the same rooms and sizes.</p>
+            : <ul className="rescan-differences">
+              {rescanDiff.agreed > 0 && <li>{rescanDiff.agreed} {rescanDiff.agreed === 1 ? 'room is' : 'rooms are'} the same in both.</li>}
+              {rescanDiff.differing.map((room, index) => <li key={`${room.name}-${index}`}><strong>{room.name}</strong>: {sizeText(room.current)} now, {sizeText(room.next)} in the new reading.</li>)}
+              {rescanDiff.onlyNext.length > 0 && <li>Only in the new reading: {rescanDiff.onlyNext.map((room) => `${room.name} (${sizeText(room.dimensions)})`).join(', ')}.</li>}
+              {rescanDiff.onlyCurrent.length > 0 && <li>Only in what you have now: {rescanDiff.onlyCurrent.map((room) => `${room.name} (${sizeText(room.dimensions)})`).join(', ')}.</li>}
+            </ul>}
+          <p>Check the rooms that differ against your drawing. Using the new reading replaces your rooms and any corrections you made.</p>
+          <div className="rescan-actions"><button type="button" className="tool-button" onClick={onKeepCurrent}>Keep what I have</button><button type="button" className="tool-button active" onClick={onUseRescan}>Use the new reading</button></div>
+        </div>}
+      </section>
+
+      <section className="coverage-panel" aria-label="Checked room area">
+        <label htmlFor="verified-total-area">Total floor area confirmed from your drawing (m²)</label>
+        <input id="verified-total-area" type="number" inputMode="decimal" min="0.1" step="0.1" value={verifiedTotalAreaM2 ?? ''} onChange={(event) => onVerifiedTotalAreaChange(event.target.value === '' ? null : Number(event.target.value))} placeholder="Enter the stated total, if known" />
+        <p>Only enter a total you can verify on the plan or from your architect. This does not measure pixels.</p>
+        {statedTotalFromPicture && verifiedTotalAreaM2 !== null && <p role="status"><strong>{verifiedTotalAreaM2} m² was read from the picture of your plan.</strong> Check it against the drawing, and correct or clear it if it is wrong.</p>}
+        {verifiedTotalAreaM2 !== null && <div className="coverage-figures">
+          <span>Verified whole area <strong>{verifiedTotalAreaM2.toFixed(1)} m²</strong></span>
+          <span>Checked rooms <strong>{verifiedMappedArea.toFixed(1)} m²</strong></span>
+          <span>{remainingArea !== null && remainingArea < 0 ? 'Over by' : 'Still to map or reconcile'} <strong>{Math.abs(remainingArea ?? 0).toFixed(1)} m²</strong></span>
+        </div>}
+        {remainingArea !== null && remainingArea < 0 && <p role="alert">Checked room areas exceed the total. Recheck the room sizes, overlaps, and whether the total includes walls.</p>}
+        {remainingArea !== null && remainingArea >= 0 && <p>The difference may include walls or circulation. It is an area reconciliation, not a measured outline of uncovered space.</p>}
+        {floorBoundary && <p>The green outline marks the whole floor area visually. It does not set the m² figure.</p>}
+      </section>
+      </div>
+
       {error && <p role="alert" className="review-error">{error}</p>}
 
       <div className="editor-footer">
         <button className="btn btn-secondary" onClick={onBack}>
           <ArrowLeft size={18} weight="bold" />
-          Upload Different Plan
+          Upload a different plan
         </button>
 
         <button className="btn btn-primary" onClick={onConfirm}>
-          Confirm Dimensions
+          These rooms are right
           <ArrowRight size={18} weight="bold" />
         </button>
       </div>
@@ -558,6 +662,9 @@ export default function FloorPlanEditor({
         .printed-check li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: .82rem; line-height: 1.45; }
         .printed-check li span { flex: 1 1 220px; }
         .printed-check .tool-button { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; }
+        .row-actions { display: flex; flex-wrap: wrap; gap: 6px; flex: 0 1 auto !important; }
+        .printed-check summary { min-height: 40px; display: flex; align-items: center; font-size: .82rem; font-weight: 700; cursor: pointer; }
+        .printed-check details[open] summary { margin-bottom: 6px; }
         .rescan-panel { border: 1px solid #d9e3ef; border-radius: 12px; background: #f5f8fc; padding: 12px 16px; }
         .rescan-panel p { margin: 0; color: #314c69; font-size: .8rem; line-height: 1.5; }
         .rescan-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
@@ -565,6 +672,13 @@ export default function FloorPlanEditor({
         .rescan-compare { margin-top: 12px; padding: 12px; border: 1px solid #b7cae1; border-radius: 9px; background: white; }
         .rescan-compare strong { color: #10243d; }
         .rescan-compare p { margin-top: 4px; }
+        .rescan-differences { margin: 8px 0; padding-left: 20px; color: #314c69; font-size: .8rem; line-height: 1.5; }
+        .rescan-differences li + li { margin-top: 3px; }
+        .checks { display: flex; flex-direction: column; gap: var(--spacing-lg); scroll-margin-top: 16px; }
+        .checks:empty { display: none; }
+        .checks-link { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; margin-top: 10px; padding: 6px 12px; border: 1px solid #e7c46a; border-radius: 999px; background: #fff9e9; color: #694408; font: inherit; font-size: .8125rem; font-weight: 700; cursor: pointer; }
+        .checks-link:hover { background: #fff2d6; }
+        .tool-button:focus-visible, .checks-link:focus-visible, .add-room-button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
         .review-toolbar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 10px; border: 1px solid #d9e3ef; border-radius: 12px; background: #f5f8fc; }
         .toolbar-group { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
         .tool-button { min-height: 40px; padding: 8px 12px; border: 1px solid #cbd8e6; border-radius: 8px; background: white; color: #173557; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
@@ -573,7 +687,7 @@ export default function FloorPlanEditor({
         .icon-button { display: inline-flex; justify-content: center; align-items: center; width: 40px; padding: 0; }
         .zoom-label { min-width: 42px; text-align: center; font-size: .8rem; font-weight: 700; color: #173557; }
         .rooms-list-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-        .rooms-list-heading h3 { margin: 0; }
+        .rooms-list-heading h2 { margin: 0; color: #10243d; font-size: .95rem; font-weight: 700; }
         .add-room-button { display: inline-flex; align-items: center; gap: 5px; min-height: 36px; border: 1px solid #b7cae1; border-radius: 8px; background: #edf5ff; color: #0f4b91; padding: 6px 9px; font-weight: 700; font-size: .78rem; cursor: pointer; }
         .add-room-form { display: grid; gap: 10px; padding: 12px; margin-bottom: 12px; border-radius: 10px; background: #f2f7fc; }
         .add-room-form label, .openings-review label { display: grid; gap: 5px; color: #314c69; font-weight: 700; font-size: .75rem; }
@@ -585,7 +699,7 @@ export default function FloorPlanEditor({
         .source-badge { display: inline-block; width: fit-content; border-radius: 5px; padding: 2px 6px; background: #e8f5f0; color: #17624a; font-size: .68rem; font-weight: 700; }
         .source-badge.needs-review { background: #fff2d6; color: #85510a; }
         .openings-review { margin-top: 16px; padding-top: 14px; border-top: 1px solid #d9e3ef; }
-        .openings-review h4 { margin: 0 0 4px; color: #10243d; font-size: .9rem; }
+        .openings-review h3 { margin: 0 0 4px; color: #10243d; font-size: .9rem; }
         .openings-review p { margin: 0 0 10px; color: #526985; font-size: .75rem; line-height: 1.4; }
         .review-error { margin: 0; border: 1px solid #f5b3b3; border-radius: 8px; padding: 10px 12px; color: #8b1e1e; background: #fff2f2; }
         .floor-plan-editor {
@@ -724,7 +838,7 @@ export default function FloorPlanEditor({
           flex-direction: column;
         }
 
-        .rooms-list-card h3 {
+        .rooms-list-card h2 {
           font-size: 0.875rem;
           font-weight: 600;
           color: var(--color-text);
@@ -827,7 +941,11 @@ export default function FloorPlanEditor({
             display: flex;
             flex-direction: column;
           }
-          .panel-container { order: -1; }
+          /* On a phone the plan comes first. The panel moves above it only
+             while a room is being edited or added, so the form is where the
+             person is looking; the room list used to sit above the drawing
+             and push it a screen or more down the page. */
+          .panel-container.in-use { order: -1; }
 
           .header-stats {
             flex-wrap: wrap;

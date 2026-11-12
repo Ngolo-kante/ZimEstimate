@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { looksMultiStorey, notAFloorPlan, statedFloorArea } from './planFacts';
+import { looksMultiStorey, notAFloorPlan, otherDrawingKind, statedFloorArea } from './planFacts';
 
 describe('statedFloorArea', () => {
   it('reads the area in a plan title', () => {
@@ -65,5 +65,20 @@ describe('notAFloorPlan', () => {
     expect(notAFloorPlan(`GROUND FLOOR PLAN LOUNGE KITCHEN BEDROOM 1 SECTION A-A ELEVATION ${filler}`)).toBeNull();
     expect(notAFloorPlan('COL C1 COLUMNS R.C DETAIL')).toBeNull();
     expect(notAFloorPlan(`4000 3200 2700 230 115 ${filler}`)).toBeNull();
+  });
+});
+
+describe('otherDrawingKind', () => {
+  const filler = 'drawing number scale date revision checked approved client project title sheet notes all dimensions in millimetres unless stated otherwise';
+
+  it('names the sheet, for choosing what to offer next', () => {
+    expect(otherDrawingKind(`SEPTIC TANK DETAIL soakaway ${filler}`)).toBe('septic');
+    expect(otherDrawingKind(`COLUMN SCHEDULE reinforcement ${filler}`)).toBe('structural');
+    expect(otherDrawingKind(`FRONT ELEVATION REAR ELEVATION ${filler}`)).toBe('elevations');
+  });
+
+  it('is null for a floor plan, and for too little text to tell', () => {
+    expect(otherDrawingKind(`FLOOR PLAN LOUNGE KITCHEN BEDROOM septic tank ${filler}`)).toBeNull();
+    expect(otherDrawingKind('SEPTIC TANK')).toBeNull();
   });
 });

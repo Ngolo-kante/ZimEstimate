@@ -4,7 +4,8 @@
 // SDK this replaced cannot set the thinking options the current models need)
 // and works through GEMINI_MODELS:
 //
-//   - busy (503/500/502/504), rate-limited (429) or too slow → the next model;
+//   - busy (503/500/502/504), rate-limited (429) or too slow → the next model
+//     (after asking the same one again, for a model marked `busyRetries`);
 //   - retired or unknown to this key (404) → the next model;
 //   - rejected settings (400 about thinking) → the same model, once, without them;
 //   - a bad key (401/403) or a request it will never accept (other 400) → stop;
@@ -45,6 +46,9 @@ export type GeminiResult = { text: string; model: string; attempts: number };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** A "busy" that comes back within this long is a brief spell, worth one more try. */
+const BUSY_REFUSAL_FAST_MS = 2_500;
+
 /** The model's answer, without any "thought" parts. */
 function replyText(body: unknown): string {
   const parts = (body as { candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[] })
@@ -81,9 +85,13 @@ export async function generateWithFailover(request: GeminiRequest): Promise<Gemi
       triedThisRound += 1;
 
       let thinking = choice.thinking;
+      let busyRetriesLeft = choice.busyRetries ?? 0;
+      // `settings` counts tries with changed thinking settings; a busy retry
+      // is the same request again and does not use one up.
       for (let settings = 0; settings < 2; settings += 1) {
         attempts += 1;
         let response: Response;
+        const asked = Date.now();
         try {
           response = await doFetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(choice.model)}:generateContent`,
@@ -125,6 +133,19 @@ export async function generateWithFailover(request: GeminiRequest): Promise<Gemi
         if (status === 404) retired.add(choice.model);
         if (status === 401 || status === 403 || (status === 400 && !/thinking/i.test(message))) {
           throw lastError; // Our key or our request — no other model will fix it.
+        }
+        // A model worth waiting for: a brief busy spell passes in a second or
+        // two. Only when it refused at once, though. In a long spell the model
+        // takes several seconds to say it is busy (7 s each, measured
+        // 2026-11-12), and asking again then only keeps the person waiting.
+        const busy = status === 503 || status === 429 || status === 500 || status === 502 || status === 504;
+        const refusedAtOnce = Date.now() - asked < BUSY_REFUSAL_FAST_MS;
+        const pause = choice.busyRetryMs ?? 1_500;
+        if (busy && refusedAtOnce && busyRetriesLeft > 0 && !stopped() && remaining() - pause > 6_000) {
+          busyRetriesLeft -= 1;
+          await sleep(pause);
+          settings -= 1;
+          continue;
         }
         break; // Busy, rate-limited, retired: next model.
       }

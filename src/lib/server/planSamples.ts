@@ -33,6 +33,15 @@ export interface PlanSampleOutcome {
   totalArea?: number;
   confidence?: number;
   error?: string;
+  /** Why a read failed (planFailure.ts). */
+  code?: string;
+  /** Which reader gave the reading, e.g. "gemini:gemini-3.5-flash": the same plan reads differently by model. */
+  reader?: string;
+  /** Room sizes a second reading agreed with, and differed on. */
+  secondAgreed?: number;
+  secondDiffered?: number;
+  /** The reading was the one remembered for this file, not a new one. */
+  remembered?: boolean;
 }
 
 export function shouldKeepPlanSamples(): boolean {
@@ -98,5 +107,8 @@ export async function prunePlanSamples(now = new Date()): Promise<{ removed: num
   for (let i = 0; i < expired.length; i += 100) {
     await client.storage.from(PLAN_SAMPLES_BUCKET).remove(expired.slice(i, i + 100));
   }
-  return { removed: expired.length };
+  // Readings remembered per file live in the same bucket, on a shorter clock.
+  const { prunePlanReadings } = await import('./planReadings');
+  const readings = await prunePlanReadings(now);
+  return { removed: expired.length + readings.removed };
 }

@@ -29,6 +29,13 @@ export type GeminiModelChoice = {
   thinking?: { thinkingBudget: number } | { thinkingLevel: 'minimal' | 'low' };
   /** Longest a single attempt may take; the caller's deadline can cut it shorter. */
   timeoutMs: number;
+  /**
+   * How many more times to ask this model when it answers "busy", before
+   * moving to the next one. For a model whose answers are worth a short wait.
+   */
+  busyRetries?: number;
+  /** The pause before each of those, in milliseconds. */
+  busyRetryMs?: number;
 };
 
 const FAST: GeminiModelChoice[] = [
@@ -52,6 +59,16 @@ const MORE: GeminiModelChoice[] = [
   { model: 'gemini-3.8-flash', thinking: { thinkingLevel: 'low' }, timeoutMs: 26_000 },
 ];
 
+/**
+ * The fast models, for a second reading of a plan that is compared with the
+ * first (lib/vision/planCheck.ts). They answer in a few seconds and do not
+ * draw on the allowance of the model that gives the main reading.
+ */
+export const PLAN_SECOND_READING_MODELS: GeminiModelChoice[] = [
+  { model: 'gemini-3.5-flash-lite', thinking: { thinkingLevel: 'minimal' }, timeoutMs: 12_000 },
+  { model: 'gemini-3.1-flash-lite', thinking: { thinkingBudget: 0 }, timeoutMs: 12_000 },
+];
+
 /** Models tried, in order, by every AI feature. */
 export const GEMINI_MODELS: GeminiModelChoice[] = [...FAST, ...MORE];
 
@@ -65,9 +82,17 @@ export const GEMINI_MODELS: GeminiModelChoice[] = [...FAST, ...MORE];
  * Accuracy first, then the fast Lite models for when 3.5 Flash is busy (a busy
  * model refuses within a second, so trying several costs little). Retired or
  * blocked for this key: gemini-2.5-flash (404), gemma-4-31b-it (timed out).
+ *
+ * Which model answers changes the reading. On 2026-11-11, thirty reads of ten
+ * real uploads: one two-storey PDF came back as 90 m² from 3.5 Flash and as
+ * 76 and 108 m² from 3.5 Flash-Lite, and a small screenshot as 151 against
+ * 163 and 182. Flash was busy for 8 of the 30, and every one of those went
+ * straight to a Lite model. A brief busy spell passes within seconds, so
+ * when Flash refuses at once it is asked one more time, a moment later,
+ * before a Lite model is (lib/ai/gemini.ts).
  */
 export const PLAN_READER_MODELS: GeminiModelChoice[] = [
-  { model: process.env.GEMINI_PLAN_MODEL?.trim() || 'gemini-3.5-flash', thinking: { thinkingLevel: 'low' }, timeoutMs: 24_000 },
+  { model: process.env.GEMINI_PLAN_MODEL?.trim() || 'gemini-3.5-flash', thinking: { thinkingLevel: 'low' }, timeoutMs: 24_000, busyRetries: 1, busyRetryMs: 1_200 },
   { model: 'gemini-3.5-flash-lite', thinking: { thinkingLevel: 'minimal' }, timeoutMs: 15_000 },
   { model: 'gemini-3.1-flash-lite', thinking: { thinkingBudget: 0 }, timeoutMs: 15_000 },
   { model: 'gemini-3.8-flash', thinking: { thinkingLevel: 'low' }, timeoutMs: 26_000 },

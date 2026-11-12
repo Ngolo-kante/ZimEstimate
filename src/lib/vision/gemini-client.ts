@@ -3,6 +3,9 @@
 // (lib/ai/gemini.ts).
 
 import { readWithFirstAvailable, type ImageInput } from '@/lib/ai/planReaders';
+import { generateWithFailover, type GeminiPart } from '@/lib/ai/gemini';
+import { PLAN_SECOND_READING_MODELS } from './model';
+import type { PlanFailureCode } from './planFailure';
 import type { LabelledRoom } from './roomLabels';
 import { VisionAnalysisResult, DetectedRoom, DetectedWall } from './types';
 
@@ -104,15 +107,51 @@ function parseGeminiResponse(text: string): {
   }
 }
 
-/** Do not present a model's omitted or invented default dimensions as a read plan. */
+/** Few rooms in a house have a side longer than this; a garage or a long verandah may. */
+const LONG_ROOM_SIDE_M = 12;
+
+/**
+ * Do not present a model's omitted or invented default dimensions as a read plan.
+ *
+ * Nor a reply whose rooms are mostly too long to be rooms. On 2026-11-12 a
+ * backup model gave one 158 m² house every room 15 to 27 m wide ("Master
+ * Bedroom 25 x 4", "Toilet 18 x 1"): it had written each room's place on the
+ * page where its width belongs. That came to 877 m², each side still under
+ * the 40 m limit. One or two long rooms are allowed; more than a quarter of
+ * them is a misreading, and the next model is asked.
+ */
 export function isUsablePlanResponse(text: string): boolean {
   const parsed = parseGeminiResponse(text);
-  return !parsed.error && parsed.rooms.length > 0 && parsed.rooms.every((room) =>
+  const measured = !parsed.error && parsed.rooms.length > 0 && parsed.rooms.every((room) =>
     typeof room.name === 'string' && room.name.trim().length > 0 &&
     typeof room.width === 'number' && Number.isFinite(room.width) && room.width >= 0.8 && room.width <= 40 &&
     typeof room.length === 'number' && Number.isFinite(room.length) && room.length >= 0.8 && room.length <= 40,
   );
+  if (!measured) return false;
+  const tooLong = parsed.rooms.filter((room) => Math.max(room.width, room.length) > LONG_ROOM_SIDE_M).length;
+  return tooLong <= Math.max(1, parsed.rooms.length * 0.25);
 }
+
+/**
+ * The reader's own verdict that the picture is not a floor plan, which the
+ * prompt asks it to give. It used to count as an unusable reply, so every
+ * model in turn was asked about a satellite photo of a stand until the 52
+ * seconds ran out, and the person was then told the reader was "busy".
+ */
+export function saysNotAFloorPlan(text: string): boolean {
+  try {
+    const first = text.indexOf('{');
+    const last = text.lastIndexOf('}');
+    if (first < 0 || last <= first) return false;
+    const reply = JSON.parse(text.slice(first, last + 1)) as { error?: unknown; rooms?: unknown };
+    const noRooms = !Array.isArray(reply.rooms) || reply.rooms.length === 0;
+    return noRooms && typeof reply.error === 'string' && /\bnot\b[^.]*\bfloor\s*plan\b/i.test(reply.error);
+  } catch {
+    return false;
+  }
+}
+
+export const NOT_A_FLOOR_PLAN_MESSAGE = 'This does not look like a floor plan. Upload the floor plan page, the one with the room names and sizes.';
 
 // Generate unique IDs
 function generateId(): string {
@@ -126,8 +165,8 @@ function generateId(): string {
    which contains "rate" — so timeouts and outages all came back as the same
    fake house, presented as a real reading. A failed read now says so. */
 
-class PlanReadError extends Error {
-  constructor(message: string, readonly retryable: boolean) {
+export class PlanReadError extends Error {
+  constructor(message: string, readonly retryable: boolean, readonly code: PlanFailureCode = 'unreadable') {
     super(message);
     this.name = 'PlanReadError';
   }
@@ -141,21 +180,21 @@ export function classifyGeminiError(error: unknown): PlanReadError {
   const message = error instanceof Error ? error.message : String(error);
 
   if (name === 'AbortError' || /\b(aborted|timed out|timeout)\b/i.test(message)) {
-    return new PlanReadError('The plan reader took too long. Check it is the floor plan, the page with the rooms (not a septic tank, column or elevation drawing), then try again, or use the room builder.', true);
+    return new PlanReadError('The plan reader took too long. Check it is the floor plan, the page with the rooms (not a septic tank, column or elevation drawing), then try again, or use the room builder.', true, 'timeout');
   }
   if (status === 429) {
-    return new PlanReadError('The plan reader has reached its limit for now. Try again in a minute, or use the room builder.', true);
+    return new PlanReadError('The plan reader has reached its limit for now. Try again in a minute, or use the room builder.', true, 'busy');
   }
   if (status === 503 || status === 500 || status === 502 || status === 504) {
-    return new PlanReadError('The plan reader is busy right now. Try again in a minute, or use the room builder.', true);
+    return new PlanReadError('The plan reader is busy right now. Try again in a minute, or use the room builder.', true, 'busy');
   }
   if (status === 400 && /safety|blocked/i.test(message)) {
-    return new PlanReadError('This image was blocked by the reader\'s safety filter. Try a different copy of the plan.', false);
+    return new PlanReadError('This image was blocked by the reader\'s safety filter. Try a different copy of the plan.', false, 'unreadable');
   }
   if (status === 400 || status === 401 || status === 403 || status === 404) {
     // A configuration problem on our side, not something a retry or the
     // user can fix — and not a reason to try the next model blindly.
-    return new PlanReadError('The plan reader is not available right now. Please use the room builder instead.', false);
+    return new PlanReadError('The plan reader is not available right now. Please use the room builder instead.', false, 'unavailable');
   }
   return new PlanReadError('We could not read that plan. Try a clearer copy, or use the room builder.', true);
 }
@@ -164,6 +203,7 @@ export function classifyGeminiError(error: unknown): PlanReadError {
 export async function analyzeFloorPlan(
   original: ImageInput,
   readingCopy?: ImageInput,
+  signal?: AbortSignal,
 ): Promise<VisionAnalysisResult> {
   try {
     // Gemini, NVIDIA and OpenRouter at once; the first usable reply wins
@@ -176,14 +216,59 @@ export async function analyzeFloorPlan(
       // 4,096 cap could cut a big plan's JSON off mid-way.
       maxOutputTokens: 8192,
       deadlineMs: PLAN_READ_DEADLINE_MS,
-      // A reply that is not the JSON asked for, or has no rooms, is no answer.
-      accept: isUsablePlanResponse,
+      // A reply that is not the JSON asked for, or has no rooms, is no answer;
+      // "this is not a floor plan" is one.
+      accept: (reply) => isUsablePlanResponse(reply) || saysNotAFloorPlan(reply),
+      signal,
     });
+    if (saysNotAFloorPlan(text)) {
+      console.info('Plan reader: not a floor plan', { provider, model });
+      throw new PlanReadError(NOT_A_FLOOR_PLAN_MESSAGE, false, 'not_floor_plan');
+    }
     console.info('Plan read', { provider, model });
     return { ...toAnalysisResult(text), source: 'ai', reader: { provider, model } };
   } catch (error) {
-    throw classifyGeminiError(error);
+    throw error instanceof PlanReadError ? error : classifyGeminiError(error);
   }
+}
+
+/**
+ * A second reading of the same plan by a fast model, to compare with the
+ * first. The reader's own "confidence" is a number it makes up, and the same
+ * plan read twice often comes back with different sizes (2026-11-11: one
+ * house's main bedroom as 3.5 × 3.4 m, then 5.2 × 4.1 m). Two readings that
+ * give a room the same size bear each other out; where they differ, the
+ * person is shown both and checks the drawing (planCheck.ts).
+ *
+ * One more call per upload, to the Lite models' own free allowance. Never
+ * throws and never delays the first reading beyond the caller's wait: no
+ * second reading simply means nothing to compare.
+ */
+export async function readSecondTime(original: ImageInput, deadlineMs: number, signal?: AbortSignal): Promise<DetectedRoom[] | null> {
+  if (!process.env.GOOGLE_GEMINI_API_KEY) return null;
+  try {
+    const { text } = await generateWithFailover({
+      parts: [{ text: FLOOR_PLAN_PROMPT }, { inlineData: { mimeType: original.mimeType, data: original.base64 } }] as GeminiPart[],
+      generationConfig: { responseMimeType: 'application/json', temperature: 0, maxOutputTokens: 8192 },
+      deadlineMs,
+      accept: isUsablePlanResponse,
+      models: PLAN_SECOND_READING_MODELS,
+      signal,
+    });
+    return toAnalysisResult(text).rooms;
+  } catch {
+    return null;
+  }
+}
+
+/** The same scan with these rooms: walls and total follow the rooms. */
+export function withRooms(result: VisionAnalysisResult, rooms: DetectedRoom[]): VisionAnalysisResult {
+  return {
+    ...result,
+    rooms,
+    walls: generateWallsFromRooms(rooms),
+    totalArea: Math.round(rooms.reduce((sum, room) => sum + room.area, 0) * 100) / 100,
+  };
 }
 
 /**

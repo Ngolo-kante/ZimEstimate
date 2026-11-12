@@ -1,3 +1,5 @@
+import type { WrongSheet } from './planFailure';
+
 // ─── Facts a plan states about itself ────────────────────────────────────────
 // Drawings often print the house's floor area in the title ("GROUND FLOOR PLAN
 // (area=90sqm)", "TOTAL FLOOR AREA: 120 m²"). Adding up the rooms misses the
@@ -58,17 +60,22 @@ export function looksMultiStorey(text: string, roomNames: string[]): boolean {
 
 const ROOM_NAME = /\b(?:lounge|living|sitting|dining|kitchen|bed(?:room|rm)?s?|bath(?:room)?|toilet|w\.?c|shower|en[\s-]?suite|study|office|garage|verand(?:ah?)|patio|porch|passage|corridor|hall|store|pantry|laundry|scullery|foyer|lobby|family)\b/i;
 
-const OTHER_DRAWINGS: { kind: string; pattern: RegExp }[] = [
+const OTHER_DRAWINGS: { kind: WrongSheet; pattern: RegExp }[] = [
   { kind: 'septic', pattern: /\b(?:septic|soak\s?away|absorption\s+pit)\b/i },
   { kind: 'structural', pattern: /\b(?:col(?:umn)?s?\s*(?:c\d|r\.?c\.?|detail|schedule)|r\.?c\.?\s+detail|reinforcement|\d+y1[0-6]\b|y1[0-6][-\s]\d|links?\b.*\bspacing|footing\s+schedule|bar\s+bending)/i },
   { kind: 'elevations', pattern: /\b(?:elevations?|sections?)\b/i },
 ];
 
-/** Why this PDF is not a floor plan, in words for the person; null if it may be one. */
-export function notAFloorPlan(text: string): string | null {
+/** Which other sheet of a drawing set this is; null if it may be a floor plan. */
+export function otherDrawingKind(text: string): WrongSheet | null {
   const words = text.trim().split(/\s+/).filter(Boolean);
   if (words.length < 20 || ROOM_NAME.test(text)) return null;
-  const kind = OTHER_DRAWINGS.find((drawing) => drawing.pattern.test(text))?.kind;
+  return OTHER_DRAWINGS.find((drawing) => drawing.pattern.test(text))?.kind ?? null;
+}
+
+/** Why this sheet is not a floor plan, in words for the person; null if it may be one. */
+export function notAFloorPlan(text: string): string | null {
+  const kind = otherDrawingKind(text);
   if (kind === 'septic') return 'This looks like a septic tank drawing, not a house floor plan. For a septic tank estimate, use Quick Projects → Septic. For the house, upload the floor plan page, the one with the rooms.';
   if (kind === 'structural') return "This looks like an engineer's structural drawing (columns or reinforcement), not a floor plan. Upload the floor plan page, the one with the room names and sizes.";
   if (kind === 'elevations') return 'This page shows the outside views or sections of the house, not the floor plan. Upload the floor plan page, the one with the room names and sizes.';

@@ -148,3 +148,124 @@ export function boxForMissing(label: PrintedRoom, rooms: DetectedRoom[], printed
     height: Math.min(100, height),
   };
 }
+
+// ─── Two readings of the same plan, side by side ─────────────────────────────
+// "Scan this plan again" used to compare the two readings by each reader's
+// own confidence score, a number it makes up. What a person can act on is
+// what actually differs: which rooms changed size, and which are in one
+// reading but not the other.
+
+export interface ReadingComparison {
+  /** Rooms in both readings with the same size. */
+  agreed: number;
+  /** Rooms in both readings whose sizes differ. */
+  differing: Array<{ name: string; current: { width: number; length: number }; next: { width: number; length: number } }>;
+  /** Rooms only the current reading has. */
+  onlyCurrent: DetectedRoom[];
+  /** Rooms only the new reading has. */
+  onlyNext: DetectedRoom[];
+}
+
+const centre = (box: PlanBox) => ({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
+const placed = (room: DetectedRoom) => room.position.width > 0 && room.position.height > 0;
+const apart = (a: DetectedRoom, b: DetectedRoom) => {
+  const p = centre(a.position);
+  const q = centre(b.position);
+  return Math.hypot(p.x - q.x, p.y - q.y);
+};
+
+/** Rooms of two readings paired up: by name first, then by place. */
+function pairReadings(first: DetectedRoom[], second: DetectedRoom[]): {
+  pairs: Array<{ first: DetectedRoom; second: DetectedRoom }>;
+  onlyFirst: DetectedRoom[];
+  onlySecond: DetectedRoom[];
+} {
+  const taken = new Set<string>();
+  const pairs: Array<{ first: DetectedRoom; second: DetectedRoom }> = [];
+  const unpaired: DetectedRoom[] = [];
+  const onlySecond: DetectedRoom[] = [];
+  // The same name, nearest first: two readings rarely put a room's box in
+  // quite the same place, and a house has more than one bedroom.
+  for (const room of second) {
+    const match = first
+      .filter((other) => !taken.has(other.id) && sameName(other.name, room.name))
+      .sort((a, b) => (placed(a) && placed(room) ? apart(a, room) : 0) - (placed(b) && placed(room) ? apart(b, room) : 0))[0];
+    if (match) { taken.add(match.id); pairs.push({ first: match, second: room }); } else unpaired.push(room);
+  }
+  // Then a room in the same place under another name ("Lounge", "Living Room").
+  for (const room of unpaired) {
+    const match = placed(room)
+      ? first.filter((other) => !taken.has(other.id) && placed(other) && apart(other, room) <= 6).sort((a, b) => apart(a, room) - apart(b, room))[0]
+      : undefined;
+    if (match) { taken.add(match.id); pairs.push({ first: match, second: room }); } else onlySecond.push(room);
+  }
+  return { pairs, onlyFirst: first.filter((room) => !taken.has(room.id)), onlySecond };
+}
+
+export function compareReadings(current: DetectedRoom[], next: DetectedRoom[]): ReadingComparison {
+  const { pairs, onlyFirst, onlySecond } = pairReadings(current, next);
+  const differing = pairs.filter((pair) => !sameSize(pair.first.dimensions, pair.second.dimensions));
+  return {
+    agreed: pairs.length - differing.length,
+    differing: differing.map((pair) => ({ name: pair.first.name, current: pair.first.dimensions, next: pair.second.dimensions })),
+    onlyCurrent: onlyFirst,
+    onlyNext: onlySecond,
+  };
+}
+
+/** What a second reading adds to a scan, in a form that travels with it. */
+export interface SecondReading {
+  /** Rooms both readings size the same. */
+  agreed: number;
+  /** Rooms the two readings size differently: the scan's room, and the other reading's size. */
+  differing: Array<{ roomId: string; other: { width: number; length: number } }>;
+  /** Rooms only the second reading has. */
+  missing: Array<{ name: string; width: number; length: number; position?: PlanBox }>;
+}
+
+export function summariseSecondReading(first: DetectedRoom[], second: DetectedRoom[]): SecondReading {
+  const { pairs, onlySecond } = pairReadings(first, second);
+  const differing = pairs.filter((pair) => !sameSize(pair.first.dimensions, pair.second.dimensions));
+  return {
+    agreed: pairs.length - differing.length,
+    differing: differing.map((pair) => ({ roomId: pair.first.id, other: pair.second.dimensions })),
+    missing: onlySecond
+      .filter((room) => room.dimensions.width > 0 && room.dimensions.length > 0)
+      .map((room) => ({ name: room.name, width: room.dimensions.width, length: room.dimensions.length, position: placed(room) ? room.position : undefined })),
+  };
+}
+
+// ─── The plan's printed sizes go into the scan ───────────────────────────────
+// When a plan prints "BEDROOM 2 / 3.6 x 4.0m" and the reader gave that room
+// another size, the printed one is right. It used to be offered as a button
+// on the review screen while the estimate started from the reader's guess,
+// so the same plan could start from a different figure on each upload.
+//
+// Only a label paired with a room of the same name, close by, is applied:
+// that pairing is sure. A label sitting inside a box of another name may be
+// the box that is misplaced, so that stays a question for the person.
+
+export function withPrintedSizes(rooms: DetectedRoom[], printed: PrintedSizes | null | undefined): { rooms: DetectedRoom[]; applied: number } {
+  if (!printed || printed.rooms.length === 0) return { rooms, applied: 0 };
+  const taken = new Set<string>();
+  const sizes = new Map<string, { width: number; length: number }>();
+  for (const label of printed.rooms) {
+    if (!hasSize(label)) continue;
+    const room = rooms
+      .filter((r) => !taken.has(r.id) && sameName(r.name, label.name) && distance(r.position, label.at) <= 8)
+      .sort((a, b) => distance(a.position, label.at) - distance(b.position, label.at))[0];
+    if (!room) continue;
+    taken.add(room.id);
+    const size = printedSizeFor(room, label);
+    if (size && !sameSize(room.dimensions, size)) sizes.set(room.id, size);
+    else if (size) sizes.set(room.id, room.dimensions);
+  }
+  let applied = 0;
+  const next = rooms.map((room) => {
+    const size = sizes.get(room.id);
+    if (!size) return room;
+    if (!sameSize(room.dimensions, size)) applied += 1;
+    return { ...room, dimensions: size, area: Math.round(size.width * size.length * 100) / 100, dimensionSource: 'printed' as const };
+  });
+  return { rooms: next, applied };
+}

@@ -10,6 +10,7 @@ import {
 import { useBoqWizardStore, type RoomInputKey } from '@/store/boqWizardStore';
 import { planToWizardRooms } from '@/lib/vision/planToWizardRooms';
 import { analyzePlanFile } from '@/lib/vision/analyzePlan';
+import { PlanReadFailure, type PlanFailureCode } from '@/lib/vision/planFailure';
 import { prepareImageForUpload } from '@/lib/compressImage';
 import { captureProductEvent } from '@/lib/productAnalytics';
 
@@ -169,36 +170,25 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
   const planInputRef = useRef<HTMLInputElement>(null);
   const [planStatus, setPlanStatus] = useState<'idle' | 'reading'>('idle');
   const [planError, setPlanError] = useState<string | null>(null);
+  /* Why the last read failed, and the file, so the person is offered a way
+     on (read it again, add the rooms, type the area) rather than a sentence. */
+  const [planFailure, setPlanFailure] = useState<{ code: PlanFailureCode; file: File } | null>(null);
   const [planSummary, setPlanSummary] = useState<
     { fileName: string; rooms: number; area: number; confidence: number } | null
   >(null);
 
-  /* The read is a real model call on a real drawing and takes anywhere from
-     20 seconds to about two minutes. A bare spinner for that long reads as a
-     hang, and a progress bar would have to invent a percentage nobody can
-     know — so this names the stage it is plausibly on and counts the seconds,
-     which is honest and still feels like movement. */
-  const PLAN_STAGES = [
-    'Reading the drawing',
-    'Finding the rooms',
-    'Measuring dimensions',
-    'Checking the structure',
-  ];
-  const [planStage, setPlanStage] = useState(0);
+  /* The read is one request: nothing reports how far along it is. So this
+     counts the seconds and says how long a read usually takes. It used to
+     name four stages in turn by the clock, which were not happening. */
   const [planElapsed, setPlanElapsed] = useState(0);
 
   useEffect(() => {
     if (planStatus !== 'reading') return;
     const started = Date.now();
     const tick = setInterval(() => {
-      const seconds = Math.floor((Date.now() - started) / 1000);
-      setPlanElapsed(seconds);
-      // Holds on the last stage rather than looping, so it never claims to
-      // start over on a slow read.
-      setPlanStage(Math.min(Math.floor(seconds / 8), PLAN_STAGES.length - 1));
+      setPlanElapsed(Math.floor((Date.now() - started) / 1000));
     }, 1000);
     return () => clearInterval(tick);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planStatus]);
 
   /* Room edits and reloads must show the values the estimate is actually
@@ -214,7 +204,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
 
   const readPlan = async (chosen: File) => {
     setPlanError(null);
-    setPlanStage(0);
+    setPlanFailure(null);
     setPlanElapsed(0);
 
     if (!PLAN_ACCEPT.split(',').includes(chosen.type)) {
@@ -237,8 +227,9 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
       }));
 
       if (mapped.rooms.length === 0 || mapped.totalArea <= 0) {
-        setPlanError('No rooms could be measured on that drawing. Try a clearer copy, or use the room builder.');
-        captureProductEvent('ai_scan_used', { tool: 'plan_upload', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'nothing_found' });
+        setPlanError('No rooms could be measured on that drawing.');
+        setPlanFailure({ code: 'unreadable', file });
+        captureProductEvent('ai_scan_used', { tool: 'plan_upload', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'nothing_found', reason: 'unreadable' });
         return;
       }
 
@@ -262,7 +253,9 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
       setPlanError(error instanceof Error
         ? error.message
         : 'That upload did not complete. Check your connection and try again.');
-      captureProductEvent('ai_scan_used', { tool: 'plan_upload', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'failed' });
+      const code = error instanceof PlanReadFailure ? error.code : 'unreadable';
+      setPlanFailure({ code, file });
+      captureProductEvent('ai_scan_used', { tool: 'plan_upload', file_kind: file.type === 'application/pdf' ? 'pdf' : 'image', outcome: 'failed', reason: code });
     } finally {
       setPlanStatus('idle');
     }
@@ -715,38 +708,49 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
             </button>
 
             {planStatus === 'reading' && (
-              <div className="mx-auto mt-5 max-w-sm" aria-live="polite">
-                <div className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-700">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75 motion-reduce:animate-none" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-600" />
-                  </span>
-                  {PLAN_STAGES[planStage]}…
-                </div>
-                <div className="mt-3 flex flex-col gap-1">
-                  {PLAN_STAGES.map((stage, index) => (
-                    <div key={stage} className="flex items-center gap-2 text-left">
-                      <span
-                        className={`h-1 flex-1 rounded-full transition-colors duration-500 ${
-                          index <= planStage ? 'bg-blue-500' : 'bg-slate-200'
-                        }`}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-3 text-xs wiz-text-muted tabular-nums">
-                  {planElapsed}s elapsed — a detailed PDF can take up to two minutes.
-                </p>
-              </div>
+              <p className="mx-auto mt-5 max-w-sm text-xs wiz-text-muted tabular-nums" role="status">
+                {planElapsed >= 45
+                  ? 'Detailed plans can take up to a minute. Still working.'
+                  : `Usually 5 to 20 seconds. ${planElapsed}s so far.`}
+              </p>
             )}
 
             {planError && (
               <div
                 role="alert"
-                className="mx-auto mt-5 flex max-w-sm items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-left"
+                className="mx-auto mt-5 max-w-sm rounded-xl border border-amber-200 bg-amber-50 p-3 text-left"
               >
-                <Warning size={16} className="mt-0.5 shrink-0 text-amber-600" />
-                <p className="text-xs leading-relaxed text-amber-900">{planError}</p>
+                <div className="flex items-start gap-2">
+                  <Warning size={16} className="mt-0.5 shrink-0 text-amber-600" aria-hidden="true" />
+                  <p className="text-xs leading-relaxed text-amber-900">{planError}</p>
+                </div>
+                {planFailure && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(planFailure.code === 'busy' || planFailure.code === 'timeout' || planFailure.code === 'network' || planFailure.code === 'cancelled') && (
+                      <button
+                        type="button"
+                        onClick={() => { captureProductEvent('plan_recovery_chosen', { tool: 'plan_upload', action: 'retry', reason: planFailure.code }); void readPlan(planFailure.file); }}
+                        className="min-h-[40px] rounded-lg bg-slate-900 px-3 text-xs font-semibold text-white hover:bg-slate-800"
+                      >
+                        Try again
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => { captureProductEvent('plan_recovery_chosen', { tool: 'plan_upload', action: 'mark_rooms', reason: planFailure.code }); setGeometryMode('detailed'); onLaunchRoomBuilder(); }}
+                      className="min-h-[40px] rounded-lg border border-amber-300 bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-amber-100"
+                    >
+                      Add the rooms yourself
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { captureProductEvent('plan_recovery_chosen', { tool: 'plan_upload', action: 'enter_area', reason: planFailure.code }); setGeometryMode('quick'); }}
+                      className="min-h-[40px] rounded-lg border border-amber-300 bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-amber-100"
+                    >
+                      Type the floor area
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

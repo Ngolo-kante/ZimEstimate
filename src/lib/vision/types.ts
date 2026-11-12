@@ -1,7 +1,7 @@
 import type { ProjectSoilType, SiteSlopeType } from '@/lib/database.types';
 import type { RoofCovering, RoofShape } from '@/lib/calculations/roofingOptions';
 import type { LaborRates } from '@/lib/calculations/laborSubstages';
-import type { PrintedSizes } from './planCheck';
+import type { PrintedSizes, SecondReading } from './planCheck';
 
 // Vision Takeoff Types
 // TypeScript interfaces for floor plan analysis and BOQ generation
@@ -56,14 +56,30 @@ export interface VisionAnalysisResult {
   imageHeight: number;
   rawResponse?: string; // For debugging
   /** 'labels' when the AI readers were all busy and the rooms were read from
-   *  the names and sizes printed on the plan; positions are then approximate. */
-  source?: 'ai' | 'labels';
+   *  the names and sizes printed on the plan; positions are then approximate.
+   *  'manual' when nothing was scanned and the person marks the rooms. */
+  source?: 'ai' | 'labels' | 'manual';
+  /**
+   * The main reader was busy and a faster, less exact one read the plan. On
+   * 2026-11-12 the main reader was busy all morning: the same two-storey plan
+   * it reads as about 92 m² came back from the backup as 62, 94 and 69 m².
+   * The person is told, and such a reading is not remembered for the file.
+   */
+  backupReader?: boolean;
   /** Reader that produced the scan; used for comparing retries, not an accuracy claim. */
   reader?: { provider: 'gemini' | 'nvidia' | 'openrouter'; model: string };
   /** Room sizes printed on the plan, for checking the scan (planCheck.ts). */
   printed?: PrintedSizes;
   /** The whole floor area the plan prints ("area=90sqm"), when it gives one (planFacts.ts). */
   statedTotalAreaM2?: number;
+  /** Where that total was read: the PDF's own text (exact) or the picture (to check). */
+  statedTotalAreaSource?: 'pdf-text' | 'ocr';
+  /**
+   * A second, independent reading of the same plan, compared with this one
+   * (planCheck.ts compareReadings). Rooms both readings size the same are
+   * borne out; the rest are for the person to check against the drawing.
+   */
+  secondReading?: SecondReading;
   /** The plan shows a stair or an upper floor. */
   multiStorey?: boolean;
 }

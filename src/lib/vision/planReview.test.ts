@@ -56,4 +56,9 @@ describe('uploaded plan review', () => {
     expect(isPlanReviewBlocked({ ...base, windows: 0 })).toBe(false);
     expect(isPlanReviewBlocked({ ...base, stages: [] })).toBe(true);
   });
+
+  it('says so when a backup reader read the plan, but not when only the labels were read', () => {
+    expect(assessPlanReview({ ...base, backupReader: true }).map((finding) => finding.id)).toEqual(['backup-reader']);
+    expect(assessPlanReview({ ...base, backupReader: true, readFromLabels: true }).map((finding) => finding.id)).toEqual(['labels']);
+  });
 });

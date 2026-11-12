@@ -68,6 +68,32 @@ describe('calling Gemini past a busy model', () => {
     expect(result.text).toBe('{"fine":true}');
   });
 
+  it('asks a model marked as worth a wait once more when it refuses at once, then moves on', async () => {
+    const patient: GeminiModelChoice[] = [{ model: 'best', timeoutMs: 5_000, busyRetries: 1, busyRetryMs: 1 }, MODELS[0]];
+    const recovered = fakeGemini({ best: [fail(503), ok('{"ok":1}')] });
+    const first = await generateWithFailover({ parts: [{ text: 'x' }], deadlineMs: 20_000, models: patient, fetchImpl: recovered.fetchImpl });
+    expect(first.model).toBe('best');
+    expect(recovered.calls.map((c) => c.model)).toEqual(['best', 'best']);
+
+    const stillBusy = fakeGemini({ best: [fail(503), fail(503)], lite: [ok('{"ok":1}')] });
+    const second = await generateWithFailover({ parts: [{ text: 'x' }], deadlineMs: 20_000, models: patient, fetchImpl: stillBusy.fetchImpl });
+    expect(second.model).toBe('lite');
+    expect(stillBusy.calls.map((c) => c.model)).toEqual(['best', 'best', 'lite']);
+  });
+
+  it('does not ask again when the model took seconds to say it was busy', async () => {
+    const patient: GeminiModelChoice[] = [{ model: 'best', timeoutMs: 5_000, busyRetries: 1, busyRetryMs: 1 }, MODELS[0]];
+    const { fetchImpl, calls } = fakeGemini({ best: [fail(503), ok('{"late":1}')], lite: [ok('{"ok":1}')] });
+    const slow = (async (...args: Parameters<typeof fetch>) => {
+      const response = await fetchImpl(...args);
+      if (String(args[0]).includes('/best:')) await new Promise((resolve) => setTimeout(resolve, 2_600));
+      return response;
+    }) as typeof fetch;
+    const result = await generateWithFailover({ parts: [{ text: 'x' }], deadlineMs: 20_000, models: patient, fetchImpl: slow });
+    expect(result.model).toBe('lite');
+    expect(calls.map((c) => c.model)).toEqual(['best', 'lite']);
+  });
+
   it('stops at once on a bad key — no other model will fix it', async () => {
     const { fetchImpl, calls } = fakeGemini({ lite: [fail(403, 'API key not valid')] });
     await expect(generateWithFailover({ parts: [{ text: 'x' }], deadlineMs: 20_000, models: MODELS, fetchImpl }))

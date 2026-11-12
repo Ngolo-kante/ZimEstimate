@@ -1,5 +1,6 @@
 import type { VisionAnalysisResult } from './types';
 import { wordsFromTextItems, type PdfWords } from './pdfWords';
+import { PlanReadFailure, cleanPartial, failureCodeFor, isWrongSheet } from './planFailure';
 
 /* The server's readers have 52 s, then may fall back to the printed labels;
    its route allows 60. Waiting a little longer than that means the browser
@@ -31,10 +32,6 @@ export function withTimeLimit<T>(operation: Promise<T>, ms: number, signal?: Abo
 
 export function shouldResizePhoto(type: string, bytes: number, width: number, height: number): boolean {
   return type.startsWith('image/') && (bytes > 3_000_000 || Math.max(width, height) > 2_400);
-}
-
-export function analysisProgress(elapsed: number): number {
-  return 96 - 84 * Math.exp(-Math.max(0, elapsed) / 22);
 }
 
 export function planResponseError(status: number, error?: unknown): string {
@@ -110,7 +107,7 @@ async function pageImageWithin(canvas: HTMLCanvasElement, budget: number): Promi
  * words printed on it, for checking the scan's sizes (pdfWords.ts). Either is
  * null if it cannot be had — the PDF is still read by the main reader.
  */
-async function readFirstPage(file: File, signal: AbortSignal): Promise<{ image: Blob | null; words: PdfWords | null; text: string }> {
+async function readFirstPage(file: File, signal: AbortSignal): Promise<{ image: Blob | null; words: PdfWords | null; text: string; pages: number }> {
   const pdfjs = await import('pdfjs-dist');
   const data = new Uint8Array(await file.arrayBuffer());
   signal.throwIfAborted();
@@ -157,14 +154,14 @@ async function readFirstPage(file: File, signal: AbortSignal): Promise<{ image: 
     canvas.width = Math.round(viewport.width);
     canvas.height = Math.round(viewport.height);
     const context = canvas.getContext('2d');
-    if (!context) return { image: null, words, text: plainText };
+    if (!context) return { image: null, words, text: plainText, pages: pdf.numPages };
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, canvas.width, canvas.height);
     await page.render({ canvas, canvasContext: context, viewport }).promise;
     signal.throwIfAborted();
     const wordsBytes = words ? JSON.stringify(words).length : 0;
     const image = await pageImageWithin(canvas, UPLOAD_LIMIT_BYTES - file.size - wordsBytes);
-    return { image, words, text: plainText };
+    return { image, words, text: plainText, pages: pdf.numPages };
   } finally {
     signal.removeEventListener('abort', cleanup);
     cleanup();
@@ -178,6 +175,10 @@ type AnalyzePlanOptions = {
   onPreviewImage?: (image: Blob) => void;
   /** Called when the readers were busy and the plan is being read again. */
   onRetry?: () => void;
+  /** "Scan this plan again": a new reading, not the one remembered for this file. */
+  fresh?: boolean;
+  /** How many pages a PDF has: only the first is drawn and checked against its printed sizes. */
+  onPageCount?: (pages: number) => void;
 };
 
 /* A busy spell on the free AI readers usually passes within seconds; 6 of the
@@ -195,7 +196,7 @@ const wait = (ms: number, signal: AbortSignal) => new Promise<void>((resolve, re
 
 export async function analyzePlanFile(
   file: File,
-  { accessToken, signal, onPreviewImage, onRetry, onPhase }: AnalyzePlanOptions = {},
+  { accessToken, signal, onPreviewImage, onRetry, onPhase, fresh, onPageCount }: AnalyzePlanOptions = {},
 ): Promise<VisionAnalysisResult> {
   const preparation = new AbortController();
   const cancelPreparation = () => preparation.abort();
@@ -207,7 +208,8 @@ export async function analyzePlanFile(
     let upload = file;
     try {
       if (file.type === 'application/pdf') {
-        const { image, words, text } = await withTimeLimit(readFirstPage(file, preparation.signal), PDF_PREPARE_TIMEOUT_MS, signal);
+        const { image, words, text, pages } = await withTimeLimit(readFirstPage(file, preparation.signal), PDF_PREPARE_TIMEOUT_MS, signal);
+        onPageCount?.(pages);
         if (image) {
           formData.append('readingCopy', image, 'page-1.jpg');
           onPreviewImage?.(image);
@@ -224,6 +226,7 @@ export async function analyzePlanFile(
     }
     signal?.throwIfAborted();
     formData.append('file', upload);
+    if (fresh) formData.append('fresh', '1');
 
     const send = async () => {
       const request = new AbortController();
@@ -257,14 +260,21 @@ export async function analyzePlanFile(
       reply = await send();
     }
     if (!reply.response.ok || !reply.result?.success) {
-      throw new Error(planResponseError(reply.response.status, reply.result?.error));
+      const { status } = reply.response;
+      throw new PlanReadFailure(planResponseError(status, reply.result?.error), failureCodeFor(status, reply.result?.code), {
+        sheet: isWrongSheet(reply.result?.sheet) ? reply.result.sheet : undefined,
+        partial: cleanPartial(reply.result?.partial),
+      });
     }
     return reply.result.data as VisionAnalysisResult;
   } catch (error) {
-    if (signal?.aborted) throw new Error('Plan reading cancelled. Your file was not lost — you can try it again.');
-    if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) throw new Error(PLAN_TIMEOUT_MESSAGE);
-    if (error instanceof TypeError) throw new Error('We could not upload your plan. Check your connection and try again, or use the manual builder.');
-    throw error instanceof Error ? error : new Error(planResponseError(0));
+    // Every failure leaves here with a code, so the screen can offer the
+    // right way forward rather than a sentence (planFailure.ts).
+    if (signal?.aborted) throw new PlanReadFailure('Plan reading cancelled. Your file was not lost — you can try it again.', 'cancelled');
+    if (error instanceof PlanReadFailure) throw error;
+    if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) throw new PlanReadFailure(PLAN_TIMEOUT_MESSAGE, 'timeout');
+    if (error instanceof TypeError) throw new PlanReadFailure('We could not upload your plan. Check your connection and try again, or use the manual builder.', 'network');
+    throw new PlanReadFailure(error instanceof Error && error.message ? error.message : planResponseError(0), 'unreadable');
   } finally {
     preparation.abort();
     signal?.removeEventListener('abort', cancelPreparation);

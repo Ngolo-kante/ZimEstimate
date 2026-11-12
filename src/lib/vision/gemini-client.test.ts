@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyGeminiError, isUsablePlanResponse, toAnalysisResult } from './gemini-client';
+import { classifyGeminiError, isUsablePlanResponse, saysNotAFloorPlan, toAnalysisResult } from './gemini-client';
 import { dimensionNeedsReview, dimensionSourceLabel } from './dimensionSource';
 
 /**
@@ -54,6 +54,32 @@ describe('accepting a plan reader reply', () => {
     expect(isUsablePlanResponse('{"rooms":[{"name":"Kitchen","width":3.6,"length":4.5}]}')).toBe(true);
     expect(isUsablePlanResponse('{"rooms":[{"name":"Kitchen"}]}')).toBe(false);
     expect(isUsablePlanResponse('{"rooms":[{"name":"Kitchen","width":0,"length":4.5}]}')).toBe(false);
+  });
+
+  it('takes the reader at its word that a picture is not a floor plan', () => {
+    expect(saysNotAFloorPlan('{"error": "This does not appear to be a floor plan", "confidence": 0}')).toBe(true);
+    expect(saysNotAFloorPlan('```json\n{"error":"Not a floor plan: satellite image","rooms":[]}\n```')).toBe(true);
+    // Rooms were read, or the failure is something else: not that verdict.
+    expect(saysNotAFloorPlan('{"error":"not a floor plan","rooms":[{"name":"Kitchen","width":3,"length":3}]}')).toBe(false);
+    expect(saysNotAFloorPlan('{"error":"Image too blurry"}')).toBe(false);
+    expect(saysNotAFloorPlan('not json')).toBe(false);
+    expect(isUsablePlanResponse('{"error": "This does not appear to be a floor plan", "confidence": 0}')).toBe(false);
+  });
+
+  it('turns away a reply whose rooms are mostly too long to be rooms', () => {
+    // A real reply: each room's place on the page written where its width belongs.
+    const misread = { rooms: [
+      { name: 'Master Bedroom', width: 25, length: 4 }, { name: 'Ensuite', width: 18, length: 3.57 },
+      { name: 'Toilet', width: 18, length: 1 }, { name: 'Kitchen', width: 24, length: 4 },
+    ] };
+    expect(isUsablePlanResponse(JSON.stringify(misread))).toBe(false);
+    // One long room in a house is believable: a verandah along the front.
+    const house = { rooms: [
+      { name: 'Lounge', width: 5.8, length: 5.4 }, { name: 'Kitchen', width: 3.9, length: 4 },
+      { name: 'Bedroom 1', width: 3.9, length: 3.1 }, { name: 'Verandah', width: 14, length: 1.7 },
+    ] };
+    expect(isUsablePlanResponse(JSON.stringify(house))).toBe(true);
+    expect(isUsablePlanResponse('{"rooms":[{"name":"Hall","width":14,"length":9}]}')).toBe(true);
   });
 
   it('keeps each room dimension origin visible and treats an omitted origin as unconfirmed', () => {

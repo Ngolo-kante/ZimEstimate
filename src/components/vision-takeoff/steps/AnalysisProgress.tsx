@@ -1,19 +1,32 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Card from '@/components/ui/Card';
 import Link from 'next/link';
-import { analysisProgress, type AnalysisPhase } from '@/lib/vision/analyzePlan';
+import { Check, FilePdf } from '@phosphor-icons/react';
+import Card from '@/components/ui/Card';
+import type { AnalysisPhase } from '@/lib/vision/analyzePlan';
 
-export default function AnalysisProgress({ onCancel, retrying = false, phase = 'preparing' }: {
+/* What the person sees while their plan is read: the plan itself, so a wrong
+   page is noticed at once, and the two things that are really happening. The
+   ring that stood here showed a percentage worked out from the clock, not
+   from the reading. */
+
+/** When a quiet "carry on without the plan" is first offered. A read usually takes 5 to 20 s. */
+const OFFER_OTHER_WAY_AFTER_S = 25;
+/** When the wait is long enough that the other way becomes the main offer. */
+const LONG_WAIT_S = 75;
+
+export default function AnalysisProgress({ onCancel, retrying = false, phase = 'preparing', planImageUrl = null, fileName }: {
   onCancel: () => void;
   retrying?: boolean;
   phase?: AnalysisPhase;
+  /** A picture of the plan being read, once there is one. */
+  planImageUrl?: string | null;
+  fileName?: string;
 }) {
   const [elapsed, setElapsed] = useState(0);
-
-  const progress = analysisProgress(elapsed);
   const preparing = phase === 'preparing';
+  const longWait = elapsed >= LONG_WAIT_S;
 
   useEffect(() => {
     const started = Date.now();
@@ -21,45 +34,42 @@ export default function AnalysisProgress({ onCancel, retrying = false, phase = '
     return () => window.clearInterval(timer);
   }, []);
 
+  const stages = [
+    { id: 'prepare', label: 'Getting your file ready', done: !preparing, active: preparing },
+    { id: 'read', label: retrying ? 'Reading the rooms and sizes again' : 'Reading the rooms and sizes', done: false, active: !preparing },
+  ];
+
   return (
     <div className="analysis-progress">
       <Card className="progress-card">
-        <div className="spinner-container">
-          <div className="spinner">
-            <svg viewBox="0 0 100 100" className="spinner-svg">
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                fill="none"
-                stroke="var(--color-border-light)"
-                strokeWidth="6"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                fill="none"
-                stroke="var(--color-accent)"
-                strokeWidth="6"
-                strokeLinecap="round"
-                strokeDasharray={`${progress * 2.83} 283`}
-                transform="rotate(-90 50 50)"
-              />
-            </svg>
-            <div className="spinner-center">
-              <span className="progress-text">{Math.round(progress)}%</span>
-            </div>
-          </div>
+        <div className="plan-preview" aria-hidden="true">
+          {planImageUrl
+            // The person's own file, from a blob URL: next/image has nothing to optimise.
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={planImageUrl} alt="" />
+            : <span className="plan-placeholder"><FilePdf size={40} weight="light" /></span>}
+          <span className="scan-sweep" />
         </div>
+        {fileName && <p className="file-name">{fileName}</p>}
 
-        <h2>{preparing ? 'Preparing your plan…' : 'Reading your plan…'}</h2>
-        <p className="subtitle">{preparing ? 'Preparing your file for upload.' : 'Extracting room dimensions and building details.'}</p>
-        <p className="time-note" role="status">{elapsed >= 75
-          ? 'This is taking much longer than usual.'
-          : elapsed >= 45
-            ? 'Detailed plans can take up to a minute — still working.'
-            : `${preparing ? 'Preparing' : 'Reading'} plan · ${Math.floor(elapsed)}s elapsed`}</p>
+        <h1 tabIndex={-1}>{preparing ? 'Preparing your plan' : 'Reading your plan'}</h1>
+
+        <ol className="stages">
+          {stages.map((stage) => (
+            <li key={stage.id} className={stage.done ? 'done' : stage.active ? 'active' : ''}>
+              <span className="marker" aria-hidden="true">{stage.done ? <Check size={12} weight="bold" /> : null}</span>
+              {stage.label}
+            </li>
+          ))}
+        </ol>
+
+        <p className="time-note" role="status">
+          {longWait
+            ? 'This is taking much longer than usual.'
+            : elapsed >= 45
+              ? 'Detailed plans can take up to a minute. Still working.'
+              : `Usually 5 to 20 seconds. ${Math.floor(elapsed)}s so far.`}
+        </p>
 
         {retrying && (
           <p className="retry-note" role="status">
@@ -67,11 +77,141 @@ export default function AnalysisProgress({ onCancel, retrying = false, phase = '
           </p>
         )}
 
-        <button type="button" className="cancel-button" onClick={onCancel}>{elapsed >= 75 ? 'Cancel' : 'Cancel and choose another file'}</button>
-        {elapsed >= 75 && <Link href="/boq/new?method=manual" className="manual-button" onClick={onCancel}>Use the manual builder</Link>}
+        <div className="choices">
+          {longWait && <Link href="/boq/new?method=manual" className="manual-button" onClick={onCancel}>Type the floor area instead</Link>}
+          <button type="button" className="cancel-button" onClick={onCancel}>{longWait ? 'Stop and choose what to do' : 'Stop reading'}</button>
+          {!longWait && elapsed >= OFFER_OTHER_WAY_AFTER_S && (
+            <p className="other-way">Stopping keeps your file. You can then read it again, mark the rooms yourself or type the floor area.</p>
+          )}
+        </div>
       </Card>
 
       <style jsx>{`
+        .analysis-progress {
+          max-width: 520px;
+          margin: 0 auto;
+          padding: var(--spacing-md) 0 var(--spacing-xl);
+        }
+
+        .analysis-progress :global(.progress-card) {
+          text-align: center;
+        }
+
+        .plan-preview {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 220px;
+          margin-bottom: 12px;
+          overflow: hidden;
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-md);
+          background: var(--color-mist);
+        }
+
+        .plan-preview img {
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+        }
+
+        .plan-placeholder {
+          color: var(--color-text-muted);
+        }
+
+        /* A soft band passing down the plan: it says "being read", nothing more. */
+        .scan-sweep {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 0;
+          height: 36%;
+          background: linear-gradient(180deg, rgba(46, 108, 246, 0), rgba(46, 108, 246, 0.16) 80%, rgba(46, 108, 246, 0.45));
+          border-bottom: 2px solid var(--color-accent);
+          transform: translateY(-100%);
+          animation: sweep 2.4s ease-in-out infinite;
+          will-change: transform;
+        }
+
+        @keyframes sweep {
+          0% { transform: translateY(-100%); }
+          100% { transform: translateY(280%); }
+        }
+
+        .file-name {
+          margin: 0 0 var(--spacing-md);
+          overflow: hidden;
+          color: var(--color-text-secondary);
+          font-size: 0.8125rem;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        h1 {
+          margin: 0 0 var(--spacing-md);
+          color: var(--color-text);
+          font-size: 1.25rem;
+          font-weight: 600;
+          outline: none;
+        }
+
+        .stages {
+          display: grid;
+          gap: 10px;
+          max-width: 320px;
+          margin: 0 auto var(--spacing-md);
+          padding: 0;
+          list-style: none;
+          text-align: left;
+        }
+
+        .stages li {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: var(--color-text-secondary);
+          font-size: 0.9375rem;
+        }
+
+        .stages li.active {
+          color: var(--color-text);
+          font-weight: 600;
+        }
+
+        .marker {
+          display: inline-flex;
+          flex: none;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+          border: 2px solid var(--color-border-dark);
+          border-radius: 50%;
+          color: var(--color-text-inverse);
+        }
+
+        .done .marker {
+          border-color: var(--color-emerald);
+          background: var(--color-emerald);
+        }
+
+        .active .marker {
+          border-color: var(--color-accent-muted);
+          border-top-color: var(--color-accent);
+          animation: turn 0.9s linear infinite;
+        }
+
+        @keyframes turn {
+          to { transform: rotate(360deg); }
+        }
+
+        .time-note {
+          margin: 0;
+          color: var(--color-text-secondary);
+          font-size: 0.8125rem;
+        }
+
         .retry-note {
           margin: 12px 0 0;
           border-radius: 10px;
@@ -80,105 +220,77 @@ export default function AnalysisProgress({ onCancel, retrying = false, phase = '
           color: #8a5300;
           font-size: 0.85rem;
           line-height: 1.45;
-          text-align: center;
         }
 
-        .analysis-progress {
-          max-width: 500px;
-          margin: 0 auto;
-          padding: var(--spacing-xl) 0;
-        }
-
-        .progress-card :global(.card) {
-          text-align: center;
-          padding: var(--spacing-2xl);
-        }
-
-        .spinner-container {
+        .choices {
           display: flex;
-          justify-content: center;
-          margin-bottom: var(--spacing-xl);
-        }
-
-        .spinner {
-          position: relative;
-          width: 120px;
-          height: 120px;
-        }
-
-        .spinner-svg {
-          width: 100%;
-          height: 100%;
-          animation: rotate 2s linear infinite;
-        }
-
-        @keyframes rotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        .spinner-center {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-        }
-
-        .progress-text {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: var(--color-text);
-        }
-
-        h2 {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: var(--color-text);
-          margin: 0 0 var(--spacing-xs) 0;
-        }
-
-        .subtitle {
-          font-size: 0.875rem;
-          color: var(--color-text-secondary);
-          margin: 0 0 var(--spacing-sm) 0;
-        }
-
-        .time-note {
-          margin: 0 0 var(--spacing-xl);
-          color: var(--color-text-muted);
-          font-family: var(--font-mono);
-          font-size: 0.72rem;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          margin-top: var(--spacing-lg);
         }
 
         .analysis-progress :global(.manual-button) {
-          display: inline-block;
-          margin: 12px;
-          padding: 10px 14px;
+          display: inline-flex;
+          align-items: center;
+          min-height: 44px;
+          padding: 0 18px;
           border-radius: var(--radius-md);
           background: var(--color-accent);
           color: white;
-          font-size: 0.875rem;
+          font-size: 0.9375rem;
           font-weight: 600;
           text-decoration: none;
         }
 
         .cancel-button {
-          margin-top: var(--spacing-lg);
-          padding: 9px 12px;
-          color: var(--color-text-secondary);
+          min-height: 44px;
+          padding: 0 16px;
+          border: 1px solid var(--color-border-dark);
+          border-radius: var(--radius-md);
           background: transparent;
-          border: 0;
-          border-bottom: 1px solid var(--color-border-light);
-          font-size: 0.75rem;
-          font-weight: 700;
+          color: var(--color-slate-light);
+          font: inherit;
+          font-size: 0.875rem;
+          font-weight: 600;
           cursor: pointer;
         }
 
         .cancel-button:hover {
+          border-color: var(--color-primary);
           color: var(--color-primary);
-          border-bottom-color: var(--color-primary);
         }
 
+        .cancel-button:focus-visible,
+        .analysis-progress :global(.manual-button:focus-visible) {
+          outline: 2px solid var(--color-accent);
+          outline-offset: 2px;
+        }
+
+        .other-way {
+          max-width: 360px;
+          margin: 0;
+          color: var(--color-text-secondary);
+          font-size: 0.8125rem;
+          line-height: 1.45;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .scan-sweep {
+            display: none;
+          }
+
+          .active .marker {
+            animation: none;
+            border-color: var(--color-accent);
+          }
+        }
+
+        @media (max-width: 520px) {
+          .plan-preview {
+            height: 180px;
+          }
+        }
       `}</style>
     </div>
   );

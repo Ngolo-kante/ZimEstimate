@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  analysisProgress, analyzePlanFile, BUSY_RETRY_DELAY_MS, PDF_PREPARE_TIMEOUT_MS,
+  analyzePlanFile, BUSY_RETRY_DELAY_MS, PDF_PREPARE_TIMEOUT_MS,
   PLAN_ANALYSIS_TIMEOUT_MS, PLAN_TIMEOUT_MESSAGE, planResponseError,
   shouldResizePhoto, withTimeLimit,
 } from './analyzePlan';
@@ -68,20 +68,6 @@ describe('photo resizing decision', () => {
     expect(shouldResizePhoto('image/jpeg', 3_000_001, 1200, 800)).toBe(true);
     expect(shouldResizePhoto('image/png', 100, 2401, 800)).toBe(true);
     expect(shouldResizePhoto('image/png', 100, 800, 2401)).toBe(true);
-  });
-});
-
-describe('progress estimate', () => {
-  it('starts at 12, keeps creeping, and never reaches 100', () => {
-    expect(analysisProgress(0)).toBeCloseTo(12);
-    let previous = analysisProgress(0);
-    for (let seconds = 1; seconds <= 200; seconds++) {
-      const progress = analysisProgress(seconds);
-      expect(progress).toBeGreaterThan(previous);
-      expect(progress).toBeLessThan(100);
-      previous = progress;
-    }
-    expect(analysisProgress(1_000_000)).toBeLessThan(100);
   });
 });
 

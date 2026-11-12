@@ -29,6 +29,8 @@ export type ReadRequest = {
   maxOutputTokens: number;
   deadlineMs: number;
   accept: (text: string) => boolean;
+  /** Stops every reader, e.g. when the plan turns out not to be a floor plan. */
+  signal?: AbortSignal;
 };
 
 export type ReadResult = { text: string; provider: 'gemini' | 'nvidia' | 'openrouter'; model: string };
@@ -52,6 +54,8 @@ export async function readWithFirstAvailable(request: ReadRequest): Promise<Read
   const remaining = () => request.deadlineMs - (Date.now() - started);
   const done = new AbortController();
   const errors: unknown[] = [];
+  if (request.signal?.aborted) done.abort();
+  else request.signal?.addEventListener('abort', () => done.abort(), { once: true });
 
   const usable = (text: string) => {
     if (!request.accept(text)) throw new GeminiCallError('Reply was not usable', 502);
@@ -63,7 +67,9 @@ export async function readWithFirstAvailable(request: ReadRequest): Promise<Read
   if (process.env.GOOGLE_GEMINI_API_KEY) readers.push(
     generateWithFailover({
       parts: [{ text: request.prompt }, { inlineData: { mimeType: request.original.mimeType, data: request.original.base64 } }] as GeminiPart[],
-      generationConfig: { responseMimeType: 'application/json', temperature: 0.1, maxOutputTokens: request.maxOutputTokens },
+      // Temperature 0: the same plan should give the same reading as far as
+      // the model allows. It is a reading task; there is nothing to vary.
+      generationConfig: { responseMimeType: 'application/json', temperature: 0, maxOutputTokens: request.maxOutputTokens },
       deadlineMs: request.deadlineMs,
       accept: request.accept,
       signal: done.signal,

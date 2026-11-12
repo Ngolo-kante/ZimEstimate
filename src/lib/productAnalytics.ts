@@ -13,7 +13,8 @@ export type ProductAnalyticsEvent =
   | 'shared_link_opened'
   | 'estimate_saved'
   | 'pdf_exported'
-  | 'ai_scan_used';
+  | 'ai_scan_used'
+  | 'plan_recovery_chosen';
 
 type AnalyticsProperties = Record<
   string,

@@ -27,7 +27,10 @@ function getWorker(): Promise<Worker> {
   return worker;
 }
 
-export async function readPlanLabels(copy: ReadingCopy): Promise<LabelledRoom[]> {
+/** Every word read off the picture of a plan, with the size its positions are measured in. */
+export type PlanWords = { words: OcrWord[]; width: number; height: number };
+
+export async function readPlanWords(copy: ReadingCopy): Promise<PlanWords> {
   const run = async () => {
     // Small text reads better a little larger and in grey.
     const scale = copy.width < 1_400 ? 2 : 1;
@@ -44,10 +47,15 @@ export async function readPlanLabels(copy: ReadingCopy): Promise<LabelledRoom[]>
         }
       }
     }
-    return roomsFromWords(words, { width: copy.width * scale, height: copy.height * scale });
+    return { words, width: copy.width * scale, height: copy.height * scale };
   };
   return Promise.race([
     run(),
-    new Promise<LabelledRoom[]>((_, reject) => setTimeout(() => reject(new Error('OCR took too long')), OCR_TIMEOUT_MS)),
+    new Promise<PlanWords>((_, reject) => setTimeout(() => reject(new Error('OCR took too long')), OCR_TIMEOUT_MS)),
   ]);
+}
+
+export async function readPlanLabels(copy: ReadingCopy): Promise<LabelledRoom[]> {
+  const read = await readPlanWords(copy);
+  return roomsFromWords(read.words, read);
 }

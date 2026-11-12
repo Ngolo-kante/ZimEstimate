@@ -1,96 +1,42 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Calculator } from '@phosphor-icons/react';
 import Card from '@/components/ui/Card';
-import {
-  Calculator,
-  Wall,
-  Shovel,
-  HouseLine,
-  PaintBucket,
-} from '@phosphor-icons/react';
 
-const CALCULATION_ITEMS = [
-  { id: 'foundation', label: 'Foundation materials', icon: Shovel },
-  { id: 'walls', label: 'Wall bricks & mortar', icon: Wall },
-  { id: 'structure', label: 'Structural elements', icon: HouseLine },
-  { id: 'finishes', label: 'Finishes & fittings', icon: PaintBucket },
-];
+/* A short beat between choosing materials and seeing the estimate. The BOQ
+   is already worked out by the time this shows (useVisionTakeoff), so every
+   figure here is the plan's own. It used to count up random numbers of
+   bricks, cement bags and tonnes of sand for two and a half seconds. */
 
-export default function CalculationAnimation() {
-  const [currentItem, setCurrentItem] = useState(0);
-  const [counts, setCounts] = useState<Record<string, number>>({
-    bricks: 0,
-    cement: 0,
-    sand: 0,
-  });
-
-  useEffect(() => {
-    // Animate through calculation items
-    const itemTimer = setInterval(() => {
-      setCurrentItem((prev) => (prev + 1) % CALCULATION_ITEMS.length);
-    }, 600);
-
-    // Animate counting numbers
-    const countTimer = setInterval(() => {
-      setCounts((prev) => ({
-        bricks: Math.min(prev.bricks + Math.floor(Math.random() * 500), 12500),
-        cement: Math.min(prev.cement + Math.floor(Math.random() * 5), 85),
-        sand: Math.min(prev.sand + Math.floor(Math.random() * 2), 24),
-      }));
-    }, 100);
-
-    return () => {
-      clearInterval(itemTimer);
-      clearInterval(countTimer);
-    };
-  }, []);
+export default function CalculationAnimation({ rooms, floorAreaM2, lines }: {
+  rooms: number;
+  floorAreaM2: number;
+  /** Lines in the bill of quantities just made. */
+  lines: number;
+}) {
+  const figures = [
+    { label: rooms === 1 ? 'Room' : 'Rooms', value: rooms.toLocaleString() },
+    { label: 'Floor area', value: `${Math.round(floorAreaM2).toLocaleString()} m²` },
+    { label: 'Items priced', value: lines.toLocaleString() },
+  ];
 
   return (
-    <div className="calculation-animation">
+    <div className="calculation-animation" role="status">
       <Card>
-        <div className="calc-icon">
-          <Calculator size={48} weight="light" />
+        <div className="calc-icon" aria-hidden="true">
+          <Calculator size={40} weight="light" />
         </div>
 
-        <h2>Generating Bill of Quantities</h2>
-        <p className="subtitle">Calculating materials based on your floor plan and configuration</p>
+        <h1 tabIndex={-1}>Pricing your plan</h1>
 
-        <div className="items-list">
-          {CALCULATION_ITEMS.map((item, index) => {
-            const IconComponent = item.icon;
-            const isActive = index === currentItem;
-            const isPast = index < currentItem;
-
-            return (
-              <div
-                key={item.id}
-                className={`calc-item ${isActive ? 'active' : ''} ${isPast ? 'past' : ''}`}
-              >
-                <div className="item-icon">
-                  <IconComponent size={20} weight={isActive ? 'fill' : 'light'} />
-                </div>
-                <span className="item-label">{item.label}</span>
-                {isActive && <div className="item-progress" />}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="live-counts">
-          <div className="count-item">
-            <span className="count-value">{counts.bricks.toLocaleString()}</span>
-            <span className="count-label">Bricks</span>
-          </div>
-          <div className="count-item">
-            <span className="count-value">{counts.cement}</span>
-            <span className="count-label">Cement bags</span>
-          </div>
-          <div className="count-item">
-            <span className="count-value">{counts.sand}</span>
-            <span className="count-label">Sand (tonnes)</span>
-          </div>
-        </div>
+        <dl className="figures">
+          {figures.map((figure) => (
+            <div key={figure.label} className="figure">
+              <dd>{figure.value}</dd>
+              <dt>{figure.label}</dt>
+            </div>
+          ))}
+        </dl>
       </Card>
 
       <style jsx>{`
@@ -102,140 +48,58 @@ export default function CalculationAnimation() {
 
         .calculation-animation :global(.card) {
           text-align: center;
-          padding: var(--spacing-2xl);
+          padding: var(--spacing-2xl) var(--spacing-lg);
         }
 
         .calc-icon {
-          width: 80px;
-          height: 80px;
-          margin: 0 auto var(--spacing-lg);
-          border-radius: var(--radius-full);
-          background: rgba(78, 154, 247, 0.12);
           display: flex;
           align-items: center;
           justify-content: center;
+          width: 72px;
+          height: 72px;
+          margin: 0 auto var(--spacing-md);
+          border: 1px solid rgba(46, 108, 246, 0.2);
+          border-radius: var(--radius-full);
+          background: var(--color-accent-muted);
           color: var(--color-accent);
-          animation: pulse-icon 1s ease-in-out infinite;
-          border: 1px solid rgba(78, 154, 247, 0.2);
         }
 
-        @keyframes pulse-icon {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-
-        h2 {
+        h1 {
+          margin: 0 0 var(--spacing-lg);
+          color: var(--color-text);
           font-size: 1.25rem;
           font-weight: 600;
-          color: var(--color-text);
-          margin: 0 0 var(--spacing-xs) 0;
+          outline: none;
         }
 
-        .subtitle {
-          font-size: 0.875rem;
-          color: var(--color-text-secondary);
-          margin: 0 0 var(--spacing-xl) 0;
-        }
-
-        .items-list {
-          display: flex;
-          flex-direction: column;
-          gap: var(--spacing-sm);
-          margin-bottom: var(--spacing-xl);
-        }
-
-        .calc-item {
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-md);
-          padding: var(--spacing-sm) var(--spacing-md);
-          background: rgba(6, 20, 47, 0.02);
-          border-radius: var(--radius-md);
-          transition: all 0.3s ease;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .calc-item.active {
-          background: rgba(78, 154, 247, 0.12);
-        }
-
-        .calc-item.past {
-          opacity: 0.5;
-        }
-
-        .item-icon {
-          width: 32px;
-          height: 32px;
-          border-radius: var(--radius-md);
-          background: #ffffff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--color-text-muted);
-          transition: all 0.3s ease;
-          border: 1px solid var(--color-border-light);
-        }
-
-        .calc-item.active .item-icon {
-          background: var(--color-accent);
-          color: white;
-        }
-
-        .item-label {
-          font-size: 0.875rem;
-          color: var(--color-text-secondary);
-          flex: 1;
-          text-align: left;
-        }
-
-        .calc-item.active .item-label {
-          color: var(--color-text);
-          font-weight: 500;
-        }
-
-        .item-progress {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          height: 2px;
-          background: var(--color-accent);
-          animation: progress 0.6s linear;
-        }
-
-        @keyframes progress {
-          from { width: 0; }
-          to { width: 100%; }
-        }
-
-        .live-counts {
+        .figures {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: var(--spacing-md);
-          padding: var(--spacing-lg);
-          background: rgba(6, 20, 47, 0.02);
+          gap: var(--spacing-sm);
+          margin: 0;
+          padding: var(--spacing-md);
+          border: 1px solid var(--color-border);
           border-radius: var(--radius-md);
-          border: 1px solid var(--color-border-light);
+          background: var(--color-mist);
         }
 
-        .count-item {
+        .figure {
           display: flex;
           flex-direction: column;
           gap: 2px;
         }
 
-        .count-value {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: var(--color-accent);
+        dd {
+          margin: 0;
+          color: var(--color-text);
+          font-size: 1.125rem;
+          font-weight: 700;
           font-variant-numeric: tabular-nums;
         }
 
-        .count-label {
-          font-size: 0.625rem;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          color: var(--color-text-muted);
+        dt {
+          color: var(--color-text-secondary);
+          font-size: 0.75rem;
         }
       `}</style>
     </div>
