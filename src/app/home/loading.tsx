@@ -15,15 +15,15 @@ export default function HomeLoading() {
               <div className={`${s.bone} ${s.eyebrow}`} />
               <div className={`${s.bone} ${s.headingLine}`} />
               <div className={`${s.bone} ${s.headingLine}`} />
+              <div className={`${s.bone} ${s.headingLine}`} />
               <div className={`${s.bone} ${s.subLine}`} />
               <div className={s.heroButtons}>
-                <div className={`${s.bone} ${s.btnSkeleton}`} />
                 <div className={s.btnRow}>
-                  <div className={`${s.bone} ${s.btnRowItem}`} />
                   <div className={`${s.bone} ${s.btnRowItem}`} />
                   <div className={`${s.bone} ${s.btnRowItem}`} />
                 </div>
               </div>
+              <div className={`${s.bone} ${s.stageLine}`} />
             </div>
             <div className={s.heroBudget}>
               <div className={s.widgetBox}>

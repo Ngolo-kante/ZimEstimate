@@ -507,6 +507,21 @@ function BoqNewPageContent() {
           freshStore.setProjectScope('stage');
           freshStore.setSelectedStages([]);
         }
+        /* What the person said when they described their project on the
+           home page (lib/describe/routeProject.ts): floor area, double
+           storey, and urban, peri-urban or rural. The chips there promised
+           these would be filled in, and the link used to carry none. Each is
+           checked again here, as any value in a link must be. */
+        const said = new URLSearchParams(window.location.search);
+        const area = Number(said.get('area'));
+        const loc = said.get('loc');
+        const fromDescription: Partial<ProjectDetailsState> = {};
+        if (Number.isFinite(area) && area > 0 && area <= 5000) fromDescription.floorPlanSize = String(Math.round(area));
+        if (said.get('floors') === '2') fromDescription.buildingType = 'double_storey';
+        if (loc === 'urban' || loc === 'peri-urban' || loc === 'rural') fromDescription.locationType = loc;
+        if (Object.keys(fromDescription).length > 0) freshStore.updateProjectDetails(fromDescription);
+        // A stated floor area is the "enter the area" way of sizing the house.
+        if (fromDescription.floorPlanSize) freshStore.setGeometryMode('quick');
         router.replace(`/boq/new?method=manual${presetFromUrl ? `&preset=${presetFromUrl}` : ''}`);
         return;
       }

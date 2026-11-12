@@ -442,3 +442,176 @@
     min-height: 270px;
   }
 }
+
+/* ─── In line with the redrawn home page (home.module.css) ─────────────────
+   The hero is a ruled navy sheet with the budget check hanging off its
+   bottom edge, and the ways in are a tall lead card with three beside it.
+   These follow that geometry so nothing jumps when the page arrives. */
+
+.page {
+  background: #fbfaf7;
+}
+
+.hero {
+  height: auto;
+  min-height: 0;
+  background:
+    radial-gradient(900px 520px at 82% 38%, rgba(46, 108, 246, 0.26), transparent 62%),
+    linear-gradient(180deg, var(--color-primary) 0%, #071428 100%);
+}
+
+.heroInner {
+  grid-template-columns: minmax(0, 1.05fr) minmax(400px, 0.78fr);
+  gap: 64px;
+  padding-block: 72px 0;
+}
+
+.heroCopy {
+  padding-bottom: 76px;
+}
+
+.headingLine {
+  height: 58px;
+  border-radius: 8px;
+}
+
+.headingLine:nth-child(2) {
+  width: 62%;
+}
+
+.headingLine:nth-child(3) {
+  width: 78%;
+}
+
+.headingLine:nth-child(4) {
+  width: 70%;
+}
+
+.btnRow {
+  grid-template-columns: repeat(2, minmax(0, 200px));
+}
+
+.btnRowItem {
+  height: 54px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.stageLine {
+  width: min(100%, 600px);
+  height: 36px;
+  margin-top: 22px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.heroBudget {
+  max-width: 480px;
+  align-self: end;
+  margin-bottom: -64px;
+}
+
+.widgetBox {
+  border-radius: 22px;
+}
+
+.startSection {
+  padding: 136px 0 88px;
+  background: #fbfaf7;
+  border-bottom: 0;
+}
+
+.startGrid {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.card {
+  min-height: 150px;
+  border: 1px solid #e4e1d8;
+  border-radius: 18px;
+}
+
+.card:nth-child(1) {
+  grid-row: 1 / span 2;
+  border-color: transparent;
+  background: var(--color-primary);
+}
+
+.card:nth-child(1) .bone {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.card:nth-child(4) {
+  grid-column: 2 / span 2;
+}
+
+@media (max-width: 1080px) {
+  .heroInner {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    padding-block: 56px 60px;
+  }
+
+  .heroCopy {
+    padding-bottom: 0;
+  }
+
+  .heroBudget {
+    max-width: 560px;
+    justify-self: start;
+    margin-bottom: 0;
+  }
+
+  .startSection {
+    padding-top: 80px;
+  }
+}
+
+@media (max-width: 900px) {
+  .startGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .card:nth-child(1),
+  .card:nth-child(4) {
+    grid-row: auto;
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .heroInner {
+    gap: 26px;
+    padding-block: 30px 36px;
+  }
+
+  .headingLine {
+    height: 38px;
+  }
+
+  .btnRow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stageLine {
+    display: none;
+  }
+
+  .heroBudget {
+    max-width: none;
+  }
+
+  .startSection {
+    padding: 52px 0 56px;
+  }
+
+  .startGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    min-height: 0;
+    border-radius: 16px;
+  }
+}

@@ -31,15 +31,14 @@ export default function DescribeProject({
   const [route, setRoute] = useState<ProjectRoute | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (text.trim().length < 3 || busy) return;
+  const read = async (sentence: string) => {
+    if (sentence.trim().length < 3 || busy) return;
     setBusy(true); setRoute(null); setMessage(null);
     try {
       const response = await fetch('/api/describe-project', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: text.trim() }),
+        body: JSON.stringify({ text: sentence.trim() }),
       });
       const result = await response.json();
       if (!result.success) throw new Error(result.error);
@@ -52,6 +51,11 @@ export default function DescribeProject({
     } finally {
       setBusy(false);
     }
+  };
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    void read(text);
   };
 
   return (
@@ -79,7 +83,9 @@ export default function DescribeProject({
       {!route && !message && !busy && (
         <div className={styles.examples}>
           {EXAMPLES.slice(1).map((example) => (
-            <button key={example} type="button" onClick={() => setText(example)}>{example}</button>
+            // An example is read as soon as it is chosen: it used to only fill
+            // the box, and the result waited on a second press of Go.
+            <button key={example} type="button" onClick={() => { setText(example); void read(example); }}>{example}</button>
           ))}
         </div>
       )}

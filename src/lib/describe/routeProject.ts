@@ -23,6 +23,7 @@ export type ProjectKind =
   | 'paving'
   | 'quote_check'
   | 'floor_plan'
+  | 'material_prices'
   | 'unclear';
 
 export interface ProjectIntent {
@@ -34,6 +35,8 @@ export interface ProjectIntent {
   setting: 'urban' | 'peri-urban' | 'rural' | null;
   /** "cheap", "basic" → economy; anything else is the standard build. */
   economy: boolean;
+  /** Two when they say double storey, two storey or upstairs; otherwise not said. */
+  storeys?: 2 | null;
   solarPriority: 'economy' | 'balanced' | 'quality' | null;
   boreholeDepthM: number | null;
   boreholeCommercial: boolean;
@@ -60,24 +63,37 @@ export function routeProject(intent: ProjectIntent): ProjectRoute | null {
   const understood: string[] = [];
   if (budget) understood.push(`${usd(budget)} budget`);
 
+  /* "What we understood" is a promise: each thing listed there is filled in
+     on the page that opens. A borehole's town and depth used to be listed
+     and then dropped when no budget was given, and a house's floor area,
+     site and economy build likewise on the way to the builder. Whatever a
+     destination cannot take is no longer listed. */
   switch (intent.kind) {
     case 'house':
     case 'house_stages': {
+      const double = intent.storeys === 2;
       if (area) understood.push(`${area} m² floor area`);
+      if (double) understood.push('Double storey');
       if (intent.setting) understood.push(intent.setting === 'peri-urban' ? 'Peri-urban site' : `${intent.setting[0].toUpperCase()}${intent.setting.slice(1)} site`);
-      if (intent.economy) understood.push('Economy build');
       if (budget) {
         // With a budget the question is "how far does it go", which the
         // budget check answers by stage.
         const params = new URLSearchParams({ budget: String(budget) });
         if (area) params.set('area', String(area));
+        if (double) params.set('floors', '2');
         if (intent.setting) params.set('loc', intent.setting);
-        if (intent.economy) params.set('profile', 'economy');
+        if (intent.economy) { params.set('profile', 'economy'); understood.push('Economy build'); }
         return { href: `/quick-budget?${params}`, destination: 'House budget check', understood: ['House', ...understood] };
       }
+      // The builder takes the same three from its link (boq/new/page.tsx).
+      // It has no economy build to set, so that is not listed here.
       const stages = intent.kind === 'house_stages';
+      const params = new URLSearchParams({ method: 'manual', fresh: '1', preset: stages ? 'building_in_stages' : 'full_house' });
+      if (area) params.set('area', String(area));
+      if (double) params.set('floors', '2');
+      if (intent.setting) params.set('loc', intent.setting);
       return {
-        href: `/boq/new?method=manual&fresh=1&preset=${stages ? 'building_in_stages' : 'full_house'}`,
+        href: `/boq/new?${params}`,
         destination: stages ? 'Estimate by stage' : 'Full house estimate',
         understood: [stages ? 'House, built in stages' : 'House', ...understood],
       };
@@ -95,10 +111,11 @@ export function routeProject(intent: ProjectIntent): ProjectRoute | null {
       const town = intent.place?.trim().toLowerCase().replace(/\s+/g, '') ?? '';
       const location = town && town !== 'other' && Object.hasOwn(LOCATION_DEFAULTS, town) ? town : null;
       const depth = sane(intent.boreholeDepthM, 300);
+      // The borehole estimate asks its own questions and takes nothing from a link.
+      if (!budget) return { href: '/quick-projects/borehole', destination: 'Borehole estimate', understood: ['Borehole'] };
       if (location) understood.push(location[0].toUpperCase() + location.slice(1));
       if (depth) understood.push(`${depth} m deep`);
       if (intent.boreholeCommercial) understood.push('Commercial use');
-      if (!budget) return { href: '/quick-projects/borehole', destination: 'Borehole estimate', understood: ['Borehole', ...understood] };
       const params = new URLSearchParams({ mode: 'borehole', budget: String(budget) });
       if (location) params.set('location', location);
       if (depth) params.set('depth', String(depth));
@@ -123,6 +140,8 @@ export function routeProject(intent: ProjectIntent): ProjectRoute | null {
       return { href: '/ai/quote-check', destination: 'Check a quote', understood: ['Checking a quote'] };
     case 'floor_plan':
       return { href: '/ai/vision-takeoff', destination: 'Read my floor plan', understood: ['Pricing from a floor plan'] };
+    case 'material_prices':
+      return { href: '/market-insights', destination: 'Material prices', understood: ['Material prices'] };
     default:
       return null;
   }

@@ -9,7 +9,7 @@ import type { ProjectIntent, ProjectKind } from './routeProject';
  */
 
 const KINDS: ProjectKind[] = [
-  'house', 'house_stages', 'solar', 'borehole', 'water_tank', 'septic', 'fencing', 'paving', 'quote_check', 'floor_plan', 'unclear',
+  'house', 'house_stages', 'solar', 'borehole', 'water_tank', 'septic', 'fencing', 'paving', 'quote_check', 'floor_plan', 'material_prices', 'unclear',
 ];
 
 export const MAX_DESCRIPTION_LENGTH = 500;
@@ -22,9 +22,11 @@ Fields:
   "house" = build a house or extension; "house_stages" = they say they will build in stages / phases or only want one stage (e.g. foundation, slab, roofing).
   "quote_check" = they have a quote or price from a builder or shop and want to know if it is fair.
   "floor_plan" = they have a building plan or drawing to price.
+  "material_prices" = they only ask what a building material costs (cement, bricks, roofing sheets, sand), with no project to price.
   "unclear" = not a building project, or you cannot tell which.
 - "budgetUsd": their budget or amount to spend in US dollars, as a number ("5k" = 5000). null if not stated or not in US dollars.
 - "floorAreaM2": house floor area in square metres if stated. null otherwise. Do not work it out from bedrooms.
+- "storeys": 2 only if they say double storey, two storey, two floors or upstairs. null otherwise.
 - "place": the town or city if stated (e.g. "Harare"), else null.
 - "setting": "urban", "peri-urban" or "rural" only if they say so in words: "rural", "farm", "kumusha", "communal land" mean rural; "peri-urban" means peri-urban; "in town" or "in the city" means urban. A place name alone is not enough: null.
 - "economy": true only if they ask for cheap, basic or low-cost building.
@@ -58,6 +60,7 @@ export function parseIntent(raw: unknown): ProjectIntent {
     place: typeof r.place === 'string' && r.place.trim() ? r.place.trim().slice(0, 60) : null,
     setting,
     economy: r.economy === true,
+    storeys: Number(r.storeys) === 2 ? 2 : null,
     solarPriority: priority,
     boreholeDepthM: num(r.boreholeDepthM),
     boreholeCommercial: r.boreholeCommercial === true,
