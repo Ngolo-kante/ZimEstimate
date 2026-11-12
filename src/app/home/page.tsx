@@ -19,6 +19,10 @@ import SignedInEntryRedirect from '@/components/home/SignedInEntryRedirect';
 import FeatureShowcase from '@/components/home/FeatureShowcase';
 import styles from './home.module.css';
 
+/* The six stages every estimate is priced in, in building order: the same
+   six the budget check beside them fills in. */
+const BUILD_STAGES = ['Foundation', 'Walls', 'Roof', 'Finishes', 'Plumbing & power', 'Outside'];
+
 const estimateStarts = [
   {
     title: 'Answer guided questions',
@@ -61,12 +65,14 @@ export default function HomePage() {
       <SignedInEntryRedirect />
       <div className={styles.page}>
         <section className={styles.hero} aria-labelledby="home-heading">
+          <div className={styles.heroGrid} aria-hidden="true" />
           <div className={styles.heroInner}>
             <div className={styles.heroCopy}>
-              <h1 id="home-heading">Construction estimates built for Zimbabwe.</h1>
-              <p>
-                Know what your build needs and what it could cost. Create an itemised
-                estimate, compare prices, and keep your project on track.
+              <p className={styles.eyebrow}>Construction estimates · Zimbabwe</p>
+              <h1 id="home-heading">Know the cost before you <em>lay a brick.</em></h1>
+              <p className={styles.heroLead}>
+                Every material and every stage of your build, listed and priced for
+                Zimbabwe. See how far your money goes before you spend any of it.
               </p>
 
               <div className={styles.heroActions}>
@@ -88,9 +94,18 @@ export default function HomePage() {
               </Link>
 
               <div className={styles.heroAssurances} aria-label="Estimate benefits">
-                <span><CheckCircle size={17} weight="fill" /> Start without an account</span>
-                <span><ShieldCheck size={17} weight="fill" /> Your project stays private</span>
+                <span><CheckCircle size={17} weight="fill" aria-hidden="true" /> Start without an account</span>
+                <span><ShieldCheck size={17} weight="fill" aria-hidden="true" /> Your project stays private</span>
               </div>
+
+              <ol className={styles.stageLine} aria-label="Every estimate is priced in six stages">
+                {BUILD_STAGES.map((stage, index) => (
+                  <li key={stage}>
+                    <span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                    {stage}
+                  </li>
+                ))}
+              </ol>
             </div>
             <div className={styles.heroBudget}>
               <HeroBudgetWidget />
@@ -102,7 +117,7 @@ export default function HomePage() {
           <div className={styles.sectionInner}>
             <div className={styles.startHeader}>
               <div>
-                <span className={styles.sectionIndex}>Start from what you have</span>
+                <span className={styles.sectionIndex}>01 · Start from what you have</span>
                 <h2 id="start-heading">What are you starting with?</h2>
               </div>
               <p>Choose a guided build, bring an existing plan or document, or price a smaller project in minutes.</p>
@@ -158,6 +173,7 @@ export default function HomePage() {
         <section className={styles.closingSection} aria-labelledby="closing-heading">
           <div className={`${styles.closingInner} ${styles.closingGrid}`}>
             <div>
+              <span className={styles.eyebrow}>03 · Your turn</span>
               <h2 id="closing-heading">Put the first reliable number on your project.</h2>
               <p>No account needed to start. Sign in when you want to save it.</p>
               <Link href="/estimate" className={styles.closingButton}>

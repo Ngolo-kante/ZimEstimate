@@ -206,7 +206,7 @@ export default function FeatureShowcase() {
     >
       <div className={styles.inner}>
         <div className={styles.header}>
-          <span className={styles.eyebrow}>Everything after the estimate</span>
+          <span className={styles.eyebrow}>02 · Everything after the estimate</span>
           <h2 id="showcase-heading">The estimate does not end at a PDF.</h2>
           <p>Run the build from the same project — even when you are building from abroad.</p>
         </div>

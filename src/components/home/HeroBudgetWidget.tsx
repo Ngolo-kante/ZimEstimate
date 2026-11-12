@@ -75,7 +75,7 @@ function BuildingHouse({ coverage, complete }: { coverage: Record<string, number
       preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-label="Illustration of a house building up stage by stage as the budget increases"
-      className="block h-[116px] w-full sm:h-28 md:h-32 lg:h-36"
+      className="block h-[128px] w-full sm:h-36 lg:h-44"
     >
       {/* Ground */}
       <line x1="10" y1="126" x2="210" y2="126" stroke="#CBD5E1" strokeWidth="2" strokeLinecap="round" />
@@ -217,7 +217,10 @@ export default function HeroBudgetWidget() {
   const coverage = useMemo(() => {
     const map: Record<string, number> = {};
     estimate?.rows.forEach((row) => {
-      map[row.id] = row.coveragePercent;
+      // A stage with nothing in it to pay for (the boundary wall and paving
+      // are left to add later by default) reports itself complete. Drawn
+      // like that, the wall stood finished at $1; it is not drawn at all.
+      map[row.id] = row.stageCostUsd > 0 ? row.coveragePercent : 0;
     });
     return map;
   }, [estimate]);
@@ -243,21 +246,21 @@ export default function HeroBudgetWidget() {
     : '';
 
   return (
-    <div className="hero-preview relative w-full overflow-hidden rounded-lg border border-slate-300 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.09)]">
-      <div className="relative h-full w-full p-3 sm:p-5 md:p-6 flex flex-col gap-2 sm:gap-3">
+    <div className="hero-preview relative w-full overflow-hidden rounded-[22px] bg-white shadow-[0_44px_90px_-34px_rgba(3,12,28,0.75),0_0_0_1px_rgba(11,31,59,0.08)]">
+      <div className="relative h-full w-full p-4 sm:p-5 md:p-6 flex flex-col gap-2.5 sm:gap-3">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold tracking-normal text-blue-600 uppercase">
-            Budget reality check
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#a4532b]" style={{ fontFamily: 'var(--font-mono)' }}>
+            Budget check
           </span>
           <span className="text-xs font-semibold text-[var(--color-success-fg)] bg-[var(--color-success-bg)] border border-[var(--color-success-border)] rounded-full px-2 py-0.5 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)]" aria-hidden="true" />
-            Interactive estimate
+            Try it
           </span>
         </div>
 
         <div>
-          <h3 className="text-sm md:text-base font-bold text-slate-900 leading-tight">
+          <h3 className="text-lg md:text-xl font-extrabold text-slate-900 leading-tight tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
             How far will your money go?
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -284,14 +287,21 @@ export default function HeroBudgetWidget() {
         {/* Keep the preview before the input visually and in the accessibility
             tree, so it remains visible when the mobile keyboard opens. */}
         <div className="flex flex-col gap-2 sm:gap-3">
-          <div className="flex min-h-[116px] flex-shrink-0 items-center justify-center overflow-visible sm:min-h-28">
+          {/* The house is drawn on graph paper, like the plan it stands for. */}
+          <div
+            className="flex min-h-[128px] flex-shrink-0 items-end justify-center overflow-hidden rounded-2xl border border-[#dbe5f5] bg-[#f5f8fe] px-2 pt-3 sm:min-h-36"
+            style={{
+              backgroundImage: 'linear-gradient(rgba(46,108,246,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(46,108,246,0.08) 1px, transparent 1px)',
+              backgroundSize: '16px 16px',
+            }}
+          >
             <BuildingHouse coverage={coverage} complete={fullyFunded} />
           </div>
 
           <label className="block">
             <span className="sr-only">Your budget in US dollars</span>
-            <div className="flex items-center gap-1 bg-slate-50 border border-slate-300 rounded-md px-3.5 py-2.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-400/20 transition">
-              <span className="text-lg md:text-xl font-extrabold text-slate-400">$</span>
+            <div className="flex items-center gap-1.5 bg-white border-2 border-slate-900 rounded-xl px-4 py-2.5 focus-within:border-blue-600 focus-within:ring-4 focus-within:ring-blue-500/15 transition">
+              <span className="text-xl md:text-2xl font-extrabold text-slate-400">$</span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -308,7 +318,7 @@ export default function HeroBudgetWidget() {
                   });
                 }}
                 placeholder="Enter amount"
-                className="w-full bg-transparent text-lg md:text-xl font-extrabold text-slate-900 outline-none placeholder:text-slate-300 tabular-nums"
+                className="w-full bg-transparent text-xl md:text-2xl font-extrabold text-slate-900 outline-none placeholder:text-slate-300 tabular-nums"
               />
               <span className="text-xs font-bold uppercase tracking-normal text-slate-400 flex-shrink-0">USD</span>
             </div>
@@ -318,21 +328,22 @@ export default function HeroBudgetWidget() {
         {/* Stage coverage bars */}
         <div className="hidden sm:flex flex-1 flex-col justify-center gap-1.5 min-h-0">
           {(estimate?.rows ?? []).map((row, index) => {
-            const pct = Math.round(row.coveragePercent);
+            const later = row.stageCostUsd === 0;
+            const pct = later ? 0 : Math.round(row.coveragePercent);
             return (
               <div key={row.id} className="flex items-center gap-2.5">
                 <span className="w-[92px] md:w-[104px] flex-shrink-0 text-xs font-semibold text-slate-600 truncate">
                   {STAGE_SHORT_LABELS[row.id]}
                 </span>
-                <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-[var(--color-success)] transition-all duration-500 motion-reduce:transition-none"
                     // In building order: each stage starts a moment after the one before.
                     style={{ width: `${pct}%`, transitionDelay: `${index * 70}ms` }}
                   />
                 </div>
-                <span className={`w-9 flex-shrink-0 text-right text-xs font-bold tabular-nums ${pct > 0 ? 'text-slate-700' : 'text-slate-400'}`}>
-                  {pct}%
+                <span className={`w-9 flex-shrink-0 text-right text-xs font-bold tabular-nums ${pct > 0 ? 'text-slate-700' : 'text-slate-500'}`}>
+                  {later ? 'Later' : `${pct}%`}
                 </span>
               </div>
             );
@@ -346,7 +357,7 @@ export default function HeroBudgetWidget() {
         </div>
 
         {/* Verdict + CTA */}
-        <div className="bg-slate-50 border border-slate-200 rounded-md px-3.5 py-2.5 flex items-center justify-between gap-3">
+        <div className="bg-[#0B1F3B] rounded-xl px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             {fullyFunded && (
               <CheckCircle size={16} weight="fill" className="text-[var(--color-success)] flex-shrink-0" aria-hidden="true" />
@@ -354,7 +365,7 @@ export default function HeroBudgetWidget() {
             <p
               // A new key when the reached stage changes replays the pop.
               key={fullyFunded ? 'full' : estimate?.reachableStageId ?? 'none'}
-              className="hero-verdict text-sm font-semibold text-slate-800 leading-snug"
+              className="hero-verdict text-sm font-semibold text-white leading-snug"
               aria-live="polite"
               aria-atomic="true"
             >
@@ -369,7 +380,7 @@ export default function HeroBudgetWidget() {
               floor_area_m2: PLAN_AREA_M2,
               location_category: PLAN_LOCATION,
             })}
-            className="flex-shrink-0 inline-flex items-center gap-1 text-xs md:text-[12px] font-bold text-blue-600 hover:text-blue-700 transition-colors whitespace-nowrap"
+            className="flex-shrink-0 inline-flex min-h-[36px] items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-bold text-[#0B1F3B] hover:bg-blue-50 transition-colors whitespace-nowrap"
           >
             Customize <ArrowRight size={12} weight="bold" />
           </Link>
@@ -377,7 +388,7 @@ export default function HeroBudgetWidget() {
 
         {/* The spec itself now sits under the heading, so this is only the
             caveat and the way out of it. */}
-        <p className="hidden sm:block text-xs text-slate-400 leading-snug">
+        <p className="hidden sm:block text-xs text-slate-500 leading-snug">
           Materials and labour, standard finish. Adjust size, location and finish in the Budget Studio.
         </p>
       </div>

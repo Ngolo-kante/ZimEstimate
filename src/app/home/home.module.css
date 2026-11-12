@@ -1,29 +1,28 @@
+/* ─── The home page as a drawing sheet ─────────────────────────────────────
+   A build starts as a drawing, so the page is laid out like one: a navy
+   sheet ruled with a drafting grid, annotations in the monospace hand a
+   draughtsman uses for dimensions, brick-clay for the one thing that
+   matters in each view, and the house that builds itself as the drawing on
+   the sheet. Sections are numbered like sheets in a set.
+
+   Colours stay the brand's own (design-tokens.css): navy, electric blue,
+   clay. Clay is lightened where it sits on navy so it holds 7:1 as text. */
+
 .page {
+  --sheet: var(--color-primary);
+  --sheet-deep: #071428;
+  --rule: rgba(148, 184, 235, 0.09);
+  --rule-strong: rgba(148, 184, 235, 0.16);
+  --clay: var(--color-clay);
+  --clay-on-navy: #f3a57c;
+  --ink-soft: #c9d6ea;
+  --paper: #fbfaf7;
+  --hairline: #e4e1d8;
+
   margin: -32px -24px 0;
   color: var(--color-text);
-  background: #f8fafc;
+  background: var(--paper);
   overflow: hidden;
-}
-
-/* The hero used to be a photograph behind a four-stop translucent gradient
-   that faded from 94% to 18% opacity across the width. It made the right-hand
-   side busy behind the budget widget and the text contrast varied with the
-   photo underneath it. A solid brand navy is calmer, keeps the identity, and
-   holds white text at a constant 15.9:1. */
-.hero {
-  position: relative;
-  /* min-height, not height. With a fixed height the trust badges under the
-     buttons overflowed the section by 16px and bled onto the white band below.
-     The clamp still sets the intended size; the section is now allowed to grow
-     when the content needs it rather than spilling out of itself. */
-  min-height: clamp(440px, calc(100svh - 200px), 580px);
-  display: flex;
-  align-items: stretch;
-  background: var(--color-primary);
-}
-
-.coverImage {
-  object-fit: cover;
 }
 
 .heroInner,
@@ -34,133 +33,235 @@
   padding-inline: 32px;
 }
 
+.page a:focus-visible {
+  outline: 3px solid #3b82f6;
+  outline-offset: 4px;
+}
+
+/* ── Annotations ─────────────────────────────────────────────────────── */
+
+.eyebrow,
+.sectionIndex {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* A short dimension tick before each annotation. */
+.eyebrow::before,
+.sectionIndex::before {
+  content: '';
+  width: 22px;
+  height: 2px;
+  flex: none;
+  background: currentColor;
+}
+
+.eyebrow {
+  color: var(--clay-on-navy);
+}
+
+.sectionIndex {
+  color: #a4532b;
+}
+
+/* ── Hero ────────────────────────────────────────────────────────────── */
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(900px 520px at 82% 38%, rgba(46, 108, 246, 0.26), transparent 62%),
+    radial-gradient(520px 360px at 6% 104%, rgba(217, 122, 74, 0.16), transparent 70%),
+    linear-gradient(180deg, var(--sheet) 0%, var(--sheet-deep) 100%);
+}
+
+/* The drafting grid: fine squares, with a heavier line every fifth. It
+   fades out toward the copy so the words sit on plain navy. */
+.heroGrid {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(var(--rule-strong) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule-strong) 1px, transparent 1px),
+    linear-gradient(var(--rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-size: 160px 160px, 160px 160px, 32px 32px, 32px 32px;
+  background-position: -1px -1px;
+  -webkit-mask-image: linear-gradient(100deg, transparent 4%, rgba(0, 0, 0, 0.5) 38%, #000 70%);
+  mask-image: linear-gradient(100deg, transparent 4%, rgba(0, 0, 0, 0.5) 38%, #000 70%);
+  pointer-events: none;
+}
+
 .heroInner {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(390px, 0.72fr);
+  grid-template-columns: minmax(0, 1.05fr) minmax(400px, 0.78fr);
   align-items: center;
-  gap: 56px;
-  padding-block: 44px 52px;
+  gap: 64px;
+  padding-block: 72px 0;
 }
 
 .heroCopy {
   width: 100%;
+  padding-bottom: 76px;
   color: white;
-  animation: heroEnter 520ms ease-out both;
 }
 
-.heroBudget {
-  width: 100%;
-  max-width: 470px;
-  justify-self: end;
-  animation: heroToolEnter 620ms 90ms ease-out both;
+/* One entrance, in reading order. */
+.heroCopy > * {
+  animation: rise 560ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
-.sectionIndex,
-.pathLabel {
-  display: block;
-  font-size: 0.78rem;
-  font-weight: 750;
-  line-height: 1.2;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
+.heroCopy > :nth-child(2) { animation-delay: 60ms; }
+.heroCopy > :nth-child(3) { animation-delay: 120ms; }
+.heroCopy > :nth-child(4) { animation-delay: 180ms; }
+.heroCopy > :nth-child(5) { animation-delay: 240ms; }
+.heroCopy > :nth-child(6) { animation-delay: 300ms; }
+.heroCopy > :nth-child(7) { animation-delay: 380ms; }
 
 .hero h1 {
-  max-width: 560px;
-  margin: 0;
+  max-width: 640px;
+  margin: 18px 0 0;
   font-family: var(--font-heading);
-  font-size: 3.05rem;
+  font-size: clamp(2.5rem, 4.6vw, 4.1rem);
   font-weight: 800;
   line-height: 1.02;
-  letter-spacing: 0;
+  letter-spacing: -0.02em;
   text-wrap: balance;
 }
 
-.heroCopy > p {
-  max-width: 540px;
-  margin: 16px 0 0;
-  color: #dbe6f5;
-  font-size: 1.05rem;
-  line-height: 1.65;
+/* The part that matters, in brick, underlined like a dimension. */
+.hero h1 em {
+  position: relative;
+  color: var(--clay-on-navy);
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.hero h1 em::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.08em;
+  height: 0.09em;
+  border-radius: 2px;
+  background: var(--clay);
+  transform-origin: left center;
+  animation: draw 700ms 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.heroLead {
+  max-width: 520px;
+  margin: 22px 0 0;
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+  line-height: 1.6;
 }
 
 .heroActions {
-  width: min(100%, 650px);
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
-  margin-top: 24px;
-}
-
-.heroActions .primaryButton {
-  grid-column: 1 / -1;
-  justify-self: start;
-}
-
-.heroActions .secondaryButton {
-  width: 100%;
-  height: 56px;
-  min-width: 0;
-  padding: 0 10px;
-  text-align: center;
+  margin-top: 30px;
 }
 
 .primaryButton,
 .secondaryButton,
-.closingButton,
-.pathActionPrimary {
-  min-height: 48px;
+.closingButton {
+  min-height: 54px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  border-radius: 6px;
-  font-size: 0.94rem;
-  font-weight: 750;
-  line-height: 1.2;
-  letter-spacing: 0;
-  text-decoration: none;
-  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
-}
-
-.primaryButton {
-  padding: 13px 18px;
+  padding: 14px 20px;
+  border: 1px solid white;
+  border-radius: 12px;
   color: var(--color-primary);
   background: white;
-  border: 1px solid white;
+  font-size: 0.97rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+/* Two equal white ways in; the first carries the weight. */
+.primaryButton,
+.closingButton {
+  box-shadow: 0 12px 30px -10px rgba(3, 12, 28, 0.7), inset 0 -3px 0 rgba(11, 31, 59, 0.12);
+}
+
+.primaryButton > svg:last-child,
+.closingButton > svg:last-child {
+  width: 26px;
+  height: 26px;
+  padding: 5px;
+  border-radius: 8px;
+  color: white;
+  background: var(--clay);
+  transition: transform 180ms ease;
 }
 
 .primaryButton:hover,
+.secondaryButton:hover,
 .closingButton:hover {
   transform: translateY(-2px);
-  background: #eef4ff;
+  background: #f1f5fd;
 }
 
-.secondaryButton {
-  padding: 13px 17px;
-  color: var(--color-primary);
-  background: white;
-  border: 1px solid white;
-}
-
-.secondaryButton:hover {
-  transform: translateY(-2px);
-  background: #eef4ff;
-  border-color: #bfd2ea;
+.primaryButton:hover > svg:last-child,
+.closingButton:hover > svg:last-child {
+  transform: translateX(3px);
 }
 
 .secondaryArrow {
   flex: 0 0 auto;
+  opacity: 0.55;
+}
+
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.closingButton:focus-visible {
+  /* On navy the standard blue ring does not reach 3:1. */
+  outline: 3px solid var(--color-focus-ring-inverse);
+  outline-offset: 3px;
+}
+
+/* Find a contractor: a quiet text link, not a third button. */
+.heroTextLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 18px;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: rgba(201, 214, 234, 0.4);
+  text-underline-offset: 4px;
+}
+
+.heroTextLink:hover {
+  color: white;
+  text-decoration-color: white;
 }
 
 .heroAssurances {
   display: flex;
   flex-wrap: wrap;
-  gap: 18px;
-  margin-top: 28px;
-  color: #dbe6f5;
-  font-size: 0.82rem;
+  gap: 8px 20px;
+  margin-top: 22px;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
 }
 
 .heroAssurances span {
@@ -170,13 +271,79 @@
 }
 
 .heroAssurances svg {
-  color: var(--color-success);
+  color: #4ade80;
 }
 
+/* The six stages every estimate is priced in, drawn as a dimension line.
+   It is the page's one piece of drawing language outside the house itself. */
+.stageLine {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  max-width: 600px;
+  margin: 40px 0 0;
+  padding: 16px 0 0;
+  list-style: none;
+}
+
+.stageLine::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(201, 214, 234, 0.38);
+  transform-origin: left center;
+  animation: draw 900ms 620ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.stageLine li {
+  position: relative;
+  display: grid;
+  gap: 3px;
+  padding-right: 8px;
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+/* A tick where each stage starts. */
+.stageLine li::before {
+  content: '';
+  position: absolute;
+  top: -16px;
+  left: 0;
+  width: 1px;
+  height: 9px;
+  background: rgba(201, 214, 234, 0.7);
+}
+
+.stageLine li span {
+  color: var(--clay-on-navy);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+/* The budget check hangs off the bottom of the sheet into the next section. */
+.heroBudget {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  justify-self: end;
+  align-self: end;
+  margin-bottom: -64px;
+  animation: riseTool 700ms 160ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* ── Start: what are you holding? ────────────────────────────────────── */
+
 .startSection {
-  padding: 64px 0 72px;
-  background: white;
-  border-bottom: 1px solid #dfe5ed;
+  padding: 136px 0 88px;
+  background: var(--paper);
 }
 
 .startHeader {
@@ -184,123 +351,133 @@
   grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
   align-items: end;
   gap: 48px;
-  margin-bottom: 30px;
 }
 
 .startHeader h2 {
-  margin: 9px 0 0;
+  margin: 14px 0 0;
   font-family: var(--font-heading);
-  font-size: 2.2rem;
+  font-size: clamp(2rem, 3.2vw, 2.75rem);
   font-weight: 800;
-  line-height: 1.12;
-  letter-spacing: 0;
+  line-height: 1.08;
+  letter-spacing: -0.015em;
 }
 
 .startHeader > p {
   margin: 0;
-  color: var(--color-text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.55;
+  color: #4b5a70;
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
+/* Describe-your-project, between the heading and the ways in. */
+.describeRow {
+  max-width: 760px;
+  margin: 28px 0 26px;
+}
+
+/* A tall lead card for the route most people need, and three beside it. */
 .startGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: repeat(2, minmax(0, auto));
+  gap: 14px;
 }
 
 .startCard {
   --method-accent: var(--color-accent);
-  --method-soft: var(--color-info-bg);
   position: relative;
-  overflow: hidden;
   min-width: 0;
-  min-height: 280px;
   display: flex;
   flex-direction: column;
-  padding: 20px;
+  padding: 22px;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: 18px;
   color: var(--color-text);
   background: white;
-  border: 1px solid #d8e0eb;
-  border-top: 3px solid var(--method-accent);
-  border-radius: 8px;
   text-decoration: none;
-  box-shadow: 0 6px 18px rgba(11, 31, 59, 0.05);
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
 }
 
 .startCard:hover {
   border-color: var(--method-accent);
-  box-shadow: 0 12px 28px rgba(11, 31, 59, 0.11);
+  box-shadow: 0 18px 36px -18px rgba(11, 31, 59, 0.28);
   transform: translateY(-3px);
 }
 
 .startCard:focus-visible {
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 3px;
-  border-color: var(--method-accent);
+}
+
+.startCard:nth-child(1) {
+  grid-row: 1 / span 2;
+}
+
+.startCard:nth-child(4) {
+  grid-column: 2 / span 2;
 }
 
 .startCardTopline {
-  min-height: 24px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  min-height: 24px;
 }
 
 .startCardRank {
-  color: var(--method-accent);
+  color: #a4532b;
   font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
 }
 
 .startCardCategory {
-  color: var(--color-text-muted);
-  font-size: 0.64rem;
-  font-weight: 800;
+  color: #5d6b80;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-}
-
-.startCardBody {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr);
-  gap: 15px;
-  margin-top: 18px;
-}
-
-.startCardIcon {
-  width: 46px;
-  height: 46px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--method-accent);
-  background: var(--method-soft);
-  border: 1px solid var(--color-info-border);
-  border-radius: 7px;
-  transition: transform 180ms ease;
-}
-
-.startCard:hover .startCardIcon {
-  transform: rotate(-4deg) scale(1.05);
 }
 
 .startCardBadge {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
-  min-height: 22px;
-  padding: 3px 7px;
-  color: #174f91;
-  background: #e8f1fc;
-  border: 1px solid #bfd2ea;
-  border-radius: 5px;
-  font-size: 0.64rem;
-  font-weight: 800;
+  min-height: 24px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  color: #0b1f3b;
+  background: var(--clay-on-navy);
+  font-size: 0.7rem;
+  font-weight: 700;
   line-height: 1.2;
-  text-align: center;
+}
+
+.startCardBody {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.startCardIcon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--color-accent-dark);
+  background: #edf3ff;
+  transition: transform 200ms ease;
+}
+
+.startCard:hover .startCardIcon {
+  transform: rotate(-5deg) scale(1.06);
 }
 
 .startCardCopy {
@@ -310,16 +487,16 @@
 .startCard h3 {
   margin: 0;
   font-family: var(--font-heading);
-  font-size: 1.15rem;
-  font-weight: 800;
-  line-height: 1.3;
-  letter-spacing: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
 }
 
 .startCard p {
   margin: 7px 0 0;
-  color: var(--color-text-secondary);
-  font-size: 0.8rem;
+  color: #4b5a70;
+  font-size: 0.9rem;
   line-height: 1.55;
 }
 
@@ -328,30 +505,29 @@
   align-items: center;
   gap: 12px;
   margin-top: auto;
-  padding-top: 17px;
-  border-top: 1px solid #e3e8ef;
+  padding-top: 20px;
 }
 
 .startCardDetail {
   min-width: 0;
-  color: var(--color-text-secondary);
-  font-size: 0.7rem;
-  font-weight: 700;
+  color: #5d6b80;
+  font-size: 0.8rem;
+  font-weight: 600;
   line-height: 1.35;
 }
 
 .startCardArrow {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   margin-left: auto;
+  border-radius: 10px;
   color: white;
   background: var(--color-primary);
-  border-radius: 6px;
-  transition: transform 180ms ease, background-color 180ms ease;
+  transition: transform 200ms ease, background-color 200ms ease;
 }
 
 .startCard:hover .startCardArrow {
@@ -359,296 +535,131 @@
   transform: translateX(3px);
 }
 
-.pathways {
-  padding: 88px 0 96px;
-  background: #f8fafc;
+/* The lead card is a piece of the sheet: navy, ruled, with a clay arrow. */
+.startCard:nth-child(1) {
+  --method-accent: var(--clay-on-navy);
+  padding: 28px;
+  border-color: transparent;
+  color: white;
+  background:
+    radial-gradient(420px 300px at 100% 0%, rgba(46, 108, 246, 0.35), transparent 70%),
+    linear-gradient(180deg, var(--sheet), var(--sheet-deep));
 }
 
-.sectionHeading {
-  max-width: 760px;
-  margin-bottom: 38px;
-}
-
-.sectionIndex,
-.pathLabel {
-  color: var(--color-accent);
-}
-
-.sectionHeading h2,
-.budgetCopy h2,
-.closingInner h2 {
-  margin: 10px 0 0;
-  font-family: var(--font-heading);
-  font-size: 2.45rem;
-  font-weight: 800;
-  line-height: 1.12;
-  letter-spacing: 0;
-  text-wrap: balance;
-}
-
-.sectionHeading > p {
-  max-width: 610px;
-  margin: 14px 0 0;
-  color: var(--color-text-secondary);
-  line-height: 1.65;
-}
-
-.pathwayGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.9fr);
-  gap: 18px;
-}
-
-.estimatePath,
-.secondaryPath {
-  overflow: hidden;
-  border: 1px solid #d8e0eb;
-  border-radius: 8px;
-  background: white;
-}
-
-.estimatePath {
-  display: grid;
-  grid-template-columns: minmax(240px, 0.82fr) minmax(320px, 1.18fr);
-  min-height: 560px;
-}
-
-.pathImage,
-.secondaryPathImage {
-  position: relative;
-  min-height: 220px;
-  overflow: hidden;
-  background: #dfe6ee;
-}
-
-.pathImage::after,
-.secondaryPathImage::after {
+.startCard:nth-child(1)::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(11, 31, 59, 0.08);
+  background-image:
+    linear-gradient(var(--rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-mask-image: linear-gradient(200deg, #000, transparent 70%);
+  mask-image: linear-gradient(200deg, #000, transparent 70%);
+  pointer-events: none;
 }
 
-.estimateContent {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 42px 38px;
+.startCard:nth-child(1) > * {
+  position: relative;
 }
 
-.pathIconPrimary {
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 24px;
+.startCard:nth-child(1) .startCardRank {
+  color: var(--clay-on-navy);
+}
+
+.startCard:nth-child(1) .startCardCategory,
+.startCard:nth-child(1) .startCardDetail {
+  color: var(--ink-soft);
+}
+
+.startCard:nth-child(1) .startCardBody {
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-top: 36px;
+}
+
+.startCard:nth-child(1) .startCardIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
   color: white;
-  background: var(--color-accent);
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 }
 
-.estimateContent h3,
-.secondaryPathContent h3 {
-  margin: 9px 0 0;
-  font-family: var(--font-heading);
-  font-weight: 780;
-  line-height: 1.2;
-  letter-spacing: 0;
+.startCard:nth-child(1) h3 {
+  font-size: clamp(1.5rem, 2.2vw, 1.9rem);
+  font-weight: 800;
+  line-height: 1.12;
 }
 
-.estimateContent h3 {
-  font-size: 1.85rem;
-}
-
-.estimateContent > p {
-  margin: 14px 0 0;
-  color: var(--color-text-secondary);
-  line-height: 1.65;
-}
-
-.estimateContent ul {
-  display: grid;
-  gap: 10px;
-  margin: 24px 0 0;
-  padding: 0;
-  list-style: none;
-  color: #314158;
-  font-size: 0.88rem;
-}
-
-.estimateContent li {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-}
-
-.estimateContent li svg {
-  flex: 0 0 auto;
-  margin-top: 2px;
-  color: var(--color-success-fg);
-}
-
-.pathActionPrimary {
-  margin-top: auto;
-  padding: 12px 16px;
-  color: white;
-  background: var(--color-primary);
-  border: 1px solid var(--color-primary);
-}
-
-.pathActionPrimary:hover {
-  transform: translateY(-2px);
-  background: var(--color-primary-light);
-}
-
-.secondaryPaths {
-  display: grid;
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.secondaryPath {
-  display: grid;
-  grid-template-columns: 42% 58%;
-  min-height: 271px;
-}
-
-.secondaryPathImage {
-  min-height: 100%;
-}
-
-.secondaryPathContent {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 26px 24px;
-}
-
-.secondaryPathContent > svg {
-  color: #c45d3e;
-}
-
-.secondaryPathContent h3 {
-  font-size: 1.3rem;
-}
-
-.secondaryPathContent p {
-  margin: 8px 0 0;
-  color: var(--color-text-secondary);
-  font-size: 0.86rem;
-  line-height: 1.5;
-}
-
-.secondaryPathContent a,
-.inlineAction {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: auto;
-  color: var(--color-accent-dark);
-  font-size: 0.86rem;
-  font-weight: 750;
-  letter-spacing: 0;
-  text-decoration: none;
-}
-
-.budgetSection {
-  padding: 96px 0;
-  background: white;
-  border-block: 1px solid #e2e8f0;
-}
-
-.budgetInner {
-  display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(430px, 0.72fr);
-  align-items: center;
-  gap: 84px;
-}
-
-.budgetCopy h2 {
-  max-width: 620px;
-}
-
-.budgetCopy > p {
-  max-width: 610px;
-  margin: 18px 0 0;
-  color: var(--color-text-secondary);
+.startCard:nth-child(1) p {
+  max-width: 34ch;
+  margin-top: 10px;
+  color: var(--ink-soft);
   font-size: 1rem;
-  line-height: 1.72;
 }
 
-.budgetNotes {
-  display: grid;
-  gap: 10px;
-  margin-top: 28px;
-  color: #314158;
-  font-size: 0.88rem;
+.startCard:nth-child(1) .startCardArrow {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--clay);
 }
 
-.budgetNotes span {
-  display: flex;
-  align-items: center;
-  gap: 9px;
+.startCard:nth-child(1):hover .startCardArrow {
+  background: var(--clay-on-navy);
 }
 
-.budgetNotes svg {
-  color: #c45d3e;
-}
+/* ── Closing ─────────────────────────────────────────────────────────── */
 
-.inlineAction {
-  margin-top: 30px;
-  font-size: 0.92rem;
-}
-
-.budgetTool {
-  width: 100%;
-  max-width: 500px;
-  justify-self: end;
-}
-
-
-
-
-
-/* Each step is a button into the feature it describes. */
-
-
-
-
-
-
-
-/* Cleaned alongside the hero. Leaving a photograph under a 76% scrim here
-   while the hero above became flat navy would have read as two different
-   pages. */
 .closingSection {
   position: relative;
-  min-height: 430px;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  background: var(--color-primary);
+  background:
+    radial-gradient(700px 420px at 12% 0%, rgba(46, 108, 246, 0.22), transparent 66%),
+    linear-gradient(180deg, var(--sheet), var(--sheet-deep));
+}
+
+.closingSection::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(var(--rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-size: 32px 32px;
+  -webkit-mask-image: linear-gradient(260deg, #000, transparent 62%);
+  mask-image: linear-gradient(260deg, #000, transparent 62%);
+  pointer-events: none;
 }
 
 .closingInner {
-  padding-block: 72px;
+  padding-block: 84px;
   color: white;
 }
 
 .closingInner h2 {
-  max-width: 700px;
-  font-size: 2.65rem;
+  max-width: 640px;
+  margin: 14px 0 0;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 3.6vw, 3rem);
+  font-weight: 800;
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 
 .closingInner p {
   margin: 16px 0 0;
-  color: #dbe6f5;
-  font-size: 1rem;
+  color: var(--ink-soft);
+  font-size: 1.02rem;
 }
 
-/* Two columns: the closing line on the left, and on the right — which was
-   empty navy — the quickest ways in. */
 .closingGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
@@ -656,47 +667,57 @@
   gap: 56px;
 }
 
+.closingButton {
+  margin-top: 30px;
+}
+
 .closingPanel {
   padding: 24px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
 }
 
 .closingPanelTitle {
   display: block;
-  color: white;
-  font-size: 1.1rem;
-  font-weight: 700;
+  color: var(--clay-on-navy);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .closingGuides {
   display: grid;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 16px;
 }
 
 .closingGuide {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
+  padding: 16px;
   border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
   color: white;
+  background: rgba(255, 255, 255, 0.07);
   text-decoration: none;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
 }
 
 .closingGuide:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.32);
+  border-color: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.13);
+  transform: translateX(3px);
 }
 
 .closingGuide > svg:first-child {
   flex-shrink: 0;
-  color: #f2b483;
+  color: var(--clay-on-navy);
 }
 
 .closingGuide > span {
@@ -707,19 +728,12 @@
 }
 
 .closingGuide strong {
-  font-size: 0.98rem;
+  font-size: 1rem;
 }
 
 .closingGuide > span > span {
-  color: #c6d4e8;
-  font-size: 0.86rem;
-}
-
-/* The start section's describe-your-project box, between the heading and
-   the four ways in. */
-.describeRow {
-  max-width: 760px;
-  margin: 26px 0 22px;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
 }
 
 /* For contractors: a line under the closing band rather than a band. */
@@ -731,7 +745,7 @@
   gap: 10px 18px;
   padding-block: 18px 22px;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
-  color: #c6d4e8;
+  color: var(--ink-soft);
   font-size: 0.92rem;
 }
 
@@ -748,194 +762,160 @@
   text-decoration: underline;
 }
 
-.closingButton {
-  margin-top: 30px;
-  padding: 13px 18px;
-  color: var(--color-primary);
-  background: white;
-  border: 1px solid white;
-}
+/* ── Motion ──────────────────────────────────────────────────────────── */
 
-.primaryButton:focus-visible,
-.secondaryButton:focus-visible,
-.closingButton:focus-visible,
-.pathActionPrimary:focus-visible,
-.secondaryPathContent a:focus-visible,
-.inlineAction:focus-visible {
-  /* These controls sit on the navy hero and the dark closing band, where the
-     standard blue ring does not reach 3:1. */
-  outline: 3px solid var(--color-focus-ring-inverse);
-  outline-offset: 3px;
-}
-
-@keyframes heroEnter {
+@keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(16px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-@keyframes heroToolEnter {
+@keyframes riseTool {
   from {
     opacity: 0;
-    transform: translateY(18px) scale(0.98);
+    transform: translateY(26px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
 }
 
-@media (max-width: 1080px) {
-  .heroInner {
-    grid-template-columns: minmax(0, 1fr) minmax(360px, 0.78fr);
-    gap: 32px;
+@keyframes draw {
+  from {
+    transform: scaleX(0);
   }
 
-  .hero h1 {
-    font-size: 2.7rem;
-  }
-
-  .pathwayGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .startGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-
-  .startCard {
-    min-height: 280px;
-  }
-
-  .secondaryPaths {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: none;
-  }
-
-  .secondaryPath {
-    grid-template-columns: 44% 56%;
-  }
-
-  .budgetInner {
-    gap: 48px;
+  to {
+    transform: scaleX(1);
   }
 }
 
-@media (max-width: 820px) {
-  .heroInner,
-  .sectionInner,
-  .closingInner {
-    padding-inline: 22px;
+/* ── Narrower screens ────────────────────────────────────────────────── */
+
+/* The budget check goes under the copy and stops hanging off the sheet. */
+@media (max-width: 1080px) {
+  .heroInner {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    padding-block: 56px 60px;
+  }
+
+  .heroCopy {
+    padding-bottom: 0;
+  }
+
+  .heroBudget {
+    max-width: 560px;
+    justify-self: start;
+    margin-bottom: 0;
+  }
+
+  .heroGrid {
+    -webkit-mask-image: linear-gradient(180deg, transparent 8%, #000 70%);
+    mask-image: linear-gradient(180deg, transparent 8%, #000 70%);
+  }
+
+  .startSection {
+    padding-top: 80px;
   }
 
   .closingGrid {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 36px;
   }
+}
 
-  .heroInner {
-    grid-template-columns: 1fr;
-    gap: 34px;
-  }
-
-  /* Centred and a little wider once it drops under the text: left-aligned at
-     520px it left the right half of the hero as empty navy on tablets. */
-  .heroBudget {
-    width: 100%;
-    max-width: 600px;
-    justify-self: center;
-  }
-
-  .hero h1 {
-    font-size: 2.45rem;
+/* MainLayout leaves 100px under the page for the phone tab bar, but the
+   footer below already allows for it, so on the home page it showed as an
+   empty strip between the closing band and the footer. */
+@media (max-width: 900px) {
+  .page {
+    margin-bottom: -100px;
   }
 
   .startHeader {
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 12px;
   }
 
-  .estimatePath {
-    grid-template-columns: 1fr;
-    min-height: auto;
+  .startGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
   }
 
-  .pathImage {
-    min-height: 310px;
+  .startCard:nth-child(1) {
+    grid-row: auto;
+    grid-column: 1 / -1;
   }
 
-  .pathActionPrimary {
-    margin-top: 28px;
+  .startCard:nth-child(4) {
+    grid-column: 1 / -1;
   }
-
-  .secondaryPaths,
-  .budgetInner {
-    grid-template-columns: 1fr;
-  }
-
-  .budgetTool {
-    max-width: 520px;
-    justify-self: start;
-  }
-
 }
 
 @media (max-width: 640px) {
-  .page {
-    margin-top: -32px;
-  }
-
-  .hero {
-    height: auto;
-    min-height: 0;
-    max-height: none;
+  .heroInner,
+  .sectionInner,
+  .closingInner {
+    padding-inline: 20px;
   }
 
   .heroInner {
-    align-items: center;
-    gap: 18px;
-    padding-block: 24px 30px;
+    gap: 26px;
+    padding-block: 30px 36px;
   }
 
   .hero h1 {
-    font-size: 1.75rem;
-    line-height: 1.08;
+    margin-top: 14px;
+    font-size: clamp(2.05rem, 9.2vw, 2.5rem);
+    line-height: 1.04;
   }
 
-  .heroCopy > p {
+  .heroLead {
     margin-top: 14px;
     font-size: 1rem;
-    line-height: 1.45;
+    line-height: 1.5;
   }
 
+  /* Two ways in, side by side, both readable. */
   .heroActions {
-    margin-top: 18px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 22px;
   }
 
-  .heroActions .primaryButton {
+  .primaryButton,
+  .secondaryButton {
     width: 100%;
-    justify-self: stretch;
+    min-height: 52px;
+    padding: 12px 10px;
+    font-size: 0.92rem;
   }
 
-  .heroActions .secondaryButton {
-    height: 56px;
-    padding: 0 5px;
-    gap: 6px;
-    font-size: 0.73rem;
-    line-height: 1.25;
-  }
-
-  .secondaryButton > svg:first-child {
+  /* Words only at this width: with an icon each, "Upload your plan" broke
+     onto a second line. */
+  .heroActions .primaryButton > svg,
+  .heroActions .secondaryButton > svg {
     display: none;
   }
 
-  .heroAssurances {
+  .heroTextLink {
+    margin-top: 14px;
+    font-size: 0.88rem;
+  }
+
+  /* The house in the budget check says the same thing on a phone. */
+  .heroAssurances,
+  .stageLine {
     display: none;
   }
 
@@ -943,28 +923,29 @@
     max-width: none;
   }
 
-  .pathways,
-  .startSection,
-  .budgetSection {
-    padding-block: 68px;
+  .startSection {
+    padding: 52px 0 56px;
   }
 
-  .sectionHeading h2,
-  .startHeader h2,
-  .budgetCopy h2,
-  .closingInner h2 {
-    font-size: 2rem;
+  /* The four ways in say this themselves on a phone. */
+  .startHeader > p {
+    display: none;
+  }
+
+  .describeRow {
+    margin: 18px 0 20px;
   }
 
   .startGrid {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
 
-  /* A row per way in on a phone — icon, title, one line, arrow — instead of
-     four cards of about 280px each with a header and footer apiece. */
+  /* A row per way in: icon, title, one line, arrow. The lead card keeps
+     its navy and a little more room. */
   .startCard {
-    min-height: 0;
-    padding: 14px 52px 14px 14px;
+    padding: 14px 58px 14px 14px;
+    border-radius: 16px;
   }
 
   .startCardRank,
@@ -978,30 +959,43 @@
   }
 
   .startCardBadge {
-    margin: 0 0 8px;
+    margin: 0 0 10px;
   }
 
-  .startCardBody {
-    grid-template-columns: 40px minmax(0, 1fr);
+  .startCardBody,
+  .startCard:nth-child(1) .startCardBody {
+    grid-template-columns: 44px minmax(0, 1fr);
     gap: 12px;
     margin-top: 0;
   }
 
-  .startCardIcon {
-    width: 40px;
-    height: 40px;
+  .startCardIcon,
+  .startCard:nth-child(1) .startCardIcon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
   }
 
-  .startCard h3 {
-    font-size: 1.02rem;
+  .startCard h3,
+  .startCard:nth-child(1) h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.25;
   }
 
-  .startCard p {
+  .startCard p,
+  .startCard:nth-child(1) p {
+    max-width: none;
     margin-top: 3px;
+    font-size: 0.86rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  .startCard:nth-child(1) {
+    padding: 16px 62px 18px 16px;
   }
 
   .startCardFooter {
@@ -1010,179 +1004,56 @@
     right: 12px;
     margin: 0;
     padding: 0;
-    border: 0;
     transform: translateY(-50%);
   }
 
-  .pathImage {
-    min-height: 230px;
+  .startCard:nth-child(1) .startCardArrow {
+    width: 38px;
+    height: 38px;
   }
 
-  .estimateContent {
-    padding: 30px 24px;
+  .closingInner {
+    padding-block: 56px;
   }
 
-  .estimateContent h3 {
-    font-size: 1.55rem;
-  }
-
-  .secondaryPath {
-    grid-template-columns: 1fr;
-  }
-
-  .secondaryPathImage {
-    min-height: 190px;
-  }
-
-  .secondaryPathContent {
-    min-height: 228px;
-  }
-
-  .budgetInner {
-    gap: 38px;
-  }
-
-  /* Two by two on a phone: the title says what it is and the button goes
-     there; the sentence under each title made this section a screen and a
-     half of reading. */
-  .closingSection {
-    min-height: 410px;
+  .contractorLine {
+    padding-block: 16px 20px;
   }
 }
 
 @media (max-width: 380px) {
   .hero h1 {
-    font-size: 1.6rem;
+    font-size: 1.9rem;
   }
 
-  .heroCopy > p,
-  .heroAssurances {
-    display: none;
-  }
-
-  .heroActions {
-    gap: 10px;
-  }
-
-  .sectionHeading h2,
-  .startHeader h2,
-  .budgetCopy h2,
-  .closingInner h2 {
-    font-size: 1.8rem;
+  .primaryButton,
+  .secondaryButton {
+    font-size: 0.86rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .heroCopy,
-  .heroBudget {
+  .heroCopy > *,
+  .heroBudget,
+  .hero h1 em::after,
+  .stageLine::before {
     animation: none;
   }
 
   .primaryButton,
   .secondaryButton,
   .closingButton,
-  .pathActionPrimary {
-    transition: none;
-  }
-
   .startCard,
   .startCardIcon,
-  .startCardArrow {
+  .startCardArrow,
+  .closingGuide {
     transition: none;
-    transform: none !important;
-  }
-}
-
-/* A single primary action, with quieter routes for exploration. */
-.heroActions { display: flex; flex-wrap: wrap; }
-.heroActions .primaryButton { width: auto; }
-.heroActions .secondaryButton { width: auto; height: auto; min-height: 48px; padding: 12px 16px; color: #fff; background: transparent; border-color: #8294ad; }
-.heroActions .secondaryButton:hover { background: #ffffff12; border-color: #fff; }
-.page a:focus-visible { outline: 3px solid #3b82f6; outline-offset: 4px; }
-
-/* MainLayout leaves 100px under the page for the phone tab bar, but the
-   footer below already allows for it, so on the home page it showed as an
-   empty white strip between the closing band and the footer. */
-@media (max-width: 900px) {
-  .page {
-    margin-bottom: -100px;
-  }
-}
-
-/* Two hero actions — Start your BOQ and Upload your plan — sharing a row on a
-   phone, both readable (the old secondary button was set at 0.73rem). */
-@media (max-width: 640px) {
-  .heroActions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
   }
 
-  .heroActions .primaryButton,
-  .heroActions .secondaryButton {
-    width: 100%;
-    min-height: 50px;
-    padding: 12px 10px;
-    justify-content: center;
-    font-size: 0.9rem;
-  }
-
-  .heroActions .primaryButton > svg:last-child,
-  .heroActions .secondaryButton > svg:last-child {
-    display: none;
-  }
-
-  .secondaryButton > svg:first-child {
-    display: inline;
-  }
-}
-
-/* Upload your plan: white, like Start your BOQ — two equal ways in. */
-.heroActions .secondaryButton {
-  color: var(--color-primary);
-  background: white;
-  border-color: white;
-}
-
-.heroActions .secondaryButton:hover {
-  background: #e8eef7;
-  border-color: #e8eef7;
-}
-
-/* Find a contractor: a quiet text link, not a third button. */
-.heroTextLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 14px;
-  color: #dbe6f5;
-  font-size: 0.92rem;
-  font-weight: 600;
-  text-decoration: underline;
-  text-decoration-color: rgba(219, 230, 245, 0.4);
-  text-underline-offset: 4px;
-}
-
-.heroTextLink:hover {
-  color: white;
-  text-decoration-color: white;
-}
-
-@media (max-width: 640px) {
-  .heroTextLink {
-    margin-top: 12px;
-    font-size: 0.86rem;
-  }
-}
-
-/* Phones: heading, one line of explanation and the describe box close together. */
-@media (max-width: 640px) {
-  .startHeader {
-    gap: 8px;
-    margin-bottom: 18px;
-  }
-
-  .describeRow {
-    margin: 14px 0 18px;
+  .primaryButton:hover,
+  .secondaryButton:hover,
+  .closingButton:hover,
+  .closingGuide:hover {
+    transform: none;
   }
 }

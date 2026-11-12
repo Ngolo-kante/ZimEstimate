@@ -7,10 +7,10 @@ test.describe('Public launch surfaces', () => {
     await page.waitForLoadState('networkidle');
 
     await expect(
-      page.getByRole('heading', { name: 'Construction estimates built for Zimbabwe.' })
+      page.getByRole('heading', { name: 'Know the cost before you lay a brick.' })
     ).toBeVisible({ timeout: 10000 });
 
-    const hero = page.getByRole('region', { name: 'Construction estimates built for Zimbabwe.' });
+    const hero = page.getByRole('region', { name: 'Know the cost before you lay a brick.' });
     await expect(hero.getByRole('link', { name: 'Start your BOQ', exact: true }))
       .toHaveAttribute('href', '/estimate');
     await expect(hero.getByRole('link', { name: 'Upload your plan', exact: true }))
@@ -49,7 +49,7 @@ test.describe('Public launch surfaces', () => {
     await budgetInput.fill('');
     await budgetInput.pressSequentially('25000');
     await expect(page.getByRole('link', { name: 'Customize' }))
-      .toHaveAttribute('href', '/quick-budget?budget=25000');
+      .toHaveAttribute('href', '/quick-budget?budget=25000&area=120');
     // Footer trust links
     await expect(page.getByRole('link', { name: 'Privacy Policy' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Terms' })).toBeVisible();
@@ -76,11 +76,11 @@ test.describe('Public launch surfaces', () => {
     const base = { budgetUsd: 12000, floorAreaM2: 120, locationType: 'urban' as const, wallHeightM: 3, cementTypes: ['cement_425' as const] };
     const withLabour = estimateStageReach({ ...base, includeLabor: true });
     const materialsOnly = estimateStageReach(base);
-    const finishing = (estimate: typeof withLabour) => `${Math.round(estimate.rows.find((row) => row.id === 'finishing')!.coveragePercent)}%`;
-    // At $12,000 labour is the difference between finishing the house and not.
-    expect(finishing(withLabour)).not.toBe(finishing(materialsOnly));
-    await expect(page.locator('.hero-preview').getByText('Finishing', { exact: true }).locator('..'))
-      .toContainText(finishing(withLabour));
+    const roofing = (estimate: typeof withLabour) => `${Math.round(estimate.rows.find((row) => row.id === 'roofing')!.coveragePercent)}%`;
+    // At $12,000 labour is the difference between most of a roof and barely starting one.
+    expect(roofing(withLabour)).not.toBe(roofing(materialsOnly));
+    await expect(page.locator('.hero-preview').getByText('Roofing', { exact: true }).locator('..'))
+      .toContainText(roofing(withLabour));
     await expect(page.locator('.hero-preview')).toContainText('Materials and labour, standard finish.');
   });
 
