@@ -218,10 +218,10 @@ test.describe('Public launch surfaces', () => {
     await page.goto('/ai/vision-takeoff');
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByText('AI VISION BOQ')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('heading', { name: 'Upload Floor Plan' })).toBeVisible();
+    await expect(page.getByText('Estimate from your plan')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Upload your floor plan' })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Estimate steps' })).toContainText(
-      'Review Estimate'
+      'Your estimate'
     );
     await expect(page.getByRole('link', { name: 'Use manual builder' }))
       .toHaveAttribute('href', '/boq/new?method=manual');

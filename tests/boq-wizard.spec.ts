@@ -141,9 +141,9 @@ test.describe('BOQ Live Estimator', () => {
       buffer: Buffer.from('mock floor plan'),
     });
 
-    await expect(page.getByRole('heading', { name: 'Edit Floor Plan' }))
+    await expect(page.getByRole('heading', { name: 'Check the rooms' }))
       .toBeVisible({ timeout: 10000 });
-    await page.getByRole('button', { name: 'Confirm Dimensions' }).click();
+    await page.getByRole('button', { name: 'These rooms are right' }).click();
     await page.getByLabel('Project Name').fill('Vision Test House');
     await page.getByRole('button', { name: 'Continue to Configuration' }).click();
     await page.getByRole('button', { name: 'Generate BOQ' }).click();
