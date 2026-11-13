@@ -1,0 +1,887 @@
+/* =============================================
+ * BOQ stage section
+ *
+ * Moved out of the <style jsx> blocks in src/components/projects/StageBOQSection.tsx. styled-jsx scoped each rule to elements that component
+ * drew itself; here every rule sits under the root class of
+ * the card it belongs to: .stage-boq-empty (a stage with no items yet) or
+ * .stage-boq (a stage with items) instead.
+ * Child component styles are scoped under the same root class.
+ * ============================================= */
+
+/* ---- A stage with no items yet ---- */
+.stage-boq-empty.boq-card {
+    background: #ffffff;
+    border: 1px solid var(--color-border-light);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: none;
+}
+.stage-boq-empty .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+.stage-boq-empty .header-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.stage-boq-empty .icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: #eff6ff;
+    border-radius: 7px;
+    color: #0284c7;
+    box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.1);
+}
+.stage-boq-empty h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+.stage-boq-empty .add-form {
+    padding: 24px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--color-border-light);
+}
+.stage-boq-empty .form-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+.stage-boq-empty .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.stage-boq-empty .form-group label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.stage-boq-empty .select-wrapper {
+    position: relative;
+}
+.stage-boq-empty select, .stage-boq-empty input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    font-size: 0.9rem;
+    background: #fff;
+    outline: none;
+    transition: all 0.2s;
+    appearance: none;
+}
+.stage-boq-empty select:focus, .stage-boq-empty input:focus {
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+.stage-boq-empty .select-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #94a3b8;
+}
+.stage-boq-empty .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+.stage-boq-empty .empty-state {
+    padding: 48px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    color: #64748b;
+}
+.stage-boq-empty .empty-icon {
+    margin-bottom: 16px;
+    color: #cbd5e1;
+}
+.stage-boq-empty .empty-state p {
+    margin: 0 0 4px;
+    font-weight: 600;
+    color: #334155;
+    font-size: 1rem;
+}
+.stage-boq-empty .empty-state span {
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .stage-boq-empty .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---- A stage with items ---- */
+.stage-boq.boq-card {
+    background: #ffffff;
+    border: 1px solid var(--color-border-light);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: none;
+    margin-bottom: 24px;
+}
+
+.stage-boq.boq-card.expanded {
+    box-shadow: none;
+}
+
+.stage-boq .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: #ffffff;
+    cursor: pointer;
+    user-select: none;
+    gap: 16px;
+}
+
+.stage-boq .header-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+
+.stage-boq .header-title {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.stage-boq .title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.stage-boq .icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #eff6ff;
+    border-radius: 7px;
+    color: #0284c7;
+    box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.1);
+    flex-shrink: 0;
+}
+
+.stage-boq h4 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+}
+
+.stage-boq .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 8px;
+}
+
+.stage-boq .item-badge, .stage-boq .purchased-badge {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.stage-boq .purchased-badge {
+    color: var(--color-accent-dark);
+    background: var(--color-accent-muted);
+    padding: 2px 8px;
+    border-radius: 99px;
+}
+
+.stage-boq .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.stage-boq .stat-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 8px 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+
+.stage-boq .stat-pill .label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: #64748b;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.stage-boq .stat-pill .value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.stage-boq .expand-trigger {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.stage-boq .expand-trigger:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+    color: #334155;
+}
+
+.stage-boq .card-content {
+    border-top: 1px solid #f1f5f9;
+}
+
+/* Toolbar */
+.stage-boq .table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: #f8fafc;
+    gap: 16px;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.stage-boq .toolbar-left, .stage-boq .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.stage-boq .search-input {
+    position: relative;
+    display: flex;
+    align-items: center;
+    color: #94a3b8;
+    background: #f8fafc;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    width: 240px;
+    height: 40px;
+}
+
+.stage-boq .search-input:focus-within {
+    background: #fff;
+    border-color: #cbd5e1;
+    box-shadow: 0 0 0 3px rgba(226, 232, 240, 0.4);
+    color: #475569;
+}
+
+.stage-boq .search-input svg {
+    position: absolute;
+    left: 12px;
+    pointer-events: none;
+}
+
+.stage-boq .search-input input {
+    width: 100%;
+    height: 100%;
+    padding: 0 12px 0 36px;
+    background: transparent;
+    border: none;
+    font-size: 0.875rem;
+    color: #1e293b;
+    outline: none;
+}
+
+.stage-boq .filter-select {
+    min-width: 180px;
+}
+
+.stage-boq .filter-select .filter-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #64748b;
+}
+
+.stage-boq .filter-select select {
+    height: 40px;
+    padding: 0 34px 0 34px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #64748b;
+    background: #fff;
+    appearance: none;
+}
+
+.stage-boq .filter-select select:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #475569;
+}
+
+.stage-boq .filter-select select:focus {
+    border-color: #cbd5e1;
+    box-shadow: 0 0 0 3px rgba(226, 232, 240, 0.35);
+    color: #334155;
+}
+
+.stage-boq .view-toggle {
+    display: flex;
+    background: #f1f5f9;
+    border: 1px solid #d7dee9;
+    padding: 4px;
+    border-radius: 7px;
+}
+
+.stage-boq .view-toggle button {
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.stage-boq .view-toggle button:hover {
+    color: #1e293b;
+}
+
+.stage-boq .view-toggle .simple-btn.active {
+    background: #dbeafe;
+    color: #1d4ed8;
+    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.22), 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.stage-boq .view-toggle .detailed-btn.active {
+    background: #dcfce7;
+    color: #166534;
+    box-shadow: inset 0 0 0 1px rgba(22, 163, 74, 0.2), 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.stage-boq .columns-dropdown {
+    position: relative;
+}
+
+.stage-boq .columns-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.stage-boq .columns-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.stage-boq .columns-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 200px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+}
+
+.stage-boq .column-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    color: #475569;
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+.stage-boq .column-option:hover {
+    background: #f1f5f9;
+}
+
+.stage-boq .column-hint {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #f8fafc;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+/* Add Form */
+.stage-boq .add-form {
+    padding: 24px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.stage-boq .form-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.stage-boq .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.stage-boq .form-group label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stage-boq .select-wrapper {
+    position: relative;
+}
+
+.stage-boq .add-form select, .stage-boq .form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    background: #fff;
+    outline: none;
+    transition: all 0.2s;
+    appearance: none;
+}
+
+.stage-boq .add-form select:focus, .stage-boq .form-group input:focus {
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.stage-boq .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+/* Table */
+.stage-boq .table-responsive {
+    overflow-x: auto;
+    width: 100%;
+}
+
+.stage-boq .boq-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.stage-boq .boq-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.stage-boq .boq-table td {
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: middle;
+}
+
+.stage-boq .boq-table tr:last-child td {
+    border-bottom: none;
+}
+
+.stage-boq .boq-table tr:hover td {
+    background: #f8fafc;
+}
+
+.stage-boq .boq-table tr.is-purchased td {
+    background: #f0fdf4;
+}
+
+.stage-boq .boq-table tr.is-purchased:hover td {
+    background: #dcfce7;
+}
+
+.stage-boq .item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-width: 250px;
+}
+
+.stage-boq .item-name {
+    font-weight: 500;
+    color: #0f172a;
+}
+
+.stage-boq .item-notes {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stage-boq .text-right {
+    text-align: right;
+}
+
+.stage-boq .price-subtle {
+    color: #64748b;
+}
+
+.stage-boq .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.stage-boq .status-pill.purchased {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.stage-boq .status-pill.pending {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.stage-boq .status-pill.in-progress {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.stage-boq .status-pill.over-purchased {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+/* Row status highlights */
+.stage-boq .item-row.status-purchased {
+    background: linear-gradient(90deg, rgba(34, 197, 94, 0.04), transparent 50%);
+}
+
+.stage-boq .item-row.status-in_progress {
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.04), transparent 50%);
+}
+
+.stage-boq .item-row.status-over_purchased {
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.04), transparent 50%);
+}
+
+.stage-boq .item-row.enablement {
+    background: linear-gradient(90deg, rgba(125, 211, 252, 0.2), transparent 60%);
+}
+
+.stage-boq .enablement-pill {
+    display: inline-flex;
+    width: fit-content;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #0369a1;
+    background: rgba(125, 211, 252, 0.35);
+    border: 1px solid rgba(14, 116, 144, 0.22);
+    border-radius: 999px;
+    padding: 2px 6px;
+}
+
+.stage-boq .variance-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.stage-boq .variance-badge.neutral { color: #94a3b8; }
+.stage-boq .variance-badge.positive { color: #dc2626; }
+.stage-boq .variance-badge.negative { color: var(--color-accent-dark); }
+
+.stage-boq .action-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.stage-boq .action-btn {
+    padding: 6px;
+    color: #94a3b8;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stage-boq .action-btn.purchase {
+    color: #3b82f6;
+}
+
+.stage-boq .action-btn.purchase:hover {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.stage-boq .action-btn.usage {
+    color: var(--color-accent);
+}
+
+.stage-boq .action-btn.usage:hover {
+    background: var(--color-accent-muted);
+    color: var(--color-accent-dark);
+}
+
+.stage-boq .action-btn.delete:hover {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+.stage-boq .select-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #94a3b8;
+}
+
+@media (max-width: 1024px) {
+    .stage-boq .stat-pill {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .stage-boq .card-header {
+        padding: 12px;
+    }
+
+    .stage-boq .header-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .stage-boq .meta-row {
+        margin-left: 0;
+    }
+
+        .stage-boq .header-actions .add-btn-header {
+        display: inline-flex;
+        min-height: 44px;
+    }
+
+    .stage-boq .table-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 12px 16px;
+        gap: 12px;
+    }
+
+    .stage-boq .toolbar-left, .stage-boq .toolbar-right {
+        width: 100%;
+    }
+
+    .stage-boq .toolbar-right {
+        display: none;
+    }
+
+    .stage-boq .search-input {
+        width: 100%;
+    }
+
+    .stage-boq .filter-select {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .stage-boq .filter-select select {
+        width: 100%;
+    }
+
+    .stage-boq .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Below 768px the BOQ stops being a table and becomes a
+       stack of cards. As a table it rendered ~1070px of columns
+       inside a ~290px viewport, so a phone showed roughly a
+       quarter of each row and everything else was reachable
+       only by horizontal scrolling — the figures and the item
+       they belong to could never be on screen together.
+
+       Each cell carries a data-label, so the column heading
+       travels with its value instead of living in a header row
+       that has scrolled away. Toggling columns off in the
+       toolbar shortens the cards, exactly as it narrows the
+       table on desktop. */
+    .stage-boq .table-responsive {
+        overflow-x: visible;
+    }
+
+    .stage-boq .boq-table,
+    .stage-boq .boq-table tbody,
+    .stage-boq .boq-table tr,
+    .stage-boq .boq-table td {
+        display: block;
+        width: auto;
+    }
+
+    .stage-boq .boq-table thead {
+        /* Accessibly hidden rather than display:none — screen
+           readers keep the header association. */
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+
+    .stage-boq .boq-table tr.item-row {
+        border: 1px solid var(--color-border, #e2e8f0);
+        border-radius: 8px;
+        padding: 4px 14px;
+        margin-bottom: 10px;
+        background: var(--color-surface, #fff);
+    }
+
+    .stage-boq .boq-table tr.item-row.is-purchased {
+        border-color: rgba(16, 185, 129, 0.35);
+    }
+
+    .stage-boq .boq-table td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 9px 0;
+        text-align: right;
+        font-size: 0.875rem;
+        border: 0;
+        border-bottom: 1px solid var(--color-border-subtle, #f1f5f9);
+    }
+
+    .stage-boq .boq-table td:last-child {
+        border-bottom: 0;
+    }
+
+    .stage-boq .boq-table td::before {
+        content: attr(data-label);
+        flex-shrink: 0;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: var(--color-text-secondary, #64748b);
+    }
+
+    /* The item name leads the card: full width, no label, and
+       visually the card's heading. */
+    .stage-boq .boq-table td.col-item {
+        display: block;
+        text-align: left;
+        padding: 12px 0 10px;
+    }
+
+    .stage-boq .boq-table td.col-item::before {
+        content: none;
+    }
+
+    .stage-boq .boq-table td.col-item .item-name {
+        font-size: 0.9375rem;
+        font-weight: 650;
+    }
+
+    .stage-boq .boq-table td.col-actions {
+        justify-content: flex-end;
+        padding: 10px 0 12px;
+    }
+
+    .stage-boq .boq-table td.col-actions::before {
+        content: none;
+    }
+
+    /* Touch targets: the desktop icon buttons are too small to
+       hit reliably on a phone. */
+    .stage-boq .boq-table td.col-actions .action-btn {
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    .stage-boq .boq-table td.col-actions .action-group {
+        gap: 8px;
+    }
+}

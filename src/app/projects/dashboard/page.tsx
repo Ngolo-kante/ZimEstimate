@@ -865,7 +865,7 @@ function DashboardContent() {
         /* ── Analytics Grid ── */
         .analytics-grid {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 16px;
         }
 
@@ -1075,7 +1075,7 @@ function DashboardContent() {
         /* ── Responsive ── */
         @media (max-width: 1024px) {
           .analytics-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
           }
         }
 

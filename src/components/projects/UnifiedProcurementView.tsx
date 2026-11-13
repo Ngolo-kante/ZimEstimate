@@ -1,187 +1,64 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { DOCUMENT_ACCEPT, validateDocumentFile } from '@/lib/documentFiles';
-import { prepareImageForUpload } from '@/lib/compressImage';
-import Button from '@/components/ui/Button';
-import EmptyState from '@/components/ui/EmptyState';
+import { useState, useMemo, useEffect, type Dispatch, type SetStateAction } from 'react';
 import RfqPanel from './RfqPanel';
 import { useToast } from '@/components/ui/Toast';
-import { useCurrency } from '@/components/ui/CurrencyToggle';
-import {
-  getPurchaseRecords,
-  getSuppliers,
-  createPurchaseRecord,
-  uploadDocument,
-  getProjectDocuments,
-  getDocumentUrl,
-  updateBOQItem,
-} from '@/lib/services/projects';
-import { supabase } from '@/lib/supabase';
-import { getProjectRfqs } from '@/lib/services/rfq';
-import type { RfqWithDetails } from '@/lib/services/rfq';
-import {
-  Project,
-  BOQItem,
-  PurchaseRecord,
-  Supplier,
-  ProjectDocument,
-} from '@/lib/database.types';
+import { getDocumentUrl } from '@/lib/services/projects';
+import type { Project, BOQItem, ProjectDocument, PurchaseRecord } from '@/lib/database.types';
 import { useReveal } from '@/hooks/useReveal';
 import {
-  Plus,
-  MagnifyingGlass,
-  DownloadSimple,
-  ShoppingCart,
-  FileText,
-  Storefront,
-  ArrowClockwise,
-  CaretDown,
-  CaretUp,
-  Check,
-  Warning,
-  Clock,
-  Package,
-  Receipt,
-  X,
-  Funnel,
-  Paperclip,
-  Camera,
-  Minus,
-  Cube,
-  Wall,
-  House,
-  PaintBrush,
-  Plug,
-  Tree,
-} from '@phosphor-icons/react';
-
-type ProcurementStage = 'boq' | 'rfq' | 'history';
-type ItemStatus = 'pending' | 'in_progress' | 'purchased' | 'over_purchased';
-type StatusFilter = ItemStatus | 'all' | 'outstanding' | 'fulfilled';
-type GroupByOption = 'stage' | 'category' | 'none';
-type BOQStage = 'substructure' | 'superstructure' | 'roofing' | 'finishing' | 'services' | 'exterior';
-
-// Consistent naming with BOQ wizard milestones
-const STAGE_CONFIG: Record<BOQStage, { label: string; icon: typeof Cube; color: string; description: string }> = {
-  substructure: {
-    label: 'Site Preparation & Foundation',
-    icon: Cube,
-    color: 'var(--color-accent)',
-    description: 'Foundation, DPC, floor slab'
-  },
-  superstructure: {
-    label: 'Structural Walls & Frame',
-    icon: Wall,
-    color: 'var(--color-accent)',
-    description: 'Walls, lintels, ring beam'
-  },
-  roofing: {
-    label: 'Roofing',
-    icon: House,
-    color: 'var(--color-primary)',
-    description: 'Timber, sheets, gutters'
-  },
-  finishing: {
-    label: 'Interior & Finishing',
-    icon: PaintBrush,
-    color: 'var(--color-accent)',
-    description: 'Plastering, painting, doors and windows'
-  },
-  services: {
-    label: 'Plumbing & Electrical',
-    icon: Plug,
-    color: 'var(--color-accent)',
-    description: 'Pipes, sanitaryware, wiring and fittings'
-  },
-  exterior: {
-    label: 'External Work',
-    icon: Tree,
-    color: 'var(--color-primary-light)',
-    description: 'Boundary, gates, driveway'
-  },
-};
-
-const toIsoMidday = (dateString: string) => {
-  if (!dateString) return new Date().toISOString();
-  const [year, month, day] = dateString.split('-').map(Number);
-  const safeDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-  return safeDate.toISOString();
-};
+  filterProcurementItems,
+  groupProcurementItems,
+  procurementStats,
+  purchasesCsv,
+  withPurchases,
+  type GroupByOption,
+  type ItemWithPurchases,
+  type ProcurementStage,
+  type StatusFilter,
+} from '@/lib/projects/procurement';
+import { ArrowClockwise, Warning } from '@phosphor-icons/react';
+import { useProcurementData } from './procurement/useProcurementData';
+import { usePurchaseForm } from './procurement/usePurchaseForm';
+import ProcurementSummary from './procurement/ProcurementSummary';
+import ProcurementTabs from './procurement/ProcurementTabs';
+import ProcurementToolbar from './procurement/ProcurementToolbar';
+import ProcurementItemsTab from './procurement/ProcurementItemsTab';
+import ProcurementPurchasesTab from './procurement/ProcurementPurchasesTab';
+import PurchaseDialog from './procurement/PurchaseDialog';
 
 interface UnifiedProcurementViewProps {
   project: Project;
+  purchases: PurchaseRecord[];
+  setPurchases: Dispatch<SetStateAction<PurchaseRecord[]>>;
   items: BOQItem[];
   onItemsRefresh: () => Promise<void>;
   selectedItemForPurchase?: BOQItem | null;
   onClearSelectedItem?: () => void;
 }
 
-interface ItemWithPurchases extends BOQItem {
-  purchaseRecords: PurchaseRecord[];
-  totalPurchased: number;
-  totalSpent: number;
-  status: ItemStatus;
-  remainingQty: number;
-}
-
-interface FormErrors {
-  supplierName?: string;
-  quantity?: string;
-  unitPrice?: string;
-  purchasedAt?: string;
-}
-
 export default function UnifiedProcurementView({
   project,
+  purchases,
+  setPurchases,
   items,
   onItemsRefresh,
   selectedItemForPurchase: externalSelectedItem,
   onClearSelectedItem,
 }: UnifiedProcurementViewProps) {
   const { success, error: showError } = useToast();
-  const { formatPrice, exchangeRate } = useCurrency();
 
-  // State
+  // Which section, and how the items are searched, filtered and grouped
   const [activeStage, setActiveStage] = useState<ProcurementStage>('boq');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [groupBy, setGroupBy] = useState<GroupByOption>('stage');
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
-  // Data State
-  const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
-  const [rfqs, setRfqs] = useState<RfqWithDetails[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [receiptDocs, setReceiptDocs] = useState<ProjectDocument[]>([]);
-
-  // Modal States
-  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  const [selectedItemForPurchase, setSelectedItemForPurchase] = useState<BOQItem | null>(null);
-  const [isSavingPurchase, setIsSavingPurchase] = useState(false);
-  const [purchaseError, setPurchaseError] = useState<string | null>(null);
-  const [purchaseStatus, setPurchaseStatus] = useState('');
-  const purchaseBusy = useRef(false);
-  const purchaseDialog = useRef<HTMLDialogElement>(null);
-  const uploadedReceipt = useRef<{ file: File; id: string } | null>(null);
-  const cameraInput = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (showPurchaseModal) purchaseDialog.current?.showModal();
-  }, [showPurchaseModal]);
-  const [savingItemId, setSavingItemId] = useState<string | null>(null);
-  const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const realtimeRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [purchaseForm, setPurchaseForm] = useState({
-    supplierName: '',
-    quantity: '',
-    unitPrice: '',
-    purchasedAt: new Date().toISOString().split('T')[0],
-    notes: '',
-    receiptFile: null as File | null,
-  });
+  const {
+    isLoading, loadError, loadData, rfqs, suppliers, receiptDocs, setReceiptDocs,
+  } = useProcurementData(project.id);
 
   useReveal({ deps: [activeStage, isLoading, purchases.length, items.length] });
 
@@ -191,170 +68,30 @@ export default function UnifiedProcurementView({
     return map;
   }, [receiptDocs]);
 
-  const getItemStatus = (estimatedQty: number, purchasedQty: number): ItemStatus => {
-    const epsilon = 0.01;
-    if (purchasedQty < epsilon) return 'pending';
-    if (purchasedQty >= estimatedQty - epsilon && purchasedQty <= estimatedQty + epsilon) return 'purchased';
-    if (purchasedQty > estimatedQty + epsilon) return 'over_purchased';
-    return 'in_progress';
-  };
+  const itemsWithPurchases: ItemWithPurchases[] = useMemo(() => withPurchases(items, purchases), [items, purchases]);
 
-  const itemsWithPurchases: ItemWithPurchases[] = useMemo(() => {
-    const purchasesByItem = new Map<string, PurchaseRecord[]>();
+  const filteredItems = useMemo(
+    () => filterProcurementItems(itemsWithPurchases, searchQuery, statusFilter),
+    [itemsWithPurchases, searchQuery, statusFilter]
+  );
 
-    purchases.forEach((p) => {
-      const list = purchasesByItem.get(p.boq_item_id) || [];
-      list.push(p);
-      purchasesByItem.set(p.boq_item_id, list);
-    });
+  const groupedItems = useMemo(() => groupProcurementItems(filteredItems, groupBy), [filteredItems, groupBy]);
 
-    return items.map((item) => {
-      const itemPurchases = purchasesByItem.get(item.id) || [];
-      const totalPurchased = itemPurchases.reduce((sum, p) => sum + Number(p.quantity), 0);
-      const totalSpent = itemPurchases.reduce((sum, p) => sum + Number(p.quantity) * Number(p.unit_price_usd), 0);
-      const estimatedQty = Number(item.quantity) || 0;
-      const status = getItemStatus(estimatedQty, totalPurchased);
-      const remainingQty = Math.max(0, estimatedQty - totalPurchased);
+  const stats = useMemo(
+    () => procurementStats(items, itemsWithPurchases, rfqs, project.total_usd),
+    [project.total_usd, items, itemsWithPurchases, rfqs]
+  );
 
-      return {
-        ...item,
-        purchaseRecords: itemPurchases.sort((a, b) =>
-          new Date(b.purchased_at).getTime() - new Date(a.purchased_at).getTime()
-        ),
-        totalPurchased,
-        totalSpent,
-        status,
-        remainingQty,
-      };
-    });
-  }, [items, purchases]);
-
-  const filteredItems = useMemo(() => {
-    let result = itemsWithPurchases;
-
-    if (searchQuery) {
-      const lowerQuery = searchQuery.toLowerCase();
-      result = result.filter((item) =>
-        item.material_name.toLowerCase().includes(lowerQuery) ||
-        item.category?.toLowerCase().includes(lowerQuery)
-      );
-    }
-
-    if (statusFilter === 'outstanding') {
-      result = result.filter((item) => item.status === 'pending' || item.status === 'in_progress');
-    } else if (statusFilter === 'fulfilled') {
-      result = result.filter((item) => item.status === 'purchased' || item.status === 'over_purchased');
-    } else if (statusFilter !== 'all') {
-      result = result.filter((item) => item.status === statusFilter);
-    }
-
-    return result;
-  }, [itemsWithPurchases, searchQuery, statusFilter]);
-
-  const groupedItems = useMemo(() => {
-    if (groupBy === 'none') {
-      return { 'All Items': filteredItems };
-    }
-
-    const groups: Record<string, ItemWithPurchases[]> = {};
-
-    filteredItems.forEach((item) => {
-      const key = groupBy === 'stage'
-        ? (item.category?.toLowerCase() as BOQStage) || 'other'
-        : item.category || 'Uncategorized';
-
-      if (!groups[key]) {
-        groups[key] = [];
-      }
-      groups[key].push(item);
-    });
-
-    if (groupBy === 'stage') {
-      const stageOrder: BOQStage[] = ['substructure', 'superstructure', 'roofing', 'finishing', 'services', 'exterior'];
-      const sortedGroups: Record<string, ItemWithPurchases[]> = {};
-
-      stageOrder.forEach((stage) => {
-        if (groups[stage]) {
-          sortedGroups[stage] = groups[stage];
-        }
-      });
-
-      Object.keys(groups).forEach((key) => {
-        if (!sortedGroups[key]) {
-          sortedGroups[key] = groups[key];
-        }
-      });
-
-      return sortedGroups;
-    }
-
-    return groups;
-  }, [filteredItems, groupBy]);
-
-  const stats = useMemo(() => {
-    const boqEstimate = items.reduce(
-      (sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unit_price_usd) || 0),
-      0
-    );
-    const totalBudget = boqEstimate || project.total_usd || 0;
-    const totalSpent = itemsWithPurchases.reduce((sum, item) => sum + item.totalSpent, 0);
-    const pendingRfqs = rfqs.filter(r => r.status === 'open' || r.status === 'draft').length;
-
-    const statusCounts = {
-      pending: itemsWithPurchases.filter(i => i.status === 'pending').length,
-      in_progress: itemsWithPurchases.filter(i => i.status === 'in_progress').length,
-      purchased: itemsWithPurchases.filter(i => i.status === 'purchased').length,
-      over_purchased: itemsWithPurchases.filter(i => i.status === 'over_purchased').length,
-    };
-
-    const fulfilledItems = statusCounts.purchased + statusCounts.over_purchased;
-    const outstandingItems = statusCounts.pending + statusCounts.in_progress;
-
-    return {
-      totalBudget,
-      totalSpent,
-      remainingBudget: totalBudget - totalSpent,
-      variance: totalSpent - totalBudget,
-      pendingRfqs,
-      statusCounts,
-      spendingProgress: totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0,
-      purchaseProgress: items.length > 0 ? (fulfilledItems / items.length) * 100 : 0,
-      fulfilledItems,
-      outstandingItems,
-      totalItems: items.length,
-    };
-  }, [project.total_usd, items, itemsWithPurchases, rfqs]);
-
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    setLoadError(null);
-    try {
-      const [purchasesData, rfqsData, suppliersData, receiptsData] = await Promise.all([
-        getPurchaseRecords(project.id),
-        getProjectRfqs(project.id),
-        getSuppliers(),
-        getProjectDocuments(project.id, 'receipt'),
-      ]);
-
-      const requestError = purchasesData.error || rfqsData.error || suppliersData.error || receiptsData.error;
-      if (requestError) throw requestError;
-
-      setPurchases(purchasesData.records);
-      setRfqs(rfqsData.rfqs);
-      setSuppliers(suppliersData.suppliers);
-      setReceiptDocs(receiptsData.documents);
-    } catch (err) {
-      console.error('Failed to load procurement data:', err);
-      setLoadError('Procurement data could not be loaded. Check your connection and try again.');
-      showError('Failed to load procurement data');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [project.id, showError]);
-
-  useEffect(() => {
-    void loadData();
-  }, [loadData]);
+  const purchase = usePurchaseForm({
+    projectId: project.id,
+    suppliers,
+    itemsWithPurchases,
+    setPurchases,
+    setReceiptDocs,
+    setExpandedItems,
+    onItemsRefresh,
+  });
+  const { openPurchaseModal, savingItemId } = purchase;
 
   // Handle external item selection (from BOQ quick action)
   useEffect(() => {
@@ -362,188 +99,8 @@ export default function UnifiedProcurementView({
       openPurchaseModal(externalSelectedItem);
       onClearSelectedItem?.();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- as before the split: runs when a new item arrives, not when the opener is recreated
   }, [externalSelectedItem, onClearSelectedItem]);
-
-  useEffect(() => {
-    const scheduleRefresh = () => {
-      if (realtimeRefreshTimeoutRef.current) {
-        clearTimeout(realtimeRefreshTimeoutRef.current);
-      }
-      realtimeRefreshTimeoutRef.current = setTimeout(() => {
-        void loadData();
-        void onItemsRefresh();
-      }, 250);
-    };
-
-    const channel = supabase
-      .channel(`procurement-${project.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'purchase_records',
-          filter: `project_id=eq.${project.id}`,
-        },
-        () => scheduleRefresh()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'boq_items',
-          filter: `project_id=eq.${project.id}`,
-        },
-        () => scheduleRefresh()
-      )
-      .subscribe();
-
-    return () => {
-      if (realtimeRefreshTimeoutRef.current) {
-        clearTimeout(realtimeRefreshTimeoutRef.current);
-        realtimeRefreshTimeoutRef.current = null;
-      }
-      void supabase.removeChannel(channel);
-    };
-  }, [loadData, project.id, onItemsRefresh]);
-
-  const resetPurchaseForm = () => {
-    uploadedReceipt.current = null;
-    setPurchaseError(null);
-    setPurchaseStatus('');
-    setPurchaseForm({
-      supplierName: '',
-      quantity: '',
-      unitPrice: '',
-      purchasedAt: new Date().toISOString().split('T')[0],
-      notes: '',
-      receiptFile: null,
-    });
-    setFormErrors({});
-  };
-
-  const openPurchaseModal = (item: BOQItem) => {
-    if (purchaseBusy.current) return;
-    uploadedReceipt.current = null;
-    setPurchaseError(null);
-    setPurchaseStatus('');
-    setSelectedItemForPurchase(item);
-    setPurchaseForm({
-      supplierName: '',
-      quantity: '',
-      unitPrice: item.unit_price_usd ? String(item.unit_price_usd) : '',
-      purchasedAt: new Date().toISOString().split('T')[0],
-      notes: '',
-      receiptFile: null,
-    });
-    setFormErrors({});
-    setShowPurchaseModal(true);
-  };
-
-  const validateForm = (): boolean => {
-    const errors: FormErrors = {};
-
-    if (!purchaseForm.supplierName.trim()) {
-      errors.supplierName = 'Supplier name is required';
-    }
-
-    const quantity = Number(purchaseForm.quantity);
-    if (!purchaseForm.quantity || isNaN(quantity) || quantity <= 0) {
-      errors.quantity = 'Enter a valid quantity greater than 0';
-    }
-
-    const unitPrice = Number(purchaseForm.unitPrice);
-    if (!purchaseForm.unitPrice || isNaN(unitPrice) || unitPrice <= 0) {
-      errors.unitPrice = 'Enter a valid unit price greater than 0';
-    }
-
-    if (!purchaseForm.purchasedAt) {
-      errors.purchasedAt = 'Purchase date is required';
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const closePurchase = () => {
-    if (purchaseBusy.current) return;
-    setShowPurchaseModal(false);
-    resetPurchaseForm();
-    setSelectedItemForPurchase(null);
-  };
-
-  const selectReceipt = async (picked?: File) => {
-    if (!picked) return;
-    // A receipt photo only has to stay legible: shrunk before the size check,
-    // it is accepted at any phone resolution and uploads far faster.
-    const file = await prepareImageForUpload(picked, 'record');
-    const error = validateDocumentFile(file);
-    setPurchaseError(error);
-    if (!error) {
-      uploadedReceipt.current = null;
-      setPurchaseForm(current => ({ ...current, receiptFile: file }));
-    }
-  };
-
-  const handleSavePurchase = async () => {
-    if (purchaseBusy.current || !selectedItemForPurchase || !validateForm()) return;
-    purchaseBusy.current = true;
-    setIsSavingPurchase(true);
-    setPurchaseError(null);
-    const supplierName = purchaseForm.supplierName.trim();
-    const quantity = Number(purchaseForm.quantity);
-    const unitPrice = Number(purchaseForm.unitPrice);
-    const itemId = selectedItemForPurchase.id;
-    const matchedSupplier = suppliers.find(supplier => supplier.name.toLowerCase() === supplierName.toLowerCase());
-    setSavingItemId(itemId);
-    try {
-      let receiptDocumentId = uploadedReceipt.current?.file === purchaseForm.receiptFile ? uploadedReceipt.current.id : null;
-      if (purchaseForm.receiptFile && !receiptDocumentId) {
-        setPurchaseStatus('Uploading receipt…');
-        const { document, error } = await uploadDocument(project.id, purchaseForm.receiptFile, 'receipt', `Receipt for ${selectedItemForPurchase.material_name}`);
-        if (error || !document) throw error || new Error('Receipt upload did not complete.');
-        receiptDocumentId = document.id;
-        uploadedReceipt.current = { file: purchaseForm.receiptFile, id: document.id };
-        setReceiptDocs(prev => [document, ...prev.filter(d => d.id !== document.id)]);
-      }
-      setPurchaseStatus('Saving purchase…');
-      const { record, error } = await createPurchaseRecord({
-        project_id: project.id, boq_item_id: itemId, supplier_name: supplierName,
-        supplier_id: matchedSupplier?.id || null, quantity, unit_price_usd: unitPrice,
-        purchased_at: toIsoMidday(purchaseForm.purchasedAt), notes: purchaseForm.notes || null,
-        receipt_document_id: receiptDocumentId,
-      });
-      if (error || !record) throw error || new Error('Purchase could not be saved.');
-      setPurchases(prev => [record, ...prev.filter(p => p.id !== record.id)]);
-      setExpandedItems(prev => new Set(prev).add(itemId));
-      // Once the purchase exists, a refresh failure must not invite a duplicate retry.
-      setShowPurchaseModal(false);
-      const currentItem = itemsWithPurchases.find(i => i.id === itemId);
-      const newTotalPurchased = (currentItem?.totalPurchased || 0) + quantity;
-      try {
-        const { error: syncError } = await updateBOQItem(itemId, {
-          actual_quantity: newTotalPurchased, actual_price_usd: unitPrice,
-          is_purchased: newTotalPurchased >= Number(selectedItemForPurchase.quantity),
-          purchased_date: new Date().toISOString(),
-        });
-        if (syncError) throw syncError;
-        await onItemsRefresh();
-        success('Purchase saved');
-      } catch {
-        showError('Purchase saved. Refresh the project to update the totals.');
-      }
-      setSelectedItemForPurchase(null);
-      resetPurchaseForm();
-    } catch (err) {
-      setPurchaseError(`${err instanceof Error ? err.message : 'Could not save purchase.'} Your details are kept here. Please retry.`);
-      setPurchaseStatus('');
-    } finally {
-      purchaseBusy.current = false;
-      setIsSavingPurchase(false);
-      setSavingItemId(null);
-    }
-  };
 
   const handleOpenReceipt = async (documentId: string | null) => {
     if (!documentId) return;
@@ -590,26 +147,7 @@ export default function UnifiedProcurementView({
       return;
     }
 
-    const itemMap = new Map(items.map(i => [i.id, i]));
-    const headers = ['Date', 'Material', 'Category', 'Supplier', 'Quantity', 'Unit', 'Unit Price (USD)', 'Total (USD)', 'Notes'];
-    const rows = purchases.map(record => {
-      const item = itemMap.get(record.boq_item_id);
-      const qty = Number(record.quantity);
-      const price = Number(record.unit_price_usd);
-      return [
-        new Date(record.purchased_at).toLocaleDateString(),
-        item?.material_name || 'Unknown',
-        item?.category || '',
-        record.supplier_name,
-        qty.toFixed(2),
-        item?.unit || '',
-        price.toFixed(2),
-        (qty * price).toFixed(2),
-        (record.notes || '').replace(/,/g, ';'),
-      ].join(',');
-    });
-
-    const csv = [headers.join(','), ...rows].join('\n');
+    const csv = purchasesCsv(purchases, items);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -621,587 +159,6 @@ export default function UnifiedProcurementView({
     URL.revokeObjectURL(url);
     success('Purchases exported to CSV');
   };
-
-  const getStatusConfig = (status: ItemStatus) => {
-    switch (status) {
-      case 'pending':
-        return { label: 'Pending', icon: Clock, bgClass: 'status-pending' };
-      case 'in_progress':
-        return { label: 'In Progress', icon: Package, bgClass: 'status-progress' };
-      case 'purchased':
-        return { label: 'Purchased', icon: Check, bgClass: 'status-purchased' };
-      case 'over_purchased':
-        return { label: 'Over Purchased', icon: Warning, bgClass: 'status-over' };
-    }
-  };
-
-  const getStageStats = (stageItems: ItemWithPurchases[]) => {
-    const total = stageItems.length;
-    const purchased = stageItems.filter(i => i.status === 'purchased').length;
-    const inProgress = stageItems.filter(i => i.status === 'in_progress').length;
-    const totalSpent = stageItems.reduce((sum, i) => sum + i.totalSpent, 0);
-    return { total, purchased, inProgress, totalSpent };
-  };
-
-  const spendingBarColor = stats.spendingProgress > 100
-    ? 'var(--color-danger)'
-    : stats.spendingProgress > 75
-      ? 'var(--color-amber)'
-      : 'var(--color-accent)';
-
-  const renderStageTabs = () => (
-    <nav className="stage-tabs reveal" data-delay="1" aria-label="Procurement sections">
-      <button
-        type="button"
-        aria-current={activeStage === 'boq' ? 'page' : undefined}
-        onClick={() => setActiveStage('boq')}
-        className={`stage-tab-btn min-h-11 ${activeStage === 'boq' ? 'active' : ''}`}
-      >
-        <Package size={16} weight="duotone" />
-        <span>Items</span>
-        <span className="tab-count">{items.length}</span>
-      </button>
-      <button
-        type="button"
-        aria-current={activeStage === 'rfq' ? 'page' : undefined}
-        onClick={() => setActiveStage('rfq')}
-        className={`stage-tab-btn min-h-11 ${activeStage === 'rfq' ? 'active' : ''}`}
-      >
-        <FileText size={16} weight="duotone" />
-        <span>Quotes</span>
-        {stats.pendingRfqs > 0 && <span className="tab-count">{stats.pendingRfqs}</span>}
-      </button>
-      <button
-        type="button"
-        aria-current={activeStage === 'history' ? 'page' : undefined}
-        onClick={() => setActiveStage('history')}
-        className={`stage-tab-btn min-h-11 ${activeStage === 'history' ? 'active' : ''}`}
-      >
-        <Receipt size={16} weight="duotone" />
-        <span>Purchases</span>
-        {purchases.length > 0 && <span className="tab-count">{purchases.length}</span>}
-      </button>
-    </nav>
-  );
-
-  const renderSummaryCards = () => (
-    <section
-      className="reveal overflow-hidden rounded-lg border border-[var(--color-border-light)] bg-[var(--color-surface)]"
-      data-delay="2"
-      aria-label="Procurement overview"
-    >
-      <div className="grid grid-cols-2 divide-x divide-[var(--color-border-light)] border-b border-[var(--color-border-light)] lg:grid-cols-4">
-        <button
-          type="button"
-          onClick={() => {
-            setActiveStage('boq');
-            setStatusFilter(statusFilter === 'outstanding' ? 'all' : 'outstanding');
-          }}
-          aria-pressed={statusFilter === 'outstanding'}
-          className="min-h-24 p-3 text-left transition-colors hover:bg-[var(--color-mist)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-accent)] sm:p-4"
-        >
-          <span className="flex items-center gap-2 text-xs font-semibold text-[var(--color-text-secondary)]">
-            <Clock size={17} weight="bold" className="text-[var(--color-amber)]" /> Pending items
-          </span>
-          <strong className="mt-2 block text-2xl font-bold text-[var(--color-text)]">{stats.outstandingItems}</strong>
-          <span className="text-xs text-[var(--color-text-muted)]">still need purchasing</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setActiveStage('boq');
-            setStatusFilter(statusFilter === 'fulfilled' ? 'all' : 'fulfilled');
-          }}
-          aria-pressed={statusFilter === 'fulfilled'}
-          className="min-h-24 p-3 text-left transition-colors hover:bg-[var(--color-mist)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-accent)] sm:p-4"
-        >
-          <span className="flex items-center gap-2 text-xs font-semibold text-[var(--color-text-secondary)]">
-            <Check size={17} weight="bold" className="text-[var(--color-success)]" /> Purchased
-          </span>
-          <strong className="mt-2 block text-2xl font-bold text-[var(--color-text)]">
-            {stats.fulfilledItems}<span className="text-sm font-medium text-[var(--color-text-muted)]">/{stats.totalItems}</span>
-          </strong>
-          <span className="text-xs text-[var(--color-text-muted)]">{stats.purchaseProgress.toFixed(0)}% fulfilled</span>
-        </button>
-
-        <div className="col-span-2 border-t border-[var(--color-border-light)] p-3 sm:p-4 lg:border-t-0">
-          <div className="flex min-w-0 items-start justify-between gap-3">
-            <div className="min-w-0">
-              <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Actual spend</span>
-              <strong className="mt-1 block break-words text-lg font-bold text-[var(--color-text)] sm:text-xl">
-                {formatPrice(stats.totalSpent, stats.totalSpent * exchangeRate)}
-              </strong>
-            </div>
-            <div className="min-w-0 text-right">
-              <span className="text-xs font-semibold text-[var(--color-text-secondary)]">BOQ estimate</span>
-              <strong className="mt-1 block break-words text-sm font-bold text-[var(--color-text)] sm:text-base">
-                {formatPrice(stats.totalBudget, stats.totalBudget * exchangeRate)}
-              </strong>
-            </div>
-          </div>
-          <div
-            className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-mist)]"
-            role="progressbar"
-            aria-label="Actual spend against BOQ estimate"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.min(100, Math.round(stats.spendingProgress))}
-          >
-            <div
-              className="h-full rounded-full motion-safe:transition-[width] motion-safe:duration-300"
-              style={{ width: `${Math.min(stats.spendingProgress, 100)}%`, background: spendingBarColor }}
-            />
-          </div>
-          <div className="mt-2 flex items-center justify-between gap-3 text-xs">
-            <span className="text-[var(--color-text-muted)]">{stats.spendingProgress.toFixed(0)}% used</span>
-            <span className={stats.variance > 0 ? 'font-semibold text-[var(--color-danger)]' : 'font-semibold text-[var(--color-success)]'}>
-              {stats.variance > 0 ? 'Over by ' : 'Available '}
-              {formatPrice(Math.abs(stats.remainingBudget), Math.abs(stats.remainingBudget) * exchangeRate)}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setActiveStage('rfq')}
-        className="flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[var(--color-mist)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-accent)] sm:px-4"
-      >
-        <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
-          <FileText size={18} weight="duotone" className="shrink-0 text-[var(--color-accent)]" />
-          <span className="truncate">Request and compare supplier quotes</span>
-        </span>
-        <span className="shrink-0 text-xs font-semibold text-[var(--color-accent)]">
-          {stats.pendingRfqs > 0 ? `${stats.pendingRfqs} active` : 'Start RFQ'}
-        </span>
-      </button>
-    </section>
-  );
-
-  const renderToolbar = () => (
-    <div className="procurement-toolbar reveal !rounded-lg" data-delay="3">
-      <div className="toolbar-left">
-        <div className="search-box">
-          <MagnifyingGlass className="search-icon" size={16} />
-          <input
-            type="text"
-            aria-label="Search procurement materials"
-            placeholder="Search materials..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input !h-11"
-          />
-        </div>
-        <select
-          aria-label="Filter materials by purchase status"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-          className="status-filter !h-11"
-        >
-          <option value="all">All Status</option>
-          <option value="outstanding">Needs Purchasing</option>
-          <option value="fulfilled">Fulfilled</option>
-          <option value="pending">Pending</option>
-          <option value="in_progress">In Progress</option>
-          <option value="purchased">Purchased</option>
-          <option value="over_purchased">Over Purchased</option>
-        </select>
-      </div>
-
-      <div className="toolbar-right">
-        <div className="group-toggle">
-          <Funnel size={14} />
-          <span className="group-label">Group:</span>
-          <select
-            aria-label="Group procurement materials"
-            value={groupBy}
-            onChange={(e) => setGroupBy(e.target.value as GroupByOption)}
-            className="group-select !h-11"
-          >
-            <option value="stage">By Stage</option>
-            <option value="category">By Category</option>
-            <option value="none">No Grouping</option>
-          </select>
-        </div>
-        <Button className="min-h-11" variant="ghost" icon={<DownloadSimple size={16} />} onClick={handleExportCSV} aria-label="Export purchases as CSV">
-          <span className="btn-text-desktop">Export CSV</span>
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderItemCard = (item: ItemWithPurchases) => {
-    const isExpanded = expandedItems.has(item.id);
-    const isSaving = savingItemId === item.id;
-    const statusConfig = getStatusConfig(item.status);
-    const StatusIcon = statusConfig.icon;
-    const progressPercent = item.quantity > 0
-      ? Math.min(100, (item.totalPurchased / Number(item.quantity)) * 100)
-      : 0;
-
-    return (
-      <div key={item.id} className={`boq-item-card !rounded-lg ${statusConfig.bgClass} ${isSaving ? 'is-saving' : ''}`}>
-        <div
-          className="item-main"
-          onClick={() => item.purchaseRecords.length > 0 && toggleItemExpanded(item.id)}
-          onKeyDown={(event) => {
-            if (event.target === event.currentTarget && item.purchaseRecords.length > 0 && (event.key === 'Enter' || event.key === ' ')) {
-              event.preventDefault();
-              toggleItemExpanded(item.id);
-            }
-          }}
-          role={item.purchaseRecords.length > 0 ? 'button' : undefined}
-          tabIndex={item.purchaseRecords.length > 0 ? 0 : undefined}
-          aria-expanded={item.purchaseRecords.length > 0 ? isExpanded : undefined}
-          aria-label={item.purchaseRecords.length > 0 ? `${item.material_name}: ${isExpanded ? 'hide' : 'show'} purchase history` : undefined}
-        >
-          <div className="item-expand">
-            {item.purchaseRecords.length > 0 ? (
-              isExpanded ? <CaretUp size={16} weight="bold" /> : <CaretDown size={16} weight="bold" />
-            ) : (
-              <span className="expand-placeholder" />
-            )}
-          </div>
-
-          <div className="item-info">
-            <div className="item-name">{item.material_name}</div>
-            <div className="item-meta">
-              {item.category && <span className="item-category">{item.category}</span>}
-              <span className="item-unit">{item.unit}</span>
-              {item.purchaseRecords.length > 0 && (
-                <span className="purchase-count">{item.purchaseRecords.length} purchase{item.purchaseRecords.length !== 1 ? 's' : ''}</span>
-              )}
-            </div>
-          </div>
-
-          <div className="item-quantities">
-            <div className="qty-group">
-              <span className="qty-label">BOQ</span>
-              <span className="qty-value">{Number(item.quantity).toFixed(1)}</span>
-            </div>
-            <div className="qty-group">
-              <span className="qty-label">Bought</span>
-              <span className="qty-value purchased">{item.totalPurchased.toFixed(1)}</span>
-            </div>
-            <div className="qty-group">
-              <span className="qty-label">Left</span>
-              <span className={`qty-value ${item.remainingQty <= 0 ? 'complete' : 'remaining'}`}>
-                {item.remainingQty.toFixed(1)}
-              </span>
-            </div>
-          </div>
-
-          <div className="item-progress">
-            <div
-              className="progress-bar"
-              role="progressbar"
-              aria-label={`${item.material_name} purchased`}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(progressPercent)}
-            >
-              <div
-                className={`progress-fill ${statusConfig.bgClass}`}
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            <span className="progress-text">{progressPercent.toFixed(0)}%</span>
-          </div>
-
-          <div className="item-spent">
-            <span className="spent-label">Spent</span>
-            <span className="spent-value">
-              {formatPrice(item.totalSpent, item.totalSpent * exchangeRate)}
-            </span>
-          </div>
-
-          <div className={`item-status ${statusConfig.bgClass}`}>
-            <StatusIcon size={14} weight="bold" />
-            <span>{statusConfig.label}</span>
-          </div>
-
-          <div className="item-actions">
-            <Button
-              size="sm"
-              className="min-h-11"
-              variant="primary"
-              icon={<Plus size={14} />}
-              onClick={(e) => {
-                e.stopPropagation();
-                openPurchaseModal(item);
-              }}
-            >
-              <span className="btn-text">Log</span>
-            </Button>
-          </div>
-        </div>
-
-        {/* Expanded Purchase Ledger */}
-        {isExpanded && item.purchaseRecords.length > 0 && (
-          <div className="item-history">
-            <div className="history-header">
-              <Receipt size={14} weight="duotone" />
-              <span>Purchase Ledger ({item.purchaseRecords.length} entries)</span>
-            </div>
-            <div className="ledger-table-wrapper">
-              <table className="ledger-table">
-                <thead>
-                  <tr>
-                    <th className="col-date">Date</th>
-                    <th className="col-supplier">Supplier</th>
-                    <th className="col-qty">Qty</th>
-                    <th className="col-price">Unit Price</th>
-                    <th className="col-total">Total</th>
-                    <th className="col-receipt">Receipt</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {item.purchaseRecords.map((record) => {
-                    const recordTotal = Number(record.quantity) * Number(record.unit_price_usd);
-                    const isOptimistic = record.id.startsWith('optimistic-');
-                    return (
-                      <tr key={record.id} className={isOptimistic ? 'optimistic-row' : ''}>
-                        <td className="col-date">
-                          <span className="date-text">{new Date(record.purchased_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                        </td>
-                        <td className="col-supplier">
-                          <div className="supplier-name">
-                            <Storefront size={14} weight="duotone" />
-                            <span>{record.supplier_name}</span>
-                          </div>
-                          {record.notes && <div className="supplier-notes">{record.notes}</div>}
-                        </td>
-                        <td className="col-qty mono">{Number(record.quantity).toFixed(2)}</td>
-                        <td className="col-price mono">{formatPrice(Number(record.unit_price_usd), Number(record.unit_price_usd) * exchangeRate)}</td>
-                        <td className="col-total mono bold">{formatPrice(recordTotal, recordTotal * exchangeRate)}</td>
-                        <td className="col-receipt">
-                          {record.receipt_document_id ? (
-                            <button
-                              className="receipt-link min-h-11 min-w-11"
-                              aria-label={`Open receipt from ${record.supplier_name}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenReceipt(record.receipt_document_id);
-                              }}
-                            >
-                              <Paperclip size={12} aria-hidden="true" />
-                              View
-                            </button>
-                          ) : (
-                            <span className="no-receipt">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={2} className="footer-label">Total Purchased</td>
-                    <td className="col-qty mono bold">{item.totalPurchased.toFixed(2)}</td>
-                    <td></td>
-                    <td className="col-total mono bold">{formatPrice(item.totalSpent, item.totalSpent * exchangeRate)}</td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderBOQContent = () => {
-    if (isLoading) {
-      return (
-        <div className="loading-state">
-          <div className="loading-skeleton" />
-          <div className="loading-skeleton short" />
-          <div className="loading-skeleton" />
-        </div>
-      );
-    }
-
-    if (filteredItems.length === 0) {
-      return (
-        <EmptyState
-          icon={<ShoppingCart size={48} weight="light" />}
-          title="No items found"
-          description={searchQuery || statusFilter !== 'all'
-            ? "Try adjusting your filters"
-            : "Add items to your BOQ to start tracking procurement"}
-        />
-      );
-    }
-
-    return (
-      <div className="boq-groups">
-        {Object.entries(groupedItems).map(([groupKey, groupItems]) => {
-          const isCollapsed = collapsedGroups.has(groupKey);
-          const stageConfig = STAGE_CONFIG[groupKey as BOQStage];
-          const stageStats = getStageStats(groupItems);
-          const StageIcon = stageConfig?.icon || Package;
-
-          return (
-            <div key={groupKey} className="boq-group">
-              {groupBy !== 'none' && (
-                <button
-                  type="button"
-                  className="group-header !w-full !rounded-lg motion-reduce:transform-none motion-reduce:transition-none"
-                  onClick={() => toggleGroupCollapsed(groupKey)}
-                  aria-expanded={!isCollapsed}
-                  aria-label={`${stageConfig?.label || groupKey}: ${isCollapsed ? 'expand' : 'collapse'} ${stageStats.total} items`}
-                  style={{ '--stage-color': stageConfig?.color || 'var(--color-text-muted)' } as React.CSSProperties}
-                >
-                  <div className="group-header-left">
-                    <div className="group-icon" style={{ background: 'var(--color-primary-bg)', color: stageConfig?.color || 'var(--color-text-muted)' }}>
-                      <StageIcon size={18} weight="duotone" />
-                    </div>
-                    <div className="group-title">
-                      <h3>{stageConfig?.label || groupKey}</h3>
-                      <span className="group-count">{stageStats.total} item{stageStats.total !== 1 ? 's' : ''}</span>
-                    </div>
-                  </div>
-                  <div className="group-header-right">
-                    <div className="group-stats">
-                      <span className="stat purchased">{stageStats.purchased} purchased</span>
-                      {stageStats.inProgress > 0 && <span className="stat progress">{stageStats.inProgress} in progress</span>}
-                      <span className="stat spent">{formatPrice(stageStats.totalSpent, stageStats.totalSpent * exchangeRate)}</span>
-                    </div>
-                    <div className="group-toggle-icon">
-                      {isCollapsed ? <CaretDown size={16} /> : <CaretUp size={16} />}
-                    </div>
-                  </div>
-                </button>
-              )}
-
-              {!isCollapsed && (
-                <div className="group-items">
-                  {groupItems.map((item) => renderItemCard(item))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  // Ledger-style purchase history grouped by date
-  const renderHistoryContent = () => {
-    const allPurchases = [...purchases].sort((a, b) =>
-      new Date(b.purchased_at).getTime() - new Date(a.purchased_at).getTime()
-    );
-
-    if (allPurchases.length === 0) {
-      return (
-        <EmptyState
-          icon={<Receipt size={48} weight="light" />}
-          title="No purchases recorded"
-          description="Log purchases against BOQ items to see history here"
-        />
-      );
-    }
-
-    const itemMap = new Map(items.map(i => [i.id, i]));
-
-    // Group purchases by date
-    const purchasesByDate: Record<string, PurchaseRecord[]> = {};
-    allPurchases.forEach((record) => {
-      const dateKey = new Date(record.purchased_at).toLocaleDateString('en-GB', {
-        weekday: 'short',
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      });
-      if (!purchasesByDate[dateKey]) {
-        purchasesByDate[dateKey] = [];
-      }
-      purchasesByDate[dateKey].push(record);
-    });
-
-    return (
-      <div className="ledger-content">
-        <div className="ledger-header-bar">
-          <h3>Purchase Ledger</h3>
-          <span className="ledger-total">{purchases.length} transactions • Total: {formatPrice(stats.totalSpent, stats.totalSpent * exchangeRate)}</span>
-        </div>
-
-        <div className="ledger-container">
-          {Object.entries(purchasesByDate).map(([dateKey, dateRecords]) => {
-            const dayTotal = dateRecords.reduce((sum, r) => sum + (Number(r.quantity) * Number(r.unit_price_usd)), 0);
-            return (
-              <div key={dateKey} className="ledger-date-group">
-                <div className="ledger-date-header">
-                  <span className="ledger-date">{dateKey}</span>
-                  <span className="ledger-date-total">{formatPrice(dayTotal, dayTotal * exchangeRate)}</span>
-                </div>
-                <table className="ledger-table full-ledger">
-                  <thead>
-                    <tr>
-                      <th className="col-item">Material</th>
-                      <th className="col-supplier">Supplier</th>
-                      <th className="col-qty">Qty</th>
-                      <th className="col-unit">Unit</th>
-                      <th className="col-price">Unit Price</th>
-                      <th className="col-total">Total</th>
-                      <th className="col-receipt">Receipt</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dateRecords.map((record) => {
-                      const item = itemMap.get(record.boq_item_id);
-                      const recordTotal = Number(record.quantity) * Number(record.unit_price_usd);
-                      return (
-                        <tr key={record.id}>
-                          <td className="col-item">
-                            <span className="item-name">{item?.material_name || 'Unknown'}</span>
-                            {item?.category && <span className="item-cat">{item.category}</span>}
-                          </td>
-                          <td className="col-supplier">{record.supplier_name}</td>
-                          <td className="col-qty mono">{Number(record.quantity).toFixed(2)}</td>
-                          <td className="col-unit">{item?.unit || '—'}</td>
-                          <td className="col-price mono">{formatPrice(Number(record.unit_price_usd), Number(record.unit_price_usd) * exchangeRate)}</td>
-                          <td className="col-total mono bold">{formatPrice(recordTotal, recordTotal * exchangeRate)}</td>
-                          <td className="col-receipt">
-                            {record.receipt_document_id ? (
-                              <button
-                                className="receipt-link min-h-11 min-w-11"
-                                aria-label={`Open receipt for ${item?.material_name || 'purchase'}`}
-                                onClick={() => handleOpenReceipt(record.receipt_document_id)}
-                              >
-                                <Paperclip size={12} aria-hidden="true" />
-                              </button>
-                            ) : (
-                              <span className="no-receipt">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  // Was an EmptyState reading "RFQ management coming soon". The RFQ backend
-  // worked the whole time — only the Marketplace ever called it, one material
-  // at a time — so a builder could not raise a request from their own BOQ.
-  const renderRFQContent = () => (
-    <RfqPanel
-      project={project}
-      items={items}
-      rfqs={rfqs}
-      onRefresh={loadData}
-    />
-  );
 
   return (
     <div className="procurement-view">
@@ -1230,185 +187,85 @@ export default function UnifiedProcurementView({
         </div>
       ) : (
         <>
-          {renderSummaryCards()}
-          {renderStageTabs()}
+          <ProcurementSummary
+            stats={stats}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            setActiveStage={setActiveStage}
+          />
+          <ProcurementTabs
+            activeStage={activeStage}
+            setActiveStage={setActiveStage}
+            itemCount={items.length}
+            purchaseCount={purchases.length}
+            stats={stats}
+          />
 
           <div className="content-area">
-            {activeStage !== 'rfq' && renderToolbar()}
-            {activeStage === 'boq' && renderBOQContent()}
-            {activeStage === 'history' && renderHistoryContent()}
-            {activeStage === 'rfq' && renderRFQContent()}
+            {activeStage !== 'rfq' && (
+              <ProcurementToolbar
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+                groupBy={groupBy}
+                setGroupBy={setGroupBy}
+                onExportCsv={handleExportCSV}
+              />
+            )}
+            {activeStage === 'boq' && (
+              <ProcurementItemsTab
+                filteredItems={filteredItems}
+                groupedItems={groupedItems}
+                groupBy={groupBy}
+                searchQuery={searchQuery}
+                statusFilter={statusFilter}
+                collapsedGroups={collapsedGroups}
+                toggleGroupCollapsed={toggleGroupCollapsed}
+                expandedItems={expandedItems}
+                savingItemId={savingItemId}
+                toggleItemExpanded={toggleItemExpanded}
+                openPurchaseModal={openPurchaseModal}
+                onOpenReceipt={handleOpenReceipt}
+              />
+            )}
+            {activeStage === 'history' && (
+              <ProcurementPurchasesTab purchases={purchases} items={items} stats={stats} onOpenReceipt={handleOpenReceipt} />
+            )}
+            {/* Was an EmptyState reading "RFQ management coming soon". The RFQ backend
+                worked the whole time — only the Marketplace ever called it, one material
+                at a time — so a builder could not raise a request from their own BOQ. */}
+            {activeStage === 'rfq' && (
+              <RfqPanel
+                project={project}
+                items={items}
+                rfqs={rfqs}
+                onRefresh={loadData}
+              />
+            )}
           </div>
         </>
       )}
 
       {/* Purchase Modal */}
-      {showPurchaseModal && selectedItemForPurchase && (
-        <dialog ref={purchaseDialog} className="modal-overlay purchase-dialog" aria-labelledby="purchase-modal-title"
-          onCancel={e => { e.preventDefault(); closePurchase(); }}
-          onClick={e => { if (e.target === e.currentTarget) closePurchase(); }}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title-group">
-                <h3 id="purchase-modal-title">Record purchase</h3>
-                <p className="modal-item-name">{selectedItemForPurchase.material_name}</p>
-              </div>
-              <button type="button" className="modal-close !h-11 !w-11" aria-label="Close purchase form" disabled={isSavingPurchase} onClick={closePurchase}>
-                <X size={20} />
-              </button>
-            </div>
-            <fieldset className="modal-body purchase-fields" disabled={isSavingPurchase}>
-              <div className="modal-item-info">
-                <div className="info-cell">
-                  <span className="info-label">BOQ Qty</span>
-                  <span className="info-value">{Number(selectedItemForPurchase.quantity).toFixed(1)} {selectedItemForPurchase.unit}</span>
-                </div>
-                <div className="info-cell">
-                  <span className="info-label">Purchased</span>
-                  <span className="info-value">{itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id)?.totalPurchased.toFixed(1) || '0'} {selectedItemForPurchase.unit}</span>
-                </div>
-                <div className="info-cell highlight">
-                  <span className="info-label">Remaining</span>
-                  <span className="info-value">{itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id)?.remainingQty.toFixed(1) || selectedItemForPurchase.quantity} {selectedItemForPurchase.unit}</span>
-                </div>
-              </div>
-
-              <div className="form-section">
-                <div className={`form-field ${formErrors.supplierName ? 'has-error' : ''}`}>
-                  <label htmlFor="supplier-input">
-                    Supplier Name <span className="required">*</span>
-                  </label>
-                  <input
-                    id="supplier-input"
-                    type="text"
-                    list="supplier-list"
-                    value={purchaseForm.supplierName}
-                    onChange={(e) => {
-                      setPurchaseForm({ ...purchaseForm, supplierName: e.target.value });
-                      if (formErrors.supplierName) setFormErrors({ ...formErrors, supplierName: undefined });
-                    }}
-                    placeholder="e.g. PPC Zimbabwe"
-                    className={formErrors.supplierName ? 'error' : ''}
-                  />
-                  <datalist id="supplier-list">
-                    {suppliers.map((supplier) => (
-                      <option key={supplier.id} value={supplier.name} />
-                    ))}
-                  </datalist>
-                  {formErrors.supplierName && <span className="field-error">{formErrors.supplierName}</span>}
-                </div>
-
-                <div className="form-row three-col">
-                  <div className={`form-field ${formErrors.quantity ? 'has-error' : ''}`}>
-                    <label htmlFor="qty-input">
-                      Quantity <span className="required">*</span>
-                    </label>
-                    <input
-                      id="qty-input"
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      step="0.01"
-                      value={purchaseForm.quantity}
-                      onChange={(e) => {
-                        setPurchaseForm({ ...purchaseForm, quantity: e.target.value });
-                        if (formErrors.quantity) setFormErrors({ ...formErrors, quantity: undefined });
-                      }}
-                      placeholder="0.00"
-                      className={formErrors.quantity ? 'error' : ''}
-                    />
-                    <div className="quantity-actions">
-                      <button type="button" aria-label="Decrease quantity by one" onClick={() => setPurchaseForm(f => ({ ...f, quantity: String(Math.max(0, Number(f.quantity) - 1)) }))}><Minus size={18} /></button>
-                      <button type="button" aria-label="Increase quantity by one" onClick={() => setPurchaseForm(f => ({ ...f, quantity: String((Number(f.quantity) || 0) + 1) }))}><Plus size={18} /></button>
-                      <button type="button" onClick={() => setPurchaseForm(f => ({ ...f, quantity: String(Math.max(0, itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id)?.remainingQty ?? Number(selectedItemForPurchase.quantity))) }))}>Use remaining</button>
-                    </div>
-                    {formErrors.quantity && <span className="field-error">{formErrors.quantity}</span>}
-                  </div>
-                  <div className={`form-field ${formErrors.unitPrice ? 'has-error' : ''}`}>
-                    <label htmlFor="price-input">
-                      Unit Price (USD) <span className="required">*</span>
-                    </label>
-                    <input
-                      id="price-input"
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      step="0.01"
-                      value={purchaseForm.unitPrice}
-                      onChange={(e) => {
-                        setPurchaseForm({ ...purchaseForm, unitPrice: e.target.value });
-                        if (formErrors.unitPrice) setFormErrors({ ...formErrors, unitPrice: undefined });
-                      }}
-                      placeholder="0.00"
-                      className={formErrors.unitPrice ? 'error' : ''}
-                    />
-                    {formErrors.unitPrice && <span className="field-error">{formErrors.unitPrice}</span>}
-                  </div>
-                  <div className={`form-field ${formErrors.purchasedAt ? 'has-error' : ''}`}>
-                    <label htmlFor="date-input">
-                      Date <span className="required">*</span>
-                    </label>
-                    <input
-                      id="date-input"
-                      type="date"
-                      value={purchaseForm.purchasedAt}
-                      onChange={(e) => {
-                        setPurchaseForm({ ...purchaseForm, purchasedAt: e.target.value });
-                        if (formErrors.purchasedAt) setFormErrors({ ...formErrors, purchasedAt: undefined });
-                      }}
-                      className={formErrors.purchasedAt ? 'error' : ''}
-                    />
-                    {formErrors.purchasedAt && <span className="field-error">{formErrors.purchasedAt}</span>}
-                  </div>
-                </div>
-
-                <div className="form-field">
-                  <label htmlFor="notes-input">Notes <span className="optional">(optional)</span></label>
-                  <input
-                    id="notes-input"
-                    type="text"
-                    value={purchaseForm.notes}
-                    onChange={(e) => setPurchaseForm({ ...purchaseForm, notes: e.target.value })}
-                    placeholder="Invoice reference, delivery notes..."
-                  />
-                </div>
-
-                <div className="form-field">
-                  <label>Receipt <span className="optional">(optional)</span></label>
-                  <div className="file-upload-area">
-                    <input
-                      type="file"
-                      id="receipt-file-input"
-                      accept={DOCUMENT_ACCEPT}
-                      onChange={e => { selectReceipt(e.target.files?.[0]); e.target.value = ''; }}
-                    />
-                    <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={e => { selectReceipt(e.target.files?.[0]); e.target.value = ''; }} />
-                    <button type="button" className="receipt-camera" onClick={() => cameraInput.current?.click()}><Camera size={18} /> Take receipt photo</button>
-                    <label htmlFor="receipt-file-input" className="file-upload-label">
-                      <Paperclip size={18} />
-                      {purchaseForm.receiptFile ? (
-                        <span className="file-name">{purchaseForm.receiptFile.name}</span>
-                      ) : (
-                        <span className="file-placeholder">Attach receipt (image or PDF)</span>
-                      )}
-                    </label>
-                  </div>
-                </div>
-                <p role="status" className="purchase-status">{purchaseStatus}</p>
-                {purchaseError && <p role="alert" className="field-error">{purchaseError}</p>}
-              </div>
-            </fieldset>
-            <div className="modal-footer purchase-footer">
-              <div className="purchase-total"><span>Total (USD)</span><strong>${((Number(purchaseForm.quantity) || 0) * (Number(purchaseForm.unitPrice) || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
-              <Button variant="secondary" disabled={isSavingPurchase} onClick={closePurchase}>
-                Cancel
-              </Button>
-              <Button onClick={handleSavePurchase} loading={isSavingPurchase}>
-                {purchaseError ? 'Retry save' : 'Save purchase'}
-              </Button>
-            </div>
-          </div>
-        </dialog>
+      {purchase.showPurchaseModal && purchase.selectedItemForPurchase && (
+        <PurchaseDialog
+          purchaseDialog={purchase.purchaseDialog}
+          cameraInput={purchase.cameraInput}
+          selectedItemForPurchase={purchase.selectedItemForPurchase}
+          itemsWithPurchases={itemsWithPurchases}
+          suppliers={suppliers}
+          purchaseForm={purchase.purchaseForm}
+          setPurchaseForm={purchase.setPurchaseForm}
+          formErrors={purchase.formErrors}
+          setFormErrors={purchase.setFormErrors}
+          purchaseError={purchase.purchaseError}
+          purchaseStatus={purchase.purchaseStatus}
+          isSavingPurchase={purchase.isSavingPurchase}
+          closePurchase={purchase.closePurchase}
+          selectReceipt={purchase.selectReceipt}
+          onSavePurchase={purchase.handleSavePurchase}
+        />
       )}
     </div>
   );

@@ -1,1097 +1,103 @@
 'use client';
 
-import { isExtrasLabourLine } from '@/lib/projectFees';
-import { isLaborCategory } from '@/lib/calculations/laborSubstages';
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useMemo } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
-import Card, { CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import StageTab from '@/components/projects/StageTab';
-import DocumentsTab from '@/components/projects/DocumentsTab';
 import ProjectViewTabs from '@/components/projects/ProjectViewTabs';
-import ComplianceTrackerTab from '@/components/projects/ComplianceTrackerTab';
 import InviteModal from '@/components/projects/InviteModal';
 import SiteView from '@/components/projects/SiteView';
-import SitePhotosPanel from '@/components/projects/SitePhotosPanel';
 import ProjectShareSheet from '@/components/projects/ProjectShareSheet';
-import { RunningTotalBar } from '@/components/ui/RunningTotalBar';
-import { StageProgressCards } from '@/components/projects/StageProgressCards';
-import { CelebrationModal } from '@/components/ui/CelebrationModal';
-import BudgetPlanner, { NotificationChannel } from '@/components/ui/BudgetPlanner';
-import { projectMoney } from '@/lib/projects/budgetMath';
-import { summariseCompliance } from '@/lib/compliance';
-import { slopeLabel, soilLabel } from '@/lib/projects/siteLabels';
-import { useReminderChannels } from '@/hooks/useReminderChannels';
+import SidebarSpine from '@/components/projects/SidebarSpine';
+import ViewHeader from '@/components/projects/views/ViewHeader';
+import OverviewView from '@/components/projects/views/OverviewView';
+import BoqView from '@/components/projects/views/BoqView';
+import ComplianceView from '@/components/projects/views/ComplianceView';
+import ProcurementView from '@/components/projects/views/ProcurementView';
+import UsageView from '@/components/projects/views/UsageView';
+import DocumentsView from '@/components/projects/views/DocumentsView';
+import BudgetView from '@/components/projects/views/BudgetView';
+import SettingsView from '@/components/projects/views/SettingsView';
 import PhoneNumberModal from '@/components/ui/PhoneNumberModal';
-import ProjectUsageView from '@/components/projects/ProjectUsageView';
-import UnifiedProcurementView from '@/components/projects/UnifiedProcurementView';
-import ProjectKPIDashboard from '@/components/projects/ProjectKPIDashboard';
-import ProjectFeesPanel from '@/components/projects/ProjectFeesPanel';
-import ProjectCostSplit from '@/components/projects/ProjectCostSplit';
-import SidebarSpine, { PROJECT_NAV_ITEMS, ProjectView } from '@/components/projects/SidebarSpine';
-import ProjectSettings from '@/components/projects/ProjectSettings';
-import { useCurrency } from '@/components/ui/CurrencyToggle';
-import { useToast } from '@/components/ui/Toast';
-import { useAuth } from '@/components/providers/AuthProvider';
-import { useReveal } from '@/hooks/useReveal';
-import {
-    getProjectWithItems,
-    getBOQItems,
-    getPurchaseRecords,
-    getProjectDocuments,
-    getLatestWeeklyPrices,
-    getLatestProjectNotification,
-    createProjectNotification,
-    createReminder,
-    updateProject,
-    updateBOQItem,
-    deleteBOQItem,
-    getProjectRecurringReminder,
-    upsertProjectRecurringReminder,
-    updateProjectRecurringReminder,
-} from '@/lib/services/projects';
-import { supabase } from '@/lib/supabase';
-import { clearCreatedProjectSnapshot, getCreatedProjectSnapshot } from '@/lib/projectCreationCache';
-import { materials, getBestPrice } from '@/lib/materials';
-import { LOCATION_PROCEDURE_RULES } from '@/lib/buildFlowRules';
-import type { LocationTypeRule } from '@/lib/buildFlowRules';
-import { getComplianceRequirementStatus, getStageRequirements } from '@/lib/compliance';
-import {
-    getProjectStages,
-    getStageUsageData,
-} from '@/lib/services/stages';
-import {
-    Project,
-    BOQItem,
-    PurchaseRecord,
-    ProjectStageWithTasks,
-    BOQCategory,
-    ProjectRecurringReminder,
-} from '@/lib/database.types';
-import {
-    ShareNetwork,
-    UserPlus,
-    ArrowLeft,
-    MapPin,
-    Warning,
-    WarningCircle,
-    Wallet,
-    TrendUp,
-    CheckCircle,
-    PencilSimple,
-    X,
-} from '@phosphor-icons/react';
 import { ProjectDetailSkeleton } from '@/components/ui/Skeleton';
-
-// Stage categories in order
-const STAGE_CATEGORIES: BOQCategory[] = ['substructure', 'superstructure', 'roofing', 'finishing', 'services', 'exterior'];
-
-const categoryLabels: Record<BOQCategory, string> = {
-    substructure: 'Site Preparation & Foundation',
-    superstructure: 'Structural Walls & Frame',
-    roofing: 'Roofing',
-    finishing: 'Interior & Finishing',
-    services: 'Plumbing & Electrical',
-    exterior: 'External Work',
-};
-
-const categoryShortLabels: Record<BOQCategory, string> = {
-    substructure: 'Foundation',
-    superstructure: 'Structure',
-    roofing: 'Roof',
-    finishing: 'Finishes',
-    services: 'Plumbing & Electrical',
-    exterior: 'External',
-};
-
-const CHECKLIST_TASK_PREFIX = 'boq_checklist:';
-const GEOTECH_DOC_TAG = 'geotech_report';
-
-
-
-const LOCATION_TYPE_LABELS: Record<LocationTypeRule, string> = {
-    urban: 'Urban',
-    'peri-urban': 'Peri-Urban',
-    rural: 'Rural',
-};
-
-const parseProjectLocationType = (location?: string | null): LocationTypeRule | null => {
-    if (!location) return null;
-    const [prefix] = location.split(' — ');
-    const entry = Object.entries(LOCATION_TYPE_LABELS).find(([, label]) => label === prefix.trim());
-    return entry ? (entry[0] as LocationTypeRule) : null;
-};
-
-type PriceUpdate = {
-    itemId: string;
-    materialId: string;
-    materialName: string;
-    currentPriceUsd: number;
-    newPriceUsd: number;
-    deltaPercent: number;
-    lastUpdated: string;
-};
-
-const SYSTEM_PRICE_VERSION = materials.reduce((latest, material) => {
-    const bestPrice = getBestPrice(material.id);
-    const lastUpdated = bestPrice?.lastUpdated || '';
-    if (lastUpdated && lastUpdated > latest) {
-        return lastUpdated;
-    }
-    return latest;
-}, '');
+import { useCurrency } from '@/components/ui/CurrencyToggle';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { useReminderChannels } from '@/hooks/useReminderChannels';
+import { useReveal } from '@/hooks/useReveal';
+import { supabase } from '@/lib/supabase';
+import { summariseCompliance } from '@/lib/compliance';
+import { completionRate as completionPercent } from '@/lib/projects/workspaceStats';
+import { parseProjectLocationType, stageComplianceWarnings } from '@/lib/projects/workspaceStages';
+import type { BOQItem } from '@/lib/database.types';
+import { ArrowLeft, Warning } from '@phosphor-icons/react';
+import '@/styles/project-workspace.css';
+import { useProjectUrlState } from './hooks/useProjectUrlState';
+import { useProjectData } from './hooks/useProjectData';
+import { useSavingsReminder } from './hooks/useSavingsReminder';
+import { useUsageData } from './hooks/useUsageData';
+import { useProjectRealtime } from './hooks/useProjectRealtime';
+import { usePriceUpdates } from './hooks/usePriceUpdates';
+import { useWorkspaceDialogs } from './hooks/useWorkspaceDialogs';
 
 function ProjectDetailContent() {
     const params = useParams();
-    const { success, error: showError } = useToast();
-    const { profile, updateProfile } = useAuth();
+    const { profile } = useAuth();
     const { exchangeRate, formatPrice } = useCurrency();
     const projectId = params.id as string;
 
-    // Core state
-    const [project, setProject] = useState<Project | null>(null);
-    const [items, setItems] = useState<BOQItem[]>([]);
-    const feeItems = useMemo(() => items.filter((item) => item.category === 'project_fees'), [items]);
-    const materialItems = useMemo(() => items.filter((item) => item.category !== 'project_fees' && !isLaborCategory(item.category) && !isExtrasLabourLine(item.material_id)), [items]);
-    const [stages, setStages] = useState<ProjectStageWithTasks[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    // Share = send a copy (PDF/summary). Invite = give a builder access to
-    // update progress. Two different things, two buttons.
-    const [showShareSheet, setShowShareSheet] = useState(false);
-    const [showInviteModal, setShowInviteModal] = useState(false);
-    const [usageByStage, setUsageByStage] = useState<Record<string, { items: BOQItem[]; usageByItem: Record<string, number> }>>({});
-    const [projectPriceVersion, setProjectPriceVersion] = useState<string>(SYSTEM_PRICE_VERSION);
-    const [priceVersionReady, setPriceVersionReady] = useState(false);
-    const [showPhoneModal, setShowPhoneModal] = useState(false);
-    const [pendingReminder, setPendingReminder] = useState<{ frequency: 'daily' | 'weekly' | 'monthly'; amount: number; channel: NotificationChannel } | null>(null);
-    const [preferredReminderChannel, setPreferredReminderChannel] = useState<NotificationChannel>('email');
+    const { activeView, activeTab, setActiveView, setActiveTab } = useProjectUrlState();
     // What reminders can actually be sent by right now (email until WhatsApp
     // is set up); a saved preference for anything else falls back to email.
     const reminderChannels = useReminderChannels();
-    const activeReminderChannel: NotificationChannel = reminderChannels.includes(preferredReminderChannel) ? preferredReminderChannel : 'email';
-    const [requestedChannel, setRequestedChannel] = useState<NotificationChannel | null>(null);
-    const [savingsReminder, setSavingsReminder] = useState<ProjectRecurringReminder | null>(null);
-    const [priceUpdates, setPriceUpdates] = useState<PriceUpdate[]>([]);
-    const [isPriceUpdateLoading, setIsPriceUpdateLoading] = useState(false);
-    const priceNotificationSentRef = useRef(false);
-    const projectRealtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const stagesRealtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const materialRealtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const stageSwitcherRef = useRef<HTMLElement | null>(null);
-    const [showCelebration, setShowCelebration] = useState(false);
-    const [celebrationData, setCelebrationData] = useState<{
-        title: string;
-        message: string;
-        stats?: { label: string; value: string; highlight?: boolean }[];
-    } | null>(null);
+    const {
+        project, setProject, items, setItems, stages, purchases, setPurchases, isLoading, error,
+        geotechDocumentSummary, feeItems, materialItems, purchaseStats,
+        loadProjectData, refreshStages, refreshItems,
+        handleProjectUpdate, handleItemUpdate, handleStageUpdate, handleDeleteItem, handleAddItem,
+    } = useProjectData(projectId, setActiveTab);
+    useReveal({ deps: [isLoading, activeView, activeTab] });
+    const {
+        activeReminderChannel, setPreferredReminderChannel, savingsReminder, reminderDraft, setReminderDraft,
+        showPhoneModal, closePhoneModal,
+        handleSavingsReminder, handleToggleSavingsReminder, handleRequestPhone, handleSavePhoneNumber,
+    } = useSavingsReminder({ projectId, project, activeTab, reminderChannels });
+    const { usageByItem, loadUsageData, refreshProjectMaterialState, handleUsageTrackingToggle } = useUsageData({
+        projectId, project, setProject, stages, activeView, refreshItems,
+    });
+    useProjectRealtime({ projectId, project, stages, activeView, loadProjectData, loadUsageData, refreshStages });
+    const { priceUpdates, priceUpdatePreview, isPriceUpdateLoading, handleApplyPriceUpdates, handleIgnorePriceUpdates } = usePriceUpdates({
+        projectId, project, setProject, items, setItems, profileId: profile?.id,
+    });
+    const {
+        showShareSheet, setShowShareSheet, showInviteModal, setShowInviteModal,
+    } = useWorkspaceDialogs();
+
     const [isComplianceBannerDismissed, setIsComplianceBannerDismissed] = useState(false);
-
-    // View state lives in the URL (?view=budget&stage=roofing), so refresh,
-    // Back and a shared link land on the same section. It was component state,
-    // and a refresh always returned to Overview. Next keeps useSearchParams in
-    // step with history.pushState, so switching needs no server round trip.
-    const searchParams = useSearchParams();
-    const viewParam = searchParams.get('view');
-    const activeView: ProjectView = PROJECT_NAV_ITEMS.some((item) => item.id === viewParam) ? (viewParam as ProjectView) : 'overview';
-    const stageParam = searchParams.get('stage');
-    const activeTab: BOQCategory = STAGE_CATEGORIES.includes(stageParam as BOQCategory) ? (stageParam as BOQCategory) : 'substructure';
-
-    const writeUrl = useCallback((patch: Record<string, string | null>, mode: 'push' | 'replace') => {
-        const params = new URLSearchParams(window.location.search);
-        for (const [key, value] of Object.entries(patch)) {
-            if (value === null) params.delete(key); else params.set(key, value);
-        }
-        const query = params.toString();
-        const next = `${window.location.pathname}${query ? `?${query}` : ''}`;
-        if (next === `${window.location.pathname}${window.location.search}`) return;
-        if (mode === 'push') window.history.pushState(null, '', next);
-        else window.history.replaceState(null, '', next);
-    }, []);
-
-    const setActiveView = useCallback((view: ProjectView) => {
-        writeUrl({ view: view === 'overview' ? null : view }, 'push');
-        // A new section starts at its top, not wherever the last one was scrolled.
-        window.scrollTo({ top: 0 });
-    }, [writeUrl]);
-
-    /** A person picking a stage adds a history entry; a correction does not. */
-    const setActiveTab = useCallback((
-        next: BOQCategory | ((current: BOQCategory) => BOQCategory),
-        mode: 'push' | 'replace' = 'push',
-    ) => {
-        const fromUrl = new URLSearchParams(window.location.search).get('stage');
-        const current: BOQCategory = STAGE_CATEGORIES.includes(fromUrl as BOQCategory) ? (fromUrl as BOQCategory) : 'substructure';
-        const value = typeof next === 'function' ? next(current) : next;
-        writeUrl({ stage: value === 'substructure' ? null : value }, mode);
-    }, [writeUrl]);
-    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [selectedItemForPurchase, setSelectedItemForPurchase] = useState<BOQItem | null>(null);
     const [selectedItemForUsage, setSelectedItemForUsage] = useState<BOQItem | null>(null);
-    const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
-    const [geotechDocumentSummary, setGeotechDocumentSummary] = useState<{
-        id: string;
-        fileName: string;
-        createdAt: string;
-    } | null>(null);
-
-    useReveal({ deps: [isLoading, activeView, activeTab] });
-
-    const projectPriceKey = useMemo(
-        () => `boq_price_version_${projectId}`,
-        [projectId]
-    );
-    const priceUpdateAckKey = useMemo(
-        () => `boq_price_update_ack_${projectId}`,
-        [projectId]
-    );
-
-    // Purchase stats (calculated from items)
-    const purchaseStats = useMemo(() => {
-        const totalItems = materialItems.length;
-        const purchasedItems = materialItems.filter(i => i.is_purchased).length;
-        const totals = items.reduce(
-            (acc, item) => {
-                const estimatedQty = Number(item.quantity) || 0;
-                const averagePrice = Number(item.unit_price_usd) || 0;
-                const actualQty = Number(item.actual_quantity ?? item.quantity) || 0;
-                const actualPrice = Number(item.actual_price_usd ?? item.unit_price_usd) || 0;
-
-                const estimatedTotal = estimatedQty * averagePrice;
-                const actualTotal = actualQty * actualPrice;
-                const priceVariance = (actualPrice - averagePrice) * actualQty;
-                const qtyVariance = (actualQty - estimatedQty) * averagePrice;
-
-                return {
-                    estimatedTotal: acc.estimatedTotal + estimatedTotal,
-                    actualTotal: acc.actualTotal + actualTotal,
-                    priceVariance: acc.priceVariance + priceVariance,
-                    qtyVariance: acc.qtyVariance + qtyVariance,
-                };
-            },
-            { estimatedTotal: 0, actualTotal: 0, priceVariance: 0, qtyVariance: 0 }
-        );
-
-        const actualSpent = items
-            .filter(item => item.is_purchased)
-            .reduce((sum, item) => {
-                const qty = item.actual_quantity ?? item.quantity;
-                const price = item.actual_price_usd ?? item.unit_price_usd;
-                return sum + (Number(qty) * Number(price));
-            }, 0);
-
-        const totalVariance = totals.actualTotal - totals.estimatedTotal;
-        const totalVariancePercent = totals.estimatedTotal > 0
-            ? (totalVariance / totals.estimatedTotal) * 100
-            : 0;
-        const priceVariancePercent = totals.estimatedTotal > 0
-            ? (totals.priceVariance / totals.estimatedTotal) * 100
-            : 0;
-        const qtyVariancePercent = totals.estimatedTotal > 0
-            ? (totals.qtyVariance / totals.estimatedTotal) * 100
-            : 0;
-
-        return {
-            totalItems,
-            purchasedItems,
-            estimatedTotal: totals.estimatedTotal,
-            actualTotal: totals.actualTotal,
-            actualSpent,
-            totalVariance,
-            totalVariancePercent,
-            priceVariance: totals.priceVariance,
-            priceVariancePercent,
-            qtyVariance: totals.qtyVariance,
-            qtyVariancePercent,
-        };
-    }, [items, materialItems]);
-
-    const priceUpdatePreview = useMemo(() => {
-        if (priceUpdates.length === 0) return '';
-        const names = priceUpdates.slice(0, 3).map((update) => update.materialName);
-        const suffix = priceUpdates.length > 3 ? ` +${priceUpdates.length - 3} more` : '';
-        return `${names.join(', ')}${suffix}`;
-    }, [priceUpdates]);
-
-    const latestPriceUpdateAt = useMemo(() => {
-        if (priceUpdates.length === 0) return null;
-        return priceUpdates.reduce((latest, update) => {
-            const updateDate = new Date(update.lastUpdated);
-            if (!latest) return updateDate;
-            return updateDate > latest ? updateDate : latest;
-        }, null as Date | null);
-    }, [priceUpdates]);
-
-    const activeStageItems = useMemo(() => {
-        if (STAGE_CATEGORIES.includes(activeTab as BOQCategory)) {
-            const category = activeTab as BOQCategory;
-            return items.filter(i => i.category === category);
-        }
-        return items;
-    }, [items, activeTab]);
-
-    const usageByItem = useMemo(() => {
-        const allUsage: Record<string, number> = {};
-        Object.values(usageByStage).forEach(stageData => {
-            Object.entries(stageData.usageByItem).forEach(([itemId, usage]) => {
-                allUsage[itemId] = (allUsage[itemId] || 0) + usage;
-            });
-        });
-        return allUsage;
-    }, [usageByStage]);
-
-    const substructureStage = useMemo(
-        () => stages.find((stage) => stage.boq_category === 'substructure'),
-        [stages]
-    );
-
-    const applyStages = useCallback((nextStages: ProjectStageWithTasks[], forcePrimaryStage = false) => {
-        setStages(nextStages);
-        const firstApplicable = nextStages.find((stage) => stage.is_applicable);
-        if (!firstApplicable) return;
-
-        // A stage named in the link (a refresh, Back, a shared URL) wins over
-        // the first stage, as long as that stage is still in the project.
-        const stageInUrl = new URLSearchParams(window.location.search).has('stage');
-        setActiveTab((currentTab) => {
-            if (forcePrimaryStage && !stageInUrl) return firstApplicable.boq_category;
-            const stillApplicable = nextStages.some(
-                (stage) => stage.is_applicable && stage.boq_category === currentTab
-            );
-            return stillApplicable ? currentTab : firstApplicable.boq_category;
-        }, 'replace');
-    }, [setActiveTab]);
-
-    const refreshStages = useCallback(async (forcePrimaryStage = false) => {
-        const stagesResult = await getProjectStages(projectId);
-        if (!stagesResult.error) {
-            applyStages(stagesResult.stages, forcePrimaryStage);
-        }
-    }, [applyStages, projectId]);
-
-    const loadProjectData = useCallback(async (showLoading = true, forcePrimaryStage = false) => {
-        if (showLoading) {
-            setIsLoading(true);
-            setError(null);
-        }
-
-        const [projectResult, stagesResult, purchasesResult, docsResult] = await Promise.all([
-            getProjectWithItems(projectId),
-            getProjectStages(projectId),
-            getPurchaseRecords(projectId),
-            getProjectDocuments(projectId, 'permit'),
-        ]);
-
-        if (projectResult.error) {
-            if (showLoading) setError(projectResult.error.message);
-        } else if (projectResult.project) {
-            setProject(projectResult.project);
-            setItems(projectResult.items);
-            clearCreatedProjectSnapshot(projectResult.project.id);
-        } else if (showLoading) {
-            setError('Project not found');
-        }
-
-        if (!stagesResult.error) {
-            applyStages(stagesResult.stages, forcePrimaryStage);
-        }
-
-        if (purchasesResult.records) {
-            setPurchases(purchasesResult.records);
-        }
-
-        if (!docsResult.error) {
-            const geotechDoc = docsResult.documents.find((document) =>
-                (document.description || '').includes(GEOTECH_DOC_TAG)
-            );
-            if (geotechDoc) {
-                setGeotechDocumentSummary({
-                    id: geotechDoc.id,
-                    fileName: geotechDoc.file_name,
-                    createdAt: geotechDoc.created_at,
-                });
-            } else {
-                setGeotechDocumentSummary(null);
-            }
-        }
-
-        if (showLoading) {
-            setIsLoading(false);
-        }
-    }, [applyStages, projectId]);
-
-    const hydrateFromCreatedSnapshot = useCallback(() => {
-        const snapshot = getCreatedProjectSnapshot(projectId);
-        if (!snapshot) return false;
-
-        setProject(snapshot.project);
-        setItems(snapshot.items);
-        setError(null);
-        setIsLoading(false);
-        return true;
-    }, [projectId]);
-
-    // Load project data
-    useEffect(() => {
-        const hydrated = hydrateFromCreatedSnapshot();
-        loadProjectData(!hydrated, true);
-    }, [hydrateFromCreatedSnapshot, loadProjectData]);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        setPriceVersionReady(false);
-        const storedVersion = localStorage.getItem(projectPriceKey);
-        const nextVersion = storedVersion || SYSTEM_PRICE_VERSION;
-        localStorage.setItem(projectPriceKey, nextVersion);
-        setProjectPriceVersion(nextVersion);
-        setPriceVersionReady(true);
-    }, [projectPriceKey]);
-
-    useEffect(() => {
-        if (!profile) return;
-        const phoneRequired = preferredReminderChannel === 'sms' || preferredReminderChannel === 'whatsapp';
-        const missingContact = phoneRequired && !profile.phone_number;
-
-        if (missingContact) {
-            setPreferredReminderChannel('email');
-        }
-    }, [profile, preferredReminderChannel]);
-
-    useEffect(() => {
-        if (!priceVersionReady || typeof window === 'undefined') return;
-        localStorage.setItem(projectPriceKey, projectPriceVersion);
-    }, [projectPriceKey, projectPriceVersion, priceVersionReady]);
-
-    useEffect(() => {
-        if (!project || !profile?.id) return;
-        const loadRecurringReminder = async () => {
-            const { reminder } = await getProjectRecurringReminder(project.id, profile.id, 'savings');
-            setSavingsReminder(reminder);
-        };
-        loadRecurringReminder();
-    }, [project, profile?.id]);
-
-    useEffect(() => {
-        priceNotificationSentRef.current = false;
-    }, [projectId]);
-
-    const getAcknowledgedPriceUpdate = useCallback(() => {
-        if (typeof window === 'undefined') return null;
-        const stored = localStorage.getItem(priceUpdateAckKey);
-        if (!stored) return null;
-        const parsed = new Date(stored);
-        return Number.isNaN(parsed.getTime()) ? null : parsed;
-    }, [priceUpdateAckKey]);
-
-    const acknowledgePriceUpdates = (date: Date) => {
-        if (typeof window === 'undefined') return;
-        localStorage.setItem(priceUpdateAckKey, date.toISOString());
-    };
-
-    const checkPriceUpdates = useCallback(async () => {
-        if (items.length === 0) return;
-
-        setIsPriceUpdateLoading(true);
-        const materialCodes = Array.from(new Set(items.map((item) => item.material_id).filter(Boolean)));
-        const { prices, error: priceError } = await getLatestWeeklyPrices(materialCodes);
-        if (priceError) {
-            setIsPriceUpdateLoading(false);
-            return;
-        }
-
-        const acknowledgedAt = getAcknowledgedPriceUpdate();
-        const updates: PriceUpdate[] = [];
-
-        items.forEach((item) => {
-            const latest = prices[item.material_id];
-            if (!latest) return;
-            const latestDate = new Date(latest.lastUpdated);
-            if (acknowledgedAt && latestDate <= acknowledgedAt) return;
-
-            const currentPrice = Number(item.unit_price_usd) || 0;
-            const nextPrice = Number(latest.priceUsd);
-            if (Math.abs(nextPrice - currentPrice) < 0.01) return;
-
-            const deltaPercent = currentPrice > 0 ? ((nextPrice - currentPrice) / currentPrice) * 100 : 0;
-            updates.push({
-                itemId: item.id,
-                materialId: item.material_id,
-                materialName: item.material_name,
-                currentPriceUsd: currentPrice,
-                newPriceUsd: nextPrice,
-                deltaPercent,
-                lastUpdated: latest.lastUpdated,
-            });
-        });
-
-        setPriceUpdates(updates);
-        setIsPriceUpdateLoading(false);
-    }, [getAcknowledgedPriceUpdate, items]);
-
-    const loadUsageData = useCallback(async () => {
-        const stagesToLoad = stages.filter(s => s.is_applicable);
-        const results = await Promise.all(
-            stagesToLoad.map(stage => getStageUsageData(projectId, stage.boq_category))
-        );
-
-        const nextUsage: Record<string, { items: BOQItem[]; usageByItem: Record<string, number> }> = {};
-        results.forEach((result, index) => {
-            const stage = stagesToLoad[index];
-            if (!stage) return;
-            if (!result.error) {
-                nextUsage[stage.boq_category] = {
-                    items: result.items,
-                    usageByItem: result.usageByItem,
-                };
-            }
-        });
-
-        setUsageByStage(nextUsage);
-    }, [projectId, stages]);
-
-    const refreshItems = useCallback(async () => {
-        // Refresh both items and purchases for instant updates across all views
-        const [itemsResult, purchasesResult] = await Promise.all([
-            getBOQItems(projectId),
-            getPurchaseRecords(projectId),
-        ]);
-        if (!itemsResult.error) {
-            setItems(itemsResult.items);
-        }
-        if (purchasesResult.records) {
-            setPurchases(purchasesResult.records);
-        }
-    }, [projectId]);
-
-    const refreshProjectMaterialState = useCallback(async () => {
-        await refreshItems();
-        if (project?.usage_tracking_enabled) {
-            await loadUsageData();
-        }
-    }, [loadUsageData, project?.usage_tracking_enabled, refreshItems]);
-
-    // Realtime sync for project detail data
-    useEffect(() => {
-        const shouldRefreshUsage =
-            project?.usage_tracking_enabled &&
-            (activeView === 'procurement' || activeView === 'boq' || activeView === 'usage');
-
-        const scheduleProjectRefresh = () => {
-            if (projectRealtimeTimeoutRef.current) {
-                clearTimeout(projectRealtimeTimeoutRef.current);
-            }
-            projectRealtimeTimeoutRef.current = setTimeout(() => {
-                void loadProjectData(false, false);
-                if (shouldRefreshUsage) {
-                    void loadUsageData();
-                }
-            }, 250);
-        };
-
-        const scheduleStageRefresh = () => {
-            if (stagesRealtimeTimeoutRef.current) {
-                clearTimeout(stagesRealtimeTimeoutRef.current);
-            }
-            stagesRealtimeTimeoutRef.current = setTimeout(() => {
-                void refreshStages(false);
-                if (shouldRefreshUsage) {
-                    void loadUsageData();
-                }
-            }, 250);
-        };
-
-        const scheduleUsageRefresh = () => {
-            if (materialRealtimeTimeoutRef.current) {
-                clearTimeout(materialRealtimeTimeoutRef.current);
-            }
-            materialRealtimeTimeoutRef.current = setTimeout(() => {
-                if (shouldRefreshUsage) {
-                    void loadUsageData();
-                }
-            }, 200);
-        };
-
-        const stageIds = new Set(stages.map((stage) => stage.id));
-
-        const channel = supabase
-            .channel(`project-detail-${projectId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'projects',
-                    filter: `id=eq.${projectId}`,
-                },
-                () => {
-                    scheduleProjectRefresh();
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'boq_items',
-                    filter: `project_id=eq.${projectId}`,
-                },
-                () => {
-                    scheduleProjectRefresh();
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'project_stages',
-                    filter: `project_id=eq.${projectId}`,
-                },
-                () => {
-                    scheduleStageRefresh();
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'stage_tasks',
-                },
-                (payload) => {
-                    const candidate = (payload.new as { stage_id?: string } | null)?.stage_id
-                        || (payload.old as { stage_id?: string } | null)?.stage_id;
-                    if (candidate && stageIds.size > 0 && !stageIds.has(candidate)) return;
-                    scheduleStageRefresh();
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'project_documents',
-                    filter: `project_id=eq.${projectId}`,
-                },
-                () => {
-                    scheduleProjectRefresh();
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'purchase_records',
-                    filter: `project_id=eq.${projectId}`,
-                },
-                () => {
-                    scheduleProjectRefresh();
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'material_usage',
-                    filter: `project_id=eq.${projectId}`,
-                },
-                () => {
-                    scheduleUsageRefresh();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            if (projectRealtimeTimeoutRef.current) {
-                clearTimeout(projectRealtimeTimeoutRef.current);
-                projectRealtimeTimeoutRef.current = null;
-            }
-            if (stagesRealtimeTimeoutRef.current) {
-                clearTimeout(stagesRealtimeTimeoutRef.current);
-                stagesRealtimeTimeoutRef.current = null;
-            }
-            if (materialRealtimeTimeoutRef.current) {
-                clearTimeout(materialRealtimeTimeoutRef.current);
-                materialRealtimeTimeoutRef.current = null;
-            }
-            void supabase.removeChannel(channel);
-        };
-    }, [activeView, loadProjectData, loadUsageData, project?.usage_tracking_enabled, projectId, refreshStages, stages]);
-
-    useEffect(() => {
-        if (!project?.usage_tracking_enabled) return;
-        if (activeView !== 'procurement' && activeView !== 'boq' && activeView !== 'usage') return;
-        loadUsageData();
-    }, [activeView, project?.usage_tracking_enabled, loadUsageData]);
-
-    useEffect(() => {
-        if (activeView !== 'procurement' && activeView !== 'boq' && activeView !== 'usage') return;
-        void refreshProjectMaterialState();
-    }, [activeView, refreshProjectMaterialState]);
-
-    useEffect(() => {
-        if (!project || items.length === 0) return;
-        checkPriceUpdates();
-    }, [project, items, checkPriceUpdates]);
-
-    useEffect(() => {
-        if (!project || priceUpdates.length === 0 || !profile?.id) return;
-        if (priceNotificationSentRef.current) return;
-        if (project.owner_id !== profile.id) return;
-
-        const notify = async () => {
-            const { notification } = await getLatestProjectNotification(project.id, profile.id, 'price_update');
-            if (notification) {
-                const last = new Date(notification.created_at);
-                const today = new Date();
-                if (last.toDateString() === today.toDateString()) {
-                    return;
-                }
-            }
-
-            const preview = priceUpdates.slice(0, 3).map((update) => update.materialName).join(', ');
-            const suffix = priceUpdates.length > 3 ? ` +${priceUpdates.length - 3} more` : '';
-            await createProjectNotification({
-                project_id: project.id,
-                user_id: profile.id,
-                type: 'price_update',
-                title: 'Material prices updated',
-                message: `New average prices available for ${preview}${suffix}. Review and update your BOQ averages.`,
-            });
-        };
-
-        notify();
-        priceNotificationSentRef.current = true;
-    }, [priceUpdates, project, profile?.id]);
 
     const isProjectOwner = Boolean(project && profile && project.owner_id === profile.id);
     // Invitees never reach this page (ProjectAccessGate shows them SiteView).
     const canManageProject = isProjectOwner;
 
-    // Handlers
-    /** Resolves false when nothing was saved, so callers can roll back. */
-    const handleProjectUpdate = async (updates: Partial<Project>, options: { quiet?: boolean } = {}): Promise<boolean> => {
-        if (!project) return false;
-
-        const { project: updated, error } = await updateProject(projectId, updates);
-        if (error || !updated) {
-            showError('Failed to update project');
-            return false;
-        }
-        setProject(updated);
-        // The Budget Planner shows its own Saving / Saved next to the field.
-        if (!options.quiet) success('Project updated');
-        return true;
-    };
-
-    // "Remind me to save $X a week" from the Budget Planner: carried into
-    // reminder setup so the amount and frequency are already filled in.
-    const [reminderDraft, setReminderDraft] = useState<{ amountUsd: number; frequency: 'daily' | 'weekly' | 'monthly' } | null>(null);
-
-    const handleItemUpdate = async (itemId: string, updates: Partial<BOQItem>): Promise<void> => {
-        const { item, error } = await updateBOQItem(itemId, updates);
-        if (error) {
-            showError('Failed to update item');
-        } else if (item) {
-            const updatedItems = items.map(i => {
-                if (i.id !== itemId) return i;
-                const next = { ...i, ...updates };
-                const qty = Number(next.quantity) || 0;
-                const priceUsd = Number(next.unit_price_usd) || 0;
-                const priceZwg = Number(next.unit_price_zwg) || 0;
-                return {
-                    ...next,
-                    total_usd: qty * priceUsd,
-                    total_zwg: qty * priceZwg,
-                };
-            });
-
-            setItems(updatedItems);
-
-            if ('quantity' in updates || 'unit_price_usd' in updates || 'unit_price_zwg' in updates) {
-                const newTotal = updatedItems.reduce((sum, i) => sum + Number(i.total_usd), 0);
-                await updateProject(projectId, {
-                    total_usd: newTotal,
-                    total_zwg: newTotal * exchangeRate,
-                });
-                setProject(prev => prev ? { ...prev, total_usd: newTotal, total_zwg: newTotal * exchangeRate } : prev);
-            }
-        }
-    };
-
-    const handleApplyPriceUpdates = async () => {
-        if (priceUpdates.length === 0) return;
-        setIsPriceUpdateLoading(true);
-
-        const updatesById = new Map<string, PriceUpdate>();
-        priceUpdates.forEach((update) => updatesById.set(update.itemId, update));
-        try {
-            await Promise.all(
-                priceUpdates.map((update) =>
-                    updateBOQItem(update.itemId, {
-                        unit_price_usd: update.newPriceUsd,
-                        unit_price_zwg: update.newPriceUsd * exchangeRate,
-                    })
-                )
-            );
-
-            const nextItems = items.map((item) => {
-                const update = updatesById.get(item.id);
-                if (!update) return item;
-                return {
-                    ...item,
-                    unit_price_usd: update.newPriceUsd,
-                    unit_price_zwg: update.newPriceUsd * exchangeRate,
-                };
-            });
-
-            setItems(nextItems);
-
-            const newTotal = nextItems.reduce((sum, item) => {
-                const qty = Number(item.quantity) || 0;
-                const priceUsd = Number(item.unit_price_usd) || 0;
-                return sum + qty * priceUsd;
-            }, 0);
-
-            await updateProject(projectId, {
-                total_usd: newTotal,
-                total_zwg: newTotal * exchangeRate,
-            });
-            setProject(prev => prev ? { ...prev, total_usd: newTotal, total_zwg: newTotal * exchangeRate } : prev);
-
-            if (latestPriceUpdateAt) {
-                acknowledgePriceUpdates(latestPriceUpdateAt);
-            }
-            setPriceUpdates([]);
-            success('Average prices updated');
-        } catch {
-            showError('Failed to update prices');
-        } finally {
-            setIsPriceUpdateLoading(false);
-        }
-    };
-
-    const handleIgnorePriceUpdates = () => {
-        if (latestPriceUpdateAt) {
-            acknowledgePriceUpdates(latestPriceUpdateAt);
-        }
-        setPriceUpdates([]);
-    };
-
-    const handleStageUpdate = (updatedStage: ProjectStageWithTasks) => {
-        setStages(prev => prev.map(s => s.id === updatedStage.id ? updatedStage : s));
-    };
-
     const handleSavingsTargetDateChange = (date: string) =>
         handleProjectUpdate({ target_purchase_date: date || null }, { quiet: true });
-
-    const getNextRunAt = (frequency: 'daily' | 'weekly' | 'monthly', baseDate = new Date()) => {
-        const next = new Date(baseDate);
-        if (frequency === 'daily') next.setDate(next.getDate() + 1);
-        if (frequency === 'weekly') next.setDate(next.getDate() + 7);
-        if (frequency === 'monthly') next.setDate(next.getDate() + 30);
-        next.setHours(9, 0, 0, 0);
-        return next;
-    };
-
-    const handleSavingsReminder = async (
-        frequency: 'daily' | 'weekly' | 'monthly',
-        amount: number,
-        channel: NotificationChannel,
-        phoneOverride?: string
-    ) => {
-        if (!profile?.id) {
-            showError('Please sign in again to set reminders.');
-            return;
-        }
-        if (project?.owner_id && profile?.id && project.owner_id !== profile.id) {
-            showError('Only the project owner can schedule reminders.');
-            return;
-        }
-
-        const isPhoneChannel = channel === 'sms' || channel === 'whatsapp';
-        const effectivePhone = phoneOverride || profile?.phone_number || '';
-        if (isPhoneChannel && !effectivePhone) {
-            showError('Add a phone number to schedule mobile reminders.');
-            return;
-        }
-
-        const firstRunAt = getNextRunAt(frequency);
-        const nextRunAt = getNextRunAt(frequency, firstRunAt);
-        const targetDate = project?.target_purchase_date || null;
-
-        if (targetDate && firstRunAt.toISOString().split('T')[0] > targetDate) {
-            showError('Target date is before the next reminder date. Update the target date first.');
-            return;
-        }
-
-        const stageLabel = STAGE_CATEGORIES.includes(activeTab as BOQCategory)
-            ? categoryLabels[activeTab as BOQCategory]
-            : 'Project';
-
-        // Prepend channel to message since DB doesn't have a channel column yet
-        const message = `[${channel.toUpperCase()}] Savings reminder for ${project?.name || 'Project'} (${stageLabel}): save ${formatPrice(amount, amount * exchangeRate)} ${frequency}.`;
-
-        const { reminder, error: recurringError } = await upsertProjectRecurringReminder({
-            project_id: projectId,
-            user_id: profile.id,
-            reminder_type: 'savings',
-            frequency,
-            channel,
-            amount_usd: amount,
-            target_date: targetDate,
-            next_run_at: nextRunAt.toISOString(),
-            is_active: true,
-        });
-
-        if (recurringError) {
-            showError(`Failed to save recurring reminder: ${recurringError.message}`);
-            return;
-        }
-
-        setSavingsReminder(reminder);
-        setPreferredReminderChannel(channel);
-
-        const { error: reminderError } = await createReminder({
-            project_id: projectId,
-            reminder_type: 'savings',
-            message,
-            scheduled_date: firstRunAt.toISOString(),
-            phone_number: effectivePhone || '0000000000', // Fallback for email-only if DB requires phone
-        });
-
-        if (reminderError) {
-            showError(`Failed to schedule reminder: ${reminderError.message}`);
-            return;
-        }
-
-        success(`Reminder scheduled via ${channel} for ${firstRunAt.toISOString().split('T')[0]}`);
-    };
-
-    const handleToggleSavingsReminder = async (active: boolean) => {
-        if (!savingsReminder) return;
-        const nextRunAt = active ? getNextRunAt(savingsReminder.frequency as 'daily' | 'weekly' | 'monthly') : savingsReminder.next_run_at;
-        const { reminder, error } = await updateProjectRecurringReminder(savingsReminder.id, {
-            is_active: active,
-            next_run_at: active ? (nextRunAt instanceof Date ? nextRunAt.toISOString() : nextRunAt) : savingsReminder.next_run_at,
-        });
-        if (error) {
-            showError('Failed to update reminder status');
-            return;
-        }
-        setSavingsReminder(reminder);
-        success(active ? 'Reminder enabled' : 'Reminder disabled');
-    };
-
-    const handleRequestPhone = (payload?: {
-        channel?: NotificationChannel;
-        pendingReminder?: { frequency: 'daily' | 'weekly' | 'monthly'; amount: number };
-    }) => {
-        setRequestedChannel(payload?.channel ?? null);
-        if (payload?.pendingReminder) {
-            setPendingReminder({
-                frequency: payload.pendingReminder.frequency,
-                amount: payload.pendingReminder.amount,
-                channel: payload.channel ?? activeReminderChannel,
-            });
-        }
-        setShowPhoneModal(true);
-    };
-
-    const handleSavePhoneNumber = async (phoneNumber: string) => {
-        const { error } = await updateProfile({ phone_number: phoneNumber });
-        if (error) {
-            showError('Failed to save phone number. Please try again.');
-            return;
-        }
-
-        success('Phone number saved');
-        setShowPhoneModal(false);
-
-        if (requestedChannel) {
-            setPreferredReminderChannel(requestedChannel);
-        }
-
-        if (pendingReminder) {
-            const reminder = { ...pendingReminder, channel: requestedChannel ?? pendingReminder.channel };
-            setPendingReminder(null);
-            setRequestedChannel(null);
-            await handleSavingsReminder(reminder.frequency, reminder.amount, reminder.channel, phoneNumber);
-            return;
-        }
-
-        setRequestedChannel(null);
-    };
-
-    const handleUsageTrackingToggle = async (enabled: boolean) => {
-        const { project: updated, error: updateError } = await updateProject(projectId, {
-            usage_tracking_enabled: enabled,
-        });
-        if (updateError) {
-            showError('Failed to update usage tracking');
-            return;
-        }
-        if (updated) {
-            setProject(updated);
-            if (enabled) {
-                loadUsageData();
-            }
-        }
-    };
 
     const currentStage = stages.find(s => s.boq_category === activeTab);
     const complianceSummary = useMemo(() => summariseCompliance(stages), [stages]);
     const hasLabor = project?.labor_preference === 'with_labor';
     const projectLocationType = parseProjectLocationType(project?.location);
-    const activeStageComplianceWarnings = useMemo(() => {
-        if (!currentStage) return [] as string[];
-        const warnings: string[] = [];
-
-        const requirements = getStageRequirements(currentStage.boq_category).filter((requirement) => requirement.required);
-        requirements.forEach((requirement) => {
-            const requirementStage = stages.find((stage) => stage.boq_category === requirement.stage);
-            const status = getComplianceRequirementStatus(requirementStage?.tasks || [], requirement.id);
-            if (status !== 'done') {
-                warnings.push(`${requirement.label} (${categoryLabels[requirement.stage]})`);
-            }
-        });
-
-        if (currentStage.boq_category === 'substructure' && projectLocationType) {
-            const requiredRules = LOCATION_PROCEDURE_RULES.filter(
-                (rule) => rule.statusByLocation[projectLocationType] === 'required'
-            );
-            requiredRules.forEach((rule) => {
-                const marker = `${CHECKLIST_TASK_PREFIX}${rule.id}`;
-                const checklistTask = (substructureStage?.tasks || []).find(
-                    (task) => (task.verification_note || '').startsWith(marker)
-                );
-                if (!checklistTask?.is_completed) {
-                    warnings.push(`${rule.label} (required for ${LOCATION_TYPE_LABELS[projectLocationType]})`);
-                }
-            });
-        }
-
-        return warnings;
-    }, [currentStage, stages, projectLocationType, substructureStage?.tasks]);
+    const activeStageComplianceWarnings = useMemo(
+        () => stageComplianceWarnings(currentStage, stages, projectLocationType),
+        [currentStage, stages, projectLocationType]
+    );
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- show the banner again for a new stage
         setIsComplianceBannerDismissed(false);
     }, [activeTab, activeStageComplianceWarnings.length]);
-
-    useEffect(() => {
-        if (activeView !== 'boq') return;
-        const frame = window.requestAnimationFrame(() => {
-            stageSwitcherRef.current
-                ?.querySelector('[aria-current="step"]')
-                ?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-        });
-        return () => window.cancelAnimationFrame(frame);
-    }, [activeTab, activeView]);
 
     // Loading state - skeleton layout
     if (isLoading) {
@@ -1106,7 +112,7 @@ function ProjectDetailContent() {
     if (error || !project) {
         return (
             <MainLayout title="Error">
-                <div className="error-state">
+                <div className="project-workspace-error error-state">
                     <Warning size={48} weight="light" />
                     <h2>Project Not Found</h2>
                     <p>{error || 'The requested project could not be found.'}</p>
@@ -1116,37 +122,9 @@ function ProjectDetailContent() {
                         </Button>
                     </Link>
                 </div>
-                <style jsx>{`
-                    .error-state {
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        justify-content: center;
-                        min-height: 400px;
-                        gap: var(--space-4);
-                        text-align: center;
-                        color: var(--color-text-muted);
-                        background: var(--color-surface);
-                        border-radius: var(--card-radius);
-                        border: 1px solid var(--color-border);
-                        margin: var(--space-8);
-                    }
-                    h2 { color: var(--color-text); margin: 0; font-family: var(--font-heading); }
-                    p { color: var(--color-text-secondary); margin: 0; }
-                `}</style>
             </MainLayout>
         );
     }
-
-    const handleDeleteItem = async (itemId: string) => {
-        const { error } = await deleteBOQItem(itemId);
-        if (error) { showError('Failed to delete item'); return; }
-        setItems(items.filter(i => i.id !== itemId));
-    };
-
-    const handleAddItem = (item: BOQItem) => {
-        setItems([...items, item]);
-    };
 
     const handleUsageRecorded = async () => {
         await refreshProjectMaterialState();
@@ -1162,605 +140,156 @@ function ProjectDetailContent() {
         setActiveView('usage');
     };
 
-    const statusBadgeStyles: Record<string, { background: string; color: string }> = {
-        active: { background: 'rgba(22, 163, 74, 0.12)', color: 'var(--color-emerald)' },
-        draft: { background: 'var(--color-mist)', color: 'var(--color-text-secondary)' },
-        completed: { background: 'rgba(46, 108, 246, 0.12)', color: 'var(--color-accent)' },
-        archived: { background: 'var(--color-mist)', color: 'var(--color-text-muted)' },
-    };
-    const completionRate = purchaseStats.totalItems > 0
-        ? Math.round((purchaseStats.purchasedItems / purchaseStats.totalItems) * 100)
-        : 0;
-    const viewDetails: Record<Exclude<ProjectView, 'overview'>, { title: string; description: string }> = {
-        budget: {
-            title: 'Budget',
-            description: '',
-        },
-        boq: {
-            title: 'Bill of Quantities',
-            description: '',
-        },
-        compliance: {
-            title: 'Compliance',
-            description: '',
-        },
-        procurement: {
-            title: 'Buying & quotes',
-            description: '',
-        },
-        usage: {
-            title: 'Usage Tracking',
-            description: 'Log site consumption and monitor burn-down before materials run low.',
-        },
-        documents: {
-            title: 'Documents',
-            description: 'Store plans, permits, receipts, and site records for your team.',
-        },
-        settings: {
-            title: 'Settings',
-            description: 'Adjust project scope, visibility, and low-stock alert settings.',
-        },
-    };
-    const activeViewDetails = activeView === 'overview' ? null : viewDetails[activeView];
+    const completionRate = completionPercent(purchaseStats);
     const activeViewStats = activeView === 'boq'
             ? [
                 { label: 'Materials', value: String(materialItems.length) },
-                { label: 'Estimate', value: formatPrice(purchaseStats.estimatedTotal, purchaseStats.estimatedTotal * exchangeRate) },
-                { label: 'Purchased', value: `${purchaseStats.purchasedItems}/${purchaseStats.totalItems}` },
+                { label: 'Project estimate', value: formatPrice(purchaseStats.estimatedTotal, purchaseStats.estimatedTotal * exchangeRate) },
+                { label: 'Materials purchased', value: `${purchaseStats.purchasedItems}/${purchaseStats.totalItems}` },
             ]
             : [];
 
     return (
         <MainLayout fullWidth hideBottomNav>
-            <div className="project-shell project-dashboard-shell">
+            <div className="project-workspace project-shell project-dashboard-shell">
                 <SidebarSpine
                     project={project}
                     activeView={activeView}
-                    onViewChange={(view) => {
-                        setActiveView(view);
-                        if (view === 'procurement' || view === 'boq' || view === 'usage') {
-                            void refreshProjectMaterialState();
-                        }
-                    }}
-                    isMobileOpen={isMobileSidebarOpen}
-                    onMobileClose={() => setIsMobileSidebarOpen(false)}
+                    onViewChange={setActiveView}
                 />
 
                 <main className="project-main">
                     {/* Mobile-only project dock. Desktop keeps the full sidebar. */}
                     <ProjectViewTabs
                         activeView={activeView}
-                        onViewChange={(view) => {
-                            setActiveView(view);
-                            if (view === 'procurement' || view === 'boq' || view === 'usage') {
-                                void refreshProjectMaterialState();
-                            }
-                        }}
+                        onViewChange={setActiveView}
                     />
 
-                    {activeViewDetails && (
-                        <section className="view-header">
-                            <div>
-                                <p className="view-eyebrow">{project.name}</p>
-                                <h1 className="view-title">{activeViewDetails.title}</h1>
-                                {activeViewDetails.description && (
-                                    <p className="view-description">{activeViewDetails.description}</p>
-                                )}
-                            </div>
-                            <div className="view-stats">
-                                {activeViewStats.map((stat) => (
-                                    <div className="view-stat" key={stat.label}>
-                                        <span>{stat.label}</span>
-                                        <strong>{stat.value}</strong>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-                    )}
+                    <ViewHeader activeView={activeView} projectName={project.name} stats={activeViewStats} />
 
-                    {/* OVERVIEW View */}
                     {activeView === 'overview' && (
-                        <div className="overview-view space-y-8 max-w-6xl mx-auto reveal" data-delay="1">
-                            <div className="overview-header">
-                                <div>
-                                    {/* Breadcrumbs */}
-                                    <div className="overview-breadcrumb">
-                                        <Link
-                                            href="/projects"
-                                            className="hover:text-accent transition-colors"
-                                        >
-                                            My Projects
-                                        </Link>
-                                        <span>/</span>
-                                        <span className="font-medium text-primary">{project.name}</span>
-                                    </div>
-                                    <h1 className="text-2xl sm:text-3xl font-bold text-primary font-heading break-words">{project.name}</h1>
-                                    <div className="flex items-center gap-2 text-sm text-secondary mt-1">
-                                        <MapPin size={16} />
-                                        {project.location || 'No location set'}
-                                        <span className="mx-2">•</span>
-                                        <span
-                                            className="px-2 py-0.5 rounded-full text-xs font-medium"
-                                            style={statusBadgeStyles[project.status] ?? statusBadgeStyles.draft}
-                                        >
-                                            {project.status.toUpperCase()}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="overview-actions">
-                                    <Button
-                                        variant="secondary"
-                                        size="sm"
-                                        onClick={() => setShowShareSheet(true)}
-                                        icon={<ShareNetwork size={16} />}
-                                    >
-                                        Share
-                                    </Button>
-                                    {isProjectOwner && (
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={() => setShowInviteModal(true)}
-                                            icon={<UserPlus size={16} />}
-                                        >
-                                            Invite
-                                        </Button>
-                                    )}
-                                    {canManageProject && (
-                                        <Button
-                                            size="sm"
-                                            icon={<PencilSimple size={16} />}
-                                            onClick={() => setActiveView('settings')}
-                                        >
-                                            Edit Project
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-
-
-
-                            {/* Price Update Alert */}
-                            {priceUpdates.length > 0 && (
-                                <div className="price-update-alert reveal" data-delay="2">
-                                    <div className="flex items-start gap-3">
-                                        <div className="price-update-icon">
-                                            <TrendUp size={20} weight="bold" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-semibold text-blue-900">Price Updates Available</h4>
-                                            <p className="text-sm text-blue-700 mt-1">
-                                                New market prices detected for {priceUpdatePreview}.
-                                                Updating will adjust your estimated totals.
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2 w-full sm:w-auto">
-                                        <Button
-                                            size="sm"
-                                            variant="secondary"
-                                            onClick={handleIgnorePriceUpdates}
-                                            className="bg-white text-blue-700 border-blue-200"
-                                        >
-                                            Ignore
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            onClick={handleApplyPriceUpdates}
-                                            loading={isPriceUpdateLoading}
-                                            className="bg-blue-500 hover:bg-blue-600 text-white border-none"
-                                        >
-                                            Apply Updates
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Project Progress/Timeline */}
-                            <section className="reveal" data-delay="3">
-                                <h3 className="section-title mb-4">Construction Progress</h3>
-                                <StageProgressCards
-                                    stages={stages}
-                                    items={items}
-                                    activeStage={activeTab}
-                                    onStageClick={(category) => {
-                                        setActiveTab(category);
-                                        setActiveView('boq');
-                                    }}
-                                />
-                                <SitePhotosPanel projectId={projectId} />
-                            </section>
-
-                            {/* KPI Dashboard */}
-                            <section className="overview-card reveal" data-delay="4">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                                        <Wallet size={24} weight="duotone" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold text-primary font-heading">Project KPIs</h3>
-                                        <p className="text-sm text-secondary">Key performance indicators at a glance</p>
-                                    </div>
-                                </div>
-
-                                <ProjectKPIDashboard
-                                    items={items}
-                                    purchases={purchases}
-                                    usageByItem={usageByItem}
-                                    totalBudget={projectMoney({ estimateUsd: purchaseStats.estimatedTotal, limitUsd: project.budget_target_usd, spentUsd: purchaseStats.actualSpent }).budgetUsd}
-                                    onNavigate={(view) => setActiveView(view as ProjectView)}
-                                />
-                            </section>
-
-                            <ProjectCostSplit items={items} spentUsd={purchaseStats.actualSpent} />
-
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-                                {/* Left Column - Next Steps */}
-                                <div className="lg:col-span-2 space-y-8">
-                                    {/* Next Steps */}
-                                    <section className="overview-card reveal" data-delay="5">
-                                        <h3 className="text-lg font-bold text-primary mb-4 font-heading">Next Steps</h3>
-                                        <div className="space-y-4">
-                                            {materialItems.filter(i => !i.is_purchased).slice(0, 5).map(item => (
-                                                <div key={item.id} className="next-step-item">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-2 h-2 rounded-full bg-accent"></div>
-                                                        <span className="font-medium text-primary">{item.material_name}</span>
-                                                        <span className="text-xs text-secondary">
-                                                            {formatPrice(
-                                                                Number(item.quantity) * Number(item.unit_price_usd),
-                                                                Number(item.quantity) * Number(item.unit_price_usd) * exchangeRate
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                    <Button size="sm" variant="secondary" onClick={() => {
-                                                        setSelectedItemForPurchase(item);
-                                                        setActiveView('procurement');
-                                                    }}>
-                                                        Purchase
-                                                    </Button>
-                                                </div>
-                                            ))}
-                                            {materialItems.filter(i => !i.is_purchased).length === 0 && (
-                                                <div className="text-center py-8 text-secondary">
-                                                    <CheckCircle size={32} className="mx-auto mb-2 text-blue-600" />
-                                                    <p>All items purchased! Great job.</p>
-                                                </div>
-                                            )}
-                                            {materialItems.filter(i => !i.is_purchased).length > 5 && (
-                                                <button
-                                                    className="view-all-btn"
-                                                    onClick={() => setActiveView('procurement')}
-                                                >
-                                                    View all {materialItems.filter(i => !i.is_purchased).length} pending items
-                                                </button>
-                                            )}
-                                        </div>
-                                    </section>
-                                </div>
-
-                                {/* Right Column - Summary Stats */}
-                                <div className="space-y-6">
-                                    <Card className="reveal" data-delay="6">
-                                        <CardHeader>
-                                            <CardTitle>Project Summary</CardTitle>
-                                        </CardHeader>
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between items-center py-2 border-b border-border-light">
-                                                <span className="text-sm text-secondary">BOQ estimate</span>
-                                                <span className="font-bold text-primary">
-                                                    {formatPrice(purchaseStats.estimatedTotal, purchaseStats.estimatedTotal * exchangeRate)}
-                                                </span>
-                                            </div>
-                                            {project.budget_target_usd ? (
-                                                <div className="flex justify-between items-center py-2 border-b border-border-light">
-                                                    <span className="text-sm text-secondary">Your limit</span>
-                                                    <span className="font-bold text-primary">
-                                                        {formatPrice(project.budget_target_usd, project.budget_target_usd * exchangeRate)}
-                                                    </span>
-                                                </div>
-                                            ) : null}
-                                            <div className="flex justify-between items-center py-2 border-b border-border-light">
-                                                <span className="text-sm text-secondary">Est. Materials</span>
-                                                <span className="font-medium text-primary">{materialItems.length} Items</span>
-                                            </div>
-                                            <div className="flex justify-between items-center py-2 border-b border-border-light">
-                                                <span className="text-sm text-secondary">Completion</span>
-                                                <span className="font-medium text-primary">{completionRate}%</span>
-                                            </div>
-                                            <div className="pt-2">
-                                                <RunningTotalBar
-                                                    totalUSD={purchaseStats.estimatedTotal}
-                                                    totalZWG={purchaseStats.estimatedTotal * exchangeRate}
-                                                    budgetTargetUSD={project.budget_target_usd}
-                                                    completionPercentage={completionRate}
-                                                    projectName={project.name}
-                                                />
-                                            </div>
-                                        </div>
-                                    </Card>
-
-                                    <Card className="reveal" data-delay="7">
-                                        <CardHeader>
-                                            <CardTitle>Compliance Snapshot</CardTitle>
-                                        </CardHeader>
-                                        {/* Counted exactly as the Compliance Tracker counts them
-                                            (summariseCompliance), so the two pages agree. */}
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between items-center py-2 border-b border-border-light">
-                                                <span className="text-sm text-secondary">Certificates</span>
-                                                <span className="font-medium text-primary">
-                                                    {complianceSummary.doneCerts}/{complianceSummary.totalCerts}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between items-center py-2 border-b border-border-light">
-                                                <span className="text-sm text-secondary">Admin tasks</span>
-                                                <span className="font-medium text-primary">
-                                                    {complianceSummary.doneTasks}/{complianceSummary.totalTasks}
-                                                </span>
-                                            </div>
-                                            {complianceSummary.next ? (
-                                                <div className="text-xs">
-                                                    <span className="text-secondary">Next {complianceSummary.next.type === 'Certificate' ? 'certificate' : 'task'}: </span>
-                                                    <span className="font-medium text-primary">{complianceSummary.next.label}</span>
-                                                    <span className="text-secondary"> · {complianceSummary.next.stageName}</span>
-                                                </div>
-                                            ) : complianceSummary.total > 0 ? (
-                                                <div className="text-xs font-medium text-green-700">All certificates and tasks are done.</div>
-                                            ) : (
-                                                <div className="text-xs text-secondary">No stages switched on yet.</div>
-                                            )}
-                                            <Button size="sm" variant="secondary" className="w-full" onClick={() => setActiveView('compliance')}>
-                                                Open Compliance Tracker
-                                            </Button>
-
-                                            <div className="pt-2 border-t border-border-light space-y-2">
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-secondary">Soil Type</span>
-                                                    <span className="font-medium text-primary">
-                                                        {soilLabel(project.soil_type) ?? 'Not set'}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-secondary">Site Slope</span>
-                                                    <span className="font-medium text-primary">
-                                                        {slopeLabel(project.site_slope) ?? 'Not set'}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-secondary">Geotech Report</span>
-                                                    <span className={`font-medium ${project.geotech_report_uploaded ? 'text-green-700' : 'text-slate-600'}`}>
-                                                        {project.geotech_report_uploaded ? 'Uploaded' : 'Not uploaded'}
-                                                    </span>
-                                                </div>
-                                                {geotechDocumentSummary && (
-                                                    <div className="text-xs text-secondary">
-                                                        {geotechDocumentSummary.fileName} ({new Date(geotechDocumentSummary.createdAt).toLocaleDateString()})
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </Card>
-
-                                    <Card className="pro-tip-card reveal" data-delay="8">
-                                        <div className="p-4">
-                                            <h4 className="font-bold text-blue-900 mb-2">Pro Tip</h4>
-                                            <p className="text-sm text-blue-700">
-                                                Use <strong>Buying &amp; quotes</strong> to request quotes from multiple suppliers and get the best deals.
-                                            </p>
-                                            <Button
-                                                size="sm"
-                                                className="mt-3 bg-blue-500 hover:bg-blue-600 text-white w-full border-none"
-                                                onClick={() => setActiveView('procurement')}
-                                            >
-                                                Go to Procurement
-                                            </Button>
-                                        </div>
-                                    </Card>
-                                </div>
-                            </div>
-                        </div>
+                        <OverviewView
+                            project={project}
+                            projectId={projectId}
+                            stages={stages}
+                            items={items}
+                            materialItems={materialItems}
+                            purchases={purchases}
+                            usageByItem={usageByItem}
+                            purchaseStats={purchaseStats}
+                            completionRate={completionRate}
+                            complianceSummary={complianceSummary}
+                            geotechDocumentSummary={geotechDocumentSummary}
+                            activeTab={activeTab}
+                            setActiveTab={setActiveTab}
+                            setActiveView={setActiveView}
+                            setSelectedItemForPurchase={setSelectedItemForPurchase}
+                            isProjectOwner={isProjectOwner}
+                            canManageProject={canManageProject}
+                            onShare={() => setShowShareSheet(true)}
+                            onInvite={() => setShowInviteModal(true)}
+                            priceUpdates={priceUpdates}
+                            priceUpdatePreview={priceUpdatePreview}
+                            isPriceUpdateLoading={isPriceUpdateLoading}
+                            onIgnorePriceUpdates={handleIgnorePriceUpdates}
+                            onApplyPriceUpdates={handleApplyPriceUpdates}
+                        />
                     )}
 
-                    {/* BOQ View */}
                     {activeView === 'boq' && (
-                        <div className="view-panel space-y-6 max-w-full mx-auto">
-                            <ProjectCostSplit items={items} spentUsd={purchaseStats.actualSpent} idSuffix="-boq" />
-                            <nav ref={stageSwitcherRef} className="stage-switcher" aria-label="Construction stages">
-                                {STAGE_CATEGORIES.map((category, index) => {
-                                    const stage = stages.find((candidate) => candidate.boq_category === category);
-                                    if (!stage) return null;
-                                    const stageItemCount = items.filter((item) => item.category === category).length;
-                                    const isActive = activeTab === category;
-                                    return (
-                                        <button
-                                            key={stage.id}
-                                            type="button"
-                                            className={`stage-switcher-item${isActive ? ' active' : ''}${!stage.is_applicable ? ' unavailable' : ''}`}
-                                            aria-current={isActive ? 'step' : undefined}
-                                            aria-label={`${categoryShortLabels[category]}, ${stageItemCount} ${stageItemCount === 1 ? 'item' : 'items'}`}
-                                            onClick={() => setActiveTab(category)}
-                                        >
-                                            <span className="stage-number">{index + 1}</span>
-                                            <span className="stage-switcher-copy">
-                                                <strong>{categoryShortLabels[category]}</strong>
-                                                <small>{stage.is_applicable ? `${stageItemCount} ${stageItemCount === 1 ? 'item' : 'items'}` : 'Not included'}</small>
-                                            </span>
-                                        </button>
-                                    );
-                                })}
-                            </nav>
-
-                            {activeStageComplianceWarnings.length > 0 && !isComplianceBannerDismissed && (
-                                <div className="compliance-warning-banner" role="alert">
-                                    <div className="compliance-warning-content">
-                                        <span className="compliance-warning-icon" aria-hidden="true">
-                                            <WarningCircle size={18} weight="fill" />
-                                        </span>
-                                        <div>
-                                            <h4 className="text-sm font-semibold text-amber-900">
-                                                {activeStageComplianceWarnings.length} pending {activeStageComplianceWarnings.length === 1 ? 'approval' : 'approvals'}
-                                            </h4>
-                                            <p className="text-xs text-amber-800 mt-1">Review these before starting this stage.</p>
-                                            <details className="compliance-warning-details">
-                                                <summary>View pending approvals</summary>
-                                                <ul className="mt-2 list-disc pl-5 text-xs text-amber-800 space-y-1">
-                                                    {activeStageComplianceWarnings.slice(0, 6).map((issue) => (
-                                                        <li key={issue}>{issue}</li>
-                                                    ))}
-                                                </ul>
-                                            </details>
-                                        </div>
-                                    </div>
-                                    <div className="compliance-warning-actions">
-                                        <Button
-                                            size="sm"
-                                            variant="secondary"
-                                            onClick={() => setActiveView('compliance')}
-                                        >
-                                            Open Compliance Tracker
-                                        </Button>
-                                        <button
-                                            type="button"
-                                            className="compliance-warning-dismiss"
-                                            onClick={() => setIsComplianceBannerDismissed(true)}
-                                            aria-label="Dismiss compliance warning"
-                                        >
-                                            <X size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                            {currentStage && (
-                                <StageTab
-                                    stage={currentStage}
-                                    projectId={projectId}
-                                    items={activeStageItems}
-                                    purchases={purchases}
-                                    onStageUpdate={(u) => handleStageUpdate({ ...currentStage, ...u })}
-                                    onItemUpdate={handleItemUpdate}
-                                    onItemDelete={handleDeleteItem}
-                                    onItemAdded={handleAddItem}
-                                    onLogPurchase={handleLogPurchase}
-                                    onRecordUsage={handleRecordUsage}
-                                    showLabor={hasLabor}
-                                    usageByItem={usageByItem}
-                                    usageTrackingEnabled={project.usage_tracking_enabled}
-                                    showTasks={false}
-                                />
-                            )}
-                            <ProjectFeesPanel items={feeItems} onUpdate={handleItemUpdate} />
-                        </div>
+                        <BoqView
+                            projectId={projectId}
+                            items={items}
+                            feeItems={feeItems}
+                            stages={stages}
+                            currentStage={currentStage}
+                            purchases={purchases}
+                            actualSpentUsd={purchaseStats.actualSpent}
+                            usageByItem={usageByItem}
+                            usageTrackingEnabled={project.usage_tracking_enabled}
+                            hasLabor={hasLabor}
+                            activeTab={activeTab}
+                            setActiveTab={setActiveTab}
+                            setActiveView={setActiveView}
+                            complianceWarnings={activeStageComplianceWarnings}
+                            isComplianceBannerDismissed={isComplianceBannerDismissed}
+                            onDismissComplianceBanner={() => setIsComplianceBannerDismissed(true)}
+                            onStageUpdate={handleStageUpdate}
+                            onItemUpdate={handleItemUpdate}
+                            onItemDelete={handleDeleteItem}
+                            onItemAdded={handleAddItem}
+                            onLogPurchase={handleLogPurchase}
+                            onRecordUsage={handleRecordUsage}
+                        />
                     )}
 
-                    {/* COMPLIANCE View */}
                     {activeView === 'compliance' && (
-                        <div className="view-panel space-y-6">
-                            <ComplianceTrackerTab
-                                projectId={projectId}
-                                projectName={project.name}
-                                stages={stages}
-                                onStageUpdate={handleStageUpdate}
-                                phoneNumber={profile?.phone_number}
-                                onRequestPhone={(payload) => handleRequestPhone({ channel: payload?.channel })}
-                                preferredChannel={activeReminderChannel}
-                                onNavigateToSettings={() => setActiveView('settings')}
-                            />
-                        </div>
+                        <ComplianceView
+                            projectId={projectId}
+                            projectName={project.name}
+                            stages={stages}
+                            onStageUpdate={handleStageUpdate}
+                            phoneNumber={profile?.phone_number}
+                            onRequestPhone={handleRequestPhone}
+                            preferredChannel={activeReminderChannel}
+                            setActiveView={setActiveView}
+                        />
                     )}
 
-                    {/* PROCUREMENT View */}
                     {activeView === 'procurement' && (
-                        <div className="view-panel">
-                            <UnifiedProcurementView
-                                project={project}
-                                items={materialItems}
-                                onItemsRefresh={refreshProjectMaterialState}
-                                selectedItemForPurchase={selectedItemForPurchase}
-                                onClearSelectedItem={() => setSelectedItemForPurchase(null)}
-                            />
-                        </div>
+                        <ProcurementView
+                            purchases={purchases}
+                            setPurchases={setPurchases}
+                            project={project}
+                            materialItems={materialItems}
+                            onItemsRefresh={refreshProjectMaterialState}
+                            selectedItemForPurchase={selectedItemForPurchase}
+                            setSelectedItemForPurchase={setSelectedItemForPurchase}
+                        />
                     )}
 
-                    {/* USAGE View */}
                     {activeView === 'usage' && (
-                        <div className="view-panel space-y-6">
-                            {project.usage_tracking_enabled ? (
-                                <ProjectUsageView
-                                    project={project}
-                                    items={materialItems}
-                                    usageByItem={usageByItem}
-                                    onUsageRecorded={handleUsageRecorded}
-                                    onRequestPhone={handleRequestPhone}
-                                    canUseMobileReminders={Boolean(profile?.phone_number)}
-                                    selectedItemForUsage={selectedItemForUsage}
-                                    onClearSelectedItem={() => setSelectedItemForUsage(null)}
-                                    preferredChannel={activeReminderChannel}
-                                    onNavigateToSettings={() => setActiveView('settings')}
-                                />
-                            ) : (
-                                <div className="bg-surface border border-border rounded-xl p-6 shadow-card">
-                                    <h3 className="text-lg font-semibold text-primary mb-2">Enable usage tracking</h3>
-                                    <p className="text-secondary mb-4">
-                                        Turn on usage tracking to log materials used by builders.
-                                    </p>
-                                    <Button
-                                        variant="primary"
-                                        onClick={() => handleUsageTrackingToggle(true)}
-                                    >
-                                        Enable Usage Tracking
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
+                        <UsageView
+                            project={project}
+                            materialItems={materialItems}
+                            usageByItem={usageByItem}
+                            onUsageRecorded={handleUsageRecorded}
+                            selectedItemForUsage={selectedItemForUsage}
+                            setSelectedItemForUsage={setSelectedItemForUsage}
+                            preferredChannel={activeReminderChannel}
+                            setActiveView={setActiveView}
+                            onEnableUsageTracking={handleUsageTrackingToggle}
+                        />
                     )}
 
-                    {/* DOCUMENTS View */}
-                    {activeView === 'documents' && (
-                        <div className="view-panel space-y-6">
-                            <DocumentsTab projectId={projectId} />
-                        </div>
-                    )}
+                    {activeView === 'documents' && <DocumentsView projectId={projectId} />}
 
-                    {/* BUDGET View */}
                     {activeView === 'budget' && (
-                        <div className="view-panel space-y-6">
-                            <BudgetPlanner
-                                estimateUsd={purchaseStats.estimatedTotal}
-                                limitUsd={project.budget_target_usd}
-                                amountSpentUsd={purchaseStats.actualSpent}
-                                targetDate={project.target_purchase_date}
-                                onTargetDateChange={handleSavingsTargetDateChange}
-                                onLimitChange={(limitUsd) => handleProjectUpdate({ budget_target_usd: limitUsd }, { quiet: true })}
-                                savingsMode={project.savings_target_mode ?? 'remaining'}
-                                savingsCustomUsd={project.savings_target_usd}
-                                onSavingsTargetChange={(mode, customUsd) => handleProjectUpdate({ savings_target_mode: mode, savings_target_usd: customUsd }, { quiet: true })}
-                                onSetReminder={(plan) => { setReminderDraft(plan); setActiveView('settings'); }}
-                            />
-                        </div>
+                        <BudgetView
+                            project={project}
+                            purchaseStats={purchaseStats}
+                            onTargetDateChange={handleSavingsTargetDateChange}
+                            onProjectUpdate={handleProjectUpdate}
+                            setReminderDraft={setReminderDraft}
+                            setActiveView={setActiveView}
+                        />
                     )}
 
-                    {/* SETTINGS View */}
                     {activeView === 'settings' && (
-                        <div className="view-panel">
-                            <ProjectSettings
-                                project={project}
-                                // Settings has already saved; this only takes the result.
-                                // It used to save the whole project a second time.
-                                onUpdate={setProject}
-                                onSetReminder={handleSavingsReminder}
-                                canUseMobileReminders={Boolean(profile?.phone_number)}
-                                defaultReminderChannel={activeReminderChannel}
-                                onRequestPhone={handleRequestPhone}
-                                reminderActive={Boolean(savingsReminder?.is_active)}
-                                reminderFrequency={(savingsReminder?.frequency as 'daily' | 'weekly' | 'monthly' | null) ?? null}
-                                onToggleReminder={handleToggleSavingsReminder}
-                                defaultReminderAmountUsd={Math.max(purchaseStats.estimatedTotal - purchaseStats.actualSpent, 0)}
-                                reminderDraft={reminderDraft}
-                                onReminderDraftUsed={() => setReminderDraft(null)}
-                                onReminderChannelChange={setPreferredReminderChannel}
-                            />
-                        </div>
+                        <SettingsView
+                            project={project}
+                            setProject={setProject}
+                            onSetReminder={handleSavingsReminder}
+                            phoneNumber={profile?.phone_number}
+                            defaultReminderChannel={activeReminderChannel}
+                            onRequestPhone={handleRequestPhone}
+                            savingsReminder={savingsReminder}
+                            onToggleReminder={handleToggleSavingsReminder}
+                            purchaseStats={purchaseStats}
+                            reminderDraft={reminderDraft}
+                            setReminderDraft={setReminderDraft}
+                            onReminderChannelChange={setPreferredReminderChannel}
+                        />
                     )}
                 </main>
             </div>
@@ -1771,11 +300,7 @@ function ProjectDetailContent() {
             {/* Modals */}
             <PhoneNumberModal
                 isOpen={showPhoneModal}
-                onClose={() => {
-                    setShowPhoneModal(false);
-                    setPendingReminder(null);
-                    setRequestedChannel(null);
-                }}
+                onClose={closePhoneModal}
                 onSave={handleSavePhoneNumber}
                 initialValue={profile?.phone_number || ''}
             />
@@ -1794,604 +319,7 @@ function ProjectDetailContent() {
                 projectName={project.name}
             />
 
-            <CelebrationModal
-                isOpen={showCelebration}
-                onClose={() => {
-                    setShowCelebration(false);
-                    setCelebrationData(null);
-                }}
-                title={celebrationData?.title || ''}
-                message={celebrationData?.message || ''}
-                stats={celebrationData?.stats}
-                variant="stage-complete"
-                actionLabel="Continue Building"
-                onAction={() => {
-                    setShowCelebration(false);
-                    setCelebrationData(null);
-                    setActiveView('boq');
-                }}
-            />
 
-            <style jsx global>{`
-                :root {
-                    --background: var(--color-background);
-                    --surface: var(--color-surface);
-                    --primary: var(--color-primary);
-                    --secondary: var(--color-text-secondary);
-                    --border: var(--color-border);
-                }
-                
-                body {
-                    background-color: var(--background);
-                    color: var(--color-text);
-                }
-                
-                .bg-background { background-color: var(--color-background); }
-                .bg-surface { background-color: var(--color-surface); }
-                .bg-mist { background-color: var(--color-mist); }
-                
-                .text-primary { color: var(--color-text); }
-                .text-secondary { color: var(--color-text-secondary); }
-                .text-accent { color: var(--color-accent); }
-                
-                .border-border { border-color: var(--color-border); }
-                .border-border-light { border-color: var(--color-border-light); }
-                
-                .shadow-card { box-shadow: var(--shadow-card); }
-                
-                .font-heading { font-family: var(--font-heading); }
-
-                .project-dashboard-shell {
-                    --dashboard-ease: cubic-bezier(0.22, 1, 0.36, 1);
-                    --dashboard-fast: 180ms;
-                    --dashboard-medium: 280ms;
-                }
-
-                .project-dashboard-shell h1,
-                .project-dashboard-shell h2,
-                .project-dashboard-shell h3,
-                .project-dashboard-shell h4 {
-                    letter-spacing: 0;
-                    line-height: 1.18;
-                }
-
-                .project-dashboard-shell p {
-                    line-height: 1.55;
-                }
-
-                .project-dashboard-shell button,
-                .project-dashboard-shell a,
-                .project-dashboard-shell input,
-                .project-dashboard-shell select,
-                .project-dashboard-shell textarea {
-                    transition:
-                        transform var(--dashboard-fast) var(--dashboard-ease),
-                        box-shadow var(--dashboard-fast) var(--dashboard-ease),
-                        border-color var(--dashboard-fast) var(--dashboard-ease),
-                        background-color var(--dashboard-fast) var(--dashboard-ease),
-                        color var(--dashboard-fast) var(--dashboard-ease),
-                        opacity var(--dashboard-fast) var(--dashboard-ease);
-                }
-
-                .project-dashboard-shell button:focus-visible,
-                .project-dashboard-shell a:focus-visible,
-                .project-dashboard-shell input:focus-visible,
-                .project-dashboard-shell select:focus-visible,
-                .project-dashboard-shell textarea:focus-visible {
-                    outline: none;
-                    box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.24);
-                }
-            `}</style>
-            <style jsx>{`
-                .project-shell {
-                    display: flex;
-                    min-width: 0;
-                    background: #f7f9fc;
-                    min-height: calc(100vh - 64px);
-                }
-
-                .project-main {
-                    flex: 1;
-                    min-width: 0;
-                    overflow-y: auto;
-                    height: calc(100vh - 64px);
-                    padding: 24px 28px 48px;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 20px;
-                }
-
-                .view-header {
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    width: 100%;
-                    background: transparent;
-                    border: 0;
-                    border-radius: 0;
-                    padding: 4px 2px;
-                    display: flex;
-                    align-items: flex-end;
-                    justify-content: space-between;
-                    gap: 20px;
-                    box-shadow: none;
-                    transition:
-                        transform var(--dashboard-medium) var(--dashboard-ease),
-                        box-shadow var(--dashboard-medium) var(--dashboard-ease);
-                }
-
-                .view-eyebrow {
-                    margin: 0 0 6px 0;
-                    font-size: 0.72rem;
-                    text-transform: uppercase;
-                    letter-spacing: 0;
-                    color: var(--color-text-secondary);
-                    font-weight: 700;
-                }
-
-                .view-title {
-                    margin: 0;
-                    font-size: clamp(1.5rem, 2vw, 2rem);
-                    line-height: 1.1;
-                    color: var(--color-text);
-                    letter-spacing: 0;
-                }
-
-                .view-description {
-                    margin: 10px 0 0 0;
-                    color: #5f6b7e;
-                    max-width: 680px;
-                }
-
-                .view-header > div:first-child {
-                    min-width: 0;
-                }
-
-                .view-eyebrow,
-                .view-title,
-                .view-description {
-                    overflow-wrap: anywhere;
-                }
-
-                .view-stats {
-                    display: flex;
-                    gap: 12px;
-                    flex-wrap: wrap;
-                    justify-content: flex-end;
-                }
-
-                .view-stat {
-                    min-width: 108px;
-                    background: #f3f8ff;
-                    border: 1px solid #d6e8ff;
-                    border-radius: 7px;
-                    padding: 10px 12px;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
-                    text-align: right;
-                }
-
-                .view-stat span {
-                    font-size: 0.72rem;
-                    text-transform: uppercase;
-                    letter-spacing: 0;
-                    color: #53739a;
-                    font-weight: 700;
-                }
-
-                .view-stat strong {
-                    font-size: 1rem;
-                    color: #16385d;
-                    overflow-wrap: anywhere;
-                }
-
-                .view-panel {
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    width: 100%;
-                    padding: 0;
-                    border-radius: 0;
-                    background: transparent;
-                    border: 0;
-                    box-shadow: none;
-                    transition:
-                        transform var(--dashboard-medium) var(--dashboard-ease),
-                        box-shadow var(--dashboard-medium) var(--dashboard-ease);
-                }
-
-                .stage-switcher {
-                    display: grid;
-                    grid-template-columns: repeat(5, minmax(0, 1fr));
-                    gap: 8px;
-                    margin-bottom: 18px;
-                }
-
-                .stage-switcher-item {
-                    min-width: 0;
-                    min-height: 58px;
-                    padding: 8px 10px;
-                    display: flex;
-                    align-items: center;
-                    gap: 9px;
-                    border: 1px solid #d8e0eb;
-                    border-radius: 7px;
-                    background: #fff;
-                    color: #526176;
-                    text-align: left;
-                    cursor: pointer;
-                }
-
-                .stage-switcher-item:hover {
-                    border-color: #9fb6d0;
-                    background: #f8fafc;
-                }
-
-                .stage-switcher-item.active {
-                    border-color: #0b1f3b;
-                    background: #0b1f3b;
-                    color: #fff;
-                    box-shadow: 0 5px 12px rgba(11, 31, 59, 0.14);
-                }
-
-                .stage-switcher-item.unavailable:not(.active) {
-                    color: #8b96a7;
-                    background: #f8fafc;
-                }
-
-                .stage-number {
-                    width: 25px;
-                    height: 25px;
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-shrink: 0;
-                    border: 1px solid #d8e0eb;
-                    border-radius: 6px;
-                    background: #f2f6fa;
-                    color: #0b1f3b;
-                    font-size: 0.72rem;
-                    font-weight: 750;
-                }
-
-                .stage-switcher-item.active .stage-number {
-                    border-color: rgba(255, 255, 255, 0.35);
-                    background: rgba(255, 255, 255, 0.12);
-                    color: #fff;
-                }
-
-                .stage-switcher-copy {
-                    min-width: 0;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 2px;
-                }
-
-                .stage-switcher-copy strong,
-                .stage-switcher-copy small {
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                }
-
-                .stage-switcher-copy strong {
-                    font-size: 0.78rem;
-                }
-
-                .stage-switcher-copy small {
-                    color: #748196;
-                    font-size: 0.67rem;
-                }
-
-                .stage-switcher-item.active .stage-switcher-copy small {
-                    color: #c9d5e4;
-                }
-
-                .compliance-warning-banner {
-                    border: 1px solid #fcd34d;
-                    background: #fffbeb;
-                    border-radius: 8px;
-                    padding: 14px 16px;
-                    display: flex;
-                    align-items: flex-start;
-                    justify-content: space-between;
-                    gap: 12px;
-                }
-
-                .compliance-warning-content {
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 10px;
-                    flex: 1;
-                    min-width: 0;
-                }
-
-                .compliance-warning-icon {
-                    width: 28px;
-                    height: 28px;
-                    border-radius: 999px;
-                    background: #fef3c7;
-                    color: #b45309;
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-shrink: 0;
-                    margin-top: 1px;
-                }
-
-                .compliance-warning-actions {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    flex-shrink: 0;
-                }
-
-                .compliance-warning-dismiss {
-                    width: 30px;
-                    height: 30px;
-                    border-radius: 8px;
-                    border: 1px solid #fcd34d;
-                    background: #fff;
-                    color: #92400e;
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                }
-
-                .compliance-warning-dismiss:hover {
-                    background: #fef3c7;
-                }
-
-                .compliance-warning-details {
-                    margin-top: 7px;
-                }
-
-                .compliance-warning-details summary {
-                    width: fit-content;
-                    color: #92400e;
-                    font-size: 0.75rem;
-                    font-weight: 700;
-                    text-decoration: underline;
-                    text-underline-offset: 2px;
-                    cursor: pointer;
-                }
-
-                .overview-view {
-                    padding: 8px 2px;
-                    width: 100%;
-                    min-width: 0;
-                    max-width: 1152px;
-                }
-
-                .overview-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    gap: 18px;
-                    flex-wrap: wrap;
-                }
-
-                .overview-breadcrumb {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    margin-bottom: 8px;
-                    font-size: 0.88rem;
-                    color: var(--color-text-secondary);
-                }
-
-                .overview-actions {
-                    display: flex;
-                    gap: 8px;
-                    align-items: center;
-                    flex-wrap: wrap;
-                }
-
-                .price-update-alert {
-                    background: linear-gradient(135deg, #eaf3ff, #f3f8ff);
-                    border: 1px solid #cfe2fb;
-                    border-radius: 16px;
-                    padding: 14px 16px;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 14px;
-                    justify-content: space-between;
-                    transition:
-                        transform var(--dashboard-medium) var(--dashboard-ease),
-                        box-shadow var(--dashboard-medium) var(--dashboard-ease);
-                }
-
-                .price-update-icon {
-                    background: rgba(255, 255, 255, 0.95);
-                    border: 1px solid rgba(159, 200, 248, 0.7);
-                    padding: 8px;
-                    border-radius: 10px;
-                    color: #2e6cf6;
-                    box-shadow: 0 3px 10px rgba(46, 108, 246, 0.12);
-                }
-
-                .overview-card {
-                    background: rgba(255, 255, 255, 0.92);
-                    border: 1px solid rgba(211, 211, 215, 0.7);
-                    border-radius: 20px;
-                    padding: 24px;
-                    box-shadow: 0 8px 20px rgba(6, 20, 47, 0.03);
-                    transition:
-                        transform var(--dashboard-medium) var(--dashboard-ease),
-                        box-shadow var(--dashboard-medium) var(--dashboard-ease),
-                        border-color var(--dashboard-medium) var(--dashboard-ease);
-                }
-
-                .next-step-item {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    gap: 12px;
-                    padding: 12px 14px;
-                    background: #f7faff;
-                    border: 1px solid #dceafb;
-                    border-radius: 12px;
-                    transition:
-                        transform var(--dashboard-fast) var(--dashboard-ease),
-                        border-color var(--dashboard-fast) var(--dashboard-ease),
-                        box-shadow var(--dashboard-fast) var(--dashboard-ease);
-                }
-
-                .pro-tip-card {
-                    background: linear-gradient(145deg, #eef6ff, #f8fbff) !important;
-                    border: 1px solid #d1e6ff !important;
-                    transition:
-                        transform var(--dashboard-medium) var(--dashboard-ease),
-                        box-shadow var(--dashboard-medium) var(--dashboard-ease),
-                        border-color var(--dashboard-medium) var(--dashboard-ease);
-                }
-
-                .overview-card:hover,
-                .price-update-alert:hover,
-                .pro-tip-card:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 20px 30px rgba(6, 20, 47, 0.08);
-                }
-
-                .next-step-item:hover {
-                    transform: translateY(-1px);
-                    border-color: #b7d7f7;
-                    box-shadow: 0 10px 18px rgba(17, 56, 95, 0.08);
-                }
-
-                .view-all-btn {
-                    width: 100%;
-                    padding: 12px 16px;
-                    background: transparent;
-                    border: 1px dashed #cbd5e1;
-                    border-radius: 10px;
-                    color: #64748b;
-                    font-size: 0.9rem;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-
-                .view-all-btn:hover {
-                    background: #f8fafc;
-                    border-color: #94a3b8;
-                    color: #475569;
-                }
-
-                @media (max-width: 1024px) {
-                    .project-main {
-                        padding: 18px 16px 40px;
-                        gap: 16px;
-                    }
-                }
-
-                @media (max-width: 768px) {
-                    .project-shell {
-                        display: block;
-                        min-height: 0;
-                    }
-
-                    .project-main {
-                        height: auto;
-                        min-height: calc(100vh - 56px);
-                        overflow-y: visible;
-                        padding: 14px 12px calc(108px + env(safe-area-inset-bottom, 0px));
-                        gap: 14px;
-                    }
-
-                    .view-header {
-                        padding: 8px 4px 2px;
-                        flex-direction: column;
-                        border-radius: 8px;
-                        align-items: flex-start;
-                    }
-
-                    .view-stats {
-                        width: 100%;
-                        display: grid;
-                        grid-template-columns: repeat(3, minmax(0, 1fr));
-                        gap: 7px;
-                    }
-
-                    .view-stat {
-                        min-width: 0;
-                        padding: 9px 8px;
-                        text-align: left;
-                    }
-
-                    .view-stat span {
-                        font-size: 0.61rem;
-                    }
-
-                    .view-stat strong {
-                        font-size: 0.82rem;
-                    }
-
-                    .view-panel {
-                        border-radius: 8px;
-                    }
-
-                    .stage-switcher {
-                        display: flex;
-                        gap: 7px;
-                        margin: 0 -12px 14px;
-                        padding: 0 12px 4px;
-                        overflow-x: auto;
-                        scroll-snap-type: x proximity;
-                        scrollbar-width: none;
-                    }
-
-                    .stage-switcher::-webkit-scrollbar {
-                        display: none;
-                    }
-
-                    .stage-switcher-item {
-                        min-width: 116px;
-                        min-height: 54px;
-                        scroll-snap-align: start;
-                    }
-
-                    .compliance-warning-banner {
-                        flex-direction: column;
-                    }
-
-                    .compliance-warning-actions {
-                        width: 100%;
-                        justify-content: space-between;
-                    }
-
-                    .next-step-item {
-                        flex-direction: column;
-                        align-items: flex-start;
-                    }
-                }
-
-                @media (max-width: 640px) {
-                    .view-title {
-                        font-size: 1.38rem;
-                    }
-
-                    .view-description {
-                        font-size: 0.9rem;
-                    }
-
-                    .overview-breadcrumb {
-                        font-size: 0.8rem;
-                    }
-                }
-
-                @media (prefers-reduced-motion: reduce) {
-                    .view-header,
-                    .view-panel,
-                    .overview-card,
-                    .price-update-alert,
-                    .next-step-item,
-                    .pro-tip-card {
-                        transition: none;
-                        transform: none !important;
-                    }
-                }
-            `}</style>
         </MainLayout>
     );
 }

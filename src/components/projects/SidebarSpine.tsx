@@ -32,9 +32,6 @@ interface SidebarSpineProps {
     project: Project;
     activeView: ProjectView;
     onViewChange: (view: ProjectView) => void;
-    currentProjectName?: string;
-    isMobileOpen?: boolean;
-    onMobileClose?: () => void;
 }
 
 /**
@@ -58,7 +55,7 @@ export const PROJECT_NAV_ITEMS: { id: ProjectView; label: string; short: string;
 
 const navItems = PROJECT_NAV_ITEMS;
 
-export default function SidebarSpine({ project, activeView, onViewChange, isMobileOpen, onMobileClose }: SidebarSpineProps) {
+export default function SidebarSpine({ project, activeView, onViewChange }: SidebarSpineProps) {
     const router = useRouter();
     const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
     const [projects, setProjects] = useState<Project[]>([]);
@@ -112,8 +109,7 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
 
     return (
         <>
-            {isMobileOpen && <div className="sidebar-backdrop" onClick={onMobileClose} />}
-            <aside className={`sidebar-spine${isMobileOpen ? ' mobile-open' : ''} ${isCollapsed ? 'collapsed' : ''}`}>
+            <aside className={`sidebar-spine ${isCollapsed ? 'collapsed' : ''}`}>
                 {/* Project Switcher */}
                 <div className="project-switcher">
                     <button
@@ -180,7 +176,6 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                             aria-label={isCollapsed ? item.label : undefined}
                             onClick={() => {
                                 onViewChange(item.id);
-                                onMobileClose?.();
                             }}
                             className={`nav-item ${activeView === item.id ? 'active' : ''}`}
                             title={isCollapsed ? item.label : undefined}
@@ -553,55 +548,9 @@ export default function SidebarSpine({ project, activeView, onViewChange, isMobi
                         }
                     }
 
+                    /* ProjectViewTabs provides navigation on phones. */
                     @media (max-width: 768px) {
-                        .sidebar-spine {
-                            position: fixed;
-                            left: 0;
-                            top: 0;
-                            height: 100vh;
-                            z-index: 1000;
-                            transform: translateX(-100%);
-                            transition: transform 0.3s ease;
-                            width: 278px;
-                            background: linear-gradient(180deg, #fdfefe, #f4f9ff);
-                        }
-
-                        .sidebar-spine.mobile-open {
-                            transform: translateX(0);
-                        }
-
-                        .sidebar-backdrop {
-                            position: fixed;
-                            inset: 0;
-                            background: rgba(0, 0, 0, 0.4);
-                            z-index: 999;
-                        }
-
-                        /* Disable collapse on mobile overlay */
-                        .collapse-toggle {
-                            display: none;
-                        }
-                        
-                        .sidebar-spine.collapsed {
-                            width: 278px; /* Reset width for mobile */
-                        }
-                        
-                        .sidebar-spine.collapsed .project-info,
-                        .sidebar-spine.collapsed .nav-label,
-                        .sidebar-spine.collapsed .caret {
-                            opacity: 1;
-                            max-width: none;
-                        }
-                        
-                        .sidebar-spine.collapsed .switcher-btn {
-                            width: 100%;
-                            justify-content: flex-start;
-                        }
-                        
-                        .sidebar-spine.collapsed .nav-item {
-                            width: 100%;
-                            justify-content: flex-start;
-                        }
+                        .sidebar-spine { display: none; }
                     }
 
                     @media (prefers-reduced-motion: reduce) {
