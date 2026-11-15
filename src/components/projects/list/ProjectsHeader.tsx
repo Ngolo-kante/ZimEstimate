@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
-import { CaretRight, Plus } from '@phosphor-icons/react';
+import { Plus } from '@phosphor-icons/react';
 
 /** Title, and the ways to start something new. */
 export default function ProjectsHeader({ canCreateProject }: { canCreateProject: () => boolean }) {
@@ -14,9 +14,6 @@ export default function ProjectsHeader({ canCreateProject }: { canCreateProject:
                 <p>Open a build, compare estimates, or continue where you left off.</p>
             </div>
             <div className="projects-header-actions">
-                <Link href="/quick-projects" className="quick-project-action">
-                    Quick Estimate <CaretRight size={15} weight="bold" />
-                </Link>
                 {/* The start page lists every kind of estimate — full house,
                     by stage, from a plan, solar, borehole and the rest —
                     rather than dropping straight into the house builder. */}

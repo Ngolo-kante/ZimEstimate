@@ -64,21 +64,11 @@ function ProjectsContent() {
             <div className="projects-list projects-page">
                 <ProjectsHeader canCreateProject={canCreateProject} />
 
-                <ProjectsSubNav active="all" />
-
                 {/* Confirmation that the save landed, and a way straight into the
                     thing that was saved. Landing on the list answers "did it
                     save?"; this answers "and where is it?" without making the
                     user hunt for a card among however many they own. */}
                 {justSaved && <SavedNotice justSaved={justSaved} onDismiss={dismissJustSaved} />}
-
-                <PortfolioStrip
-                    isLoading={isLoading}
-                    projectStats={projectStats}
-                    quickCount={quickItems.length}
-                    profile={profile}
-                    projectCount={projectCount}
-                />
 
                 <div className="page-header-row">
                     <div>
@@ -157,6 +147,15 @@ function ProjectsContent() {
                     />
                 )}
 
+                <PortfolioStrip
+                    isLoading={isLoading}
+                    projectStats={projectStats}
+                    quickCount={quickItems.length}
+                    profile={profile}
+                    projectCount={projectCount}
+                />
+
+                <ProjectsSubNav active="all" />
             </div>
 
             {/* Mobile Bottom Sheet Menu */}

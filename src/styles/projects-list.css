@@ -932,3 +932,22 @@
     .projects-list button, .projects-list input, .projects-list select { min-height: 44px; }
     .projects-list .menu-btn { min-width: 44px; min-height: 44px; }
 }
+
+/* Keep names independent of badges and the action menu. */
+.projects-list .project-card .card-header { flex-wrap: wrap; align-items: flex-start; }
+.projects-list .project-header { flex-wrap: wrap; min-width: 0; }
+.projects-list .project-header .card-title { flex-basis: 100%; overflow-wrap: anywhere; }
+.projects-list .project-card .menu-container { margin-left: auto; flex-shrink: 0; }
+.projects-list svg { flex-shrink: 0; }
+.projects-list .project-meta { flex-wrap: wrap; }
+.projects-list .meta-item { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 767px) {
+    .projects-list .projects-header { flex-direction: row; align-items: center; gap: 12px; padding-bottom: 12px; }
+    .projects-list .projects-header p, .projects-list .projects-header .projects-eyebrow,
+    .projects-list .page-header-row { display: none; }
+    .projects-list .projects-header-actions { width: auto; flex-shrink: 0; }
+    .projects-list .projects-header h1 { margin: 0; font-size: 1.5rem; }
+    .projects-list .search-box { height: 44px; }
+    .projects-list .filters-bar { gap: 0; }
+    .projects-list .filter-group.mobile-filters { margin-top: 12px; }
+}

@@ -4,13 +4,9 @@ import Link from 'next/link';
 import Card, { CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import SitePhotosPanel from '@/components/projects/SitePhotosPanel';
-import { RunningTotalBar } from '@/components/ui/RunningTotalBar';
 import { StageProgressCards } from '@/components/projects/StageProgressCards';
-import ProjectKPIDashboard from '@/components/projects/ProjectKPIDashboard';
-import ProjectCostSplit from '@/components/projects/ProjectCostSplit';
 import type { ProjectView } from '@/components/projects/SidebarSpine';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
-import { projectMoney } from '@/lib/projects/budgetMath';
 import { slopeLabel, soilLabel } from '@/lib/projects/siteLabels';
 import type { ComplianceSummary } from '@/lib/compliance';
 import type { PriceUpdate } from '@/lib/projects/priceUpdates';
@@ -20,7 +16,6 @@ import {
     ShareNetwork,
     UserPlus,
     MapPin,
-    Wallet,
     TrendUp,
     CheckCircle,
     PencilSimple,
@@ -60,15 +55,13 @@ export interface OverviewViewProps {
     onApplyPriceUpdates: () => void;
 }
 
-/** The project's front page: progress, KPIs, next purchases, summary and compliance. */
+/** The project's front page: progress, next purchases, summary and compliance. */
 export default function OverviewView({
     project,
     projectId,
     stages,
     items,
     materialItems,
-    purchases,
-    usageByItem,
     purchaseStats,
     completionRate,
     complianceSummary,
@@ -88,6 +81,7 @@ export default function OverviewView({
     onApplyPriceUpdates,
 }: OverviewViewProps) {
     const { exchangeRate, formatPrice } = useCurrency();
+    const pendingItems = materialItems.filter(item => !item.is_purchased);
     return (
         <div className="overview-view space-y-8 max-w-6xl mx-auto">
             <div className="overview-header">
@@ -138,6 +132,7 @@ export default function OverviewView({
                     {canManageProject && (
                         <Button
                             size="sm"
+                            variant="secondary"
                             icon={<PencilSimple size={16} />}
                             onClick={() => setActiveView('settings')}
                         >
@@ -147,46 +142,8 @@ export default function OverviewView({
                 </div>
             </div>
 
-
-
-            {/* Price Update Alert */}
-            {priceUpdates.length > 0 && (
-                <div className="price-update-alert">
-                    <div className="flex items-start gap-3">
-                        <div className="price-update-icon">
-                            <TrendUp size={20} weight="bold" />
-                        </div>
-                        <div>
-                            <h4 className="font-semibold text-blue-900">Price Updates Available</h4>
-                            <p className="text-sm text-blue-700 mt-1">
-                                New market prices detected for {priceUpdatePreview}.
-                                Updating will adjust your estimated totals.
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                        <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={onIgnorePriceUpdates}
-                            className="bg-white text-blue-700 border-blue-200"
-                        >
-                            Ignore
-                        </Button>
-                        <Button
-                            size="sm"
-                            onClick={onApplyPriceUpdates}
-                            loading={isPriceUpdateLoading}
-                            className="bg-blue-500 hover:bg-blue-600 text-white border-none"
-                        >
-                            Apply updates
-                        </Button>
-                    </div>
-                </div>
-            )}
-
             {/* Project Progress/Timeline */}
-            <section >
+            <section>
                 <h3 className="section-title mb-4">Construction Progress</h3>
                 <StageProgressCards
                     stages={stages}
@@ -197,31 +154,7 @@ export default function OverviewView({
                         setActiveView('boq');
                     }}
                 />
-                <SitePhotosPanel projectId={projectId} />
             </section>
-
-            {/* KPI Dashboard */}
-            <section className="overview-card">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                        <Wallet size={24} weight="duotone" />
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-bold text-primary font-heading">Project KPIs</h3>
-                        <p className="text-sm text-secondary">Key performance indicators at a glance</p>
-                    </div>
-                </div>
-
-                <ProjectKPIDashboard
-                    items={items}
-                    purchases={purchases}
-                    usageByItem={usageByItem}
-                    totalBudget={projectMoney({ estimateUsd: purchaseStats.estimatedTotal, limitUsd: project.budget_target_usd, spentUsd: purchaseStats.actualSpent }).budgetUsd}
-                    onNavigate={(view) => setActiveView(view as ProjectView)}
-                />
-            </section>
-
-            <ProjectCostSplit items={items} spentUsd={purchaseStats.actualSpent} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                 {/* Left Column - Next Steps */}
@@ -230,11 +163,11 @@ export default function OverviewView({
                     <section className="overview-card">
                         <h3 className="text-lg font-bold text-primary mb-4 font-heading">Next Steps</h3>
                         <div className="space-y-4">
-                            {materialItems.filter(i => !i.is_purchased).slice(0, 5).map(item => (
+                            {pendingItems.slice(0, 5).map((item, index) => (
                                 <div key={item.id} className="next-step-item">
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex min-w-0 flex-wrap items-center gap-3">
                                         <div className="w-2 h-2 rounded-full bg-accent"></div>
-                                        <span className="font-medium text-primary">{item.material_name}</span>
+                                        <span className="font-medium text-primary break-words min-w-0">{item.material_name}</span>
                                         <span className="text-xs text-secondary">
                                             {formatPrice(
                                                 Number(item.quantity) * Number(item.unit_price_usd),
@@ -242,7 +175,7 @@ export default function OverviewView({
                                             )}
                                         </span>
                                     </div>
-                                    <Button size="sm" variant="secondary" onClick={() => {
+                                    <Button size="sm" variant={index === 0 ? 'primary' : 'secondary'} onClick={() => {
                                         setSelectedItemForPurchase(item);
                                         setActiveView('procurement');
                                     }}>
@@ -250,18 +183,18 @@ export default function OverviewView({
                                     </Button>
                                 </div>
                             ))}
-                            {materialItems.filter(i => !i.is_purchased).length === 0 && (
+                            {pendingItems.length === 0 && (
                                 <div className="text-center py-8 text-secondary">
                                     <CheckCircle size={32} className="mx-auto mb-2 text-blue-600" />
                                     <p>All items purchased! Great job.</p>
                                 </div>
                             )}
-                            {materialItems.filter(i => !i.is_purchased).length > 5 && (
+                            {pendingItems.length > 5 && (
                                 <button
                                     className="view-all-btn"
                                     onClick={() => setActiveView('procurement')}
                                 >
-                                    View all {materialItems.filter(i => !i.is_purchased).length} pending items
+                                    View all {pendingItems.length} pending items
                                 </button>
                             )}
                         </div>
@@ -270,59 +203,55 @@ export default function OverviewView({
 
                 {/* Right Column - Summary Stats */}
                 <div className="space-y-6">
-                    <Card >
+                    <Card>
                         <CardHeader>
                             <CardTitle>Project Summary</CardTitle>
                         </CardHeader>
                         <div className="space-y-4">
-                            <div className="flex justify-between items-center py-2 border-b border-border-light">
+                            <div className="flex flex-wrap justify-between items-center gap-2 py-2 border-b border-border-light">
                                 <span className="text-sm text-secondary">BOQ estimate</span>
                                 <span className="font-bold text-primary">
                                     {formatPrice(purchaseStats.estimatedTotal, purchaseStats.estimatedTotal * exchangeRate)}
                                 </span>
                             </div>
+                            <div className="flex justify-between items-center gap-3 py-2 border-b border-border-light">
+                                <span className="text-sm text-secondary">Spent so far</span>
+                                <span className="font-bold text-primary">{formatPrice(purchaseStats.actualSpent, purchaseStats.actualSpent * exchangeRate)}</span>
+                            </div>
                             {project.budget_target_usd ? (
-                                <div className="flex justify-between items-center py-2 border-b border-border-light">
+                                <div className="flex flex-wrap justify-between items-center gap-2 py-2 border-b border-border-light">
                                     <span className="text-sm text-secondary">Your limit</span>
                                     <span className="font-bold text-primary">
                                         {formatPrice(project.budget_target_usd, project.budget_target_usd * exchangeRate)}
                                     </span>
                                 </div>
                             ) : null}
-                            <div className="flex justify-between items-center py-2 border-b border-border-light">
+                            <div className="flex flex-wrap justify-between items-center gap-2 py-2 border-b border-border-light">
                                 <span className="text-sm text-secondary">Est. Materials</span>
                                 <span className="font-medium text-primary">{materialItems.length} Items</span>
                             </div>
-                            <div className="flex justify-between items-center py-2 border-b border-border-light">
+                            <div className="flex flex-wrap justify-between items-center gap-2 py-2 border-b border-border-light">
                                 <span className="text-sm text-secondary">Completion</span>
                                 <span className="font-medium text-primary">{completionRate}%</span>
                             </div>
-                            <div className="pt-2">
-                                <RunningTotalBar
-                                    totalUSD={purchaseStats.estimatedTotal}
-                                    totalZWG={purchaseStats.estimatedTotal * exchangeRate}
-                                    budgetTargetUSD={project.budget_target_usd}
-                                    completionPercentage={completionRate}
-                                    projectName={project.name}
-                                />
-                            </div>
+
                         </div>
                     </Card>
 
-                    <Card >
+                    <Card>
                         <CardHeader>
                             <CardTitle>Compliance Snapshot</CardTitle>
                         </CardHeader>
                         {/* Counted exactly as the Compliance counts them
                             (summariseCompliance), so the two pages agree. */}
                         <div className="space-y-4">
-                            <div className="flex justify-between items-center py-2 border-b border-border-light">
+                            <div className="flex flex-wrap justify-between items-center gap-2 py-2 border-b border-border-light">
                                 <span className="text-sm text-secondary">Certificates</span>
                                 <span className="font-medium text-primary">
                                     {complianceSummary.doneCerts}/{complianceSummary.totalCerts}
                                 </span>
                             </div>
-                            <div className="flex justify-between items-center py-2 border-b border-border-light">
+                            <div className="flex flex-wrap justify-between items-center gap-2 py-2 border-b border-border-light">
                                 <span className="text-sm text-secondary">Admin tasks</span>
                                 <span className="font-medium text-primary">
                                     {complianceSummary.doneTasks}/{complianceSummary.totalTasks}
@@ -371,23 +300,45 @@ export default function OverviewView({
                         </div>
                     </Card>
 
-                    <Card className="pro-tip-card">
-                        <div className="p-4">
-                            <h4 className="font-bold text-blue-900 mb-2">Pro Tip</h4>
-                            <p className="text-sm text-blue-700">
-                                Use <strong>Buying &amp; quotes</strong> to request quotes from multiple suppliers and get the best deals.
-                            </p>
-                            <Button
-                                size="sm"
-                                className="mt-3 bg-blue-500 hover:bg-blue-600 text-white w-full border-none"
-                                onClick={() => setActiveView('procurement')}
-                            >
-                                Go to Procurement
-                            </Button>
-                        </div>
-                    </Card>
                 </div>
             </div>
+            {/* Price Update Alert */}
+            {priceUpdates.length > 0 && (
+                <div className="price-update-alert">
+                    <div className="flex items-start gap-3">
+                        <div className="price-update-icon">
+                            <TrendUp size={20} weight="bold" />
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-blue-900">Price Updates Available</h4>
+                            <p className="text-sm text-blue-700 mt-1">
+                                New market prices detected for {priceUpdatePreview}.
+                                Updating will adjust your estimated totals.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={onIgnorePriceUpdates}
+                            className="bg-white text-blue-700 border-blue-200"
+                        >
+                            Ignore
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={onApplyPriceUpdates}
+                            loading={isPriceUpdateLoading}
+                        >
+                            Apply updates
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            <SitePhotosPanel projectId={projectId} />
         </div>
     );
 }

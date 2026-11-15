@@ -53,7 +53,7 @@ export default function ProjectsFilters({
 
             {/* Built from what the user actually has, so someone with no
                 solar estimate is never offered a Solar filter. */}
-            {typeFilters.length > 2 && (
+            {typeFilters.length > 2 && (!isMobile || showFilters) && (
                 <div className="type-pills">
                     {typeFilters.map((f) => (
                         <button

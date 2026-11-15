@@ -649,6 +649,17 @@ export default function QuickBudgetPage() {
                 />
               </div>
 
+              <div className="mobile-budget-headline" aria-live="polite" aria-atomic="true">
+                {estimatorErrors.budget ? <p>Enter your budget to see how far it goes.</p>
+                  : estimatorErrors.area ? <p>Enter a floor plan size to calculate your coverage.</p>
+                  : isCalculating ? <p>Updating budget coverage…</p>
+                  : stageEstimate ? <>
+                    <strong>{overallPercent}% of your build covered</strong>
+                    <p>{affordableStageCount} of {buildStageCount} stages · {formatUsd(stageEstimate.estimatedTotalUsd)} to move in</p>
+                    <a href="#budget-results">View full results</a>
+                  </> : null}
+              </div>
+
               <div className="presets">
                 {['10000', '15000', '25000', '40000'].map((value) => (
                   <button
@@ -845,7 +856,7 @@ export default function QuickBudgetPage() {
             </div>
           </div>
 
-          <div className="results-panel">
+          <div className="results-panel" id="budget-results">
             {isCalculating ? (
               <div className="loading-card">
                 <div className="loader" />
@@ -1005,6 +1016,14 @@ export default function QuickBudgetPage() {
       </div>
 
       <style jsx>{`
+        .mobile-budget-headline { display: none; }
+        #budget-results { scroll-margin-top: 100px; }
+        @media (max-width: 767px) {
+          .mobile-budget-headline { display: block; margin: 12px 0; padding: 12px; border: 1px solid #cbd5e1; border-radius: 12px; background: #f8fafc; color: #0f172a; font-size: 14px; }
+          .mobile-budget-headline p { margin: 4px 0; }
+          .mobile-budget-headline a { display: inline-flex; align-items: center; min-height: 44px; color: #1d4ed8; text-decoration: underline; }
+        }
+
         .explorer-panel {
           position: relative;
           /* An auto margin in this flex column turns off stretching, so the
