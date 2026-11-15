@@ -1,0 +1,35 @@
+/* Colours for the shadcn components in src/components/shadcn.
+   Those components use `sc-` colour names (bg-sc-muted, text-sc-primary…)
+   because the app already uses muted, secondary and accent with other
+   meanings. scripts/shadcn-scope.mjs renames them after each `shadcn add`.
+   Every value here points at the app's own palette, so shadcn adds behaviour,
+   not a second look. Text pairs are 4.5:1 or better. */
+@theme inline {
+  --color-sc-background: var(--color-surface);
+  --color-sc-foreground: var(--color-text);
+  --color-sc-card: var(--color-surface);
+  --color-sc-card-foreground: var(--color-text);
+  --color-sc-popover: var(--color-surface);
+  --color-sc-popover-foreground: var(--color-text);
+
+  /* Primary actions are the brand blue, as in src/components/ui/Button.tsx. */
+  --color-sc-primary: var(--color-accent);
+  --color-sc-primary-foreground: #ffffff;
+
+  /* Quiet fills: slate-100 behind slate-900 / slate-600 text. */
+  --color-sc-secondary: #f1f5f9;
+  --color-sc-secondary-foreground: var(--color-text);
+  --color-sc-muted: #f1f5f9;
+  --color-sc-muted-foreground: #475569;
+
+  /* Hover and selected rows: a pale blue tint, never the brand blue itself. */
+  --color-sc-accent: #eff6ff;
+  --color-sc-accent-foreground: var(--color-text);
+
+  --color-sc-destructive: var(--color-danger-fg);
+  --color-sc-destructive-foreground: #ffffff;
+
+  --color-sc-border: var(--color-border);
+  --color-sc-input: var(--color-border);
+  --color-sc-ring: var(--color-focus-ring);
+}

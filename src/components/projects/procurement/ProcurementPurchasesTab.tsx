@@ -2,6 +2,7 @@
 
 import { formatQuantity } from '@/lib/format';
 
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/shadcn/table';
 import EmptyState from '@/components/ui/EmptyState';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import type { BOQItem, PurchaseRecord } from '@/lib/database.types';
@@ -65,34 +66,47 @@ export default function ProcurementPurchasesTab({ purchases, items, stats, onOpe
                   <span className="ledger-date">{dateKey}</span>
                   <span className="ledger-date-total">{formatPrice(dayTotal, dayTotal * exchangeRate)}</span>
                 </div>
-                <table className="ledger-table full-ledger">
-                  <thead>
-                    <tr>
-                      <th className="col-item">Material</th>
-                      <th className="col-supplier">Supplier</th>
-                      <th className="col-qty">Qty</th>
-                      <th className="col-unit">Unit</th>
-                      <th className="col-price">Unit Price</th>
-                      <th className="col-total">Total</th>
-                      <th className="col-receipt">Receipt</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <div className="buying-purchase-rows">
+                  {dateRecords.map(record => {
+                    const item = itemMap.get(record.boq_item_id);
+                    const price = Number(record.unit_price_usd);
+                    const total = Number(record.quantity) * price;
+                    return <div className="buying-purchase-row" key={record.id}>
+                      <div className="buying-purchase-heading"><strong title={item?.material_name}>{item?.material_name || 'Unknown'}</strong><strong>{price > 0 ? formatPrice(total, total * exchangeRate) : 'No price yet'}</strong></div>
+                      <div className="buying-purchase-detail">{formatQuantity(Number(record.quantity))} × {price > 0 ? formatPrice(price, price * exchangeRate) : 'No price yet'}</div>
+                      <div className="buying-purchase-detail">{record.supplier_name}{record.notes && ` · ${record.notes}`}</div>
+                      {record.receipt_document_id && <button className="receipt-link min-h-11 min-w-11" aria-label={`Open receipt for ${item?.material_name || 'purchase'}`} onClick={() => onOpenReceipt(record.receipt_document_id)}><Paperclip aria-hidden="true" /> View receipt</button>}
+                    </div>;
+                  })}
+                </div>
+                <div className="buying-purchase-table"><Table className="ledger-table full-ledger">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="col-item">Material</TableHead>
+                      <TableHead className="col-supplier">Supplier</TableHead>
+                      <TableHead className="col-qty">Qty</TableHead>
+                      <TableHead className="col-unit">Unit</TableHead>
+                      <TableHead className="col-price">Unit Price</TableHead>
+                      <TableHead className="col-total">Total</TableHead>
+                      <TableHead className="col-receipt">Receipt</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {dateRecords.map((record) => {
                       const item = itemMap.get(record.boq_item_id);
                       const recordTotal = Number(record.quantity) * Number(record.unit_price_usd);
                       return (
-                        <tr key={record.id}>
-                          <td className="col-item">
+                        <TableRow key={record.id}>
+                          <TableCell className="col-item">
                             <span className="item-name" title={item?.material_name}>{item?.material_name || 'Unknown'}</span>
                             {item?.category && <span className="item-cat">{item.category.toLowerCase() === 'labor' ? 'Labour' : item.category}</span>}
-                          </td>
-                          <td className="col-supplier">{record.supplier_name}</td>
-                          <td className="col-qty mono">{formatQuantity(Number(record.quantity))}</td>
-                          <td className="col-unit">{item?.unit || '—'}</td>
-                          <td className="col-price mono">{Number(record.unit_price_usd) > 0 ? formatPrice(Number(record.unit_price_usd), Number(record.unit_price_usd) * exchangeRate) : <span className="muted">No price yet</span>}</td>
-                          <td className="col-total mono bold">{Number(record.unit_price_usd) > 0 ? formatPrice(recordTotal, recordTotal * exchangeRate) : <span className="muted">No price yet</span>}</td>
-                          <td className="col-receipt">
+                          </TableCell>
+                          <TableCell className="col-supplier">{record.supplier_name}</TableCell>
+                          <TableCell className="col-qty mono">{formatQuantity(Number(record.quantity))}</TableCell>
+                          <TableCell className="col-unit">{item?.unit || '—'}</TableCell>
+                          <TableCell className="col-price mono">{Number(record.unit_price_usd) > 0 ? formatPrice(Number(record.unit_price_usd), Number(record.unit_price_usd) * exchangeRate) : <span className="muted">No price yet</span>}</TableCell>
+                          <TableCell className="col-total mono bold">{Number(record.unit_price_usd) > 0 ? formatPrice(recordTotal, recordTotal * exchangeRate) : <span className="muted">No price yet</span>}</TableCell>
+                          <TableCell className="col-receipt">
                             {record.receipt_document_id ? (
                               <button
                                 className="receipt-link min-h-11 min-w-11"
@@ -104,12 +118,12 @@ export default function ProcurementPurchasesTab({ purchases, items, stats, onOpe
                             ) : (
                               <span className="no-receipt">—</span>
                             )}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table></div>
               </div>
             );
           })}

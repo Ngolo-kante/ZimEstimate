@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { Toaster } from '@/components/shadcn/sonner';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -150,6 +151,7 @@ function ProjectDetailContent() {
 
     return (
         <MainLayout fullWidth hideBottomNav>
+            <Toaster position="bottom-center" mobileOffset={{ bottom: 88 }} />
             <div className="project-workspace project-shell project-dashboard-shell">
                 <SidebarSpine
                     project={project}

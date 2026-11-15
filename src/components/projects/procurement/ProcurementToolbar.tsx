@@ -1,8 +1,10 @@
 'use client';
 
+import { Input } from '@/components/shadcn/input';
+import { NativeSelect } from '@/components/shadcn/native-select';
 import Button from '@/components/ui/Button';
 import type { GroupByOption, StatusFilter } from '@/lib/projects/procurement';
-import { DownloadSimple, Funnel, MagnifyingGlass } from '@phosphor-icons/react';
+import { DownloadSimple, MagnifyingGlass } from '@phosphor-icons/react';
 
 export interface ProcurementToolbarProps {
   searchQuery: string;
@@ -29,7 +31,7 @@ export default function ProcurementToolbar({
       <div className="toolbar-left">
         <div className="search-box">
           <MagnifyingGlass className="search-icon" size={16} />
-          <input
+          <Input
             type="text"
             aria-label="Search procurement materials"
             placeholder="Search materials..."
@@ -38,11 +40,11 @@ export default function ProcurementToolbar({
             className="search-input !h-11"
           />
         </div>
-        <select
-          aria-label="Filter materials by purchase status"
+        <NativeSelect
+          aria-label="Filter by status"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-          className="status-filter !h-11"
+          className="status-filter [&_select]:h-11"
         >
           <option value="all">All Status</option>
           <option value="outstanding">Needs Purchasing</option>
@@ -51,23 +53,21 @@ export default function ProcurementToolbar({
           <option value="in_progress">In Progress</option>
           <option value="purchased">Purchased</option>
           <option value="over_purchased">Over-purchased</option>
-        </select>
+        </NativeSelect>
       </div>
 
       <div className="toolbar-right">
         <div className="group-toggle">
-          <Funnel size={14} />
-          <span className="group-label">Group:</span>
-          <select
-            aria-label="Group procurement materials"
+          <NativeSelect
+            aria-label="Group by"
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value as GroupByOption)}
-            className="group-select !h-11"
+            className="group-select [&_select]:h-11"
           >
             <option value="stage">By Stage</option>
             <option value="category">By Category</option>
             <option value="none">No Grouping</option>
-          </select>
+          </NativeSelect>
         </div>
         <Button className="min-h-11" variant="ghost" icon={<DownloadSimple size={16} />} onClick={onExportCsv} aria-label="Export purchases as CSV">
           <span className="btn-text-desktop">Export CSV</span>

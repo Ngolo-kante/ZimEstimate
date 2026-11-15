@@ -1,13 +1,26 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { formatQuantity } from '@/lib/format';
 
+import { Badge } from '@/components/shadcn/badge';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/shadcn/collapsible';
+import { cn } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import type { BOQItem } from '@/lib/database.types';
 import type { ItemWithPurchases } from '@/lib/projects/procurement';
 import { getStatusConfig } from './procurementConfig';
 import { CaretDown, CaretUp, Paperclip, Plus, Receipt, Storefront } from '@phosphor-icons/react';
+
+const desktopQuery = '(min-width: 768px)';
+const subscribeDesktop = (notify: () => void) => {
+  const query = window.matchMedia(desktopQuery);
+  query.addEventListener('change', notify);
+  return () => query.removeEventListener('change', notify);
+};
+const getDesktop = () => window.matchMedia(desktopQuery).matches;
+const getServerDesktop = () => false;
 
 export interface ProcurementItemCardProps {
   item: ItemWithPurchases;
@@ -27,6 +40,7 @@ export default function ProcurementItemCard({
   openPurchaseModal,
   onOpenReceipt,
 }: ProcurementItemCardProps) {
+  const desktop = useSyncExternalStore(subscribeDesktop, getDesktop, getServerDesktop);
   const { formatPrice, exchangeRate } = useCurrency();
     const statusConfig = getStatusConfig(item.status);
     const StatusIcon = statusConfig.icon;
@@ -35,28 +49,17 @@ export default function ProcurementItemCard({
       : 0;
 
     return (
-      <div key={item.id} className={`boq-item-card !rounded-lg ${statusConfig.bgClass} ${isSaving ? 'is-saving' : ''}`}>
-        <div
-          className="item-main"
-          onClick={() => item.purchaseRecords.length > 0 && toggleItemExpanded(item.id)}
-          onKeyDown={(event) => {
-            if (event.target === event.currentTarget && item.purchaseRecords.length > 0 && (event.key === 'Enter' || event.key === ' ')) {
-              event.preventDefault();
-              toggleItemExpanded(item.id);
-            }
-          }}
-          role={item.purchaseRecords.length > 0 ? 'button' : undefined}
-          tabIndex={item.purchaseRecords.length > 0 ? 0 : undefined}
-          aria-expanded={item.purchaseRecords.length > 0 ? isExpanded : undefined}
-          aria-label={item.purchaseRecords.length > 0 ? `${item.material_name}: ${isExpanded ? 'hide' : 'show'} purchase history` : undefined}
-        >
-          <div className="item-expand">
-            {item.purchaseRecords.length > 0 ? (
-              isExpanded ? <CaretUp size={16} weight="bold" /> : <CaretDown size={16} weight="bold" />
-            ) : (
-              <span className="expand-placeholder" />
-            )}
-          </div>
+      <Collapsible open={desktop || isExpanded} onOpenChange={() => toggleItemExpanded(item.id)} className={cn('boq-item-card !rounded-lg buying-item', statusConfig.bgClass, isSaving && 'is-saving')}>
+        <CollapsibleTrigger className="buying-mobile-trigger" aria-label={`${item.material_name}: ${isExpanded ? 'hide' : 'show'} purchase history`}>
+          <span className="buying-mobile-name"><span className="item-name" title={item.material_name}>{item.material_name}</span><span className="buying-key-fact">{item.remainingQty <= 0 ? 'All bought' : !Number(item.unit_price_usd) ? 'No price yet' : `${formatQuantity(item.remainingQty)} per ${item.unit} left`}</span></span>
+          <Badge className={cn('item-status', statusConfig.bgClass)}>{statusConfig.label}</Badge>
+          <CaretDown aria-hidden="true" className="buying-caret" />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="buying-details">
+        <div className="item-main">
+          <CollapsibleTrigger className="item-expand buying-desktop-trigger" aria-expanded={isExpanded} aria-label={`${item.material_name}: ${isExpanded ? 'hide' : 'show'} purchase history`}>
+            {isExpanded ? <CaretUp weight="bold" /> : <CaretDown weight="bold" />}
+          </CollapsibleTrigger>
 
           <div className="item-info">
             <div className="item-name" title={item.material_name}>{item.material_name}</div>{!Number(item.unit_price_usd) && <span className="muted">No price yet</span>}
@@ -110,23 +113,23 @@ export default function ProcurementItemCard({
             </span>
           </div>
 
-          <div className={`item-status ${statusConfig.bgClass}`}>
-            <StatusIcon size={14} weight="bold" />
+          <Badge className={cn("item-status", statusConfig.bgClass)}>
+            <StatusIcon weight="bold" />
             <span>{statusConfig.label}</span>
-          </div>
+          </Badge>
 
           <div className="item-actions">
             <Button
               size="sm"
               className="min-h-11"
-              variant="primary"
-              icon={<Plus size={14} />}
+              variant={item.remainingQty > 0 ? "primary" : "secondary"}
+              icon={<Plus />}
               onClick={(e) => {
                 e.stopPropagation();
                 openPurchaseModal(item);
               }}
             >
-              <span className="btn-text">Log</span>
+              <span className="btn-text"><span className="buying-desktop-log">Log</span><span className="buying-mobile-log">Log purchase</span></span>
             </Button>
           </div>
         </div>
@@ -203,6 +206,7 @@ export default function ProcurementItemCard({
             </div>
           </div>
         )}
-      </div>
+        </CollapsibleContent>
+      </Collapsible>
     );
 }

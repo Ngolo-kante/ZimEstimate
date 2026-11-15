@@ -3,6 +3,9 @@
 import { formatQuantity, formatUsd } from '@/lib/format';
 
 import type { Dispatch, RefObject, SetStateAction } from 'react';
+import { FieldGroup, Field, FieldLabel } from '@/components/shadcn/field';
+import { Input } from '@/components/shadcn/input';
+import { cn } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import { DOCUMENT_ACCEPT } from '@/lib/documentFiles';
 import type { BOQItem, Supplier } from '@/lib/database.types';
@@ -75,12 +78,12 @@ export default function PurchaseDialog({
             </div>
           </div>
 
-          <div className="form-section">
-            <div className={`form-field ${formErrors.supplierName ? 'has-error' : ''}`}>
-              <label htmlFor="supplier-input">
+          <FieldGroup className="form-section">
+            <Field className={cn('form-field', formErrors.supplierName && 'has-error')}>
+              <FieldLabel htmlFor="supplier-input">
                 Supplier Name <span className="required">*</span>
-              </label>
-              <input
+              </FieldLabel>
+              <Input
                 id="supplier-input"
                 type="text"
                 list="supplier-list"
@@ -90,7 +93,7 @@ export default function PurchaseDialog({
                   if (formErrors.supplierName) setFormErrors({ ...formErrors, supplierName: undefined });
                 }}
                 placeholder="e.g. PPC Zimbabwe"
-                className={formErrors.supplierName ? 'error' : ''}
+                className={cn('h-11', formErrors.supplierName && 'error')}
               />
               <datalist id="supplier-list">
                 {suppliers.map((supplier) => (
@@ -98,14 +101,14 @@ export default function PurchaseDialog({
                 ))}
               </datalist>
               {formErrors.supplierName && <span className="field-error">{formErrors.supplierName}</span>}
-            </div>
+            </Field>
 
             <div className="form-row three-col">
-              <div className={`form-field ${formErrors.quantity ? 'has-error' : ''}`}>
-                <label htmlFor="qty-input">
+              <Field className={cn('form-field', formErrors.quantity && 'has-error')}>
+                <FieldLabel htmlFor="qty-input">
                   Quantity <span className="required">*</span>
-                </label>
-                <input
+                </FieldLabel>
+                <Input
                   id="qty-input"
                   type="number"
                   inputMode="decimal"
@@ -117,7 +120,7 @@ export default function PurchaseDialog({
                     if (formErrors.quantity) setFormErrors({ ...formErrors, quantity: undefined });
                   }}
                   placeholder="0.00"
-                  className={formErrors.quantity ? 'error' : ''}
+                  className={cn('h-11', formErrors.quantity && 'error')}
                 />
                 <div className="quantity-actions">
                   <button type="button" aria-label="Decrease quantity by one" onClick={() => setPurchaseForm(f => ({ ...f, quantity: String(Math.max(0, Number(f.quantity) - 1)) }))}><Minus size={18} /></button>
@@ -125,12 +128,12 @@ export default function PurchaseDialog({
                   <button type="button" onClick={() => setPurchaseForm(f => ({ ...f, quantity: String(Math.max(0, itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id)?.remainingQty ?? Number(selectedItemForPurchase.quantity))) }))}>Use remaining</button>
                 </div>
                 {formErrors.quantity && <span className="field-error">{formErrors.quantity}</span>}
-              </div>
-              <div className={`form-field ${formErrors.unitPrice ? 'has-error' : ''}`}>
-                <label htmlFor="price-input">
+              </Field>
+              <Field className={cn('form-field', formErrors.unitPrice && 'has-error')}>
+                <FieldLabel htmlFor="price-input">
                   Unit Price (USD) <span className="required">*</span>
-                </label>
-                <input
+                </FieldLabel>
+                <Input
                   id="price-input"
                   type="number"
                   inputMode="decimal"
@@ -142,15 +145,15 @@ export default function PurchaseDialog({
                     if (formErrors.unitPrice) setFormErrors({ ...formErrors, unitPrice: undefined });
                   }}
                   placeholder="0.00"
-                  className={formErrors.unitPrice ? 'error' : ''}
+                  className={cn('h-11', formErrors.unitPrice && 'error')}
                 />
                 {formErrors.unitPrice && <span className="field-error">{formErrors.unitPrice}</span>}
-              </div>
-              <div className={`form-field ${formErrors.purchasedAt ? 'has-error' : ''}`}>
-                <label htmlFor="date-input">
+              </Field>
+              <Field className={cn('form-field', formErrors.purchasedAt && 'has-error')}>
+                <FieldLabel htmlFor="date-input">
                   Date <span className="required">*</span>
-                </label>
-                <input
+                </FieldLabel>
+                <Input
                   id="date-input"
                   type="date"
                   value={purchaseForm.purchasedAt}
@@ -158,47 +161,48 @@ export default function PurchaseDialog({
                     setPurchaseForm({ ...purchaseForm, purchasedAt: e.target.value });
                     if (formErrors.purchasedAt) setFormErrors({ ...formErrors, purchasedAt: undefined });
                   }}
-                  className={formErrors.purchasedAt ? 'error' : ''}
+                  className={cn('h-11', formErrors.purchasedAt && 'error')}
                 />
                 {formErrors.purchasedAt && <span className="field-error">{formErrors.purchasedAt}</span>}
-              </div>
+              </Field>
             </div>
 
-            <div className="form-field">
-              <label htmlFor="notes-input">Notes <span className="optional">(optional)</span></label>
-              <input
+            <Field className="form-field">
+              <FieldLabel htmlFor="notes-input">Notes <span className="optional">(optional)</span></FieldLabel>
+              <Input
+                className="h-11"
                 id="notes-input"
                 type="text"
                 value={purchaseForm.notes}
                 onChange={(e) => setPurchaseForm({ ...purchaseForm, notes: e.target.value })}
                 placeholder="Invoice reference, delivery notes..."
               />
-            </div>
+            </Field>
 
-            <div className="form-field">
-              <label>Receipt <span className="optional">(optional)</span></label>
+            <Field className="form-field">
+              <FieldLabel htmlFor="receipt-file-input">Receipt <span className="optional">(optional)</span></FieldLabel>
               <div className="file-upload-area">
-                <input
+                <Input
                   type="file"
                   id="receipt-file-input"
                   accept={DOCUMENT_ACCEPT}
                   onChange={e => { selectReceipt(e.target.files?.[0]); e.target.value = ''; }}
                 />
-                <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={e => { selectReceipt(e.target.files?.[0]); e.target.value = ''; }} />
+                <Input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={e => { selectReceipt(e.target.files?.[0]); e.target.value = ''; }} />
                 <button type="button" className="receipt-camera" onClick={() => cameraInput.current?.click()}><Camera size={18} /> Take receipt photo</button>
-                <label htmlFor="receipt-file-input" className="file-upload-label">
+                <FieldLabel htmlFor="receipt-file-input" className="file-upload-label">
                   <Paperclip size={18} />
                   {purchaseForm.receiptFile ? (
                     <span className="file-name">{purchaseForm.receiptFile.name}</span>
                   ) : (
                     <span className="file-placeholder">Attach receipt (image or PDF)</span>
                   )}
-                </label>
+                </FieldLabel>
               </div>
-            </div>
+            </Field>
             <p role="status" className="purchase-status">{purchaseStatus}</p>
             {purchaseError && <p role="alert" className="field-error">{purchaseError}</p>}
-          </div>
+          </FieldGroup>
         </fieldset>
         <div className="modal-footer purchase-footer">
           <div className="purchase-total"><span>Total (USD)</span><strong>{formatUsd((Number(purchaseForm.quantity) || 0) * (Number(purchaseForm.unitPrice) || 0))}</strong></div>

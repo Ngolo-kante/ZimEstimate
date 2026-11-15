@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { createPendingDelete, restoreDeletedItem } from '@/lib/projects/pendingDelete';
 import { useToast } from '@/components/ui/Toast';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import {
@@ -196,10 +198,51 @@ export function useProjectData(projectId: string, setActiveTab: SetActiveTab) {
         setStages(prev => prev.map(s => s.id === updatedStage.id ? updatedStage : s));
     };
 
+    const pendingDeletes = useRef(new Map<string, { commit: () => Promise<void>; toastId: string | number }>());
+    const deletionOrder = useRef<string[]>([]);
+
+    useEffect(() => {
+        const pending = pendingDeletes.current;
+        const flush = () => {
+            for (const entry of [...pending.values()]) {
+                void entry.commit();
+                toast.dismiss(entry.toastId);
+            }
+        };
+        window.addEventListener('pagehide', flush);
+        return () => {
+            window.removeEventListener('pagehide', flush);
+            flush();
+        };
+    }, [projectId]);
+
     const handleDeleteItem = async (itemId: string) => {
-        const { error } = await deleteBOQItem(itemId);
-        if (error) { showError('Failed to delete item'); return; }
-        setItems(items.filter(i => i.id !== itemId));
+        const item = items.find(line => line.id === itemId);
+        if (!item || pendingDeletes.current.has(itemId)) return;
+        if (pendingDeletes.current.size === 0) deletionOrder.current = items.map(line => line.id);
+        const order = [...deletionOrder.current];
+        const restore = () => setItems(current => restoreDeletedItem(current, item, order));
+        const pending = createPendingDelete(async () => {
+            pendingDeletes.current.delete(itemId);
+            try {
+                const { error } = await deleteBOQItem(itemId);
+                if (error) throw error;
+            } catch {
+                restore();
+                showError('Failed to delete item');
+            }
+        }, () => {
+            pendingDeletes.current.delete(itemId);
+            restore();
+        });
+        setItems(current => current.filter(line => line.id !== itemId));
+        const toastId = toast('Line removed', {
+            duration: 6000,
+            action: { label: 'Undo', onClick: () => pending.undo() },
+            onAutoClose: () => { void pending.commit(); },
+            onDismiss: () => { void pending.commit(); },
+        });
+        pendingDeletes.current.set(itemId, { commit: pending.commit, toastId });
     };
 
     const handleAddItem = (item: BOQItem) => {

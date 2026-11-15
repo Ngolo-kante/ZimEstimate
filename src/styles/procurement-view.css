@@ -1980,3 +1980,97 @@
 @media (min-width: 1025px) { .procurement-view .item-main { grid-template-columns: 24px minmax(0, 2fr) auto minmax(0, 1fr) auto max-content 90px; } }
 
 .procurement-view .muted { color: var(--color-text-muted); }
+
+/* Buying: compact phone rows with the full workspace behind one trigger. */
+.procurement-view .buying-mobile-trigger,
+.procurement-view .buying-mobile-log,
+.procurement-view .buying-purchase-rows { display: none; }
+.procurement-view .buying-desktop-trigger { min-height: 44px; justify-content: center; }
+.procurement-view .buying-tabs { height: auto; min-height: 50px; width: 100%; margin: 0; }
+.procurement-view .buying-tabs [role="tab"] { min-height: 44px; transition: none; }
+.procurement-view .buying-item .item-status { display: inline-flex; height: auto; transition: none; }
+.procurement-view .item-status.status-pending { color: #92400e; background: #fffbeb; }
+.procurement-view .item-status.status-progress { color: #1d4ed8; background: #eff6ff; }
+.procurement-view .item-status.status-purchased { color: #166534; background: #f0fdf4; }
+.procurement-view .item-status.status-over { color: #b91c1c; background: #fef2f2; }
+.procurement-view .buying-item .item-main::after { content: none; }
+.procurement-view .buying-item .item-main { cursor: default; }
+.procurement-view .buying-item { transition: none; }
+.procurement-view .buying-item .progress-fill { transition: none; }
+.procurement-view .buying-details { overflow: hidden; }
+.procurement-view .buying-purchase-detail { color: var(--color-text-muted); font-size: 13px; overflow-wrap: anywhere; }
+.procurement-view .buying-purchase-heading { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.procurement-view .buying-purchase-heading strong:first-child { min-width: 0; overflow-wrap: anywhere; }
+.procurement-view .buying-purchase-heading strong:last-child { flex-shrink: 0; }
+.procurement-view .purchase-dialog [data-slot="field"] { min-width: 0; }
+.procurement-view .purchase-dialog [data-slot="input"] { min-height: 44px; }
+@media (min-width: 768px) {
+    .procurement-view .buying-item .item-main { display: grid; grid-template-columns: 24px minmax(0, 2fr) auto minmax(60px, 1fr) auto max-content auto; }
+    .procurement-view .buying-item .item-quantities,
+    .procurement-view .buying-item .item-progress,
+    .procurement-view .buying-item .item-spent { display: flex; }
+}
+@media (max-width: 767px) {
+    .procurement-view .buying-mobile-trigger { display: flex; width: 100%; min-height: 72px; padding: 10px 12px; gap: 8px; align-items: center; text-align: left; }
+    .procurement-view .buying-mobile-trigger:active { background: var(--color-mist); }
+    .procurement-view .buying-mobile-trigger:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: -2px; }
+    .procurement-view .buying-mobile-name { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
+    .procurement-view .buying-mobile-name .item-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; white-space: normal; font-size: 14px; line-height: 18px; }
+    .procurement-view .buying-key-fact { color: var(--color-text-muted); font-size: 12px; line-height: 16px; overflow-wrap: anywhere; }
+    .procurement-view .buying-caret { width: 16px; height: 16px; transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1); }
+    .procurement-view .buying-mobile-trigger[data-state="open"] .buying-caret { transform: rotate(180deg); }
+    .procurement-view .buying-details[data-state="open"] { animation: buying-open 180ms cubic-bezier(0.23, 1, 0.32, 1); }
+    .procurement-view .buying-details[data-state="closed"] { animation: buying-close 150ms cubic-bezier(0.23, 1, 0.32, 1); }
+    .procurement-view .buying-item .item-main { display: flex; flex-direction: column; align-items: stretch; padding: 12px; gap: 12px; }
+    .procurement-view .buying-item .item-main > .item-info,
+    .procurement-view .buying-item .item-main > .item-status,
+    .procurement-view .buying-item .buying-desktop-trigger,
+    .procurement-view .buying-desktop-log { display: none; }
+    .procurement-view .buying-mobile-log { display: inline; }
+    .procurement-view .buying-item .item-quantities { display: flex; width: 100%; justify-content: space-between; }
+    .procurement-view .buying-item .item-progress,
+    .procurement-view .buying-item .item-spent { display: flex; }
+    .procurement-view .buying-item .item-actions button { width: 100%; min-height: 44px; justify-content: center; }
+    .procurement-view .procurement-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+    .procurement-view .toolbar-left, .procurement-view .toolbar-right { display: contents; }
+    .procurement-view .search-box { grid-column: 1 / -1; width: 100%; }
+    .procurement-view .status-filter, .procurement-view .group-toggle, .procurement-view .group-select { width: 100%; min-width: 0; }
+    .procurement-view .group-toggle { padding: 0; border: 0; }
+    .procurement-view .procurement-toolbar [data-slot="native-select"] { height: 44px; font-size: 16px; }
+    .procurement-view .toolbar-right > button { grid-column: 1 / -1; justify-self: end; }
+    .procurement-view .buying-purchase-table { display: none; }
+    .procurement-view .buying-purchase-rows { display: flex; flex-direction: column; }
+    .procurement-view .buying-purchase-row { padding: 12px; border-bottom: 1px solid var(--color-border); }
+    .procurement-view .buying-purchase-row .receipt-link { display: inline-flex; align-items: center; gap: 6px; }
+    .procurement-view .ledger-header-bar, .procurement-view .ledger-date-header { flex-wrap: wrap; gap: 8px; }
+    .procurement-view .buying-tabs { gap: 0; }
+}
+@keyframes buying-open { from { height: 0; opacity: 0; } to { height: var(--radix-collapsible-content-height); opacity: 1; } }
+@keyframes buying-close { from { height: var(--radix-collapsible-content-height); opacity: 1; } to { height: 0; opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+    .procurement-view *, .procurement-view *::before, .procurement-view *::after { animation: none !important; transition: none !important; }
+}
+
+.procurement-view .buying-details[hidden] { display: none; }
+@media (hover: hover) and (pointer: fine) {
+    .procurement-view .buying-item:hover { transform: none; box-shadow: none; }
+}
+.procurement-view .purchase-dialog button,
+.procurement-view .purchase-dialog .file-upload-label { min-height: 44px; }
+.procurement-view .purchase-dialog .quantity-actions button { min-width: 44px; }
+.procurement-view .procurement-toolbar [data-slot="input"],
+.procurement-view .procurement-toolbar [data-slot="native-select"],
+.procurement-view .purchase-dialog [data-slot="input"],
+.procurement-view .buying-purchase-table [data-slot="table-row"] { transition: none; }
+.procurement-view .procurement-toolbar [data-slot="native-select-wrapper"] { height: auto; padding: 0; border: 0; background: transparent; }
+.procurement-view .buying-item.is-saving::before { animation: none; }
+@media (min-width: 768px) and (max-width: 1024px) {
+    .procurement-view .buying-item .item-main { grid-template-columns: 24px minmax(0, 1fr) auto auto; }
+    .procurement-view .buying-item .item-expand { grid-column: 1; grid-row: 1; }
+    .procurement-view .buying-item .item-info { grid-column: 2; grid-row: 1; }
+    .procurement-view .buying-item .item-status { grid-column: 3; grid-row: 1; }
+    .procurement-view .buying-item .item-actions { grid-column: 4; grid-row: 1; }
+    .procurement-view .buying-item .item-quantities { grid-column: 2; grid-row: 2; }
+    .procurement-view .buying-item .item-progress { grid-column: 3; grid-row: 2; }
+    .procurement-view .buying-item .item-spent { grid-column: 4; grid-row: 2; }
+}
