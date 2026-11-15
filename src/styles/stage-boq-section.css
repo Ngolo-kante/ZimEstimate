@@ -903,3 +903,12 @@
     .stage-boq .expand-trigger,
     .stage-boq .boq-table td.col-actions .action-btn { min-width: 44px; min-height: 44px; }
 }
+
+/* Keep numeric data intact while descriptive columns yield and wrap. */
+.stage-boq .num, .stage-boq .mono, .stage-boq .col-qty, .stage-boq .col-price, .stage-boq .col-total, .stage-boq .col-date, .stage-boq .qty-value, .stage-boq .stat-value, .stage-boq .spent-value, .stage-boq .info-value, .stage-boq .inline-edit-trigger, .stage-boq .line-total { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.stage-boq .item-info, .stage-boq .material-info, .stage-boq .material-cell, .stage-boq .history-item > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+.stage-boq .item-name, .stage-boq .material-name { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.stage-boq .supplier-notes, .stage-boq .item-notes, .stage-boq .col-notes, .stage-boq .notes-text { white-space: normal; overflow-wrap: anywhere; overflow: visible; text-overflow: clip; }
+.stage-boq .item-status, .stage-boq .status-pill, .stage-boq .item-actions, .stage-boq svg, .stage-boq .history-count { flex-shrink: 0; white-space: nowrap; }
+
+.stage-boq .inline-edit-display, .stage-boq .inline-edit { white-space: nowrap; font-variant-numeric: tabular-nums; }

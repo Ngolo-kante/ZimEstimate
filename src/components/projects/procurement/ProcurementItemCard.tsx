@@ -1,5 +1,7 @@
 'use client';
 
+import { formatQuantity } from '@/lib/format';
+
 import Button from '@/components/ui/Button';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import type { BOQItem } from '@/lib/database.types';
@@ -57,9 +59,9 @@ export default function ProcurementItemCard({
           </div>
 
           <div className="item-info">
-            <div className="item-name">{item.material_name}</div>
+            <div className="item-name" title={item.material_name}>{item.material_name}</div>{!Number(item.unit_price_usd) && <span className="muted">No price yet</span>}
             <div className="item-meta">
-              {item.category && <span className="item-category">{item.category}</span>}
+              {item.category && <span className="item-category">{item.category.toLowerCase() === 'labor' ? 'Labour' : item.category}</span>}
               <span className="item-unit">{item.unit}</span>
               {item.purchaseRecords.length > 0 && (
                 <span className="purchase-count">{item.purchaseRecords.length} purchase{item.purchaseRecords.length !== 1 ? 's' : ''}</span>
@@ -70,16 +72,16 @@ export default function ProcurementItemCard({
           <div className="item-quantities">
             <div className="qty-group">
               <span className="qty-label">BOQ</span>
-              <span className="qty-value">{Number(item.quantity).toFixed(1)}</span>
+              <span className="qty-value">{formatQuantity(Number(item.quantity))}</span>
             </div>
             <div className="qty-group">
               <span className="qty-label">Bought</span>
-              <span className="qty-value purchased">{item.totalPurchased.toFixed(1)}</span>
+              <span className="qty-value purchased">{formatQuantity(item.totalPurchased)}</span>
             </div>
             <div className="qty-group">
               <span className="qty-label">Left</span>
               <span className={`qty-value ${item.remainingQty <= 0 ? 'complete' : 'remaining'}`}>
-                {item.remainingQty.toFixed(1)}
+                {formatQuantity(item.remainingQty)}
               </span>
             </div>
           </div>
@@ -104,7 +106,7 @@ export default function ProcurementItemCard({
           <div className="item-spent">
             <span className="spent-label">Spent</span>
             <span className="spent-value">
-              {formatPrice(item.totalSpent, item.totalSpent * exchangeRate)}
+              {!Number(item.unit_price_usd) && item.totalSpent === 0 ? <span className="muted">No price yet</span> : formatPrice(item.totalSpent, item.totalSpent * exchangeRate)}
             </span>
           </div>
 
@@ -164,9 +166,9 @@ export default function ProcurementItemCard({
                           </div>
                           {record.notes && <div className="supplier-notes">{record.notes}</div>}
                         </td>
-                        <td className="col-qty mono">{Number(record.quantity).toFixed(2)}</td>
-                        <td className="col-price mono">{formatPrice(Number(record.unit_price_usd), Number(record.unit_price_usd) * exchangeRate)}</td>
-                        <td className="col-total mono bold">{formatPrice(recordTotal, recordTotal * exchangeRate)}</td>
+                        <td className="col-qty mono">{formatQuantity(Number(record.quantity))}</td>
+                        <td className="col-price mono">{Number(record.unit_price_usd) > 0 ? formatPrice(Number(record.unit_price_usd), Number(record.unit_price_usd) * exchangeRate) : <span className="muted">No price yet</span>}</td>
+                        <td className="col-total mono bold">{Number(record.unit_price_usd) > 0 ? formatPrice(recordTotal, recordTotal * exchangeRate) : <span className="muted">No price yet</span>}</td>
                         <td className="col-receipt">
                           {record.receipt_document_id ? (
                             <button
@@ -191,9 +193,9 @@ export default function ProcurementItemCard({
                 <tfoot>
                   <tr>
                     <td colSpan={2} className="footer-label">Total Purchased</td>
-                    <td className="col-qty mono bold">{item.totalPurchased.toFixed(2)}</td>
+                    <td className="col-qty mono bold">{formatQuantity(item.totalPurchased)}</td>
                     <td></td>
-                    <td className="col-total mono bold">{formatPrice(item.totalSpent, item.totalSpent * exchangeRate)}</td>
+                    <td className="col-total mono bold">{!Number(item.unit_price_usd) && item.totalSpent === 0 ? <span className="muted">No price yet</span> : formatPrice(item.totalSpent, item.totalSpent * exchangeRate)}</td>
                     <td></td>
                   </tr>
                 </tfoot>

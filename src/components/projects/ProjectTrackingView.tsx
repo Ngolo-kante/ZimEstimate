@@ -1,5 +1,7 @@
 'use client';
 
+import { formatQuantity } from '@/lib/format';
+
 import { useCallback, useEffect, useMemo, useState, Fragment } from 'react';
 import Button from '@/components/ui/Button';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -330,9 +332,9 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
         </div>
         <div className="progress-meta">
           <span>
-            Purchased {summary.totalPurchasedQty.toFixed(2)} of {summary.totalEstimatedQty.toFixed(2)} units
+            Purchased {formatQuantity(summary.totalPurchasedQty)} of {formatQuantity(summary.totalEstimatedQty)} units
           </span>
-          <span>Remaining {summary.totalRemainingQty.toFixed(2)} units</span>
+          <span>Remaining {formatQuantity(summary.totalRemainingQty)} units</span>
           <span>Total spent {formatPrice(summary.totalSpent, summary.totalSpent * exchangeRate)}</span>
         </div>
       </div>
@@ -384,7 +386,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                 <Fragment key={row.item.id}>
                   <tr key={row.item.id} className={`row status-${row.status}`}>
                     <td className="item-cell">
-                      <div className="item-title">{row.item.material_name}</div>
+                      <div className="item-title" title={row.item.material_name}>{row.item.material_name}</div>
                       <div className="item-sub">{row.item.unit}</div>
                       <div className="progress-mini">
                         <div className="progress-track">
@@ -393,9 +395,9 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                         <span>{row.progress.toFixed(0)}%</span>
                       </div>
                     </td>
-                    <td className="num">{row.estimatedQty.toFixed(2)}</td>
-                    <td className="num">{row.purchasedQty.toFixed(2)}</td>
-                    <td className="num">{row.remainingQty.toFixed(2)}</td>
+                    <td className="num">{formatQuantity(row.estimatedQty)}</td>
+                    <td className="num">{formatQuantity(row.purchasedQty)}</td>
+                    <td className="num">{formatQuantity(row.remainingQty)}</td>
                     <td className="num">
                       {row.avgPrice ? formatPrice(row.avgPrice, row.avgPrice * exchangeRate) : '—'}
                     </td>
@@ -444,7 +446,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                                         {record.supplier_name}
                                       </div>
                                     </td>
-                                    <td className="num">{Number(record.quantity).toFixed(2)}</td>
+                                    <td className="num">{formatQuantity(Number(record.quantity))}</td>
                                     <td className="num">
                                       {formatPrice(Number(record.unit_price_usd), Number(record.unit_price_usd) * exchangeRate)}
                                     </td>
@@ -808,6 +810,11 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                 }
 
                 .item-title {
+          overflow-wrap: anywhere;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 2;
+          overflow: hidden;
                     font-weight: 600;
                     color: #0f172a;
                     font-size: 0.95rem;

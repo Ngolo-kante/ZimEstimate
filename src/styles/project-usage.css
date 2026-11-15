@@ -1114,7 +1114,8 @@
         min-width: 0;
     }
     .project-usage .kpi-card .value {
-        overflow-wrap: anywhere;
+        /* Amounts never break; shrink a little so "$366,237.30" fits a half-width card. */
+        font-size: clamp(1.0625rem, 5vw, 1.5rem);
     }
     .project-usage .donut-card {
         display: none;
@@ -1146,3 +1147,19 @@
         transform: none !important;
     }
 }
+
+/* Keep numeric data intact while descriptive columns yield and wrap. */
+.project-usage .num, .project-usage .mono, .project-usage .col-qty, .project-usage .col-price, .project-usage .col-total, .project-usage .col-date, .project-usage .qty-value, .project-usage .stat-value, .project-usage .spent-value, .project-usage .info-value, .project-usage .inline-edit-trigger, .project-usage .line-total { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.project-usage .item-info, .project-usage .material-info, .project-usage .material-cell, .project-usage .history-item > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+.project-usage .item-name, .project-usage .material-name { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.project-usage .supplier-notes, .project-usage .item-notes, .project-usage .col-notes, .project-usage .notes-text { white-space: normal; overflow-wrap: anywhere; overflow: visible; text-overflow: clip; }
+.project-usage .item-status, .project-usage .status-pill, .project-usage .item-actions, .project-usage svg, .project-usage .history-count { flex-shrink: 0; white-space: nowrap; }
+
+.project-usage .ledger-table .col-notes { white-space: normal; overflow-wrap: anywhere; overflow: visible; text-overflow: clip; }
+.project-usage .muted { color: var(--color-text-muted); }
+
+.project-usage .kpi-card .value, .project-usage .item-qty, .project-usage .ledger-date-total { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* A long note takes the row; the quantity drops below it instead of squeezing the note into a column. */
+.project-usage .history-item { flex-wrap: wrap; column-gap: 12px; row-gap: 4px; }
+.project-usage .history-item > div:first-child { flex: 1 1 14rem; }

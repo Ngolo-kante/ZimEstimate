@@ -1,5 +1,7 @@
 'use client';
 
+import { formatQuantity } from '@/lib/format';
+
 import { localToday } from '@/lib/projects/usageStats';
 
 import Button from '@/components/ui/Button';
@@ -96,8 +98,8 @@ export default function UsageLogTab({
               </div>
             </div>
             <div className="donut-meta">
-              <span>{usageSummary.totalUsed.toFixed(2)} used</span>
-              <span>{usageSummary.totalRemaining.toFixed(2)} remaining</span>
+              <span>{formatQuantity(usageSummary.totalUsed)} used</span>
+              <span>{formatQuantity(usageSummary.totalRemaining)} remaining</span>
             </div>
           </div>
         </div>
@@ -128,7 +130,7 @@ export default function UsageLogTab({
 
         <div className="usage-log">
           <div className="log-header">
-            <h3>Log Usage</h3>
+            <h3>Log usage</h3>
           </div>
           <div className="log-form">
             <div className="form-row">
@@ -149,7 +151,7 @@ export default function UsageLogTab({
                 </select>
               </div>
               <div className="form-group">
-                <label>Quantity Used</label>
+                <label>Quantity used</label>
                 <input
                   type="number"
                   value={formState.quantity}
@@ -180,7 +182,7 @@ export default function UsageLogTab({
               </div>
               <div className="form-actions">
                 <Button onClick={onLogUsage} icon={<Check size={16} />}>
-                  Save Usage
+                  Save usage
                 </Button>
               </div>
             </div>
@@ -209,13 +211,13 @@ export default function UsageLogTab({
                   <tr key={stat.item.id}>
                     <td className="col-material">
                       <div className="material-cell">
-                        <span className="material-name">{stat.item.material_name}</span>
+                        <span className="material-name" title={stat.item.material_name}>{stat.item.material_name}</span>{!Number(stat.item.unit_price_usd) && <span className="muted">No price yet</span>}
                         <span className="material-unit">{stat.item.unit}</span>
                       </div>
                     </td>
-                    <td data-label="Available" className="num">{stat.availableQty.toFixed(2)}</td>
-                    <td data-label="Used" className="num">{stat.usedQty.toFixed(2)}</td>
-                    <td data-label="Remaining" className="num">{stat.remainingQty.toFixed(2)}</td>
+                    <td data-label="Available" className="num">{formatQuantity(stat.availableQty)}</td>
+                    <td data-label="Used" className="num">{formatQuantity(stat.usedQty)}</td>
+                    <td data-label="Remaining" className="num">{formatQuantity(stat.remainingQty)}</td>
                     <td data-label="Usage %" className="num">{stat.usagePercent.toFixed(0)}%</td>
                     <td className="col-burn">
                       <div className="burn-bar">
@@ -223,7 +225,7 @@ export default function UsageLogTab({
                       </div>
                       {stat.availableQty > 0 && (
                         <span className="burn-label">
-                          {stat.remainingQty.toFixed(2)} {stat.item.unit} left
+                          {formatQuantity(stat.remainingQty)} {stat.item.unit} left
                         </span>
                       )}
                     </td>
@@ -264,11 +266,11 @@ export default function UsageLogTab({
                     return (
                       <div key={record.id} className="history-item">
                         <div>
-                          <span className="item-name">{item?.material_name || 'Material'}</span>
+                          <span className="item-name" title={item?.material_name}>{item?.material_name || 'Material'}</span>
                           <span className="item-notes">{record.notes || '—'}</span>
                         </div>
                         <div className="item-qty">
-                          {record.quantity_used} {item?.unit || ''}
+                          {formatQuantity(record.quantity_used)} {item?.unit || ''}
                         </div>
                       </div>
                     );

@@ -52,7 +52,7 @@ export default function StageTaskList({
                                 icon={<Plus size={14} />}
                                 onClick={() => setShowAddForm(true)}
                             >
-                                Add Task
+                                Add task
                             </Button>
                         )}
                         <button
@@ -72,7 +72,7 @@ export default function StageTaskList({
 
                 {!isCollapsed && (
                     <>
-                        {/* Add Task Form */}
+                        {/* Add task Form */}
                         {showAddForm && (
                             <div className="add-task-form">
                                 <input
@@ -118,7 +118,7 @@ export default function StageTaskList({
                                     icon={<Plus size={14} />}
                                     onClick={() => setShowAddForm(true)}
                                 >
-                                    Add First Task
+                                    Add first task
                                 </Button>
                             </div>
                         ) : (

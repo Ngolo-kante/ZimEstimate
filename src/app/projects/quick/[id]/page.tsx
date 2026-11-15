@@ -1,5 +1,7 @@
 'use client';
 
+import { formatUsd } from '@/lib/format';
+
 // ─── Saved quick estimate ─────────────────────────────────────────────────────
 // The BOQ for one saved quick estimate.
 //
@@ -284,7 +286,7 @@ function SavedQuickEstimate() {
               day: 'numeric', month: 'short', year: 'numeric',
             })}
             {' · '}
-            ${Math.round(total).toLocaleString()}
+            {formatUsd(total, { wholeDollars: true })}
           </p>
           {boq.shareToken && (
             <p className="mt-1 text-xs text-[var(--color-text-secondary)]">

@@ -83,7 +83,7 @@ export default function PlanReviewCheckpoint({
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {input.stages.length ? input.stages.map((stage) => <span key={stage} className="rounded-md border border-blue-200 bg-white px-2.5 py-1 text-xs font-semibold text-blue-900">{stage}</span>) : <span className="text-sm text-amber-900">No stages selected</span>}
-            <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">{input.includeLabor ? 'Labor included' : 'Materials only'}</span>
+            <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">{input.includeLabor ? 'Labour included' : 'Materials only'}</span>
           </div>
           {input.stages.length > 0 && input.stages.length < 5 && <p className="mt-2 text-xs font-medium text-amber-900">This is a partial-stage estimate, not a full-house total.</p>}
         </div>

@@ -141,7 +141,7 @@ export default function OverviewView({
                             icon={<PencilSimple size={16} />}
                             onClick={() => setActiveView('settings')}
                         >
-                            Edit Project
+                            Edit project
                         </Button>
                     )}
                 </div>
@@ -179,7 +179,7 @@ export default function OverviewView({
                             loading={isPriceUpdateLoading}
                             className="bg-blue-500 hover:bg-blue-600 text-white border-none"
                         >
-                            Apply Updates
+                            Apply updates
                         </Button>
                     </div>
                 </div>
@@ -313,7 +313,7 @@ export default function OverviewView({
                         <CardHeader>
                             <CardTitle>Compliance Snapshot</CardTitle>
                         </CardHeader>
-                        {/* Counted exactly as the Compliance Tracker counts them
+                        {/* Counted exactly as the Compliance counts them
                             (summariseCompliance), so the two pages agree. */}
                         <div className="space-y-4">
                             <div className="flex justify-between items-center py-2 border-b border-border-light">
@@ -340,7 +340,7 @@ export default function OverviewView({
                                 <div className="text-xs text-secondary">No stages switched on yet.</div>
                             )}
                             <Button size="sm" variant="secondary" className="w-full" onClick={() => setActiveView('compliance')}>
-                                Open Compliance Tracker
+                                Open compliance
                             </Button>
 
                             <div className="pt-2 border-t border-border-light space-y-2">

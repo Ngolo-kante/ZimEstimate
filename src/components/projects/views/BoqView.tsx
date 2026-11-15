@@ -134,7 +134,7 @@ export default function BoqView({
                             variant="secondary"
                             onClick={() => setActiveView('compliance')}
                         >
-                            Open Compliance Tracker
+                            Open compliance
                         </Button>
                         <button
                             type="button"

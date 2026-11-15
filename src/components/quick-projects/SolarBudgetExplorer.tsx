@@ -1,4 +1,7 @@
 'use client';
+
+import { formatUsd, formatQuantity } from '@/lib/format';
+
 // v2 — combo packages + kVA guide
 import '@/styles/budget-explorer.css';
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -125,10 +128,10 @@ function PackageCard({
         </div>
         <div className="flex-shrink-0 flex flex-col items-end gap-0.5">
           <span className={`font-bold text-base tabular-nums ${over ? 'text-amber-600' : 'text-emerald-600'}`}>
-            ${pkg.price.toLocaleString()}
+            {formatUsd(pkg.price)}
           </span>
           {over && (
-            <span className="text-[10px] font-semibold text-amber-500">+${delta.toLocaleString()} over</span>
+            <span className="text-[10px] font-semibold text-amber-500">+{formatUsd(delta)} over</span>
           )}
         </div>
       </div>
@@ -375,7 +378,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
      allocator divides by ratio, so it produces values like $511.1 and $988.1,
      and a tenth of a cent of false precision next to whole-dollar supplier
      prices makes the whole estimate look machine-generated. */
-  const usd = (value: number) => `$${Math.round(value).toLocaleString()}`;
+  const usd = (value: number) => `${formatUsd(value, { wholeDollars: true })}`;
 
   // Freed budget suggestions — shown when significant unallocated budget exists
   const hasFreedBudget = budget > 0 && remaining > 120;
@@ -396,8 +399,8 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
   const packageGroups = useMemo(() => groupPackagesByKva(matchingPackages), [matchingPackages]);
 
-  const systemKw = ((allocation.panels.count * pBrand.watt) / 1000).toFixed(1);
-  const storageKwh = (allocation.battery.units * allocation.battery.brand.unitKwh).toFixed(1);
+  const systemKw = formatQuantity((allocation.panels.count * pBrand.watt) / 1000);
+  const storageKwh = formatQuantity(allocation.battery.units * allocation.battery.brand.unitKwh);
   const backupWithFridge = backupHours(
     allocation.battery.units * allocation.battery.brand.unitKwh,
     BACKUP_LOADS[1],
@@ -673,7 +676,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       description: !enabledCards.installation
         ? 'Switch on if you are paying an installer, then set their rate'
         : allocation.installation.isCustom
-          ? `Your installer's quote: $${installCustom?.toLocaleString()}`
+          ? `Your installer's quote: ${formatUsd(installCustom)}`
           : `${allocation.installation.pct}% of hardware — tap to change the rate`,
       hasBrandPicker: false,
       hasCustomInput: true,
@@ -822,7 +825,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                 aria-pressed={budget === amt}
                 className={`min-h-10 rounded-full border px-2.5 py-1.5 text-[0.72rem] font-bold text-[var(--color-primary)] ${budget === amt ? 'border-blue-500/65 bg-blue-100/75' : 'border-slate-400/40 bg-white'}`}
               >
-                ${amt.toLocaleString()}
+                {formatUsd(amt)}
               </button>
             ))}
           </div>
@@ -925,7 +928,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
               <Info size={18} className="flex-shrink-0 mt-0.5 text-indigo-600" />
               <div className="text-sm text-indigo-900 flex-1">
                 <strong>Using {allocation.fallbackBattery.label} batteries for now.</strong>{' '}
-                Your selected <strong>{bBrand.label}</strong> (${bBrand.unitPrice.toLocaleString()} a unit) does not fit this budget yet.
+                Your selected <strong>{bBrand.label}</strong> ({formatUsd(bBrand.unitPrice)} a unit) does not fit this budget yet.
                 <br />
                 <button
                   type="button"
@@ -947,7 +950,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
               <BatteryCharging size={18} className="flex-shrink-0 mt-0.5 text-emerald-700" />
               <div className="text-sm text-emerald-900 flex-1">
                 <strong>More storage for the same money:</strong> {allocation.storageOffer.brand.label} batteries would give
-                you {allocation.storageOffer.kwh.toFixed(1)} kWh at this budget, against {storageKwh} kWh with {bBrand.label}.
+                you {formatQuantity(allocation.storageOffer.kwh)} kWh at this budget, against {storageKwh} kWh with {bBrand.label}.
                 <br />
                 <button
                   type="button"
@@ -1413,7 +1416,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
             const currentPanels = allocation.panels.count;
             const currentBatteryUnits = allocation.battery.units;
-            const currentStorageKwh = (currentBatteryUnits * activeBatBrand.unitKwh).toFixed(1);
+            const currentStorageKwh = formatQuantity(currentBatteryUnits * activeBatBrand.unitKwh);
             const extraPanels = Math.max(0, idealPanelCount - currentPanels);
             const extraBattery = Math.max(0, idealBatteryUnits - currentBatteryUnits);
             const costToIdeal = extraPanels * pBrand.pricePerPanel + extraBattery * activeBatBrand.unitPrice;
@@ -1435,7 +1438,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                     <div className="space-y-1.5 text-sm">
                       <div className="flex justify-between">
                         <span className="text-[var(--color-text-secondary)]">Array</span>
-                        <strong className="text-[var(--color-text)]">{idealArrayKw.toFixed(1)} kW</strong>
+                        <strong className="text-[var(--color-text)]">{formatQuantity(idealArrayKw)} kW</strong>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[var(--color-text-secondary)]">Panels</span>
@@ -1443,7 +1446,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[var(--color-text-secondary)]">Battery</span>
-                        <strong className="text-[var(--color-text)]">{idealBatteryKwh.toFixed(1)} kWh</strong>
+                        <strong className="text-[var(--color-text)]">{formatQuantity(idealBatteryKwh)} kWh</strong>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[var(--color-text-secondary)]">Units</span>
@@ -1496,14 +1499,14 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                     <div className="text-sm text-amber-900">
                       To reach ideal:{' '}
                       {extraPanels > 0 && (
-                        <strong>+{extraPanels} panel{extraPanels > 1 ? 's' : ''} (${(extraPanels * pBrand.pricePerPanel).toLocaleString()})</strong>
+                        <strong>+{extraPanels} panel{extraPanels > 1 ? 's' : ''} ({formatUsd(extraPanels * pBrand.pricePerPanel)})</strong>
                       )}
                       {extraPanels > 0 && extraBattery > 0 && ' + '}
                       {extraBattery > 0 && (
-                        <strong>+{extraBattery} battery unit{extraBattery > 1 ? 's' : ''} (${(extraBattery * activeBatBrand.unitPrice).toLocaleString()})</strong>
+                        <strong>+{extraBattery} battery unit{extraBattery > 1 ? 's' : ''} ({formatUsd(extraBattery * activeBatBrand.unitPrice)})</strong>
                       )}
                       {' '}— add approximately{' '}
-                      <strong className="text-amber-800">${costToIdeal.toLocaleString()} to your budget</strong>.
+                      <strong className="whitespace-nowrap tabular-nums text-amber-800">{formatUsd(costToIdeal)} to your budget</strong>.
                     </div>
                   </div>
                 )}

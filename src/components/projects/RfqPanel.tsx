@@ -1,5 +1,7 @@
 'use client';
 
+import { formatQuantity } from '@/lib/format';
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
@@ -324,7 +326,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                             {item.material_name}
                           </span>
                           <span className="flex-shrink-0 text-xs tabular-nums text-slate-500">
-                            {Number(item.quantity).toLocaleString()} {item.unit}
+                            {formatQuantity(Number(item.quantity))} {item.unit}
                           </span>
                         </label>
                       ))}
@@ -494,7 +496,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                           <li key={item.id} className="flex justify-between gap-3 text-xs text-slate-700">
                             <span className="truncate">{item.material_name}</span>
                             <span className="flex-shrink-0 tabular-nums text-slate-500">
-                              {Number(item.quantity).toLocaleString()} {item.unit ?? ''}
+                              {formatQuantity(Number(item.quantity))} {item.unit ?? ''}
                             </span>
                           </li>
                         ))}

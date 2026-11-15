@@ -102,7 +102,7 @@ export const SOIL_RISK_PROFILES: Record<SoilType, SoilRiskProfile> = {
     soilType: 'rock',
     label: 'Rock',
     severity: 'medium',
-    warning: 'Rock excavation can significantly increase labor and equipment effort.',
+    warning: 'Rock excavation can significantly increase labour and equipment effort.',
     recommendation: 'Add 15% to substructure allowance for excavation complexity and slower progress.',
     adjustmentPct: 15,
   },

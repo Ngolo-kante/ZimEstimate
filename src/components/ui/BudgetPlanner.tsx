@@ -178,7 +178,9 @@ export default function BudgetPlanner({
           </div>
           <span className={`status-badge ${status.tone}`}>
             {status.icon}
-            {status.text}
+            <span>{status.text.split(/(-?\$[\d,]+\.\d{2})/).map((part, index) =>
+              part.includes('$') ? <span key={index} className="status-amount">{part}</span> : part
+            )}</span>
           </span>
         </header>
 
@@ -472,9 +474,12 @@ export default function BudgetPlanner({
         }
 
         .status-badge {
+          min-width: 0;
+          max-width: 100%;
+          overflow-wrap: anywhere;
           display: inline-flex;
           min-height: 32px;
-          flex: 0 0 auto;
+          flex: 0 1 auto;
           align-items: center;
           gap: 6px;
           padding: 6px 9px;
@@ -482,8 +487,11 @@ export default function BudgetPlanner({
           border-radius: 999px;
           font-size: 0.75rem;
           font-weight: 700;
-          white-space: nowrap;
+          white-space: normal;
         }
+
+        .status-amount { white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .status-badge :global(svg) { flex-shrink: 0; }
 
         .status-good {
           border-color: var(--color-success-border);
@@ -553,6 +561,8 @@ export default function BudgetPlanner({
         }
 
         .metric-value {
+          white-space: nowrap;
+          font-variant-numeric: tabular-nums;
           margin-top: 3px;
           font-size: clamp(0.875rem, 4.2vw, 1.125rem);
           line-height: 1.2;
@@ -925,6 +935,8 @@ export default function BudgetPlanner({
           }
 
           .metric-value {
+          white-space: nowrap;
+          font-variant-numeric: tabular-nums;
             font-size: 1rem;
           }
 

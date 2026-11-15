@@ -1,5 +1,7 @@
 'use client';
 
+import { formatQuantity } from '@/lib/format';
+
 // What someone invited to a project or quick estimate sees: the site, not
 // the money.
 //
@@ -36,7 +38,7 @@ const STATUS_LABELS: Record<string, string> = {
   pending_approval: 'Awaiting approval',
 };
 
-const fmt = (n: number) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+const fmt = (n: number) => formatQuantity(n);
 
 // A usage date is a calendar day ("2026-10-12"). new Date() reads that as UTC
 // midnight, which is the evening before anywhere west of Greenwich, so it is

@@ -16,7 +16,7 @@ const viewDetails: Record<Exclude<ProjectView, 'overview'>, { title: string; des
         description: '',
     },
     procurement: {
-        title: 'Buying & quotes',
+        title: 'Buying',
         description: '',
     },
     usage: {

@@ -44,10 +44,10 @@ interface SidebarSpineProps {
  */
 export const PROJECT_NAV_ITEMS: { id: ProjectView; label: string; short: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Overview', short: 'Overview', icon: <House size={20} /> },
-    { id: 'budget', label: 'Budget Planner', short: 'Budget', icon: <CurrencyCircleDollar size={20} /> },
+    { id: 'budget', label: 'Budget', short: 'Budget', icon: <CurrencyCircleDollar size={20} /> },
     { id: 'boq', label: 'Bill of Quantities', short: 'BOQ', icon: <ListChecks size={20} /> },
-    { id: 'compliance', label: 'Compliance Tracker', short: 'Compliance', icon: <ShieldCheck size={20} /> },
-    { id: 'procurement', label: 'Buying & quotes', short: 'Buying', icon: <Truck size={20} /> },
+    { id: 'compliance', label: 'Compliance', short: 'Compliance', icon: <ShieldCheck size={20} /> },
+    { id: 'procurement', label: 'Buying', short: 'Buying', icon: <Truck size={20} /> },
     { id: 'usage', label: 'Usage Tracking', short: 'Usage', icon: <Clipboard size={20} /> },
     { id: 'documents', label: 'Documents', short: 'Documents', icon: <Files size={20} /> },
     { id: 'settings', label: 'Settings', short: 'Settings', icon: <Gear size={20} /> },

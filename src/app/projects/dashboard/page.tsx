@@ -151,7 +151,7 @@ function DashboardContent() {
           <h2>Welcome to ZimEstimate</h2>
           <p>Create your first project to start tracking budgets and purchases.</p>
           <Link href="/estimate">
-            <Button icon={<Plus size={18} />}>Create Project</Button>
+            <Button icon={<Plus size={18} />}>Create project</Button>
           </Link>
         </div>
         <style jsx>{`
@@ -244,7 +244,7 @@ function DashboardContent() {
           </div>
           <div className="hero-actions">
             <Link href="/estimate">
-              <Button icon={<Plus size={16} />}>New Project</Button>
+              <Button icon={<Plus size={16} />}>New project</Button>
             </Link>
             <Button variant="secondary" icon={<DownloadSimple size={16} />} onClick={() => window.print()}>
               Export
@@ -359,7 +359,7 @@ function DashboardContent() {
                 <Buildings size={40} weight="light" />
                 <p>No projects yet.</p>
                 <Link href="/estimate">
-                  <Button size="sm" icon={<Plus size={16} />}>Create Project</Button>
+                  <Button size="sm" icon={<Plus size={16} />}>Create project</Button>
                 </Link>
               </div>
             )}

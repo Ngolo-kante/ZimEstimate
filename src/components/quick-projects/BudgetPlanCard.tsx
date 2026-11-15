@@ -1,5 +1,7 @@
 'use client';
 
+import { formatUsd } from '@/lib/format';
+
 // ─── Saving toward a quick project ────────────────────────────────────────────
 // "Some may create a project to do in three months and need to budget their
 // funds towards it." This answers "can I afford it by then?", which is the
@@ -17,7 +19,7 @@ interface BudgetPlanCardProps {
   onSave: (patch: { targetDate: string | null; fundsSavedUsd: number }) => Promise<void>;
 }
 
-const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
+const money = (n: number) => `${formatUsd(n, { wholeDollars: true })}`;
 
 export default function BudgetPlanCard({
   totalUsd,

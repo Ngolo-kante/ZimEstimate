@@ -40,7 +40,7 @@ export default function BoqAddItemForm({
                                 value={newMaterialId}
                                 onChange={(e) => setNewMaterialId(e.target.value)}
                             >
-                                <option value="">{isLaborCategory(category) ? 'Select labor or service...' : 'Select material...'}</option>
+                                <option value="">{isLaborCategory(category) ? 'Select labour or service...' : 'Select material...'}</option>
                                 {availableMaterials.map((material) => (
                                     <option key={material.id} value={material.id}>
                                         {material.name}
@@ -63,7 +63,7 @@ export default function BoqAddItemForm({
                 </div>
                 <div className="form-actions">
                     <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
-                    <Button variant="primary" size="sm" loading={isAdding} onClick={onAdd}>Add Item</Button>
+                    <Button variant="primary" size="sm" loading={isAdding} onClick={onAdd}>Add item</Button>
                 </div>
             </div>
     );

@@ -1,5 +1,7 @@
 'use client';
 
+import { formatQuantity } from '@/lib/format';
+
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import type { BOQItem, MaterialUsage } from '@/lib/database.types';
 import { Receipt } from '@phosphor-icons/react';
@@ -22,7 +24,7 @@ export default function UsageLedgerTab({
   return (
     <div className="ledger-tab">
       <div className="ledger-header-bar">
-        <h3>Usage Ledger</h3>
+        <h3>Usage ledger</h3>
         <span className="ledger-total">
           {usageHistory.length} entries • Total: {formatPrice(totalUsedCost, totalUsedCost * exchangeRate)}
         </span>
@@ -69,13 +71,13 @@ export default function UsageLedgerTab({
                       return (
                         <tr key={record.id}>
                           <td className="col-material">
-                            <span className="material-name">{item?.material_name || 'Unknown'}</span>
-                            {item?.category && <span className="material-cat">{item.category}</span>}
+                            <span className="material-name" title={item?.material_name}>{item?.material_name || 'Unknown'}</span>
+                            {item?.category && <span className="material-cat">{item.category.toLowerCase() === 'labor' ? 'Labour' : item.category}</span>}
                           </td>
-                          <td className="col-qty mono">{record.quantity_used.toFixed(2)}</td>
+                          <td className="col-qty mono">{formatQuantity(record.quantity_used)}</td>
                           <td className="col-unit">{item?.unit || '—'}</td>
-                          <td className="col-price mono">{formatPrice(unitPrice, unitPrice * exchangeRate)}</td>
-                          <td className="col-total mono bold">{formatPrice(recordValue, recordValue * exchangeRate)}</td>
+                          <td className="col-price mono">{unitPrice > 0 ? formatPrice(unitPrice, unitPrice * exchangeRate) : <span className="muted">No price yet</span>}</td>
+                          <td className="col-total mono bold">{unitPrice > 0 ? formatPrice(recordValue, recordValue * exchangeRate) : <span className="muted">No price yet</span>}</td>
                           <td className="col-notes">{record.notes || '—'}</td>
                         </tr>
                       );

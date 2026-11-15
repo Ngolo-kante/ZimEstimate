@@ -918,7 +918,7 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
           >
             {[
               { id: 'transport',   label: 'Equipment delivery / transport', val: includeTransport, set: setIncludeTransport },
-              { id: 'install',     label: 'Installation labor (25% of hardware)', val: includeInstall, set: setIncludeInstall },
+              { id: 'install',     label: 'Installation labour (25% of hardware)', val: includeInstall, set: setIncludeInstall },
               { id: 'contingency', label: 'Contingency (5%)', val: includeContingency, set: setIncludeContingency },
             ].map((opt) => (
               <label key={opt.id} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50">

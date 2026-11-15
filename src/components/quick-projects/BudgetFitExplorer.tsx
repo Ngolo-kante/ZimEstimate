@@ -1,5 +1,7 @@
 'use client';
 
+import { formatUsd } from '@/lib/format';
+
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import CostDonut, { SERIES_COLORS } from '@/components/ui/CostDonut';
@@ -57,7 +59,7 @@ interface BudgetFitExplorerProps {
 }
 
 const money = (value: number) =>
-  `$${Math.round(value).toLocaleString('en-US')}`;
+  `${formatUsd(value, { wholeDollars: true })}`;
 
 export default function BudgetFitExplorer({
   config,

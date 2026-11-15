@@ -324,7 +324,7 @@ export function generateBOQPDF(
     doc.text(`Scope: ${project.scope.replace('_', ' ')}`, margin, yPos);
     yPos += 5;
 
-    doc.text(`Labor: ${project.labor_preference === 'with_labor' ? 'Included' : 'Materials Only'}`, margin, yPos);
+    doc.text(`Labour: ${project.labor_preference === 'with_labor' ? 'Included' : 'Materials Only'}`, margin, yPos);
     yPos += 5;
 
     doc.text(`Status: ${project.status.charAt(0).toUpperCase() + project.status.slice(1)}`, margin, yPos);
@@ -652,7 +652,7 @@ function buildBOQDocument(data: VisionBOQData, currency: 'USD' | 'ZWG'): jsPDF {
     doc.text(`Wall Material: ${formatConfigValue(data.config.brickType)}`, margin, yPos);
     yPos += 5;
 
-    doc.text(`Labor: ${data.config.includeLabor ? 'Included' : 'Materials Only'}`, margin, yPos);
+    doc.text(`Labour: ${data.config.includeLabor ? 'Included' : 'Materials Only'}`, margin, yPos);
     yPos += 15;
 
     // Summary Box

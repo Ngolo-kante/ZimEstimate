@@ -205,7 +205,7 @@ export default function ProjectsGrid({
                                 {formatScopeLabel(project)}
                             </span>
                             <span className="detail-item">
-                                {project.labor_preference === 'with_labor' ? 'With Labor' : 'Materials Only'}
+                                {project.labor_preference === 'with_labor' ? 'With labour' : 'Materials only'}
                             </span>
                         </div>
                         <div className="compliance-chips">

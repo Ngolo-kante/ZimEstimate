@@ -46,10 +46,10 @@ export const getStatusConfig = (status: ProcurementItemStatus) => {
     case 'pending':
       return { label: 'Pending', icon: Clock, bgClass: 'status-pending' };
     case 'in_progress':
-      return { label: 'In Progress', icon: Package, bgClass: 'status-progress' };
+      return { label: 'In progress', icon: Package, bgClass: 'status-progress' };
     case 'purchased':
       return { label: 'Purchased', icon: Check, bgClass: 'status-purchased' };
     case 'over_purchased':
-      return { label: 'Over Purchased', icon: Warning, bgClass: 'status-over' };
+      return { label: 'Over-purchased', icon: Warning, bgClass: 'status-over' };
   }
 };

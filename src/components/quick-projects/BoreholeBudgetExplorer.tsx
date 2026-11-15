@@ -1,5 +1,7 @@
 'use client';
 
+import { formatUsd, formatQuantity } from '@/lib/format';
+
 import '@/styles/budget-explorer.css';
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
@@ -329,10 +331,10 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
   const handleShare = async () => {
     const shareText = [
       'ZimEstimate Borehole Budget',
-      `Budget: $${budget.toLocaleString()}`,
+      `Budget: ${formatUsd(budget)}`,
       `Depth: ${depth}m`,
       `Pump: ${pumpType}`,
-      `Allocated: $${Math.round(totalAllocated).toLocaleString()} (${budgetPct}% of budget)`,
+      `Allocated: ${formatUsd(totalAllocated, { wholeDollars: true })} (${budgetPct}% of budget)`,
     ].join('\n');
 
     /* A link that rebuilds this borehole, rather than the page's bare address,
@@ -489,10 +491,10 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
           {budget > 0 && (
             <div className="explorer-grid grid grid-cols-2 gap-2 my-3 text-xs text-slate-600 [&>span]:rounded-xl [&>span]:border [&>span]:border-slate-200 [&>span]:bg-white [&>span]:p-3 [&_strong]:block [&_strong]:text-base [&_strong]:text-[var(--color-primary)]">
               <span>
-                <strong>${totalAllocated.toLocaleString()}</strong> allocated
+                <strong>{formatUsd(totalAllocated)}</strong> allocated
               </span>
               <span className={remaining >= 0 ? 'is-good' : 'is-over'}>
-                <strong>${Math.abs(remaining).toLocaleString()}</strong>{' '}
+                <strong>{formatUsd(Math.abs(remaining))}</strong>{' '}
                 {remaining >= 0 ? 'left' : 'over'}
               </span>
             </div>
@@ -516,7 +518,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                 aria-pressed={budget === amt}
                 className={`min-h-10 rounded-full border px-2.5 py-1.5 text-[0.72rem] font-bold text-[var(--color-primary)] ${budget === amt ? 'border-blue-500/65 bg-blue-100/75' : 'border-slate-400/40 bg-white'}`}
               >
-                ${amt.toLocaleString()}
+                {formatUsd(amt)}
               </button>
             ))}
           </div>
@@ -590,9 +592,9 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
       {/* ── Budget Progress Bar ──────────────────────────────────────────────── */}
       <div className="mb-6">
         <div className="flex justify-between text-sm mb-2">
-          <span className="font-semibold text-slate-700">${totalAllocated.toLocaleString(undefined, { maximumFractionDigits: 0 })} allocated</span>
+          <span className="whitespace-nowrap tabular-nums font-semibold text-slate-700">{formatUsd(totalAllocated, { wholeDollars: true })} allocated</span>
           <span className={`font-semibold ${remaining >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-            {remaining >= 0 ? `$${remaining.toLocaleString(undefined, { maximumFractionDigits: 0 })} remaining` : `$${Math.abs(remaining).toLocaleString(undefined, { maximumFractionDigits: 0 })} over budget`}
+            {remaining >= 0 ? `${formatUsd(remaining, { wholeDollars: true })} remaining` : `${formatUsd(Math.abs(remaining), { wholeDollars: true })} over budget`}
           </span>
         </div>
         {/* Over budget on an auto-fitted configuration means something specific:
@@ -615,7 +617,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
         </div>
         <div className="flex justify-between text-xs text-[var(--color-text-muted)] mt-1">
           <span>$0</span>
-          <span>${budget.toLocaleString()}</span>
+          <span>{formatUsd(budget)}</span>
         </div>
       </div>
 
@@ -629,7 +631,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
             { label: 'Depth', value: `${depth}m`, show: enabledCards.drilling },
             { label: 'Casing', value: `${diameter} ${getCasingLabel(casingGrade).split(' — ')[0]}`, show: enabledCards.casing },
             { label: 'Pump', value: pumpType.charAt(0).toUpperCase() + pumpType.slice(1), show: enabledCards.pump },
-            { label: 'Tank', value: tankSize === 'none' ? 'None' : `${Number(tankSize).toLocaleString()}L`, show: enabledCards.tank },
+            { label: 'Tank', value: tankSize === 'none' ? 'None' : formatQuantity(Number(tankSize), 'L'), show: enabledCards.tank },
             { label: 'Location', value: location.charAt(0).toUpperCase() + location.slice(1), show: true },
             { label: 'Purpose', value: purpose.charAt(0).toUpperCase() + purpose.slice(1), show: true },
           ]
@@ -688,7 +690,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                   <div className="flex items-center justify-between">
                     <span className={`font-semibold text-sm ${card.enabled ? 'text-[var(--color-text)]' : 'text-[var(--color-text-secondary)]'}`}>{card.label}</span>
                     <span className={`text-lg font-bold tabular-nums ${card.enabled ? 'text-[var(--color-text)]' : 'text-[var(--color-text-muted)]'}`}>
-                      ${Math.round(card.cost).toLocaleString()}
+                      {formatUsd(card.cost, { wholeDollars: true })}
                     </span>
                   </div>
                   <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 truncate">{card.description}</p>
@@ -736,7 +738,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                                   }`}>{opt.tier}</span>
                                 </div>
                                 <span className="text-xs text-[var(--color-text-secondary)] mt-1">{opt.desc}</span>
-                                <span className="text-xs font-medium text-[var(--color-text-secondary)] mt-1">${p.price.toLocaleString()} for {depth}m depth</span>
+                                <span className="whitespace-nowrap tabular-nums text-xs font-medium text-[var(--color-text-secondary)] mt-1">{formatUsd(p.price)} for {depth}m depth</span>
                               </button>
                             );
                           })}
@@ -789,7 +791,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                                   }`}
                                 >
                                   <span className="font-semibold text-[var(--color-text)]">{opt.label}</span>
-                                  <span className="text-xs font-medium text-[var(--color-text-secondary)]">${t.cost.toLocaleString()}</span>
+                                  <span className="whitespace-nowrap tabular-nums text-xs font-medium text-[var(--color-text-secondary)]">{formatUsd(t.cost)}</span>
                                 </button>
                               );
                             })}

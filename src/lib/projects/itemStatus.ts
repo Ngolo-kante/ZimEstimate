@@ -36,11 +36,11 @@ export function getStatusConfig(status: ItemStatus): { label: string; className:
         case 'pending':
             return { label: 'Pending', className: 'pending' };
         case 'in_progress':
-            return { label: 'In Progress', className: 'in-progress' };
+            return { label: 'In progress', className: 'in-progress' };
         case 'purchased':
             return { label: 'Purchased', className: 'purchased' };
         case 'over_purchased':
-            return { label: 'Over Purchased', className: 'over-purchased' };
+            return { label: 'Over-purchased', className: 'over-purchased' };
     }
 }
 

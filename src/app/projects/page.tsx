@@ -127,7 +127,7 @@ function ProjectsContent() {
                         <p>Create your first construction estimate to get started</p>
                         <Link href="/estimate">
                             <Button icon={<Plus size={18} />}>
-                                Create First Project
+                                Create first project
                             </Button>
                         </Link>
                     </Card>
@@ -140,7 +140,7 @@ function ProjectsContent() {
                         <h3>No matching projects</h3>
                         <p>Try adjusting your search or filters</p>
                         <Button variant="secondary" onClick={clearFilters}>
-                            Clear Filters
+                            Clear filters
                         </Button>
                     </Card>
                 )}

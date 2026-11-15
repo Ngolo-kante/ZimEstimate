@@ -1,5 +1,7 @@
 'use client';
 
+import { formatQuantity, formatUsd } from '@/lib/format';
+
 import InlineEdit from '@/components/ui/InlineEdit';
 import PriceDisplay from '@/components/projects/PriceDisplay';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
@@ -65,7 +67,7 @@ export default function BoqItemRow({
     const qtyVariance = actualQty - estimatedQty;
     const qtyVariancePercent = estimatedQty > 0 ? (qtyVariance / estimatedQty) * 100 : 0;
     const qtyVarianceAbs = Math.abs(qtyVariance);
-    const qtyVarianceLabel = qtyVarianceAbs.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const qtyVarianceLabel = formatQuantity(qtyVarianceAbs);
     const estimatedTotal = estimatedQty * averagePrice;
     const lineTotalUsd = actualQty * actualPrice;
     const lineTotalZwg = lineTotalUsd * exchangeRate;
@@ -88,7 +90,7 @@ export default function BoqItemRow({
             {visibleColumns.item && (
                 <td data-label="Item" className="col-item">
                     <div className="item-info">
-                        <span className="item-name">{item.material_name}</span>
+                        <span className="item-name" title={item.material_name}>{item.material_name}</span>
                         {enablement && (
                             <span className="enablement-pill">Enablement Cost</span>
                         )}
@@ -99,7 +101,7 @@ export default function BoqItemRow({
             {visibleColumns.avgPrice && (
                 <td data-label="Avg. Price" className="col-price text-right">
                     <span className="price-subtle">
-                        <PriceDisplay priceUsd={averagePrice} priceZwg={Number(item.unit_price_zwg)} />
+                        {averagePrice > 0 ? <PriceDisplay priceUsd={averagePrice} priceZwg={Number(item.unit_price_zwg)} /> : <span className="muted">No price yet</span>}
                     </span>
                 </td>
             )}
@@ -108,6 +110,7 @@ export default function BoqItemRow({
                     <InlineEdit
                         value={actualPrice}
                         type="currency"
+                        formatDisplay={(value) => Number(value) > 0 ? formatUsd(Number(value)) : 'No price yet'}
                         prefix="$"
                         onSave={(val) => handleActualPriceUpdate(item, Number(val))}
                         className="price-edit"
@@ -130,6 +133,7 @@ export default function BoqItemRow({
                     <InlineEdit
                         value={Number(item.quantity)}
                         type="number"
+                        formatDisplay={(value) => formatQuantity(Number(value), item.unit)}
                         suffix={` ${item.unit}`}
                         onSave={(val) => handleQuantityUpdate(item, Number(val))}
                         className="qty-edit"
@@ -141,6 +145,7 @@ export default function BoqItemRow({
                     <InlineEdit
                         value={Number(item.actual_quantity ?? item.quantity)}
                         type="number"
+                        formatDisplay={(value) => formatQuantity(Number(value), item.unit)}
                         suffix={` ${item.unit}`}
                         onSave={(val) => handleActualQuantityUpdate(item, Number(val))}
                         className="qty-edit"
@@ -161,14 +166,14 @@ export default function BoqItemRow({
             {visibleColumns.actualTotal && (
                 <td data-label="Actual Total" className="col-total text-right">
                     <div className="line-total">
-                        <PriceDisplay priceUsd={lineTotalUsd} priceZwg={lineTotalZwg} bold />
+                        {actualPrice > 0 ? <PriceDisplay priceUsd={lineTotalUsd} priceZwg={lineTotalZwg} bold /> : <span className="muted">No price yet</span>}
                     </div>
                 </td>
             )}
             {visibleColumns.estTotal && (
                 <td data-label="Est Total" className="col-total text-right">
                     <div className="line-total est">
-                        <PriceDisplay priceUsd={estimatedTotal} priceZwg={estimatedTotal * exchangeRate} />
+                        {averagePrice > 0 ? <PriceDisplay priceUsd={estimatedTotal} priceZwg={estimatedTotal * exchangeRate} /> : <span className="muted">No price yet</span>}
                     </div>
                 </td>
             )}
@@ -187,7 +192,7 @@ export default function BoqItemRow({
                 <td data-label="Usage" className="col-usage text-right">
                     {usageTrackingEnabled ? (
                         <div className="usage-cell">
-                            <span>{usage.toFixed(2)} {item.unit}</span>
+                            <span>{formatQuantity(usage)} {item.unit}</span>
                             <small>{actualQty > 0 ? `${usagePercent.toFixed(0)}%` : '—'}</small>
                         </div>
                     ) : (

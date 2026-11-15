@@ -15,5 +15,5 @@ interface PriceDisplayProps {
 export default function PriceDisplay({ priceUsd, priceZwg, bold = false, unwrapped = false }: PriceDisplayProps) {
     const { formatPrice } = useCurrency();
     if (unwrapped) return <>{formatPrice(priceUsd, priceZwg)}</>;
-    return <span className={bold ? 'font-semibold' : ''}>{formatPrice(priceUsd, priceZwg)}</span>;
+    return <span style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }} className={bold ? 'font-semibold' : ''}>{formatPrice(priceUsd, priceZwg)}</span>;
 }

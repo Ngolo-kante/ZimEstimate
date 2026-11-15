@@ -18,7 +18,7 @@ const STAGES = [
 const VIEW_HEADINGS: Array<{ view: string; heading: string }> = [
   { view: 'boq', heading: 'Bill of Quantities' },
   { view: 'compliance', heading: 'Compliance' },
-  { view: 'procurement', heading: 'Buying & quotes' },
+  { view: 'procurement', heading: 'Buying' },
   { view: 'usage', heading: 'Usage Tracking' },
   { view: 'documents', heading: 'Documents' },
   { view: 'budget', heading: 'Budget' },
@@ -100,7 +100,7 @@ test.describe('Authenticated project workspace', () => {
 
     await projectDock.getByRole('button', { name: 'Buy' }).click();
     // This heading was "Procurement Hub" until the view was renamed.
-    await expect(page.getByRole('heading', { name: 'Buying & quotes' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Buying' })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Procurement overview' })).toBeVisible();
     await expect(page.getByRole('progressbar', { name: 'Actual spend against BOQ estimate' })).toBeVisible();
     const procurementSections = page.getByRole('navigation', { name: 'Procurement sections' });
@@ -227,7 +227,7 @@ async function signIn(page: Page) {
 
 /** Log, Materials and Ledger; switches usage tracking on first when the project has it off. */
 async function visitUsageSections(page: Page) {
-  const enableUsage = page.getByRole('button', { name: 'Enable Usage Tracking' });
+  const enableUsage = page.getByRole('button', { name: 'Enable usage tracking' });
   const usageTabs = page.getByRole('tablist', { name: 'Usage tracking' });
   await expect(enableUsage.or(usageTabs)).toBeVisible({ timeout: 10_000 });
   if (await enableUsage.isVisible()) {
@@ -235,7 +235,7 @@ async function visitUsageSections(page: Page) {
   }
   await expect(usageTabs).toBeVisible({ timeout: 10_000 });
 
-  for (const section of [/Log/, /Materials/, /Ledger/]) {
+  for (const section of [/Log/, /Materials/, /ledger/i]) {
     const tab = usageTabs.getByRole('tab', { name: section });
     await tab.click();
     await expect(tab).toHaveAttribute('aria-selected', 'true');

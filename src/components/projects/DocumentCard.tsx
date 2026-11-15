@@ -1,5 +1,7 @@
 'use client';
 
+import { truncateMiddle, formatQuantity } from '@/lib/format';
+
 import { useEffect, useState } from 'react';
 import {
     File,
@@ -51,8 +53,8 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
 
     const formatFileSize = (bytes: number): string => {
         if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        if (bytes < 1024 * 1024) return formatQuantity(bytes / 1024) + ' KB';
+        return formatQuantity(bytes / (1024 * 1024)) + ' MB';
     };
 
     const getIcon = () => {
@@ -76,8 +78,8 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     <img src={thumbnail} alt="" loading="lazy" />
                 </button>}
                 <div className="card-body">
-                    <h4 className="file-name" title={document.file_name}>
-                        {document.file_name}
+                    <h4 className="file-name" title={document.file_name} aria-label={document.file_name}>
+                        {truncateMiddle(document.file_name, 64)}
                     </h4>
                     {document.description && (
                         <p className="file-description">{document.description}</p>
@@ -99,6 +101,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
 
             <style jsx>{`
                 .document-card {
+                    min-width: 0;
                     background: #ffffff;
                     border: 1px solid #d7e6f5;
                     border-radius: 16px;
@@ -155,6 +158,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                 .document-actions .danger { color: #b91c1c; }
                 button:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
                 .card-body {
+                    min-width: 0;
                     cursor: pointer;
                     flex: 1;
                 }
@@ -165,8 +169,8 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     color: #0f172a;
                     margin: 0;
                     overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
+                    overflow-wrap: anywhere;
+                    white-space: normal;
                     line-height: 1.4;
                 }
 
@@ -175,8 +179,8 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     color: #64748b;
                     margin: 4px 0 0 0;
                     overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
+                    overflow-wrap: anywhere;
+                    white-space: normal;
                 }
 
                 .card-footer {
@@ -201,6 +205,8 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                 }
 
                 .file-meta {
+                    white-space: nowrap;
+                    font-variant-numeric: tabular-nums;
                     font-size: 0.8rem;
                     color: #475569;
                     font-weight: 500;

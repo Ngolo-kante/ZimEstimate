@@ -362,6 +362,8 @@ export default function ProjectKPIDashboard({
         }
 
         .kpi-value {
+          white-space: nowrap;
+          font-variant-numeric: tabular-nums;
           font-size: 1.5rem;
           font-weight: 700;
           color: #0f172a;
@@ -491,6 +493,8 @@ export default function ProjectKPIDashboard({
         }
 
         .stat-value {
+          white-space: nowrap;
+          font-variant-numeric: tabular-nums;
           font-size: 1rem;
           font-weight: 700;
           color: #0f172a;
@@ -553,6 +557,8 @@ export default function ProjectKPIDashboard({
           }
 
           .kpi-value {
+          white-space: nowrap;
+          font-variant-numeric: tabular-nums;
             font-size: 1.25rem;
           }
         }

@@ -1,10 +1,12 @@
 'use client';
 
+import { formatUsd } from '@/lib/format';
+
 import { useEffect, useState } from 'react';
 import type { BOQItem } from '@/lib/database.types';
 import { OWN_FIGURE_NOTE } from '@/lib/projectFees';
 
-const dollars = (value: number) => `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const dollars = (value: number) => `${formatUsd(value)}`;
 
 function FeeRow({ item, onUpdate }: { item: BOQItem; onUpdate: (id: string, updates: Partial<BOQItem>) => Promise<void> }) {
   const [amount, setAmount] = useState(String(item.unit_price_usd));

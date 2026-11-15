@@ -44,7 +44,7 @@ interface ProjectSettingsProps {
     reminderFrequency?: ReminderFrequency | null;
     onToggleReminder?: (active: boolean) => void;
     defaultReminderAmountUsd?: number;
-    /** A savings plan from the Budget Planner, to pre-fill the budget reminder. */
+    /** A savings plan from the Budget, to pre-fill the budget reminder. */
     reminderDraft?: { amountUsd: number; frequency: ReminderFrequency } | null;
     onReminderDraftUsed?: () => void;
     onReminderChannelChange?: (channel: NotificationChannel) => void;
@@ -589,7 +589,7 @@ export default function ProjectSettings({
 
                     <p className="notif-footnote">
                         Price updates on your BOQ show in your notifications automatically. To be reminded about
-                        a permit or inspection, set a reminder on that task in the Compliance Tracker.
+                        a permit or inspection, set a reminder on that task in the Compliance.
                     </p>
                 </div>
             </section>

@@ -225,7 +225,7 @@ function ExportContent() {
                             </div>
                             <div className="stat">
                                 <span className="stat-value">{project.labor_preference === 'with_labor' ? 'Yes' : 'No'}</span>
-                                <span className="stat-label">Labor Included</span>
+                                <span className="stat-label">Labour included</span>
                             </div>
                         </div>
                     </CardContent>

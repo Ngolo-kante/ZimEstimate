@@ -26,7 +26,7 @@ export default function ProjectsHeader({ canCreateProject }: { canCreateProject:
                         disabled={!canCreateProject()}
                         title={!canCreateProject() ? 'Project limit reached. Upgrade to Pro.' : ''}
                     >
-                        New Project
+                        New project
                     </Button>
                 </Link>
             </div>

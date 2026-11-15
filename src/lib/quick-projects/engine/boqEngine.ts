@@ -121,7 +121,7 @@ export function calculateLaborItems(
       {
         id: 'labor_total',
         category: 'Labor',
-        description: `Labor (${labor.percentage ?? 25}% of materials)`,
+        description: `Labour (${labor.percentage ?? 25}% of materials)`,
         quantity: 1,
         unit: 'lump sum',
         unitCostUsd: total,
@@ -142,7 +142,7 @@ export function calculateLaborItems(
     {
       id: 'labor_total',
       category: 'Labor',
-      description: `Labor — ${workers} builder${workers > 1 ? 's' : ''} × ${days} days @ $${rate}/day`,
+      description: `Labour — ${workers} builder${workers > 1 ? 's' : ''} × ${days} day${days === 1 ? '' : 's'} @ $${rate}/day`,
       quantity: days * workers,
       unit: 'man-days',
       unitCostUsd: rate,

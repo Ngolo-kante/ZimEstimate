@@ -1,5 +1,7 @@
 'use client';
 
+import { formatQuantity } from '@/lib/format';
+
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
@@ -141,7 +143,7 @@ export default function StageUsageSection({
 
                 {expanded && (
                     <div className="usage-content">
-                        {/* Record Usage Button */}
+                        {/* Record usage Button */}
                         {!showForm && (
                             <Button
                                 variant="secondary"
@@ -150,7 +152,7 @@ export default function StageUsageSection({
                                 onClick={() => setShowForm(true)}
                                 className="record-btn"
                             >
-                                Record Usage
+                                Record usage
                             </Button>
                         )}
 
@@ -248,9 +250,9 @@ export default function StageUsageSection({
                                 return (
                                     <div key={item.id} className="material-usage-item">
                                         <div className="material-info">
-                                            <span className="material-name">{item.material_name}</span>
+                                            <span className="material-name" title={item.material_name}>{item.material_name}</span>
                                             <span className="material-stats">
-                                                {used.toLocaleString()} / {purchased.toLocaleString()} {item.unit} used
+                                                {formatQuantity(used)} / {formatQuantity(purchased)} {item.unit} used
                                             </span>
                                         </div>
                                         <div className="usage-bar-container">

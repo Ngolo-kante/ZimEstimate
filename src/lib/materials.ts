@@ -73,7 +73,7 @@ export const categoryInfo: Record<MaterialCategory, { label: string; icon: strin
     plumbing: { label: 'Plumbing', icon: 'Drop' },
     finishes: { label: 'Finishes', icon: 'PaintBrush' },
     hardware: { label: 'Hardware', icon: 'Wrench' },
-    labor: { label: 'Labor & Services', icon: 'UserCircle' },
+    labor: { label: 'Labour & services', icon: 'UserCircle' },
 };
 
 // Master material database

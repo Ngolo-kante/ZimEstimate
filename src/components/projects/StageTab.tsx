@@ -304,7 +304,7 @@ export default function StageTab({
                         <StageBOQSection
                             projectId={projectId}
                             category="labor"
-                            categoryLabel="Labor & Services"
+                            categoryLabel="Labour & services"
                             items={stageLaborItems}
                             stats={laborStats}
                             purchases={purchases}

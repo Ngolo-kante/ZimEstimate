@@ -1,5 +1,7 @@
 'use client';
 
+import { formatUsd } from '@/lib/format';
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -46,7 +48,7 @@ interface QuickBOQTableProps {
 function fmt(amount: number, currency: 'USD' | 'ZWG', zwgRate: number): string {
   const val = currency === 'ZWG' ? amount * zwgRate : amount;
   const sym = currency === 'ZWG' ? 'ZiG' : '$';
-  return `${sym} ${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return currency === 'USD' ? formatUsd(val) : `${sym} ${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -200,8 +202,8 @@ export default function QuickBOQTable({
                 if (!catTotal) return null;
                 return (
                   <tr key={cat} className="border-t border-slate-100 first:border-t-0">
-                    <td className="px-4 py-3 font-medium text-slate-700">{cat}</td>
-                    <td className="px-4 py-3 text-right font-medium text-slate-900">
+                    <td className="px-4 py-3 font-medium text-slate-700">{cat === 'Labor' ? 'Labour' : cat}</td>
+                    <td className="whitespace-nowrap tabular-nums px-4 py-3 text-right font-medium text-slate-900">
                       {fmt(catTotal, currency, zwgRate)}
                     </td>
                   </tr>
@@ -210,7 +212,7 @@ export default function QuickBOQTable({
               {markupPct > 0 && (
                 <tr className="border-t border-slate-200 bg-slate-50">
                   <td className="px-4 py-3 text-slate-600">Contractor markup ({markupPct}%)</td>
-                  <td className="px-4 py-3 text-right font-medium text-slate-900">
+                  <td className="whitespace-nowrap tabular-nums px-4 py-3 text-right font-medium text-slate-900">
                     {fmt(totals.markupUsd, currency, zwgRate)}
                   </td>
                 </tr>
@@ -220,7 +222,7 @@ export default function QuickBOQTable({
         </div>
         <div className="rounded-xl border border-slate-200 bg-slate-900 px-5 py-4 text-white">
           <p className="text-xs uppercase tracking-wider text-slate-400">Grand Total</p>
-          <p className="text-2xl font-bold">
+          <p className="whitespace-nowrap tabular-nums text-2xl font-bold">
             {fmt(totals.grandTotalUsd, currency, zwgRate)}
           </p>
         </div>
@@ -299,7 +301,7 @@ export default function QuickBOQTable({
               <li key={item.id} className={`px-3 py-3 ${dimmed ? 'opacity-50' : ''}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-800">{item.description}</p>
+                    <p className="min-w-0 line-clamp-2 [overflow-wrap:anywhere] text-sm font-medium text-slate-800" title={item.description}>{item.description}</p>
                     <div className="mt-0.5 flex flex-wrap gap-1">
                       {item.brand && <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">{item.brand}</span>}
                       {item.owned && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">Owned</span>}
@@ -347,7 +349,7 @@ export default function QuickBOQTable({
                     />
                   </label>
                   <span className="pt-4 pl-1 text-right text-sm font-semibold text-slate-800 whitespace-nowrap">
-                    {dimmed ? '\u2014' : fmt(item.totalCostUsd, currency, zwgRate)}
+                    {dimmed ? '\u2014' : item.unitCostUsd > 0 ? fmt(item.totalCostUsd, currency, zwgRate) : <span className="text-slate-400">No price yet</span>}
                   </span>
                 </div>
               </li>
@@ -382,7 +384,7 @@ export default function QuickBOQTable({
                     {/* Description */}
                     <td className="px-4 py-2.5">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-slate-800">{item.description}</span>
+                        <span className="min-w-0 line-clamp-2 [overflow-wrap:anywhere] text-slate-800" title={item.description}>{item.description}</span>
                         {item.brand && (
                           <span className="inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
                             {item.brand}
@@ -438,8 +440,8 @@ export default function QuickBOQTable({
                     </td>
 
                     {/* Line total */}
-                    <td className="px-4 py-2.5 font-medium text-slate-800">
-                      {dimmed ? '\u2014' : fmt(lineTotal, currency, zwgRate)}
+                    <td className="whitespace-nowrap tabular-nums px-4 py-2.5 font-medium text-slate-800">
+                      {dimmed ? '\u2014' : item.unitCostUsd > 0 ? fmt(lineTotal, currency, zwgRate) : <span className="text-slate-400">No price yet</span>}
                     </td>
 
                     {/* Toggle */}
@@ -510,7 +512,7 @@ export default function QuickBOQTable({
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-wider text-slate-400">Grand Total</p>
-            <p className="text-2xl font-bold mt-0.5">
+            <p className="whitespace-nowrap tabular-nums text-2xl font-bold mt-0.5">
               {fmt(totals.grandTotalUsd, currency, zwgRate)}
             </p>
           </div>

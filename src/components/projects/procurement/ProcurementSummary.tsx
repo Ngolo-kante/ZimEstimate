@@ -100,10 +100,10 @@ export default function ProcurementSummary({ stats, statusFilter, setStatusFilte
       >
         <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
           <FileText size={18} weight="duotone" className="shrink-0 text-[var(--color-accent)]" />
-          <span className="truncate">Request and compare supplier quotes</span>
+          <span className="min-w-0">Request and compare supplier quotes</span>
         </span>
         <span className="shrink-0 text-xs font-semibold text-[var(--color-accent)]">
-          {stats.pendingRfqs > 0 ? `${stats.pendingRfqs} active` : 'Start RFQ'}
+          {stats.pendingRfqs > 0 ? `${stats.pendingRfqs} active` : 'Request quotes'}
         </span>
       </button>
     </section>

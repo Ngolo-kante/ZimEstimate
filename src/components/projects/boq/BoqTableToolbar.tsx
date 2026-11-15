@@ -58,7 +58,7 @@ export default function BoqTableToolbar({
                             <option value="pending">Pending</option>
                             <option value="in_progress">In Progress</option>
                             <option value="purchased">Purchased</option>
-                            <option value="over_purchased">Over Purchased</option>
+                            <option value="over_purchased">Over-purchased</option>
                         </select>
                         <CaretDown size={14} className="select-arrow" />
                     </div>

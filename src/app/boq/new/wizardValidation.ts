@@ -134,8 +134,8 @@ export function validateBOQWizardStep(state: BOQWizardValidationState): BOQWizar
   switch (currentSection) {
     case 'labor':
       if (!laborType) {
-        errors.laborType = 'Please select a labor option.';
-        message = 'Choose a labor option to continue.';
+        errors.laborType = 'Please select a labour option.';
+        message = 'Choose a labour option to continue.';
       }
       break;
   }

@@ -1,5 +1,7 @@
 'use client';
 
+import { formatQuantity } from '@/lib/format';
+
 import { formatUsageDate } from '@/lib/projects/usageStats';
 
 import type { MaterialUsage } from '@/lib/database.types';
@@ -48,22 +50,22 @@ export default function UsageMaterialsTab({
                   )}
                 </div>
                 <div className="material-info">
-                  <span className="material-name">{stat.item.material_name}</span>
+                  <span className="material-name" title={stat.item.material_name}>{stat.item.material_name}</span>{!Number(stat.item.unit_price_usd) && <span className="muted">No price yet</span>}
                   <span className="material-unit">{stat.item.unit}</span>
                 </div>
                 <div className="material-stats">
                   <div className="stat-group">
                     <span className="stat-label">Available</span>
-                    <span className="stat-value">{stat.availableQty.toFixed(1)}</span>
+                    <span className="stat-value">{formatQuantity(stat.availableQty)}</span>
                   </div>
                   <div className="stat-group">
                     <span className="stat-label">Used</span>
-                    <span className="stat-value used">{stat.usedQty.toFixed(1)}</span>
+                    <span className="stat-value used">{formatQuantity(stat.usedQty)}</span>
                   </div>
                   <div className="stat-group">
                     <span className="stat-label">Remaining</span>
                     <span className={`stat-value ${stat.remainingQty <= 0 ? 'depleted' : ''}`}>
-                      {stat.remainingQty.toFixed(1)}
+                      {formatQuantity(stat.remainingQty)}
                     </span>
                   </div>
                 </div>
@@ -101,7 +103,7 @@ export default function UsageMaterialsTab({
                               year: 'numeric'
                             })}
                           </td>
-                          <td className="col-qty">{usage.quantity_used} {stat.item.unit}</td>
+                          <td className="col-qty">{formatQuantity(usage.quantity_used)} {stat.item.unit}</td>
                           <td className="col-notes">{usage.notes || '—'}</td>
                         </tr>
                       ))}
@@ -109,7 +111,7 @@ export default function UsageMaterialsTab({
                     <tfoot>
                       <tr>
                         <td className="footer-label">Total Used</td>
-                        <td className="col-qty bold">{stat.usedQty.toFixed(2)} {stat.item.unit}</td>
+                        <td className="col-qty bold">{formatQuantity(stat.usedQty)} {stat.item.unit}</td>
                         <td></td>
                       </tr>
                     </tfoot>

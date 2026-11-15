@@ -40,9 +40,9 @@ describe('purchase status of a line', () => {
 describe('status labels', () => {
     it('gives a label and class for each status', () => {
         expect(getStatusConfig('pending')).toEqual({ label: 'Pending', className: 'pending' });
-        expect(getStatusConfig('in_progress')).toEqual({ label: 'In Progress', className: 'in-progress' });
+        expect(getStatusConfig('in_progress')).toEqual({ label: 'In progress', className: 'in-progress' });
         expect(getStatusConfig('purchased')).toEqual({ label: 'Purchased', className: 'purchased' });
-        expect(getStatusConfig('over_purchased')).toEqual({ label: 'Over Purchased', className: 'over-purchased' });
+        expect(getStatusConfig('over_purchased')).toEqual({ label: 'Over-purchased', className: 'over-purchased' });
     });
 });
 

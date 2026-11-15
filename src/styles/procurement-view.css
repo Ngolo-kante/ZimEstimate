@@ -1970,3 +1970,13 @@
   .purchase-dialog .form-field input { font-size: 16px; min-height: 48px; }
   .purchase-footer { padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); gap: 8px; }
 }
+
+/* Keep numeric data intact while descriptive columns yield and wrap. */
+.procurement-view .num, .procurement-view .mono, .procurement-view .col-qty, .procurement-view .col-price, .procurement-view .col-total, .procurement-view .col-date, .procurement-view .qty-value, .procurement-view .stat-value, .procurement-view .spent-value, .procurement-view .info-value, .procurement-view .inline-edit-trigger, .procurement-view .line-total { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.procurement-view .item-info, .procurement-view .material-info, .procurement-view .material-cell, .procurement-view .history-item > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+.procurement-view .item-name, .procurement-view .material-name { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.procurement-view .supplier-notes, .procurement-view .item-notes, .procurement-view .col-notes, .procurement-view .notes-text { white-space: normal; overflow-wrap: anywhere; overflow: visible; text-overflow: clip; }
+.procurement-view .item-status, .procurement-view .status-pill, .procurement-view .item-actions, .procurement-view svg, .procurement-view .history-count { flex-shrink: 0; white-space: nowrap; }
+@media (min-width: 1025px) { .procurement-view .item-main { grid-template-columns: 24px minmax(0, 2fr) auto minmax(0, 1fr) auto max-content 90px; } }
+
+.procurement-view .muted { color: var(--color-text-muted); }

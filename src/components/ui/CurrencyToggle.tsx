@@ -1,5 +1,7 @@
 'use client';
 
+import { formatUsd } from '@/lib/format';
+
 import { createContext, useContext, ReactNode } from 'react';
 
 // ZimEstimate displays prices in USD only. Zimbabwe construction trades in USD,
@@ -30,18 +32,12 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined
 
 const LEGACY_ZWG_RATE = 30;
 
-function formatUsd(priceUsd: number) {
-    const safe = Number.isFinite(priceUsd) ? priceUsd : 0;
-    return `$${safe.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    })}`;
-}
+
 
 const CURRENCY_VALUE: CurrencyContextType = {
     currency: 'USD',
     setCurrency: () => {},
-    formatPrice: formatUsd,
+    formatPrice: (priceUsd) => formatUsd(priceUsd),
     exchangeRate: LEGACY_ZWG_RATE,
 };
 

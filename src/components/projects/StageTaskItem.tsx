@@ -124,7 +124,7 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                             <div className="detail-actions">
                                 <button className="action-btn" onClick={() => setIsEditing(true)}>
                                     <NotePencil size={14} />
-                                    Edit Details
+                                    Edit details
                                 </button>
                                 <button className="action-btn danger" onClick={handleDelete}>
                                     <Trash size={14} />

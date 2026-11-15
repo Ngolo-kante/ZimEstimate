@@ -14,7 +14,7 @@ Finding IDs refer to the audit. Each batch is one brief in this folder, one comm
 | # | Batch | Findings | Skills to load | Status |
 | --- | --- | --- | --- | --- |
 | 1 | Accessibility floor and phone feel | C1, C2, C4, H1, H2, H3, H11, H12, M10 | `mobile-native`, `emil-design-eng`, `remove-animations` | Done 15 Nov (built by Codex, checked by Claude). Still open: tab-count and a few badge colours on public pages, `viewport-fit` and `100vh` (batch 6). |
-| 2 | Numbers and words | H8, M1, M2, M7, M11, C3 | `break-ui` | Not started |
+| 2 | Numbers and words | H8, M1, M2, M7, M11, C3 | `break-ui` | Done 15 Nov (built by Codex, checked by Claude). Unit prices under $1 keep up to four decimals so bulk lines are not misstated. Still open: "Usage Tracking" and section headings in capitals are not yet sentence case; quick-estimate item names clamp to two lines with only a hover title, which a phone cannot show. |
 | 3 | shadcn set-up, then Buying on a phone | H5 (Buying), M3, H7 | `shadcn`, `emil-design-eng`, `ask-sonner` | Not started. Needs `npx shadcn init`, which adds packages. |
 | 4 | Usage and BOQ as compact rows; BOQ table first on desktop | H5 (Usage, BOQ), H4, M5, M6 | `shadcn`, `gestures`, `/prototype` | Not started |
 | 5 | Overview, projects list and Budget Estimator order | H6, H9, H10 | `apple-hig-review`, `/prototype` | Not started. Try two or three arrangements before choosing. |

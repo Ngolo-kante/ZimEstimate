@@ -180,7 +180,8 @@ body:where(:has(.project-dashboard-shell)) {
 .project-workspace .view-stat strong {
     font-size: 1rem;
     color: #16385d;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
 }
 
 .project-workspace .view-panel {
@@ -623,3 +624,8 @@ body:where(:has(.project-dashboard-shell)) {
         min-height: 44px;
     }
 }
+
+.view-header > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+.view-stat strong { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 640px) { .project-workspace .view-stats { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); } }

@@ -155,7 +155,7 @@ export default function StageBOQSection({
 
     const handleAddItem = async () => {
         if (!newMaterialId) {
-            showError(isLaborCategory(category) ? 'Please select a labor item' : 'Please select a material');
+            showError(isLaborCategory(category) ? 'Please select a labour item' : 'Please select a material');
             return;
         }
 
@@ -167,7 +167,7 @@ export default function StageBOQSection({
 
         const material = materials.find(m => m.id === newMaterialId);
         if (!material) {
-            showError(isLaborCategory(category) ? 'Labor item not found' : 'Material not found');
+            showError(isLaborCategory(category) ? 'Labour item not found' : 'Material not found');
             return;
         }
 
@@ -208,13 +208,13 @@ export default function StageBOQSection({
         setIsAdding(false);
     };
 
-    const addLabel = isLaborCategory(category) ? 'Add Labor' : 'Add Item';
-    const selectLabel = isLaborCategory(category) ? 'Labor/Service' : 'Material';
+    const addLabel = isLaborCategory(category) ? 'Add labour' : 'Add item';
+    const selectLabel = isLaborCategory(category) ? 'Labour/service' : 'Material';
     const emptyTitle = isLaborCategory(category)
-        ? 'No labor items yet'
+        ? 'No labour items yet'
         : 'No items in this section';
     const emptyHint = isLaborCategory(category)
-        ? 'Add labor or service items to start tracking'
+        ? 'Add labour or service items to start tracking'
         : 'Use the builder or add items manually';
 
     if (items.length === 0) {

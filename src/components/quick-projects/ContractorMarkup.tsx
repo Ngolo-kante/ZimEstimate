@@ -1,5 +1,7 @@
 'use client';
 
+import { formatUsd } from '@/lib/format';
+
 interface ContractorMarkupProps {
   markupPct: number;
   subtotalUsd: number;
@@ -20,7 +22,7 @@ interface ContractorMarkupProps {
 function fmt(amount: number, currency: 'USD' | 'ZWG', zwgRate: number): string {
   const val = currency === 'ZWG' ? amount * zwgRate : amount;
   const sym = currency === 'ZWG' ? 'ZiG' : '$';
-  return `${sym} ${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return currency === 'USD' ? formatUsd(val) : `${sym} ${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export default function ContractorMarkup({
@@ -68,7 +70,7 @@ export default function ContractorMarkup({
           <span className="text-sm text-slate-500">
             {markupPct > 0 ? (
               <>
-                adds <strong className="text-slate-900">{fmt(markupUsd, currency, zwgRate)}</strong>
+                adds <strong className="whitespace-nowrap tabular-nums text-slate-900">{fmt(markupUsd, currency, zwgRate)}</strong>
               </>
             ) : (
               'no markup applied'

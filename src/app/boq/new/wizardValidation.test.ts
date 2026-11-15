@@ -86,8 +86,8 @@ describe('validateBOQWizardStep', () => {
       laborType: null,
     });
 
-    expect(result.errors.laborType).toBe('Please select a labor option.');
-    expect(result.message).toBe('Choose a labor option to continue.');
+    expect(result.errors.laborType).toBe('Please select a labour option.');
+    expect(result.message).toBe('Choose a labour option to continue.');
   });
 
   it('returns no errors for a valid step', () => {

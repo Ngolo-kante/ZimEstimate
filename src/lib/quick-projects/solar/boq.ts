@@ -258,7 +258,7 @@ export function solarSizingToBOQ(
         ? Math.min(0.4, Math.max(0.05, answers.install_labor_pct))
         : SOLAR_PRICES.install_labor_pct;
     const installCost = +(hardware * pct).toFixed(2);
-    items.push(makeItem('sol_install', 'Labor', `Installation labor (${Math.round(pct * 100)}% of hardware)`, 1, 'lump sum', installCost, {
+    items.push(makeItem('sol_install', 'Labor', `Installation labour (${Math.round(pct * 100)}% of hardware)`, 1, 'lump sum', installCost, {
       optional: true,
       notes: `Requires ZERA ${getRequiredZeraTier(systemWatts)} licensed technician for this ${(systemWatts / 1000).toFixed(1)}kW system`,
     }));

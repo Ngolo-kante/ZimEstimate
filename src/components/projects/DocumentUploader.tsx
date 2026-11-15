@@ -1,5 +1,7 @@
 'use client';
 
+import { formatQuantity } from '@/lib/format';
+
 import { useEffect, useId, useRef, useState } from 'react';
 import Button from '@/components/ui/Button';
 import { Camera, CloudArrowUp, File, X } from '@phosphor-icons/react';
@@ -80,7 +82,7 @@ export default function DocumentUploader({ onUpload, isUploading }: DocumentUplo
                 <div className="selected-file">
                     {preview ? /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={preview} alt="Selected document preview" /> : <File size={36} />}
-                    <div><strong>{file.name}</strong><span>{(file.size / 1024 / 1024).toFixed(2)} MB · Ready to upload</span></div>
+                    <div><strong>{file.name}</strong><span>{formatQuantity(file.size / 1024 / 1024)} MB · Ready to upload</span></div>
                     <button type="button" disabled={disabled} aria-label="Remove selected file" onClick={() => { setFile(null); setError(null); setStatus(''); }}><X size={20} /></button>
                 </div>
                 <div className="fields">

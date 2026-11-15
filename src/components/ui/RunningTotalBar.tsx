@@ -74,6 +74,8 @@ export function RunningTotalBar({
                         letter-spacing: 0.05em;
                     }
                     .amount {
+          white-space: nowrap;
+          font-variant-numeric: tabular-nums;
                         font-size: 1rem;
                         font-weight: 700;
                         font-feature-settings: 'tnum';
@@ -193,6 +195,8 @@ export function RunningTotalBar({
                 }
 
                 .total-amount {
+          white-space: nowrap;
+          font-variant-numeric: tabular-nums;
                     font-size: 2rem;
                     font-weight: 800;
                     font-feature-settings: 'tnum';
@@ -252,6 +256,8 @@ export function RunningTotalBar({
                 }
 
                 .budget-diff {
+          white-space: nowrap;
+          font-variant-numeric: tabular-nums;
                     font-weight: 700;
                 }
 
@@ -291,6 +297,8 @@ export function RunningTotalBar({
                     }
 
                     .total-amount {
+          white-space: nowrap;
+          font-variant-numeric: tabular-nums;
                         font-size: 1.5rem;
                     }
 

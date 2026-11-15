@@ -1,5 +1,7 @@
 'use client';
 
+import { formatQuantity, formatUsd } from '@/lib/format';
+
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 import Button from '@/components/ui/Button';
 import { DOCUMENT_ACCEPT } from '@/lib/documentFiles';
@@ -61,15 +63,15 @@ export default function PurchaseDialog({
           <div className="modal-item-info">
             <div className="info-cell">
               <span className="info-label">BOQ Qty</span>
-              <span className="info-value">{Number(selectedItemForPurchase.quantity).toFixed(1)} {selectedItemForPurchase.unit}</span>
+              <span className="info-value">{formatQuantity(Number(selectedItemForPurchase.quantity))} {selectedItemForPurchase.unit}</span>
             </div>
             <div className="info-cell">
               <span className="info-label">Purchased</span>
-              <span className="info-value">{itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id)?.totalPurchased.toFixed(1) || '0'} {selectedItemForPurchase.unit}</span>
+              <span className="info-value">{formatQuantity(itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id)?.totalPurchased ?? 0)} {selectedItemForPurchase.unit}</span>
             </div>
             <div className="info-cell highlight">
               <span className="info-label">Remaining</span>
-              <span className="info-value">{itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id)?.remainingQty.toFixed(1) || selectedItemForPurchase.quantity} {selectedItemForPurchase.unit}</span>
+              <span className="info-value">{formatQuantity(itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id)?.remainingQty ?? selectedItemForPurchase.quantity)} {selectedItemForPurchase.unit}</span>
             </div>
           </div>
 
@@ -199,7 +201,7 @@ export default function PurchaseDialog({
           </div>
         </fieldset>
         <div className="modal-footer purchase-footer">
-          <div className="purchase-total"><span>Total (USD)</span><strong>${((Number(purchaseForm.quantity) || 0) * (Number(purchaseForm.unitPrice) || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+          <div className="purchase-total"><span>Total (USD)</span><strong>{formatUsd((Number(purchaseForm.quantity) || 0) * (Number(purchaseForm.unitPrice) || 0))}</strong></div>
           <Button variant="secondary" disabled={isSavingPurchase} onClick={closePurchase}>
             Cancel
           </Button>

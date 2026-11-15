@@ -1,5 +1,7 @@
 'use client';
 
+import { formatQuantity } from '@/lib/format';
+
 import { localToday } from '@/lib/projects/usageStats';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -176,7 +178,7 @@ export default function ProjectUsageView({
         user_id: project.owner_id || user?.id || '',
         type: 'low_stock',
         title: 'Low stock alert',
-        message: `${item.material_name} is at ${remainingPercent.toFixed(0)}% remaining (${remainingQty.toFixed(2)} ${item.unit}).`,
+        message: `${item.material_name} is at ${remainingPercent.toFixed(0)}% remaining (${formatQuantity(remainingQty)} ${item.unit}).`,
       });
     }
 
@@ -232,7 +234,7 @@ export default function ProjectUsageView({
           onClick={() => setActiveTab('log')}
         >
           <Plus size={16} weight="duotone" aria-hidden="true" />
-          <span className="tab-label-long">Log Usage</span>
+          <span className="tab-label-long">Log usage</span>
           <span className="tab-label-short">Log</span>
         </button>
         <button
@@ -254,13 +256,13 @@ export default function ProjectUsageView({
           onClick={() => setActiveTab('ledger')}
         >
           <Receipt size={16} weight="duotone" aria-hidden="true" />
-          <span className="tab-label-long">Usage Ledger</span>
+          <span className="tab-label-long">Usage ledger</span>
           <span className="tab-label-short">Ledger</span>
           {usageHistory.length > 0 && <span className="tab-count">{usageHistory.length}</span>}
         </button>
       </div>
 
-      {/* Log Usage Tab Content */}
+      {/* Log usage Tab Content */}
       {activeTab === 'log' && (
         <UsageLogTab
           usageSummary={usageSummary}

@@ -53,7 +53,7 @@ export default function UsageView({
                         variant="primary"
                         onClick={() => onEnableUsageTracking(true)}
                     >
-                        Enable Usage Tracking
+                        Enable usage tracking
                     </Button>
                 </div>
             )}

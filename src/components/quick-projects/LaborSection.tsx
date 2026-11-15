@@ -1,5 +1,7 @@
 'use client';
 
+import { formatUsd } from '@/lib/format';
+
 import type { LaborConfig } from '@/lib/quick-projects/engine/types';
 
 interface LaborSectionProps {
@@ -26,7 +28,7 @@ interface LaborSectionProps {
 function fmt(amount: number, currency: 'USD' | 'ZWG', zwgRate: number): string {
   const val = currency === 'ZWG' ? amount * zwgRate : amount;
   const sym = currency === 'ZWG' ? 'ZiG' : '$';
-  return `${sym} ${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return currency === 'USD' ? formatUsd(val) : `${sym} ${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 const NUMBER_INPUT =
@@ -127,7 +129,7 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
                   <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">%</span>
                 </div>
                 <span className="text-sm text-slate-500">
-                  = <strong className="text-slate-900">{fmt(laborCostUsd, currency, zwgRate)}</strong>
+                  = <strong className="whitespace-nowrap tabular-nums text-slate-900">{fmt(laborCostUsd, currency, zwgRate)}</strong>
                 </span>
               </div>
               {/* Anchors the figure to something real rather than leaving the
@@ -185,7 +187,7 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
               <p className="sm:col-span-3 text-xs text-slate-500">
                 {workers} {workers === 1 ? 'builder' : 'builders'} × {days} {days === 1 ? 'day' : 'days'} ×{' '}
                 {fmt(rate, 'USD', zwgRate)}/day ={' '}
-                <strong className="text-slate-900">{fmt(laborCostUsd, currency, zwgRate)}</strong>
+                <strong className="whitespace-nowrap tabular-nums text-slate-900">{fmt(laborCostUsd, currency, zwgRate)}</strong>
               </p>
             </div>
           )}
@@ -197,7 +199,7 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
       <dl className="border-t border-slate-100 bg-slate-50 px-4 py-3 space-y-1.5">
         <div className="flex items-center justify-between text-sm">
           <dt className="text-slate-600">Materials</dt>
-          <dd className="font-semibold text-slate-900 tabular-nums">{fmt(shownMaterials, currency, zwgRate)}</dd>
+          <dd className="whitespace-nowrap tabular-nums font-semibold text-slate-900 tabular-nums">{fmt(shownMaterials, currency, zwgRate)}</dd>
         </div>
         <div className="flex items-center justify-between text-sm">
           <dt className="text-slate-600">
@@ -214,7 +216,7 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
         </div>
         <div className="flex items-center justify-between border-t border-slate-200 pt-1.5 text-sm">
           <dt className="font-bold text-slate-900">Materials + labour</dt>
-          <dd className="font-bold text-slate-900 tabular-nums">{fmt(total, currency, zwgRate)}</dd>
+          <dd className="whitespace-nowrap tabular-nums font-bold text-slate-900 tabular-nums">{fmt(total, currency, zwgRate)}</dd>
         </div>
       </dl>
     </div>

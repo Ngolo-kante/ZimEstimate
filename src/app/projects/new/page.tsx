@@ -203,7 +203,7 @@ export default function NewProject() {
     const stepInfo = getStepTitle();
 
     return (
-        <MainLayout title="New Project">
+        <MainLayout title="New project">
             <div className="new-project">
                 {/* Progress Bar */}
                 <div className="progress-container">
@@ -221,7 +221,7 @@ export default function NewProject() {
 
                 {/* Step Header */}
                 <div className="step-header">
-                    <h1>{stepInfo.title}</h1>
+                    <h2>{stepInfo.title}</h2>
                     <p>{stepInfo.subtitle}</p>
                 </div>
                 <div className="step-meta">
@@ -464,7 +464,7 @@ export default function NewProject() {
                         loading={isLoading}
                     >
                         {step === 4
-                            ? (formData.boqMethod === 'budget-checker' ? 'Open Budget Checker' : 'Continue to estimate')
+                            ? (formData.boqMethod === 'budget-checker' ? 'Open budget checker' : 'Continue to estimate')
                             : 'Continue'}
                     </Button>
                 </div>
@@ -537,7 +537,7 @@ export default function NewProject() {
                     margin-bottom: 12px;
                 }
 
-                .step-header h1 {
+                .step-header h2 {
                     font-size: 2rem;
                     font-weight: 700;
                     color: #0f172a;
@@ -792,7 +792,7 @@ export default function NewProject() {
                         grid-template-columns: 1fr;
                     }
 
-                    .step-header h1 {
+                    .step-header h2 {
                         font-size: 1.5rem;
                     }
 
