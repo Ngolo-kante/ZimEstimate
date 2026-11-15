@@ -207,7 +207,8 @@
   min-width: 280px;
 }
 
-.project-usage .reminder-left svg {
+/* The bell only: the channel icon inside the text stays inline. */
+.project-usage .reminder-left > svg {
     color: var(--color-accent);
     padding: 8px;
     background: #eff6ff;

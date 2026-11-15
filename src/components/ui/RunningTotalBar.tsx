@@ -144,6 +144,7 @@ export function RunningTotalBar({
             <style jsx>{`
                 .running-total-bar {
                     display: flex;
+                    flex-wrap: wrap;
                     align-items: center;
                     justify-content: space-between;
                     gap: 24px;
@@ -233,7 +234,10 @@ export function RunningTotalBar({
                     flex-direction: column;
                     align-items: flex-end;
                     gap: 8px;
-                    min-width: 200px;
+                    /* Beside the total when there is room, on its own line in a
+                       narrow card (the Overview summary) instead of overflowing it. */
+                    flex: 1 1 200px;
+                    min-width: 0;
                 }
 
                 .budget-info {

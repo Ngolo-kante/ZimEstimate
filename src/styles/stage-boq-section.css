@@ -291,6 +291,9 @@
 }
 
 .stage-boq .search-input {
+    /* The global .search-input rule (procurement-view.css) pads the box too;
+       the input carries the room for the icon. */
+    padding: 0;
     position: relative;
     display: flex;
     align-items: center;
