@@ -5,7 +5,6 @@ import RfqPanel from './RfqPanel';
 import { useToast } from '@/components/ui/Toast';
 import { getDocumentUrl } from '@/lib/services/projects';
 import type { Project, BOQItem, ProjectDocument, PurchaseRecord } from '@/lib/database.types';
-import { useReveal } from '@/hooks/useReveal';
 import {
   filterProcurementItems,
   groupProcurementItems,
@@ -60,7 +59,6 @@ export default function UnifiedProcurementView({
     isLoading, loadError, loadData, rfqs, suppliers, receiptDocs, setReceiptDocs,
   } = useProcurementData(project.id);
 
-  useReveal({ deps: [activeStage, isLoading, purchases.length, items.length] });
 
   const receiptById = useMemo(() => {
     const map = new Map<string, ProjectDocument>();

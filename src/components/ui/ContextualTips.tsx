@@ -287,7 +287,7 @@ export function ContextualTips({
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        color: #94a3b8;
+                        color: #64748b;
                         transition: all 0.15s;
                     }
 
@@ -424,7 +424,7 @@ export function ContextualTips({
 
                 .tip-category {
                     flex: 1;
-                    font-size: 0.6875rem;
+                    font-size: 12px;
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
@@ -441,7 +441,7 @@ export function ContextualTips({
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    color: #94a3b8;
+                    color: #64748b;
                     transition: all 0.15s;
                 }
 

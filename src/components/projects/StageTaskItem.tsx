@@ -209,7 +209,7 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
 
                 .task-item.completed .task-title {
                     text-decoration: line-through;
-                    color: #94a3b8;
+                    color: #64748b;
                 }
 
                 .task-meta {
@@ -239,7 +239,7 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                 }
 
                 .default-badge {
-                    font-size: 0.65rem;
+                    font-size: 12px;
                     font-weight: 600;
                     padding: 2px 6px;
                     background: #f1f5f9;
@@ -296,7 +296,7 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                     display: flex;
                     align-items: center;
                     gap: 6px;
-                    font-size: 0.7rem;
+                    font-size: 12px;
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
@@ -383,8 +383,8 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                 }
 
                 .completed-info {
-                    font-size: 0.7rem;
-                    color: #94a3b8;
+                    font-size: 12px;
+                    color: #64748b;
                     margin: 12px 0 0 0;
                     text-align: right;
                 }

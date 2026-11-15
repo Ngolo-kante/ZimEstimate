@@ -16,10 +16,11 @@
   padding: 0;
   box-shadow: none;
 }
-
-.project-usage.usage-page:hover {
-  transform: none;
-  box-shadow: none;
+@media (hover: hover) and (pointer: fine) {
+  .project-usage.usage-page:hover {
+    transform: none;
+    box-shadow: none;
+  }
 }
 
 .project-usage .usage-header {
@@ -96,11 +97,12 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
     transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.project-usage .kpi-card:hover {
+@media (hover: hover) and (pointer: fine) {
+  .project-usage .kpi-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
     border-color: rgba(59, 130, 246, 0.2);
+  }
 }
 
 .project-usage .kpi-card.alert {
@@ -113,7 +115,7 @@
 }
 
 .project-usage .kpi-card .label {
-    font-size: 0.7rem;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: #64748b;
@@ -170,8 +172,8 @@
 }
 
 .project-usage .donut-center small {
-  font-size: 0.7rem;
-  color: #94a3b8;
+  font-size: 12px;
+  color: #64748b;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -250,10 +252,11 @@
   transition: all 0.2s;
   white-space: nowrap;
 }
-
-.project-usage .reminder-settings-link:hover {
-  background: #eff6ff;
-  border-color: #bfdbfe;
+@media (hover: hover) and (pointer: fine) {
+  .project-usage .reminder-settings-link:hover {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+  }
 }
 
 .project-usage .reminder-settings-link:focus-visible {
@@ -407,7 +410,7 @@
 
 .project-usage .material-unit {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .project-usage .burn-bar {
@@ -435,7 +438,7 @@
 .project-usage .empty-row {
     text-align: center;
     padding: 32px;
-    color: #94a3b8;
+    color: #64748b;
     font-style: italic;
 }
 
@@ -500,10 +503,11 @@
     background: #ffffff;
     transition: all 0.2s;
 }
-
-.project-usage .history-item:hover {
+@media (hover: hover) and (pointer: fine) {
+  .project-usage .history-item:hover {
     border-color: #e2e8f0;
     background: #f8fafc;
+  }
 }
 
 .project-usage .item-name {
@@ -515,7 +519,7 @@
 
 .project-usage .item-notes {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .project-usage .item-qty {
@@ -550,14 +554,15 @@
   border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #64748b;
+  color: #475569;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.project-usage .usage-tab:hover {
-  background: rgba(255, 255, 255, 0.7);
-  color: #334155;
+@media (hover: hover) and (pointer: fine) {
+  .project-usage .usage-tab:hover {
+    background: rgba(255, 255, 255, 0.7);
+    color: #334155;
+  }
 }
 
 .project-usage .usage-tab.active {
@@ -593,7 +598,7 @@
 .project-usage .tab-count {
   background: rgba(100, 116, 139, 0.15);
   color: #64748b;
-  font-size: 0.7rem;
+  font-size: 12px;
   padding: 3px 8px;
   border-radius: 99px;
   font-weight: 700;
@@ -652,9 +657,10 @@
   cursor: pointer;
   transition: background 0.2s;
 }
-
-.project-usage .material-header:hover {
-  background: #f8fafc;
+@media (hover: hover) and (pointer: fine) {
+  .project-usage .material-header:hover {
+    background: #f8fafc;
+  }
 }
 
 .project-usage .material-expand {
@@ -662,7 +668,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .project-usage .expand-placeholder {
@@ -683,7 +689,7 @@
 
 .project-usage .materials-tab .material-unit {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .project-usage .material-stats {
@@ -699,10 +705,10 @@
 }
 
 .project-usage .stat-label {
-  font-size: 0.65rem;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #94a3b8;
+  color: #64748b;
   font-weight: 600;
 }
 
@@ -770,7 +776,7 @@
 
 .project-usage .history-table th {
   text-align: left;
-  font-size: 0.7rem;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -809,7 +815,7 @@
 .project-usage .empty-materials {
   padding: 48px 24px;
   text-align: center;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .project-usage .empty-materials p {
@@ -892,11 +898,11 @@
 
 .project-usage .ledger-table th {
   text-align: left;
-  font-size: 0.7rem;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #94a3b8;
+  color: #64748b;
   padding: 10px 24px;
   background: #ffffff;
   border-bottom: 1px solid #f1f5f9;
@@ -926,7 +932,7 @@
 .project-usage .ledger-table .material-cat {
   display: block;
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: #64748b;
   text-transform: capitalize;
 }
 
@@ -947,7 +953,7 @@
 }
 
 .project-usage .ledger-table .col-notes {
-  color: #94a3b8;
+  color: #64748b;
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -957,7 +963,7 @@
 .project-usage .empty-ledger {
   padding: 64px 24px;
   text-align: center;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .project-usage .empty-ledger p {

@@ -160,7 +160,7 @@ export default function SavingOverlay({
                 }
 
                 .step-row.done {
-                    color: var(--color-success);
+                    color: #15803d;
                 }
 
                 .step-row.active {

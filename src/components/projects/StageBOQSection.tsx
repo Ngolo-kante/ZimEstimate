@@ -317,7 +317,7 @@ export default function StageBOQSection({
                             Add
                         </Button>
 
-                        <button className="expand-trigger">
+                        <button className="expand-trigger" aria-label={`${expanded ? 'Collapse' : 'Expand'} ${categoryLabel}`} aria-expanded={expanded}>
                             {expanded ? <CaretUp size={16} /> : <CaretDown size={16} />}
                         </button>
                     </div>

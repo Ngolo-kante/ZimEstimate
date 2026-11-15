@@ -475,7 +475,7 @@ export default function SiteView({ target, embedded = false, onInvite }: SiteVie
         .site :global(.stage-top strong) { color: var(--color-text); }
         .site :global(select), .site :global(input) { padding: 9px 10px; min-height: 44px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-size: max(0.9rem, 16px); min-width: 0; }
         .site :global(.chip) { font-size: 0.75rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--color-background); color: var(--color-text-secondary); }
-        .site :global(.chip.completed) { color: var(--color-success); }
+        .site :global(.chip.completed) { color: #166534; }
         .site :global(.chip.in_progress) { color: var(--color-accent); }
         .site :global(.tasks) { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; }
         .site :global(.task) { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; min-height: 44px; padding: 8px; border: none; border-radius: 8px; background: none; color: var(--color-text); text-align: left; font-size: 0.9rem; font-weight: 500; cursor: pointer; }

@@ -144,7 +144,7 @@
 
 .compliance-next-action small {
   color: var(--color-text-secondary);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .compliance-next-action strong {
@@ -271,7 +271,7 @@
 .compliance-stage-header .stage-sub {
   margin: 2px 0 0;
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .compliance-stage-header .stage-progress-area {
@@ -287,7 +287,7 @@
 
 .compliance-stage-header .progress-label {
   color: var(--color-text-secondary);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: var(--font-semibold);
   text-align: right;
 }
@@ -319,7 +319,7 @@
   gap: var(--space-2);
   margin-bottom: var(--space-2);
   color: var(--color-text-secondary);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: var(--font-bold);
   text-transform: uppercase;
 }
@@ -393,7 +393,7 @@
 
 .compliance-cert-row .cert-required {
   color: var(--color-danger);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: var(--font-semibold);
 }
 
@@ -611,7 +611,7 @@
 
 .compliance-guidance-note p {
   margin: 0;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
 }
 

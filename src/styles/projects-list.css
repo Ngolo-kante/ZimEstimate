@@ -30,7 +30,7 @@
 .projects-list .projects-eyebrow {
     display: block;
     color: #1d5fbf;
-    font-size: 0.7rem;
+    font-size: 12px;
     font-weight: 800;
     text-transform: uppercase;
 }
@@ -100,8 +100,8 @@
 }
 
 .projects-list .portfolio-strip span {
-    color: #748196;
-    font-size: 0.66rem;
+    color: #5b6b82;
+    font-size: 12px;
     font-weight: 750;
     text-transform: uppercase;
 }
@@ -139,7 +139,7 @@
 
 .projects-list .work-count {
     color: #64748b;
-    font-size: 0.72rem;
+    font-size: 12px;
     font-weight: 700;
 }
 
@@ -166,11 +166,12 @@
     transition: all var(--duration-normal) var(--ease-default);
     box-shadow: var(--shadow-sm);
 }
-
-.projects-list .kpi-card:hover {
+@media (hover: hover) and (pointer: fine) {
+  .projects-list .kpi-card:hover {
     border-color: var(--color-border-dark);
     box-shadow: var(--shadow-md);
     transform: translateY(-2px);
+  }
 }
 
 .projects-list .kpi-card.highlight {
@@ -245,7 +246,7 @@
 }
 
 .projects-list .kpi-trend.positive {
-    color: var(--color-emerald);
+    color: #15803d;
 }
 
 .projects-list .kpi-sub {
@@ -254,7 +255,7 @@
 }
 
 .projects-list .under-budget {
-    color: var(--color-emerald);
+    color: #15803d;
 }
 
 .projects-list .tier-status {
@@ -363,8 +364,11 @@
     cursor: pointer;
     transition: all 0.15s ease;
 }
-
-.projects-list .type-pill:hover { border-color: var(--color-accent); }
+@media (hover: hover) and (pointer: fine) {
+  .projects-list .type-pill:hover {
+    border-color: var(--color-accent);
+  }
+}
 
 .projects-list .type-pill.active {
     background: var(--color-accent);
@@ -373,7 +377,7 @@
 }
 
 .projects-list .type-pill-count {
-    font-size: 11px;
+    font-size: 12px;
     opacity: 0.75;
 }
 
@@ -449,9 +453,10 @@
     color: var(--color-text-secondary);
     transition: border-color 0.2s;
 }
-
-.projects-list .filter-select:hover {
+@media (hover: hover) and (pointer: fine) {
+  .projects-list .filter-select:hover {
     border-color: var(--color-border-dark);
+  }
 }
 
 .projects-list .filter-select select {
@@ -492,7 +497,7 @@
 .projects-list .filter-badge {
     background: var(--color-accent);
     color: white;
-    font-size: 10px;
+    font-size: 12px;
     width: 18px;
     height: 18px;
     border-radius: 50%;
@@ -532,11 +537,12 @@
     background: var(--color-surface) !important;
     border: 1px solid var(--color-border) !important;
 }
-
-:where(.projects-list) .project-card:hover {
+@media (hover: hover) and (pointer: fine) {
+  :where(.projects-list) .project-card:hover {
     transform: translateY(-4px) !important;
     box-shadow: var(--shadow-lg) !important;
     border-color: var(--color-accent) !important;
+  }
 }
 
 :where(.projects-list) .project-card.creating {
@@ -580,10 +586,11 @@
     background: transparent;
     border: none;
 }
-
-.projects-list .menu-btn:hover {
+@media (hover: hover) and (pointer: fine) {
+  .projects-list .menu-btn:hover {
     background: var(--color-mist);
     color: var(--color-text);
+  }
 }
 
 .projects-list .dropdown-menu {
@@ -619,17 +626,19 @@
     text-align: left;
     font-family: var(--font-body);
 }
-
-.projects-list .dropdown-menu button:hover {
+@media (hover: hover) and (pointer: fine) {
+  .projects-list .dropdown-menu button:hover {
     background: var(--color-mist);
+  }
 }
 
 .projects-list .dropdown-menu button.danger {
     color: var(--color-danger);
 }
-
-.projects-list .dropdown-menu button.danger:hover {
+@media (hover: hover) and (pointer: fine) {
+  .projects-list .dropdown-menu button.danger:hover {
     background: rgba(220, 38, 38, 0.05);
+  }
 }
 
 .projects-list .project-meta {
@@ -680,7 +689,7 @@
     background: var(--color-background);
     padding: 4px 8px;
     border-radius: var(--radius-sm);
-    font-size: 11px;
+    font-size: 12px;
     color: var(--color-text-secondary);
     font-weight: var(--font-medium);
 }
@@ -693,7 +702,7 @@
 }
 
 .projects-list .compliance-chip {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
     padding: 4px 8px;
     border-radius: 999px;
@@ -918,3 +927,8 @@
 
 @keyframes projectsListFadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes projectsListSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+@media (max-width: 767px) {
+    .projects-list button, .projects-list input, .projects-list select { min-height: 44px; }
+    .projects-list .menu-btn { min-width: 44px; min-height: 44px; }
+}

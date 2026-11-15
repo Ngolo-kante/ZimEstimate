@@ -2,7 +2,7 @@
 /* Beat Input's scoped label styles regardless of stylesheet load order. */
 .budget-explorer label.input-label,
 .budget-fit-explorer label.input-label {
-  font-size: 0.7rem;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #64748b;

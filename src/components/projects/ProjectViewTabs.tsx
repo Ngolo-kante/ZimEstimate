@@ -176,7 +176,7 @@ export default function ProjectViewTabs({
             color: #475569;
             background: transparent;
             font: inherit;
-            font-size: 0.7rem;
+            font-size: 12px;
             font-weight: 650;
             cursor: pointer;
           }
@@ -269,7 +269,7 @@ export default function ProjectViewTabs({
 
           .sheet-header p {
             color: #64748b;
-            font-size: 0.67rem;
+            font-size: 12px;
             font-weight: 750;
             text-transform: uppercase;
           }
@@ -339,8 +339,8 @@ export default function ProjectViewTabs({
           }
 
           .sheet-copy strong { font-size: 0.84rem; }
-          .sheet-copy small { color: #748196; font-size: 0.7rem; line-height: 1.3; }
-          .current-label { color: #2563eb; font-size: 0.66rem; font-weight: 750; }
+          .sheet-copy small { color: #5b6b82; font-size: 12px; line-height: 1.3; }
+          .current-label { color: #2563eb; font-size: 12px; font-weight: 750; }
 
           @keyframes sheet-in {
             from { opacity: 0; transform: translateY(18px); }

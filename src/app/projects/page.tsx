@@ -21,7 +21,6 @@ import ProjectsFilters from '@/components/projects/list/ProjectsFilters';
 import SharedWithYou from '@/components/projects/list/SharedWithYou';
 import ProjectsGrid from '@/components/projects/list/ProjectsGrid';
 import MobileCardSheet from '@/components/projects/list/MobileCardSheet';
-import { useReveal } from '@/hooks/useReveal';
 import { FolderOpen, MagnifyingGlass, Plus } from '@phosphor-icons/react';
 import '@/styles/projects-list.css';
 import { useProjectList } from './hooks/useProjectList';
@@ -50,7 +49,7 @@ function ProjectsContent() {
         highlightedProjectId, justSaved, dismissJustSaved,
     } = useProjectList({ searchParams, router, profileId: profile?.id });
     const filters = useListFilters(projects, quickItems);
-    const { filteredProjects, filteredQuick, visibleProjects, projectStats, clearFilters } = filters;
+    const { filteredQuick, visibleProjects, projectStats, clearFilters } = filters;
     const actions = useCardActions({ router, projects, setProjects, quickItems, setQuickItems });
     const {
         isMobile, mobileMenuProjectId,
@@ -59,7 +58,6 @@ function ProjectsContent() {
         quickShareTarget, setQuickShareTarget, quickInviteTarget, setQuickInviteTarget,
     } = actions;
 
-    useReveal({ deps: [isLoading, filteredProjects.length] });
 
     return (
         <MainLayout fullWidth>
@@ -82,7 +80,7 @@ function ProjectsContent() {
                     projectCount={projectCount}
                 />
 
-                <div className="page-header-row reveal" data-delay="2">
+                <div className="page-header-row">
                     <div>
                         <span className="projects-eyebrow">Saved work</span>
                         <h2 className="section-title">All projects and estimates</h2>

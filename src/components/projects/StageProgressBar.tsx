@@ -134,7 +134,7 @@ export default function StageProgressBar({ stages, activeStage, onStageClick }: 
                     }
 
                     .stage-name {
-                        font-size: 0.625rem;
+                        font-size: 12px;
                     }
 
                     .connector {

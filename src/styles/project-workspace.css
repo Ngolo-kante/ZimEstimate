@@ -75,8 +75,9 @@ body:where(:has(.project-dashboard-shell)) {
 .project-dashboard-shell input:focus-visible,
 .project-dashboard-shell select:focus-visible,
 .project-dashboard-shell textarea:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.24);
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    box-shadow: none;
 }
 
 /* ---- Workspace layout ---- */
@@ -118,7 +119,7 @@ body:where(:has(.project-dashboard-shell)) {
 
 .project-workspace .view-eyebrow {
     margin: 0 0 6px 0;
-    font-size: 0.72rem;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0;
     color: var(--color-text-secondary);
@@ -169,7 +170,7 @@ body:where(:has(.project-dashboard-shell)) {
 }
 
 .project-workspace .view-stat span {
-    font-size: 0.72rem;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0;
     color: #53739a;
@@ -217,10 +218,11 @@ body:where(:has(.project-dashboard-shell)) {
     text-align: left;
     cursor: pointer;
 }
-
-.project-workspace .stage-switcher-item:hover {
+@media (hover: hover) and (pointer: fine) {
+  .project-workspace .stage-switcher-item:hover {
     border-color: #9fb6d0;
     background: #f8fafc;
+  }
 }
 
 .project-workspace .stage-switcher-item.active {
@@ -246,7 +248,7 @@ body:where(:has(.project-dashboard-shell)) {
     border-radius: 6px;
     background: #f2f6fa;
     color: #0b1f3b;
-    font-size: 0.72rem;
+    font-size: 12px;
     font-weight: 750;
 }
 
@@ -275,8 +277,8 @@ body:where(:has(.project-dashboard-shell)) {
 }
 
 .project-workspace .stage-switcher-copy small {
-    color: #748196;
-    font-size: 0.67rem;
+    color: #5b6b82;
+    font-size: 12px;
 }
 
 .project-workspace .stage-switcher-item.active .stage-switcher-copy small {
@@ -334,9 +336,10 @@ body:where(:has(.project-dashboard-shell)) {
     justify-content: center;
     cursor: pointer;
 }
-
-.project-workspace .compliance-warning-dismiss:hover {
+@media (hover: hover) and (pointer: fine) {
+  .project-workspace .compliance-warning-dismiss:hover {
     background: #fef3c7;
+  }
 }
 
 .project-workspace .compliance-warning-details {
@@ -442,17 +445,20 @@ body:where(:has(.project-dashboard-shell)) {
         box-shadow var(--dashboard-medium) var(--dashboard-ease),
         border-color var(--dashboard-medium) var(--dashboard-ease);
 }
-.project-workspace .pro-tip-card:hover,
-.project-workspace .overview-card:hover,
-.project-workspace .price-update-alert:hover {
+@media (hover: hover) and (pointer: fine) {
+  .project-workspace .pro-tip-card:hover,
+  .project-workspace .overview-card:hover,
+  .project-workspace .price-update-alert:hover {
     transform: translateY(-2px);
     box-shadow: 0 20px 30px rgba(6, 20, 47, 0.08);
+  }
 }
-
-.project-workspace .next-step-item:hover {
+@media (hover: hover) and (pointer: fine) {
+  .project-workspace .next-step-item:hover {
     transform: translateY(-1px);
     border-color: #b7d7f7;
     box-shadow: 0 10px 18px rgba(17, 56, 95, 0.08);
+  }
 }
 
 .project-workspace .view-all-btn {
@@ -467,11 +473,12 @@ body:where(:has(.project-dashboard-shell)) {
     cursor: pointer;
     transition: all 0.2s;
 }
-
-.project-workspace .view-all-btn:hover {
+@media (hover: hover) and (pointer: fine) {
+  .project-workspace .view-all-btn:hover {
     background: #f8fafc;
     border-color: #94a3b8;
     color: #475569;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -516,7 +523,7 @@ body:where(:has(.project-dashboard-shell)) {
     }
 
     .project-workspace .view-stat span {
-        font-size: 0.61rem;
+        font-size: 12px;
     }
 
     .project-workspace .view-stat strong {
@@ -605,3 +612,14 @@ body:where(:has(.project-dashboard-shell)) {
 }
 .project-workspace-error h2 { color: var(--color-text); margin: 0; font-family: var(--font-heading); }
 .project-workspace-error p { color: var(--color-text-secondary); margin: 0; }
+
+@media (max-width: 767px) {
+    .project-dashboard-shell button,
+    .project-dashboard-shell input,
+    .project-dashboard-shell select { min-height: 44px !important; }
+    .project-dashboard-shell .stat-action,
+    .project-dashboard-shell .compliance-warning-dismiss {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}

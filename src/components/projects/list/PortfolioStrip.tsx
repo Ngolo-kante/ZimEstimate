@@ -19,7 +19,7 @@ export default function PortfolioStrip({
     projectCount: number;
 }) {
     return (
-        <section className="portfolio-strip reveal" data-delay="1" aria-label="Project portfolio summary">
+        <section className="portfolio-strip" aria-label="Project portfolio summary">
             <div className="portfolio-value">
                 <span>Portfolio value</span>
                 <strong>

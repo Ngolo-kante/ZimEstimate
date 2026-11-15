@@ -121,11 +121,12 @@
 .summary-card.clickable {
     cursor: pointer !important;
 }
-
-.summary-card.clickable:hover {
+@media (hover: hover) and (pointer: fine) {
+  .summary-card.clickable:hover {
     transform: none;
     box-shadow: none !important;
     border-color: rgba(59, 130, 246, 0.3) !important;
+  }
 }
 
 .summary-icon {
@@ -219,10 +220,11 @@
     white-space: nowrap;
     transition: all var(--duration-fast) var(--ease-default);
 }
-
-.stage-tab-btn:hover {
+@media (hover: hover) and (pointer: fine) {
+  .stage-tab-btn:hover {
     color: var(--color-text);
     background: rgba(255, 255, 255, 0.5);
+  }
 }
 
 .stage-tab-btn.active {
@@ -232,10 +234,10 @@
 }
 
 .tab-count {
-    font-size: 0.7em;
+    font-size: 0.75rem;
     font-weight: var(--font-bold);
     background: var(--color-border);
-    color: var(--color-text-secondary);
+    color: #475569;
     padding: 2px 6px;
     border-radius: var(--radius-full);
     line-height: 1;
@@ -243,7 +245,7 @@
 
 .stage-tab-btn.active .tab-count {
     background: var(--color-accent-muted);
-    color: var(--color-accent);
+    color: #1d4ed8;
 }
 
 /* =============================================
@@ -411,11 +413,12 @@
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.group-header:hover {
+@media (hover: hover) and (pointer: fine) {
+  .group-header:hover {
     border-color: var(--stage-color, rgba(59, 130, 246, 0.3));
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
     transform: translateY(-1px);
+  }
 }
 
 .group-header-left {
@@ -471,7 +474,7 @@
 
 .group-stats .stat.purchased {
     background: rgba(22, 163, 74, 0.1);
-    color: var(--color-emerald);
+    color: #166534;
 }
 
 .group-stats .stat.progress {
@@ -512,11 +515,12 @@
     overflow: hidden;
     transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.boq-item-card:hover {
+@media (hover: hover) and (pointer: fine) {
+  .boq-item-card:hover {
     border-color: rgba(59, 130, 246, 0.25);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.03);
     transform: translateY(-1px);
+  }
 }
 
 /* Status highlights */
@@ -570,7 +574,7 @@
     position: absolute;
     top: 8px;
     right: 12px;
-    font-size: 0.7rem;
+    font-size: 12px;
     font-weight: 600;
     color: #3b82f6;
     background: rgba(239, 246, 255, 0.95);
@@ -671,7 +675,7 @@
 }
 
 .qty-label {
-    font-size: 0.65rem;
+    font-size: 12px;
     text-transform: uppercase;
     color: var(--color-text-muted);
     font-weight: var(--font-semibold);
@@ -685,16 +689,16 @@
 }
 
 .qty-value.purchased {
-    color: var(--color-accent);
+    color: #1d4ed8;
     font-weight: var(--font-semibold);
 }
 
 .qty-value.complete {
-    color: var(--color-emerald);
+    color: #15803d;
 }
 
 .qty-value.remaining {
-    color: var(--color-amber);
+    color: #b45309;
 }
 
 .item-progress {
@@ -745,7 +749,7 @@
 }
 
 .spent-label {
-    font-size: 0.65rem;
+    font-size: 12px;
     text-transform: uppercase;
     color: var(--color-text-muted);
     font-weight: var(--font-semibold);
@@ -772,7 +776,7 @@
 
 .item-status.status-purchased {
     background: rgba(22, 163, 74, 0.1);
-    color: var(--color-emerald);
+    color: #166534;
 }
 
 .item-status.status-progress {
@@ -873,7 +877,7 @@
 }
 
 .detail-label {
-    font-size: 0.65rem;
+    font-size: 12px;
     text-transform: uppercase;
     color: var(--color-text-muted);
     font-weight: var(--font-semibold);
@@ -905,9 +909,10 @@
     margin-left: auto;
     transition: all var(--duration-fast);
 }
-
-.receipt-btn:hover {
+@media (hover: hover) and (pointer: fine) {
+  .receipt-btn:hover {
     background: var(--color-accent-muted);
+  }
 }
 
 .purchase-notes {
@@ -942,9 +947,10 @@
     padding: var(--space-4);
     transition: border-color var(--duration-fast);
 }
-
-.history-card:hover {
+@media (hover: hover) and (pointer: fine) {
+  .history-card:hover {
     border-color: var(--color-accent-muted);
+  }
 }
 
 .history-card-header {
@@ -1025,10 +1031,11 @@
     width: 100%;
     transition: all var(--duration-fast);
 }
-
-.history-receipt-btn:hover {
+@media (hover: hover) and (pointer: fine) {
+  .history-receipt-btn:hover {
     background: var(--color-accent-muted);
     border-color: var(--color-accent);
+  }
 }
 
 /* =============================================
@@ -1105,10 +1112,11 @@
     border-radius: var(--radius-sm);
     transition: all var(--duration-fast);
 }
-
-.modal-close:hover {
+@media (hover: hover) and (pointer: fine) {
+  .modal-close:hover {
     background: var(--color-mist);
     color: var(--color-text);
+  }
 }
 
 .modal-body {
@@ -1154,7 +1162,7 @@
 }
 
 .info-row.highlight strong {
-    color: var(--color-emerald);
+    color: #166534;
 }
 
 .field {
@@ -1245,10 +1253,11 @@
     transition: all var(--duration-fast);
     background: var(--color-background);
 }
-
-.file-input-label:hover {
+@media (hover: hover) and (pointer: fine) {
+  .file-input-label:hover {
     border-color: var(--color-accent);
     background: var(--color-accent-muted);
+  }
 }
 
 .file-placeholder {
@@ -1310,7 +1319,7 @@
 }
 
 .modal-item-info .info-cell.highlight .info-value {
-    color: var(--color-emerald);
+    color: #166534;
     font-weight: var(--font-bold);
 }
 
@@ -1417,10 +1426,11 @@
     transition: all var(--duration-fast);
     background: var(--color-background);
 }
-
-.file-upload-label:hover {
+@media (hover: hover) and (pointer: fine) {
+  .file-upload-label:hover {
     border-color: var(--color-accent);
     background: var(--color-accent-muted);
+  }
 }
 
 .file-upload-label .file-placeholder {
@@ -1459,7 +1469,7 @@
 
 .ledger-table th {
     text-align: left;
-    font-size: 0.65rem;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--color-text-muted);
@@ -1474,9 +1484,10 @@
     border-bottom: 1px solid var(--color-border-light);
     vertical-align: top;
 }
-
-.ledger-table tbody tr:hover {
+@media (hover: hover) and (pointer: fine) {
+  .ledger-table tbody tr:hover {
     background: var(--color-mist);
+  }
 }
 
 /* Optimistic/Saving row style */
@@ -1598,9 +1609,10 @@
     cursor: pointer;
     transition: all var(--duration-fast);
 }
-
-.ledger-table .receipt-link:hover {
+@media (hover: hover) and (pointer: fine) {
+  .ledger-table .receipt-link:hover {
     background: var(--color-accent-muted);
+  }
 }
 
 .ledger-table .no-receipt {

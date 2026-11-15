@@ -214,7 +214,7 @@ export default function BoqItemRow({
                         <button
                             className="action-btn purchase"
                             onClick={() => onLogPurchase(item)}
-                            title="Log purchase"
+                            title="Log purchase" aria-label="Log purchase"
                         >
                             <ShoppingCart size={14} />
                         </button>
@@ -223,7 +223,7 @@ export default function BoqItemRow({
                         <button
                             className="action-btn usage"
                             onClick={() => onRecordUsage(item)}
-                            title="Record usage"
+                            title="Record usage" aria-label="Record usage"
                         >
                             <ClipboardText size={14} />
                         </button>
@@ -232,7 +232,7 @@ export default function BoqItemRow({
                         <button
                             className="action-btn delete"
                             onClick={() => onItemDelete(item.id)}
-                            title="Delete item"
+                            title="Delete item" aria-label="Delete item"
                         >
                             <Trash size={14} />
                         </button>

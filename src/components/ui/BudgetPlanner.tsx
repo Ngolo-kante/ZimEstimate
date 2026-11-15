@@ -464,7 +464,7 @@ export default function BudgetPlanner({
         .eyebrow,
         .metric-label,
         .target-readout span {
-          font-size: 0.6875rem;
+          font-size: 12px;
           font-weight: 700;
           line-height: 1.2;
           text-transform: uppercase;
@@ -583,7 +583,7 @@ export default function BudgetPlanner({
           gap: 12px;
           padding: 8px 16px 16px;
           color: var(--color-text-secondary);
-          font-size: 0.6875rem;
+          font-size: 12px;
           font-variant-numeric: tabular-nums;
         }
 
@@ -762,7 +762,7 @@ export default function BudgetPlanner({
           display: block;
           margin-top: 6px;
           color: var(--color-info-fg);
-          font-size: 0.6875rem;
+          font-size: 12px;
           font-weight: 600;
         }
 
@@ -816,7 +816,7 @@ export default function BudgetPlanner({
           padding: 3px 5px;
           border-radius: 4px;
           background: var(--color-success-bg);
-          font-size: 0.5625rem;
+          font-size: 12px;
           font-weight: 800;
           text-transform: uppercase;
         }
@@ -1031,7 +1031,7 @@ export default function BudgetPlanner({
         }
 
         .save-note.ok {
-          color: var(--color-success);
+          color: #15803d;
         }
 
         .save-note.bad {

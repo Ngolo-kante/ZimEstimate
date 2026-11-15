@@ -204,7 +204,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
 
                 .toggle-copy small {
                     color: #64748b;
-                    font-size: 0.68rem;
+                    font-size: 12px;
                     font-weight: 700;
                     text-transform: uppercase;
                 }
@@ -255,7 +255,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     display: flex;
                     align-items: center;
                     gap: 6px;
-                    font-size: 0.7rem;
+                    font-size: 12px;
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
@@ -367,7 +367,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     display: flex;
                     align-items: center;
                     gap: 4px;
-                    font-size: 0.7rem;
+                    font-size: 12px;
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
@@ -393,14 +393,14 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
 
                 .date-display {
                     font-size: 0.75rem;
-                    color: #94a3b8;
+                    color: #64748b;
                     display: flex;
                     align-items: center;
                     gap: 6px;
                 }
 
                 .days-badge {
-                    font-size: 0.65rem;
+                    font-size: 12px;
                     font-weight: 700;
                     padding: 2px 8px;
                     background: #eff6ff;

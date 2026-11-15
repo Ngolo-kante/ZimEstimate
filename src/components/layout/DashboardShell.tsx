@@ -133,10 +133,11 @@ export default function DashboardShell({
           font-weight: 500;
           transition: all 0.2s ease;
         }
-
-        .nav-item:hover {
-          background: rgba(78, 154, 247, 0.08);
-          color: var(--color-primary);
+        @media (hover: hover) and (pointer: fine) {
+          .nav-item:hover {
+            background: rgba(78, 154, 247, 0.08);
+            color: var(--color-primary);
+          }
         }
 
         .nav-item.active {
@@ -216,7 +217,7 @@ export default function DashboardShell({
         }
 
         .search-box kbd {
-          font-size: 0.7rem;
+          font-size: 12px;
           color: var(--color-text-muted);
           background: rgba(6, 20, 47, 0.06);
           padding: 2px 6px;

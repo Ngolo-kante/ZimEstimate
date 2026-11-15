@@ -643,7 +643,7 @@ export default function TopNavbar() {
           display: block;
           padding: 6px 8px 7px;
           color: var(--color-text-muted);
-          font-size: 0.66rem;
+          font-size: 12px;
           font-weight: 750;
           letter-spacing: 0;
           text-transform: uppercase;
@@ -659,11 +659,15 @@ export default function TopNavbar() {
           text-decoration: none;
           transition: background 0.15s ease, color 0.15s ease;
         }
-
-        :global(.nav-dropdown-link:hover),
         :global(.nav-dropdown-link.active) {
           color: var(--color-primary);
           background: #f2f6fa;
+        }
+        @media (hover: hover) and (pointer: fine) {
+          :global(.nav-dropdown-link:hover) {
+            color: var(--color-primary);
+            background: #f2f6fa;
+          }
         }
 
         :global(.nav-dropdown-link strong) {
@@ -674,7 +678,7 @@ export default function TopNavbar() {
 
         :global(.nav-dropdown-link small) {
           color: var(--color-text-muted);
-          font-size: 0.7rem;
+          font-size: 12px;
           line-height: 1.3;
         }
 
@@ -688,13 +692,15 @@ export default function TopNavbar() {
           background-color: var(--color-primary);
           transition: width 0.25s ease;
         }
-
-        .nav-link:hover {
-          color: var(--color-text);
+        @media (hover: hover) and (pointer: fine) {
+          .nav-link:hover {
+            color: var(--color-text);
+          }
         }
-
-        .nav-link:hover::after {
-          width: 100%;
+        @media (hover: hover) and (pointer: fine) {
+          .nav-link:hover::after {
+            width: 100%;
+          }
         }
 
         .nav-link.active {
@@ -728,11 +734,15 @@ export default function TopNavbar() {
           white-space: nowrap;
           transition: border-color 0.15s ease, background 0.15s ease;
         }
-
-        :global(.admin-panel-link:hover),
         :global(.admin-panel-link.active) {
           border-color: var(--color-accent);
           background: var(--color-accent-muted);
+        }
+        @media (hover: hover) and (pointer: fine) {
+          :global(.admin-panel-link:hover) {
+            border-color: var(--color-accent);
+            background: var(--color-accent-muted);
+          }
         }
 
         /* Generic Menu Container */
@@ -779,10 +789,15 @@ export default function TopNavbar() {
           cursor: pointer;
           transition: all 0.2s ease;
         }
-
-        .icon-btn:hover, .icon-btn.active {
+        .icon-btn.active {
           background: rgba(0,0,0,0.04);
           color: var(--color-text);
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .icon-btn:hover {
+            background: rgba(0,0,0,0.04);
+            color: var(--color-text);
+          }
         }
         
         .notification-btn {
@@ -817,10 +832,15 @@ export default function TopNavbar() {
           padding: 0 8px 0 0;
           gap: 8px;
         }
-
-        .user-btn:hover, .user-btn.active {
+        .user-btn.active {
           border-color: var(--color-accent);
           box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .user-btn:hover {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          }
         }
 
         .trigger-avatar {
@@ -869,7 +889,7 @@ export default function TopNavbar() {
 
         .trigger-meta {
           color: var(--color-text-muted);
-          font-size: 0.68rem;
+          font-size: 12px;
           line-height: 1.2;
         }
 
@@ -940,7 +960,7 @@ export default function TopNavbar() {
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            font-size: 0.65rem;
+            font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0;
@@ -972,14 +992,14 @@ export default function TopNavbar() {
           display: block;
           padding: 0 8px 6px;
           color: var(--color-text-muted);
-          font-size: 0.66rem;
+          font-size: 12px;
           font-weight: 750;
           letter-spacing: 0;
           text-transform: uppercase;
         }
 
         .menu-section-label-secondary {
-          font-size: 0.58rem;
+          font-size: 12px;
           text-decoration-line: underline;
           text-decoration-color: currentColor;
           text-decoration-thickness: 1px;
@@ -1012,7 +1032,7 @@ export default function TopNavbar() {
 
         .auth-intro span {
           color: var(--color-text-muted);
-          font-size: 0.74rem;
+          font-size: 12px;
           line-height: 1.4;
         }
 
@@ -1038,9 +1058,10 @@ export default function TopNavbar() {
           color: #fff;
           border: 1px solid var(--color-primary);
         }
-
-        :global(.auth-btn-primary:hover) {
-          background: var(--color-primary-dark);
+        @media (hover: hover) and (pointer: fine) {
+          :global(.auth-btn-primary:hover) {
+            background: var(--color-primary-dark);
+          }
         }
 
         :global(.auth-btn-secondary) {
@@ -1048,9 +1069,10 @@ export default function TopNavbar() {
           color: var(--color-primary);
           border: 1px solid var(--color-primary);
         }
-
-        :global(.auth-btn-secondary:hover) {
-          background: var(--color-primary-bg);
+        @media (hover: hover) and (pointer: fine) {
+          :global(.auth-btn-secondary:hover) {
+            background: var(--color-primary-bg);
+          }
         }
 
         /* Sign-in-free quick actions below the auth buttons. Dedicated class
@@ -1070,10 +1092,11 @@ export default function TopNavbar() {
           transition: background 0.15s ease, color 0.15s ease;
           border-radius: 6px;
         }
-
-        :global(.quick-link:hover) {
-          background: #f2f6fa;
-          color: var(--color-primary);
+        @media (hover: hover) and (pointer: fine) {
+          :global(.quick-link:hover) {
+            background: #f2f6fa;
+            color: var(--color-primary);
+          }
         }
 
         :global(.admin-quick-link) {
@@ -1109,7 +1132,7 @@ export default function TopNavbar() {
 
         .quick-link-copy small {
           color: var(--color-text-muted);
-          font-size: 0.7rem;
+          font-size: 12px;
           line-height: 1.25;
         }
 
@@ -1129,15 +1152,20 @@ export default function TopNavbar() {
           transition: all 0.15s ease;
           text-align: left;
         }
-
-        .menu-item:hover {
-          background: #f9fafb;
-          color: var(--color-text);
+        @media (hover: hover) and (pointer: fine) {
+          .menu-item:hover {
+            background: #f9fafb;
+            color: var(--color-text);
+          }
         }
 
         .menu-item.upgrade { color: #2563eb; }
         .menu-item.logout { color: #ef4444; }
-        .menu-item.logout:hover { background: #fef2f2; }
+        @media (hover: hover) and (pointer: fine) {
+          .menu-item.logout:hover {
+            background: #fef2f2;
+          }
+        }
         
         /* Notifications Specific */
         .dropdown-header {
@@ -1185,9 +1213,10 @@ export default function TopNavbar() {
             transition: bg 0.2s;
             cursor: pointer;
         }
-        
-        .notification-item:hover {
+        @media (hover: hover) and (pointer: fine) {
+          .notification-item:hover {
             background: #f9fafb;
+          }
         }
         
         .notification-item:last-child { border-bottom: none; }
@@ -1248,9 +1277,10 @@ export default function TopNavbar() {
             color: var(--color-text-secondary);
             text-decoration: none;
         }
-        
-        .view-all-link:hover {
+        @media (hover: hover) and (pointer: fine) {
+          .view-all-link:hover {
             color: var(--color-primary);
+          }
         }
 
         .mobile-toggle {
@@ -1281,10 +1311,11 @@ export default function TopNavbar() {
           text-decoration: none;
           transition: background 0.15s ease, color 0.15s ease;
         }
-
-        :global(.mobile-nav-link:hover) {
-          background: rgba(0, 0, 0, 0.04);
-          color: var(--color-text);
+        @media (hover: hover) and (pointer: fine) {
+          :global(.mobile-nav-link:hover) {
+            background: rgba(0, 0, 0, 0.04);
+            color: var(--color-text);
+          }
         }
 
         :global(.mobile-nav-link.active) {
@@ -1339,6 +1370,9 @@ export default function TopNavbar() {
           .dropdown-menu,
           .nav-dropdown { animation: none; }
           .profile-caret { transition: none; }
+        }
+        @media (max-width: 767px) {
+          .user-btn, .mobile-toggle { min-width: 44px; min-height: 44px; }
         }
       `}</style>
     </header>

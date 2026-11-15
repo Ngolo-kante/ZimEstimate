@@ -330,7 +330,7 @@ export default function FloorPlanRenderer({
                                     y={(room.length * scale) / 2 - 8}
                                     textAnchor="middle"
                                     style={{
-                                        fontSize: '11px',
+                                        fontSize: '12px',
                                         fontWeight: 700,
                                         fill: '#334155',
                                         fontFamily: 'system-ui, sans-serif',
@@ -346,7 +346,7 @@ export default function FloorPlanRenderer({
                                     y={(room.length * scale) / 2 + 6}
                                     textAnchor="middle"
                                     style={{
-                                        fontSize: '9px',
+                                        fontSize: '12px',
                                         fill: '#64748b',
                                         fontFamily: 'system-ui, sans-serif',
                                         pointerEvents: 'none',
@@ -361,8 +361,8 @@ export default function FloorPlanRenderer({
                                     y={(room.length * scale) / 2 + 20}
                                     textAnchor="middle"
                                     style={{
-                                        fontSize: '9px',
-                                        fill: '#94a3b8',
+                                        fontSize: '12px',
+                                        fill: '#64748b',
                                         fontFamily: 'system-ui, sans-serif',
                                         pointerEvents: 'none',
                                     }}
@@ -377,7 +377,7 @@ export default function FloorPlanRenderer({
                                         y={room.length * scale + 14}
                                         textAnchor="middle"
                                         style={{
-                                            fontSize: '9px',
+                                            fontSize: '12px',
                                             fill: '#3b82f6',
                                             fontWeight: 600,
                                             fontFamily: 'system-ui, sans-serif',
@@ -395,7 +395,7 @@ export default function FloorPlanRenderer({
                         x={viewBoxWidth / 2}
                         y={-12}
                         textAnchor="middle"
-                        style={{ fontSize: '10px', fontWeight: 600, fill: '#94a3b8', fontFamily: 'system-ui' }}
+                        style={{ fontSize: '12px', fontWeight: 600, fill: '#64748b', fontFamily: 'system-ui' }}
                     >
                         {((viewBoxWidth - 30) / scale).toFixed(1)}m
                     </text>
@@ -443,7 +443,7 @@ export default function FloorPlanRenderer({
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
                             {/* Width */}
                             <div>
-                                <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+                                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
                                     Width (m)
                                 </label>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
@@ -465,7 +465,7 @@ export default function FloorPlanRenderer({
 
                             {/* Length */}
                             <div>
-                                <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+                                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
                                     Length (m)
                                 </label>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
@@ -487,7 +487,7 @@ export default function FloorPlanRenderer({
 
                             {/* Windows */}
                             <div>
-                                <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+                                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
                                     🪟 Windows
                                 </label>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
@@ -509,7 +509,7 @@ export default function FloorPlanRenderer({
 
                             {/* Doors */}
                             <div>
-                                <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+                                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
                                     🚪 Doors
                                 </label>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
@@ -547,7 +547,7 @@ export default function FloorPlanRenderer({
             </div>
 
             {/* Hint */}
-            <p style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', margin: 0 }}>
+            <p style={{ fontSize: '12px', color: '#64748b', textAlign: 'center', margin: 0 }}>
                 Tap any room to adjust dimensions, windows & doors
             </p>
         </div>
@@ -579,13 +579,13 @@ function CalcCard({ label, value, subtext, highlight }: { label: string; value: 
                 textAlign: 'center',
             }}
         >
-            <div style={{ fontSize: '10px', fontWeight: 600, color: highlight ? 'rgba(255,255,255,0.8)' : '#94a3b8', textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '12px', fontWeight: 600, color: highlight ? 'rgba(255,255,255,0.8)' : '#64748b', textTransform: 'uppercase' }}>
                 {label}
             </div>
             <div style={{ fontSize: '18px', fontWeight: 800, color: highlight ? '#fff' : '#1e293b', margin: '2px 0' }}>
                 {value}
             </div>
-            <div style={{ fontSize: '10px', color: highlight ? 'rgba(255,255,255,0.7)' : '#94a3b8' }}>
+            <div style={{ fontSize: '12px', color: highlight ? 'rgba(255,255,255,0.7)' : '#64748b' }}>
                 {subtext}
             </div>
         </div>

@@ -815,7 +815,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
 
                 .item-sub {
                     font-size: 0.75rem;
-                    color: #94a3b8;
+                    color: #64748b;
                     margin-top: 4px;
                 }
 
@@ -824,7 +824,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     align-items: center;
                     gap: 8px;
                     margin-top: 8px;
-                    font-size: 0.7rem;
+                    font-size: 12px;
                     color: #64748b;
                 }
 
@@ -903,7 +903,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                 .history-empty {
                     padding: 16px;
                     text-align: center;
-                    color: #94a3b8;
+                    color: #64748b;
                     font-style: italic;
                     font-size: 0.9rem;
                 }
@@ -918,7 +918,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                 
                 .history-table th {
                     text-align: left;
-                    font-size: 0.7rem;
+                    font-size: 12px;
                     text-transform: uppercase;
                     color: #64748b;
                     padding: 10px 16px;

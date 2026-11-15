@@ -112,7 +112,7 @@ function MobileBottomNav() {
           justify-content: center;
           gap: 3px;
           text-decoration: none;
-          color: #748196;
+          color: #5b6b82;
           /* Full-height target: the whole column is tappable, not just the icon. */
           padding: 4px 2px;
           min-width: 0;
@@ -133,7 +133,7 @@ function MobileBottomNav() {
         }
 
         .nav-text {
-          font-size: 0.68rem;
+          font-size: 12px;
           font-weight: 600;
           letter-spacing: 0;
           line-height: 1;
@@ -180,7 +180,7 @@ function MobileBottomNav() {
         /* Narrow phones: keep five labels on one line each. */
         @media (max-width: 359px) {
           .nav-text {
-            font-size: 0.62rem;
+            font-size: 12px;
           }
           .nav-pill {
             width: 38px;
@@ -275,7 +275,7 @@ export default function MainLayout({
 
         .app-footer {
           background: #f4f6fb;
-          color: var(--color-text-secondary);
+          color: #475569;
           padding: 20px 0;
           margin-top: auto;
           border-top: 1px solid var(--color-border-light);
@@ -304,7 +304,7 @@ export default function MainLayout({
 
         .footer-right :global(a),
         .footer-right button {
-          color: var(--color-text-secondary);
+          color: #475569;
           background: transparent;
           border: 0;
           padding: 0;
@@ -314,10 +314,11 @@ export default function MainLayout({
           cursor: pointer;
           transition: color 0.2s ease;
         }
-
-        .footer-right :global(a:hover),
-        .footer-right button:hover {
-          color: var(--color-primary);
+        @media (hover: hover) and (pointer: fine) {
+          .footer-right :global(a:hover),
+          .footer-right button:hover {
+            color: var(--color-primary);
+          }
         }
 
         @media (max-width: 900px) {
@@ -341,6 +342,13 @@ export default function MainLayout({
             flex-wrap: wrap;
             justify-content: center;
             gap: 16px;
+          }
+        }
+        @media (max-width: 767px) {
+          .footer-right :global(a), .footer-right button {
+            display: inline-flex;
+            align-items: center;
+            min-height: 44px;
           }
         }
       `}</style>

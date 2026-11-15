@@ -234,7 +234,7 @@
 }
 
 .stage-boq .stat-pill .label {
-    font-size: 0.65rem;
+    font-size: 12px;
     text-transform: uppercase;
     color: #64748b;
     letter-spacing: 0.05em;
@@ -261,11 +261,12 @@
     transition: all 0.2s;
     flex-shrink: 0;
 }
-
-.stage-boq .expand-trigger:hover {
+@media (hover: hover) and (pointer: fine) {
+  .stage-boq .expand-trigger:hover {
     background: #e2e8f0;
     border-color: #cbd5e1;
     color: #334155;
+  }
 }
 
 .stage-boq .card-content {
@@ -297,7 +298,7 @@
     position: relative;
     display: flex;
     align-items: center;
-    color: #94a3b8;
+    color: #64748b;
     background: #f8fafc;
     border-radius: 7px;
     border: 1px solid transparent;
@@ -354,11 +355,12 @@
     background: #fff;
     appearance: none;
 }
-
-.stage-boq .filter-select select:hover {
+@media (hover: hover) and (pointer: fine) {
+  .stage-boq .filter-select select:hover {
     background: #f8fafc;
     border-color: #cbd5e1;
     color: #475569;
+  }
 }
 
 .stage-boq .filter-select select:focus {
@@ -386,9 +388,10 @@
     cursor: pointer;
     transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
-
-.stage-boq .view-toggle button:hover {
+@media (hover: hover) and (pointer: fine) {
+  .stage-boq .view-toggle button:hover {
     color: #1e293b;
+  }
 }
 
 .stage-boq .view-toggle .simple-btn.active {
@@ -421,10 +424,11 @@
     cursor: pointer;
     transition: all 0.2s;
 }
-
-.stage-boq .columns-btn:hover {
+@media (hover: hover) and (pointer: fine) {
+  .stage-boq .columns-btn:hover {
     background: #f8fafc;
     border-color: #cbd5e1;
+  }
 }
 
 .stage-boq .columns-menu {
@@ -450,9 +454,10 @@
     cursor: pointer;
     border-radius: 6px;
 }
-
-.stage-boq .column-option:hover {
+@media (hover: hover) and (pointer: fine) {
+  .stage-boq .column-option:hover {
     background: #f1f5f9;
+  }
 }
 
 .stage-boq .column-hint {
@@ -461,7 +466,7 @@
     background: #f8fafc;
     border-radius: 6px;
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: #64748b;
 }
 
 /* Add Form */
@@ -555,17 +560,19 @@
 .stage-boq .boq-table tr:last-child td {
     border-bottom: none;
 }
-
-.stage-boq .boq-table tr:hover td {
+@media (hover: hover) and (pointer: fine) {
+  .stage-boq .boq-table tr:hover td {
     background: #f8fafc;
+  }
 }
 
 .stage-boq .boq-table tr.is-purchased td {
     background: #f0fdf4;
 }
-
-.stage-boq .boq-table tr.is-purchased:hover td {
+@media (hover: hover) and (pointer: fine) {
+  .stage-boq .boq-table tr.is-purchased:hover td {
     background: #dcfce7;
+  }
 }
 
 .stage-boq .item-info {
@@ -582,7 +589,7 @@
 
 .stage-boq .item-notes {
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: #64748b;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -623,7 +630,7 @@
 
 .stage-boq .status-pill.over-purchased {
     background: #fee2e2;
-    color: #dc2626;
+    color: #b91c1c;
 }
 
 /* Row status highlights */
@@ -646,7 +653,7 @@
 .stage-boq .enablement-pill {
     display: inline-flex;
     width: fit-content;
-    font-size: 0.62rem;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -665,7 +672,7 @@
     font-weight: 500;
 }
 
-.stage-boq .variance-badge.neutral { color: #94a3b8; }
+.stage-boq .variance-badge.neutral { color: #64748b; }
 .stage-boq .variance-badge.positive { color: #dc2626; }
 .stage-boq .variance-badge.negative { color: var(--color-accent-dark); }
 
@@ -691,24 +698,27 @@
 .stage-boq .action-btn.purchase {
     color: #3b82f6;
 }
-
-.stage-boq .action-btn.purchase:hover {
+@media (hover: hover) and (pointer: fine) {
+  .stage-boq .action-btn.purchase:hover {
     background: #dbeafe;
     color: #2563eb;
+  }
 }
 
 .stage-boq .action-btn.usage {
     color: var(--color-accent);
 }
-
-.stage-boq .action-btn.usage:hover {
+@media (hover: hover) and (pointer: fine) {
+  .stage-boq .action-btn.usage:hover {
     background: var(--color-accent-muted);
     color: var(--color-accent-dark);
+  }
 }
-
-.stage-boq .action-btn.delete:hover {
+@media (hover: hover) and (pointer: fine) {
+  .stage-boq .action-btn.delete:hover {
     background: #fee2e2;
     color: #ef4444;
+  }
 }
 
 .stage-boq .select-arrow {
@@ -717,7 +727,7 @@
     top: 50%;
     transform: translateY(-50%);
     pointer-events: none;
-    color: #94a3b8;
+    color: #64748b;
 }
 
 @media (max-width: 1024px) {
@@ -887,4 +897,9 @@
     .stage-boq .boq-table td.col-actions .action-group {
         gap: 8px;
     }
+}
+
+@media (max-width: 767px) {
+    .stage-boq .expand-trigger,
+    .stage-boq .boq-table td.col-actions .action-btn { min-width: 44px; min-height: 44px; }
 }

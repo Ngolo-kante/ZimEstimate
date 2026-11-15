@@ -40,7 +40,7 @@
   --color-text: #0F172A;
   --color-text-secondary: #64748B;
   /* Muted Gray */
-  --color-text-muted: #94A3B8;
+  --color-text-muted: #64748b;
   /* Disabled Gray */
   --color-text-inverse: #FFFFFF;
 
@@ -248,3 +248,12 @@
     stroke-dashoffset: 283;
   }
 }
+
+/* Touch input readability and native gesture handling. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea {
+    font-size: 16px !important;
+  }
+}
+html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
+button, a, summary, [role="button"], [role="tab"] { touch-action: manipulation; }

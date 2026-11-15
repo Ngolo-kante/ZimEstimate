@@ -45,12 +45,13 @@ export default function Card({
         .card.clickable {
           cursor: pointer;
         }
-
-        .card.clickable:hover {
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05),
-                      0 8px 10px -6px rgba(0, 0, 0, 0.01),
-                      0 0 0 1px rgba(59, 130, 246, 0.5);
-          transform: translateY(-4px);
+        @media (hover: hover) and (pointer: fine) {
+          .card.clickable:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05),
+            0 8px 10px -6px rgba(0, 0, 0, 0.01),
+            0 0 0 1px rgba(59, 130, 246, 0.5);
+            transform: translateY(-4px);
+          }
         }
 
         .card.selected {
@@ -75,9 +76,10 @@ export default function Card({
           gap: 16px;
           background: linear-gradient(145deg, #ffffff, #f8fafc);
         }
-
-        .card-choice:hover {
-          background: #ffffff;
+        @media (hover: hover) and (pointer: fine) {
+          .card-choice:hover {
+            background: #ffffff;
+          }
         }
 
         /* Material Card Variant */

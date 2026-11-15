@@ -26,7 +26,7 @@ export default function PriceSparkline({
           justifyContent: 'center',
         }}
       >
-        <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>No data</span>
+        <span style={{ fontSize: '12px', color: '#64748b' }}>No data</span>
       </div>
     );
   }

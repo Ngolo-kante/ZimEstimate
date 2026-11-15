@@ -7,7 +7,7 @@ import { CaretRight, Plus } from '@phosphor-icons/react';
 /** Title, and the ways to start something new. */
 export default function ProjectsHeader({ canCreateProject }: { canCreateProject: () => boolean }) {
     return (
-        <header className="projects-header reveal">
+        <header className="projects-header">
             <div>
                 <span className="projects-eyebrow">Project workspace</span>
                 <h1>My Projects</h1>

@@ -14,7 +14,7 @@ export interface ProcurementTabsProps {
 /** Items, Quotes and Purchases. */
 export default function ProcurementTabs({ activeStage, setActiveStage, itemCount, purchaseCount, stats }: ProcurementTabsProps) {
   return (
-    <nav className="stage-tabs reveal" data-delay="1" aria-label="Procurement sections">
+    <nav className="stage-tabs" aria-label="Procurement sections">
       <button
         type="button"
         aria-current={activeStage === 'boq' ? 'page' : undefined}

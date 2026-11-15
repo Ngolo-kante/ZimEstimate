@@ -23,7 +23,7 @@ export default function ProjectsFilters({
         activeFilterCount, clearFilters,
     } = filters;
     return (
-        <div className="filters-bar reveal" data-delay="2">
+        <div className="filters-bar">
             <div className="filters-top-row">
                 <div className="search-box">
                     <MagnifyingGlass size={18} weight="light" />

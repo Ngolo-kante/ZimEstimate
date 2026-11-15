@@ -262,7 +262,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
 
                 .file-count {
                     margin: 0;
-                    color: #68809f;
+                    color: #475569;
                     font-size: 0.86rem;
                 }
 

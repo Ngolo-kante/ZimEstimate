@@ -25,7 +25,6 @@ import { ProjectDetailSkeleton } from '@/components/ui/Skeleton';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useReminderChannels } from '@/hooks/useReminderChannels';
-import { useReveal } from '@/hooks/useReveal';
 import { supabase } from '@/lib/supabase';
 import { summariseCompliance } from '@/lib/compliance';
 import { completionRate as completionPercent } from '@/lib/projects/workspaceStats';
@@ -57,7 +56,7 @@ function ProjectDetailContent() {
         loadProjectData, refreshStages, refreshItems,
         handleProjectUpdate, handleItemUpdate, handleStageUpdate, handleDeleteItem, handleAddItem,
     } = useProjectData(projectId, setActiveTab);
-    useReveal({ deps: [isLoading, activeView, activeTab] });
+
     const {
         activeReminderChannel, setPreferredReminderChannel, savingsReminder, reminderDraft, setReminderDraft,
         showPhoneModal, closePhoneModal,

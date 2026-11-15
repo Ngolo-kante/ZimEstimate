@@ -241,7 +241,7 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
         }
 
         .status-btn.checked {
-          color: var(--color-success);
+          color: #15803d;
         }
 
         .item-info {
@@ -300,7 +300,7 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
 
         .variance.under {
           background: var(--color-success-bg, rgba(16, 185, 129, 0.1));
-          color: var(--color-success);
+          color: #166534;
         }
 
         .variance.on {

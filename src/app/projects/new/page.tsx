@@ -513,7 +513,7 @@ export default function NewProject() {
                     height: 32px;
                     border-radius: 50%;
                     background: #e2e8f0;
-                    color: #64748b;
+                    color: #475569;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -748,7 +748,7 @@ export default function NewProject() {
 
                 .field-hint {
                     font-size: 0.813rem;
-                    color: #94a3b8;
+                    color: #64748b;
                 }
 
                 .field-error {

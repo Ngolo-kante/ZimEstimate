@@ -477,7 +477,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                     </p>
                   </div>
                   <span
-                    className={`flex-shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-bold capitalize ${
+                    className={`flex-shrink-0 rounded-full border px-2.5 py-1 text-[12px] font-bold capitalize ${
                       STATUS_STYLES[rfq.status] ?? STATUS_STYLES.open
                     }`}
                   >
@@ -525,7 +525,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                                     <Storefront size={14} className="text-slate-400" />
                                     {quote.supplier?.name ?? 'Supplier'}
                                     {index === 0 && quotes.length > 1 && quote.status !== 'accepted' && (
-                                      <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
+                                      <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[12px] font-bold text-blue-700">
                                         Lowest
                                       </span>
                                     )}

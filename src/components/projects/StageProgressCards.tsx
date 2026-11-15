@@ -222,7 +222,7 @@ export function StageProgressCards({
 
                 .stage-items {
                     font-size: 0.75rem;
-                    color: #64748b;
+                    color: #475569;
                 }
 
                 .stage-progress {

@@ -115,8 +115,6 @@ export const viewport: Viewport = {
   themeColor: "#0B1F3B", // matches --color-primary — was a fourth, uncoordinated navy
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export default function RootLayout({

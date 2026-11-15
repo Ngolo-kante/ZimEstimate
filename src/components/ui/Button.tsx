@@ -47,7 +47,7 @@ export default function Button({
           gap: 0.5rem;
           font-weight: 500;
           border-radius: var(--radius-md);
-          transition: all 0.2s ease;
+          transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, color 160ms ease;
           cursor: pointer;
           border: none;
           font-family: inherit;
@@ -56,6 +56,13 @@ export default function Button({
         .btn:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+
+        .btn:active:not(:disabled) { transform: scale(0.97); }
+
+        @media (prefers-reduced-motion: reduce) {
+          .btn { transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, color 160ms ease; }
+          .btn:active:not(:disabled) { transform: none; }
         }
 
         /* Sizes */
@@ -79,9 +86,10 @@ export default function Button({
           background: var(--color-accent);
           color: white;
         }
-
-        .btn-primary:hover:not(:disabled) {
-          background: var(--color-accent-dark);
+        @media (hover: hover) and (pointer: fine) {
+          .btn-primary:hover:not(:disabled) {
+            background: var(--color-accent-dark);
+          }
         }
 
         .btn-secondary {
@@ -89,29 +97,32 @@ export default function Button({
           border: 1px solid var(--color-border);
           color: var(--color-text);
         }
-
-        .btn-secondary:hover:not(:disabled) {
-          background: var(--color-surface);
-          border-color: var(--color-primary);
+        @media (hover: hover) and (pointer: fine) {
+          .btn-secondary:hover:not(:disabled) {
+            background: var(--color-surface);
+            border-color: var(--color-primary);
+          }
         }
 
         .btn-ghost {
           background: transparent;
           color: var(--color-text-secondary);
         }
-
-        .btn-ghost:hover:not(:disabled) {
-          background: var(--color-border-light);
-          color: var(--color-text);
+        @media (hover: hover) and (pointer: fine) {
+          .btn-ghost:hover:not(:disabled) {
+            background: var(--color-border-light);
+            color: var(--color-text);
+          }
         }
 
         .btn-danger {
           background: var(--color-error);
           color: white;
         }
-
-        .btn-danger:hover:not(:disabled) {
-          background: #dc2626;
+        @media (hover: hover) and (pointer: fine) {
+          .btn-danger:hover:not(:disabled) {
+            background: #dc2626;
+          }
         }
 
         .full-width {

@@ -57,7 +57,7 @@ export default function ErrorState({
             onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
             aria-expanded={showTechnicalDetails}
             aria-label="Toggle technical error details"
-            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--color-muted)] hover:text-[var(--color-text-secondary)] transition outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-accent)] rounded px-1"
+            className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--color-muted)] hover:text-[var(--color-text-secondary)] transition outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-accent)] rounded px-1"
           >
             <span>{showTechnicalDetails ? 'Hide details' : 'Technical details'}</span>
             {showTechnicalDetails ? <CaretUp size={12} /> : <CaretDown size={12} />}
@@ -68,7 +68,7 @@ export default function ErrorState({
               initial={reduceMotion ? false : { height: 0, opacity: 0 }}
               animate={reduceMotion ? undefined : { height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="mt-2 overflow-hidden rounded-xl border border-[var(--color-border-light)] bg-[var(--color-background)] p-3 text-left font-mono text-[11px] text-[var(--color-text-secondary)] break-all"
+              className="mt-2 overflow-hidden rounded-xl border border-[var(--color-border-light)] bg-[var(--color-background)] p-3 text-left font-mono text-[12px] text-[var(--color-text-secondary)] break-all"
             >
               <code>{technicalDetail}</code>
             </motion.div>

@@ -25,7 +25,7 @@ export default function ProcurementToolbar({
   onExportCsv,
 }: ProcurementToolbarProps) {
   return (
-    <div className="procurement-toolbar reveal !rounded-lg" data-delay="3">
+    <div className="procurement-toolbar !rounded-lg">
       <div className="toolbar-left">
         <div className="search-box">
           <MagnifyingGlass className="search-icon" size={16} />

@@ -326,7 +326,7 @@ export default function StageUsageSection({
                 }
 
                 .stat-label {
-                    font-size: 0.625rem;
+                    font-size: 12px;
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
@@ -393,7 +393,7 @@ export default function StageUsageSection({
                 }
 
                 .form-group label {
-                    font-size: 0.625rem;
+                    font-size: 12px;
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
@@ -455,7 +455,7 @@ export default function StageUsageSection({
                 }
 
                 .material-stats {
-                    font-size: 0.625rem;
+                    font-size: 12px;
                     color: var(--color-text-muted);
                 }
 

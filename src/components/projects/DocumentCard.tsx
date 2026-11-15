@@ -190,7 +190,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                 }
 
                 .category-badge {
-                    font-size: 0.65rem;
+                    font-size: 12px;
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;

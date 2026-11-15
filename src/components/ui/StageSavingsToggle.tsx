@@ -84,7 +84,7 @@ export default function StageSavingsToggle(props: StageSavingsToggleProps) {
                 }
 
                 .header-label {
-                    font-size: 0.625rem;
+                    font-size: 12px;
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
@@ -121,7 +121,7 @@ export default function StageSavingsToggle(props: StageSavingsToggleProps) {
                 }
 
                 .stat-label {
-                    font-size: 0.625rem;
+                    font-size: 12px;
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;

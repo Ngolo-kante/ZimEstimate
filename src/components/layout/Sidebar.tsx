@@ -188,10 +188,11 @@ export default function Sidebar() {
           text-decoration: none;
           transition: all 0.2s ease;
         }
-
-        .nav-item:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: var(--color-text-inverse);
+        @media (hover: hover) and (pointer: fine) {
+          .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--color-text-inverse);
+          }
         }
 
         .nav-item.active {
@@ -262,10 +263,11 @@ export default function Sidebar() {
           border-radius: var(--radius-sm);
           transition: all 0.2s ease;
         }
-
-        .logout-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: var(--color-text-inverse);
+        @media (hover: hover) and (pointer: fine) {
+          .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--color-text-inverse);
+          }
         }
       `}</style>
     </aside>

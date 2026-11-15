@@ -27,7 +27,7 @@ import {
 } from '@phosphor-icons/react';
 
 const statusBadgeStyles: Record<string, { background: string; color: string }> = {
-    active: { background: 'rgba(22, 163, 74, 0.12)', color: 'var(--color-emerald)' },
+    active: { background: 'rgba(22, 163, 74, 0.12)', color: '#166534' },
     draft: { background: 'var(--color-mist)', color: 'var(--color-text-secondary)' },
     completed: { background: 'rgba(46, 108, 246, 0.12)', color: 'var(--color-accent)' },
     archived: { background: 'var(--color-mist)', color: 'var(--color-text-muted)' },
@@ -89,7 +89,7 @@ export default function OverviewView({
 }: OverviewViewProps) {
     const { exchangeRate, formatPrice } = useCurrency();
     return (
-        <div className="overview-view space-y-8 max-w-6xl mx-auto reveal" data-delay="1">
+        <div className="overview-view space-y-8 max-w-6xl mx-auto">
             <div className="overview-header">
                 <div>
                     {/* Breadcrumbs */}
@@ -151,7 +151,7 @@ export default function OverviewView({
 
             {/* Price Update Alert */}
             {priceUpdates.length > 0 && (
-                <div className="price-update-alert reveal" data-delay="2">
+                <div className="price-update-alert">
                     <div className="flex items-start gap-3">
                         <div className="price-update-icon">
                             <TrendUp size={20} weight="bold" />
@@ -186,7 +186,7 @@ export default function OverviewView({
             )}
 
             {/* Project Progress/Timeline */}
-            <section className="reveal" data-delay="3">
+            <section >
                 <h3 className="section-title mb-4">Construction Progress</h3>
                 <StageProgressCards
                     stages={stages}
@@ -201,7 +201,7 @@ export default function OverviewView({
             </section>
 
             {/* KPI Dashboard */}
-            <section className="overview-card reveal" data-delay="4">
+            <section className="overview-card">
                 <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
                         <Wallet size={24} weight="duotone" />
@@ -227,7 +227,7 @@ export default function OverviewView({
                 {/* Left Column - Next Steps */}
                 <div className="lg:col-span-2 space-y-8">
                     {/* Next Steps */}
-                    <section className="overview-card reveal" data-delay="5">
+                    <section className="overview-card">
                         <h3 className="text-lg font-bold text-primary mb-4 font-heading">Next Steps</h3>
                         <div className="space-y-4">
                             {materialItems.filter(i => !i.is_purchased).slice(0, 5).map(item => (
@@ -270,7 +270,7 @@ export default function OverviewView({
 
                 {/* Right Column - Summary Stats */}
                 <div className="space-y-6">
-                    <Card className="reveal" data-delay="6">
+                    <Card >
                         <CardHeader>
                             <CardTitle>Project Summary</CardTitle>
                         </CardHeader>
@@ -309,7 +309,7 @@ export default function OverviewView({
                         </div>
                     </Card>
 
-                    <Card className="reveal" data-delay="7">
+                    <Card >
                         <CardHeader>
                             <CardTitle>Compliance Snapshot</CardTitle>
                         </CardHeader>
@@ -371,7 +371,7 @@ export default function OverviewView({
                         </div>
                     </Card>
 
-                    <Card className="pro-tip-card reveal" data-delay="8">
+                    <Card className="pro-tip-card">
                         <div className="p-4">
                             <h4 className="font-bold text-blue-900 mb-2">Pro Tip</h4>
                             <p className="text-sm text-blue-700">

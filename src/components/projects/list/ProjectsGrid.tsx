@@ -45,7 +45,7 @@ export default function ProjectsGrid({
             {/* Optimistic "Creating..." card */}
             {optimisticProject && (
                 <div className="project-link">
-                    <Card className="project-card creating reveal" data-delay="1">
+                    <Card className="project-card creating">
                         <CardHeader>
                             <div className="project-header">
                                 <CardTitle>{optimisticProject.name}</CardTitle>
@@ -67,9 +67,9 @@ export default function ProjectsGrid({
                     </Card>
                 </div>
             )}
-            {filteredQuick.map((item, index) => (
+            {filteredQuick.map((item) => (
                 <Link key={item.id} href={item.href} className="project-link" data-saved-id={item.id}>
-                    <Card className={`project-card${highlightedProjectId === item.id ? ' highlight-new' : ''} reveal`} data-delay={(index % 4) + 1}>
+                    <Card className={`project-card${highlightedProjectId === item.id ? ' highlight-new' : ''}`}>
                         <CardHeader>
                             <div className="project-header">
                                 <CardTitle>{item.name}</CardTitle>
@@ -82,7 +82,7 @@ export default function ProjectsGrid({
                                 {item.status === 'archived' && <CardBadge variant="default">Archived</CardBadge>}
                             </div>
                             <div className="menu-container" ref={openMenuId === item.id ? menuRef : null}>
-                                <button className="menu-btn" onClick={(e) => handleMenuToggle(e, item.id)}>
+                                <button className="menu-btn" aria-label={`Actions for ${item.name}`} aria-haspopup="menu" aria-expanded={openMenuId === item.id} onClick={(e) => handleMenuToggle(e, item.id)}>
                                     <DotsThreeVertical size={20} weight="bold" />
                                 </button>
                                 {openMenuId === item.id && (
@@ -126,9 +126,9 @@ export default function ProjectsGrid({
                     </Card>
                 </Link>
             ))}
-            {visibleProjects.map((project, index) => (
+            {visibleProjects.map((project) => (
                 <Link key={project.id} href={`/projects/${project.id}`} className="project-link" data-saved-id={project.id}>
-                    <Card className={`project-card${highlightedProjectId === project.id ? ' highlight-new' : ''} reveal`} data-delay={(index % 4) + 1}>
+                    <Card className={`project-card${highlightedProjectId === project.id ? ' highlight-new' : ''}`}>
                         <CardHeader>
                             <div className="project-header">
                                 <CardTitle>{project.name}</CardTitle>
@@ -141,7 +141,7 @@ export default function ProjectsGrid({
                                 </CardBadge>
                             </div>
                             <div className="menu-container" ref={openMenuId === project.id ? menuRef : null}>
-                                <button className="menu-btn" onClick={(e) => handleMenuToggle(e, project.id)}>
+                                <button className="menu-btn" aria-label={`Actions for ${project.name}`} aria-haspopup="menu" aria-expanded={openMenuId === project.id} onClick={(e) => handleMenuToggle(e, project.id)}>
                                     <DotsThreeVertical size={20} weight="bold" />
                                 </button>
                                 {openMenuId === project.id && (

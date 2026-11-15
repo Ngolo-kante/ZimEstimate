@@ -10,7 +10,6 @@ import Button from '@/components/ui/Button';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useReveal } from '@/hooks/useReveal';
 import { getPortfolioAnalytics, type PortfolioAnalyticsData } from '@/lib/services/analytics';
 import {
   TrendUp,
@@ -44,8 +43,6 @@ function DashboardContent() {
   // project", telling someone with projects that they had none.
   const [loadFailed, setLoadFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
-
-  useReveal({ deps: [loading] });
 
   useEffect(() => {
     let active = true;
@@ -237,7 +234,7 @@ function DashboardContent() {
   return (
     <MainLayout fullWidth>
       <div className="dashboard-page">
-        <section className="dash-hero reveal">
+        <section className="dash-hero">
           <div className="hero-left">
             <div>
               <span className="dash-eyebrow">Portfolio performance</span>
@@ -258,7 +255,7 @@ function DashboardContent() {
         <ProjectsSubNav active="dashboard" />
 
         {/* ── KPI Strip ── */}
-        <section className="kpi-strip reveal" data-delay="1">
+        <section className="kpi-strip">
           {kpis.map((kpi) => {
             const colors = toneColors[kpi.tone];
             return (
@@ -277,7 +274,7 @@ function DashboardContent() {
         </section>
 
         {/* ── Projects Table ── */}
-        <section className="projects-panel reveal" data-delay="2">
+        <section className="projects-panel">
           <div className="panel-head">
             <h2>Your Projects</h2>
             <Link href="/projects" className="see-all">
@@ -372,7 +369,7 @@ function DashboardContent() {
         {/* ── Analytics Grid ── */}
         <div className="analytics-grid">
           {/* Budget Health */}
-          <Card className="spend-card reveal" data-delay="3">
+          <Card className="spend-card">
             <CardHeader>
               <CardTitle>Budget Health</CardTitle>
               <CardBadge variant={analytics.budgetVarianceUsd >= 0 ? 'success' : 'warning'}>
@@ -419,7 +416,7 @@ function DashboardContent() {
           </Card>
 
           {/* Monthly Spend */}
-          <Card className="timeline-card reveal" data-delay="4">
+          <Card className="timeline-card">
             <CardHeader>
               <CardTitle>Monthly Spend</CardTitle>
               <CardBadge variant="accent">Last 6 Months</CardBadge>
@@ -442,7 +439,7 @@ function DashboardContent() {
           </Card>
 
           {/* Top Suppliers */}
-          <Card className="suppliers-card reveal" data-delay="5">
+          <Card className="suppliers-card">
             <CardHeader>
               <CardTitle>Top Suppliers</CardTitle>
               <CardBadge variant="accent">By Spend</CardBadge>
@@ -468,7 +465,7 @@ function DashboardContent() {
           </Card>
 
           {/* Recent Purchases */}
-          <Card className="purchases-card reveal" data-delay="6">
+          <Card className="purchases-card">
             <CardHeader>
               <CardTitle>Recent Purchases</CardTitle>
               <Receipt size={18} weight="duotone" />
@@ -525,7 +522,7 @@ function DashboardContent() {
         .dash-eyebrow {
           display: block;
           color: #1d5fbf;
-          font-size: 0.7rem;
+          font-size: 12px;
           font-weight: 800;
           text-transform: uppercase;
         }
@@ -706,7 +703,7 @@ function DashboardContent() {
         }
 
         .pt-header .pt-cell {
-          font-size: 0.7rem;
+          font-size: 12px;
           font-weight: 700;
           color: var(--color-text-muted);
           text-transform: uppercase;
@@ -741,7 +738,7 @@ function DashboardContent() {
           display: flex;
           align-items: center;
           gap: 3px;
-          font-size: 0.7rem;
+          font-size: 12px;
           color: var(--color-text-muted);
           margin-top: 2px;
         }
@@ -751,7 +748,7 @@ function DashboardContent() {
           display: inline-flex;
           align-items: center;
           gap: 4px;
-          font-size: 0.68rem;
+          font-size: 12px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.04em;
@@ -767,7 +764,7 @@ function DashboardContent() {
 
         .pt-badge.active {
           background: #dcfce7;
-          color: var(--color-success);
+          color: #166534;
         }
 
         .pt-badge.completed {
@@ -830,7 +827,7 @@ function DashboardContent() {
         .pt-progress-ring span {
           position: relative;
           z-index: 1;
-          font-size: 0.65rem;
+          font-size: 12px;
           font-weight: 800;
           color: #334155;
         }
@@ -972,7 +969,7 @@ function DashboardContent() {
         }
 
         .bar-label {
-          font-size: 0.68rem;
+          font-size: 12px;
           color: var(--color-text-muted);
           text-transform: uppercase;
           letter-spacing: 0.03em;
@@ -980,7 +977,7 @@ function DashboardContent() {
         }
 
         .bar-value {
-          font-size: 0.68rem;
+          font-size: 12px;
           font-weight: 600;
           color: var(--color-text-secondary);
         }
@@ -1038,7 +1035,7 @@ function DashboardContent() {
         }
 
         .list-meta {
-          font-size: 0.72rem;
+          font-size: 12px;
           color: var(--color-text-muted);
         }
 
@@ -1192,7 +1189,7 @@ function DashboardContent() {
           }
 
           .kpi-label {
-            font-size: 0.68rem;
+            font-size: 12px;
           }
 
           .pt-progress-ring {
@@ -1206,7 +1203,7 @@ function DashboardContent() {
           }
 
           .pt-progress-ring span {
-            font-size: 0.6rem;
+            font-size: 12px;
           }
         }
       `}</style>

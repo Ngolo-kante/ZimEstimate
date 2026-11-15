@@ -241,7 +241,7 @@ export default function ProjectKPIDashboard({
             <span className="stat-sub">Value: {formatPrice(stats.usageValue, stats.usageValue * exchangeRate)}</span>
           </div>
           {onNavigate && (
-            <button className="stat-action" onClick={() => onNavigate('usage')}>
+            <button className="stat-action" aria-label="View usage tracking" onClick={() => onNavigate('usage')}>
               <ArrowRight size={14} />
             </button>
           )}
@@ -263,7 +263,7 @@ export default function ProjectKPIDashboard({
             </span>
           </div>
           {onNavigate && (
-            <button className="stat-action" onClick={() => onNavigate('procurement')}>
+            <button className="stat-action" aria-label="View buying and quotes" onClick={() => onNavigate('procurement')}>
               <ArrowRight size={14} />
             </button>
           )}
@@ -371,7 +371,7 @@ export default function ProjectKPIDashboard({
 
         .kpi-sub {
           font-size: 0.85rem;
-          color: #94a3b8;
+          color: #64748b;
         }
 
         .kpi-action {
@@ -384,7 +384,7 @@ export default function ProjectKPIDashboard({
           border-radius: 8px;
           font-size: 0.8rem;
           font-weight: 600;
-          color: #3b82f6;
+          color: #1d4ed8;
           cursor: pointer;
           transition: all 0.2s;
           margin-top: auto;
@@ -483,9 +483,9 @@ export default function ProjectKPIDashboard({
         }
 
         .stat-label {
-          font-size: 0.7rem;
+          font-size: 12px;
           font-weight: 600;
-          color: #94a3b8;
+          color: #64748b;
           text-transform: uppercase;
           letter-spacing: 0.03em;
         }

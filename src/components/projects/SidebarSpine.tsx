@@ -292,7 +292,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                     }
 
                     .label {
-                        font-size: 0.68rem;
+                        font-size: 12px;
                         text-transform: uppercase;
                         letter-spacing: 0.05em;
                         color: #4b5f7a;

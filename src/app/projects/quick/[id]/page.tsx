@@ -375,7 +375,7 @@ function SavedQuickEstimate() {
         .type-chip {
           display: inline-block; padding: 3px 10px; border-radius: 999px; margin-bottom: 8px;
           background: var(--color-accent-muted); color: var(--color-accent);
-          font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+          font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
         }
         .head h1 { font-size: 1.5rem; font-weight: 700; color: var(--color-text); margin: 0; }
         .meta { font-size: 0.875rem; color: var(--color-text-secondary); margin-top: 4px; }
