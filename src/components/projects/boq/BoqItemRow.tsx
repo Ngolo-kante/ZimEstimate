@@ -1,5 +1,8 @@
 'use client';
 
+import { Children, isValidElement, type ReactNode } from 'react';
+import { Badge } from '@/components/shadcn/badge';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/shadcn/collapsible';
 import { formatQuantity, formatUsd } from '@/lib/format';
 
 import InlineEdit from '@/components/ui/InlineEdit';
@@ -85,8 +88,7 @@ export default function BoqItemRow({
 
     const rowStatus = getItemStatus(item, purchases);
     const enablement = isEnablementItem(item.notes);
-    return (
-        <tr key={item.id} className={`item-row status-${rowStatus}${enablement ? ' enablement' : ''}`}>
+    const cells = (<>
             {visibleColumns.item && (
                 <td data-label="Item" className="col-item">
                     <div className="item-info">
@@ -221,7 +223,7 @@ export default function BoqItemRow({
                             onClick={() => onLogPurchase(item)}
                             title="Log purchase" aria-label="Log purchase"
                         >
-                            <ShoppingCart size={14} />
+                            <ShoppingCart size={14} /><span className="boq-action-label">Log purchase</span>
                         </button>
                     )}
                     {onRecordUsage && usageTrackingEnabled && (
@@ -230,7 +232,7 @@ export default function BoqItemRow({
                             onClick={() => onRecordUsage(item)}
                             title="Record usage" aria-label="Record usage"
                         >
-                            <ClipboardText size={14} />
+                            <ClipboardText size={14} /><span className="boq-action-label">Record usage</span>
                         </button>
                     )}
                     {onItemDelete && (
@@ -239,11 +241,24 @@ export default function BoqItemRow({
                             onClick={() => onItemDelete(item.id)}
                             title="Delete item" aria-label="Delete item"
                         >
-                            <Trash size={14} />
+                            <Trash size={14} /><span className="boq-action-label">Delete</span>
                         </button>
                     )}
                 </div>
             </td>
-        </tr>
-);
+        </>);
+    return <>
+      <tr className={`item-row boq-desktop-row status-${rowStatus}${enablement ? ' enablement' : ''}`}>{cells}</tr>
+      <tr className="boq-mobile-row"><td colSpan={20}>
+        <Collapsible className="compact-row">
+          <CollapsibleTrigger className="compact-trigger">
+            <span className="compact-copy"><strong>{item.material_name}</strong><span>{formatQuantity(actualQty)} {item.unit} × {actualPrice > 0 ? formatPrice(actualPrice, actualPrice * exchangeRate) : 'No price yet'}</span></span>
+            <span className="compact-end"><strong>{actualPrice > 0 ? formatPrice(lineTotalUsd, lineTotalZwg) : 'No price yet'}</strong><Badge className="bg-sc-muted text-sc-foreground">{getStatusConfig(rowStatus).label}</Badge></span>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="compact-details">
+            {Children.map(cells.props.children, cell => isValidElement<{ children: ReactNode; 'data-label'?: string }>(cell) ? <div className="compact-field"><span>{cell.props['data-label']}</span><div>{cell.props.children}</div></div> : null)}
+          </CollapsibleContent>
+        </Collapsible>
+      </td></tr>
+    </>;
 }

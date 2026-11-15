@@ -1,5 +1,6 @@
 'use client';
 
+import UsageCompactRow from './UsageCompactRow';
 import { formatQuantity } from '@/lib/format';
 
 import { useCurrency } from '@/components/ui/CurrencyToggle';
@@ -51,7 +52,14 @@ export default function UsageLedgerTab({
                   <span className="ledger-date">{dateKey}</span>
                   <span className="ledger-date-total">{formatPrice(dayTotal, dayTotal * exchangeRate)}</span>
                 </div>
-                <table className="ledger-table">
+                <div className="usage-mobile-list">{records.map(record => {
+                  const item = itemLookup.get(record.boq_item_id);
+                  const price = Number(item?.unit_price_usd || 0);
+                  return <UsageCompactRow key={record.id} name={item?.material_name || 'Unknown'} fact={`${formatQuantity(record.quantity_used)} ${item?.unit || ''} · ${price > 0 ? formatPrice(record.quantity_used * price, record.quantity_used * price * exchangeRate) : 'No price yet'}`}>
+                    <dl><div><dt>Unit price</dt><dd>{price > 0 ? formatPrice(price, price * exchangeRate) : 'No price yet'}</dd></div><div><dt>Category</dt><dd>{item?.category || '—'}</dd></div></dl><p>{record.notes || 'No notes'}</p>
+                  </UsageCompactRow>;
+                })}</div>
+                <table className="ledger-table usage-desktop-list">
                   <thead>
                     <tr>
                       <th className="col-material">Material</th>

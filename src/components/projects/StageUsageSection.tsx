@@ -1,5 +1,7 @@
 'use client';
 
+import UsageCompactRow from './usage/UsageCompactRow';
+import '@/styles/project-usage.css';
 import { formatQuantity } from '@/lib/format';
 
 import { useState } from 'react';
@@ -98,16 +100,6 @@ export default function StageUsageSection({
             onUsageRecorded();
         }
         setIsSubmitting(false);
-    };
-
-    const getStatusColor = (item: BOQItem) => {
-        const purchased = Number(item.actual_quantity) || Number(item.quantity);
-        const used = usageByItem[item.id] || 0;
-        const usagePercent = purchased > 0 ? (used / purchased) * 100 : 0;
-
-        if (usagePercent >= 100) return 'var(--color-error)';
-        if (usagePercent >= 80) return 'var(--color-warning)';
-        return 'var(--color-success)';
     };
 
     if (items.length === 0) {
@@ -248,28 +240,9 @@ export default function StageUsageSection({
                                 const usagePercent = purchased > 0 ? (used / purchased) * 100 : 0;
 
                                 return (
-                                    <div key={item.id} className="material-usage-item">
-                                        <div className="material-info">
-                                            <span className="material-name" title={item.material_name}>{item.material_name}</span>
-                                            <span className="material-stats">
-                                                {formatQuantity(used)} / {formatQuantity(purchased)} {item.unit} used
-                                            </span>
-                                        </div>
-                                        <div className="usage-bar-container">
-                                            <div className="usage-bar">
-                                                <div
-                                                    className="usage-fill"
-                                                    style={{
-                                                        width: `${Math.min(usagePercent, 100)}%`,
-                                                        background: getStatusColor(item),
-                                                    }}
-                                                />
-                                            </div>
-                                            <span className="usage-percent" style={{ color: getStatusColor(item) }}>
-                                                {usagePercent.toFixed(0)}%
-                                            </span>
-                                        </div>
-                                    </div>
+                                    <div className="project-usage" key={item.id}><UsageCompactRow name={item.material_name} fact={!Number(item.unit_price_usd) ? 'No price yet' : `${formatQuantity(purchased - used)} ${item.unit} left`} percent={usagePercent}>
+                                      <dl><div><dt>Available</dt><dd>{formatQuantity(purchased)} {item.unit}</dd></div><div><dt>Used</dt><dd>{formatQuantity(used)} {item.unit}</dd></div><div><dt>Remaining</dt><dd>{formatQuantity(purchased - used)} {item.unit}</dd></div></dl>
+                                    </UsageCompactRow></div>
                                 );
                             })}
                         </div>

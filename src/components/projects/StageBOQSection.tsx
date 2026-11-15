@@ -15,6 +15,7 @@ import { Package, CaretDown, CaretUp, ShoppingCart, Plus } from '@phosphor-icons
 import PriceDisplay from '@/components/projects/PriceDisplay';
 import BoqAddItemForm from './boq/BoqAddItemForm';
 import BoqTableToolbar from './boq/BoqTableToolbar';
+import { Table, TableHeader, TableBody } from '@/components/shadcn/table';
 import BoqItemRow from './boq/BoqItemRow';
 import { SIMPLE_COLUMNS, DETAILED_COLUMNS, type ColumnKey } from './boq/boqColumns';
 import { getItemStatus } from '@/lib/projects/itemStatus';
@@ -355,8 +356,8 @@ export default function StageBOQSection({
                         )}
 
                         <div className="table-responsive">
-                            <table className="boq-table">
-                                <thead>
+                            <Table className="boq-table">
+                                <TableHeader>
                                     <tr>
                                         {visibleColumns.item && <th className="col-item">Item Description</th>}
                                         {visibleColumns.avgPrice && <th className="col-price text-right">Avg. Price</th>}
@@ -372,8 +373,8 @@ export default function StageBOQSection({
                                         {visibleColumns.status && <th className="col-status">Status</th>}
                                         <th className="col-actions"></th>
                                     </tr>
-                                </thead>
-                                <tbody>
+                                </TableHeader>
+                                <TableBody>
                                     {filteredItems.map((item) => (
                                         <BoqItemRow
                                             key={item.id}
@@ -390,8 +391,8 @@ export default function StageBOQSection({
                                             onItemDelete={onItemDelete}
                                         />
                                     ))}
-                                </tbody>
-                            </table>
+                                </TableBody>
+                            </Table>
                         </div>
                     </div>
                 )}

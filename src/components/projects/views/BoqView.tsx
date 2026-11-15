@@ -73,15 +73,16 @@ export default function BoqView({
     // Bring the current stage into view in the switcher (it scrolls sideways on phones).
     useEffect(() => {
         const frame = window.requestAnimationFrame(() => {
-            stageSwitcherRef.current
-                ?.querySelector('[aria-current="step"]')
-                ?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            const strip = stageSwitcherRef.current;
+            const active = strip?.querySelector<HTMLElement>('[aria-current="step"]');
+            if (!strip || !active || strip.scrollWidth <= strip.clientWidth) return;
+            const left = active.getBoundingClientRect().left - strip.getBoundingClientRect().left + strip.scrollLeft - (strip.clientWidth - active.offsetWidth) / 2;
+            strip.scrollTo({ left, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
         });
         return () => window.cancelAnimationFrame(frame);
     }, [activeTab]);
     return (
         <div className="view-panel space-y-6 max-w-full mx-auto">
-            <ProjectCostSplit items={items} spentUsd={actualSpentUsd} idSuffix="-boq" />
             <nav ref={stageSwitcherRef} className="stage-switcher" aria-label="Construction stages">
                 {STAGE_CATEGORIES.map((category, index) => {
                     const stage = stages.find((candidate) => candidate.boq_category === category);
@@ -107,6 +108,24 @@ export default function BoqView({
                 })}
             </nav>
 
+            {currentStage && (
+                <StageTab
+                    stage={currentStage}
+                    projectId={projectId}
+                    items={activeStageItems}
+                    purchases={purchases}
+                    onStageUpdate={(u) => onStageUpdate({ ...currentStage, ...u })}
+                    onItemUpdate={onItemUpdate}
+                    onItemDelete={onItemDelete}
+                    onItemAdded={onItemAdded}
+                    onLogPurchase={onLogPurchase}
+                    onRecordUsage={onRecordUsage}
+                    showLabor={hasLabor}
+                    usageByItem={usageByItem}
+                    usageTrackingEnabled={usageTrackingEnabled}
+                    showTasks={false}
+                />
+            )}
             {activeStageComplianceWarnings.length > 0 && !isComplianceBannerDismissed && (
                 <div className="compliance-warning-banner" role="alert">
                     <div className="compliance-warning-content">
@@ -147,24 +166,7 @@ export default function BoqView({
                     </div>
                 </div>
             )}
-            {currentStage && (
-                <StageTab
-                    stage={currentStage}
-                    projectId={projectId}
-                    items={activeStageItems}
-                    purchases={purchases}
-                    onStageUpdate={(u) => onStageUpdate({ ...currentStage, ...u })}
-                    onItemUpdate={onItemUpdate}
-                    onItemDelete={onItemDelete}
-                    onItemAdded={onItemAdded}
-                    onLogPurchase={onLogPurchase}
-                    onRecordUsage={onRecordUsage}
-                    showLabor={hasLabor}
-                    usageByItem={usageByItem}
-                    usageTrackingEnabled={usageTrackingEnabled}
-                    showTasks={false}
-                />
-            )}
+            <ProjectCostSplit items={items} spentUsd={actualSpentUsd} idSuffix="-boq" />
             <ProjectFeesPanel items={feeItems} onUpdate={onItemUpdate} />
         </div>
     );

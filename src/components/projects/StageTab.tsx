@@ -23,7 +23,6 @@ import {
     getStageBudgetStats,
     StageBudgetStats,
 } from '@/lib/services/stages';
-import { deleteBOQItem } from '@/lib/services/projects';
 import { Warning } from '@phosphor-icons/react';
 
 interface StageTabProps {
@@ -205,16 +204,8 @@ export default function StageTab({
     };
 
     const handleItemDelete = async (itemId: string) => {
-        if (!confirm('Delete this item?')) return;
-
-        const { error } = await deleteBOQItem(itemId);
-        if (error) {
-            showError('Failed to delete item');
-        } else {
-            onItemDelete?.(itemId);
-            success('Item deleted');
-            loadData();
-        }
+        // The workspace owns the delayed delete and Undo toast.
+        onItemDelete?.(itemId);
     };
 
     const handleItemAdded = (item: BOQItem) => {
@@ -262,11 +253,11 @@ export default function StageTab({
     return (
         <>
             <div className="stage-tab">
-                <StageMetadataHeader
+                {showTasks && <StageMetadataHeader
                     stage={stage}
                     onUpdate={handleStageUpdate}
                     customTitle={categoryLabels[stage.boq_category]}
-                />
+                />}
 
                 {showTasks && (
                     <div className="tasks-section">
@@ -319,6 +310,11 @@ export default function StageTab({
                         />
                     </div>
                 )}
+                {!showTasks && <StageMetadataHeader
+                    stage={stage}
+                    onUpdate={handleStageUpdate}
+                    customTitle={categoryLabels[stage.boq_category]}
+                />}
             </div>
 
             <style jsx>{`

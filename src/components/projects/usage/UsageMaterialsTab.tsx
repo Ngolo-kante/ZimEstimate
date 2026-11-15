@@ -1,5 +1,6 @@
 'use client';
 
+import UsageCompactRow from './UsageCompactRow';
 import { formatQuantity } from '@/lib/format';
 
 import { formatUsageDate } from '@/lib/projects/usageStats';
@@ -35,10 +36,17 @@ export default function UsageMaterialsTab({
           const hasHistory = materialHistory.length > 0;
 
           return (
-            <div key={stat.item.id} className={`material-card ${isExpanded ? 'expanded' : ''}`}>
+            <div key={stat.item.id}>
+              <div className="usage-mobile-list"><UsageCompactRow name={stat.item.material_name} fact={!Number(stat.item.unit_price_usd) ? 'No price yet' : `${formatQuantity(stat.remainingQty)} ${stat.item.unit} left`} percent={stat.usagePercent}>
+                <dl><div><dt>Available</dt><dd>{formatQuantity(stat.availableQty)} {stat.item.unit}</dd></div><div><dt>Used</dt><dd>{formatQuantity(stat.usedQty)} {stat.item.unit}</dd></div><div><dt>Remaining</dt><dd>{formatQuantity(stat.remainingQty)} {stat.item.unit}</dd></div></dl>
+                {materialHistory.map(usage => <p key={usage.id}>{formatUsageDate(usage.usage_date, { day: '2-digit', month: 'short', year: 'numeric' })} · {formatQuantity(usage.quantity_used)} {stat.item.unit}{usage.notes && ` · ${usage.notes}`}</p>)}
+              </UsageCompactRow></div>
+            <div className={`usage-desktop-list material-card ${isExpanded ? 'expanded' : ''}`}>
               <div
                 className="material-header"
                 onClick={() => hasHistory && toggleMaterialExpanded(stat.item.id)}
+                onKeyDown={(event) => { if (hasHistory && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); toggleMaterialExpanded(stat.item.id); } }}
+                aria-expanded={hasHistory ? isExpanded : undefined}
                 role={hasHistory ? 'button' : undefined}
                 tabIndex={hasHistory ? 0 : undefined}
               >
@@ -118,7 +126,7 @@ export default function UsageMaterialsTab({
                   </table>
                 </div>
               )}
-            </div>
+            </div></div>
           );
         })}
         {usageStats.length === 0 && (

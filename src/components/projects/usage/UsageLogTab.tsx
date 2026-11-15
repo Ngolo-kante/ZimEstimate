@@ -1,5 +1,6 @@
 'use client';
 
+import UsageCompactRow from './UsageCompactRow';
 import { formatQuantity } from '@/lib/format';
 
 import { localToday } from '@/lib/projects/usageStats';
@@ -194,7 +195,13 @@ export default function UsageLogTab({
             <h3>Burn-down by material</h3>
             <p>Track how each material is being consumed on site.</p>
           </div>
-          <div className="table-wrap">
+          <div className="usage-mobile-list">
+            {usageStats.map(stat => <UsageCompactRow key={stat.item.id} name={stat.item.material_name} fact={!Number(stat.item.unit_price_usd) ? 'No price yet' : `${formatQuantity(stat.remainingQty)} ${stat.item.unit} left`} percent={stat.usagePercent}>
+              <dl><div><dt>Available</dt><dd>{formatQuantity(stat.availableQty)} {stat.item.unit}</dd></div><div><dt>Used</dt><dd>{formatQuantity(stat.usedQty)} {stat.item.unit}</dd></div><div><dt>Remaining</dt><dd>{formatQuantity(stat.remainingQty)} {stat.item.unit}</dd></div></dl>
+            </UsageCompactRow>)}
+            {usageStats.length === 0 && <p className="empty-row">No materials found for usage tracking.</p>}
+          </div>
+          <div className="table-wrap usage-desktop-list">
             <table className="usage-table">
               <thead>
                 <tr>
@@ -264,15 +271,9 @@ export default function UsageLogTab({
                   {records.map((record) => {
                     const item = itemLookup.get(record.boq_item_id);
                     return (
-                      <div key={record.id} className="history-item">
-                        <div>
-                          <span className="item-name" title={item?.material_name}>{item?.material_name || 'Material'}</span>
-                          <span className="item-notes">{record.notes || '—'}</span>
-                        </div>
-                        <div className="item-qty">
-                          {formatQuantity(record.quantity_used)} {item?.unit || ''}
-                        </div>
-                      </div>
+                      <UsageCompactRow key={record.id} name={item?.material_name || 'Material'} fact={`${formatQuantity(record.quantity_used)} ${item?.unit || ''} used`}>
+                        <p>{record.notes || 'No notes'}</p>
+                      </UsageCompactRow>
                     );
                   })}
                 </div>
