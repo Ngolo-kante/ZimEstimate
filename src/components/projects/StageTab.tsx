@@ -1,5 +1,7 @@
 'use client';
 
+import { isLinePurchased } from '@/lib/projects/itemStatus';
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import StageMetadataHeader from './StageMetadataHeader';
 import StageTaskList from './StageTaskList';
@@ -109,7 +111,7 @@ export default function StageTab({
                 const price = item.actual_price_usd ?? item.unit_price_usd;
                 return sum + (Number(qty) * Number(price));
             }, 0);
-        const purchasedCount = stageLaborItems.filter(i => i.is_purchased).length;
+        const purchasedCount = stageLaborItems.filter(i => isLinePurchased(i, purchases)).length;
         const remaining = totalBudget - totalSpent;
         const usagePercent = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
@@ -121,7 +123,7 @@ export default function StageTab({
             purchasedCount,
             usagePercent,
         };
-    }, [stageLaborItems]);
+    }, [stageLaborItems, purchases]);
 
     // Load budget stats
     const loadData = useCallback(async () => {

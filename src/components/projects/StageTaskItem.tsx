@@ -148,13 +148,15 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                     border: 1px solid #e2e8f0;
                     border-radius: 12px;
                     overflow: hidden;
-                    transition: all 0.2s ease;
+                    transition: background-color 0.2s ease, border-color 0.2s ease;
                     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
                 }
 
-                .task-item:hover {
-                    border-color: #cbd5e1;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                @media (hover: hover) and (pointer: fine) {
+                  .task-item:hover {
+                      border-color: #cbd5e1;
+                      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                  }
                 }
 
                 .task-item.completed {
@@ -181,12 +183,14 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                     align-items: center;
                     justify-content: center;
                     flex-shrink: 0;
-                    transition: all 0.15s ease;
+                    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
                     color: white;
                 }
 
-                .checkbox:hover {
-                    border-color: #3b82f6;
+                @media (hover: hover) and (pointer: fine) {
+                  .checkbox:hover {
+                      border-color: #3b82f6;
+                  }
                 }
 
                 .checkbox.checked {
@@ -259,12 +263,14 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                     cursor: pointer;
                     color: #94a3b8;
                     border-radius: 6px;
-                    transition: all 0.2s;
+                    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
                 }
 
-                .expand-btn:hover {
-                    background: #f1f5f9;
-                    color: #475569;
+                @media (hover: hover) and (pointer: fine) {
+                  .expand-btn:hover {
+                      background: #f1f5f9;
+                      color: #475569;
+                  }
                 }
 
                 .task-details {
@@ -339,8 +345,10 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                     color: #64748b;
                 }
 
-                .btn-cancel:hover {
-                    background: #e2e8f0;
+                @media (hover: hover) and (pointer: fine) {
+                  .btn-cancel:hover {
+                      background: #e2e8f0;
+                  }
                 }
 
                 .btn-save {
@@ -348,8 +356,10 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                     color: white;
                 }
 
-                .btn-save:hover {
-                    background: #1d4ed8;
+                @media (hover: hover) and (pointer: fine) {
+                  .btn-save:hover {
+                      background: #1d4ed8;
+                  }
                 }
 
                 .detail-actions {
@@ -368,19 +378,25 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                     font-size: 0.8rem;
                     color: #475569;
                     cursor: pointer;
-                    transition: all 0.15s ease;
+                    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
                 }
 
-                .action-btn:hover {
-                    border-color: #cbd5e1;
-                    background: #f8fafc;
+                @media (hover: hover) and (pointer: fine) {
+                  .action-btn:hover {
+                      border-color: #cbd5e1;
+                      background: #f8fafc;
+                  }
                 }
+@media (hover: hover) and (pointer: fine) {
+
 
                 .action-btn.danger:hover {
                     border-color: #fee2e2;
                     color: #ef4444;
                     background: #fef2f2;
                 }
+}
+
 
                 .completed-info {
                     font-size: 12px;

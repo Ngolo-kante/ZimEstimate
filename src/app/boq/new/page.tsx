@@ -883,7 +883,7 @@ function BoqNewPageContent() {
 
   return (
     <>
-      <div className="wiz-root min-h-[calc(100vh-80px)]">
+      <div className="wiz-root min-h-[calc(100dvh-80px)]">
         {/* Static, not sticky. It was `sticky top-0` while the app navbar also
             occupies the top of the viewport, so the project name and Save
             Estimate rendered directly on top of the logo and account menu.

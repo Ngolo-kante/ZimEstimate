@@ -30,6 +30,11 @@ export function purchaseStatus(estimatedQty: number, totalPurchased: number): It
     return 'in_progress';
 }
 
+/** A purchased line has enough quantity, regardless of a stale flag or status tolerance. */
+export function isLinePurchased(item: BOQItem, purchases: PurchaseRecord[] = []): boolean {
+    return purchasedQuantity(item, purchases) >= Number(item.quantity);
+}
+
 /** The label and CSS class for each status. */
 export function getStatusConfig(status: ItemStatus): { label: string; className: string } {
     switch (status) {

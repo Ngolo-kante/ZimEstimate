@@ -79,7 +79,7 @@
     font-size: 0.9rem;
     background: #fff;
     outline: none;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
     appearance: none;
 }
 .stage-boq-empty select:focus, .stage-boq-empty input:focus {
@@ -209,8 +209,8 @@
 }
 
 .stage-boq .purchased-badge {
-    color: var(--color-accent-dark);
-    background: var(--color-accent-muted);
+    color: var(--color-success-fg);
+    background: var(--color-success-bg);
     padding: 2px 8px;
     border-radius: 99px;
 }
@@ -258,7 +258,7 @@
     border: 1px solid #e2e8f0;
     color: #64748b;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     flex-shrink: 0;
 }
 @media (hover: hover) and (pointer: fine) {
@@ -302,7 +302,7 @@
     background: #f8fafc;
     border-radius: 7px;
     border: 1px solid transparent;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     width: 240px;
     height: 40px;
 }
@@ -422,7 +422,7 @@
     font-weight: 500;
     color: #64748b;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 @media (hover: hover) and (pointer: fine) {
   .stage-boq .columns-btn:hover {
@@ -510,7 +510,7 @@
     font-size: 0.9rem;
     background: #fff;
     outline: none;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
     appearance: none;
 }
 
@@ -614,23 +614,23 @@
 }
 
 .stage-boq .status-pill.purchased {
-    background: #dcfce7;
-    color: #166534;
+    color: var(--color-success-fg);
+    background: var(--color-success-bg);
 }
 
 .stage-boq .status-pill.pending {
-    background: #f1f5f9;
-    color: #475569;
+    color: var(--color-warning-fg);
+    background: var(--color-warning-bg);
 }
 
 .stage-boq .status-pill.in-progress {
-    background: #dbeafe;
-    color: #1e40af;
+    color: var(--color-info-fg);
+    background: var(--color-info-bg);
 }
 
 .stage-boq .status-pill.over-purchased {
-    background: #fee2e2;
-    color: #b91c1c;
+    color: var(--color-danger-fg);
+    background: var(--color-danger-bg);
 }
 
 /* Row status highlights */
@@ -689,7 +689,7 @@
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;

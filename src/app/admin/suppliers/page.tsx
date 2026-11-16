@@ -250,7 +250,7 @@ export default function AdminSuppliersPage() {
   if (loading) {
     return (
       <div style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -263,7 +263,7 @@ export default function AdminSuppliersPage() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       backgroundColor: '#f8fafc',
     }}>
       {/* Header */}
@@ -493,7 +493,7 @@ export default function AdminSuppliersPage() {
             boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
             position: 'sticky',
             top: '2rem',
-            maxHeight: 'calc(100vh - 4rem)',
+            maxHeight: 'calc(100dvh - 4rem)',
             overflowY: 'auto',
           }}>
             <div style={{

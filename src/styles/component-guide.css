@@ -1,7 +1,7 @@
 /* Component style guide primitives (uses design tokens) */
 
 .ds-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: var(--space-12) var(--space-8);
   background: var(--color-background);
   color: var(--color-text);
@@ -111,9 +111,10 @@
   color: var(--color-text-inverse);
   box-shadow: var(--shadow-button);
 }
-
+@media (hover: hover) and (pointer: fine) {
 .ds-btn--primary:hover {
   background: var(--color-accent-dark);
+}
 }
 
 .ds-btn--secondary {
@@ -121,10 +122,11 @@
   color: var(--color-text);
   border-color: var(--color-border-dark);
 }
-
+@media (hover: hover) and (pointer: fine) {
 .ds-btn--secondary:hover {
   border-color: var(--color-accent);
   color: var(--color-accent);
+}
 }
 
 .ds-btn--ghost {
@@ -132,19 +134,21 @@
   color: var(--color-accent);
   border-color: var(--color-border-light);
 }
-
+@media (hover: hover) and (pointer: fine) {
 .ds-btn--ghost:hover {
   border-color: var(--color-accent);
   background: var(--color-accent-muted);
+}
 }
 
 .ds-btn--danger {
   background: var(--color-danger);
   color: var(--color-text-inverse);
 }
-
+@media (hover: hover) and (pointer: fine) {
 .ds-btn--danger:hover {
   background: #b91c1c;
+}
 }
 
 .ds-btn:disabled {
@@ -270,9 +274,10 @@
 .ds-table tbody tr:nth-child(even) {
   background: var(--table-zebra-bg);
 }
-
+@media (hover: hover) and (pointer: fine) {
 .ds-table tbody tr:hover {
   background: var(--table-row-hover);
+}
 }
 
 @media (max-width: 960px) {

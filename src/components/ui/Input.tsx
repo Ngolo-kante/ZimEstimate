@@ -72,7 +72,7 @@ export default function Input({
           border-radius: var(--radius-md);
           background: var(--color-surface);
           color: var(--color-text);
-          transition: all 0.2s ease;
+          transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
 
         .input-field.has-icon {
@@ -166,7 +166,7 @@ export function Textarea({
           background: var(--color-surface);
           color: var(--color-text);
           resize: vertical;
-          transition: all 0.2s ease;
+          transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
 
         .textarea-field:focus {

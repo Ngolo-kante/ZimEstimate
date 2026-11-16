@@ -288,12 +288,14 @@ export function ContextualTips({
                         align-items: center;
                         justify-content: center;
                         color: #64748b;
-                        transition: all 0.15s;
+                        transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
                     }
 
-                    .tip-dismiss:hover {
-                        background: rgba(0, 0, 0, 0.05);
-                        color: #64748b;
+                    @media (hover: hover) and (pointer: fine) {
+                      .tip-dismiss:hover {
+                          background: rgba(0, 0, 0, 0.05);
+                          color: #64748b;
+                      }
                     }
                 `}</style>
             </div>
@@ -374,8 +376,10 @@ export function ContextualTips({
                     transition: background 0.15s;
                 }
 
-                .sidebar-toggle:hover {
-                    background: #f1f5f9;
+                @media (hover: hover) and (pointer: fine) {
+                  .sidebar-toggle:hover {
+                      background: #f1f5f9;
+                  }
                 }
 
                 .toggle-icon {
@@ -442,12 +446,14 @@ export function ContextualTips({
                     align-items: center;
                     justify-content: center;
                     color: #64748b;
-                    transition: all 0.15s;
+                    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
                 }
 
-                .tip-dismiss:hover {
-                    background: rgba(0, 0, 0, 0.08);
-                    color: #64748b;
+                @media (hover: hover) and (pointer: fine) {
+                  .tip-dismiss:hover {
+                      background: rgba(0, 0, 0, 0.08);
+                      color: #64748b;
+                  }
                 }
 
                 .tip-title {
@@ -475,8 +481,10 @@ export function ContextualTips({
                     text-decoration: none;
                 }
 
-                .tip-link:hover {
-                    text-decoration: underline;
+                @media (hover: hover) and (pointer: fine) {
+                  .tip-link:hover {
+                      text-decoration: underline;
+                  }
                 }
             `}</style>
         </div>

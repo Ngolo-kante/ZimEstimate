@@ -1,5 +1,7 @@
 'use client';
 
+import HeightCollapse from '@/components/ui/HeightCollapse';
+import { useState } from 'react';
 import EmptyState from '@/components/ui/EmptyState';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import type { BOQItem } from '@/lib/database.types';
@@ -39,6 +41,7 @@ export default function ProcurementItemsTab({
   onOpenReceipt,
 }: ProcurementItemsTabProps) {
   const { formatPrice, exchangeRate } = useCurrency();
+  const [animateCollapse, setAnimateCollapse] = useState(true);
     if (filteredItems.length === 0) {
       return (
         <EmptyState
@@ -65,7 +68,7 @@ export default function ProcurementItemsTab({
                 <button
                   type="button"
                   className="group-header !w-full !rounded-lg motion-reduce:transform-none motion-reduce:transition-none"
-                  onClick={() => toggleGroupCollapsed(groupKey)}
+                  onClick={(event) => { setAnimateCollapse(event.detail !== 0); toggleGroupCollapsed(groupKey); }}
                   aria-expanded={!isCollapsed}
                   aria-label={`${stageConfig?.label || groupKey}: ${isCollapsed ? 'expand' : 'collapse'} ${stageStats.total} items`}
                   style={{ '--stage-color': stageConfig?.color || 'var(--color-text-muted)' } as React.CSSProperties}
@@ -92,7 +95,7 @@ export default function ProcurementItemsTab({
                 </button>
               )}
 
-              {!isCollapsed && (
+              <HeightCollapse open={!isCollapsed} animate={animateCollapse}>
                 <div className="group-items">
                   {groupItems.map((item) => (
                     <ProcurementItemCard
@@ -106,7 +109,7 @@ export default function ProcurementItemsTab({
                     />
                   ))}
                 </div>
-              )}
+              </HeightCollapse>
             </div>
           );
         })}

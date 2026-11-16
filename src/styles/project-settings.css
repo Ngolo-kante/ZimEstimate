@@ -85,10 +85,11 @@
     box-shadow: none;
     transition: box-shadow var(--duration-normal) ease, border-color var(--duration-normal) ease;
 }
-
+@media (hover: hover) and (pointer: fine) {
 .settings-card:hover {
     box-shadow: none;
     border-color: var(--color-border-dark);
+}
 }
 
 .settings-card-header {
@@ -166,7 +167,7 @@
     font-size: var(--text-sm);
     color: var(--color-text);
     background: var(--color-background);
-    transition: all var(--duration-fast) ease;
+    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }
 
 .form-input.compact {
@@ -240,16 +241,17 @@
     border-radius: var(--radius-md);
     margin-bottom: var(--space-3);
     background: var(--color-surface);
-    transition: all var(--duration-fast) ease;
+    transition: background-color var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }
 
 .stage-toggle-card:last-child {
     margin-bottom: 0;
 }
-
+@media (hover: hover) and (pointer: fine) {
 .stage-toggle-card:hover {
     border-color: var(--color-border-dark);
     background: var(--color-mist);
+}
 }
 
 .stage-toggle-card.active {
@@ -272,7 +274,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all var(--duration-fast) ease;
+    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease;
 }
 
 .stage-toggle-card.active .stage-icon {
@@ -302,9 +304,10 @@
     /* Clears the sticky site header when the savings plan scrolls here. */
     scroll-margin-top: 88px;
 }
-
+@media (hover: hover) and (pointer: fine) {
 .notification-centre:hover {
     border-color: rgba(46, 108, 246, 0.3);
+}
 }
 
 .notification-centre .settings-card-header {
@@ -363,12 +366,13 @@
     font-size: var(--text-sm);
     font-weight: var(--font-medium);
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }
-
+@media (hover: hover) and (pointer: fine) {
 .channel-option:hover {
     background: var(--color-mist);
     border-color: var(--color-border-dark);
+}
 }
 
 .channel-option.selected {
@@ -416,9 +420,10 @@
     overflow: hidden;
     transition: border-color var(--duration-normal) ease, box-shadow var(--duration-normal) ease;
 }
-
+@media (hover: hover) and (pointer: fine) {
 .alert-row:hover {
     border-color: var(--color-border-dark);
+}
 }
 
 .alert-row.enabled {
@@ -436,9 +441,10 @@
     transition: background var(--duration-fast) ease;
     gap: var(--space-3);
 }
-
+@media (hover: hover) and (pointer: fine) {
 .alert-row-header:hover {
     background: rgba(248, 250, 252, 0.6);
+}
 }
 
 .alert-row-left {
@@ -459,9 +465,10 @@
     flex-shrink: 0;
     transition: transform var(--duration-fast) ease;
 }
-
+@media (hover: hover) and (pointer: fine) {
 .alert-row:hover .alert-icon-badge {
     transform: scale(1.05);
+}
 }
 
 .alert-row-text h4 {
@@ -514,9 +521,10 @@
     color: var(--color-text-muted);
     transition: color var(--duration-fast) ease;
 }
-
+@media (hover: hover) and (pointer: fine) {
 .alert-row-header:hover .alert-caret {
     color: var(--color-accent);
+}
 }
 
 /* Alert Row Body (expanded) */
@@ -583,12 +591,13 @@
     font-size: var(--text-xs);
     font-weight: var(--font-semibold);
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }
-
+@media (hover: hover) and (pointer: fine) {
 .freq-chip:hover {
     background: var(--color-mist);
     border-color: var(--color-border-dark);
+}
 }
 
 .freq-chip.selected {
@@ -671,9 +680,10 @@
 .settings-card {
     border-radius: 14px;
 }
-
+@media (hover: hover) and (pointer: fine) {
 .settings-card:hover {
     border-color: var(--color-border);
+}
 }
 
 /* A plain heading now, not a button: nothing to open or close. */
@@ -846,4 +856,8 @@
     background: rgba(46, 108, 246, 0.07);
     color: var(--color-text);
     font-size: 0.85rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .alert-row:hover .alert-icon-badge { transform: none !important; }
 }

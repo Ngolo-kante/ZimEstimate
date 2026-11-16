@@ -612,7 +612,7 @@ export default function TopNavbar() {
           font-weight: 500;
           color: var(--color-text-secondary);
           text-decoration: none;
-          transition: all 0.2s ease;
+          transition: background-color 0.2s ease, color 0.2s ease;
         }
 
         .nav-menu-container {
@@ -707,7 +707,7 @@ export default function TopNavbar() {
           color: var(--color-primary);
           font-weight: 600;
         }
-        
+
         .nav-link.active::after {
           width: 100%;
         }
@@ -765,7 +765,7 @@ export default function TopNavbar() {
           animation: slideUpFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
           transform-origin: top right;
         }
-        
+
         .notification-dropdown {
           width: 320px;
         }
@@ -787,7 +787,7 @@ export default function TopNavbar() {
           border-radius: 12px;
           color: var(--color-text-secondary);
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
         .icon-btn.active {
           background: rgba(0,0,0,0.04);
@@ -799,7 +799,7 @@ export default function TopNavbar() {
             color: var(--color-text);
           }
         }
-        
+
         .notification-btn {
           position: relative;
         }
@@ -828,7 +828,7 @@ export default function TopNavbar() {
           border-radius: 8px;
           color: var(--color-text);
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
           padding: 0 8px 0 0;
           gap: 8px;
         }
@@ -924,7 +924,7 @@ export default function TopNavbar() {
           overflow: hidden;
           font-size: 0.875rem;
         }
-        
+
         .profile-avatar img {
             width: 100%;
             height: 100%;
@@ -969,7 +969,7 @@ export default function TopNavbar() {
             width: fit-content;
             margin-top: 2px;
         }
-        
+
         .profile-tier.free { background: #f3f4f6; color: #6b7280; }
         .profile-tier.pro { background: #eff6ff; color: #3b82f6; }
         .profile-tier.admin { background: #1f2937; color: #fff; }
@@ -1049,7 +1049,7 @@ export default function TopNavbar() {
           font-weight: 600;
           text-decoration: none;
           cursor: pointer;
-          transition: all 0.15s ease;
+          transition: none;
           box-sizing: border-box;
         }
 
@@ -1149,7 +1149,7 @@ export default function TopNavbar() {
           border: none;
           text-decoration: none;
           cursor: pointer;
-          transition: all 0.15s ease;
+          transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
           text-align: left;
         }
         @media (hover: hover) and (pointer: fine) {
@@ -1166,7 +1166,7 @@ export default function TopNavbar() {
             background: #fef2f2;
           }
         }
-        
+
         /* Notifications Specific */
         .dropdown-header {
             padding: 16px;
@@ -1175,14 +1175,14 @@ export default function TopNavbar() {
             justify-content: space-between;
             border-bottom: 1px solid var(--color-border-light);
         }
-        
+
         .dropdown-header h3 {
             margin: 0;
             font-size: 0.95rem;
             font-weight: 600;
             color: var(--color-text);
         }
-        
+
         .notification-list {
             max-height: 320px;
             overflow-y: auto;
@@ -1202,7 +1202,7 @@ export default function TopNavbar() {
             font-size: 0.85rem;
             font-weight: 500;
         }
-        
+
         .notification-item {
             padding: 12px 16px;
             display: grid;
@@ -1218,13 +1218,13 @@ export default function TopNavbar() {
             background: #f9fafb;
           }
         }
-        
+
         .notification-item:last-child { border-bottom: none; }
-        
+
         .notification-item.unread {
             background: #f8fafc;
         }
-        
+
         .notification-icon {
             width: 32px;
             height: 32px;
@@ -1236,13 +1236,13 @@ export default function TopNavbar() {
             justify-content: center;
             flex-shrink: 0;
         }
-        
+
         .notification-content {
             display: flex;
             flex-direction: column;
             gap: 2px;
         }
-        
+
         .notification-title {
             margin: 0;
             font-size: 0.85rem;
@@ -1250,12 +1250,12 @@ export default function TopNavbar() {
             color: var(--color-text);
             line-height: 1.4;
         }
-        
+
         .notification-time {
             font-size: 0.75rem;
             color: var(--color-text-muted);
         }
-        
+
         .unread-dot {
             width: 8px;
             height: 8px;
@@ -1263,14 +1263,14 @@ export default function TopNavbar() {
             background: #2563eb;
             margin-top: 6px;
         }
-        
+
         .dropdown-footer {
             padding: 12px;
             text-align: center;
             background: #f9fafb;
             border-top: 1px solid var(--color-border-light);
         }
-        
+
         .view-all-link {
             font-size: 0.8rem;
             font-weight: 600;
@@ -1333,7 +1333,7 @@ export default function TopNavbar() {
           color: var(--color-primary);
           font-weight: 700;
         }
-        
+
         /* Typography - Concept */
         .logo-text { font-size: 1.25rem; font-weight: 800; color: #0f172a; letter-spacing: -0.03em; }
 

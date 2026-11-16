@@ -18,7 +18,6 @@ interface DashboardShellProps {
 }
 
 
-
 export default function DashboardShell({
   title,
   subtitle,
@@ -68,7 +67,7 @@ export default function DashboardShell({
 
       <style jsx>{`
         .dash-shell {
-          min-height: 100vh;
+          min-height: 100dvh;
           display: flex;
           flex-direction: column;
           background: #f4f6fb;
@@ -131,7 +130,7 @@ export default function DashboardShell({
           color: var(--color-text-secondary);
           font-size: 0.9rem;
           font-weight: 500;
-          transition: all 0.2s ease;
+          transition: background-color 0.2s ease, color 0.2s ease;
         }
         @media (hover: hover) and (pointer: fine) {
           .nav-item:hover {

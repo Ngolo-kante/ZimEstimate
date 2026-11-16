@@ -163,7 +163,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-    transition: all var(--duration-normal) var(--ease-default);
+    transition: background-color var(--duration-normal) ease, color var(--duration-normal) ease, border-color var(--duration-normal) ease, transform var(--duration-normal) var(--ease-out);
     box-shadow: var(--shadow-sm);
 }
 @media (hover: hover) and (pointer: fine) {
@@ -362,7 +362,7 @@
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.15s var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   .projects-list .type-pill:hover {
@@ -531,7 +531,7 @@
 
 /* Project Card Enhancements */
 :where(.projects-list) .project-card {
-    transition: transform var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out) !important;
+    transition: transform var(--duration-normal) var(--ease-out), border-color var(--duration-normal) ease !important;
     border-radius: 8px !important;
     box-shadow: var(--shadow-card) !important;
     background: var(--color-surface) !important;
@@ -551,13 +551,7 @@
 }
 
 :where(.projects-list) .project-card.highlight-new {
-    animation: projectsListHighlightPulse 2s ease-out;
-}
-
-@keyframes projectsListHighlightPulse {
-    0% { box-shadow: 0 0 0 0 rgba(46, 108, 246, 0.4); border-color: var(--color-accent); }
-    70% { box-shadow: 0 0 0 10px rgba(46, 108, 246, 0); border-color: var(--color-accent); }
-    100% { box-shadow: 0 0 0 0 rgba(46, 108, 246, 0); }
+    border-color: var(--color-accent) !important;
 }
 
 .projects-list .project-header {
@@ -580,7 +574,7 @@
     justify-content: center;
     border-radius: var(--radius-md);
     color: var(--color-text-secondary);
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     cursor: pointer;
     z-index: 2;
     background: transparent;
@@ -608,7 +602,8 @@
        those two widths, a card near the bottom of the list
        opened this dropdown underneath the nav instead. */
     z-index: var(--z-modal);
-    animation: projectsListFadeIn 0.1s ease-out;
+    transform-origin: top right;
+    transition: transform 150ms var(--ease-out), opacity 150ms var(--ease-out);
 }
 
 .projects-list .dropdown-menu button {
@@ -879,7 +874,9 @@
            uses safely, so this cannot fall behind page chrome
            again by accident. */
         z-index: var(--z-modal-backdrop);
-        animation: projectsListFadeIn 0.2s ease-out;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 200ms ease, visibility 0s 200ms;
     }
 
     .projects-list.mobile-bottom-sheet {
@@ -889,9 +886,12 @@
         right: 0;
         background: var(--color-surface);
         border-radius: 20px 20px 0 0;
-        padding: 24px 16px 40px;
+        padding: 24px 16px calc(40px + env(safe-area-inset-bottom, 0px));
         z-index: var(--z-modal);
-        animation: projectsListSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(100%);
+        opacity: 0;
+        visibility: hidden;
+        transition: transform 200ms cubic-bezier(0.32, 0.72, 0, 1), opacity 200ms ease, visibility 0s 200ms;
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -925,9 +925,6 @@
     }
 }
 
-@keyframes projectsListFadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes projectsListSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
 @media (max-width: 767px) {
     .projects-list button, .projects-list input, .projects-list select { min-height: 44px; }
     .projects-list .menu-btn { min-width: 44px; min-height: 44px; }
@@ -950,4 +947,39 @@
     .projects-list .search-box { height: 44px; }
     .projects-list .filters-bar { gap: 0; }
     .projects-list .filter-group.mobile-filters { margin-top: 12px; }
+}
+
+/* Persistent sheets can reverse direction while entering or leaving. */
+@media (max-width: 768px) {
+    .projects-list.mobile-bottom-sheet[data-open="true"] {
+        transform: translateY(0); opacity: 1; visibility: visible;
+        transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1), opacity 300ms ease, visibility 0s;
+    }
+    .projects-list.mobile-menu-backdrop[data-open="true"] { opacity: 1; visibility: visible; transition-delay: 0s; }
+}
+.projects-list .saved-banner { transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out); }
+@starting-style {
+    .projects-list .dropdown-menu { opacity: 0; transform: scale(0.97); }
+    .projects-list .saved-banner { opacity: 0; transform: translateY(8px); }
+    .projects-list.mobile-bottom-sheet[data-open="true"] { opacity: 0; transform: translateY(100%); }
+    .projects-list.mobile-menu-backdrop[data-open="true"] { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .projects-list.mobile-bottom-sheet,
+    .projects-list.mobile-bottom-sheet[data-open="true"],
+    .projects-list .dropdown-menu,
+    .projects-list .saved-banner { transform: none; transition-property: opacity, visibility; }
+    @starting-style {
+        .projects-list .dropdown-menu, .projects-list .saved-banner,
+        .projects-list.mobile-bottom-sheet[data-open="true"] { transform: none; }
+    }
+}
+
+.projects-list .dropdown-menu[data-keyboard="true"],
+.projects-list.mobile-bottom-sheet[data-keyboard="true"],
+.projects-list.mobile-menu-backdrop[data-keyboard="true"] { transition: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    .projects-list .kpi-card:hover,
+    :where(.projects-list) .project-card:hover { transform: none !important; }
 }

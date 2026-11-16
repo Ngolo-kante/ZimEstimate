@@ -59,7 +59,7 @@ describe('purchase stats', () => {
     });
 
     it('keeps material progress separate from the whole-project budget, including labour', () => {
-        const cement = boqItem({ quantity: 10, unit_price_usd: 10, is_purchased: true });
+        const cement = boqItem({ quantity: 10, actual_quantity: 10, unit_price_usd: 10, is_purchased: true });
         const labour = boqItem({ category: 'labor_superstructure', material_id: 'labor-bricklaying', quantity: 1, unit_price_usd: 500, is_purchased: true });
         const items = [cement, labour];
         const stats = computePurchaseStats(items, materialItemsOf(items));

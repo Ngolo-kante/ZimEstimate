@@ -151,7 +151,7 @@ function ProjectDetailContent() {
 
     return (
         <MainLayout fullWidth hideBottomNav>
-            <Toaster position="bottom-center" mobileOffset={{ bottom: 88 }} />
+            <Toaster position="bottom-center" mobileOffset={{ bottom: "calc(88px + env(safe-area-inset-bottom, 0px))" }} />
             <div className="project-workspace project-shell project-dashboard-shell">
                 <SidebarSpine
                     project={project}

@@ -162,7 +162,7 @@ export default function ShareSheet({ isOpen, onClose, name, summary, hasItems, b
 
       <style jsx>{`
         .overlay { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: rgba(15, 23, 42, 0.45); }
-        .sheet { width: min(100%, 520px); max-height: calc(100vh - 32px); overflow-y: auto; padding: 20px; border-radius: 14px; background: var(--color-surface); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2); }
+        .sheet { width: min(100%, 520px); max-height: calc(100dvh - 32px); overflow-y: auto; padding: 20px; border-radius: 14px; background: var(--color-surface); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2); }
         .head { display: flex; justify-content: space-between; align-items: center; }
         h2 { margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--color-text); }
         .close { border: none; background: none; color: var(--color-text-secondary); cursor: pointer; padding: 4px; }

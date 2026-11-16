@@ -39,7 +39,7 @@ export default function Card({
                       0 10px 15px -3px rgba(0, 0, 0, 0.01),
                       0 0 0 1px rgba(226, 232, 240, 0.6);
           border: none;
-          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .card.clickable {
@@ -89,7 +89,12 @@ export default function Card({
           gap: 12px;
           padding: 20px;
         }
-      `}</style>
+
+
+                @media (prefers-reduced-motion: reduce) {
+                    .card.clickable:hover { transform: none !important; }
+                }
+            `}</style>
     </>
   );
 }
@@ -106,7 +111,8 @@ export function CardHeader({ children, className = '' }: { children: React.React
           justify-content: space-between;
           gap: var(--spacing-md);
         }
-      `}</style>
+
+            `}</style>
     </>
   );
 }
@@ -122,7 +128,8 @@ export function CardTitle({ children, className = '' }: { children: React.ReactN
           color: var(--color-text);
           margin: 0;
         }
-      `}</style>
+
+            `}</style>
     </>
   );
 }
@@ -135,7 +142,8 @@ export function CardContent({ children, className = '' }: { children: React.Reac
         .card-content {
           flex: 1;
         }
-      `}</style>
+
+            `}</style>
     </>
   );
 }
@@ -195,7 +203,8 @@ export function CardBadge({
           background: #eff6ff;
           color: #1d4ed8;
         }
-      `}</style>
+
+            `}</style>
     </>
   );
 }

@@ -204,7 +204,7 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
 
         .supplier-shell {
           display: flex;
-          min-height: 100vh;
+          min-height: 100dvh;
           background: #f1f5f9;
         }
 
@@ -220,7 +220,7 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
           flex-direction: column;
           position: sticky;
           top: 0;
-          height: 100vh;
+          height: 100dvh;
           overflow-y: auto;
           overflow-x: hidden;
           transition: width 0.3s cubic-bezier(0.2,0,0,1), min-width 0.3s cubic-bezier(0.2,0,0,1);

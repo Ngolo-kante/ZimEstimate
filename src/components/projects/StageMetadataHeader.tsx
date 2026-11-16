@@ -12,10 +12,10 @@ interface StageMetadataHeaderProps {
 
 const statusOptions: { value: StageStatus; label: string; icon: React.ReactNode; color: string }[] = [
     { value: 'planning', label: 'Planning', icon: <Clock size={16} />, color: 'var(--color-text-muted)' },
-    { value: 'pending_approval', label: 'Pending Approval', icon: <CircleNotch size={16} />, color: 'var(--color-warning)' },
-    { value: 'in_progress', label: 'In Progress', icon: <Flag size={16} />, color: 'var(--color-accent)' },
+    { value: 'pending_approval', label: 'Pending Approval', icon: <CircleNotch size={16} />, color: 'var(--color-warning-fg)' },
+    { value: 'in_progress', label: 'In Progress', icon: <Flag size={16} />, color: 'var(--color-info-fg)' },
     { value: 'on_hold', label: 'On Hold', icon: <Pause size={16} />, color: 'var(--color-text-secondary)' },
-    { value: 'completed', label: 'Completed', icon: <CheckCircle size={16} />, color: 'var(--color-success)' },
+    { value: 'completed', label: 'Completed', icon: <CheckCircle size={16} />, color: 'var(--color-success-fg)' },
 ];
 
 export default function StageMetadataHeader({ stage, onUpdate, customTitle }: StageMetadataHeaderProps) {
@@ -161,7 +161,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     overflow: visible;
                     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 
                                 0 2px 4px -1px rgba(0, 0, 0, 0.01);
-                    transition: all 0.2s ease;
+                    transition: background-color 0.2s ease, border-color 0.2s ease;
                     margin-bottom: 24px;
                     z-index: 3;
                 }
@@ -186,12 +186,14 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     font-size: 1.1rem;
                     font-weight: 600;
                     color: #0f172a;
-                    transition: all 0.2s;
+                    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
                     user-select: none;
                 }
 
-                .section-toggle:hover {
-                    background: #fafafa;
+                @media (hover: hover) and (pointer: fine) {
+                  .section-toggle:hover {
+                      background: #fafafa;
+                  }
                 }
 
                 .toggle-copy {
@@ -213,7 +215,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     overflow-wrap: anywhere;
                     font-size: 1rem;
                 }
-                
+
                 .stage-header:has(.stage-body) .section-toggle {
                     border-bottom-color: #f1f5f9;
                 }
@@ -271,15 +273,17 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     border: 1px solid #e2e8f0;
                     border-radius: 10px;
                     cursor: pointer;
-                    transition: all 0.2s ease;
+                    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
                     min-width: 180px;
                     width: 100%;
                     justify-content: space-between;
                 }
 
-                .status-trigger:hover {
-                    border-color: #cbd5e1;
-                    background: #f8fafc;
+                @media (hover: hover) and (pointer: fine) {
+                  .status-trigger:hover {
+                      border-color: #cbd5e1;
+                      background: #f8fafc;
+                  }
                 }
 
                 .status-icon {
@@ -326,12 +330,14 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     color: #475569;
                     text-align: left;
                     border-radius: 8px;
-                    transition: all 0.15s ease;
+                    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
                 }
 
-                .status-option:hover {
-                    background: #f1f5f9;
-                    color: #1e293b;
+                @media (hover: hover) and (pointer: fine) {
+                  .status-option:hover {
+                      background: #f1f5f9;
+                      color: #1e293b;
+                  }
                 }
 
                 .status-option.active {
@@ -384,7 +390,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     font-weight: 500;
                     outline: none;
                 }
-                
+
                 .date-input-wrapper {
                      display: flex;
                      align-items: center;
@@ -435,7 +441,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                         align-items: flex-start;
                         gap: 16px;
                     }
-                    
+
                     .status-trigger {
                         width: 100%;
                     }

@@ -64,7 +64,7 @@
   font-weight: 600;
   color: #64748b;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
 }
 
 .project-usage .view-toggle button.active {
@@ -95,7 +95,7 @@
     flex-direction: column;
     gap: 6px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
-    transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   .project-usage .kpi-card:hover {
@@ -249,7 +249,7 @@
   background: #f8fafc;
   color: var(--color-accent);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   white-space: nowrap;
 }
 @media (hover: hover) and (pointer: fine) {
@@ -501,7 +501,7 @@
     border: 1px solid #f1f5f9;
     border-radius: 12px;
     background: #ffffff;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   .project-usage .history-item:hover {
@@ -556,7 +556,7 @@
   font-weight: 600;
   color: #475569;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 @media (hover: hover) and (pointer: fine) {
   .project-usage .usage-tab:hover {
@@ -1188,4 +1188,9 @@
 @media (pointer: coarse) and (prefers-reduced-motion: no-preference) {
   .project-usage .compact-trigger { transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1); }
   .project-usage .compact-trigger:active { transform: scale(.99); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .project-usage.usage-page:hover,
+    .project-usage .kpi-card:hover { transform: none !important; }
 }

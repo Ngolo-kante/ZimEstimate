@@ -4,7 +4,8 @@
 
 import { isExtrasLabourLine } from '@/lib/projectFees';
 import { isLaborCategory } from '@/lib/calculations/laborSubstages';
-import type { BOQItem } from '@/lib/database.types';
+import { isLinePurchased } from './itemStatus';
+import type { BOQItem, PurchaseRecord } from '@/lib/database.types';
 
 /** Professional and council fee lines, shown in their own panel. */
 export const feeItemsOf = (items: BOQItem[]): BOQItem[] =>
@@ -17,7 +18,7 @@ export const materialItemsOf = (items: BOQItem[]): BOQItem[] =>
 export interface PurchaseStats {
     /** Material lines only. */
     totalItems: number;
-    /** Material lines marked purchased. */
+    /** Material lines with bought quantity at least the BOQ quantity. */
     purchasedItems: number;
     /** Every line, fees and labour included: quantity × average price. */
     estimatedTotal: number;
@@ -38,9 +39,9 @@ export interface PurchaseStats {
  * labels these "Materials purchased" and "Project estimate" so fees and
  * labour remain included in budgets and savings plans.
  */
-export function computePurchaseStats(items: BOQItem[], materialItems: BOQItem[]): PurchaseStats {
+export function computePurchaseStats(items: BOQItem[], materialItems: BOQItem[], purchases: PurchaseRecord[] = []): PurchaseStats {
     const totalItems = materialItems.length;
-    const purchasedItems = materialItems.filter(i => i.is_purchased).length;
+    const purchasedItems = materialItems.filter(i => isLinePurchased(i, purchases)).length;
     const totals = items.reduce(
         (acc, item) => {
             const estimatedQty = Number(item.quantity) || 0;

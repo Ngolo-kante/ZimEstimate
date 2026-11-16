@@ -139,7 +139,7 @@ export default function Sidebar() {
       <style jsx>{`
         .sidebar {
           width: 260px;
-          height: 100vh;
+          height: 100dvh;
           background: var(--color-primary);
           color: var(--color-text-inverse);
           display: flex;
@@ -186,7 +186,7 @@ export default function Sidebar() {
           border-radius: var(--radius-md);
           color: rgba(255, 255, 255, 0.7);
           text-decoration: none;
-          transition: all 0.2s ease;
+          transition: background-color 0.2s ease, color 0.2s ease;
         }
         @media (hover: hover) and (pointer: fine) {
           .nav-item:hover {
@@ -261,7 +261,7 @@ export default function Sidebar() {
           cursor: pointer;
           padding: var(--spacing-xs);
           border-radius: var(--radius-sm);
-          transition: all 0.2s ease;
+          transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
         @media (hover: hover) and (pointer: fine) {
           .logout-btn:hover {

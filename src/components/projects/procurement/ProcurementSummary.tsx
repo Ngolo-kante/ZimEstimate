@@ -31,7 +31,7 @@ export default function ProcurementSummary({ stats, statusFilter, setStatusFilte
           className="min-h-24 p-3 text-left transition-colors hover:bg-[var(--color-mist)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-accent)] sm:p-4"
         >
           <span className="flex items-center gap-2 text-xs font-semibold text-[var(--color-text-secondary)]">
-            <Clock size={17} weight="bold" className="text-[var(--color-amber)]" /> Pending items
+            <Clock size={17} weight="bold" className="text-[var(--color-warning-fg)]" /> Pending items
           </span>
           <strong className="mt-2 block text-2xl font-bold text-[var(--color-text)]">{stats.outstandingItems}</strong>
           <span className="text-xs text-[var(--color-text-muted)]">still need purchasing</span>
@@ -47,7 +47,7 @@ export default function ProcurementSummary({ stats, statusFilter, setStatusFilte
           className="min-h-24 p-3 text-left transition-colors hover:bg-[var(--color-mist)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-accent)] sm:p-4"
         >
           <span className="flex items-center gap-2 text-xs font-semibold text-[var(--color-text-secondary)]">
-            <Check size={17} weight="bold" className="text-[#15803d]" /> Purchased
+            <Check size={17} weight="bold" className="text-[var(--color-success-fg)]" /> Purchased
           </span>
           <strong className="mt-2 block text-2xl font-bold text-[var(--color-text)]">
             {stats.fulfilledItems}<span className="text-sm font-medium text-[var(--color-text-muted)]">/{stats.totalItems}</span>
@@ -85,7 +85,7 @@ export default function ProcurementSummary({ stats, statusFilter, setStatusFilte
           </div>
           <div className="mt-2 flex items-center justify-between gap-3 text-xs">
             <span className="text-[var(--color-text-muted)]">{stats.spendingProgress.toFixed(0)}% used</span>
-            <span className={stats.variance > 0 ? 'font-semibold text-[var(--color-danger)]' : 'font-semibold text-[#15803d]'}>
+            <span className={stats.variance > 0 ? 'font-semibold text-[var(--color-danger)]' : 'font-semibold text-[var(--color-text)]'}>
               {stats.variance > 0 ? 'Over by ' : 'Available '}
               {formatPrice(Math.abs(stats.remainingBudget), Math.abs(stats.remainingBudget) * exchangeRate)}
             </span>

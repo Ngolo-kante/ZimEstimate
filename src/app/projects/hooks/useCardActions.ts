@@ -29,6 +29,7 @@ export function useCardActions({
     setQuickItems: Dispatch<SetStateAction<SavedWorkItem[]>>;
 }) {
     const { success, error: showError } = useToast();
+    const [menuKeyboard, setMenuKeyboard] = useState(false);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     // Carries the kind because the two live in different tables and delete
     // through different services, while sharing one confirmation dialog.
@@ -37,6 +38,8 @@ export function useCardActions({
     const menuRef = useRef<HTMLDivElement>(null);
     const [isMobile, setIsMobile] = useState(false);
     const [mobileMenuProjectId, setMobileMenuProjectId] = useState<string | null>(null);
+
+    const [mobileMenuTargetId, setMobileMenuTargetId] = useState<string | null>(null);
 
     // Mobile detection
     useEffect(() => {
@@ -60,7 +63,9 @@ export function useCardActions({
     const handleMenuToggle = (e: React.MouseEvent, projectId: string) => {
         e.preventDefault();
         e.stopPropagation();
+        setMenuKeyboard(e.detail === 0);
         if (isMobile) {
+            setMobileMenuTargetId(projectId);
             setMobileMenuProjectId(projectId);
         } else {
             setOpenMenuId(openMenuId === projectId ? null : projectId);
@@ -260,6 +265,8 @@ export function useCardActions({
     };
 
     return {
+        mobileMenuTargetId,
+        menuKeyboard,
         openMenuId, menuRef, isMobile,
         mobileMenuProjectId, setMobileMenuProjectId,
         deleteTarget, setDeleteTarget, isDeleting, confirmDelete,

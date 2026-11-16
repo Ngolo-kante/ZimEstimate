@@ -8,6 +8,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme="light"
+      offset="calc(24px + env(safe-area-inset-bottom, 0px))"
+      mobileOffset="calc(16px + env(safe-area-inset-bottom, 0px))"
       className="toaster group"
       icons={{
         success: <CheckCircle className="size-4" weight="fill" />,

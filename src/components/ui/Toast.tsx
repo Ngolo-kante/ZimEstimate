@@ -123,7 +123,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <style jsx>{`
                 .toast-container {
                     position: fixed;
-                    bottom: var(--spacing-lg);
+                    bottom: calc(var(--spacing-lg) + env(safe-area-inset-bottom, 0px));
                     right: var(--spacing-lg);
                     z-index: 9999;
                     display: flex;
@@ -141,7 +141,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                     border-radius: var(--radius-md);
                     box-shadow: var(--shadow-lg);
                     border-left: 4px solid;
-                    animation: slideIn 0.3s ease;
+                    animation: slideIn 0.3s var(--ease-out);
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .toast { animation-name: toastFade; }
+                }
+
+                @keyframes toastFade {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
                 }
 
                 @keyframes slideIn {
@@ -178,16 +187,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                     flex-shrink: 0;
                 }
 
-                .toast-close:hover {
-                    background: var(--color-border-light);
-                    color: var(--color-text);
+                @media (hover: hover) and (pointer: fine) {
+                  .toast-close:hover {
+                      background: var(--color-border-light);
+                      color: var(--color-text);
+                  }
                 }
 
                 @media (max-width: 480px) {
                     .toast-container {
                         left: var(--spacing-md);
                         right: var(--spacing-md);
-                        bottom: var(--spacing-md);
+                        bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom, 0px));
                         max-width: none;
                     }
                 }

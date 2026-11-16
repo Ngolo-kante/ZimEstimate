@@ -201,7 +201,7 @@ export function RunningTotalBar({
                     font-weight: 800;
                     font-feature-settings: 'tnum';
                     letter-spacing: -0.02em;
-                    transition: all 0.3s ease;
+                    transition: none;
                 }
 
                 .total-amount.updating {

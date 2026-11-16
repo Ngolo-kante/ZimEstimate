@@ -1,5 +1,7 @@
 'use client';
 
+import { isLinePurchased } from '@/lib/projects/itemStatus';
+import type { PurchaseRecord } from '@/lib/database.types';
 import React from 'react';
 import { stageOfLaborCategory } from '@/lib/calculations/laborSubstages';
 import {
@@ -19,6 +21,7 @@ import { BOQItem } from '@/lib/database.types';
 interface StageProgressCardsProps {
     stages: ProjectStageWithTasks[];
     items: BOQItem[];
+    purchases?: PurchaseRecord[];
     onStageClick?: (category: BOQCategory) => void;
     activeStage?: BOQCategory;
 }
@@ -43,15 +46,16 @@ const stageLabels: Record<BOQCategory, { short: string; full: string }> = {
 
 const statusConfig: Record<StageStatus, { color: string; bg: string; label: string }> = {
     planning: { color: 'text-slate-500', bg: 'bg-slate-100', label: 'Planning' },
-    pending_approval: { color: 'text-amber-600', bg: 'bg-amber-50', label: 'Pending' },
-    in_progress: { color: 'text-blue-600', bg: 'bg-blue-50', label: 'In Progress' },
-    on_hold: { color: 'text-orange-600', bg: 'bg-orange-50', label: 'On Hold' },
-    completed: { color: 'text-blue-700', bg: 'bg-blue-50', label: 'Complete' },
+    pending_approval: { color: 'text-[var(--color-warning-fg)]', bg: 'bg-[var(--color-warning-bg)]', label: 'Pending' },
+    in_progress: { color: 'text-[var(--color-info-fg)]', bg: 'bg-[var(--color-info-bg)]', label: 'In Progress' },
+    on_hold: { color: 'text-[var(--color-warning-fg)]', bg: 'bg-[var(--color-warning-bg)]', label: 'On Hold' },
+    completed: { color: 'text-[var(--color-success-fg)]', bg: 'bg-[var(--color-success-bg)]', label: 'Complete' },
 };
 
 export function StageProgressCards({
     stages,
     items,
+    purchases = [],
     onStageClick,
     activeStage
 }: StageProgressCardsProps) {
@@ -63,7 +67,7 @@ export function StageProgressCards({
         const totalCost = stageItems.reduce((sum, item) => {
             return sum + (Number(item.quantity) * Number(item.unit_price_usd));
         }, 0);
-        const purchasedCount = stageItems.filter(i => i.is_purchased).length;
+        const purchasedCount = stageItems.filter(i => isLinePurchased(i, purchases)).length;
         const totalCount = stageItems.length;
         const completionPercent = totalCount > 0 ? Math.round((purchasedCount / totalCount) * 100) : 0;
 
@@ -93,9 +97,9 @@ export function StageProgressCards({
                             >
                                 <div className={`stage-icon-wrapper ${config.bg}`}>
                                     {isCompleted ? (
-                                        <CheckCircle size={28} weight="fill" className="text-blue-600" />
+                                        <CheckCircle size={28} weight="fill" className="text-[var(--color-success-fg)]" />
                                     ) : isInProgress ? (
-                                        <HourglassSimple size={28} weight="fill" className="text-blue-500" />
+                                        <HourglassSimple size={28} weight="fill" className="text-[var(--color-info-fg)]" />
                                     ) : (
                                         <Icon size={28} weight="duotone" className={config.color} />
                                     )}
@@ -116,7 +120,7 @@ export function StageProgressCards({
                                         className="stage-progress-fill"
                                         style={{
                                             width: `${stats.completionPercent}%`,
-                                            background: '#2e6cf6'
+                                            background: isCompleted ? 'var(--color-success)' : 'var(--color-info)'
                                         }}
                                     />
                                 </div>
@@ -157,28 +161,30 @@ export function StageProgressCards({
                     border-radius: 12px;
                     padding: 16px;
                     cursor: pointer;
-                    transition: all 0.2s;
+                    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
                     display: flex;
                     flex-direction: column;
                     gap: 12px;
                 }
 
-                .stage-card:hover {
-                    background: #f1f5f9;
-                    transform: translateY(-2px);
+                @media (hover: hover) and (pointer: fine) {
+                  .stage-card:hover {
+                      background: #f1f5f9;
+                      transform: translateY(-2px);
+                  }
                 }
 
                 .stage-card.active {
-                    border-color: #FCA311;
-                    background: #fffbeb;
+                    border-color: var(--color-accent);
+                    background: var(--color-accent-muted);
                 }
 
                 .stage-card.completed {
-                    background: #f0fdf4;
+                    background: var(--color-success-bg);
                 }
 
                 .stage-card.in-progress {
-                    background: #eff6ff;
+                    background: var(--color-info-bg);
                 }
 
                 .stage-icon-wrapper {
@@ -253,7 +259,7 @@ export function StageProgressCards({
                 }
 
                 .stage-connector.completed .connector-line {
-                    background: #2e6cf6;
+                    background: var(--color-success);
                 }
 
                 @media (max-width: 768px) {
@@ -274,6 +280,11 @@ export function StageProgressCards({
                     .connector-line {
                         width: 16px;
                     }
+                }
+
+
+                @media (prefers-reduced-motion: reduce) {
+                    .stage-card:hover { transform: none !important; }
                 }
             `}</style>
         </div>

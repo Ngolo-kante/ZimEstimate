@@ -65,24 +65,24 @@
   /* Semantic Status Roles
      Name by meaning, not hue. Text values target >= 4.5:1 on white (AA). */
 
-  /* Success / complete / on track */
+  /* Done = green; attention = amber; problem = red; in progress = blue. */
   --color-success-fg: #15803D;
-  --color-success-bg: rgba(22, 163, 74, 0.1);
+  --color-success-bg: #F0FDF4;
   --color-success-border: rgba(22, 163, 74, 0.32);
 
   /* Warning / attention / stale pricing */
   --color-warning-fg: #92400E;
-  --color-warning-bg: rgba(245, 158, 11, 0.1);
+  --color-warning-bg: #FFFBEB;
   --color-warning-border: rgba(245, 158, 11, 0.36);
 
   /* Danger / destructive / over budget */
   --color-danger-fg: #B91C1C;
-  --color-danger-bg: rgba(220, 38, 38, 0.08);
+  --color-danger-bg: #FEF2F2;
   --color-danger-border: rgba(220, 38, 38, 0.3);
 
-  /* Information / neutral guidance */
+  /* In progress */
   --color-info-fg: #1D4ED8;
-  --color-info-bg: rgba(46, 108, 246, 0.08);
+  --color-info-bg: #EFF6FF;
   --color-info-border: rgba(46, 108, 246, 0.24);
 
   /* Interactive focus — on light surfaces, and on dark ones.

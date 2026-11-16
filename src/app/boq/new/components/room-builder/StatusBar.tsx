@@ -16,7 +16,7 @@ export default function StatusBar({ totals, isOverTarget, isMobile, onContinue, 
         <div style={{
             background: '#fff',
             borderTop: '1px solid #e5e7eb',
-            padding: isMobile ? '12px 16px' : '16px 24px',
+            padding: isMobile ? '12px 16px calc(12px + env(safe-area-inset-bottom, 0px))' : '16px 24px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -29,7 +29,7 @@ export default function StatusBar({ totals, isOverTarget, isMobile, onContinue, 
         }}>
             <div style={{ display: 'flex', gap: isMobile ? '16px' : '40px', flexWrap: 'wrap' }}>
                 <div>
-                    <div style={{ fontSize: isMobile ? '10px' : '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Total Area</div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Total Area</div>
                     <div style={{
                         fontSize: isMobile ? '16px' : '18px',
                         fontWeight: 700,
@@ -40,12 +40,12 @@ export default function StatusBar({ totals, isOverTarget, isMobile, onContinue, 
                 </div>
                 {!isMobile && !fromUpload && (
                     <div>
-                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Wall Area</div>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Wall Area</div>
                         <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>{totals.walls.toFixed(1)}m²</div>
                     </div>
                 )}
                 {!fromUpload && <div>
-                    <div style={{ fontSize: isMobile ? '10px' : '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Brick Count</div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Brick Count</div>
                     <div style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: 700, color: '#10b981' }}>~{Math.ceil(totals.bricks).toLocaleString()}</div>
                 </div>}
             </div>

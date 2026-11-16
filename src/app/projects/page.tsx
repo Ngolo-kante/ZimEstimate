@@ -52,7 +52,7 @@ function ProjectsContent() {
     const { filteredQuick, visibleProjects, projectStats, clearFilters } = filters;
     const actions = useCardActions({ router, projects, setProjects, quickItems, setQuickItems });
     const {
-        isMobile, mobileMenuProjectId,
+        isMobile, mobileMenuProjectId, mobileMenuTargetId,
         deleteTarget, setDeleteTarget, isDeleting, confirmDelete,
         shareProjectId, setShareProjectId, inviteProjectId, setInviteProjectId,
         quickShareTarget, setQuickShareTarget, quickInviteTarget, setQuickInviteTarget,
@@ -159,9 +159,10 @@ function ProjectsContent() {
             </div>
 
             {/* Mobile Bottom Sheet Menu */}
-            {isMobile && mobileMenuProjectId && (
+            {isMobile && mobileMenuTargetId && (
                 <MobileCardSheet
-                    mobileMenuProjectId={mobileMenuProjectId}
+                    mobileMenuProjectId={mobileMenuTargetId}
+                    open={!!mobileMenuProjectId}
                     projects={projects}
                     quickItems={quickItems}
                     profile={profile}

@@ -194,7 +194,7 @@ export function ProjectDetailSkeleton() {
             <style jsx>{`
                 .detail-skeleton {
                     display: flex;
-                    min-height: calc(100vh - 64px);
+                    min-height: calc(100dvh - 64px);
                     background: #f8fafc;
                 }
 

@@ -2,6 +2,7 @@
 
 import { isExtrasLabourLine } from '@/lib/projectFees';
 import { isLaborCategory } from '@/lib/calculations/laborSubstages';
+import { isLinePurchased } from '@/lib/projects/itemStatus';
 import { useMemo } from 'react';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { BOQItem, PurchaseRecord } from '@/lib/database.types';
@@ -75,8 +76,8 @@ export default function ProjectKPIDashboard({
     const budgetVariancePercent = estimatedTotal > 0 ? (budgetVariance / estimatedTotal) * 100 : 0;
 
     // Purchase status counts
-    const purchasedItems = materialItems.filter(i => i.is_purchased).length;
-    const pendingItems = materialItems.filter(i => !i.is_purchased).length;
+    const purchasedItems = materialItems.filter(i => isLinePurchased(i, purchases)).length;
+    const pendingItems = materialItems.filter(i => !isLinePurchased(i, purchases)).length;
     const completionRate = materialItems.length > 0 ? (purchasedItems / materialItems.length) * 100 : 0;
 
     // Over-purchase detection
@@ -154,7 +155,7 @@ export default function ProjectKPIDashboard({
       trend: stats.budgetVariance > 0 ? 'up' : stats.budgetVariance < 0 ? 'down' : 'neutral',
       trendValue: `${stats.budgetVariance >= 0 ? '+' : ''}${stats.budgetVariancePercent.toFixed(1)}%`,
       icon: <Wallet size={22} weight="duotone" />,
-      color: stats.budgetVariance > 0 ? 'orange' : 'blue',
+      color: stats.budgetVariance > 0 ? 'red' : 'blue',
     },
     {
       label: 'Purchased Items',
@@ -216,7 +217,7 @@ export default function ProjectKPIDashboard({
       <div className="stats-row">
         {/* Over-purchase Warning */}
         {stats.overPurchasedItems.length > 0 && (
-          <div className="stat-alert alert-warning">
+          <div className="stat-alert alert-problem">
             <Warning size={20} weight="fill" />
             <div className="alert-content">
               <strong>{stats.overPurchasedItems.length} over-purchased items</strong>
@@ -305,12 +306,14 @@ export default function ProjectKPIDashboard({
           display: flex;
           flex-direction: column;
           gap: 12px;
-          transition: all 0.2s ease;
+          transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
         }
 
-        .kpi-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        @media (hover: hover) and (pointer: fine) {
+          .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+          }
         }
 
         .kpi-header {
@@ -330,8 +333,8 @@ export default function ProjectKPIDashboard({
 
         .icon-blue { background: var(--color-accent-muted); color: var(--color-accent); }
         .icon-orange { background: #fff7ed; color: #f97316; }
-        .icon-red { background: #fef2f2; color: #ef4444; }
-        .icon-amber { background: #fffbeb; color: #f59e0b; }
+        .icon-red { background: var(--color-danger-bg); color: var(--color-danger-fg); }
+        .icon-amber { background: #fffbeb; color: var(--color-warning-fg); }
 
         .kpi-trend {
           display: flex;
@@ -343,7 +346,7 @@ export default function ProjectKPIDashboard({
           border-radius: 6px;
         }
 
-        .trend-up { background: #fef2f2; color: #ef4444; }
+        .trend-up { background: var(--color-danger-bg); color: var(--color-danger-fg); }
         .trend-down { background: var(--color-accent-muted); color: var(--color-accent-dark); }
         .trend-neutral { background: #f1f5f9; color: #64748b; }
 
@@ -388,13 +391,15 @@ export default function ProjectKPIDashboard({
           font-weight: 600;
           color: #1d4ed8;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
           margin-top: auto;
         }
 
-        .kpi-action:hover {
-          background: #eff6ff;
-          border-color: #bfdbfe;
+        @media (hover: hover) and (pointer: fine) {
+          .kpi-action:hover {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+          }
         }
 
         .stats-row {
@@ -412,10 +417,10 @@ export default function ProjectKPIDashboard({
           grid-column: span 2;
         }
 
-        .alert-warning {
-          background: linear-gradient(135deg, #fef3c7, #fef9c3);
-          border: 1px solid #fcd34d;
-          color: #92400e;
+        .alert-problem {
+          background: var(--color-danger-bg);
+          border: 1px solid var(--color-danger-border);
+          color: var(--color-danger-fg);
         }
 
         .alert-content {
@@ -437,17 +442,19 @@ export default function ProjectKPIDashboard({
         .alert-action {
           padding: 6px 12px;
           background: rgba(255, 255, 255, 0.8);
-          border: 1px solid #fcd34d;
+          border: 1px solid var(--color-danger-border);
           border-radius: 6px;
           font-size: 0.8rem;
           font-weight: 600;
-          color: #92400e;
+          color: var(--color-danger-fg);
           cursor: pointer;
-          transition: all 0.2s;
+          transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
 
-        .alert-action:hover {
-          background: #ffffff;
+        @media (hover: hover) and (pointer: fine) {
+          .alert-action:hover {
+            background: #ffffff;
+          }
         }
 
         .stat-card {
@@ -458,12 +465,14 @@ export default function ProjectKPIDashboard({
           background: #ffffff;
           border: 1px solid #e2e8f0;
           border-radius: 12px;
-          transition: all 0.2s;
+          transition: background-color 0.2s ease, border-color 0.2s ease;
         }
 
-        .stat-card:hover {
-          border-color: #cbd5e1;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        @media (hover: hover) and (pointer: fine) {
+          .stat-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+          }
         }
 
         .stat-icon {
@@ -516,13 +525,15 @@ export default function ProjectKPIDashboard({
           border-radius: 6px;
           color: #64748b;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
           flex-shrink: 0;
         }
 
-        .stat-action:hover {
-          background: #e2e8f0;
-          color: #0f172a;
+        @media (hover: hover) and (pointer: fine) {
+          .stat-action:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+          }
         }
 
         .progress-bar {
@@ -562,7 +573,12 @@ export default function ProjectKPIDashboard({
             font-size: 1.25rem;
           }
         }
-      `}</style>
+
+
+                @media (prefers-reduced-motion: reduce) {
+                    .kpi-card:hover { transform: none !important; }
+                }
+            `}</style>
     </div>
   );
 }

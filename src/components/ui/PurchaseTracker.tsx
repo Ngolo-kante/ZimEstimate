@@ -208,12 +208,14 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
           border: 1px solid var(--color-border-light);
           border-radius: var(--radius-md);
           padding: var(--spacing-md);
-          transition: all 0.2s ease;
+          transition: background-color 0.2s ease, border-color 0.2s ease;
           box-shadow: 0 10px 20px rgba(6, 20, 47, 0.06);
         }
 
-        .purchase-tracker:hover {
-          border-color: var(--color-border);
+        @media (hover: hover) and (pointer: fine) {
+          .purchase-tracker:hover {
+            border-color: var(--color-border);
+          }
         }
 
         .purchase-tracker.purchased {
@@ -233,11 +235,13 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
           cursor: pointer;
           padding: 4px;
           color: var(--color-border);
-          transition: all 0.2s ease;
+          transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
 
-        .status-btn:hover {
-          color: var(--color-accent);
+        @media (hover: hover) and (pointer: fine) {
+          .status-btn:hover {
+            color: var(--color-accent);
+          }
         }
 
         .status-btn.checked {
@@ -321,12 +325,14 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
           font-size: 0.75rem;
           color: var(--color-text-secondary);
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
 
-        .edit-btn:hover {
-          border-color: var(--color-accent);
-          color: var(--color-accent);
+        @media (hover: hover) and (pointer: fine) {
+          .edit-btn:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+          }
         }
 
         .edit-panel {
@@ -402,7 +408,7 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
           font-size: 0.875rem;
           font-weight: 500;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: none;
         }
 
         .cancel-btn {
@@ -411,8 +417,10 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
           color: var(--color-text-secondary);
         }
 
-        .cancel-btn:hover {
-          background: var(--color-background);
+        @media (hover: hover) and (pointer: fine) {
+          .cancel-btn:hover {
+            background: var(--color-background);
+          }
         }
 
         .save-btn {
@@ -421,8 +429,10 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
           color: white;
         }
 
-        .save-btn:hover {
-          background: var(--color-success-dark, #059669);
+        @media (hover: hover) and (pointer: fine) {
+          .save-btn:hover {
+            background: var(--color-success-dark, #059669);
+          }
         }
 
         @media (max-width: 640px) {

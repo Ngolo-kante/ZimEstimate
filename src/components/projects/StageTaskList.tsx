@@ -163,7 +163,7 @@ export default function StageTaskList({
                     align-items: center;
                     gap: 12px;
                 }
-                
+
                 .header-title svg {
                     color: #2563eb;
                 }
@@ -193,12 +193,14 @@ export default function StageTaskList({
                     border-radius: 8px;
                     color: #94a3b8;
                     cursor: pointer;
-                    transition: all 0.2s ease;
+                    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
                 }
 
-                .collapse-btn:hover {
-                    color: #475569;
-                    background: #f1f5f9;
+                @media (hover: hover) and (pointer: fine) {
+                  .collapse-btn:hover {
+                      color: #475569;
+                      background: #f1f5f9;
+                  }
                 }
 
                 .add-task-form {
@@ -247,7 +249,7 @@ export default function StageTaskList({
                     text-align: center;
                     color: #64748b;
                 }
-                
+
                 .empty-state svg {
                     margin-bottom: 12px;
                     color: #cbd5e1;

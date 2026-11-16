@@ -3,7 +3,7 @@
 // requests, shared by the procurement components.
 
 import type { BOQItem, PurchaseRecord } from '@/lib/database.types';
-import { purchasedQuantity, purchaseStatus } from './itemStatus';
+import { isLinePurchased, purchasedQuantity, purchaseStatus } from './itemStatus';
 
 export type ProcurementStage = 'boq' | 'rfq' | 'history';
 export type ProcurementItemStatus = 'pending' | 'in_progress' | 'purchased' | 'over_purchased';
@@ -71,9 +71,9 @@ export function filterProcurementItems(items: ItemWithPurchases[], searchQuery: 
     }
 
     if (statusFilter === 'outstanding') {
-        result = result.filter((item) => item.status === 'pending' || item.status === 'in_progress');
+        result = result.filter((item) => !isLinePurchased(item, item.purchaseRecords));
     } else if (statusFilter === 'fulfilled') {
-        result = result.filter((item) => item.status === 'purchased' || item.status === 'over_purchased');
+        result = result.filter((item) => isLinePurchased(item, item.purchaseRecords));
     } else if (statusFilter !== 'all') {
         result = result.filter((item) => item.status === statusFilter);
     }
@@ -148,8 +148,8 @@ export function procurementStats(
         over_purchased: itemsWithPurchases.filter(i => i.status === 'over_purchased').length,
     };
 
-    const fulfilledItems = statusCounts.purchased + statusCounts.over_purchased;
-    const outstandingItems = statusCounts.pending + statusCounts.in_progress;
+    const fulfilledItems = itemsWithPurchases.filter(i => isLinePurchased(i, i.purchaseRecords)).length;
+    const outstandingItems = itemsWithPurchases.length - fulfilledItems;
 
     return {
         totalBudget,
@@ -169,7 +169,7 @@ export function procurementStats(
 /** Counts and spend for one group of lines. */
 export function groupStats(stageItems: ItemWithPurchases[]) {
     const total = stageItems.length;
-    const purchased = stageItems.filter(i => i.status === 'purchased').length;
+    const purchased = stageItems.filter(i => isLinePurchased(i, i.purchaseRecords)).length;
     const inProgress = stageItems.filter(i => i.status === 'in_progress').length;
     const totalSpent = stageItems.reduce((sum, i) => sum + i.totalSpent, 0);
     return { total, purchased, inProgress, totalSpent };

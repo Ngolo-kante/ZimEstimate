@@ -201,7 +201,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                 <style jsx>{`
                     .sidebar-spine {
                         width: 272px;
-                        height: calc(100vh - 64px);
+                        height: calc(100dvh - 64px);
                         background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(246, 250, 255, 0.9));
                         backdrop-filter: blur(16px);
                         -webkit-backdrop-filter: blur(16px);
@@ -239,7 +239,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         padding: 12px;
                         border-radius: 14px;
                         cursor: pointer;
-                        transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+                        transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.3s var(--ease-out);
                         text-align: left;
                         box-shadow: 0 8px 18px rgba(6, 20, 47, 0.04);
                         overflow: hidden;
@@ -253,10 +253,12 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         gap: 0;
                     }
 
-                    .switcher-btn:hover {
-                        border-color: #a7ccf9;
-                        box-shadow: 0 10px 22px rgba(31, 96, 174, 0.14);
-                        transform: translateY(-1px);
+                    @media (hover: hover) and (pointer: fine) {
+                      .switcher-btn:hover {
+                          border-color: #a7ccf9;
+                          box-shadow: 0 10px 22px rgba(31, 96, 174, 0.14);
+                          transform: translateY(-1px);
+                      }
                     }
 
                     .switcher-btn:focus-visible {
@@ -359,14 +361,16 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         color: #516b8e;
                         border-radius: 10px;
                         cursor: pointer;
-                        transition: all 0.2s;
+                        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
                         text-decoration: none;
                     }
 
-                    .dropdown-item:hover {
-                        background: #eff6ff;
-                        color: #173f6a;
-                        transform: translateX(2px);
+                    @media (hover: hover) and (pointer: fine) {
+                      .dropdown-item:hover {
+                          background: #eff6ff;
+                          color: #173f6a;
+                          transform: translateX(2px);
+                      }
                     }
 
                     .dropdown-item:focus-visible {
@@ -403,7 +407,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         overflow-y: auto;
                         overflow-x: hidden;
                     }
-                    
+
                     .sidebar-spine.collapsed .spine-nav {
                         padding: 0 10px 20px;
                     }
@@ -419,7 +423,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         text-align: left;
                         cursor: pointer;
                         color: #5a6f8d;
-                        transition: all 0.2s ease;
+                        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
                         position: relative;
                         font-weight: 500;
                         white-space: nowrap;
@@ -431,10 +435,12 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         gap: 0;
                     }
 
-                    .nav-item:hover {
-                        background: #edf6ff;
-                        color: #164d83;
-                        transform: translateX(2px);
+                    @media (hover: hover) and (pointer: fine) {
+                      .nav-item:hover {
+                          background: #edf6ff;
+                          color: #164d83;
+                          transform: translateX(2px);
+                      }
                     }
 
                     .nav-item.active {
@@ -457,11 +463,13 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         transition: transform 0.2s;
                         flex-shrink: 0;
                     }
-                    
-                    .nav-item:hover .nav-icon {
-                        transform: scale(1.1);
+
+                    @media (hover: hover) and (pointer: fine) {
+                      .nav-item:hover .nav-icon {
+                          transform: scale(1.1);
+                      }
                     }
-                    
+
                     .nav-item.active .nav-icon {
                         transform: scale(1.1);
                     }
@@ -479,7 +487,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         max-width: 0;
                         margin: 0;
                     }
-                    
+
                     .active-indicator {
                         position: absolute;
                         right: 10px;
@@ -516,12 +524,14 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         background: transparent;
                         color: #6f86a9;
                         cursor: pointer;
-                        transition: all 0.2s;
+                        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
                     }
 
-                    .collapse-toggle:hover {
-                        background: rgba(233, 244, 255, 0.65);
-                        color: #255f9b;
+                    @media (hover: hover) and (pointer: fine) {
+                      .collapse-toggle:hover {
+                          background: rgba(233, 244, 255, 0.65);
+                          color: #255f9b;
+                      }
                     }
 
                     .collapse-toggle:focus-visible {
@@ -565,7 +575,15 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                             transform: none !important;
                         }
                     }
-                `}</style>
+
+
+                @media (prefers-reduced-motion: reduce) {
+                    .switcher-btn:hover,
+                    .dropdown-item:hover,
+                    .nav-item:hover,
+                    .nav-item:hover .nav-icon { transform: none !important; }
+                }
+            `}</style>
             </aside>
         </>
     );

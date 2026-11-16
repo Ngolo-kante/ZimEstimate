@@ -1,7 +1,10 @@
 'use client';
 
+import { isLinePurchased } from '@/lib/projects/itemStatus';
+
 import { isLaborCategory } from '@/lib/calculations/laborSubstages';
 import { useMemo, useState, useEffect, useRef } from 'react';
+import HeightCollapse from '@/components/ui/HeightCollapse';
 import Button from '@/components/ui/Button';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useToast } from '@/components/ui/Toast';
@@ -56,6 +59,7 @@ export default function StageBOQSection({
     usageTrackingEnabled = false,
 }: StageBOQSectionProps) {
     const [expanded, setExpanded] = useState(true);
+    const [animateCollapse, setAnimateCollapse] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
     const [newMaterialId, setNewMaterialId] = useState('');
     const [newQuantity, setNewQuantity] = useState('1');
@@ -138,6 +142,7 @@ export default function StageBOQSection({
             return sum + actualQty * actualPrice;
         }, 0);
     }, [items]);
+    const purchasedCount = items.filter(item => isLinePurchased(item, purchases)).length;
     const stageEstimatedTotal = stats.totalBudget;
 
     const applyPreset = (preset: 'simple' | 'detailed') => {
@@ -267,7 +272,7 @@ export default function StageBOQSection({
     return (
         <>
             <div className={`stage-boq boq-card ${expanded ? 'expanded' : 'collapsed'}`}>
-                <div className="card-header" onClick={() => setExpanded(!expanded)}>
+                <div className="card-header" onClick={(event) => { setAnimateCollapse(event.detail !== 0); setExpanded(!expanded); }}>
                     <div className="header-main">
                         <div className="header-title">
                             <div className="title-row">
@@ -280,10 +285,10 @@ export default function StageBOQSection({
                                 <span className="item-badge">
                                     {isFiltered ? `${filteredItems.length} of ${items.length} items` : `${items.length} items`}
                                 </span>
-                                {stats.purchasedCount > 0 && (
+                                {purchasedCount > 0 && (
                                     <span className="purchased-badge">
                                         <ShoppingCart size={12} weight="fill" />
-                                        {stats.purchasedCount} bought
+                                        {purchasedCount} bought
                                     </span>
                                 )}
                             </div>
@@ -324,7 +329,7 @@ export default function StageBOQSection({
                     </div>
                 </div>
 
-                {expanded && (
+                <HeightCollapse open={expanded} animate={animateCollapse}>
                     <div className="card-content">
                         <BoqTableToolbar
                             searchTerm={searchTerm}
@@ -395,7 +400,7 @@ export default function StageBOQSection({
                             </Table>
                         </div>
                     </div>
-                )}
+                </HeightCollapse>
             </div>
 
         </>

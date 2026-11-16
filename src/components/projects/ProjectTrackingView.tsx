@@ -617,9 +617,11 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     transition: transform 0.2s;
                 }
 
-                .summary-card:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+                @media (hover: hover) and (pointer: fine) {
+                  .summary-card:hover {
+                      transform: translateY(-2px);
+                      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+                  }
                 }
 
                 .summary-card.alert {
@@ -641,7 +643,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     color: #0f172a;
                     line-height: 1;
                 }
-                
+
                 .summary-card.alert .value {
                     color: #ef4444;
                 }
@@ -718,9 +720,9 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     padding: 8px 12px;
                     flex: 1;
                     max-width: 320px;
-                    transition: all 0.2s;
+                    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
                 }
-                
+
                 .search:focus-within {
                     border-color: #3b82f6;
                     background: #ffffff;
@@ -745,9 +747,9 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     color: #0f172a;
                     cursor: pointer;
                     outline: none;
-                    transition: all 0.2s;
+                    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
                 }
-                
+
                 select:focus {
                     border-color: #3b82f6;
                 }
@@ -792,7 +794,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     text-align: right;
                     white-space: nowrap;
                 }
-                
+
                 .tracking-table tr:last-child td {
                     border-bottom: none;
                 }
@@ -800,7 +802,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                 .row.status-over_purchased {
                     background: #fef2f2;
                 }
-                
+
                 .row.status-over_purchased td {
                     color: #991b1b;
                 }
@@ -855,26 +857,26 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.03em;
-                    background: #f1f5f9;
-                    color: #475569;
+                    background: var(--color-warning-bg);
+                    color: var(--color-warning-fg);
                     display: inline-block;
                 }
 
                 .status-pill.completed {
-                    background: #dcfce7;
-                    color: #166534;
+                    background: var(--color-success-bg);
+                    color: var(--color-success-fg);
                 }
-                
+
                 .status-pill.in_progress {
-                    background: #eff6ff;
-                    color: #1d4ed8;
+                    background: var(--color-info-bg);
+                    color: var(--color-info-fg);
                 }
-                
+
                 .status-pill.over_purchased {
-                    background: #fee2e2;
-                    color: #991b1b;
+                    background: var(--color-danger-bg);
+                    color: var(--color-danger-fg);
                 }
-                
+
                 .history-btn {
                     display: inline-flex;
                     align-items: center;
@@ -886,13 +888,15 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     color: #64748b;
                     padding: 6px 10px;
                     border-radius: 6px;
-                    transition: all 0.2s;
+                    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
                     margin-left: 8px;
                 }
-                
-                .history-btn:hover {
-                    background: #f1f5f9;
-                    color: #334155;
+
+                @media (hover: hover) and (pointer: fine) {
+                  .history-btn:hover {
+                      background: #f1f5f9;
+                      color: #334155;
+                  }
                 }
 
                 .history-row td {
@@ -922,7 +926,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     border-radius: 8px;
                     overflow: hidden;
                 }
-                
+
                 .history-table th {
                     text-align: left;
                     font-size: 12px;
@@ -932,13 +936,13 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     background: #f1f5f9;
                     border-bottom: 1px solid #e2e8f0;
                 }
-                
+
                 .history-table td {
                     padding: 10px 16px;
                     border-bottom: 1px solid #f1f5f9;
                     font-size: 0.85rem;
                 }
-                
+
                 .supplier-name {
                     display: flex;
                     align-items: center;
@@ -959,21 +963,27 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     color: #64748b;
                     cursor: pointer;
                     margin-left: 4px;
-                    transition: all 0.2s;
+                    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
                 }
-                
-                .icon-btn:hover {
-                    border-color: #cbd5e1;
-                    color: #334155;
-                    background: #f8fafc;
+
+                @media (hover: hover) and (pointer: fine) {
+                  .icon-btn:hover {
+                      border-color: #cbd5e1;
+                      color: #334155;
+                      background: #f8fafc;
+                  }
                 }
-                
+@media (hover: hover) and (pointer: fine) {
+
+
                 .icon-btn.danger:hover {
                     border-color: #fecaca;
                     color: #ef4444;
                     background: #fef2f2;
                 }
-                
+}
+
+
                 /* Modal */
                 .modal-overlay {
                     position: fixed;
@@ -992,7 +1002,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     justify-content: center;
                     padding: 20px;
                 }
-                
+
                 .modal {
                     background: #ffffff;
                     border-radius: 24px;
@@ -1002,50 +1012,50 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     overflow: hidden;
                     animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
                 }
-                
+
                 @keyframes slideUp {
                     from { transform: translateY(20px); opacity: 0; }
                     to { transform: translateY(0); opacity: 1; }
                 }
-                
+
                 .modal-header {
                     padding: 24px;
                     border-bottom: 1px solid #f1f5f9;
                     background: #fff;
                 }
-                
+
                 .modal-header h3 {
                     margin: 0;
                     font-size: 1.25rem;
                     font-weight: 700;
                     color: #0f172a;
                 }
-                
+
                 .modal-header p {
                     margin: 4px 0 0;
                     color: #64748b;
                     font-size: 0.9rem;
                 }
-                
+
                 .modal-body {
                     padding: 24px;
                     display: flex;
                     flex-direction: column;
                     gap: 20px;
                 }
-                
+
                 .field {
                     display: flex;
                     flex-direction: column;
                     gap: 8px;
                 }
-                
+
                 .field label {
                     font-size: 0.85rem;
                     font-weight: 600;
                     color: #334155;
                 }
-                
+
                 .field input {
                     padding: 10px 14px;
                     border: 1px solid #cbd5e1;
@@ -1054,18 +1064,18 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     transition: border 0.2s;
                     outline: none;
                 }
-                
+
                 .field input:focus {
                     border-color: #3b82f6;
                     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
                 }
-                
+
                 .field-grid {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
                     gap: 16px;
                 }
-                
+
                 .modal-actions {
                     padding: 20px 24px;
                     background: #f8fafc;
@@ -1074,7 +1084,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     justify-content: flex-end;
                     gap: 12px;
                 }
-                
+
                 @media (max-width: 640px) {
                     .tracking-header {
                         flex-direction: column;
@@ -1087,6 +1097,11 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     .field-grid {
                         grid-template-columns: 1fr;
                     }
+                }
+
+
+                @media (prefers-reduced-motion: reduce) {
+                    .summary-card:hover { transform: none !important; }
                 }
             `}</style>
     </div>

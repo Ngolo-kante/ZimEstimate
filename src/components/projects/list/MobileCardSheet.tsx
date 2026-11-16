@@ -12,12 +12,14 @@ import { Archive, FileArrowDown, PencilSimple, ShareNetwork, Trash, UserPlus } f
  */
 export default function MobileCardSheet({
     mobileMenuProjectId,
+    open,
     projects,
     quickItems,
     profile,
     actions,
 }: {
     mobileMenuProjectId: string;
+    open: boolean;
     projects: Project[];
     quickItems: SavedWorkItem[];
     profile: Profile | null;
@@ -31,8 +33,8 @@ export default function MobileCardSheet({
     const quickTarget = quickItems.find(i => i.id === mobileMenuProjectId);
     return (
     <>
-        <div className="projects-list mobile-menu-backdrop" onClick={() => setMobileMenuProjectId(null)} />
-        <div className="projects-list mobile-bottom-sheet">
+        <div className="projects-list mobile-menu-backdrop" data-open={open} data-keyboard={actions.menuKeyboard} aria-hidden="true" onClick={() => setMobileMenuProjectId(null)} />
+        <div className="projects-list mobile-bottom-sheet" data-open={open} data-keyboard={actions.menuKeyboard} inert={!open}>
             <div className="bottom-sheet-handle" />
             {quickTarget ? (
                 <>

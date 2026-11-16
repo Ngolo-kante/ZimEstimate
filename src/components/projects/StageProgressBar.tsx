@@ -20,10 +20,10 @@ const statusIcons: Record<StageStatus, React.ReactNode> = {
 
 const statusColors: Record<StageStatus, string> = {
     planning: 'var(--color-text-muted)',
-    pending_approval: 'var(--color-warning)',
-    in_progress: 'var(--color-accent)',
+    pending_approval: 'var(--color-warning-fg)',
+    in_progress: 'var(--color-info-fg)',
     on_hold: 'var(--color-text-secondary)',
-    completed: 'var(--color-success)',
+    completed: 'var(--color-success-fg)',
 };
 
 export default function StageProgressBar({ stages, activeStage, onStageClick }: StageProgressBarProps) {
@@ -78,13 +78,15 @@ export default function StageProgressBar({ stages, activeStage, onStageClick }: 
                     border: 2px solid var(--color-border-light);
                     border-radius: var(--radius-full);
                     cursor: pointer;
-                    transition: all 0.2s ease;
+                    transition: background-color 0.2s ease, border-color 0.2s ease;
                     white-space: nowrap;
                 }
 
-                .stage-node:hover {
-                    border-color: var(--color-primary);
-                    background: var(--color-primary-bg);
+                @media (hover: hover) and (pointer: fine) {
+                  .stage-node:hover {
+                      border-color: var(--color-primary);
+                      background: var(--color-primary-bg);
+                  }
                 }
 
                 .stage-node.active {

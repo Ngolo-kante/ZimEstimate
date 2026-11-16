@@ -1,5 +1,7 @@
+import { computePurchaseStats } from './workspaceStats';
+import { withPurchases, procurementStats, groupStats, filterProcurementItems } from './procurement';
 import { describe, expect, it } from 'vitest';
-import { getItemStatus, getStatusConfig, isEnablementItem, stripEnablementTag } from './itemStatus';
+import { getItemStatus, getStatusConfig, isLinePurchased, isEnablementItem, stripEnablementTag } from './itemStatus';
 import { boqItem, purchaseRecord } from './testItems';
 
 describe('purchase status of a line', () => {
@@ -57,5 +59,42 @@ describe('enablement lines', () => {
         expect(stripEnablementTag('[Enablement Cost] Access road')).toBe('Access road');
         expect(stripEnablementTag('Plain note')).toBe('Plain note');
         expect(stripEnablementTag(undefined)).toBe('');
+    });
+});
+
+describe('quantity-based purchased count', () => {
+    it('ignores stale flags, includes excess purchases, and uses an exact quantity boundary', () => {
+        expect(isLinePurchased(boqItem({ quantity: 10, actual_quantity: 5, is_purchased: true }))).toBe(false);
+        expect(isLinePurchased(boqItem({ quantity: 10, actual_quantity: 10, is_purchased: false }))).toBe(true);
+        expect(isLinePurchased(boqItem({ quantity: 10, actual_quantity: 12 }))).toBe(true);
+        expect(isLinePurchased(boqItem({ quantity: 10, actual_quantity: 9.995 }))).toBe(false);
+        expect(isLinePurchased(boqItem({ quantity: 10, actual_quantity: null, is_purchased: true }))).toBe(false);
+    });
+
+    it('counts logged purchases without double counting the actual quantity or other lines', () => {
+        const item = boqItem({ id: 'a', quantity: 10, actual_quantity: 6 });
+        expect(isLinePurchased(item, [purchaseRecord({ boq_item_id: 'a', quantity: 4 })])).toBe(false);
+        expect(isLinePurchased(item, [
+            purchaseRecord({ boq_item_id: 'a', quantity: 4 }),
+            purchaseRecord({ boq_item_id: 'a', quantity: 6 }),
+            purchaseRecord({ boq_item_id: 'other', quantity: 100 }),
+        ])).toBe(true);
+    });
+
+    it('gives Overview, BOQ and Buying the same purchased count after an estimate is raised', () => {
+        const items = [
+            boqItem({ id: 'partial', quantity: 10, actual_quantity: 5, is_purchased: true }),
+            boqItem({ id: 'full', quantity: 10, is_purchased: false }),
+            boqItem({ id: 'over', quantity: 10, actual_quantity: 12 }),
+            boqItem({ id: 'almost', quantity: 10, actual_quantity: 9.995 }),
+        ];
+        const purchases = [purchaseRecord({ boq_item_id: 'full', quantity: 10 })];
+        const lines = withPurchases(items, purchases);
+        expect(computePurchaseStats(items, items, purchases).purchasedItems).toBe(2);
+        expect(items.filter(item => isLinePurchased(item, purchases))).toHaveLength(2);
+        expect(procurementStats(items, lines, [], 0).fulfilledItems).toBe(2);
+        expect(groupStats(lines).purchased).toBe(2);
+        expect(filterProcurementItems(lines, '', 'fulfilled')).toHaveLength(2);
+        expect(filterProcurementItems(lines, '', 'outstanding')).toHaveLength(2);
     });
 });

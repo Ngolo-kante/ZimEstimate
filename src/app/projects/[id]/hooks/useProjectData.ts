@@ -50,7 +50,7 @@ export function useProjectData(projectId: string, setActiveTab: SetActiveTab) {
 
     const feeItems = useMemo(() => feeItemsOf(items), [items]);
     const materialItems = useMemo(() => materialItemsOf(items), [items]);
-    const purchaseStats = useMemo(() => computePurchaseStats(items, materialItems), [items, materialItems]);
+    const purchaseStats = useMemo(() => computePurchaseStats(items, materialItems, purchases), [items, materialItems, purchases]);
 
     const applyStages = useCallback((nextStages: ProjectStageWithTasks[], forcePrimaryStage = false) => {
         setStages(nextStages);
@@ -140,7 +140,6 @@ export function useProjectData(projectId: string, setActiveTab: SetActiveTab) {
 
     // Load project data
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load, unchanged from the page
         const hydrated = hydrateFromCreatedSnapshot();
         loadProjectData(!hydrated, true);
     }, [hydrateFromCreatedSnapshot, loadProjectData]);

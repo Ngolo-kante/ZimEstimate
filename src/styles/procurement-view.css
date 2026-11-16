@@ -218,7 +218,7 @@
     border: none;
     cursor: pointer;
     white-space: nowrap;
-    transition: all var(--duration-fast) var(--ease-default);
+    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }
 @media (hover: hover) and (pointer: fine) {
   .stage-tab-btn:hover {
@@ -411,7 +411,7 @@
     border-radius: 16px;
     margin-bottom: var(--space-3);
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   .group-header:hover {
@@ -474,7 +474,7 @@
 
 .group-stats .stat.purchased {
     background: rgba(22, 163, 74, 0.1);
-    color: #166534;
+    color: var(--color-success-fg);
 }
 
 .group-stats .stat.progress {
@@ -513,7 +513,7 @@
     border: 1px solid var(--color-border-light);
     border-radius: 14px;
     overflow: hidden;
-    transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   .boq-item-card:hover {
@@ -689,16 +689,17 @@
 }
 
 .qty-value.purchased {
-    color: #1d4ed8;
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
     font-weight: var(--font-semibold);
 }
 
 .qty-value.complete {
-    color: #15803d;
+    color: var(--color-success-fg);
 }
 
 .qty-value.remaining {
-    color: #b45309;
+    color: var(--color-warning-fg);
 }
 
 .item-progress {
@@ -723,7 +724,7 @@
 }
 
 .progress-fill.status-purchased {
-    background: var(--color-emerald);
+    background: var(--color-success);
 }
 
 .progress-fill.status-progress {
@@ -775,23 +776,23 @@
 }
 
 .item-status.status-purchased {
-    background: rgba(22, 163, 74, 0.1);
-    color: #166534;
+    color: var(--color-success-fg);
+    background: var(--color-success-bg);
 }
 
 .item-status.status-progress {
-    background: var(--color-accent-muted);
-    color: var(--color-accent);
+    color: var(--color-info-fg);
+    background: var(--color-info-bg);
 }
 
 .item-status.status-over {
-    background: rgba(220, 38, 38, 0.08);
-    color: var(--color-danger);
+    color: var(--color-danger-fg);
+    background: var(--color-danger-bg);
 }
 
 .item-status.status-pending {
-    background: var(--color-mist);
-    color: var(--color-text-muted);
+    color: var(--color-warning-fg);
+    background: var(--color-warning-bg);
 }
 
 .item-actions {
@@ -907,7 +908,7 @@
     font-weight: var(--font-semibold);
     cursor: pointer;
     margin-left: auto;
-    transition: all var(--duration-fast);
+    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }
 @media (hover: hover) and (pointer: fine) {
   .receipt-btn:hover {
@@ -1029,7 +1030,7 @@
     font-weight: var(--font-semibold);
     cursor: pointer;
     width: 100%;
-    transition: all var(--duration-fast);
+    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }
 @media (hover: hover) and (pointer: fine) {
   .history-receipt-btn:hover {
@@ -1110,7 +1111,7 @@
     cursor: pointer;
     padding: 4px;
     border-radius: var(--radius-sm);
-    transition: all var(--duration-fast);
+    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }
 @media (hover: hover) and (pointer: fine) {
   .modal-close:hover {
@@ -1156,13 +1157,13 @@
 }
 
 .info-row.highlight {
-    background: rgba(22, 163, 74, 0.08);
+    background: var(--color-mist);
     border-radius: var(--radius-sm);
     padding: var(--space-2);
 }
 
 .info-row.highlight strong {
-    color: #166534;
+    color: var(--color-text);
 }
 
 .field {
@@ -1196,7 +1197,7 @@
     height: var(--input-height);
     font-size: var(--text-sm);
     outline: none;
-    transition: all var(--duration-fast);
+    transition: border-color var(--duration-fast) ease;
 }
 
 .field input:focus,
@@ -1250,7 +1251,7 @@
     border: 2px dashed var(--color-border);
     border-radius: var(--radius-md);
     cursor: pointer;
-    transition: all var(--duration-fast);
+    transition: background-color var(--duration-fast) ease, border-color var(--duration-fast) ease;
     background: var(--color-background);
 }
 @media (hover: hover) and (pointer: fine) {
@@ -1313,13 +1314,13 @@
 }
 
 .modal-item-info .info-cell.highlight {
-    background: rgba(22, 163, 74, 0.08);
+    background: var(--color-mist);
     border-radius: var(--radius-sm);
     padding: var(--space-2);
 }
 
 .modal-item-info .info-cell.highlight .info-value {
-    color: #166534;
+    color: var(--color-text);
     font-weight: var(--font-bold);
 }
 
@@ -1372,7 +1373,7 @@
     height: var(--input-height);
     font-size: var(--text-sm);
     outline: none;
-    transition: all var(--duration-fast);
+    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
     background: var(--input-bg);
     color: var(--color-text);
 }
@@ -1423,7 +1424,7 @@
     border: 2px dashed var(--color-border);
     border-radius: var(--radius-md);
     cursor: pointer;
-    transition: all var(--duration-fast);
+    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
     background: var(--color-background);
 }
 @media (hover: hover) and (pointer: fine) {
@@ -1607,7 +1608,7 @@
     font-size: var(--text-xs);
     font-weight: var(--font-semibold);
     cursor: pointer;
-    transition: all var(--duration-fast);
+    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }
 @media (hover: hover) and (pointer: fine) {
   .ledger-table .receipt-link:hover {
@@ -1824,7 +1825,7 @@
     }
 
     .modal-card {
-        max-height: 100vh;
+        max-height: 100dvh;
         border-radius: 0;
         border-top-width: 4px;
     }
@@ -1968,7 +1969,7 @@
   .purchase-dialog .form-row.three-col { grid-template-columns: 1fr 1fr; }
   .purchase-dialog .form-row.three-col > :last-child { grid-column: 1 / -1; }
   .purchase-dialog .form-field input { font-size: 16px; min-height: 48px; }
-  .purchase-footer { padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); gap: 8px; }
+  .purchase-footer { padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); gap: 8px; }
 }
 
 /* Keep numeric data intact while descriptive columns yield and wrap. */
@@ -1989,10 +1990,6 @@
 .procurement-view .buying-tabs { height: auto; min-height: 50px; width: 100%; margin: 0; }
 .procurement-view .buying-tabs [role="tab"] { min-height: 44px; transition: none; }
 .procurement-view .buying-item .item-status { display: inline-flex; height: auto; transition: none; }
-.procurement-view .item-status.status-pending { color: #92400e; background: #fffbeb; }
-.procurement-view .item-status.status-progress { color: #1d4ed8; background: #eff6ff; }
-.procurement-view .item-status.status-purchased { color: #166534; background: #f0fdf4; }
-.procurement-view .item-status.status-over { color: #b91c1c; background: #fef2f2; }
 .procurement-view .buying-item .item-main::after { content: none; }
 .procurement-view .buying-item .item-main { cursor: default; }
 .procurement-view .buying-item { transition: none; }
@@ -2073,4 +2070,10 @@
     .procurement-view .buying-item .item-quantities { grid-column: 2; grid-row: 2; }
     .procurement-view .buying-item .item-progress { grid-column: 3; grid-row: 2; }
     .procurement-view .buying-item .item-spent { grid-column: 4; grid-row: 2; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .group-header:hover,
+    .boq-item-card:hover,
+    .procurement-view .buying-item:hover { transform: none !important; }
 }

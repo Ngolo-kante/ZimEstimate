@@ -199,9 +199,11 @@ export default function ProjectPickerModal({
                     border-radius: var(--radius-sm);
                 }
 
-                .close-btn:hover {
-                    background: var(--color-border-light);
-                    color: var(--color-text);
+                @media (hover: hover) and (pointer: fine) {
+                  .close-btn:hover {
+                      background: var(--color-border-light);
+                      color: var(--color-text);
+                  }
                 }
 
                 .projects-list {
@@ -244,13 +246,15 @@ export default function ProjectPickerModal({
                     border: 2px solid transparent;
                     border-radius: var(--radius-md);
                     cursor: pointer;
-                    transition: all 0.15s ease;
+                    transition: background-color 0.15s ease, border-color 0.15s ease;
                     margin-bottom: var(--spacing-sm);
                     text-align: left;
                 }
 
-                .project-item:hover {
-                    border-color: var(--color-border);
+                @media (hover: hover) and (pointer: fine) {
+                  .project-item:hover {
+                      border-color: var(--color-border);
+                  }
                 }
 
                 .project-item.selected {

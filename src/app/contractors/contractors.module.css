@@ -1,6 +1,6 @@
 .page {
   margin: -32px -24px 0;
-  min-height: 100vh;
+  min-height: 100dvh;
   color: #0f172a;
   background: #f4f7fb;
 }

@@ -86,7 +86,7 @@ export default function ProjectsGrid({
                                     <DotsThreeVertical size={20} weight="bold" />
                                 </button>
                                 {openMenuId === item.id && (
-                                    <div className="dropdown-menu">
+                                    <div className="dropdown-menu" data-keyboard={actions.menuKeyboard}>
                                         <button onClick={(e) => handleQuickEdit(e, item)}>
                                             <PencilSimple size={16} /> Edit
                                         </button>
@@ -145,7 +145,7 @@ export default function ProjectsGrid({
                                     <DotsThreeVertical size={20} weight="bold" />
                                 </button>
                                 {openMenuId === project.id && (
-                                    <div className="dropdown-menu">
+                                    <div className="dropdown-menu" data-keyboard={actions.menuKeyboard}>
                                         <button onClick={(e) => handleEdit(e, project.id)}>
                                             <PencilSimple size={16} /> Edit
                                         </button>

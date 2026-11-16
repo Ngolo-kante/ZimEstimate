@@ -106,7 +106,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     border: 1px solid #d7e6f5;
                     border-radius: 16px;
                     padding: 20px;
-                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                    transition: background-color 0.2s ease, border-color 0.2s ease;
                     display: flex;
                     flex-direction: column;
                     gap: 16px;
@@ -114,10 +114,12 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     position: relative;
                 }
 
-                .document-card:hover {
-                    border-color: #b9d4ef;
-                    box-shadow: 0 12px 20px -8px rgba(22, 77, 131, 0.24), 0 4px 8px -2px rgba(22, 77, 131, 0.08);
-                    transform: translateY(-2px);
+                @media (hover: hover) and (pointer: fine) {
+                  .document-card:hover {
+                      border-color: #b9d4ef;
+                      box-shadow: 0 12px 20px -8px rgba(22, 77, 131, 0.24), 0 4px 8px -2px rgba(22, 77, 131, 0.08);
+                      transform: translateY(-2px);
+                  }
                 }
 
                 .card-header {
@@ -210,6 +212,11 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     font-size: 0.8rem;
                     color: #475569;
                     font-weight: 500;
+                }
+
+
+                @media (prefers-reduced-motion: reduce) {
+                    .document-card:hover { transform: none !important; }
                 }
             `}</style>
         </>

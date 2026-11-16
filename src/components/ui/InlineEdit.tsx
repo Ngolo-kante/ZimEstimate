@@ -173,7 +173,7 @@ export default function InlineEdit({
             border: none;
             border-radius: var(--radius-sm);
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: none;
           }
 
           .action-btn.save {
@@ -181,8 +181,10 @@ export default function InlineEdit({
             color: white;
           }
 
-          .action-btn.save:hover {
-            background: var(--color-success-dark, #059669);
+          @media (hover: hover) and (pointer: fine) {
+            .action-btn.save:hover {
+              background: var(--color-success-dark, #059669);
+            }
           }
 
           .action-btn.cancel {
@@ -190,9 +192,11 @@ export default function InlineEdit({
             color: var(--color-text-secondary);
           }
 
-          .action-btn.cancel:hover {
-            background: var(--color-error);
-            color: white;
+          @media (hover: hover) and (pointer: fine) {
+            .action-btn.cancel:hover {
+              background: var(--color-error);
+              color: white;
+            }
           }
         `}</style>
       </div>
@@ -216,11 +220,13 @@ export default function InlineEdit({
           padding: 4px 8px;
           margin: -4px -8px;
           border-radius: var(--radius-md);
-          transition: all 0.15s ease;
+          transition: none;
         }
 
-        .inline-edit-display:hover {
-          background: var(--color-background);
+        @media (hover: hover) and (pointer: fine) {
+          .inline-edit-display:hover {
+            background: var(--color-background);
+          }
         }
 
         .inline-edit-display :global(.edit-icon) {
@@ -229,8 +235,10 @@ export default function InlineEdit({
           transition: opacity 0.15s ease;
         }
 
-        .inline-edit-display:hover :global(.edit-icon) {
-          opacity: 1;
+        @media (hover: hover) and (pointer: fine) {
+          .inline-edit-display:hover :global(.edit-icon) {
+            opacity: 1;
+          }
         }
 
         .placeholder {

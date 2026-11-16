@@ -285,12 +285,14 @@ export function CelebrationModal({
                         align-items: center;
                         justify-content: center;
                         color: #374151;
-                        transition: all 0.2s;
+                        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
                         z-index: 20;
                     }
 
-                    .close-btn:hover {
-                        background: rgba(0, 0, 0, 0.15);
+                    @media (hover: hover) and (pointer: fine) {
+                      .close-btn:hover {
+                          background: rgba(0, 0, 0, 0.15);
+                      }
                     }
 
                     .celebration-content {

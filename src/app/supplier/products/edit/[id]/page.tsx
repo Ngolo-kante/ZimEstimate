@@ -167,7 +167,7 @@ export default function EditProductPage() {
   if (loading) {
     return (
       <div style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -184,7 +184,7 @@ export default function EditProductPage() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       backgroundColor: '#f8fafc',
       padding: '2rem',
     }}>

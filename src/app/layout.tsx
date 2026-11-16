@@ -112,7 +112,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0B1F3B", // matches --color-primary — was a fourth, uncoordinated navy
+  themeColor: "#FFFFFF", // Matches the light header surface.
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
   width: "device-width",
   initialScale: 1,
 };

@@ -1,5 +1,6 @@
 'use client';
 
+import { isLinePurchased } from '@/lib/projects/itemStatus';
 import Link from 'next/link';
 import Card, { CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -22,9 +23,9 @@ import {
 } from '@phosphor-icons/react';
 
 const statusBadgeStyles: Record<string, { background: string; color: string }> = {
-    active: { background: 'rgba(22, 163, 74, 0.12)', color: '#166534' },
+    active: { background: 'var(--color-info-bg)', color: 'var(--color-info-fg)' },
     draft: { background: 'var(--color-mist)', color: 'var(--color-text-secondary)' },
-    completed: { background: 'rgba(46, 108, 246, 0.12)', color: 'var(--color-accent)' },
+    completed: { background: 'var(--color-success-bg)', color: 'var(--color-success-fg)' },
     archived: { background: 'var(--color-mist)', color: 'var(--color-text-muted)' },
 };
 
@@ -62,6 +63,7 @@ export default function OverviewView({
     stages,
     items,
     materialItems,
+    purchases,
     purchaseStats,
     completionRate,
     complianceSummary,
@@ -81,7 +83,7 @@ export default function OverviewView({
     onApplyPriceUpdates,
 }: OverviewViewProps) {
     const { exchangeRate, formatPrice } = useCurrency();
-    const pendingItems = materialItems.filter(item => !item.is_purchased);
+    const pendingItems = materialItems.filter(item => !isLinePurchased(item, purchases));
     return (
         <div className="overview-view space-y-8 max-w-6xl mx-auto">
             <div className="overview-header">
@@ -147,7 +149,7 @@ export default function OverviewView({
                 <h3 className="section-title mb-4">Construction Progress</h3>
                 <StageProgressCards
                     stages={stages}
-                    items={items}
+                    items={items} purchases={purchases}
                     activeStage={activeTab}
                     onStageClick={(category) => {
                         setActiveTab(category);
@@ -185,7 +187,7 @@ export default function OverviewView({
                             ))}
                             {pendingItems.length === 0 && (
                                 <div className="text-center py-8 text-secondary">
-                                    <CheckCircle size={32} className="mx-auto mb-2 text-blue-600" />
+                                    <CheckCircle size={32} className="mx-auto mb-2 text-[var(--color-success-fg)]" />
                                     <p>All items purchased! Great job.</p>
                                 </div>
                             )}

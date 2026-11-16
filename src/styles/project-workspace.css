@@ -85,14 +85,14 @@ body:where(:has(.project-dashboard-shell)) {
     display: flex;
     min-width: 0;
     background: #f7f9fc;
-    min-height: calc(100vh - 64px);
+    min-height: calc(100dvh - 64px);
 }
 
 .project-workspace .project-main {
     flex: 1;
     min-width: 0;
     overflow-y: auto;
-    height: calc(100vh - 64px);
+    height: calc(100dvh - 64px);
     padding: 24px 28px 48px;
     display: flex;
     flex-direction: column;
@@ -472,7 +472,7 @@ body:where(:has(.project-dashboard-shell)) {
     font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 @media (hover: hover) and (pointer: fine) {
   .project-workspace .view-all-btn:hover {
@@ -497,7 +497,7 @@ body:where(:has(.project-dashboard-shell)) {
 
     .project-workspace .project-main {
         height: auto;
-        min-height: calc(100vh - 56px);
+        min-height: calc(100dvh - 56px);
         overflow-y: visible;
         padding: 14px 12px calc(108px + env(safe-area-inset-bottom, 0px));
         gap: 14px;
@@ -629,3 +629,10 @@ body:where(:has(.project-dashboard-shell)) {
 .view-stat strong { white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 @media (max-width: 640px) { .project-workspace .view-stats { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .project-workspace .pro-tip-card:hover,
+  .project-workspace .overview-card:hover,
+  .project-workspace .price-update-alert:hover,
+    .project-workspace .next-step-item:hover { transform: none !important; }
+}
