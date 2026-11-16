@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { PaperPlaneRight } from '@phosphor-icons/react';
 import Button from '@/components/ui/Button';
 import { captureProductEvent } from '@/lib/productAnalytics';
 import { routeProject, type ProjectIntent, type ProjectKind, type ProjectRoute } from '@/lib/describe/routeProject';
@@ -15,6 +16,14 @@ const questions: Record<Field, { prompt: string; choices: string[] }> = {
   budget: { prompt: 'What is your budget in US dollars?', choices: ['10000', '25000', '50000'] },
 };
 
+// Tap one to send it as is: shows what a description looks like (owner, 16 Nov).
+const examples = [
+  '3 bedroom house in Harare, $40,000',
+  'Solar for a 4 bedroom home',
+  'Borehole in Chitungwiza',
+  '50 m of durawall fencing',
+];
+
 export default function DescribeConversation() {
   const router = useRouter();
   const [description, setDescription] = useState('');
@@ -27,22 +36,25 @@ export default function DescribeConversation() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const read = async (event: FormEvent) => {
-    event.preventDefault();
-    if (busy || description.trim().length < 3) return;
-    setBusy(true); setError(''); setSent(description.trim());
+  const read = async (event: FormEvent | null, text = description) => {
+    event?.preventDefault();
+    if (busy) return;
+    // Send always looks ready; an empty box gets a nudge instead of a dead button.
+    if (text.trim().length < 3) { setError('Tell me what you want to build first, or tap an example.'); return; }
+    setDescription(text);
+    setBusy(true); setError(''); setSent(text.trim());
     try {
       // The existing parsing call is made once. Follow-ups never call AI.
-      const response = await fetch('/api/describe-project', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: description.trim() }) });
+      const response = await fetch('/api/describe-project', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text.trim() }) });
       const result = await response.json();
       if (!result.success) throw new Error(result.error);
       const found = result.data.route as ProjectRoute | null;
       if (!found) throw new Error('Try naming a house, solar system or borehole, or choose an estimate below.');
       const params = new URL(found.href, 'https://zimestimate.local').searchParams;
-      const bedroom = description.match(/(\d+)\s*(?:bedroom|bed\b)/i)?.[1];
+      const bedroom = text.match(/(\d+)\s*(?:bedroom|bed\b)/i)?.[1];
       const size = params.get('area');
       const budget = params.get('budget');
-      const location = params.get('loc') || params.get('location') || description.match(/\b(?:in|near)\s+([a-z][a-z -]*?)(?=,|\.|\s+(?:budget|about|with)\b|$)/i)?.[1];
+      const location = params.get('loc') || params.get('location') || text.match(/\b(?:in|near)\s+([a-z][a-z -]*?)(?=,|\.|\s+(?:budget|about|with)\b|$)/i)?.[1];
       setAnswers({ ...(bedroom ? { bedrooms: bedroom } : {}), ...(size ? { size } : {}), ...(budget ? { budget } : {}), ...(location ? { location } : {}) });
       setIntent({ kind: result.data.kind as ProjectKind, budgetUsd: budget ? Number(budget) : null, floorAreaM2: size ? Number(size) : null, place: location || null, setting: (params.get('loc') as ProjectIntent['setting']) || null, economy: params.get('profile') === 'economy', storeys: params.get('floors') === '2' ? 2 : null, solarPriority: (params.get('priority') as ProjectIntent['solarPriority']) || (found.understood.includes('Best quality') ? 'quality' : found.understood.includes('Lowest cost') ? 'economy' : null), boreholeDepthM: params.has('depth') ? Number(params.get('depth')) : null, boreholeCommercial: params.get('purpose') === 'commercial' });
       setRoute(found);
@@ -77,13 +89,14 @@ export default function DescribeConversation() {
   return <section className={styles.chat} aria-label="Describe your project conversation">
     <p className={styles.assistant}>What would you like to build? Tell me about your project and any size, location or budget you have in mind.</p>
     {sent && <p className={styles.person}>{sent}</p>}
-    {!route && <form onSubmit={read} className={styles.composer}><label htmlFor="project-description">Your project</label><textarea id="project-description" value={description} onChange={e => setDescription(e.target.value)} maxLength={500} placeholder="A 3 bedroom house in Ruwa, budget $25,000" rows={3} /><Button type="submit" loading={busy} disabled={description.trim().length < 3}>Send description</Button></form>}
+    {!route && !sent && <div className={styles.examples}><p className={styles.examplesLabel}>Try one of these</p><div className={styles.choices}>{examples.map(example => <button key={example} type="button" className={styles.example} onClick={() => read(null, example)} disabled={busy}>{example}</button>)}</div></div>}
+    {!route && <form onSubmit={read} className={styles.composer}><label htmlFor="project-description">Your project</label><textarea id="project-description" value={description} onChange={e => { setDescription(e.target.value); if (error) setError(''); }} maxLength={500} placeholder="Or type your own, e.g. a 3 bedroom house in Ruwa, budget $25,000" rows={3} /><Button type="submit" loading={busy} icon={<PaperPlaneRight size={18} weight="fill" aria-hidden="true" />} iconPosition="right">Send</Button></form>}
     {route && <>
       <div className={styles.assistant} role="status"><strong>Here&apos;s what I understood</strong><ul>{route.understood.map(item => <li key={item}>{item}</li>)}</ul></div>
       {replies.map(item => <div key={item.field}><p className={styles.assistant}>{questions[item.field].prompt}</p><p className={styles.person}>{item.answer}</p></div>)}
       {missing ? <div><p className={styles.assistant}>{questions[missing].prompt}</p><div className={styles.choices}>{questions[missing].choices.map(choice => <Button key={choice} variant="secondary" onClick={() => answer(choice)}>{choice}</Button>)}<Button variant="ghost" onClick={() => answer('Decide later')}>Decide later</Button></div><form className={styles.composer} onSubmit={e => { e.preventDefault(); answer(reply); }}><label htmlFor="project-reply">Your answer</label><input id="project-reply" value={reply} onChange={e => setReply(e.target.value)} inputMode={missing === 'location' ? 'text' : 'decimal'} maxLength={80} /><Button variant="secondary" type="submit" disabled={!reply.trim()}>Send answer</Button></form></div> : <Button onClick={() => router.push(route.href)}>Build my estimate</Button>}
       <Button variant="ghost" onClick={() => { setRoute(null); setIntent(null); setSent(''); setReplies([]); setAnswers({}); }}>Start again</Button>
     </>}
-    {error && <p role="alert">{error}</p>}
+    {error && <p role="alert" className={styles.error}>{error}</p>}
   </section>;
 }
