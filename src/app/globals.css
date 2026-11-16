@@ -50,6 +50,9 @@
   --color-text-secondary: #64748B;
   /* Muted Gray */
   --color-text-muted: #64748b;
+  /* Example text inside empty fields: clearly lighter than labels and typed
+     answers so it never reads as filled in (owner, 16 Nov). About 3.2:1. */
+  --color-placeholder: #8792a2;
   /* Disabled Gray */
   --color-text-inverse: #FFFFFF;
 
@@ -263,3 +266,10 @@
 }
 html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
 button, a, summary, [role="button"], [role="tab"] { touch-action: manipulation; }
+
+/* One placeholder look everywhere: lighter and regular weight. */
+::placeholder {
+  color: var(--color-placeholder);
+  font-weight: 400;
+  opacity: 1;
+}

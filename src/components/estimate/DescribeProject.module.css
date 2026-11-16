@@ -31,7 +31,7 @@
 }
 
 .row input::placeholder {
-  color: #8a96a6;
+  color: var(--color-placeholder);
 }
 
 .row button {

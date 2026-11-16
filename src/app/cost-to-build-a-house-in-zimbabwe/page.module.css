@@ -747,7 +747,7 @@
   color: var(--color-text-muted);
 }
 .calculatorCard :global(input::placeholder) {
-  color: var(--color-text-muted);
+  color: var(--color-placeholder);
 }
 .calculatorCard :global(.text-\[10px\]),
 .calculatorCard :global(.text-\[11px\]) {

@@ -86,7 +86,8 @@ export default function Input({
         }
 
         .input-field::placeholder {
-          color: var(--color-text-muted);
+          color: var(--color-placeholder);
+          font-weight: 400;
         }
 
         .has-error .input-field {
@@ -176,7 +177,8 @@ export function Textarea({
         }
 
         .textarea-field::placeholder {
-          color: var(--color-text-muted);
+          color: var(--color-placeholder);
+          font-weight: 400;
         }
 
         .has-error .textarea-field {

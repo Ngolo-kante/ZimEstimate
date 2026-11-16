@@ -356,7 +356,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
             value={projectDetails.floorPlanSize}
             onChange={(e) => updateProjectDetails({ floorPlanSize: e.target.value })}
             placeholder="e.g. 150"
-            className={`w-full rounded-2xl border py-4 pl-10 pr-12 text-base font-semibold wiz-text-primary shadow-sm outline-none transition-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-[var(--color-text-muted)] ${
+            className={`w-full rounded-2xl border py-4 pl-10 pr-12 text-base font-semibold wiz-text-primary shadow-sm outline-none transition-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-[var(--color-placeholder)] ${
               showAreaWarning ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'
             }`}
           />
@@ -382,7 +382,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
               value={projectDetails.standSize}
               onChange={(e) => updateProjectDetails({ standSize: e.target.value })}
               placeholder="e.g. 600"
-              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-12 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-[var(--color-text-muted)]"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-12 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-[var(--color-placeholder)]"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[var(--color-text-muted)]">m²</span>
           </div>
@@ -401,7 +401,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
               value={projectDetails.wallHeight}
               onChange={(e) => updateProjectDetails({ wallHeight: e.target.value })}
               placeholder="2.7"
-              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm wiz-text-primary shadow-sm outline-none transition-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:text-[var(--color-text-muted)]"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm wiz-text-primary shadow-sm outline-none transition-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:text-[var(--color-placeholder)]"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-[var(--color-text-muted)]">m</span>
           </div>
