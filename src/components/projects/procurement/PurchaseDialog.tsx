@@ -1,5 +1,6 @@
 'use client';
 
+import { quantityInputValue } from '@/lib/quantityInput';
 import { formatQuantity, formatUsd } from '@/lib/format';
 
 import type { Dispatch, RefObject, SetStateAction } from 'react';
@@ -123,9 +124,9 @@ export default function PurchaseDialog({
                   className={cn('h-11', formErrors.quantity && 'error')}
                 />
                 <div className="quantity-actions">
-                  <button type="button" aria-label="Decrease quantity by one" onClick={() => setPurchaseForm(f => ({ ...f, quantity: String(Math.max(0, Number(f.quantity) - 1)) }))}><Minus size={18} /></button>
-                  <button type="button" aria-label="Increase quantity by one" onClick={() => setPurchaseForm(f => ({ ...f, quantity: String((Number(f.quantity) || 0) + 1) }))}><Plus size={18} /></button>
-                  <button type="button" onClick={() => setPurchaseForm(f => ({ ...f, quantity: String(Math.max(0, itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id)?.remainingQty ?? Number(selectedItemForPurchase.quantity))) }))}>Use remaining</button>
+                  <button type="button" aria-label="Decrease quantity by one" onClick={() => setPurchaseForm(f => ({ ...f, quantity: quantityInputValue(Math.max(0, Number(f.quantity) - 1)) }))}><Minus size={18} /></button>
+                  <button type="button" aria-label="Increase quantity by one" onClick={() => setPurchaseForm(f => ({ ...f, quantity: quantityInputValue((Number(f.quantity) || 0) + 1) }))}><Plus size={18} /></button>
+                  <button type="button" onClick={() => setPurchaseForm(f => ({ ...f, quantity: quantityInputValue(Math.max(0, itemsWithPurchases.find(i => i.id === selectedItemForPurchase.id)?.remainingQty ?? Number(selectedItemForPurchase.quantity))) }))}>Use remaining</button>
                 </div>
                 {formErrors.quantity && <span className="field-error">{formErrors.quantity}</span>}
               </Field>

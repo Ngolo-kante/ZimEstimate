@@ -82,7 +82,7 @@ export default function ErrorState({
           <button
             type="button"
             onClick={onRetry}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-xs sm:text-sm font-bold text-[var(--color-surface)] shadow-sm transition-all hover:bg-[var(--color-primary-light)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] cursor-pointer"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-xs sm:text-sm font-bold text-[var(--color-surface)] shadow-sm transition-all hover:bg-[var(--color-primary-light)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] cursor-pointer"
             aria-label={retryLabel}
           >
             <ArrowCounterClockwise size={16} />

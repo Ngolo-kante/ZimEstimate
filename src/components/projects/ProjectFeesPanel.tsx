@@ -1,6 +1,6 @@
 'use client';
 
-import { formatUsd } from '@/lib/format';
+import { formatQuantity, formatUsd } from '@/lib/format';
 
 import { useEffect, useState } from 'react';
 import type { BOQItem } from '@/lib/database.types';
@@ -34,7 +34,7 @@ function FeeRow({ item, onUpdate }: { item: BOQItem; onUpdate: (id: string, upda
       <span className="min-w-0">
         <span className="block text-sm font-medium text-[var(--color-text)]">{item.material_name}</span>
         {item.notes && <span className="mt-0.5 block text-xs leading-5 text-[var(--color-text-secondary)]">{item.notes}</span>}
-        {Number(item.quantity) > 1 && <span className="mt-0.5 block text-xs font-semibold text-[var(--color-text-secondary)]">{Number(item.quantity)} {item.unit}s · {dollars(Number(item.quantity) * Number(item.unit_price_usd))}</span>}
+        {Number(item.quantity) > 1 && <span className="mt-0.5 block text-xs font-semibold text-[var(--color-text-secondary)]">{formatQuantity(Number(item.quantity))} {item.unit}s · {dollars(Number(item.quantity) * Number(item.unit_price_usd))}</span>}
       </span>
       <span className="flex shrink-0 items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2 focus-within:border-[var(--color-accent)]">
         <span className="text-sm text-[var(--color-text-secondary)]">$</span>

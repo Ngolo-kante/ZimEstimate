@@ -332,6 +332,7 @@ export default function BudgetPlanner({
                   <CalendarBlank size={18} className="input-icon" aria-hidden="true" />
                   <input
                     id="budget-target-date"
+                    disabled={dateSave === 'saving'}
                     type="date"
                     value={localTargetDate}
                     onChange={(event) => void handleDateChange(event.target.value)}

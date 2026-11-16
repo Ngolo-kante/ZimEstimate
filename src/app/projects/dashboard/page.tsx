@@ -7,6 +7,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import ProjectsSubNav from '@/components/projects/ProjectsSubNav';
 import Card, { CardHeader, CardTitle, CardBadge } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import ErrorState from '@/components/ui/ErrorState';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -47,7 +48,7 @@ function DashboardContent() {
   useEffect(() => {
     let active = true;
     const load = async () => {
-      const { data, error } = await getPortfolioAnalytics();
+      const { data, error } = await getPortfolioAnalytics().catch(() => ({ data: null, error: true }));
       if (!active) return;
       if (error || !data) {
         setLoadFailed(true);
@@ -110,31 +111,11 @@ function DashboardContent() {
     return (
       <MainLayout title="My projects">
         <ProjectsSubNav active="dashboard" />
-        <div className="dashboard-failed" role="alert">
-          <h2>Insights could not be loaded</h2>
-          <p>Your projects are safe — this was a problem fetching the figures. Check your connection and try again.</p>
-          <Button onClick={() => { setLoading(true); setAttempt((n) => n + 1); }}>Retry</Button>
-        </div>
-        <style jsx>{`
-          .dashboard-failed {
-            display: grid;
-            justify-items: center;
-            gap: 12px;
-            min-height: 360px;
-            align-content: center;
-            text-align: center;
-            color: var(--color-text-secondary);
-          }
-          .dashboard-failed h2 {
-            margin: 0;
-            color: var(--color-text);
-            font-size: 1.25rem;
-          }
-          .dashboard-failed p {
-            margin: 0;
-            max-width: 46ch;
-          }
-        `}</style>
+        <ErrorState
+          whatFailed="Insights could not be loaded"
+          retryLabel="Retry"
+          onRetry={() => { setLoading(true); setAttempt((n) => n + 1); }}
+        />
       </MainLayout>
     );
   }
