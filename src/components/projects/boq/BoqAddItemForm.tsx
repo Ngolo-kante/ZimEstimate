@@ -1,8 +1,14 @@
 'use client';
 
+import { useId } from 'react';
+
+import { Field, FieldGroup, FieldLabel } from '@/components/shadcn/field';
+import { Input } from '@/components/shadcn/input';
+import { NativeSelect } from '@/components/shadcn/native-select';
+
+
 import Button from '@/components/ui/Button';
 import { isLaborCategory } from '@/lib/calculations/laborSubstages';
-import { CaretDown } from '@phosphor-icons/react';
 
 export interface BoqAddItemFormProps {
     category: string;
@@ -30,13 +36,14 @@ export default function BoqAddItemForm({
     onCancel,
     onAdd,
 }: BoqAddItemFormProps) {
+    const controlId = useId();
     return (
             <div className="add-form">
-                <div className="form-grid">
-                    <div className="form-group span-2">
-                        <label>{selectLabel}</label>
+                <FieldGroup className="!grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <Field className="min-w-0">
+                        <FieldLabel htmlFor={`${controlId}-1`}>{selectLabel}</FieldLabel>
                         <div className="select-wrapper">
-                            <select
+                            <NativeSelect id={`${controlId}-1`} className="w-full [&_select]:!h-11 [&_select]:bg-sc-background [&_select]:text-base [&_select]:transition-none"
                                 value={newMaterialId}
                                 onChange={(e) => setNewMaterialId(e.target.value)}
                             >
@@ -46,21 +53,21 @@ export default function BoqAddItemForm({
                                         {material.name}
                                     </option>
                                 ))}
-                            </select>
-                            <CaretDown size={14} className="select-arrow" />
+                            </NativeSelect>
+
                         </div>
-                    </div>
-                    <div className="form-group">
-                        <label>Quantity</label>
-                        <input
-                            type="number"
+                    </Field>
+                    <Field className="min-w-0">
+                        <FieldLabel htmlFor={`${controlId}-2`}>Quantity</FieldLabel>
+                        <Input id={`${controlId}-2`} className="!h-11 bg-sc-background text-sc-foreground transition-none"
+                            type="number" inputMode="decimal"
                             value={newQuantity}
                             onChange={(e) => setNewQuantity(e.target.value)}
                             min="0"
                             step="0.01"
                         />
-                    </div>
-                </div>
+                    </Field>
+                </FieldGroup>
                 <div className="form-actions">
                     <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
                     <Button variant="primary" size="sm" loading={isAdding} onClick={onAdd}>Add item</Button>

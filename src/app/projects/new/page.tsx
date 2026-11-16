@@ -1,11 +1,16 @@
 'use client';
 
+import { useId } from 'react';
+
+import { Field, FieldGroup, FieldLabel } from '@/components/shadcn/field';
+
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import Card, { CardBadge } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import { Input } from '@/components/shadcn/input';
 import {
     FileArrowUp,
     PencilSimple,
@@ -13,8 +18,6 @@ import {
     Calculator,
     ArrowRight,
     ArrowLeft,
-    MapPin,
-    Buildings,
     House,
     Storefront,
     Wrench,
@@ -44,6 +47,7 @@ import { storeEstimateHandoff } from '@/lib/estimateHandoff';
 import { useToast } from '@/components/ui/Toast';
 
 export default function NewProject() {
+    const controlId = useId();
     const router = useRouter();
     const { error: showError, success: showSuccess } = useToast();
     const [step, setStep] = useState(1);
@@ -348,31 +352,31 @@ export default function NewProject() {
                 {step === 3 && (
                     <div className="step-content">
                         <Card className="form-card">
-                            <div className="form-grid">
-                                <div className="form-field">
-                                    <label className="field-label">What would you like to call this project?</label>
-                                    <Input
+                            <FieldGroup className="!grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <Field className="min-w-0">
+                                    <FieldLabel htmlFor={`${controlId}-1`} className="field-label">What would you like to call this project?</FieldLabel>
+                                    <Input id={`${controlId}-1`} className="!h-11 bg-sc-background text-sc-foreground transition-none"
                                         placeholder="e.g., Borrowdale 4-Bed House"
                                         value={formData.name}
                                         onChange={(e) => handleInputChange('name', e.target.value)}
-                                        icon={<Buildings size={18} weight="light" />}
-                                        error={fieldErrors.name}
+                                        aria-invalid={!!fieldErrors.name} aria-describedby="new-project-name-error"
                                     />
+                                    {fieldErrors.name && <p id="new-project-name-error" role="alert" className="text-sm text-sc-destructive">{fieldErrors.name}</p>}
                                     <span className="field-hint">Give it a memorable name you&apos;ll recognize</span>
-                                </div>
+                                </Field>
 
-                                <div className="form-field">
-                                    <label className="field-label">Where is your project located?</label>
-                                    <Input
+                                <Field className="min-w-0">
+                                    <FieldLabel htmlFor={`${controlId}-2`} className="field-label">Where is your project located?</FieldLabel>
+                                    <Input id={`${controlId}-2`} className="!h-11 bg-sc-background text-sc-foreground transition-none"
                                         placeholder="e.g., Harare, Zimbabwe"
                                         value={formData.location}
                                         onChange={(e) => handleInputChange('location', e.target.value)}
-                                        icon={<MapPin size={18} weight="light" />}
-                                        error={fieldErrors.location}
+                                        aria-invalid={!!fieldErrors.location} aria-describedby="new-project-location-error"
                                     />
+                                    {fieldErrors.location && <p id="new-project-location-error" role="alert" className="text-sm text-sc-destructive">{fieldErrors.location}</p>}
                                     <span className="field-hint">Helps us show local supplier prices</span>
-                                </div>
-                            </div>
+                                </Field>
+                            </FieldGroup>
                         </Card>
                     </div>
                 )}

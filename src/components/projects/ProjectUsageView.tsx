@@ -1,5 +1,8 @@
 'use client';
 
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shadcn/tabs';
+import { Badge } from '@/components/shadcn/badge';
+
 import { formatQuantity } from '@/lib/format';
 
 import { localToday } from '@/lib/projects/usageStats';
@@ -204,20 +207,12 @@ export default function ProjectUsageView({
     <div className="project-usage usage-page">
       <div className="usage-header">
         <div className="header-actions">
-          <div className="view-toggle">
-            <button
-              className={viewMode === 'daily' ? 'active' : ''}
-              onClick={() => setViewMode('daily')}
-            >
-              Daily
-            </button>
-            <button
-              className={viewMode === 'weekly' ? 'active' : ''}
-              onClick={() => setViewMode('weekly')}
-            >
-              Weekly
-            </button>
-          </div>
+          <Tabs value={viewMode} onValueChange={value => setViewMode(value as UsageViewMode)}>
+            <TabsList aria-label="Usage period" className="!h-auto">
+              <TabsTrigger className="min-h-11 text-sc-muted-foreground transition-none" value="daily">Daily</TabsTrigger>
+              <TabsTrigger className="min-h-11 text-sc-muted-foreground transition-none" value="weekly">Weekly</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </div>
 
@@ -225,45 +220,24 @@ export default function ProjectUsageView({
       {/* Three equal columns that always fit: as a row that could not
           shrink it pushed the page to 426px on a 390px phone and cut off
           the ledger. Short labels on small screens. */}
-      <div className="usage-tabs" role="tablist" aria-label="Usage tracking">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'log'}
-          className={`usage-tab ${activeTab === 'log' ? 'active' : ''}`}
-          onClick={() => setActiveTab('log')}
-        >
-          <Plus size={16} weight="duotone" aria-hidden="true" />
-          <span className="tab-label-long">Log usage</span>
-          <span className="tab-label-short">Log</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'materials'}
-          className={`usage-tab ${activeTab === 'materials' ? 'active' : ''}`}
-          onClick={() => setActiveTab('materials')}
-        >
-          <Package size={16} weight="duotone" aria-hidden="true" />
-          <span>Materials</span>
-          <span className="tab-count">{items.length}</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'ledger'}
-          className={`usage-tab ${activeTab === 'ledger' ? 'active' : ''}`}
-          onClick={() => setActiveTab('ledger')}
-        >
-          <Receipt size={16} weight="duotone" aria-hidden="true" />
-          <span className="tab-label-long">Usage ledger</span>
-          <span className="tab-label-short">Ledger</span>
-          {usageHistory.length > 0 && <span className="tab-count">{usageHistory.length}</span>}
-        </button>
-      </div>
+      <Tabs value={activeTab} onValueChange={value => setActiveTab(value as UsageTab)}>
+      <TabsList aria-label="Usage tracking" className="!h-auto !w-full !grid grid-cols-3">
+        <TabsTrigger className="min-h-11 min-w-0 px-1 text-sc-muted-foreground transition-none" value="log">
+          <Plus className="hidden sm:block" size={16} weight="duotone" aria-hidden="true" />
+          <span className="tab-label-long">Log usage</span><span className="tab-label-short">Log</span>
+        </TabsTrigger>
+        <TabsTrigger className="min-h-11 min-w-0 px-1 text-sc-muted-foreground transition-none" value="materials">
+          <Package className="hidden sm:block" size={16} weight="duotone" aria-hidden="true" />Materials<Badge variant="secondary">{items.length}</Badge>
+        </TabsTrigger>
+        <TabsTrigger className="min-h-11 min-w-0 px-1 text-sc-muted-foreground transition-none" value="ledger">
+          <Receipt className="hidden sm:block" size={16} weight="duotone" aria-hidden="true" />
+          <span className="tab-label-long">Usage ledger</span><span className="tab-label-short">Ledger</span>
+          {usageHistory.length > 0 && <Badge variant="secondary">{usageHistory.length}</Badge>}
+        </TabsTrigger>
+      </TabsList>
 
       {/* Log usage Tab Content */}
-      {activeTab === 'log' && (
+      <TabsContent value="log">
         <UsageLogTab
           usageSummary={usageSummary}
           usageStats={usageStats}
@@ -279,27 +253,28 @@ export default function ProjectUsageView({
           groupedUsage={groupedUsage}
           itemLookup={itemLookup}
         />
-      )}
+      </TabsContent>
 
       {/* Materials Tab - Per-material usage history */}
-      {activeTab === 'materials' && (
+      <TabsContent value="materials">
         <UsageMaterialsTab
           usageStats={usageStats}
           usageByMaterial={usageByMaterial}
           expandedMaterials={expandedMaterials}
           toggleMaterialExpanded={toggleMaterialExpanded}
         />
-      )}
+      </TabsContent>
 
       {/* Ledger Tab - Overall usage history */}
-      {activeTab === 'ledger' && (
+      <TabsContent value="ledger">
         <UsageLedgerTab
           usageHistory={usageHistory}
           ledgerByDate={ledgerByDate}
           itemLookup={itemLookup}
           totalUsedCost={totalUsedCost}
         />
-      )}
+      </TabsContent>
+      </Tabs>
     </div>
   );
 }

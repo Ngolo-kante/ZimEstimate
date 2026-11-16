@@ -1,5 +1,9 @@
 'use client';
 
+import { Field, FieldGroup, FieldLabel } from '@/components/shadcn/field';
+import { NativeSelect } from '@/components/shadcn/native-select';
+
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import DocumentUploader from './DocumentUploader';
@@ -12,7 +16,7 @@ import {
     getDocumentUrl,
 } from '@/lib/services/projects';
 import { ProjectDocument, DocumentCategory } from '@/lib/database.types';
-import { FunnelSimple, File, Warning } from '@phosphor-icons/react';
+import { File, Warning } from '@phosphor-icons/react';
 import PdfViewer from '@/components/ui/PdfViewer';
 
 interface DocumentsTabProps {
@@ -133,10 +137,11 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
             <div className="documents-tab">
                 <div className="tab-header">
                     <p className="file-count">{filteredDocuments.length} files</p>
-                    <div className="filter-select">
-                        <FunnelSimple size={16} />
-                        <select
-                            aria-label="Filter documents"
+                    <FieldGroup className="!w-auto"><Field>
+                        <FieldLabel className="sr-only" htmlFor="documents-category-filter">Filter documents</FieldLabel>
+
+                        <NativeSelect className="w-full [&_select]:!h-11 [&_select]:bg-sc-background [&_select]:text-base [&_select]:transition-none"
+                            id="documents-category-filter" aria-label="Filter documents"
                             value={filter}
                             onChange={(e) => setFilter(e.target.value as DocumentFilter)}
                         >
@@ -145,8 +150,8 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                                     {opt.label}
                                 </option>
                             ))}
-                        </select>
-                    </div>
+                        </NativeSelect>
+                    </Field></FieldGroup>
                 </div>
 
                 <DocumentUploader onUpload={handleUpload} isUploading={isUploading} />

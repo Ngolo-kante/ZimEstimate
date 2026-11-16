@@ -1,5 +1,11 @@
 'use client';
 
+import { Tabs, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
+import { useId } from 'react';
+
+import { Field, FieldGroup, FieldLabel } from '@/components/shadcn/field';
+import { Input } from '@/components/shadcn/input';
+
 import { useEffect, useState, useCallback } from 'react';
 import { Project, BOQCategory } from '@/lib/database.types';
 import Button from '@/components/ui/Button';
@@ -175,6 +181,7 @@ function AlertRow({
     state: AlertRowState;
     onChange: (updates: Partial<AlertRowState>) => void;
 }) {
+    const controlId = useId();
     return (
         <div className={`alert-row ${state.enabled ? 'enabled' : ''}`}>
             <div className="alert-row-header">
@@ -204,15 +211,14 @@ function AlertRow({
 
             {/* Settings show as soon as the alert is on — no second click. */}
             {state.enabled && (
-                <div className="alert-row-body">
+                <FieldGroup className="gap-4 p-4">
                     {/* Threshold input */}
                     {config.hasThreshold && (
-                        <div className="alert-config-field">
-                            <label className="form-label">{config.thresholdLabel}</label>
+                        <Field className="min-w-0">
+                            <FieldLabel htmlFor={`${controlId}-1`} className="form-label">{config.thresholdLabel}</FieldLabel>
                             <div className="threshold-input-row">
-                                <input
-                                    className="form-input compact"
-                                    type="number"
+                                <Input id={`${controlId}-1`} className="!h-11 bg-sc-background text-sc-foreground transition-none form-input compact"
+                                    type="number" inputMode="decimal"
                                     min={config.thresholdMin}
                                     max={config.thresholdMax}
                                     value={state.threshold}
@@ -220,18 +226,17 @@ function AlertRow({
                                 />
                                 <span className="threshold-unit">{config.thresholdUnit}</span>
                             </div>
-                        </div>
+                        </Field>
                     )}
 
                     {/* Amount input (for budget) */}
                     {config.hasAmount && (
-                        <div className="alert-config-field">
-                            <label className="form-label">Reminder amount (USD)</label>
+                        <Field className="min-w-0">
+                            <FieldLabel htmlFor={`${controlId}-2`} className="form-label">Reminder amount (USD)</FieldLabel>
                             <div className="form-input-wrapper" style={{ maxWidth: '200px' }}>
                                 <span className="currency-prefix">$</span>
-                                <input
-                                    className="form-input compact"
-                                    type="number"
+                                <Input id={`${controlId}-2`} className="!h-11 bg-sc-background text-sc-foreground transition-none form-input compact"
+                                    type="number" inputMode="decimal"
                                     min="0"
                                     step="0.01"
                                     value={state.amount}
@@ -239,28 +244,21 @@ function AlertRow({
                                     style={{ paddingLeft: '26px' }}
                                 />
                             </div>
-                        </div>
+                        </Field>
                     )}
 
                     {/* Frequency selector */}
                     {config.hasFrequency && (
-                        <div className="alert-config-field">
-                            <label className="form-label">Frequency</label>
-                            <div className="frequency-selector">
-                                {FREQUENCY_OPTIONS.map((opt) => (
-                                    <button
-                                        key={opt.id}
-                                        type="button"
-                                        className={`freq-chip ${state.frequency === opt.id ? 'selected' : ''}`}
-                                        onClick={() => onChange({ frequency: opt.id })}
-                                    >
-                                        {opt.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                        <Field className="min-w-0">
+                            <FieldLabel className="form-label">Frequency</FieldLabel>
+                            <Tabs value={state.frequency} onValueChange={value => onChange({ frequency: value as AlertRowState['frequency'] })}>
+                                <TabsList aria-label="Frequency" className="!h-auto flex-wrap">
+                                    {FREQUENCY_OPTIONS.map(opt => <TabsTrigger key={opt.id} value={opt.id} className="min-h-11 transition-none">{opt.label}</TabsTrigger>)}
+                                </TabsList>
+                            </Tabs>
+                        </Field>
                     )}
-                </div>
+                </FieldGroup>
             )}
         </div>
     );
@@ -472,26 +470,24 @@ export default function ProjectSettings({
                     <span><h3>General</h3><p>Project name and location.</p></span>
                 </header>
                 <div className="settings-card-content">
-                    <div className="form-grid">
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="settings-name">Project name</label>
+                    <FieldGroup className="!grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <Field className="min-w-0">
+                            <FieldLabel className="form-label" htmlFor="settings-name">Project name</FieldLabel>
                             <div className="form-input-wrapper">
-                                <input
+                                <Input className="!h-11 bg-sc-background text-sc-foreground transition-none pr-11"
                                     id="settings-name"
-                                    className="form-input"
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                 />
                                 <HouseLine size={18} className="form-input-icon" />
                             </div>
-                        </div>
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="settings-location">Location</label>
+                        </Field>
+                        <Field className="min-w-0">
+                            <FieldLabel className="form-label" htmlFor="settings-location">Location</FieldLabel>
                             <div className="form-input-wrapper">
-                                <input
+                                <Input className="!h-11 bg-sc-background text-sc-foreground transition-none pr-11"
                                     id="settings-location"
-                                    className="form-input"
                                     type="text"
                                     value={location}
                                     onChange={(e) => setLocation(e.target.value)}
@@ -499,8 +495,8 @@ export default function ProjectSettings({
                                 />
                                 <MapPin size={18} className="form-input-icon" />
                             </div>
-                        </div>
-                    </div>
+                        </Field>
+                    </FieldGroup>
                 </div>
             </section>
 
@@ -550,21 +546,13 @@ export default function ProjectSettings({
 
                 <div className="settings-card-content">
                     <div className="notif-channel-section">
-                        <label className="form-label">How alerts reach you</label>
+                        <FieldLabel className="form-label">How alerts reach you</FieldLabel>
                         {channelOptions.length > 1 ? (
-                            <div className="channel-selector">
-                                {channelOptions.map((option) => (
-                                    <button
-                                        key={option.id}
-                                        type="button"
-                                        className={`channel-option ${effectiveChannel === option.id ? 'selected' : ''}`}
-                                        onClick={() => handleChannelSelect(option.id)}
-                                    >
-                                        {option.icon}
-                                        {option.label}
-                                    </button>
-                                ))}
-                            </div>
+                            <Tabs value={effectiveChannel} onValueChange={value => handleChannelSelect(value as NotificationChannel)}>
+                                <TabsList aria-label="How alerts reach you" className="!h-auto flex-wrap">
+                                    {channelOptions.map(option => <TabsTrigger key={option.id} value={option.id} className="min-h-11 transition-none">{option.icon}{option.label}</TabsTrigger>)}
+                                </TabsList>
+                            </Tabs>
                         ) : (
                             <p className="notif-channel-desc">By email, and in the bell at the top of the page.</p>
                         )}

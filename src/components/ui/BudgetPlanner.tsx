@@ -1,5 +1,9 @@
 'use client';
 
+import { Tabs, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
+import { Field, FieldGroup, FieldLabel } from '@/components/shadcn/field';
+import { Input } from '@/components/shadcn/input';
+
 import { useMemo, useState } from 'react';
 import {
   ArrowRight,
@@ -204,14 +208,13 @@ export default function BudgetPlanner({
               <span className="limit-editor">
                 <span className="money-input-wrapper">
                   <span aria-hidden="true">$</span>
-                  <input
+                  <Input className="!h-11 bg-sc-background text-sc-foreground transition-none pl-7"
                     type="number"
                     inputMode="decimal"
                     min="0"
                     value={limitDraft}
                     onChange={(e) => setLimitDraft(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') void saveLimit(); if (e.key === 'Escape') setEditingLimit(false); }}
-                    className="modern-input money-input"
                     aria-label="Budget limit in US dollars"
                     autoFocus
                   />
@@ -274,43 +277,22 @@ export default function BudgetPlanner({
           <div className="target-controls">
             <fieldset className="input-group">
               <legend>What are you saving for? {saveNote(targetSave, () => saveTarget(planMode, customAmount))}</legend>
-              <div className={`toggle-group ${criticalItemsUsd > 0 ? 'has-critical' : ''}`}>
-                <button
-                  type="button"
-                  className={`toggle-btn ${planMode === 'remaining' ? 'active' : ''}`}
-                  aria-pressed={planMode === 'remaining'}
-                  onClick={() => chooseMode('remaining')}
-                >
-                  Still to fund
-                </button>
-                {criticalItemsUsd > 0 && (
-                  <button
-                    type="button"
-                    className={`toggle-btn ${planMode === 'critical' ? 'active' : ''}`}
-                    aria-pressed={planMode === 'critical'}
-                    onClick={() => chooseMode('critical')}
-                  >
-                    Critical
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className={`toggle-btn ${planMode === 'custom' ? 'active' : ''}`}
-                  aria-pressed={planMode === 'custom'}
-                  onClick={() => chooseMode('custom')}
-                >
-                  Custom
-                </button>
-              </div>
+              <Tabs value={planMode} onValueChange={value => chooseMode(value as typeof planMode)}>
+                <TabsList aria-label="Savings target" className="!h-auto !w-full flex-wrap">
+                  <TabsTrigger className="min-h-11 text-sc-muted-foreground transition-none" value="remaining">Still to fund</TabsTrigger>
+                  {criticalItemsUsd > 0 && <TabsTrigger className="min-h-11 text-sc-muted-foreground transition-none" value="critical">Critical</TabsTrigger>}
+                  <TabsTrigger className="min-h-11 text-sc-muted-foreground transition-none" value="custom">Custom</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </fieldset>
 
-            <div className={`field-grid ${planMode === 'custom' ? 'has-custom' : ''}`}>
+            <FieldGroup className="!grid grid-cols-1 gap-4 md:grid-cols-2">
               {planMode === 'custom' && (
-                <div className="input-group animate-in">
-                  <label htmlFor="budget-target-amount">Target amount (US$)</label>
+                <Field className="min-w-0">
+                  <FieldLabel htmlFor="budget-target-amount">Target amount (US$)</FieldLabel>
                   <div className="money-input-wrapper">
                     <span aria-hidden="true">$</span>
-                    <input
+                    <Input className="!h-11 bg-sc-background text-sc-foreground transition-none pl-7"
                       id="budget-target-amount"
                       type="number"
                       inputMode="decimal"
@@ -320,24 +302,22 @@ export default function BudgetPlanner({
                       onKeyDown={(event) => { if (event.key === 'Enter') saveTarget('custom', customAmount); }}
                       placeholder="0.00"
                       min="0"
-                      className="modern-input money-input"
                     />
                   </div>
-                </div>
+                </Field>
               )}
 
-              <div className="input-group">
-                <label htmlFor="budget-target-date">Target date</label>
+              <Field className="min-w-0">
+                <FieldLabel htmlFor="budget-target-date">Target date</FieldLabel>
                 <div className="date-input-wrapper">
                   <CalendarBlank size={18} className="input-icon" aria-hidden="true" />
-                  <input
+                  <Input className="!h-11 bg-sc-background text-sc-foreground transition-none pl-10"
                     id="budget-target-date"
                     disabled={dateSave === 'saving'}
                     type="date"
                     value={localTargetDate}
                     onChange={(event) => void handleDateChange(event.target.value)}
                     min={new Date().toISOString().split('T')[0]}
-                    className="modern-input with-icon"
                     aria-describedby="budget-target-date-help"
                   />
                 </div>
@@ -348,8 +328,8 @@ export default function BudgetPlanner({
                   {dateSave === 'saving' && <span className="save-note"> · Saving…</span>}
                   {dateSave === 'saved' && <span className="save-note ok"> · Saved</span>}
                 </span>
-              </div>
-            </div>
+              </Field>
+            </FieldGroup>
           </div>
 
           <div className="savings-results" aria-live="polite">

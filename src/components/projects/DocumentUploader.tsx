@@ -1,5 +1,10 @@
 'use client';
 
+import { Field, FieldGroup, FieldLabel } from '@/components/shadcn/field';
+import { Input } from '@/components/shadcn/input';
+import { NativeSelect } from '@/components/shadcn/native-select';
+
+
 import { formatQuantity } from '@/lib/format';
 
 import { useEffect, useId, useRef, useState } from 'react';
@@ -85,10 +90,10 @@ export default function DocumentUploader({ onUpload, isUploading }: DocumentUplo
                     <div><strong>{file.name}</strong><span>{formatQuantity(file.size / 1024 / 1024)} MB · Ready to upload</span></div>
                     <button type="button" disabled={disabled} aria-label="Remove selected file" onClick={() => { setFile(null); setError(null); setStatus(''); }}><X size={20} /></button>
                 </div>
-                <div className="fields">
-                    <label htmlFor={`${id}-category`}>Category<select id={`${id}-category`} value={category} disabled={disabled} onChange={e => setCategory(e.target.value as DocumentCategory)}>{CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></label>
-                    <label htmlFor={`${id}-description`}>Description (optional)<input id={`${id}-description`} value={description} disabled={disabled} onChange={e => setDescription(e.target.value)} placeholder="e.g. Foundation delivery receipt" /></label>
-                </div>
+                <FieldGroup className="!grid grid-cols-1 gap-4 md:grid-cols-2 my-5 text-left">
+                    <Field><FieldLabel htmlFor={`${id}-category`}>Category</FieldLabel><NativeSelect className="w-full [&_select]:!h-11 [&_select]:bg-sc-background [&_select]:text-base [&_select]:transition-none" id={`${id}-category`} value={category} disabled={disabled} onChange={e => setCategory(e.target.value as DocumentCategory)}>{CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</NativeSelect></Field>
+                    <Field><FieldLabel htmlFor={`${id}-description`}>Description (optional)</FieldLabel><Input className="!h-11 bg-sc-background text-sc-foreground transition-none" id={`${id}-description`} value={description} disabled={disabled} onChange={e => setDescription(e.target.value)} placeholder="e.g. Foundation delivery receipt" /></Field>
+                </FieldGroup>
                 <div className="actions"><Button variant="secondary" disabled={disabled} onClick={() => fileInput.current?.click()}>Choose another</Button><Button onClick={upload} loading={disabled} icon={<CloudArrowUp size={18} />}>{error ? 'Retry upload' : 'Upload document'}</Button></div>
             </> : <>
                 <CloudArrowUp size={32} weight="duotone" />

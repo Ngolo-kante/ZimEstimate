@@ -1,12 +1,18 @@
 'use client';
 
+import { useId } from 'react';
+
+import { Field, FieldGroup, FieldLabel } from '@/components/shadcn/field';
+import { NativeSelect } from '@/components/shadcn/native-select';
+
+
 import UsageCompactRow from './UsageCompactRow';
 import { formatQuantity } from '@/lib/format';
 
 import { localToday } from '@/lib/projects/usageStats';
 
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import { Input } from '@/components/shadcn/input';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import type { NotificationChannel } from '@/components/ui/BudgetPlanner';
 import type { BOQItem, MaterialUsage } from '@/lib/database.types';
@@ -66,6 +72,7 @@ export default function UsageLogTab({
   groupedUsage,
   itemLookup,
 }: UsageLogTabProps) {
+    const controlId = useId();
   const { formatPrice, exchangeRate } = useCurrency();
   return (
     <>
@@ -133,11 +140,11 @@ export default function UsageLogTab({
           <div className="log-header">
             <h3>Log usage</h3>
           </div>
-          <div className="log-form">
-            <div className="form-row">
-              <div className="form-group flex-2">
-                <label>Material</label>
-                <select
+          <FieldGroup className="gap-4">
+            <FieldGroup className="!grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field className="min-w-0 md:col-span-1">
+                <FieldLabel htmlFor={`${controlId}-1`}>Material</FieldLabel>
+                <NativeSelect id={`${controlId}-1`} className="w-full [&_select]:!h-11 [&_select]:bg-sc-background [&_select]:text-base [&_select]:transition-none"
                   value={formState.itemId}
                   onChange={(e) => setFormState({ ...formState, itemId: e.target.value })}
                 >
@@ -149,45 +156,45 @@ export default function UsageLogTab({
                       ))}
                     </optgroup>
                   ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Quantity used</label>
-                <input
-                  type="number"
+                </NativeSelect>
+              </Field>
+              <Field className="min-w-0">
+                <FieldLabel htmlFor={`${controlId}-2`}>Quantity used</FieldLabel>
+                <Input id={`${controlId}-2`} className="!h-11 bg-sc-background text-sc-foreground transition-none"
+                  type="number" inputMode="decimal"
                   value={formState.quantity}
                   onChange={(e) => setFormState({ ...formState, quantity: e.target.value })}
                   min="0"
                   step="0.01"
                   placeholder="0"
                 />
-              </div>
-              <div className="form-group">
-                <label>Date</label>
-                <input
+              </Field>
+              <Field className="min-w-0">
+                <FieldLabel htmlFor={`${controlId}-3`}>Date</FieldLabel>
+                <Input id={`${controlId}-3`} className="!h-11 bg-sc-background text-sc-foreground transition-none"
                   type="date"
                   value={formState.date}
                   onChange={(e) => setFormState({ ...formState, date: e.target.value })}
                   max={localToday()}
                 />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group flex-2">
-                <label>Notes (optional)</label>
-                <Input
+              </Field>
+            </FieldGroup>
+            <FieldGroup className="!grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field className="min-w-0 md:col-span-1">
+                <FieldLabel htmlFor={`${controlId}-4`}>Notes (optional)</FieldLabel>
+                <Input id={`${controlId}-4`} className="!h-11 bg-sc-background text-sc-foreground transition-none"
                   value={formState.notes}
                   onChange={(e) => setFormState({ ...formState, notes: e.target.value })}
                   placeholder="e.g., slab pour day 1"
                 />
-              </div>
+              </Field>
               <div className="form-actions">
                 <Button onClick={onLogUsage} icon={<Check size={16} />}>
                   Save usage
                 </Button>
               </div>
-            </div>
-          </div>
+            </FieldGroup>
+          </FieldGroup>
         </div>
 
         <div className="usage-table-card">
