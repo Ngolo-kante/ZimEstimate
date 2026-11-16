@@ -2,6 +2,7 @@
 
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem } from '@/components/shadcn/dropdown-menu';
 import Link from 'next/link';
+import ProjectActionsMenu from './ProjectActionsMenu';
 import Card, { CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/shadcn/badge';
 import Button from '@/components/ui/Button';
@@ -41,7 +42,7 @@ export default function ProjectsGrid({
 }) {
     const {
         openMenuId, setOpenMenuId, isMobile,
-        handleMenuToggle, handleEdit, handleShare, handleInvite, handleArchive, handleDelete, handleDownloadPdf,
+        handleMenuToggle,
         handleQuickEdit, handleQuickShare, handleQuickInvite, handleQuickArchive, handleQuickDelete, handleQuickDownloadPdf,
     } = actions;
     return (
@@ -109,40 +110,7 @@ export default function ProjectsGrid({
                                 {project.scope !== 'entire_house' && <span className="build-type">{formatScopeLabel(project)}</span>}
                                 <Badge variant="secondary">{currentStageLabel(project, stages.filter(s => s.project_id === project.id))}</Badge>
                             </div>
-                            <DropdownMenu open={!isMobile && openMenuId === project.id} onOpenChange={open => { if (!isMobile) setOpenMenuId(open ? project.id : null); }}><div className="menu-container">
-                                <DropdownMenuTrigger asChild><Button variant="ghost" className="menu-btn" aria-label={`Actions for ${project.name}`} aria-haspopup="menu" aria-expanded={openMenuId === project.id} onClick={(e) => { if (isMobile) handleMenuToggle(e, project.id); else { e.preventDefault(); e.stopPropagation(); } }}>
-                                    <DotsThreeVertical size={20} weight="bold" />
-                                </Button></DropdownMenuTrigger>
-                                {!isMobile && (
-                                    <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}><DropdownMenuGroup>
-                                        <DropdownMenuItem asChild><button onClick={(e) => handleEdit(e, project.id)}>
-                                            <PencilSimple size={16} /> Edit
-                                        </button></DropdownMenuItem>
-                                        <DropdownMenuItem asChild><button onClick={(e) => handleShare(e, project.id)}>
-                                            <ShareNetwork size={16} /> Share a copy
-                                        </button></DropdownMenuItem>
-                                        {/* Inviting, archiving and deleting stay with the owner. */}
-                                        {project.owner_id === profile?.id && (
-                                            <DropdownMenuItem asChild><button onClick={(e) => handleInvite(e, project.id)}>
-                                                <UserPlus size={16} /> Invite people
-                                            </button></DropdownMenuItem>
-                                        )}
-                                        <DropdownMenuItem asChild><button onClick={(e) => { void handleDownloadPdf(e, project.id); }}>
-                                            <FileArrowDown size={16} /> Download BOQ PDF
-                                        </button></DropdownMenuItem>
-                                        {project.owner_id === profile?.id && (
-                                            <>
-                                                <DropdownMenuItem asChild><button onClick={(e) => handleArchive(e, project.id)}>
-                                                    <Archive size={16} /> {project.status === 'archived' ? 'Restore' : 'Archive'}
-                                                </button></DropdownMenuItem>
-                                                <DropdownMenuItem variant="destructive" asChild><button className="danger" onClick={(e) => handleDelete(e, project.id)}>
-                                                    <Trash size={16} /> Delete
-                                                </button></DropdownMenuItem>
-                                            </>
-                                        )}
-                                    </DropdownMenuGroup></DropdownMenuContent>
-                                )}
-                            </div></DropdownMenu>
+                            <ProjectActionsMenu project={project} profile={profile} actions={actions} />
                         </CardHeader>
 
                         <div className="project-meta">

@@ -1,17 +1,19 @@
 'use client';
 
 import Link from 'next/link';
+import ProjectActionsMenu from './ProjectActionsMenu';
+import type { useCardActions } from '@/app/projects/hooks/useCardActions';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { Badge } from '@/components/shadcn/badge';
-import type { BOQItem, Project, ProjectStage, PurchaseRecord } from '@/lib/database.types';
+import type { BOQItem, Profile, Project, ProjectStage, PurchaseRecord } from '@/lib/database.types';
 import { currentStageLabel, pendingItemsOf, shortLocation } from '@/lib/projects/listPresentation';
 import { computePurchaseStats, materialItemsOf } from '@/lib/projects/workspaceStats';
 import { formatUsd } from '@/lib/format';
 import { CaretRight } from '@phosphor-icons/react';
 
-export default function ContinuePanel({ project, stages, items, purchases }: { project: Project; stages: ProjectStage[]; items: BOQItem[]; purchases: PurchaseRecord[] }) {
+export default function ContinuePanel({ project, stages, items, purchases, profile, actions }: { project: Project; stages: ProjectStage[]; items: BOQItem[]; purchases: PurchaseRecord[]; profile: Profile | null; actions: ReturnType<typeof useCardActions> }) {
     const router = useRouter();
     const materials = materialItemsOf(items);
     const pending = pendingItemsOf(materials, purchases).slice(0, 3);
@@ -21,6 +23,7 @@ export default function ContinuePanel({ project, stages, items, purchases }: { p
     const lineCost = (item: BOQItem) => Number(item.quantity) * Number(item.unit_price_usd);
     return <section aria-label="Continue your build" className="continue-panel">
         <Card>
+            <ProjectActionsMenu project={project} profile={profile} actions={actions} menuId={`continue:${project.id}`} />
             <div className="continue-grid">
                 <div className="continue-main">
                     <p className="continue-label">Continue your build</p>

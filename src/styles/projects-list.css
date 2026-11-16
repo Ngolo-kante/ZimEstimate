@@ -29,14 +29,14 @@
 .projects-list .budget-value { font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .projects-list .muted { color: #475569; font-weight: 400; font-size: 14px; }
 .projects-list .highlight-new { border-color: var(--color-accent); }
-.projects-list .portfolio-strip { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 16px; font-size: 14px; color: #475569; }
+.projects-list .portfolio-strip { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 16px; margin-bottom: 24px; font-size: 14px; color: #475569; }
 .projects-list .portfolio-strip p { margin: 0; }
 .projects-list .portfolio-strip a { display: inline-flex; align-items: center; min-height: 44px; color: #1d4ed8; font-weight: 600; } /* link blue on the off-white page: the accent is 4.37:1 */
 .projects-list .usage-limit { color: #92400e; }
-.projects-list .continue-panel .card { border: 1px solid #bfdbfe; box-shadow: none; border-radius: 16px; }
+.projects-list .continue-panel .card { position: relative; border: 1px solid #bfdbfe; box-shadow: none; border-radius: 16px; }
 /* Phone: details, next steps, then a full-width Open. Desktop: details and Open on the left, next steps on the right. */
 .projects-list .continue-grid { display: grid; gap: 20px; grid-template-areas: "main" "next" "actions"; }
-.projects-list .continue-main { grid-area: main; min-width: 0; }
+.projects-list .continue-main { grid-area: main; min-width: 0; padding-right: 52px; }
 .projects-list .continue-next { grid-area: next; min-width: 0; }
 .projects-list .continue-actions { grid-area: actions; }
 .projects-list .continue-actions .btn { width: 100%; }
@@ -110,3 +110,5 @@
 }
 .projects-list .shared-list .shared-card span { font-size: 0.82rem; color: var(--color-text-secondary); }
 .projects-list .shared-list .shared-card .shared-access { color: var(--color-accent); font-weight: 600; }
+
+@media (min-width: 768px) { .projects-list .continue-next { padding-right: 52px; } }

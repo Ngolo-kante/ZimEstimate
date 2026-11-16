@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { prepareImageForUpload } from '@/lib/compressImage';
 import { getSitePhotos, uploadSitePhoto, type SitePhoto } from '@/lib/services/site';
 
-export default function SitePhotosPanel({ projectId }: { projectId: string }) {
+export default function SitePhotosPanel({ projectId, onPhotoCountChange }: { projectId: string; onPhotoCountChange?: (count: number) => void }) {
   const { success, error: showError } = useToast();
   const [photos, setPhotos] = useState<SitePhoto[] | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -21,6 +21,10 @@ export default function SitePhotosPanel({ projectId }: { projectId: string }) {
     void getSitePhotos({ kind: 'project', id: projectId }).then((result) => { if (active) setPhotos(result.photos); });
     return () => { active = false; };
   }, [projectId]);
+
+  useEffect(() => {
+    if (photos !== null) onPhotoCountChange?.(photos.length);
+  }, [photos, onPhotoCountChange]);
 
   const add = async (chosen: File | undefined) => {
     if (!chosen) return;

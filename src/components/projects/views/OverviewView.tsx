@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/shadcn/collapsible';
 import { pendingItemsOf } from '@/lib/projects/listPresentation';
 import Card, { CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -13,6 +15,7 @@ import type { PriceUpdate } from '@/lib/projects/priceUpdates';
 import type { PurchaseStats } from '@/lib/projects/workspaceStats';
 import type { BOQCategory, BOQItem, Project, ProjectStageWithTasks, PurchaseRecord } from '@/lib/database.types';
 import {
+    CaretDown,
     ShareNetwork,
     UserPlus,
     MapPin,
@@ -81,6 +84,8 @@ export default function OverviewView({
     onIgnorePriceUpdates,
     onApplyPriceUpdates,
 }: OverviewViewProps) {
+    const [detailsOpen, setDetailsOpen] = useState(false);
+    const [photoCount, setPhotoCount] = useState<number | null>(null);
     const { exchangeRate, formatPrice } = useCurrency();
     const pendingItems = pendingItemsOf(materialItems, purchases);
     return (
@@ -125,8 +130,9 @@ export default function OverviewView({
                             variant="secondary"
                             icon={<PencilSimple size={16} />}
                             onClick={() => setActiveView('settings')}
+                            aria-label="Edit project"
                         >
-                            Edit project
+                            <span className="overview-edit-desktop">Edit project</span><span className="overview-edit-mobile">Edit</span>
                         </Button>
                     )}
                 </div>
@@ -165,7 +171,7 @@ export default function OverviewView({
                                             )}
                                         </span>
                                     </div>
-                                    <Button size="sm" variant={index === 0 ? 'primary' : 'secondary'} onClick={() => {
+                                    <Button size="sm" variant="secondary" onClick={() => {
                                         setSelectedItemForPurchase(item);
                                         setActiveView('procurement');
                                     }}>
@@ -268,8 +274,13 @@ export default function OverviewView({
                 </div>
             )}
 
-            <details className="overview-details">
-                <summary className="min-h-11 cursor-pointer py-3 font-semibold text-primary focus-visible:outline-2 focus-visible:outline-offset-4">Details</summary>
+            <Collapsible className="overview-details" open={detailsOpen} onOpenChange={setDetailsOpen}>
+                <CollapsibleTrigger className="overview-details-trigger">
+                    <span>Compliance and site photos</span>
+                    {!detailsOpen && <span className="overview-details-summary">{complianceSummary.doneCerts} of {complianceSummary.totalCerts} certificates · {photoCount === null ? 'Loading photos…' : `${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}`}</span>}
+                    <CaretDown size={18} aria-hidden="true" />
+                </CollapsibleTrigger>
+                <CollapsibleContent forceMount className="overview-details-content">
                 <div className="space-y-6 pt-4">
                     <Card>
                         <CardHeader>
@@ -332,9 +343,10 @@ export default function OverviewView({
                             </div>
                         </div>
                     </Card>
-                    <SitePhotosPanel projectId={projectId} />
+                    <SitePhotosPanel projectId={projectId} onPhotoCountChange={setPhotoCount} />
                 </div>
-            </details>
+            </CollapsibleContent>
+            </Collapsible>
         </div>
     );
 }
