@@ -15,9 +15,12 @@
 }
 
 .panel {
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  max-height: 80dvh;
+  /* Phone drawer: only its inner DrawerScrollArea scrolls (touch works there);
+     the desktop dialog scrolls as a whole (rule below). */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 85dvh;
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 }
 
@@ -69,4 +72,8 @@
     animation: none !important;
     transition: none !important;
   }
+}
+
+@media (min-width: 768px) {
+  .panel { overflow-y: auto; overscroll-behavior: contain; }
 }

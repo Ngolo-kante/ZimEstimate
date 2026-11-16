@@ -119,8 +119,26 @@ function DrawerDescription({
   )
 }
 
+/**
+ * The scrolling part of a drawer. Vaul sets touch-action: none on the drawer
+ * itself (so it can be dragged closed), which also blocks finger scrolling
+ * when the drawer is its own scroll container. A scroll container inside it
+ * resets that, so long content scrolls by touch while the header and footer
+ * stay put. Vaul still drags the drawer when this area is scrolled to the top.
+ */
+function DrawerScrollArea({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="drawer-scroll-area"
+      className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain [touch-action:pan-y] [-webkit-overflow-scrolling:touch]", className)}
+      {...props}
+    />
+  )
+}
+
 export {
   Drawer,
+  DrawerScrollArea,
   DrawerPortal,
   DrawerOverlay,
   DrawerTrigger,

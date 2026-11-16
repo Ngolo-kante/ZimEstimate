@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 import { ChatCircleText } from '@phosphor-icons/react';
-import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from '@/components/shadcn/drawer';
+import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose, DrawerScrollArea } from '@/components/shadcn/drawer';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/shadcn/dialog';
 import DescribeProject from './DescribeProject';
 import styles from './DescribeChatBubble.module.css';
@@ -84,7 +84,7 @@ function ChatPanel() {
       className={`${styles.panel} z-[150] outline-none motion-reduce:animate-none motion-reduce:transition-none`}
     >
       <DrawerHeader><DrawerTitle>Describe your project</DrawerTitle><DrawerDescription>{description}</DrawerDescription></DrawerHeader>
-      {conversation}
+      <DrawerScrollArea>{conversation}</DrawerScrollArea>
       <DrawerClose className={`${styles.close} border border-sc-border`}>Close</DrawerClose>
     </DrawerContent>
   </Drawer>;

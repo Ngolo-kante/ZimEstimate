@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from '@/components/shadcn/drawer';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose, DrawerScrollArea } from '@/components/shadcn/drawer';
 import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
 import Card, { CardContent } from '@/components/ui/Card';
@@ -769,9 +769,9 @@ export default function MarketplacePage() {
 
         {phone && <div className="mobile-supplier-flow">{supplierCard}</div>}
         <Drawer open={phone && !!selectedMaterial} onOpenChange={open => { if (!open) setSelectedMaterial(null); }}>
-          <DrawerContent className="motion-reduce:[animation:none!important] motion-reduce:[transition:none!important] z-[150] overflow-y-auto pb-[env(safe-area-inset-bottom)]">
+          <DrawerContent className="motion-reduce:[animation:none!important] motion-reduce:[transition:none!important] z-[150] max-h-[85dvh] pb-[env(safe-area-inset-bottom)]">
             <DrawerHeader><DrawerTitle>{selectedMaterial?.name || 'Material details'}</DrawerTitle><DrawerDescription>Details and supplier prices</DrawerDescription></DrawerHeader>
-            {phone && selectedMaterial && materialDetail}
+            <DrawerScrollArea>{phone && selectedMaterial && materialDetail}</DrawerScrollArea>
             <DrawerClose className="m-4 min-h-11 rounded-lg border border-sc-border">Close</DrawerClose>
           </DrawerContent>
         </Drawer>
