@@ -1,7 +1,7 @@
 'use client';
 
+import { initialsFor } from '@/lib/initials';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   House,
@@ -107,15 +107,8 @@ export default function Sidebar() {
         {/* User Profile */}
         <div className="user-profile">
           <div className="user-avatar">
-            {profile?.avatar_url ? (
-              <Image
-                src={profile.avatar_url}
-                alt={profile.full_name ? `${profile.full_name} avatar` : 'User avatar'}
-                fill
-                sizes="36px"
-                style={{ objectFit: 'cover' }}
-                unoptimized
-              />
+            {isAuthenticated && initialsFor(profile?.full_name || user?.email) ? (
+              <span className="avatar-initials" aria-hidden="true">{initialsFor(profile?.full_name || user?.email)}</span>
             ) : (
               <User size={20} weight="light" />
             )}

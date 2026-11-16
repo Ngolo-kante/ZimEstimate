@@ -1,5 +1,6 @@
 'use client';
 
+import { initialsFor } from '@/lib/initials';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -179,6 +180,7 @@ export default function TopNavbar() {
   }, []);
 
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Account';
+  const initials = initialsFor(profile?.full_name || user?.email);
   const tierLabel = isAdmin ? 'Administrator' : profile?.tier === 'pro' ? 'Pro plan' : 'Free plan';
 
   const handleSignOut = async () => {
@@ -338,15 +340,10 @@ export default function TopNavbar() {
               aria-controls="profile-menu"
             >
               <span className="trigger-avatar">
-                {profile?.avatar_url ? (
-                  <Image
-                    src={profile.avatar_url}
-                    alt={profile.full_name ? `${profile.full_name} avatar` : 'User avatar'}
-                    width={34}
-                    height={34}
-                    className="user-avatar-img"
-                    unoptimized
-                  />
+                {/* Initials on the brand navy, never the account photo: Google's
+                    default photo is a coloured letter tile that broke the theme. */}
+                {isAuthenticated && initials ? (
+                  <span className="avatar-initials" aria-hidden="true">{initials}</span>
                 ) : (
                   <User size={20} weight="fill" />
                 )}
@@ -369,14 +366,8 @@ export default function TopNavbar() {
                   <>
                     <div className="profile-header">
                       <div className="profile-avatar">
-                        {profile?.avatar_url ? (
-                          <Image
-                            src={profile.avatar_url}
-                            alt={profile.full_name ? `${profile.full_name} avatar` : 'User avatar'}
-                            width={40}
-                            height={40}
-                            unoptimized
-                          />
+                        {initials ? (
+                          <span className="avatar-initials" aria-hidden="true">{initials}</span>
                         ) : (
                           <User size={20} weight="light" />
                         )}
@@ -864,6 +855,13 @@ export default function TopNavbar() {
           border-radius: 7px 0 0 7px;
           color: #fff;
           background: var(--color-primary);
+        }
+
+        .avatar-initials {
+          font-size: 0.8125rem;
+          font-weight: 700;
+          letter-spacing: 0.02em;
+          line-height: 1;
         }
 
         .user-btn .user-avatar-img {
