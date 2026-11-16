@@ -1,9 +1,11 @@
 'use client';
 
+import { TooltipProvider } from '@/components/shadcn/tooltip';
+
 import { isLinePurchased } from '@/lib/projects/itemStatus';
 
 import { isLaborCategory } from '@/lib/calculations/laborSubstages';
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import HeightCollapse from '@/components/ui/HeightCollapse';
 import Button from '@/components/ui/Button';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
@@ -69,24 +71,11 @@ export default function StageBOQSection({
     const [viewPreset, setViewPreset] = useState<'simple' | 'detailed' | 'custom'>('simple');
     const [visibleColumns, setVisibleColumns] = useState<Record<ColumnKey, boolean>>({ ...SIMPLE_COLUMNS });
     const [isColumnsOpen, setIsColumnsOpen] = useState(false);
-    const columnsMenuRef = useRef<HTMLDivElement | null>(null);
     const { exchangeRate } = useCurrency();
     const { success, error: showError } = useToast();
     // The catalog as an admin has edited it, so added products can be picked
     // and hidden ones are not offered.
     const { visible: materials } = useCatalog();
-
-    useEffect(() => {
-        if (!isColumnsOpen) return;
-        const handleClick = (event: MouseEvent) => {
-            if (!columnsMenuRef.current) return;
-            if (!columnsMenuRef.current.contains(event.target as Node)) {
-                setIsColumnsOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
-    }, [isColumnsOpen]);
 
     const availableMaterials = useMemo(() => {
         if (isLaborCategory(category)) {
@@ -270,7 +259,7 @@ export default function StageBOQSection({
     }
 
     return (
-        <>
+        <TooltipProvider delayDuration={400} skipDelayDuration={300}>
             <div className={`stage-boq boq-card ${expanded ? 'expanded' : 'collapsed'}`}>
                 <div className="card-header" onClick={(event) => { setAnimateCollapse(event.detail !== 0); setExpanded(!expanded); }}>
                     <div className="header-main">
@@ -338,7 +327,6 @@ export default function StageBOQSection({
                             setStatusFilter={setStatusFilter}
                             viewPreset={viewPreset}
                             applyPreset={applyPreset}
-                            columnsMenuRef={columnsMenuRef}
                             isColumnsOpen={isColumnsOpen}
                             setIsColumnsOpen={setIsColumnsOpen}
                             visibleColumns={visibleColumns}
@@ -403,6 +391,6 @@ export default function StageBOQSection({
                 </HeightCollapse>
             </div>
 
-        </>
+        </TooltipProvider>
     );
 }

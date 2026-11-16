@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/shadcn/dialog';
+import { useOverlayFocus } from './useOverlayFocus';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Phone, X } from '@phosphor-icons/react';
@@ -29,7 +31,7 @@ export default function PhoneNumberModal({
     setIsSaving(false);
   }, [isOpen, initialValue]);
 
-  if (!isOpen) return null;
+  const focus = useOverlayFocus();
 
   const handleSave = async () => {
     const trimmed = phoneNumber.trim();
@@ -47,11 +49,13 @@ export default function PhoneNumberModal({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <>
+    <Dialog open={isOpen} onOpenChange={open => { if (!open) onClose(); }}>
+                <DialogContent {...focus} showCloseButton={false} aria-describedby={undefined} className="!block !w-[calc(100%-2rem)] !max-w-[420px] !p-0">
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Add Phone Number</h2>
-          <button className="close-btn" onClick={onClose}>
+          <DialogTitle asChild><h2>Add Phone Number</h2></DialogTitle>
+          <button className="close-btn" aria-label="Close" onClick={onClose}>
             <X size={18} weight="bold" />
           </button>
         </div>
@@ -77,23 +81,9 @@ export default function PhoneNumberModal({
             Save Number
           </Button>
         </div>
-      </div>
+      </div></DialogContent></Dialog>
 
       <style jsx>{`
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(15, 23, 42, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          /* Was 50 — below MainLayout's persistent bottom nav bar (z-index:
-             100), which rendered on top of this modal's lower portion on any
-             page short enough for the centred content to reach the bottom
-             72px of the viewport. */
-          z-index: var(--z-modal);
-          padding: 24px;
-        }
 
         .modal-content {
           width: 100%;
@@ -126,12 +116,11 @@ export default function PhoneNumberModal({
           color: #64748b;
           cursor: pointer;
           padding: 4px;
+          min-width: 44px; min-height: 44px;
           border-radius: 6px;
         }
 
-        .close-btn:hover {
-          background: #f1f5f9;
-        }
+        @media (hover: hover) and (pointer: fine) { .close-btn:hover { background: #f1f5f9; } }
 
         .modal-description {
           margin: 0;
@@ -145,6 +134,6 @@ export default function PhoneNumberModal({
           gap: 12px;
         }
       `}</style>
-    </div>
+    </>
   );
 }

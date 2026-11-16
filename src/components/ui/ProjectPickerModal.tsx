@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { Dialog, DialogContent, DialogTitle } from '@/components/shadcn/dialog';
+import { useOverlayFocus } from './useOverlayFocus';
 import Button from '@/components/ui/Button';
 import { getProjects } from '@/lib/services/projects';
 import { Project } from '@/lib/database.types';
@@ -60,19 +62,20 @@ export default function ProjectPickerModal({
         }
     };
 
-    if (!isOpen) return null;
+    const focus = useOverlayFocus();
 
     return (
         <>
-            <div className="modal-overlay" onClick={onClose}>
+            <Dialog open={isOpen} onOpenChange={open => { if (!open) onClose(); }}>
+                <DialogContent {...focus} showCloseButton={false} aria-describedby={undefined} className="!block !w-[calc(100%-2rem)] !max-w-[480px] !p-0">
                 <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                     {/* Header */}
                     <div className="modal-header">
                         <div>
-                            <h2>{title}</h2>
+                            <DialogTitle asChild><h2>{title}</h2></DialogTitle>
                             <p className="modal-description">{description}</p>
                         </div>
-                        <button className="close-btn" onClick={onClose}>
+                        <button className="close-btn" aria-label="Close" onClick={onClose}>
                             <X size={20} weight="bold" />
                         </button>
                     </div>
@@ -141,22 +144,9 @@ export default function ProjectPickerModal({
                         </div>
                     )}
                 </div>
-            </div>
+            </DialogContent></Dialog>
 
             <style jsx>{`
-                .modal-overlay {
-                    position: fixed;
-                    inset: 0;
-                    background: rgba(0, 0, 0, 0.5);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    /* Was 100 — an exact tie with MainLayout's persistent bottom
-                       nav bar. Ties resolve by DOM order, and the nav renders
-                       after page content, so it won every time. */
-                    z-index: var(--z-modal);
-                    padding: var(--spacing-lg);
-                }
 
                 .modal-content {
                     background: var(--color-surface);
@@ -194,6 +184,7 @@ export default function ProjectPickerModal({
                     background: none;
                     border: none;
                     padding: var(--spacing-xs);
+                    min-width: 44px; min-height: 44px;
                     cursor: pointer;
                     color: var(--color-text-muted);
                     border-radius: var(--radius-sm);

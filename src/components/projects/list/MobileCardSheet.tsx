@@ -1,5 +1,7 @@
 'use client';
 
+import { useOverlayFocus } from '@/components/ui/useOverlayFocus';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/shadcn/drawer';
 import type { Profile, Project } from '@/lib/database.types';
 import type { SavedWorkItem } from '@/lib/services/savedWork';
 import type { useCardActions } from '@/app/projects/hooks/useCardActions';
@@ -30,12 +32,12 @@ export default function MobileCardSheet({
         handleEdit, handleShare, handleInvite, handleArchive, handleDelete, handleDownloadPdf,
         handleQuickEdit, handleQuickShare, handleQuickInvite, handleQuickArchive, handleQuickDelete, handleQuickDownloadPdf,
     } = actions;
+    const focus = useOverlayFocus();
     const quickTarget = quickItems.find(i => i.id === mobileMenuProjectId);
     return (
-    <>
-        <div className="projects-list mobile-menu-backdrop" data-open={open} data-keyboard={actions.menuKeyboard} aria-hidden="true" onClick={() => setMobileMenuProjectId(null)} />
-        <div className="projects-list mobile-bottom-sheet" data-open={open} data-keyboard={actions.menuKeyboard} inert={!open}>
-            <div className="bottom-sheet-handle" />
+    <Drawer open={open} onOpenChange={value => { if (!value) setMobileMenuProjectId(null); }} closeThreshold={0.25}>
+        <DrawerContent {...focus} className="projects-list card-actions-drawer" aria-describedby={undefined}>
+            <DrawerTitle className="sr-only">Project actions</DrawerTitle>
             {quickTarget ? (
                 <>
                     <button className="bottom-sheet-item" onClick={(e) => { handleQuickEdit(e, quickTarget); setMobileMenuProjectId(null); }}>
@@ -86,7 +88,7 @@ export default function MobileCardSheet({
                     )}
                 </>
             )}
-        </div>
-    </>
+        </DrawerContent>
+    </Drawer>
 );
 }

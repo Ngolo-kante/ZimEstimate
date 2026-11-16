@@ -1,5 +1,6 @@
 'use client';
 
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem } from '@/components/shadcn/dropdown-menu';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -71,7 +72,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
         } catch {
             // Storage unavailable: fall through to the width default.
         }
-        return window.matchMedia('(min-width: 769px) and (max-width: 1100px)').matches;
+        return window.matchMedia('(min-width: 768px) and (max-width: 1100px)').matches;
     });
 
     const toggleCollapse = () => {
@@ -111,11 +112,15 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
         <>
             <aside className={`sidebar-spine ${isCollapsed ? 'collapsed' : ''}`}>
                 {/* Project Switcher */}
-                <div className="project-switcher">
+                <DropdownMenu open={isProjectMenuOpen && !isCollapsed} onOpenChange={open => {
+                    if (isCollapsed) return;
+                    setIsProjectMenuOpen(open);
+                    if (open && projects.length === 0) void loadProjects();
+                }}><div className="project-switcher"><DropdownMenuTrigger asChild>
                     <button
                         type="button"
                         className="switcher-btn"
-                        onClick={handleToggleMenu}
+                        onClick={e => { if (isCollapsed) { e.preventDefault(); handleToggleMenu(); } }}
                         title={isCollapsed ? project.name : undefined}
                         aria-label={isCollapsed ? `Project: ${project.name}. Expand sidebar` : undefined}
                         aria-expanded={isCollapsed ? undefined : isProjectMenuOpen}
@@ -131,24 +136,24 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         <CaretDown size={14} className={`caret ${isProjectMenuOpen ? 'open' : ''}`} />
                     </button>
 
+                    </DropdownMenuTrigger>
                     {/* Dropdown for Switcher */}
-                    {isProjectMenuOpen && !isCollapsed && (
-                        <div className="switcher-dropdown">
+                    {!isCollapsed && (
+                        <DropdownMenuContent align="start" className="min-w-64"><DropdownMenuGroup>
                             {isLoadingProjects ? (
                                 <div className="p-4 text-center text-slate-400 text-sm">Loading...</div>
                             ) : (
                                 <>
                                     {projects.map((p) => (
-                                        <button
+                                        <DropdownMenuItem asChild key={p.id}><button
                                             type="button"
-                                            key={p.id}
                                             className={`dropdown-item ${p.id === project.id ? 'active' : ''}`}
                                             aria-current={p.id === project.id ? 'page' : undefined}
                                             onClick={() => handleProjectSelect(p.id)}
                                         >
                                             <Buildings size={16} aria-hidden="true" />
                                             <span className="truncate">{p.name}</span>
-                                        </button>
+                                        </button></DropdownMenuItem>
                                     ))}
 
                                     {projects.length === 0 && (
@@ -159,12 +164,12 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
 
                             <div className="dropdown-divider"></div>
 
-                            <Link href="/projects" className="dropdown-item view-all" onClick={() => setIsProjectMenuOpen(false)}>
+                            <DropdownMenuItem asChild><Link href="/projects" className="dropdown-item view-all" onClick={() => setIsProjectMenuOpen(false)}>
                                 View all projects
-                            </Link>
-                        </div>
+                            </Link></DropdownMenuItem>
+                        </DropdownMenuGroup></DropdownMenuContent>
                     )}
-                </div>
+                </div></DropdownMenu>
 
                 {/* Navigation */}
                 <nav className="spine-nav" aria-label="Project sections">
@@ -559,7 +564,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                     }
 
                     /* ProjectViewTabs provides navigation on phones. */
-                    @media (max-width: 768px) {
+                    @media (max-width: 767px) {
                         .sidebar-spine { display: none; }
                     }
 

@@ -1,5 +1,7 @@
 'use client';
 
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogCancel } from '@/components/shadcn/alert-dialog';
+import { useOverlayFocus } from './useOverlayFocus';
 import Button from '@/components/ui/Button';
 import { Warning, Trash, Info } from '@phosphor-icons/react';
 
@@ -46,7 +48,7 @@ export default function ConfirmDialog({
     variant = 'danger',
     isLoading = false,
 }: ConfirmDialogProps) {
-    if (!isOpen) return null;
+    const focus = useOverlayFocus();
 
     const config = variantConfig[variant];
 
@@ -56,7 +58,8 @@ export default function ConfirmDialog({
 
     return (
         <>
-            <div className="dialog-overlay" onClick={onClose}>
+            <AlertDialog open={isOpen} onOpenChange={open => { if (!open) onClose(); }}>
+                <AlertDialogContent {...focus} aria-describedby={undefined} className="!block !w-[calc(100%-2rem)] !max-w-[400px] !p-0">
                 <div className="dialog-content" onClick={(e) => e.stopPropagation()}>
                     {/* Icon */}
                     <div className="dialog-icon" style={{ background: config.bgColor, color: config.color }}>
@@ -64,18 +67,18 @@ export default function ConfirmDialog({
                     </div>
 
                     {/* Content */}
-                    <h3 className="dialog-title">{title}</h3>
+                    <AlertDialogTitle asChild><h3 className="dialog-title">{title}</h3></AlertDialogTitle>
                     <p className="dialog-message">{message}</p>
 
                     {/* Actions */}
                     <div className="dialog-actions">
-                        <Button
+                        <AlertDialogCancel asChild><Button
                             variant="secondary"
                             onClick={onClose}
                             disabled={isLoading}
                         >
                             {cancelText}
-                        </Button>
+                        </Button></AlertDialogCancel>
                         <Button
                             onClick={handleConfirm}
                             loading={isLoading}
@@ -88,19 +91,9 @@ export default function ConfirmDialog({
                         </Button>
                     </div>
                 </div>
-            </div>
+            </AlertDialogContent></AlertDialog>
 
             <style jsx>{`
-                .dialog-overlay {
-                    position: fixed;
-                    inset: 0;
-                    background: rgba(0, 0, 0, 0.5);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 200;
-                    padding: var(--spacing-lg);
-                }
 
                 .dialog-content {
                     background: var(--color-surface);

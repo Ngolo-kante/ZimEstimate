@@ -1,5 +1,6 @@
 'use client';
 
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuCheckboxItem } from '@/components/shadcn/dropdown-menu';
 import { useId } from 'react';
 
 import { Field, FieldGroup, FieldLabel } from '@/components/shadcn/field';
@@ -8,7 +9,6 @@ import { NativeSelect } from '@/components/shadcn/native-select';
 
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
-import type { RefObject } from 'react';
 import { COLUMN_LABELS, type ColumnKey } from './boqColumns';
 import { CaretDown } from '@phosphor-icons/react';
 
@@ -21,7 +21,6 @@ export interface BoqTableToolbarProps {
     setStatusFilter: (filter: StatusFilterValue) => void;
     viewPreset: 'simple' | 'detailed' | 'custom';
     applyPreset: (preset: 'simple' | 'detailed') => void;
-    columnsMenuRef: RefObject<HTMLDivElement | null>;
     isColumnsOpen: boolean;
     setIsColumnsOpen: (update: (open: boolean) => boolean) => void;
     visibleColumns: Record<ColumnKey, boolean>;
@@ -37,7 +36,6 @@ export default function BoqTableToolbar({
     setStatusFilter,
     viewPreset,
     applyPreset,
-    columnsMenuRef,
     isColumnsOpen,
     setIsColumnsOpen,
     visibleColumns,
@@ -79,33 +77,23 @@ export default function BoqTableToolbar({
                             <TabsTrigger className="min-h-11 text-sc-muted-foreground transition-none" value="detailed">Detailed</TabsTrigger>
                         </TabsList>
                     </Tabs>
-                    <div className="columns-dropdown" ref={columnsMenuRef}>
+                    <DropdownMenu open={isColumnsOpen} onOpenChange={open => setIsColumnsOpen(() => open)}><div className="columns-dropdown"><DropdownMenuTrigger asChild>
                         <button
                             type="button"
                             className="columns-btn"
-                            onClick={() => setIsColumnsOpen(prev => !prev)}
                         >
                             Columns
                             <CaretDown size={12} />
-                        </button>
-                        {isColumnsOpen && (
-                            <div className="columns-menu">
+                        </button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end"><DropdownMenuGroup>
                                 {Object.keys(COLUMN_LABELS).map((key) => {
                                     const columnKey = key as ColumnKey;
                                     const isLocked = columnKey === 'item';
                                     return (
-                                        <label
-                                            key={columnKey}
-                                            className={`column-option ${isLocked ? 'locked' : ''}`}
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={visibleColumns[columnKey]}
-                                                onChange={() => toggleColumn(columnKey)}
-                                                disabled={isLocked}
-                                            />
-                                            <span>{COLUMN_LABELS[columnKey]}</span>
-                                        </label>
+                                        <DropdownMenuCheckboxItem key={columnKey} checked={visibleColumns[columnKey]} disabled={isLocked}
+                                            onSelect={event => event.preventDefault()} onCheckedChange={() => toggleColumn(columnKey)}>
+                                            {COLUMN_LABELS[columnKey]}
+                                        </DropdownMenuCheckboxItem>
                                     );
                                 })}
                                 {!usageTrackingEnabled && (
@@ -113,9 +101,8 @@ export default function BoqTableToolbar({
                                         Enable usage tracking to populate the Usage column.
                                     </div>
                                 )}
-                            </div>
-                        )}
-                    </div>
+                            </DropdownMenuGroup></DropdownMenuContent>
+                    </div></DropdownMenu>
                 </div>
             </div>
     );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { validateDocumentFile } from '@/lib/documentFiles';
 import { prepareImageForUpload } from '@/lib/compressImage';
@@ -51,12 +51,8 @@ export function usePurchaseForm({
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [purchaseStatus, setPurchaseStatus] = useState('');
   const purchaseBusy = useRef(false);
-  const purchaseDialog = useRef<HTMLDialogElement>(null);
   const uploadedReceipt = useRef<{ file: File; id: string } | null>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (showPurchaseModal) purchaseDialog.current?.showModal();
-  }, [showPurchaseModal]);
   const [savingItemId, setSavingItemId] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<PurchaseFormErrors>({});
   const [purchaseForm, setPurchaseForm] = useState<PurchaseFormValues>(emptyForm());
@@ -90,7 +86,6 @@ export function usePurchaseForm({
     if (purchaseBusy.current) return;
     setShowPurchaseModal(false);
     resetPurchaseForm();
-    setSelectedItemForPurchase(null);
   };
 
   const selectReceipt = async (picked?: File) => {
@@ -153,7 +148,6 @@ export function usePurchaseForm({
       } catch {
         showError('Purchase saved. Refresh the project to update the totals.');
       }
-      setSelectedItemForPurchase(null);
       resetPurchaseForm();
     } catch (err) {
       setPurchaseError(`${err instanceof Error ? err.message : 'Could not save purchase.'} Your details are kept here. Please retry.`);
@@ -171,7 +165,6 @@ export function usePurchaseForm({
     isSavingPurchase,
     purchaseError,
     purchaseStatus,
-    purchaseDialog,
     cameraInput,
     savingItemId,
     formErrors,

@@ -1,5 +1,6 @@
 'use client';
 
+import DesktopTooltip from '@/components/ui/DesktopTooltip';
 import { Children, isValidElement, type ReactNode } from 'react';
 import { Badge } from '@/components/shadcn/badge';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/shadcn/collapsible';
@@ -218,31 +219,31 @@ export default function BoqItemRow({
             <td data-label="" className="col-actions">
                 <div className="action-group">
                     {onLogPurchase && getItemStatus(item, purchases) !== 'purchased' && (
-                        <button
+                        <DesktopTooltip label="Log purchase"><button
                             className="action-btn purchase"
                             onClick={() => onLogPurchase(item)}
-                            title="Log purchase" aria-label="Log purchase"
+                            aria-label="Log purchase"
                         >
                             <ShoppingCart size={14} /><span className="boq-action-label">Log purchase</span>
-                        </button>
+                        </button></DesktopTooltip>
                     )}
                     {onRecordUsage && usageTrackingEnabled && (
-                        <button
+                        <DesktopTooltip label="Record usage"><button
                             className="action-btn usage"
                             onClick={() => onRecordUsage(item)}
-                            title="Record usage" aria-label="Record usage"
+                            aria-label="Record usage"
                         >
                             <ClipboardText size={14} /><span className="boq-action-label">Record usage</span>
-                        </button>
+                        </button></DesktopTooltip>
                     )}
                     {onItemDelete && (
-                        <button
+                        <DesktopTooltip label="Delete item"><button
                             className="action-btn delete"
                             onClick={() => onItemDelete(item.id)}
-                            title="Delete item" aria-label="Delete item"
+                            aria-label="Delete item"
                         >
                             <Trash size={14} /><span className="boq-action-label">Delete</span>
-                        </button>
+                        </button></DesktopTooltip>
                     )}
                 </div>
             </td>

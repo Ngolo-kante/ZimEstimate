@@ -1,5 +1,6 @@
 'use client';
 
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem } from '@/components/shadcn/dropdown-menu';
 import Link from 'next/link';
 import Card, { CardHeader, CardTitle, CardBadge } from '@/components/ui/Card';
 import PriceDisplay from '@/components/projects/PriceDisplay';
@@ -36,7 +37,7 @@ export default function ProjectsGrid({
     actions: ReturnType<typeof useCardActions>;
 }) {
     const {
-        openMenuId, menuRef,
+        openMenuId, setOpenMenuId, isMobile,
         handleMenuToggle, handleEdit, handleShare, handleInvite, handleArchive, handleDelete, handleDownloadPdf,
         handleQuickEdit, handleQuickShare, handleQuickInvite, handleQuickArchive, handleQuickDelete, handleQuickDownloadPdf,
     } = actions;
@@ -81,33 +82,33 @@ export default function ProjectsGrid({
                                 <CardBadge variant="info">{item.typeLabel}</CardBadge>
                                 {item.status === 'archived' && <CardBadge variant="default">Archived</CardBadge>}
                             </div>
-                            <div className="menu-container" ref={openMenuId === item.id ? menuRef : null}>
-                                <button className="menu-btn" aria-label={`Actions for ${item.name}`} aria-haspopup="menu" aria-expanded={openMenuId === item.id} onClick={(e) => handleMenuToggle(e, item.id)}>
+                            <DropdownMenu open={!isMobile && openMenuId === item.id} onOpenChange={open => { if (!isMobile) setOpenMenuId(open ? item.id : null); }}><div className="menu-container">
+                                <DropdownMenuTrigger asChild><button className="menu-btn" aria-label={`Actions for ${item.name}`} aria-haspopup="menu" aria-expanded={openMenuId === item.id} onClick={(e) => { if (isMobile) handleMenuToggle(e, item.id); else { e.preventDefault(); e.stopPropagation(); } }}>
                                     <DotsThreeVertical size={20} weight="bold" />
-                                </button>
-                                {openMenuId === item.id && (
-                                    <div className="dropdown-menu" data-keyboard={actions.menuKeyboard}>
-                                        <button onClick={(e) => handleQuickEdit(e, item)}>
+                                </button></DropdownMenuTrigger>
+                                {!isMobile && (
+                                    <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}><DropdownMenuGroup>
+                                        <DropdownMenuItem asChild><button onClick={(e) => handleQuickEdit(e, item)}>
                                             <PencilSimple size={16} /> Edit
-                                        </button>
-                                        <button onClick={(e) => handleQuickShare(e, item)}>
+                                        </button></DropdownMenuItem>
+                                        <DropdownMenuItem asChild><button onClick={(e) => handleQuickShare(e, item)}>
                                             <ShareNetwork size={16} /> Share a copy
-                                        </button>
-                                        <button onClick={(e) => handleQuickInvite(e, item)}>
+                                        </button></DropdownMenuItem>
+                                        <DropdownMenuItem asChild><button onClick={(e) => handleQuickInvite(e, item)}>
                                             <UserPlus size={16} /> Invite people
-                                        </button>
-                                        <button onClick={(e) => { void handleQuickDownloadPdf(e, item); }}>
+                                        </button></DropdownMenuItem>
+                                        <DropdownMenuItem asChild><button onClick={(e) => { void handleQuickDownloadPdf(e, item); }}>
                                             <FileArrowDown size={16} /> Download BOQ PDF
-                                        </button>
-                                        <button onClick={(e) => { void handleQuickArchive(e, item); }}>
+                                        </button></DropdownMenuItem>
+                                        <DropdownMenuItem asChild><button onClick={(e) => { void handleQuickArchive(e, item); }}>
                                             <Archive size={16} /> {item.status === 'archived' ? 'Restore' : 'Archive'}
-                                        </button>
-                                        <button className="danger" onClick={(e) => handleQuickDelete(e, item)}>
+                                        </button></DropdownMenuItem>
+                                        <DropdownMenuItem variant="destructive" asChild><button className="danger" onClick={(e) => handleQuickDelete(e, item)}>
                                             <Trash size={16} /> Delete
-                                        </button>
-                                    </div>
+                                        </button></DropdownMenuItem>
+                                    </DropdownMenuGroup></DropdownMenuContent>
                                 )}
-                            </div>
+                            </div></DropdownMenu>
                         </CardHeader>
 
                         <div className="project-meta">
@@ -140,40 +141,40 @@ export default function ProjectsGrid({
                                     {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
                                 </CardBadge>
                             </div>
-                            <div className="menu-container" ref={openMenuId === project.id ? menuRef : null}>
-                                <button className="menu-btn" aria-label={`Actions for ${project.name}`} aria-haspopup="menu" aria-expanded={openMenuId === project.id} onClick={(e) => handleMenuToggle(e, project.id)}>
+                            <DropdownMenu open={!isMobile && openMenuId === project.id} onOpenChange={open => { if (!isMobile) setOpenMenuId(open ? project.id : null); }}><div className="menu-container">
+                                <DropdownMenuTrigger asChild><button className="menu-btn" aria-label={`Actions for ${project.name}`} aria-haspopup="menu" aria-expanded={openMenuId === project.id} onClick={(e) => { if (isMobile) handleMenuToggle(e, project.id); else { e.preventDefault(); e.stopPropagation(); } }}>
                                     <DotsThreeVertical size={20} weight="bold" />
-                                </button>
-                                {openMenuId === project.id && (
-                                    <div className="dropdown-menu" data-keyboard={actions.menuKeyboard}>
-                                        <button onClick={(e) => handleEdit(e, project.id)}>
+                                </button></DropdownMenuTrigger>
+                                {!isMobile && (
+                                    <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}><DropdownMenuGroup>
+                                        <DropdownMenuItem asChild><button onClick={(e) => handleEdit(e, project.id)}>
                                             <PencilSimple size={16} /> Edit
-                                        </button>
-                                        <button onClick={(e) => handleShare(e, project.id)}>
+                                        </button></DropdownMenuItem>
+                                        <DropdownMenuItem asChild><button onClick={(e) => handleShare(e, project.id)}>
                                             <ShareNetwork size={16} /> Share a copy
-                                        </button>
+                                        </button></DropdownMenuItem>
                                         {/* Inviting, archiving and deleting stay with the owner. */}
                                         {project.owner_id === profile?.id && (
-                                            <button onClick={(e) => handleInvite(e, project.id)}>
+                                            <DropdownMenuItem asChild><button onClick={(e) => handleInvite(e, project.id)}>
                                                 <UserPlus size={16} /> Invite people
-                                            </button>
+                                            </button></DropdownMenuItem>
                                         )}
-                                        <button onClick={(e) => { void handleDownloadPdf(e, project.id); }}>
+                                        <DropdownMenuItem asChild><button onClick={(e) => { void handleDownloadPdf(e, project.id); }}>
                                             <FileArrowDown size={16} /> Download BOQ PDF
-                                        </button>
+                                        </button></DropdownMenuItem>
                                         {project.owner_id === profile?.id && (
                                             <>
-                                                <button onClick={(e) => handleArchive(e, project.id)}>
+                                                <DropdownMenuItem asChild><button onClick={(e) => handleArchive(e, project.id)}>
                                                     <Archive size={16} /> {project.status === 'archived' ? 'Restore' : 'Archive'}
-                                                </button>
-                                                <button className="danger" onClick={(e) => handleDelete(e, project.id)}>
+                                                </button></DropdownMenuItem>
+                                                <DropdownMenuItem variant="destructive" asChild><button className="danger" onClick={(e) => handleDelete(e, project.id)}>
                                                     <Trash size={16} /> Delete
-                                                </button>
+                                                </button></DropdownMenuItem>
                                             </>
                                         )}
-                                    </div>
+                                    </DropdownMenuGroup></DropdownMenuContent>
                                 )}
-                            </div>
+                            </div></DropdownMenu>
                         </CardHeader>
 
                         <div className="project-meta">

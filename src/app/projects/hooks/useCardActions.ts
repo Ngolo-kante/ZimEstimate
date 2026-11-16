@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { deleteProject, archiveProject, unarchiveProject, getBOQItems } from '@/lib/services/projects';
 import { QUICK_TYPE_LABELS, type SavedWorkItem, type SavedWorkKind } from '@/lib/services/savedWork';
@@ -35,7 +35,6 @@ export function useCardActions({
     // through different services, while sharing one confirmation dialog.
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; kind: SavedWorkKind } | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const menuRef = useRef<HTMLDivElement>(null);
     const [isMobile, setIsMobile] = useState(false);
     const [mobileMenuProjectId, setMobileMenuProjectId] = useState<string | null>(null);
 
@@ -43,21 +42,10 @@ export function useCardActions({
 
     // Mobile detection
     useEffect(() => {
-        const check = () => setIsMobile(window.innerWidth <= 768);
+        const check = () => setIsMobile(window.innerWidth < 768);
         check();
         window.addEventListener('resize', check);
         return () => window.removeEventListener('resize', check);
-    }, []);
-
-    // Close menu when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                setOpenMenuId(null);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const handleMenuToggle = (e: React.MouseEvent, projectId: string) => {
@@ -267,7 +255,7 @@ export function useCardActions({
     return {
         mobileMenuTargetId,
         menuKeyboard,
-        openMenuId, menuRef, isMobile,
+        openMenuId, setOpenMenuId, isMobile,
         mobileMenuProjectId, setMobileMenuProjectId,
         deleteTarget, setDeleteTarget, isDeleting, confirmDelete,
         shareProjectId, setShareProjectId,

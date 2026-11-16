@@ -44,3 +44,43 @@
 @custom-variant data-checked (&:where([data-state="checked"], [data-checked]:not([data-checked="false"])));
 @custom-variant data-horizontal (&:where([data-orientation="horizontal"]));
 @custom-variant data-vertical (&:where([data-orientation="vertical"]));
+
+/* Overlay motion belongs to the portalled surfaces, independent of page CSS. */
+[data-slot="dialog-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"] { z-index: var(--z-modal-backdrop); }
+[data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="drawer-content"],
+[data-slot="dropdown-menu-content"], [data-slot="tooltip-content"] { z-index: var(--z-modal); }
+[data-slot="dialog-content"], [data-slot="alert-dialog-content"] {
+  --overlay-scale: .96;
+  animation: overlay-enter 200ms cubic-bezier(.23, 1, .32, 1);
+}
+[data-slot="dropdown-menu-content"] {
+  --overlay-scale: .97;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+  animation: overlay-enter 150ms cubic-bezier(.23, 1, .32, 1);
+}
+[data-slot="dialog-content"][data-state="closed"], [data-slot="alert-dialog-content"][data-state="closed"],
+[data-slot="dropdown-menu-content"][data-state="closed"] { animation: overlay-exit 100ms cubic-bezier(.23, 1, .32, 1); }
+[data-slot="dropdown-menu-content"][data-keyboard="true"] { animation: none; }
+[data-slot="drawer-content"][data-vaul-drawer] {
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(.23, 1, .32, 1);
+}
+[data-slot="drawer-content"][data-vaul-drawer][data-state="closed"] { animation-duration: 180ms; }
+[data-slot="dropdown-menu-item"], [data-slot="dropdown-menu-checkbox-item"] { min-height: 44px; font-size: 14px; }
+@keyframes overlay-enter { from { opacity: 0; transform: scale(var(--overlay-scale)); } to { opacity: 1; transform: scale(1); } }
+@keyframes overlay-exit { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(var(--overlay-scale)); } }
+@keyframes overlay-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes overlay-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="dropdown-menu-content"],
+  [data-slot="drawer-content"][data-vaul-drawer] { animation-name: overlay-fade-in !important; }
+  [data-slot="dialog-content"][data-state="closed"], [data-slot="alert-dialog-content"][data-state="closed"],
+  [data-slot="dropdown-menu-content"][data-state="closed"], [data-slot="drawer-content"][data-state="closed"] { animation-name: overlay-fade-out !important; }
+  [data-slot="drawer-content"][data-vaul-drawer] { transform: none !important; transition-property: opacity !important; }
+  [data-slot="tooltip-content"] { animation: none; }
+}
+/* Keyboard invocations do not wait for a spatial entrance or exit. */
+[data-slot="dialog-content"][data-keyboard="true"], [data-slot="alert-dialog-content"][data-keyboard="true"],
+[data-slot="drawer-content"][data-vaul-drawer][data-keyboard="true"] { animation: none !important; }

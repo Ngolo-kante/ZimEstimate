@@ -1,5 +1,6 @@
 'use client';
 
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem } from '@/components/shadcn/dropdown-menu';
 import { useState } from 'react';
 import { ProjectStage, StageStatus } from '@/lib/database.types';
 import { Calendar, CaretDown, CaretUp, CheckCircle, Clock, Pause, CircleNotch, Flag } from '@phosphor-icons/react';
@@ -77,40 +78,36 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                         </div>
                         <div className="stage-controls">
                             {/* Status Dropdown */}
-                            <div className="status-dropdown">
+                            <DropdownMenu open={isStatusOpen} onOpenChange={setIsStatusOpen}><div className="status-dropdown">
                                 <div className="status-field">
                                     <label>
                                         <Flag size={14} />
                                         Status
                                     </label>
-                                    <button
+                                    <DropdownMenuTrigger asChild><button
                                         className="status-trigger"
-                                        onClick={() => setIsStatusOpen(!isStatusOpen)}
                                         disabled={isSaving}
                                         style={{ '--status-color': currentStatus.color } as React.CSSProperties}
                                     >
                                         <span className="status-icon">{currentStatus.icon}</span>
                                         <span className="status-label">{currentStatus.label}</span>
                                         <CaretDown size={14} className={isStatusOpen ? 'rotated' : ''} />
-                                    </button>
+                                    </button></DropdownMenuTrigger>
                                 </div>
 
-                                {isStatusOpen && (
-                                    <div className="status-menu">
+                                    <DropdownMenuContent><DropdownMenuGroup>
                                         {statusOptions.map((option) => (
-                                            <button
-                                                key={option.value}
+                                            <DropdownMenuItem asChild key={option.value}><button
                                                 className={`status-option ${stage.status === option.value ? 'active' : ''}`}
                                                 onClick={() => handleStatusChange(option.value)}
                                                 style={{ '--option-color': option.color } as React.CSSProperties}
                                             >
                                                 <span className="option-icon">{option.icon}</span>
                                                 <span>{option.label}</span>
-                                            </button>
+                                            </button></DropdownMenuItem>
                                         ))}
-                                    </div>
-                                )}
-                            </div>
+                                    </DropdownMenuGroup></DropdownMenuContent>
+                            </div></DropdownMenu>
 
                             {/* Date Range */}
                             <div className="date-range">

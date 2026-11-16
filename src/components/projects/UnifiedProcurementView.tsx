@@ -246,9 +246,9 @@ export default function UnifiedProcurementView({
       )}
 
       {/* Purchase Modal */}
-      {purchase.showPurchaseModal && purchase.selectedItemForPurchase && (
+      {purchase.selectedItemForPurchase && (
         <PurchaseDialog
-          purchaseDialog={purchase.purchaseDialog}
+          open={purchase.showPurchaseModal}
           cameraInput={purchase.cameraInput}
           selectedItemForPurchase={purchase.selectedItemForPurchase}
           itemsWithPurchases={itemsWithPurchases}

@@ -7,7 +7,7 @@ import { Drawer as DrawerPrimitive } from "vaul"
 function Drawer({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
-  return <DrawerPrimitive.Root data-slot="drawer" {...props} />
+  return <DrawerPrimitive.Root autoFocus closeThreshold={0.25} data-slot="drawer" {...props} />
 }
 
 function DrawerTrigger({

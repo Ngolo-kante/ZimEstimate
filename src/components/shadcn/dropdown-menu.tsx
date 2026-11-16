@@ -5,10 +5,13 @@ import { cn } from "@/lib/utils"
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui"
 import { Check as CheckIcon, CaretRight as ChevronRightIcon } from "@phosphor-icons/react"
 
+const MenuInputContext = React.createContext({ keyboard: false, setKeyboard: (_value: boolean) => { void _value; } });
+
 function DropdownMenu({
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
-  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />
+  const [keyboard, setKeyboard] = React.useState(false);
+  return <MenuInputContext.Provider value={{ keyboard, setKeyboard }}><DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} /></MenuInputContext.Provider>
 }
 
 function DropdownMenuPortal({
@@ -22,8 +25,11 @@ function DropdownMenuPortal({
 function DropdownMenuTrigger({
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
+  const { setKeyboard } = React.useContext(MenuInputContext);
   return (
     <DropdownMenuPrimitive.Trigger
+      onPointerDownCapture={() => setKeyboard(false)}
+      onKeyDownCapture={() => setKeyboard(true)}
       data-slot="dropdown-menu-trigger"
       {...props}
     />
@@ -36,9 +42,11 @@ function DropdownMenuContent({
   sideOffset = 4,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+  const { keyboard } = React.useContext(MenuInputContext);
   return (
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
+        data-keyboard={keyboard}
         data-slot="dropdown-menu-content"
         sideOffset={sideOffset}
         align={align}

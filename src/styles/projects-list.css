@@ -592,55 +592,6 @@
   }
 }
 
-.projects-list .dropdown-menu {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    width: 160px;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
-    padding: 4px;
-    /* This page switches to the bottom sheet at 768px, but the
-       global nav bar stays visible until 900px — so between
-       those two widths, a card near the bottom of the list
-       opened this dropdown underneath the nav instead. */
-    z-index: var(--z-modal);
-    transform-origin: top right;
-    transition: transform 150ms var(--ease-out), opacity 150ms var(--ease-out);
-}
-
-.projects-list .dropdown-menu button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 8px 12px;
-    font-size: var(--text-sm);
-    color: var(--color-text);
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    text-align: left;
-    font-family: var(--font-body);
-}
-@media (hover: hover) and (pointer: fine) {
-  .projects-list .dropdown-menu button:hover {
-    background: var(--color-mist);
-  }
-}
-
-.projects-list .dropdown-menu button.danger {
-    color: var(--color-danger);
-}
-@media (hover: hover) and (pointer: fine) {
-  .projects-list .dropdown-menu button.danger:hover {
-    background: rgba(220, 38, 38, 0.05);
-  }
-}
-
 .projects-list .project-meta {
     display: flex;
     gap: var(--space-4);
@@ -769,7 +720,7 @@
 }
 
 /* Mobile Styles */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     .projects-list.projects-page {
         gap: 16px;
     }
@@ -867,49 +818,6 @@
         grid-template-columns: 1fr;
     }
 
-    .projects-list.mobile-menu-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.5);
-        /* Was 50 — below MainLayout's persistent bottom nav bar
-           (z-index: 100), which paints later in the DOM and so
-           wins ties too. The nav sat in front of this sheet and
-           its last one or two actions were unreachable. Using
-           the modal tier, the same one ConfirmDialog already
-           uses safely, so this cannot fall behind page chrome
-           again by accident. */
-        z-index: var(--z-modal-backdrop);
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 200ms ease, visibility 0s 200ms;
-    }
-
-    .projects-list.mobile-bottom-sheet {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: var(--color-surface);
-        border-radius: 20px 20px 0 0;
-        padding: 24px 16px calc(40px + env(safe-area-inset-bottom, 0px));
-        z-index: var(--z-modal);
-        transform: translateY(100%);
-        opacity: 0;
-        visibility: hidden;
-        transition: transform 200ms cubic-bezier(0.32, 0.72, 0, 1), opacity 200ms ease, visibility 0s 200ms;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .projects-list .bottom-sheet-handle {
-        width: 40px;
-        height: 4px;
-        background: var(--color-border);
-        border-radius: 2px;
-        margin: 0 auto 16px;
-    }
-
     .projects-list .bottom-sheet-item {
         display: flex;
         align-items: center;
@@ -954,35 +862,12 @@
     .projects-list .filter-group.mobile-filters { margin-top: 12px; }
 }
 
-/* Persistent sheets can reverse direction while entering or leaving. */
-@media (max-width: 768px) {
-    .projects-list.mobile-bottom-sheet[data-open="true"] {
-        transform: translateY(0); opacity: 1; visibility: visible;
-        transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1), opacity 300ms ease, visibility 0s;
-    }
-    .projects-list.mobile-menu-backdrop[data-open="true"] { opacity: 1; visibility: visible; transition-delay: 0s; }
-}
+/* Card action layout; Vaul owns sheet motion and drag gestures. */
+.projects-list.card-actions-drawer { padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px)); gap: 8px; }
+.projects-list.card-actions-drawer .bottom-sheet-item { min-height: 48px; }
 .projects-list .saved-banner { transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out); }
-@starting-style {
-    .projects-list .dropdown-menu { opacity: 0; transform: scale(0.97); }
-    .projects-list .saved-banner { opacity: 0; transform: translateY(8px); }
-    .projects-list.mobile-bottom-sheet[data-open="true"] { opacity: 0; transform: translateY(100%); }
-    .projects-list.mobile-menu-backdrop[data-open="true"] { opacity: 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-    .projects-list.mobile-bottom-sheet,
-    .projects-list.mobile-bottom-sheet[data-open="true"],
-    .projects-list .dropdown-menu,
-    .projects-list .saved-banner { transform: none; transition-property: opacity, visibility; }
-    @starting-style {
-        .projects-list .dropdown-menu, .projects-list .saved-banner,
-        .projects-list.mobile-bottom-sheet[data-open="true"] { transform: none; }
-    }
-}
-
-.projects-list .dropdown-menu[data-keyboard="true"],
-.projects-list.mobile-bottom-sheet[data-keyboard="true"],
-.projects-list.mobile-menu-backdrop[data-keyboard="true"] { transition: none; }
+@starting-style { .projects-list .saved-banner { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .projects-list .saved-banner { transform: none; transition-property: opacity; } }
 
 @media (prefers-reduced-motion: reduce) {
     .projects-list .kpi-card:hover,

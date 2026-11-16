@@ -1,5 +1,7 @@
 'use client';
 
+import { useOverlayFocus } from '@/components/ui/useOverlayFocus';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/shadcn/drawer';
 import { useEffect, useRef, useState } from 'react';
 import { DotsThree, X } from '@phosphor-icons/react';
 import { PROJECT_NAV_ITEMS, type ProjectView } from './SidebarSpine';
@@ -25,25 +27,15 @@ export default function ProjectViewTabs({
   activeView: ProjectView;
   onViewChange: (view: ProjectView) => void;
 }) {
+  const focus = useOverlayFocus();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const isMoreActive = MORE_VIEWS.includes(activeView);
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const moreButtonRef = useRef<HTMLButtonElement>(null);
-
-  // A native modal dialog: showModal() moves focus inside, makes the page
-  // behind inert, and Escape closes it. The old sheet only said
-  // aria-modal="true" — focus stayed on More, behind it.
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (isMoreOpen && !dialog.open) dialog.showModal();
-    if (!isMoreOpen && dialog.open) dialog.close();
-  }, [isMoreOpen]);
 
   // The sheet is phone-only; widening the window closes it rather than
   // leaving an invisible modal over the desktop layout.
   useEffect(() => {
-    const desktop = window.matchMedia('(min-width: 769px)');
+    const desktop = window.matchMedia('(min-width: 768px)');
     const onChange = () => { if (desktop.matches) setIsMoreOpen(false); };
     desktop.addEventListener('change', onChange);
     return () => desktop.removeEventListener('change', onChange);
@@ -89,24 +81,14 @@ export default function ProjectViewTabs({
         </button>
       </nav>
 
-      <dialog
-        ref={dialogRef}
-        className="sheet-layer"
-        id="project-more-sheet"
-        aria-labelledby="project-more-title"
-        onClose={() => {
-          setIsMoreOpen(false);
-          moreButtonRef.current?.focus();
-        }}
-        // A click on the dimmed area (the dialog itself, outside the sheet) closes it.
-        onClick={(event) => { if (event.target === event.currentTarget) setIsMoreOpen(false); }}
-      >
+      <Drawer open={isMoreOpen} onOpenChange={setIsMoreOpen} closeThreshold={0.25}>
+        <DrawerContent {...focus} id="project-more-sheet" aria-describedby={undefined} onCloseAutoFocus={() => moreButtonRef.current?.focus()}>
           <section className="more-sheet">
-            <div className="sheet-handle" aria-hidden="true" />
+
             <div className="sheet-header">
               <div>
                 <p>Project workspace</p>
-                <h2 id="project-more-title">More tools</h2>
+                <DrawerTitle asChild><h2 id="project-more-title">More tools</h2></DrawerTitle>
               </div>
               <button type="button" className="sheet-close" onClick={() => setIsMoreOpen(false)} aria-label="Close project tools">
                 <X size={19} />
@@ -135,15 +117,15 @@ export default function ProjectViewTabs({
               })}
             </div>
           </section>
-      </dialog>
+        </DrawerContent>
+      </Drawer>
 
       <style jsx>{`
-        .project-mobile-dock,
-        .sheet-layer {
+        .project-mobile-dock {
           display: none;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 767px) {
           .project-mobile-dock {
             position: fixed;
             z-index: 120;
@@ -214,34 +196,13 @@ export default function ProjectViewTabs({
             outline-offset: 1px;
           }
 
-          .sheet-layer[open] {
-            position: fixed;
-            inset: 0;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-            max-width: none;
-            max-height: none;
-            margin: 0;
-            padding: 12px;
-            border: 0;
-            background: rgba(5, 18, 35, 0.46);
-          }
-
-          .sheet-layer::backdrop {
-            background: transparent;
-          }
-
           .more-sheet {
-            width: min(100%, 520px);
+            width: 100%;
             padding: 8px 12px calc(12px + env(safe-area-inset-bottom, 0px));
             border: 1px solid #d8e0eb;
             border-radius: 8px;
             background: #fff;
             box-shadow: 0 24px 60px rgba(5, 18, 35, 0.28);
-            animation: sheet-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
           }
 
           .sheet-handle {
@@ -281,8 +242,8 @@ export default function ProjectViewTabs({
           }
 
           .sheet-close {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -342,10 +303,6 @@ export default function ProjectViewTabs({
           .sheet-copy small { color: #5b6b82; font-size: 12px; line-height: 1.3; }
           .current-label { color: #2563eb; font-size: 12px; font-weight: 750; }
 
-          @keyframes sheet-in {
-            from { opacity: 0; transform: translateY(18px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
         }
 
         @media (prefers-reduced-motion: reduce) {

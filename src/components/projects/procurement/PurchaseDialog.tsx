@@ -1,5 +1,9 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/shadcn/dialog';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/shadcn/drawer';
+import { useOverlayFocus } from '@/components/ui/useOverlayFocus';
 import { quantityInputValue } from '@/lib/quantityInput';
 import { formatQuantity, formatUsd } from '@/lib/format';
 
@@ -14,7 +18,7 @@ import type { ItemWithPurchases, PurchaseFormErrors, PurchaseFormValues } from '
 import { Camera, Minus, Paperclip, Plus, X } from '@phosphor-icons/react';
 
 export interface PurchaseDialogProps {
-  purchaseDialog: RefObject<HTMLDialogElement | null>;
+  open: boolean;
   cameraInput: RefObject<HTMLInputElement | null>;
   selectedItemForPurchase: BOQItem;
   itemsWithPurchases: ItemWithPurchases[];
@@ -33,7 +37,7 @@ export interface PurchaseDialogProps {
 
 /** Logging a purchase against one BOQ line, with an optional receipt. */
 export default function PurchaseDialog({
-  purchaseDialog,
+  open,
   cameraInput,
   selectedItemForPurchase,
   itemsWithPurchases,
@@ -49,14 +53,18 @@ export default function PurchaseDialog({
   selectReceipt,
   onSavePurchase,
 }: PurchaseDialogProps) {
+  const phone = useSyncExternalStore(subscribePhone, isPhone, () => false);
+  const focus = useOverlayFocus();
+  const Root = phone ? Drawer : Dialog;
+  const Content = phone ? DrawerContent : DialogContent;
+  const Title = phone ? DrawerTitle : DialogTitle;
   return (
-    <dialog ref={purchaseDialog} className="modal-overlay purchase-dialog" aria-labelledby="purchase-modal-title"
-      onCancel={e => { e.preventDefault(); closePurchase(); }}
-      onClick={e => { if (e.target === e.currentTarget) closePurchase(); }}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+    <Root open={open} onOpenChange={value => { if (!value) closePurchase(); }}>
+    <Content {...focus} {...(!phone ? { showCloseButton: false } : {})} aria-describedby={undefined} className="purchase-overlay-content !p-0 !gap-0 !max-w-[680px]" >
+      <div className="procurement-view"><div className="purchase-dialog"><div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title-group">
-            <h3 id="purchase-modal-title">Record purchase</h3>
+            <Title asChild><h3 id="purchase-modal-title">Record purchase</h3></Title>
             <p className="modal-item-name">{selectedItemForPurchase.material_name}</p>
           </div>
           <button type="button" className="modal-close !h-11 !w-11" aria-label="Close purchase form" disabled={isSavingPurchase} onClick={closePurchase}>
@@ -215,6 +223,14 @@ export default function PurchaseDialog({
           </Button>
         </div>
       </div>
-    </dialog>
+      </div></div>
+    </Content></Root>
   );
+}
+
+function isPhone() { return window.matchMedia('(max-width: 767px)').matches; }
+function subscribePhone(change: () => void) {
+  const media = window.matchMedia('(max-width: 767px)');
+  media.addEventListener('change', change);
+  return () => media.removeEventListener('change', change);
 }
