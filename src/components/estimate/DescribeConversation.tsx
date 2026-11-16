@@ -24,6 +24,13 @@ const examples = [
   '50 m of durawall fencing',
 ];
 
+// Once the keyboard has opened (it animates in), bring the field and its send
+// arrow into view inside the panel, which has just shrunk to fit above it.
+function keepInView(event: { currentTarget: HTMLElement }) {
+  const field = event.currentTarget;
+  window.setTimeout(() => field.closest('form')?.scrollIntoView({ block: 'nearest' }), 320);
+}
+
 export default function DescribeConversation() {
   const router = useRouter();
   const [description, setDescription] = useState('');
@@ -93,7 +100,7 @@ export default function DescribeConversation() {
       <label htmlFor="project-description" className="sr-only">Your project</label>
       {/* Chat-style box: the send arrow sits inside it, bottom right. Enter sends; Shift+Enter adds a line. */}
       <div className={styles.inputWrap}>
-        <textarea id="project-description" value={description} onChange={e => { setDescription(e.target.value); if (error) setError(''); }} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); read(null); } }} maxLength={500} placeholder="Describe your project, e.g. a 3 bedroom house in Ruwa, budget $25,000" rows={3} />
+        <textarea id="project-description" onFocus={keepInView} value={description} onChange={e => { setDescription(e.target.value); if (error) setError(''); }} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); read(null); } }} maxLength={500} placeholder="Describe your project, e.g. a 3 bedroom house in Ruwa, budget $25,000" rows={3} />
         <button type="submit" className={styles.send} aria-label="Send" disabled={busy} aria-busy={busy}>{busy ? <span className={styles.spinner} aria-hidden="true" /> : <PaperPlaneRight size={20} weight="fill" aria-hidden="true" />}</button>
       </div>
     </form>}
@@ -101,7 +108,7 @@ export default function DescribeConversation() {
     {route && <>
       <div className={styles.assistant} role="status"><strong>Here&apos;s what I understood</strong><ul>{route.understood.map(item => <li key={item}>{item}</li>)}</ul></div>
       {replies.map(item => <div key={item.field}><p className={styles.assistant}>{questions[item.field].prompt}</p><p className={styles.person}>{item.answer}</p></div>)}
-      {missing ? <div><p className={styles.assistant}>{questions[missing].prompt}</p><div className={styles.choices}>{questions[missing].choices.map(choice => <Button key={choice} variant="secondary" onClick={() => answer(choice)}>{choice}</Button>)}<Button variant="ghost" onClick={() => answer('Decide later')}>Decide later</Button></div><form className={styles.composer} onSubmit={e => { e.preventDefault(); if (!reply.trim()) { setError('Type an answer or tap one of the choices.'); return; } answer(reply); }}><label htmlFor="project-reply" className="sr-only">Your answer</label><div className={styles.inputWrap}><input id="project-reply" value={reply} onChange={e => { setReply(e.target.value); if (error) setError(''); }} inputMode={missing === 'location' ? 'text' : 'decimal'} maxLength={80} placeholder="Or type your answer" /><button type="submit" className={styles.send} aria-label="Send answer"><PaperPlaneRight size={20} weight="fill" aria-hidden="true" /></button></div></form></div> : <Button onClick={() => router.push(route.href)}>Build my estimate</Button>}
+      {missing ? <div><p className={styles.assistant}>{questions[missing].prompt}</p><div className={styles.choices}>{questions[missing].choices.map(choice => <Button key={choice} variant="secondary" onClick={() => answer(choice)}>{choice}</Button>)}<Button variant="ghost" onClick={() => answer('Decide later')}>Decide later</Button></div><form className={styles.composer} onSubmit={e => { e.preventDefault(); if (!reply.trim()) { setError('Type an answer or tap one of the choices.'); return; } answer(reply); }}><label htmlFor="project-reply" className="sr-only">Your answer</label><div className={styles.inputWrap}><input id="project-reply" value={reply} onChange={e => { setReply(e.target.value); if (error) setError(''); }} inputMode={missing === 'location' ? 'text' : 'decimal'} maxLength={80} placeholder="Or type your answer" onFocus={keepInView} /><button type="submit" className={styles.send} aria-label="Send answer"><PaperPlaneRight size={20} weight="fill" aria-hidden="true" /></button></div></form></div> : <Button onClick={() => router.push(route.href)}>Build my estimate</Button>}
       <Button variant="ghost" onClick={() => { setRoute(null); setIntent(null); setSent(''); setReplies([]); setAnswers({}); }}>Start again</Button>
     </>}
     {error && <p role="alert" className={styles.error}>{error}</p>}
