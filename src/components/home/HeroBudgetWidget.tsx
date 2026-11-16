@@ -84,7 +84,7 @@ function BuildingHouse({ coverage, complete }: { coverage: Record<string, number
           still visible as what the money is for. */}
       <g opacity="0.12">
         <rect x="38" y="116" width="114" height="10" rx="2" fill="#94A3B8" />
-        <rect x="44" y="66" width="102" height="50" fill="var(--color-accent)" />
+        <rect x="44" y="66" width="102" height="50" fill="#B5543A" />
         <polygon points="36,66 95,32 154,66" fill="#475569" />
         <rect x="85" y="88" width="20" height="28" rx="1.5" fill="#0B1F3B" />
         <rect x="54" y="76" width="17" height="15" rx="1.5" fill="#0B1F3B" />
@@ -104,8 +104,13 @@ function BuildingHouse({ coverage, complete }: { coverage: Record<string, number
         const y = 116 - (i + 1) * 12.5;
         return (
           <g key={`w${i}`} style={{ ...FADE, opacity: piece(walls, i, 4) }} className="motion-reduce:transition-none">
-            <rect x="44" y={y} width="102" height="12.5" fill="var(--color-accent)" />
-            <line x1="44" y1={y} x2="146" y2={y} stroke="var(--color-primary)" strokeWidth="1" />
+            <rect x="44" y={y} width="102" height="12.5" fill="#B5543A" />
+            <line x1="44" y1={y} x2="146" y2={y} stroke="#EBD9CC" strokeWidth="1" />
+            {/* Vertical joints, offset every other course like a stretcher bond. */}
+            {Array.from({ length: 5 }, (_, j) => {
+              const x = 44 + (i % 2 ? 10 : 20) + j * 20;
+              return <line key={j} x1={x} y1={y} x2={x} y2={y + 12.5} stroke="#EBD9CC" strokeWidth="1" />;
+            })}
           </g>
         );
       })}
