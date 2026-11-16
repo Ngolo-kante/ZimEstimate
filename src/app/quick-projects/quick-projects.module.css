@@ -140,8 +140,10 @@
 }
 
 .card {
-  --project-accent: #64748b;
-  --project-soft: #f1f5f9;
+  /* One accent for every job type (the owner's rule: colour is consistent,
+     not per type). Brand blue; #1d4ed8 passes 4.5:1 on white. */
+  --project-accent: #1d4ed8;
+  --project-soft: #eff6ff;
   min-width: 0;
   min-height: 232px;
   display: flex;
@@ -191,7 +193,7 @@
 }
 
 .category {
-  color: var(--color-text-secondary);
+  color: #1d4ed8;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -200,9 +202,9 @@
 .popular {
   margin-left: auto;
   padding: 4px 7px;
-  color: #475569;
-  background: #f1f5f9;
-  border: 1px solid #d8e0eb;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
   border-radius: 5px;
   font-size: 12px;
   font-weight: 800;
@@ -265,19 +267,23 @@
   gap: 5px;
 }
 
+.cardFooter > span:not(.openAction) svg {
+  color: #1d4ed8;
+}
+
 .openAction {
   width: 32px;
   height: 32px;
   justify-content: center;
   margin-left: auto;
   color: white;
-  background: #0b1f3b;
+  background: #1d4ed8;
   border-radius: 6px;
   transition: none;
 }
 @media (hover: hover) and (pointer: fine) {
     .card:hover .openAction {
-      background: var(--project-accent);}
+      background: #1e40af;}
 }
 
 .fullBuild {
@@ -290,7 +296,7 @@
   padding: 28px 30px;
   background: white;
   border: 1px solid #d8e0eb;
-  border-left: 4px solid #0b1f3b;
+  border-left: 4px solid #1d4ed8;
 }
 
 .fullBuild > div > span {
@@ -317,8 +323,9 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 14px;
-  color: white;
-  background: #0b1f3b;
+  color: #1d4ed8;
+  background: white;
+  border: 1px solid #1d4ed8;
   border-radius: 6px;
   font-size: 0.78rem;
   font-weight: 750;
@@ -327,7 +334,7 @@
 }
 @media (hover: hover) and (pointer: fine) {
     .fullBuild a:hover {
-      background: #1d5fbf;}
+      background: #eff6ff;}
 }
 
 
