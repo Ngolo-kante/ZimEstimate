@@ -7,7 +7,10 @@ numbered annotations retain the app's drawing language. */
   --rule: rgba(148, 184, 235, 0.09);
   --rule-strong: rgba(148, 184, 235, 0.16);
   --action: var(--color-accent);
-  --accent-on-navy: #bfdbfe;
+  /* A softer gold than the old clay, back at the owner's request (16 Nov):
+     accents on navy only. #E9C46A on the navy hero is about 9.8:1. */
+  --gold: #e9c46a;
+  --accent-on-navy: var(--gold);
   --ink-soft: #c9d6ea;
   --paper: #fbfaf7;
   --hairline: #e4e1d8;
@@ -147,7 +150,7 @@ fades out toward the copy so the words sit on plain navy. */
   bottom: -0.08em;
   height: 0.09em;
   border-radius: 2px;
-  background: var(--action);
+  background: var(--gold);
   transform-origin: left center;
   animation: draw 700ms 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
@@ -199,8 +202,8 @@ fades out toward the copy so the words sit on plain navy. */
   height: 26px;
   padding: 5px;
   border-radius: 8px;
-  color: white;
-  background: var(--action);
+  color: var(--color-primary);
+  background: var(--gold);
   transition: transform 180ms ease;
 }
 @media (hover: hover) and (pointer: fine) {
@@ -605,7 +608,8 @@ It is the page's one piece of drawing language outside the house itself. */
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--action);
+  color: var(--color-primary);
+  background: var(--gold);
 }
 @media (hover: hover) and (pointer: fine) {
   .startCard:nth-child(1):hover .startCardArrow {
@@ -1076,7 +1080,8 @@ empty strip between the closing band and the footer. */
 
 .primaryButton > svg:last-child,
 .closingButton > svg:last-child {
-  background: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--gold);
 }
 
 .startHeader h2,
