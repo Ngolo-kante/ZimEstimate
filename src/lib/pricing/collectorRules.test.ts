@@ -1,23 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { convertedPrice, currentPrice, median, priceDecision } from './collectorRules';
-import { ZBMS_PRODUCTS } from './zbmsProducts';
-import { materials } from '../materials';
-
-describe('owner-confirmed ZBMS mappings', () => {
-  it('uses catalogue ids and units, unique materials and valid factors/product ids', () => {
-    expect(new Set(ZBMS_PRODUCTS.map((m) => m.materialId)).size).toBe(ZBMS_PRODUCTS.length);
-    for (const mapping of ZBMS_PRODUCTS) {
-      const material = materials.find((m) => m.id === mapping.materialId);
-      expect(material).toBeDefined();
-      expect(mapping.unit).toBe(material?.unit);
-      expect(mapping.factor).toBeGreaterThan(0);
-      expect(Number.isFinite(mapping.factor)).toBe(true);
-      expect(mapping.zbmsProductIds.length).toBeGreaterThan(0);
-      expect(mapping.zbmsProductIds.every((id) => Number.isSafeInteger(id) && id > 0)).toBe(true);
-    }
-  });
-});
-
 describe('collector price decisions', () => {
   it('takes a median without mutating inputs and converts units before approval', () => {
     const prices = [300, 100, 200, 400];

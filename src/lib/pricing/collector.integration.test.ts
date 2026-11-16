@@ -7,20 +7,18 @@ import { spawnSync } from 'node:child_process';
 const directories: string[] = [];
 afterEach(() => { for (const dir of directories.splice(0)) rmSync(dir, { recursive: true, force: true }); });
 
-function run(options: { dry?: boolean; fetchFails?: boolean; unavailable?: boolean; old?: number; missingCredentials?: boolean } = {}) {
+function run(options: { dry?: boolean; fetchFails?: boolean; unavailable?: boolean; old?: number; missingCredentials?: boolean; missingTable?: string; empty?: boolean } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'zbms-test-'));
   directories.push(dir);
   const preload = join(dir, 'mock.mjs');
   writeFileSync(preload, `
-    import { registerHooks } from 'node:module';
     import { appendFileSync } from 'node:fs';
-    registerHooks({ load(url, context, nextLoad) {
-      if (url.endsWith('/zbmsProducts.ts')) return { format: 'module', shortCircuit: true,
-        source: 'export const ZBMS_PRODUCTS = [{ materialId: "brick-common", zbmsProductIds: [123,124,125], factor: 0.001, unit: "each", note: "test" }];' };
-      return nextLoad(url, context);
-    }});
     globalThis.fetch = async (url, options = {}) => {
       appendFileSync(${JSON.stringify(join(dir, 'calls.jsonl'))}, JSON.stringify({url, ...options, signal: undefined}) + '\\n');
+      if (url.includes('/price_source_matches')) {
+        if (${!!options.missingTable}) return Response.json({ code: ${JSON.stringify(options.missingTable || '')} }, {status:404});
+        return Response.json(${options.empty ? '[]' : JSON.stringify([{material_id:'brick-common',product_ids:[123,124,125],factor:0.001,unit:'each'}])});
+      }
       if (url.includes('zbms.co.zw')) {
         if (${!!options.fetchFails}) throw new Error('mock fetch failure');
         return Response.json([123,124,125].map((id, i) => ({ id, is_in_stock: ${!options.unavailable}, permalink: 'https://www.zbms.co.zw/product/' + id,
@@ -51,8 +49,10 @@ describe('collector CLI with offline mocked HTTP', () => {
     expect(summary.written).toBe(1);
     const write = calls.find((c) => c.method === 'POST');
     expect(JSON.parse(write!.body!)).toEqual([expect.objectContaining({ material_key: 'brick-common', price_usd: 0.11, review_status: 'auto', unit: 'each', source_name: 'ZBMS', supplier_name: 'ZBMS', currency: 'USD' })]);
-    expect(calls[0].url).toContain('include=123,124,125&per_page=100');
-    expect(calls[0].headers?.['User-Agent']).toBe('ZimEstimate price check (+https://zimestimate.com)');
+    expect(calls[0].url).toContain('price_source_matches?source=eq.zbms&status=eq.confirmed');
+    const productCall = calls.find(c => c.url.includes('zbms.co.zw'));
+    expect(productCall?.url).toContain('include=123,124,125&per_page=100');
+    expect(productCall?.headers?.['User-Agent']).toBe('ZimEstimate price check (+https://zimestimate.com)');
     expect(calls.some((c) => c.url.includes('api.resend.com'))).toBe(false);
   });
   it('writes a pending price and sends exactly one review email with the change', () => {
@@ -78,6 +78,19 @@ describe('collector CLI with offline mocked HTTP', () => {
     expect(summary.lowCoverage).toBe(true);
     expect(summary.written).toBe(0);
     expect(calls.filter((c) => c.url.includes('api.resend.com'))).toHaveLength(1);
+  });
+  it.each(['42P01', 'PGRST205'])('fails clearly when migration is missing (%s)', (code) => {
+    const { result, summary, calls } = run({ missingTable: code });
+    expect(result.status).toBe(1);
+    expect(summary.failures).toContain('Price matches need a database update. Ask your developer to apply migration 068.');
+    expect(calls.some(c => c.url.includes('zbms.co.zw'))).toBe(false);
+    expect(calls.filter(c => c.url.includes('api.resend.com'))).toHaveLength(1);
+  });
+  it('does nothing when no matches are confirmed', () => {
+    const { result, summary, calls } = run({ empty: true });
+    expect(result.status).toBe(0);
+    expect(summary.mapped).toBe(0);
+    expect(calls).toHaveLength(1);
   });
   it('requires database credentials outside dry run and still records failure', () => {
     const { result, summary, calls } = run({ missingCredentials: true });

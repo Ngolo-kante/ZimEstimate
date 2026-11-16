@@ -1,0 +1,503 @@
+[
+  {
+    "materialId": "cement-425",
+    "materialName": "Rapid Cement 42.5R (Foundation Concrete)",
+    "ourUnit": "per 50kg bag",
+    "candidates": [
+      {
+        "productId": 3241,
+        "name": "Supaset",
+        "priceUsd": 13.8,
+        "statedUnit": "Grade and bag mass unstated",
+        "factor": 1,
+        "reason": "Supaset is a possible structural cement; 42.5R and 50 kg must be confirmed.",
+        "url": "https://www.zbms.co.zw/shop/building-materials/cement/supaset/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "kitchen-units",
+    "materialName": "Kitchen Units",
+    "ourUnit": "per metre",
+    "candidates": [],
+    "noGoodMatch": true,
+    "note": "No finished kitchen units with a stated per-metre price."
+  },
+  {
+    "materialId": "brick-common",
+    "materialName": "Red Common Brick (Foundation Walls)",
+    "ourUnit": "each",
+    "candidates": [
+      {
+        "productId": 3227,
+        "name": "Red solid common",
+        "priceUsd": 0.11,
+        "statedUnit": "Unit unstated",
+        "factor": 1,
+        "reason": "Red solid common matches type; confirm sale is per brick.",
+        "url": "https://www.zbms.co.zw/shop/building-materials/bricks/solid-common/"
+      },
+      {
+        "productId": 3233,
+        "name": "Smooth industrial",
+        "priceUsd": 0.11,
+        "statedUnit": "Unit unstated",
+        "factor": 1,
+        "reason": "Common industrial alternative; confirm brick type and each pricing.",
+        "url": "https://www.zbms.co.zw/shop/building-materials/bricks/smooth-industrial/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "ibr-05-3m",
+    "materialName": "IBR Sheets 0.5mm x 3m",
+    "ourUnit": "per sheet",
+    "candidates": [
+      {
+        "productId": 5610,
+        "name": "3.6m (12 feet) Galvanized IBR Steel Sheet",
+        "priceUsd": 9.0,
+        "statedUnit": "3.6 m sheet; thickness unstated",
+        "factor": 0.8333333333333333,
+        "reason": "Length scales to 3 m; thickness is a blocking doubt.",
+        "url": "https://www.zbms.co.zw/shop/roofing-materials/roof-coverings/sheets/galvanized/3-6m-12-feet-galvanized-ibr-steel-sheet/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "durawall-panel",
+    "materialName": "Durawall Panel",
+    "ourUnit": "each",
+    "candidates": [
+      {
+        "productId": 11568,
+        "name": "35cm by 2.4m",
+        "priceUsd": 4.6,
+        "statedUnit": "35 cm × 2.4 m panel",
+        "factor": 1,
+        "reason": "Length matches the catalogue 2.4 m precast panel; confirm height/thickness and each pricing. Durawall identity comes from the offline permalink.",
+        "url": "https://www.zbms.co.zw/shop/precast-and-prestressed-concrete/durawall/panels/35cm-by-2-4m/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "tiles-floor-ceramic",
+    "materialName": "Floor Tiles",
+    "ourUnit": "per m²",
+    "candidates": [],
+    "noGoodMatch": true,
+    "note": "Tile listings give dimensions/categories but no sale area or ceramic specification; no defensible per-m² conversion."
+  },
+  {
+    "materialId": "paving-brick",
+    "materialName": "Paving Brick",
+    "ourUnit": "per m²",
+    "candidates": [],
+    "noGoodMatch": true,
+    "note": "Pavers 3300 ($0.25, 60mm plain natural grey) and 3303 ($0.37, Colored concrete pavers 80mm) lack face dimensions or pieces/m²; no defensible per-m² conversion."
+  },
+  {
+    "materialId": "cement-325",
+    "materialName": "Cement (Plaster)",
+    "ourUnit": "per 50kg bag",
+    "candidates": [
+      {
+        "productId": 3242,
+        "name": "Unicem",
+        "priceUsd": 12.5,
+        "statedUnit": "Grade and bag mass unstated",
+        "factor": 1,
+        "reason": "Unicem candidate for plaster; grade and bag mass require confirmation.",
+        "url": "https://www.zbms.co.zw/shop/building-materials/cement/unicem/"
+      },
+      {
+        "productId": 3244,
+        "name": "Surebuild",
+        "priceUsd": 13.8,
+        "statedUnit": "Grade and bag mass unstated",
+        "factor": 1,
+        "reason": "Surebuild alternative; do not infer 32.5 from brand.",
+        "url": "https://www.zbms.co.zw/shop/building-materials/cement/surebuild/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "timber-152x38",
+    "materialName": "Timber 152x38mm (Rafters & Tie Beams)",
+    "ourUnit": "per 6m length",
+    "candidates": [
+      {
+        "productId": 3269,
+        "name": "152 by 38 by 6m /Beam",
+        "priceUsd": 17.0,
+        "statedUnit": "152 by 38 by 6 m",
+        "factor": 1,
+        "reason": "Dimensions and 6 m length match; timber treatment/grade unstated.",
+        "url": "https://www.zbms.co.zw/shop/roofing-materials/timber/152-by-38/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "ceiling-board",
+    "materialName": "Ceiling Board",
+    "ourUnit": "per m²",
+    "candidates": [
+      {
+        "productId": 4776,
+        "name": "Gyproc 0.9m by 3.6m",
+        "priceUsd": 12.0,
+        "statedUnit": "0.9 m × 3.6 m board",
+        "factor": 0.30864197530864196,
+        "reason": "Gypsum board area converts directly; confirm thickness and price per whole board.",
+        "url": "https://www.zbms.co.zw/shop/ceilings-partitions/rhino-boards/gyproc-0-9m-by-3-6m/"
+      },
+      {
+        "productId": 4841,
+        "name": "6m by 0.3m",
+        "priceUsd": 10.0,
+        "statedUnit": "6 m × 0.3 m panel",
+        "factor": 0.5555555555555556,
+        "reason": "PVC ceiling alternative (offline PVC Panels category); confirm pack quantity and specification.",
+        "url": "https://www.zbms.co.zw/shop/ceilings-partitions/pvc-panels/6m-by-0-3m/"
+      },
+      {
+        "productId": 5482,
+        "name": "6m by 200mm",
+        "priceUsd": 6.0,
+        "statedUnit": "6 m × 200 mm panel",
+        "factor": 0.8333333333333333,
+        "reason": "PVC ceiling alternative; confirm pack quantity and specification. Different factors must not share one mapping.",
+        "url": "https://www.zbms.co.zw/shop/ceilings-partitions/pvc-panels/6m-by-200mm/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "pipe-15-copper",
+    "materialName": "Copper Pipe 15mm",
+    "ourUnit": "per 5.5m length",
+    "candidates": [
+      {
+        "productId": 12961,
+        "name": "CTCP03 15mm x 5.5m Standard Class 0",
+        "priceUsd": 24.7,
+        "statedUnit": "15 mm × 5.5 m Standard Class 0",
+        "factor": 1,
+        "reason": "Exact diameter and length; class stated.",
+        "url": "https://www.zbms.co.zw/shop/plumbing/connectors/copper-tubes/ctcp03-15mm-x-5-5m-standard-class-0/"
+      },
+      {
+        "productId": 10401,
+        "name": "CTCP01 15mm X 5.5m",
+        "priceUsd": 15.8,
+        "statedUnit": "15 mm × 5.5 m",
+        "factor": 1,
+        "reason": "Dimensions match; class unstated.",
+        "url": "https://www.zbms.co.zw/shop/plumbing/connectors/copper-tubes/ctcp01-15mm-x-5-5m/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "window-steel",
+    "materialName": "Steel Window Frames",
+    "ourUnit": "per m²",
+    "candidates": [],
+    "noGoodMatch": true,
+    "note": "Window codes lack dimensions, preventing a per-m² conversion."
+  },
+  {
+    "materialId": "durawall-post",
+    "materialName": "Durawall Post",
+    "ourUnit": "each",
+    "candidates": [
+      {
+        "productId": 11559,
+        "name": "3m ordinary",
+        "priceUsd": 12.65,
+        "statedUnit": "3 m centre pillar",
+        "factor": 1,
+        "reason": "Durawall centre-pillar identity from offline permalink; confirm slots and required height.",
+        "url": "https://www.zbms.co.zw/shop/precast-and-prestressed-concrete/durawall/centre-pillar/3m-ordinary/"
+      },
+      {
+        "productId": 11558,
+        "name": "2.7m ordinary",
+        "priceUsd": 10.35,
+        "statedUnit": "2.7 m centre pillar",
+        "factor": 1,
+        "reason": "Shorter alternative; confirm slots and required wall height before selecting.",
+        "url": "https://www.zbms.co.zw/shop/precast-and-prestressed-concrete/durawall/centre-pillar/2-7m-ordinary/"
+      },
+      {
+        "productId": 11557,
+        "name": "2.4m ordinary",
+        "priceUsd": 8.05,
+        "statedUnit": "2.4 m centre pillar",
+        "factor": 1,
+        "reason": "Shorter alternative; confirm slots and burial depth/finished height.",
+        "url": "https://www.zbms.co.zw/shop/precast-and-prestressed-concrete/durawall/centre-pillar/2-4m-ordinary/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "door-interior",
+    "materialName": "Interior Door",
+    "ourUnit": "each",
+    "candidates": [],
+    "noGoodMatch": true,
+    "note": "Our item includes a hollow-core leaf AND frame. 11178 (White molded, $46) and 11177 (Flush, $150) lack size/core/frame inclusion; no confirmed complete assembly or conversion."
+  },
+  {
+    "materialId": "geyser-150",
+    "materialName": "Geyser 150L",
+    "ourUnit": "each",
+    "candidates": [
+      {
+        "productId": 16738,
+        "name": "SPG27 HIGH PRSSRE 150L",
+        "priceUsd": 619.0,
+        "statedUnit": "150 L high pressure",
+        "factor": 1,
+        "reason": "Capacity and pressure stated; confirm installation compatibility.",
+        "url": "https://www.zbms.co.zw/shop/solar/geysers/spg27-high-prssre-150l/"
+      },
+      {
+        "productId": 16736,
+        "name": "SPG26 LOW PRSSRE 150L",
+        "priceUsd": 534.0,
+        "statedUnit": "150 L low pressure",
+        "factor": 1,
+        "reason": "Capacity matches; low pressure is a system compatibility doubt.",
+        "url": "https://www.zbms.co.zw/shop/solar/geysers/spg26-low-prssre-150l/"
+      },
+      {
+        "productId": 16885,
+        "name": "SPG40 SUPAHOT 150L",
+        "priceUsd": 566.0,
+        "statedUnit": "150 L; pressure unstated",
+        "factor": 1,
+        "reason": "Capacity matches; confirm pressure rating.",
+        "url": "https://www.zbms.co.zw/shop/solar/geysers/spg40-supahot-150l/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "gate-vehicle",
+    "materialName": "Vehicle Gate",
+    "ourUnit": "each",
+    "candidates": [],
+    "noGoodMatch": true,
+    "note": "Vehicle gate frames (11874: 4 m × 1.8 m × 32 mm, $80) are not complete gates; signs and valves are unrelated."
+  },
+  {
+    "materialId": "burglar-bars",
+    "materialName": "Burglar Bars",
+    "ourUnit": "per window",
+    "candidates": [],
+    "noGoodMatch": true,
+    "note": "No suitable burglar-bar listings."
+  },
+  {
+    "materialId": "stone-19mm",
+    "materialName": "Crushed Stone 19mm (Foundation Concrete)",
+    "ourUnit": "per cube",
+    "candidates": [
+      {
+        "productId": 3234,
+        "name": "19mm 3/4 stones",
+        "priceUsd": 18.0,
+        "statedUnit": "19 mm stones; sale volume unstated",
+        "factor": 1,
+        "reason": "Aggregate size matches; cannot approve per-cube price without volume confirmation.",
+        "url": "https://www.zbms.co.zw/shop/building-materials/quarry/3-4-stones/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "mesh-ref193",
+    "materialName": "Welded Mesh Ref 193",
+    "ourUnit": "per sheet",
+    "candidates": [
+      {
+        "productId": 4605,
+        "name": "S193 – 6m by 2.4m",
+        "priceUsd": 30.0,
+        "statedUnit": "S193, 6 m × 2.4 m",
+        "factor": 1,
+        "reason": "Reference and sheet dimensions match; confirm reinforcement specification.",
+        "url": "https://www.zbms.co.zw/shop/steel/mesh-wire/s193/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "sand-river",
+    "materialName": "River Sand (Foundation Concrete)",
+    "ourUnit": "per cube",
+    "candidates": [
+      {
+        "productId": 3231,
+        "name": "Washed Riversand",
+        "priceUsd": 10.0,
+        "statedUnit": "Washed river sand; volume unstated",
+        "factor": 1,
+        "reason": "Sand type matches; sale volume remains unconfirmed.",
+        "url": "https://www.zbms.co.zw/shop/building-materials/sands-soils/washed-riversand/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "fascia-pvc",
+    "materialName": "Fascia Board 228mm",
+    "ourUnit": "per 6m length",
+    "candidates": [],
+    "noGoodMatch": true,
+    "note": "228×38×6 m timber fascia (3268) is not PVC; do not substitute."
+  },
+  {
+    "materialId": "hardcore",
+    "materialName": "Hardcore (Filling)",
+    "ourUnit": "per cube",
+    "candidates": [],
+    "noGoodMatch": true,
+    "note": "Coal rubble and gravel are not a confirmed hardcore specification."
+  },
+  {
+    "materialId": "timber-114x38",
+    "materialName": "Timber 114x38mm (Truss Webs & Wall Plate)",
+    "ourUnit": "per 6m length",
+    "candidates": [
+      {
+        "productId": 3271,
+        "name": "114 by 38 by 6m /Wallplate/ Roof Timber",
+        "priceUsd": 13.0,
+        "statedUnit": "114 by 38 by 6 m",
+        "factor": 1,
+        "reason": "Exact dimensions and length; grade/treatment unstated.",
+        "url": "https://www.zbms.co.zw/shop/roofing-materials/timber/114-by-38/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "door-exterior",
+    "materialName": "Exterior Door",
+    "ourUnit": "each",
+    "candidates": [],
+    "noGoodMatch": true,
+    "note": "Our item includes leaf AND frame. 4813 (ED07 Solid core ext, $110) and 10772 (ED05 Metal, $45) lack dimensions/frame inclusion; no confirmed complete assembly or conversion."
+  },
+  {
+    "materialId": "timber-38x38",
+    "materialName": "Timber 38x38mm (Ceiling Brandering)",
+    "ourUnit": "per 6m length",
+    "candidates": [
+      {
+        "productId": 3273,
+        "name": "38 by 38 by 6m /Brandering",
+        "priceUsd": 4.8,
+        "statedUnit": "38 by 38 by 6 m",
+        "factor": 1,
+        "reason": "Exact brandering dimensions and length; grade/treatment unstated.",
+        "url": "https://www.zbms.co.zw/shop/roofing-materials/timber/38-by-38/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "timber-50x76",
+    "materialName": "Timber 50x76mm (Purlins)",
+    "ourUnit": "per 6m length",
+    "candidates": [
+      {
+        "productId": 5618,
+        "name": "76mm by 50mm by 6m",
+        "priceUsd": 9.0,
+        "statedUnit": "76 mm by 50 mm by 6 m",
+        "factor": 1,
+        "reason": "Exact cross section and length; grade/treatment unstated.",
+        "url": "https://www.zbms.co.zw/shop/roofing-materials/timber/76mm-by-50mm-by-6m/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "sand-bricks",
+    "materialName": "Brick Sand (Foundation Mortar)",
+    "ourUnit": "per cube",
+    "candidates": [],
+    "noGoodMatch": true,
+    "note": "No clearly identified brick/mortar sand with a stated cubic-metre unit."
+  },
+  {
+    "materialId": "sand-pit",
+    "materialName": "Pit Sand (Plaster)",
+    "ourUnit": "per cube",
+    "candidates": [
+      {
+        "productId": 3229,
+        "name": "Pitsand",
+        "priceUsd": 6.0,
+        "statedUnit": "Pit sand; volume unstated",
+        "factor": 1,
+        "reason": "Sand type matches; confirm cubic-metre sale unit.",
+        "url": "https://www.zbms.co.zw/shop/building-materials/sands-soils/pitsand/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "rebar-12",
+    "materialName": "Rebar Y12",
+    "ourUnit": "per length",
+    "candidates": [
+      {
+        "productId": 3307,
+        "name": "12mm",
+        "priceUsd": 4.5,
+        "statedUnit": "12 mm; length unstated (Deformed category)",
+        "factor": 1,
+        "reason": "Deformed bar diameter matches; length and steel grade unstated.",
+        "url": "https://www.zbms.co.zw/shop/steel/bars/deformed/12mm/"
+      }
+    ],
+    "noGoodMatch": false,
+    "note": ""
+  },
+  {
+    "materialId": "tiles-wall-ceramic",
+    "materialName": "Wall Tiles (Wet Areas)",
+    "ourUnit": "per m²",
+    "candidates": [],
+    "noGoodMatch": true,
+    "note": "Tile listings lack sale area and ceramic specification; no defensible per-m² conversion."
+  }
+]

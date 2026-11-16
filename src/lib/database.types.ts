@@ -784,6 +784,20 @@ export interface Database {
                     updated_at?: string;
                 };
             };
+            price_source_matches: {
+                Row: {
+                    source: 'zbms'; material_id: string; status: 'confirmed' | 'no_match';
+                    product_ids: number[]; factor: number; unit: string; note: string | null;
+                    confirmed_by: string | null; confirmed_at: string;
+                };
+                Insert: {
+                    source: 'zbms'; material_id: string; status: 'confirmed' | 'no_match';
+                    product_ids: number[]; factor: number; unit: string; note?: string | null;
+                    confirmed_by: string; confirmed_at: string;
+                };
+                Update: Partial<Database['public']['Tables']['price_source_matches']['Insert']>;
+                Relationships: [];
+            };
             price_observations: {
                 Row: {
                     id: string;

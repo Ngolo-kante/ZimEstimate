@@ -56,6 +56,7 @@ const navGroups = [
       { label: 'Packages', href: '/admin/packages', icon: Package },
       { label: 'Scraper', href: '/admin/scraper', icon: Robot },
       { label: 'Review queue', href: '/admin/scraper-review', icon: MagnifyingGlass },
+      { label: 'Price matches', href: '/admin/price-matches', icon: Tag },
     ],
   },
   {

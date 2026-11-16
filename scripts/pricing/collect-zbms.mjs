@@ -2,7 +2,6 @@ import './load-typescript.mjs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-const { ZBMS_PRODUCTS } = await import('../../src/lib/pricing/zbmsProducts.ts');
 const { materials, materialPrices } = await import('../../src/lib/materials.ts');
 const { getVerifiedPrice } = await import('../../src/lib/pricing/verifiedPrices.ts');
 const { convertedPrice, currentPrice, priceDecision } = await import('../../src/lib/pricing/collectorRules.ts');
@@ -11,12 +10,18 @@ const dbUrl = process.env.SUPABASE_URL;
 const dbKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const now = Date.now();
 const summary = {
-  scrapedAt: new Date(now).toISOString(), dryRun, mapped: ZBMS_PRODUCTS.length,
+  scrapedAt: new Date(now).toISOString(), dryRun, mapped: 0,
   priced: 0, written: 0, autoApproved: [], pending: [], materials: [], unpriced: [], failures: [],
 };
 const request = async (url, options = {}) => {
   const response = await fetch(url, { ...options, signal: AbortSignal.timeout(30000) });
-  if (!response.ok) throw new Error(`HTTP ${response.status} from ${new URL(url).hostname}`);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    if (['42P01', 'PGRST205'].includes(error.code)) {
+      throw new Error('Price matches need a database update. Ask your developer to apply migration 068.');
+    }
+    throw new Error(`HTTP ${response.status} from ${new URL(url).hostname}: ${error.message || 'Request failed'}`);
+  }
   return response;
 };
 const database = async (query, options = {}) => request(`${dbUrl.replace(/\/$/, '')}/rest/v1/price_observations${query}`, {
@@ -25,19 +30,26 @@ const database = async (query, options = {}) => request(`${dbUrl.replace(/\/$/, 
 });
 
 try {
-  if (!dryRun && (!dbUrl || !dbKey)) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.');
+  if (!dbUrl || !dbKey) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.');
+  const confirmed = await (await request(`${dbUrl.replace(/\/$/, '')}/rest/v1/price_source_matches?source=eq.zbms&status=eq.confirmed&select=material_id,product_ids,factor,unit&order=material_id&limit=10000`, {
+    headers: { apikey: dbKey, Authorization: `Bearer ${dbKey}` },
+  })).json();
+  if (!Array.isArray(confirmed)) throw new Error('Invalid price matches response');
+  const mappings = confirmed.map((row) => ({ materialId: row.material_id,
+    zbmsProductIds: row.product_ids, factor: Number(row.factor), unit: row.unit }));
+  summary.mapped = mappings.length;
   const seen = new Set();
-  for (const mapping of ZBMS_PRODUCTS) {
+  for (const mapping of mappings) {
     const material = materials.find((m) => m.id === mapping.materialId);
     if (!material || material.unit !== mapping.unit || seen.has(mapping.materialId)
-      || !Number.isFinite(mapping.factor) || mapping.factor <= 0 || !mapping.zbmsProductIds.length
+      || !Number.isFinite(mapping.factor) || mapping.factor <= 0 || !Array.isArray(mapping.zbmsProductIds) || !mapping.zbmsProductIds.length
       || mapping.zbmsProductIds.some((id) => !Number.isSafeInteger(id) || id <= 0)) {
       throw new Error(`Invalid mapping: ${mapping.materialId}`);
     }
     seen.add(mapping.materialId);
   }
-  if (!ZBMS_PRODUCTS.length) console.log('No owner-confirmed mappings; nothing to collect.');
-  const ids = [...new Set(ZBMS_PRODUCTS.flatMap((m) => m.zbmsProductIds))];
+  if (!mappings.length) console.log('No owner-confirmed mappings; nothing to collect.');
+  const ids = [...new Set(mappings.flatMap((m) => m.zbmsProductIds))];
   const products = new Map();
   for (let offset = 0; offset < ids.length; offset += 100) {
     if (offset) await new Promise((done) => setTimeout(done, 300));
@@ -50,7 +62,7 @@ try {
       for (const p of batch) products.set(p.id, p);
     } catch (error) { summary.failures.push(`Product batch ${offset / 100 + 1}: ${error.message}`); }
   }
-  for (const mapping of ZBMS_PRODUCTS) {
+  for (const mapping of mappings) {
     try {
       const valid = mapping.zbmsProductIds.map((id) => products.get(id)).filter((p) =>
         p?.is_in_stock === true && p.prices?.currency_code === 'USD'
