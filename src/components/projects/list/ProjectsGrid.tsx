@@ -3,11 +3,12 @@
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem } from '@/components/shadcn/dropdown-menu';
 import Link from 'next/link';
 import ProjectActionsMenu from './ProjectActionsMenu';
+import StageBadge from './StageBadge';
 import Card, { CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/shadcn/badge';
 import Button from '@/components/ui/Button';
 import { formatUsd } from '@/lib/format';
-import { currentStageLabel, shortLocation, updatedLabel } from '@/lib/projects/listPresentation';
+import { shortLocation, updatedLabel } from '@/lib/projects/listPresentation';
 import type { Profile, Project, ProjectStage } from '@/lib/database.types';
 import type { SavedWorkItem } from '@/lib/services/savedWork';
 import { formatScopeLabel } from '@/lib/projects/projectList';
@@ -108,7 +109,7 @@ export default function ProjectsGrid({
                             <div className="project-header">
                                 <CardTitle><Link href={`/projects/${project.id}`} className="project-link">{project.name}</Link></CardTitle>
                                 {project.scope !== 'entire_house' && <span className="build-type">{formatScopeLabel(project)}</span>}
-                                <Badge variant="secondary">{currentStageLabel(project, stages.filter(s => s.project_id === project.id))}</Badge>
+                                <StageBadge project={project} stages={stages} />
                             </div>
                             <ProjectActionsMenu project={project} profile={profile} actions={actions} />
                         </CardHeader>
