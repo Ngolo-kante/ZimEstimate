@@ -115,7 +115,9 @@
    Small on purpose: there are about twenty ways in, and each group should
    read at a glance rather than one large card per screen. */
 .group {
-  --tone: #64748b;
+  /* One accent for every group, matching Quick projects (owner: add colour,
+     keep it minimal). #1d4ed8 passes 4.5:1 on white. */
+  --tone: #1d4ed8;
 }
 
 .groupHeader {
@@ -207,7 +209,7 @@
 
 .tileArrow {
   flex: 0 0 auto;
-  color: #9aa6b4;
+  color: var(--tone);
   transition: none;
 }
 @media (hover: hover) and (pointer: fine) {
