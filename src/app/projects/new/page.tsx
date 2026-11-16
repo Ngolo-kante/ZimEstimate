@@ -523,7 +523,7 @@ export default function NewProject() {
                     justify-content: center;
                     font-size: 0.875rem;
                     font-weight: 600;
-                    transition: all 0.3s;
+                    transition: none;
                 }
 
                 .progress-step.active {
@@ -638,7 +638,7 @@ export default function NewProject() {
                     padding: 28px 24px;
                     text-align: center;
                     cursor: pointer;
-                    transition: all 0.2s;
+                    transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
                 }
 
                 .tile:focus-visible {
@@ -655,11 +655,15 @@ export default function NewProject() {
                     }
                 }
 
+                @media (hover: hover) and (pointer: fine) {
                 .tile:hover {
                     border-color: #cbd5e1;
                     transform: translateY(-2px);
                     box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
                 }
+                }
+
+                @media (prefers-reduced-motion: reduce) { .tile:hover { transform: none; } }
 
                 .tile.selected {
                     border-color: #FCA311;
@@ -677,7 +681,7 @@ export default function NewProject() {
                     align-items: center;
                     justify-content: center;
                     color: #64748b;
-                    transition: all 0.2s;
+                    transition: none;
                 }
 
                 .tile.selected .tile-icon {

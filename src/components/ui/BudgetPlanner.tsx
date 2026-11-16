@@ -536,7 +536,6 @@ export default function BudgetPlanner({
           min-width: 0;
           /* Whole figures: "$32,914.79" broke mid-number at tablet width. */
           white-space: nowrap;
-          font-family: var(--font-mono);
           font-variant-numeric: tabular-nums;
         }
 

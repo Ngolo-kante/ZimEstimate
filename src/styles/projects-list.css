@@ -623,7 +623,8 @@
 }
 
 .projects-list .budget-value {
-    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
     font-size: var(--text-lg);
     font-weight: var(--font-bold);
     color: var(--color-primary);
@@ -872,4 +873,10 @@
 @media (prefers-reduced-motion: reduce) {
     .projects-list .kpi-card:hover,
     :where(.projects-list) .project-card:hover { transform: none !important; }
+}
+
+@media (max-width: 767px) {
+    .projects-list .project-card .card-header { position: relative; display: block; }
+    .projects-list .project-card .project-header { width: 100%; padding-right: 52px; }
+    .projects-list .project-card .menu-container { position: absolute; top: 0; right: 0; }
 }

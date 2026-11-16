@@ -5,6 +5,9 @@ import ReminderChannels from '@/components/settings/ReminderChannels';
 import { useReminderChannels } from '@/hooks/useReminderChannels';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
+import { Field, FieldLabel } from '@/components/shadcn/field';
+import { Input } from '@/components/shadcn/input';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shadcn/tabs';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -16,7 +19,6 @@ import {
     CurrencyDollar,
     Lock,
     Crown,
-    Check,
     EnvelopeSimple,
     Phone,
     CaretRight,
@@ -231,7 +233,7 @@ function SettingsContent() {
                     </div>
                 </header>
 
-                <div className="settings-layout">
+                <Tabs defaultValue="profile" className="settings-layout">
                     <aside className="settings-sidebar">
                         <div className="account-summary">
                             <div className="account-avatar" aria-hidden="true">
@@ -242,34 +244,34 @@ function SettingsContent() {
                                 <span>{user?.email}</span>
                             </div>
                         </div>
-                        <nav className="settings-nav" aria-label="Settings sections">
-                            <a href="#profile"><User size={17} />Profile</a>
-                            <a href="#preferences"><CurrencyDollar size={17} />Preferences</a>
-                            <a href="#plan"><Crown size={17} />Plan</a>
-                            <a href="#notifications"><Bell size={17} />Notifications</a>
-                            <a href="#security"><Lock size={17} />Security</a>
-                        </nav>
+                        <TabsList className="settings-nav" aria-label="Settings sections">
+                            <TabsTrigger value="profile"><User size={17} />Profile</TabsTrigger>
+                            <TabsTrigger value="preferences"><CurrencyDollar size={17} />Preferences</TabsTrigger>
+                            <TabsTrigger value="plan"><Crown size={17} />Plan</TabsTrigger>
+                            <TabsTrigger value="notifications"><Bell size={17} />Notifications</TabsTrigger>
+                            <TabsTrigger value="security"><Lock size={17} />Security</TabsTrigger>
+                        </TabsList>
                     </aside>
 
                     <div className="settings-grid">
                     {/* Profile Section */}
-                    <section className="settings-card" id="profile">
+                    <TabsContent value="profile" asChild><section className="settings-card">
                         <div className="card-header">
                             <div className="header-icon user">
                                 <User size={20} weight="bold" />
                             </div>
                             <div>
-                                <h3>Personal Information</h3>
+                                <h3>Personal information</h3>
                                 <p>Update your personal details.</p>
                             </div>
                         </div>
 
                         <div className="card-content">
-                            <div className="form-group" id="email">
-                                <label>Email Address</label>
+                            <Field className="form-group" id="email">
+                                <FieldLabel htmlFor="account-email">Email address</FieldLabel>
                                 <div className="input-box disabled">
                                     <EnvelopeSimple size={18} />
-                                    <input type="email" value={user?.email || ''} disabled />
+                                    <Input id="account-email" type="email" value={user?.email || ''} disabled />
                                     <span className="badge">Verified</span>
                                 </div>
                                 {signsInWithGoogle ? (
@@ -278,8 +280,9 @@ function SettingsContent() {
                                     <div className="email-change">
                                         <div className="input-box">
                                             <EnvelopeSimple size={18} />
-                                            <input
+                                            <Input
                                                 type="email"
+                                                aria-label="New email address"
                                                 value={newEmail}
                                                 onChange={(e) => setNewEmail(e.target.value)}
                                                 placeholder="New email address"
@@ -303,78 +306,64 @@ function SettingsContent() {
                                         <button type="button" className="text-link" onClick={() => setEditingEmail(true)}>Change email</button>
                                     </p>
                                 )}
-                            </div>
+                            </Field>
 
                             <div className="form-row">
-                                <div className="form-group">
-                                    <label>Full Name</label>
+                                <Field className="form-group">
+                                    <FieldLabel htmlFor="full-name">Full name</FieldLabel>
                                     <div className="input-box">
                                         <User size={18} />
-                                        <input
+                                        <Input id="full-name"
                                             type="text"
                                             value={fullName}
                                             onChange={(e) => setFullName(e.target.value)}
                                             placeholder="Enter full name"
                                         />
                                     </div>
-                                </div>
+                                </Field>
 
-                                <div className="form-group">
-                                    <label>Phone Number</label>
+                                <Field className="form-group">
+                                    <FieldLabel htmlFor="phone-number">Phone number</FieldLabel>
                                     <div className="input-box">
                                         <Phone size={18} />
-                                        <input
+                                        <Input id="phone-number"
                                             type="tel"
                                             value={phoneNumber}
                                             onChange={(e) => setPhoneNumber(e.target.value)}
                                             placeholder="+263..."
                                         />
                                     </div>
-                                </div>
+                                </Field>
                             </div>
 
                             <div className="card-actions">
                                 <Button onClick={handleSaveProfile} disabled={isSaving}>
-                                    {isSaving ? 'Saving...' : 'Save Changes'}
+                                    {isSaving ? 'Saving...' : 'Save changes'}
                                 </Button>
                             </div>
                         </div>
-                    </section>
+                    </section></TabsContent>
 
                     {/* Preferences & Security Grid */}
                     <div className="split-grid">
                         {/* Currency Preference */}
-                        <section className="settings-card" id="preferences">
+                        <TabsContent value="preferences" asChild><section className="settings-card">
                             <div className="card-header">
                                 <div className="header-icon currency">
                                     <CurrencyDollar size={20} weight="bold" />
                                 </div>
                                 <div>
                                     <h3>Currency</h3>
-                                    <p>Prices are shown in USD.</p>
+
                                 </div>
                             </div>
                             <div className="card-content">
-                                <div className="currency-selector">
-                                    <button
-                                        className={`currency-option ${preferredCurrency === 'USD' ? 'active' : ''}`}
-                                        onClick={() => setPreferredCurrency('USD')}
-                                    >
-                                        <span className="code">USD</span>
-                                        <span className="name">US Dollar</span>
-                                        {preferredCurrency === 'USD' && <Check size={16} weight="bold" />}
-                                    </button>
-                                </div>
-                                <div className="card-actions">
-                                    <Button onClick={handleSaveProfile} disabled={isSaving} variant="secondary">
-                                        Update Currency
-                                    </Button>
-                                </div>
+                                <p className="currency-note">Prices are shown in US dollars.</p>
                             </div>
-                        </section>
+                        </section></TabsContent>
 
                         {/* Subscription */}
-                        <section className="settings-card" id="plan">
+                        <TabsContent value="plan" asChild><section className="settings-card">
                             <div className="card-header">
                                 <div className="header-icon premium">
                                     <Crown size={20} weight="bold" />
@@ -387,8 +376,8 @@ function SettingsContent() {
                             <div className="card-content">
                                 <div className="plan-summary">
                                     <div className="current-plan">
-                                        <span className="label">Current Plan</span>
-                                        <span className={`plan-badge ${profile?.tier}`}>
+                                        <span className="label">Current plan</span>
+                                        <span className={`plan-badge ${profile?.tier || 'free'}`}>
                                             {profile?.tier === 'pro' ? 'Pro' : profile?.tier === 'admin' ? 'Admin' : 'Free'}
                                         </span>
                                     </div>
@@ -399,16 +388,16 @@ function SettingsContent() {
                                     </p>
                                     {profile?.tier === 'free' && (
                                         <Link href="/upgrade" className="upgrade-link">
-                                            Upgrade Plan <CaretRight size={14} />
+                                            Upgrade plan <CaretRight size={14} />
                                         </Link>
                                     )}
                                 </div>
                             </div>
-                        </section>
+                        </section></TabsContent>
                     </div>
 
                     {/* Notification Preferences */}
-                    <div className="split-grid">
+                    <TabsContent value="notifications" className="settings-panel">
                         <section className="settings-card" id="notifications">
                             <div className="card-header">
                                 <div className="header-icon notification">
@@ -424,10 +413,10 @@ function SettingsContent() {
                                     <div className="toggle-row">
                                         <div>
                                             <span className="toggle-label">Email</span>
-                                            <span className="toggle-hint">RFQs, quotes, and updates</span>
+                                            <span className="toggle-hint">Quote requests, quotes and updates</span>
                                         </div>
                                         <label className="toggle">
-                                            <input
+                                            <Input
                                                 type="checkbox"
                                                 checked={notifyEmail}
                                                 onChange={(e) => setNotifyEmail(e.target.checked)}
@@ -446,7 +435,7 @@ function SettingsContent() {
                                             <span className="toggle-hint">Instant alerts to your phone</span>
                                         </div>
                                         <label className="toggle">
-                                            <input
+                                            <Input
                                                 type="checkbox"
                                                 checked={notifyWhatsapp}
                                                 onChange={(e) => setNotifyWhatsapp(e.target.checked)}
@@ -464,7 +453,7 @@ function SettingsContent() {
                                             className={`chip ${notifyRfq ? 'active' : ''}`}
                                             onClick={() => setNotifyRfq(!notifyRfq)}
                                         >
-                                            RFQs
+                                            Quote requests
                                         </button>
                                         <button
                                             className={`chip ${notifyQuoteUpdates ? 'active' : ''}`}
@@ -498,7 +487,7 @@ function SettingsContent() {
 
                                 <div className="card-actions">
                                     <Button onClick={handleSaveNotifications} disabled={isSavingNotifications} variant="secondary">
-                                        {isSavingNotifications ? 'Saving...' : 'Save Preferences'}
+                                        {isSavingNotifications ? 'Saving...' : 'Save preferences'}
                                     </Button>
                                 </div>
                             </div>
@@ -510,7 +499,7 @@ function SettingsContent() {
                                     <DeviceMobile size={20} weight="bold" />
                                 </div>
                                 <div>
-                                    <h3>Delivery Activity</h3>
+                                    <h3>Delivery activity</h3>
                                     <p>Recent notification delivery status.</p>
                                 </div>
                             </div>
@@ -534,10 +523,10 @@ function SettingsContent() {
                                 )}
                             </div>
                         </section>
-                    </div>
+                    </TabsContent>
 
                     {/* Password Section */}
-                    <section className="settings-card" id="security">
+                    <TabsContent value="security" className="settings-panel"><section className="settings-card" id="security">
                         <div className="card-header">
                             <div className="header-icon security">
                                 <Lock size={20} weight="bold" />
@@ -550,10 +539,10 @@ function SettingsContent() {
                         <div className="card-content">
                             <form onSubmit={handleChangePassword}>
                                 <div className="form-row">
-                                    <div className="form-group">
-                                        <label>New Password</label>
+                                    <Field className="form-group">
+                                        <FieldLabel htmlFor="new-password">New password</FieldLabel>
                                         <div className="input-box">
-                                            <input
+                                            <Input id="new-password"
                                                 type="password"
                                                 value={newPassword}
                                                 onChange={(e) => setNewPassword(e.target.value)}
@@ -561,11 +550,11 @@ function SettingsContent() {
                                                 minLength={8}
                                             />
                                         </div>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Confirm Password</label>
+                                    </Field>
+                                    <Field className="form-group">
+                                        <FieldLabel htmlFor="confirm-password">Confirm password</FieldLabel>
                                         <div className="input-box">
-                                            <input
+                                            <Input id="confirm-password"
                                                 type="password"
                                                 value={confirmPassword}
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -573,7 +562,7 @@ function SettingsContent() {
                                                 minLength={8}
                                             />
                                         </div>
-                                    </div>
+                                    </Field>
                                 </div>
                                 <div className="card-actions">
                                     <Button
@@ -581,28 +570,28 @@ function SettingsContent() {
                                         disabled={isChangingPassword || !newPassword || !confirmPassword}
                                         variant="secondary"
                                     >
-                                        {isChangingPassword ? 'Updating...' : 'Update Password'}
+                                        {isChangingPassword ? 'Updating...' : 'Update password'}
                                     </Button>
                                 </div>
                             </form>
                         </div>
                     </section>
 
-                    {/* Danger Zone */}
+                    {/* Danger zone */}
                     <section className="settings-card danger">
                         <div className="card-header">
                             <div className="header-icon danger">
                                 <WarningCircle size={20} weight="bold" />
                             </div>
                             <div>
-                                <h3>Danger Zone</h3>
+                                <h3>Danger zone</h3>
                                 <p>Irreversible account actions.</p>
                             </div>
                         </div>
                         <div className="card-content">
                             <div className="danger-row">
                                 <div>
-                                    <h4>Delete Account</h4>
+                                    <h4>Delete account</h4>
                                     <p>Permanently delete your account and all data.</p>
                                 </div>
                                 <Link href="/delete-account" className="request-delete-link">
@@ -611,9 +600,9 @@ function SettingsContent() {
                                 </Link>
                             </div>
                         </div>
-                    </section>
+                    </section></TabsContent>
                     </div>
-                </div>
+                </Tabs>
             </div>
 
             <style jsx>{`
@@ -639,10 +628,10 @@ function SettingsContent() {
                     display: block;
                     margin-bottom: 7px;
                     color: #2563eb;
-                    font-size: 0.7rem;
+                    font-size: 12px;
                     font-weight: 800;
                     letter-spacing: 0;
-                    text-transform: uppercase;
+                    text-transform: none;
                 }
 
                 .settings-header h1 {
@@ -680,10 +669,10 @@ function SettingsContent() {
                 .settings-status strong {
                     color: #0b1f3b;
                     font-size: 0.78rem;
-                    text-transform: uppercase;
+                    text-transform: none;
                 }
 
-                .settings-layout {
+                :global(.settings-container .settings-layout) {
                     display: grid;
                     grid-template-columns: 218px minmax(0, 1fr);
                     gap: 24px;
@@ -736,16 +725,16 @@ function SettingsContent() {
                 }
 
                 .account-summary strong { color: #0f172a; font-size: 0.79rem; }
-                .account-summary span { color: #64748b; font-size: 0.68rem; }
+                .account-summary span { color: #64748b; font-size: 12px; }
 
-                .settings-nav {
+                :global(.settings-container .settings-nav) {
                     display: flex;
                     flex-direction: column;
                     gap: 3px;
                     margin-top: 10px;
                 }
 
-                .settings-nav a {
+                :global(.settings-container .settings-nav a) {
                     display: flex;
                     align-items: center;
                     gap: 9px;
@@ -846,17 +835,17 @@ function SettingsContent() {
                     gap: 20px;
                 }
 
-                .form-group {
+                :global(.settings-container .form-group) {
                     display: flex;
                     flex-direction: column;
                     gap: 8px;
                 }
 
-                .form-group label {
+                :global(.settings-container .form-group label) {
                     font-size: 0.8rem;
                     font-weight: 600;
                     color: #475569;
-                    text-transform: uppercase;
+                    text-transform: none;
                     letter-spacing: 0;
                 }
 
@@ -887,7 +876,7 @@ function SettingsContent() {
                     flex-shrink: 0;
                 }
 
-                .input-box input {
+                :global(.settings-container .input-box input) {
                     border: none;
                     outline: none;
                     /* min-width:0 lets the field shrink inside the flex row.
@@ -903,7 +892,7 @@ function SettingsContent() {
                     text-overflow: ellipsis;
                 }
 
-                .input-box input:disabled {
+                :global(.settings-container .input-box input:disabled) {
                     color: #64748b;
                     cursor: not-allowed;
                 }
@@ -946,13 +935,13 @@ function SettingsContent() {
                 }
 
                 .badge {
-                    font-size: 0.7rem;
+                    font-size: 12px;
                     font-weight: 600;
                     color: #166534;
                     background: #dcfce7;
                     padding: 2px 8px;
                     border-radius: 4px;
-                    text-transform: uppercase;
+                    text-transform: none;
                     margin-left: auto;
                     flex-shrink: 0;
                 }
@@ -1046,7 +1035,7 @@ function SettingsContent() {
                 .section-title {
                     font-size: 0.8rem;
                     font-weight: 600;
-                    text-transform: uppercase;
+                    text-transform: none;
                     letter-spacing: 0.02em;
                     color: #64748b;
                 }
@@ -1118,7 +1107,7 @@ function SettingsContent() {
                     border-radius: 999px;
                     font-size: 0.75rem;
                     font-weight: 600;
-                    text-transform: uppercase;
+                    text-transform: none;
                     background: #e2e8f0;
                     color: #475569;
                 }
@@ -1134,57 +1123,8 @@ function SettingsContent() {
                 }
 
                 .empty-log {
-                    color: #94a3b8;
+                    color: var(--color-text-secondary);
                     font-size: 0.9rem;
-                }
-
-                /* Currency Selector */
-                .currency-selector {
-                    display: grid;
-                    grid-template-columns: 1fr;
-                    gap: 12px;
-                }
-
-                .currency-option {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: flex-start;
-                    padding: 12px;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 7px;
-                    background: #ffffff;
-                    cursor: pointer;
-                    transition: none;
-                    position: relative;
-                }
-                @media (hover: hover) and (pointer: fine) {
-                    .currency-option:hover {
-                        border-color: #cbd5e1;
-                        background: #f8fafc;
-                }
-                }
-
-                .currency-option.active {
-                    border-color: #3b82f6;
-                    background: #eff6ff;
-                }
-
-                .currency-option .code {
-                    font-weight: 700;
-                    color: #0f172a;
-                    font-size: 1rem;
-                }
-
-                .currency-option .name {
-                    font-size: 0.8rem;
-                    color: #64748b;
-                }
-
-                .currency-option svg {
-                    position: absolute;
-                    top: 12px;
-                    right: 12px;
-                    color: #2563eb;
                 }
 
                 /* Plan Summary */
@@ -1211,10 +1151,10 @@ function SettingsContent() {
                     border-radius: 4px;
                     font-size: 0.75rem;
                     font-weight: 700;
-                    text-transform: uppercase;
+                    text-transform: none;
                 }
 
-                .plan-badge.free { background: #f1f5f9; color: #64748b; }
+                .plan-badge.free { background: #f1f5f9; color: var(--color-text); }
                 .plan-badge.pro { background: #eff6ff; color: #2563eb; }
                 .plan-badge.admin { background: #fefce8; color: #b45309; }
 
@@ -1225,7 +1165,7 @@ function SettingsContent() {
                     margin: 0;
                 }
 
-                .upgrade-link {
+                :global(.settings-container .upgrade-link) {
                     display: inline-flex;
                     align-items: center;
                     gap: 6px;
@@ -1236,12 +1176,12 @@ function SettingsContent() {
                     margin-top: 4px;
                 }
                 @media (hover: hover) and (pointer: fine) {
-                    .upgrade-link:hover {
+                    :global(.settings-container .upgrade-link:hover) {
                         text-decoration: underline;
                 }
                 }
 
-                /* Danger Zone */
+                /* Danger zone */
                 .settings-card.danger {
                     border-color: #fecaca;
                 }
@@ -1289,7 +1229,7 @@ function SettingsContent() {
                         padding: 22px 16px 96px;
                     }
 
-                    .settings-layout {
+                    :global(.settings-container .settings-layout) {
                         grid-template-columns: 1fr;
                         gap: 16px;
                     }
@@ -1303,7 +1243,7 @@ function SettingsContent() {
                         display: none;
                     }
 
-                    .settings-nav {
+                    :global(.settings-container .settings-nav) {
                         flex-direction: row;
                         gap: 5px;
                         margin: 0;
@@ -1315,7 +1255,7 @@ function SettingsContent() {
                         display: none;
                     }
 
-                    .settings-nav a {
+                    :global(.settings-container .settings-nav a) {
                         flex: 0 0 auto;
                         min-height: 36px;
                     }
@@ -1348,12 +1288,12 @@ function SettingsContent() {
                         padding: 12px 10px;
                     }
 
-                    .input-box input {
+                    :global(.settings-container .input-box input) {
                         font-size: 0.85rem;
                     }
 
                     .badge {
-                        font-size: 0.62rem;
+                        font-size: 12px;
                         padding: 2px 6px;
                     }
 
@@ -1428,6 +1368,27 @@ function SettingsContent() {
 
                 @media (prefers-reduced-motion: reduce) {
                     @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
+                }
+                :global(.settings-container .settings-layout) { display: grid; }
+                :global(.settings-container .settings-nav) { display: flex; flex-direction: column; align-items: stretch; width: 100%; height: auto; background: var(--color-surface); }
+                :global(.settings-container .settings-nav [data-slot="tabs-trigger"]) { min-height: 44px; justify-content: flex-start; padding: 8px 10px; color: var(--color-text); }
+                :global(.settings-container .settings-nav [data-state="active"]) { color: var(--color-text); background: var(--color-background); }
+                :global(.settings-container .input-box input) { min-height: 44px; height: 44px; padding: 0; box-shadow: none; transition: none; opacity: 1; }
+                .input-box { padding-block: 0; }
+                :global(.settings-container .form-group label) { color: var(--color-text-secondary); font-size: 12px; }
+                .text-link, .chip { min-height: 44px; }
+                .toggle { height: 44px; flex-shrink: 0; }
+                .toggle-slider { top: 8px; bottom: 8px; }
+                .toggle:focus-within { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 8px; }
+                :global(.settings-container .upgrade-link), :global(.settings-container .request-delete-link) { min-height: 44px; }
+                :global(.settings-container .upgrade-link) { white-space: nowrap; }
+                :global(.settings-container .upgrade-link svg) { flex-shrink: 0; }
+                .currency-note { margin: 0; color: var(--color-text-secondary); }
+                .split-grid { display: contents; }
+                :global(.settings-container .settings-panel[data-state="active"]) { display: flex; flex-direction: column; gap: 18px; }
+                @media (max-width: 900px) {
+                    :global(.settings-container .settings-nav) { flex-direction: row; overflow-x: auto; }
+                    :global(.settings-container .settings-nav [data-slot="tabs-trigger"]) { flex: 0 0 auto; }
                 }
             `}</style>
         </MainLayout>

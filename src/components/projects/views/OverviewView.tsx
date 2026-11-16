@@ -166,7 +166,7 @@ export default function OverviewView({
                         <h3 className="text-lg font-bold text-primary mb-4 font-heading">Next steps</h3>
                         <div className="space-y-4">
                             {pendingItems.slice(0, 5).map((item, index) => (
-                                <div key={item.id} className="next-step-item">
+                                <div key={item.id} className={`next-step-item${index >= 3 ? ' hidden md:flex' : ''}`}>
                                     <div className="flex min-w-0 flex-wrap items-center gap-3">
                                         <div className="w-2 h-2 rounded-full bg-accent"></div>
                                         <span className="font-medium text-primary break-words min-w-0">{item.material_name}</span>
@@ -191,9 +191,9 @@ export default function OverviewView({
                                     <p>All items purchased! Great job.</p>
                                 </div>
                             )}
-                            {pendingItems.length > 5 && (
+                            {pendingItems.length > 3 && (
                                 <button
-                                    className="view-all-btn"
+                                    className={`view-all-btn${pendingItems.length <= 5 ? ' md:hidden' : ''}`}
                                     onClick={() => setActiveView('procurement')}
                                 >
                                     View all {pendingItems.length} pending items

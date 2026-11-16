@@ -624,7 +624,7 @@ function DashboardContent() {
           padding: 6px 14px;
           border-radius: 6px;
           background: #eff6ff;
-          transition: all 0.2s;
+          transition: none;
         }
 
         .see-all:hover {

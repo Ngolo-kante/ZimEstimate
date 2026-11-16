@@ -581,6 +581,7 @@ export default function TopNavbar() {
            styled-jsx does not scope: written as .logo this matched nothing,
            so the icon stacked above the name instead of beside it. */
         :global(a.zim-navbar-logo) {
+          min-height: 44px;
           display: flex;
           align-items: center;
           gap: 10px;

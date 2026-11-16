@@ -61,7 +61,8 @@
 }
 
 .spending-spent {
-    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
     font-size: var(--text-sm);
     font-weight: var(--font-bold);
     color: var(--color-text);
@@ -180,7 +181,8 @@
     font-size: var(--text-lg);
     font-weight: var(--font-bold);
     color: var(--color-text);
-    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
     line-height: var(--leading-tight);
 }
 
@@ -484,8 +486,9 @@
 
 .group-stats .stat.spent {
     background: var(--color-mist);
-    color: var(--color-text-secondary);
-    font-family: var(--font-mono);
+    color: #475569;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .group-toggle-icon {
@@ -758,7 +761,8 @@
 }
 
 .spent-value {
-    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
     font-weight: var(--font-semibold);
     font-size: var(--text-sm);
     color: var(--color-text);
@@ -994,7 +998,8 @@
     align-items: center;
     gap: var(--space-2);
     flex-wrap: wrap;
-    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
     font-size: var(--text-sm);
 }
 
@@ -1530,6 +1535,13 @@
     font-family: var(--font-mono);
 }
 
+.ledger-table .col-price,
+.ledger-table .col-total {
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
 .ledger-table .bold {
     font-weight: var(--font-bold);
     color: var(--color-primary);
@@ -1681,7 +1693,8 @@
 }
 
 .ledger-date-total {
-    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
     font-weight: var(--font-bold);
     font-size: var(--text-sm);
     color: var(--color-primary);

@@ -132,6 +132,7 @@ export default function BudgetPlanCard({
           font-size: 1rem; font-weight: 700; color: var(--color-text);
         }
         .link-btn {
+          min-height: 44px;
           background: none; border: none; cursor: pointer; padding: 0;
           font-size: 0.85rem; font-weight: 600; color: var(--color-accent);
         }
@@ -157,6 +158,7 @@ export default function BudgetPlanCard({
         }
         .edit-actions { display: flex; gap: 8px; }
         .edit-actions button {
+          min-height: 44px;
           padding: 9px 16px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
           border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text);
         }

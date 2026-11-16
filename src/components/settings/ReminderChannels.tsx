@@ -79,7 +79,7 @@ export default function ReminderChannels({ phoneNumber }: { phoneNumber: string 
 
       <style jsx>{`
         .channels { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--color-border-light, var(--color-border)); }
-        .title { font-size: 0.8rem; font-weight: 700; color: var(--color-text); text-transform: uppercase; letter-spacing: 0.04em; }
+        .title { font-size: 0.8rem; font-weight: 700; color: var(--color-text); text-transform: none; letter-spacing: 0.04em; }
         .hint { margin: 4px 0 10px; font-size: 0.8rem; color: var(--color-text-secondary); }
         ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
         li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); }
@@ -87,7 +87,7 @@ export default function ReminderChannels({ phoneNumber }: { phoneNumber: string 
         .text { flex: 1; min-width: 0; display: grid; }
         .text strong { font-size: 0.88rem; color: var(--color-text); }
         .text span { font-size: 0.78rem; color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        button { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-size: 0.78rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        button { min-height: 44px; display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-size: 0.78rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
         button:disabled { opacity: 0.6; cursor: default; }
         :global(.spin) { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }

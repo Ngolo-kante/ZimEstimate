@@ -7,8 +7,8 @@
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   margin-bottom: 8px;
-  color: #748196;
-  font-size: 0.7rem;
+  color: #475569;
+  font-size: 12px;
   font-weight: 750;
   text-transform: uppercase;
 }
@@ -50,18 +50,18 @@
 }
 
 .step {
-  min-height: 32px;
+  min-height: 44px;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 5px 10px;
-  color: #748196;
+  color: #475569;
   background: transparent;
   border: 1px solid #d8e0eb;
   border-radius: 6px;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -74,7 +74,7 @@
   justify-content: center;
   background: #eef2f7;
   border-radius: 4px;
-  font-size: 0.66rem;
+  font-size: 12px;
 }
 
 @media (min-width: 641px) {
@@ -84,7 +84,7 @@
 
   .step {
     padding-inline: 8px;
-    font-size: 0.68rem;
+    font-size: 12px;
   }
 }
 
@@ -113,7 +113,8 @@
 }
 
 .locked {
-  color: #9aa5b4;
+  color: #475569;
+  font-weight: 500;
   background: #f8fafc;
 }
 

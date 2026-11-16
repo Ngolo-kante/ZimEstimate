@@ -304,6 +304,11 @@ export default function MainLayout({
 
         .footer-right :global(a),
         .footer-right button {
+          min-width: 44px;
+          min-height: 44px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
           color: #475569;
           background: transparent;
           border: 0;

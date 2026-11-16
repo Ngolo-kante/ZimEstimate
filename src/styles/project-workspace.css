@@ -636,3 +636,8 @@ body:where(:has(.project-dashboard-shell)) {
   .project-workspace .price-update-alert:hover,
     .project-workspace .next-step-item:hover { transform: none !important; }
 }
+
+@media (max-width: 767px) {
+    .project-workspace .overview-breadcrumb a { min-height: 44px; display: inline-flex; align-items: center; }
+    .project-workspace .next-step-item.hidden { display: none; }
+}

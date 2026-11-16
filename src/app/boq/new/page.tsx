@@ -943,7 +943,7 @@ function BoqNewPageContent() {
               {isReviewStep && <h1 className="sr-only">Review estimate</h1>}
               {!isReviewStep && (
                 <div className="wiz-step-header mb-8">
-                  <span className="wiz-step-label mb-2 block">BOQ MANUAL BUILDER</span>
+                  <span className="wiz-step-label mb-2 block text-[12px] !text-[#475569]">BOQ MANUAL BUILDER</span>
                   <h1 className="text-xl sm:text-2xl font-bold mb-2" style={{color:'var(--wiz-text-primary)'}}>{WIZARD_STEPS[currentStep].title}</h1>
                   <p className="text-sm" style={{color:'var(--wiz-text-muted)'}}>{WIZARD_STEPS[currentStep].subtitle}</p>
                 </div>

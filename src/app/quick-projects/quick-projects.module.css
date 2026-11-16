@@ -25,7 +25,7 @@
 .sectionHeader > div > span,
 .fullBuild > div > span {
   display: block;
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -84,7 +84,7 @@
 .headerMeta span {
   margin-top: 3px;
   color: #b9c8dc;
-  font-size: 0.68rem;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -119,7 +119,7 @@
 }
 
 .savedLink {
-  min-height: 42px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -208,15 +208,15 @@
 }
 
 .rank {
-  color: var(--project-accent);
+  color: var(--color-text);
   font-family: var(--font-heading);
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 800;
 }
 
 .category {
-  color: #748196;
-  font-size: 0.68rem;
+  color: var(--color-text-secondary);
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -228,7 +228,7 @@
   background: #fff5c2;
   border: 1px solid #f0d978;
   border-radius: 5px;
-  font-size: 0.64rem;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -279,7 +279,7 @@
   padding-top: 17px;
   border-top: 1px solid #e3e8ef;
   color: #64748b;
-  font-size: 0.7rem;
+  font-size: 12px;
   font-weight: 700;
 }
 

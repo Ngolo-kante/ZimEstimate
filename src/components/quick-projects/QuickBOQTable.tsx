@@ -569,7 +569,7 @@ export default function QuickBOQTable({
             noticed. This makes reporting one a single click. */}
         <p className="mt-2">
           Spotted a price that looks wrong?{' '}
-          <ContactSupportLink category="bug" subject="Price looks wrong" showIcon={false}>
+          <ContactSupportLink className="inline-flex min-h-11 items-center" category="bug" subject="Price looks wrong" showIcon={false}>
             Tell us
           </ContactSupportLink>
         </p>

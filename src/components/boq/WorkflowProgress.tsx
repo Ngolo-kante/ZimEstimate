@@ -33,7 +33,7 @@ export default function WorkflowProgress({
       if (!nav || !current) return;
       nav.scrollTo({
         left: Math.max(0, current.offsetLeft - nav.clientWidth / 2 + current.clientWidth / 2),
-        behavior: 'smooth',
+        behavior: 'instant',
       });
     };
 

@@ -383,13 +383,14 @@ function SavedQuickEstimate() {
         .meta { font-size: 0.875rem; color: var(--color-text-secondary); margin-top: 4px; }
         .actions { display: flex; gap: 8px; flex-wrap: wrap; }
         .act {
+          min-height: 44px;
           display: inline-flex; align-items: center; justify-content: center; gap: 6px;
           padding: 9px 14px; border-radius: 8px; cursor: pointer;
           border: 1px solid var(--color-border); background: var(--color-surface);
           color: var(--color-text); font-size: 0.85rem; font-weight: 600;
-          transition: border-color 0.15s, color 0.15s;
+          transition: none;
         }
-        .act:hover { border-color: var(--color-accent); color: var(--color-accent); }
+        @media (hover: hover) and (pointer: fine) { .act:hover { border-color: var(--color-accent); color: var(--color-accent); } }
 
         @media (max-width: 640px) {
           .wrap { padding: 20px 16px; }
