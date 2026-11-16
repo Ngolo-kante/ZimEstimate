@@ -64,7 +64,7 @@ export default function PurchaseDialog({
       <div className="procurement-view"><div className="purchase-dialog"><div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title-group">
-            <Title asChild><h3 id="purchase-modal-title">Record purchase</h3></Title>
+            <Title asChild><h3>Record purchase</h3></Title>
             <p className="modal-item-name">{selectedItemForPurchase.material_name}</p>
           </div>
           <button type="button" className="modal-close !h-11 !w-11" aria-label="Close purchase form" disabled={isSavingPurchase} onClick={closePurchase}>
