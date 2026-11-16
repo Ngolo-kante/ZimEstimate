@@ -145,7 +145,7 @@ test.describe('Authenticated project workspace', () => {
 
     await page.goto('/settings');
     await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
-    await expect(page.getByRole('navigation', { name: 'Settings sections' }))
+    await expect(page.getByRole('tablist', { name: 'Settings sections' }))
       .toContainText('Notifications');
     await expect(page.getByRole('link', { name: 'Contact support' }).first())
       .toHaveAttribute('href', '/support');

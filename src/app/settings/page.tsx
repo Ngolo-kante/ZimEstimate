@@ -36,6 +36,29 @@ function SettingsContent() {
     const whatsappAvailable = useReminderChannels().includes('whatsapp');
 
     // Profile form state
+    // Sections are tabs; the address says which one is open, so links such as
+    // /settings#notifications (or the older #email anchor) open the right tab.
+    const SECTION_TABS = ['profile', 'preferences', 'plan', 'notifications', 'security'];
+    const [section, setSection] = useState('profile');
+    useEffect(() => {
+        const hash = window.location.hash.slice(1);
+        const tab = hash === 'email' ? 'profile' : hash;
+        if (SECTION_TABS.includes(tab)) setSection(tab);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    // Keep the open tab visible in the phone's sideways tab strip (the strip
+    // scrolls, the page does not).
+    useEffect(() => {
+        const active = document.querySelector<HTMLElement>('.settings-nav [data-state="active"]');
+        const list = active?.parentElement;
+        if (!active || !list || list.scrollWidth <= list.clientWidth) return;
+        const offset = active.getBoundingClientRect().left - list.getBoundingClientRect().left;
+        list.scrollLeft += offset - 16;
+    }, [section]);
+    const openSection = (value: string) => {
+        setSection(value);
+        window.history.replaceState(null, '', `#${value}`);
+    };
     const [fullName, setFullName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [preferredCurrency, setPreferredCurrency] = useState<Currency>('USD');
@@ -233,7 +256,7 @@ function SettingsContent() {
                     </div>
                 </header>
 
-                <Tabs defaultValue="profile" className="settings-layout">
+                <Tabs value={section} onValueChange={openSection} className="settings-layout">
                     <aside className="settings-sidebar">
                         <div className="account-summary">
                             <div className="account-avatar" aria-hidden="true">
@@ -1245,6 +1268,9 @@ function SettingsContent() {
 
                     :global(.settings-container .settings-nav) {
                         flex-direction: row;
+                        /* shadcn centres its tab list; centred and scrolling sideways, the
+                           first tabs sat past the left edge where scrolling cannot reach. */
+                        justify-content: flex-start;
                         gap: 5px;
                         margin: 0;
                         overflow-x: auto;
