@@ -33,3 +33,12 @@
   --color-sc-input: var(--color-border);
   --color-sc-ring: var(--color-focus-ring);
 }
+
+/* State variants the shadcn components use (normally from shadcn's own
+   tailwind.css, which this setup does not import). Radix marks state with
+   data-state / data-orientation, so map the short names onto those. Without
+   these, the selected tab had no visible style. */
+@custom-variant data-active (&:where([data-state="active"], [data-active]:not([data-active="false"])));
+@custom-variant data-checked (&:where([data-state="checked"], [data-checked]:not([data-checked="false"])));
+@custom-variant data-horizontal (&:where([data-orientation="horizontal"]));
+@custom-variant data-vertical (&:where([data-orientation="vertical"]));
