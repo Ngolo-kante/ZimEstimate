@@ -26,6 +26,6 @@ export default function StartOptions({ onHouse }: { onHouse?: () => void }) {
 
 export function MobileStartButton() {
   const pathname = usePathname();
-  if (!['/projects', '/projects/quick', '/estimate'].includes(pathname)) return null;
+  if (!['/', '/home', '/projects', '/projects/quick', '/estimate'].includes(pathname)) return null;
   return <Drawer><DrawerTrigger asChild><button type="button" aria-label="Start something new" className="fixed right-4 z-[110] flex h-14 w-14 items-center justify-center rounded-full bg-sc-primary text-sc-primary-foreground shadow-lg md:hidden" style={{ bottom: 'calc(90px + env(safe-area-inset-bottom, 0px))' }}><Plus size={28} aria-hidden="true" /></button></DrawerTrigger><DrawerContent className="motion-reduce:[animation:none!important] motion-reduce:[transition:none!important] z-[150] overflow-y-auto pb-[env(safe-area-inset-bottom)]"><DrawerHeader><DrawerTitle>Start something new</DrawerTitle><DrawerDescription>Choose what you want to estimate.</DrawerDescription></DrawerHeader><div className="px-4"><StartOptions /></div><DrawerClose className="m-4 min-h-11 rounded-lg border border-sc-border">Close</DrawerClose></DrawerContent></Drawer>;
 }
