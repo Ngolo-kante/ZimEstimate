@@ -86,7 +86,8 @@ function ProjectsContent() {
                 {isLoading && <ProjectsLoading />}
                 {!isLoading && !error && <div className="projects-content" style={{ opacity: contentVisible ? 1 : 0 }}>
                     {continueProject && <ContinuePanel project={continueProject} stages={stages} items={continueItems} purchases={continuePurchases} />}
-                    <PortfolioStrip projectStats={projectStats} profile={profile} projectCount={projectCount} quickTotal={quickItems.filter(q => q.status !== 'archived').reduce((sum, q) => sum + q.totalUsd, 0)} />
+                    {/* Nothing to count for a new person: the "Start your first estimate" choices come first. */}
+                    {projects.length + quickItems.length > 0 && <PortfolioStrip projectStats={projectStats} profile={profile} projectCount={projectCount} quickTotal={quickItems.filter(q => q.status !== 'archived').reduce((sum, q) => sum + q.totalUsd, 0)} />}
                     {projects.length + quickItems.length >= 6 && <ProjectsFilters filters={filters} isMobile={isMobile} />}
 
                 {/* Empty State */}

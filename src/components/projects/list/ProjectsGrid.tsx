@@ -56,7 +56,7 @@ export default function ProjectsGrid({
                                 {item.status === 'archived' && <Badge variant="secondary">Archived</Badge>}
                             </div>
                             <DropdownMenu open={!isMobile && openMenuId === item.id} onOpenChange={open => { if (!isMobile) setOpenMenuId(open ? item.id : null); }}><div className="menu-container">
-                                <DropdownMenuTrigger asChild><Button variant="secondary" className="menu-btn" aria-label={`Actions for ${item.name}`} aria-haspopup="menu" aria-expanded={openMenuId === item.id} onClick={(e) => { if (isMobile) handleMenuToggle(e, item.id); else { e.preventDefault(); e.stopPropagation(); } }}>
+                                <DropdownMenuTrigger asChild><Button variant="ghost" className="menu-btn" aria-label={`Actions for ${item.name}`} aria-haspopup="menu" aria-expanded={openMenuId === item.id} onClick={(e) => { if (isMobile) handleMenuToggle(e, item.id); else { e.preventDefault(); e.stopPropagation(); } }}>
                                     <DotsThreeVertical size={20} weight="bold" />
                                 </Button></DropdownMenuTrigger>
                                 {!isMobile && (
@@ -110,7 +110,7 @@ export default function ProjectsGrid({
                                 <Badge variant="secondary">{currentStageLabel(project, stages.filter(s => s.project_id === project.id))}</Badge>
                             </div>
                             <DropdownMenu open={!isMobile && openMenuId === project.id} onOpenChange={open => { if (!isMobile) setOpenMenuId(open ? project.id : null); }}><div className="menu-container">
-                                <DropdownMenuTrigger asChild><Button variant="secondary" className="menu-btn" aria-label={`Actions for ${project.name}`} aria-haspopup="menu" aria-expanded={openMenuId === project.id} onClick={(e) => { if (isMobile) handleMenuToggle(e, project.id); else { e.preventDefault(); e.stopPropagation(); } }}>
+                                <DropdownMenuTrigger asChild><Button variant="ghost" className="menu-btn" aria-label={`Actions for ${project.name}`} aria-haspopup="menu" aria-expanded={openMenuId === project.id} onClick={(e) => { if (isMobile) handleMenuToggle(e, project.id); else { e.preventDefault(); e.stopPropagation(); } }}>
                                     <DotsThreeVertical size={20} weight="bold" />
                                 </Button></DropdownMenuTrigger>
                                 {!isMobile && (
