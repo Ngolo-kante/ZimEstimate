@@ -66,7 +66,6 @@ export default function HomePage() {
       <SignedInEntryRedirect />
       <div className={styles.page}>
         <section className={styles.hero} aria-labelledby="home-heading">
-          <div className={styles.heroGrid} aria-hidden="true" />
           <div className={styles.heroInner}>
             <div className={styles.heroCopy}>
               <p className={styles.eyebrow}>Construction estimates · Zimbabwe</p>
