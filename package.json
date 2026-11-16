@@ -19,7 +19,8 @@
     "test": "npm run test:unit && npm run test:e2e",
     "check:env": "node scripts/check-env.ts",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "collect:prices": "node scripts/pricing/collect-zbms.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

@@ -1,4 +1,4 @@
-name: Weekly price scrape
+name: Weekly ZBMS price collection
 
 on:
   schedule:
@@ -21,16 +21,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run scraper
-        run: npm run scrape:prices
+      - name: Collect ZBMS prices
+        run: npm run collect:prices
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          PRICE_SOURCES_FILE: scripts/pricing/sources.json
-          SCRAPE_OUTPUT_DIR: output/prices
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          COLLECT_OUTPUT_DIR: output/prices
 
-      - name: Upload scrape outputs
+      - name: Upload collection summary
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: price-scrape
-          path: output/prices
+          name: zbms-prices
+          path: output/prices/zbms-summary.json
