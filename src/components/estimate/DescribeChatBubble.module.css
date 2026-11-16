@@ -1,0 +1,72 @@
+.bubble {
+  position: fixed;
+  right: 16px;
+  bottom: calc(158px + env(safe-area-inset-bottom, 0px));
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  color: #1d4ed8;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgb(11 31 59 / 12%);
+}
+
+.panel {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  max-height: 80dvh;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
+
+.conversation {
+  width: 100%;
+  min-width: 0;
+  padding-inline: 16px;
+}
+
+.conversation > section {
+  margin-top: 0;
+  width: 100%;
+}
+
+.close {
+  flex-shrink: 0;
+  min-height: 44px;
+  margin: 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.bubble:focus-visible,
+.close:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 3px;
+}
+
+@media (min-width: 768px) {
+  .bubble { right: 24px; bottom: 24px; }
+  .conversation { padding-inline: 0; }
+  .close { margin: 0; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .bubble:hover { border-color: #1d4ed8; }
+}
+
+:global(body):has(.panel) :global([data-slot='dialog-overlay']),
+:global(body):has(.panel) :global([data-slot='drawer-overlay']) {
+  z-index: 140;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  :global(body):has(.panel) :global([data-slot='dialog-overlay']),
+  :global(body):has(.panel) :global([data-slot='drawer-overlay']) {
+    animation: none !important;
+    transition: none !important;
+  }
+}

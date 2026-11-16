@@ -15,7 +15,6 @@ import {
 } from '@phosphor-icons/react/dist/ssr';
 import MainLayout from '@/components/layout/MainLayout';
 import HeroBudgetWidget from '@/components/home/HeroBudgetWidget';
-import DescribeProject from '@/components/estimate/DescribeProject';
 import SignedInEntryRedirect from '@/components/home/SignedInEntryRedirect';
 import FeatureShowcase from '@/components/home/FeatureShowcase';
 import styles from './home.module.css';
@@ -122,12 +121,6 @@ export default function HomePage() {
                 <h2 id="start-heading">What are you starting with?</h2>
               </div>
               <p>Choose a guided build, bring an existing plan or document, or price a smaller project in minutes.</p>
-            </div>
-
-            {/* The quickest way in, moved up from the bottom of the page: say
-                what you are building and land in the right estimator. */}
-            <div className={styles.describeRow}>
-              <DescribeProject label="Not sure? Describe your project in a sentence" tone="light" />
             </div>
 
             <div className={styles.startGrid}>

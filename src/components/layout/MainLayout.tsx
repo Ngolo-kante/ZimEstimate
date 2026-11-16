@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import DescribeChatBubble from '@/components/estimate/DescribeChatBubble';
 import { MobileStartButton } from '@/components/projects/StartOptions';
 import TopNavbar from './TopNavbar';
 import { CurrencyProvider } from '../ui/CurrencyToggle';
@@ -212,6 +213,8 @@ export default function MainLayout({
         </main>
 
         {!hideBottomNav && <><MobileBottomNav /><MobileStartButton /></>}
+
+        <DescribeChatBubble />
 
         {/* Footer */}
         <footer className="app-footer">
