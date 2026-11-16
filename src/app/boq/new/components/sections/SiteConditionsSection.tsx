@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Warning, CheckCircle, Question, Mountains, TrendUp, ArrowRight, Info } from '@phosphor-icons/react';
 import { LOCATION_PROCEDURE_RULES, SOIL_RISK_PROFILES, type SoilType } from '@/lib/buildFlowRules';
 import { useBoqWizardStore, type SiteSlopeType } from '@/store/boqWizardStore';
@@ -82,13 +82,11 @@ export default function SiteConditionsSection() {
           {SLOPE_OPTIONS.map((opt) => {
             const isSelected = projectDetails.siteSlope === opt.value;
             return (
-              <motion.button
+              <button
                 key={opt.value}
                 type="button"
-                whileHover={{ scale: 1.01, y: -1 }}
-                whileTap={{ scale: 0.98 }}
                 onClick={() => updateProjectDetails({ siteSlope: opt.value })}
-                className={`flex flex-col items-center gap-3 rounded-2xl border p-5 text-center transition-all duration-200 ${
+                className={`flex flex-col items-center gap-3 rounded-2xl border p-5 text-center transition-none duration-200 ${
                   isSelected
                     ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:shadow-sm'
@@ -99,7 +97,7 @@ export default function SiteConditionsSection() {
                   <opt.Icon
                     size={28}
                     weight="bold"
-                    className={`${opt.rotate} transition-transform`}
+                    className={`${opt.rotate} transition-none`}
                   />
                 </div>
                 <div>
@@ -109,7 +107,7 @@ export default function SiteConditionsSection() {
                 {isSelected && (
                   <CheckCircle size={16} weight="fill" className="text-blue-500" />
                 )}
-              </motion.button>
+              </button>
             );
           })}
         </div>
@@ -127,13 +125,11 @@ export default function SiteConditionsSection() {
             const isSelected = projectDetails.soilType === opt.value;
             const rb = RISK_BADGE[opt.risk];
             return (
-              <motion.button
+              <button
                 key={opt.value}
                 type="button"
-                whileHover={{ scale: 1.01, y: -1 }}
-                whileTap={{ scale: 0.98 }}
                 onClick={() => updateProjectDetails({ soilType: opt.value as SoilType })}
-                className={`group relative flex items-start gap-3 rounded-2xl border p-4 text-left transition-all duration-200 ${
+                className={`group relative flex items-start gap-3 rounded-2xl border p-4 text-left transition-none duration-200 ${
                   isSelected
                     ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                     : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
@@ -157,7 +153,7 @@ export default function SiteConditionsSection() {
                     {rb.label}
                   </span>
                 </div>
-              </motion.button>
+              </button>
             );
           })}
         </div>
@@ -165,10 +161,7 @@ export default function SiteConditionsSection() {
         {/* High-risk callout */}
         <AnimatePresence>
           {soilRisk && selectedSoil?.risk === 'high' && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4 }}
+            <div
               className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
             >
               <Warning size={17} weight="fill" className="shrink-0 mt-0.5 text-amber-500" />
@@ -184,7 +177,7 @@ export default function SiteConditionsSection() {
                 <strong>This estimate does not add an allowance for it</strong> — budget for deeper
                 foundations and extra reinforcement on top of the figure shown.
               </p>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
 

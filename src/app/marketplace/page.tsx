@@ -960,12 +960,13 @@ export default function MarketplacePage() {
           font-size: var(--text-sm);
           color: var(--color-text-muted);
           cursor: pointer;
-          transition: all var(--duration-fast) var(--ease-out);
+          transition: none;
         }
-
-        .category-pill:hover {
-          border-color: var(--color-accent);
+      @media (hover: hover) and (pointer: fine) {
+          .category-pill:hover {
+              border-color: var(--color-accent);
         }
+      }
 
         .category-pill.active {
           background: rgba(46, 108, 246, 0.12);
@@ -1048,18 +1049,18 @@ export default function MarketplacePage() {
 
         .material-card.card {
           cursor: pointer;
-          transition: all var(--duration-normal) var(--ease-out);
+          transition: none;
           border-radius: var(--card-radius);
           border: 1px solid var(--color-border-light);
           box-shadow: var(--shadow-card);
           background: var(--color-surface);
         }
-
-        .material-card.card:hover {
-          border-color: var(--color-accent);
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-lg);
+      @media (hover: hover) and (pointer: fine) {
+          .material-card.card:hover {
+              border-color: var(--color-accent);
+              box-shadow: var(--shadow-lg);
         }
+      }
 
         .material-card.card.selected {
           border-color: var(--color-accent);
@@ -1189,12 +1190,13 @@ export default function MarketplacePage() {
           border-radius: var(--radius-md);
           color: var(--color-text-muted);
           cursor: pointer;
-          transition: all var(--duration-fast);
+          transition: none;
         }
-
-        .alert-btn:hover {
-          background: var(--color-border-light);
+      @media (hover: hover) and (pointer: fine) {
+          .alert-btn:hover {
+              background: var(--color-border-light);
         }
+      }
 
         .alert-btn.active {
           background: rgba(245, 158, 11, 0.15);
@@ -1512,10 +1514,11 @@ export default function MarketplacePage() {
           align-items: center;
           justify-content: center;
         }
-
-        .qty-btn:hover:not(:disabled) {
-          background: var(--color-border-light);
+      @media (hover: hover) and (pointer: fine) {
+          .qty-btn:hover:not(:disabled) {
+              background: var(--color-border-light);
         }
+      }
 
         .qty-btn:disabled {
           opacity: 0.5;
@@ -1574,10 +1577,11 @@ export default function MarketplacePage() {
           cursor: pointer;
           text-align: left;
         }
-
-        .alt-card:hover {
-          border-color: var(--color-accent);
+      @media (hover: hover) and (pointer: fine) {
+          .alt-card:hover {
+              border-color: var(--color-accent);
         }
+      }
 
         .alt-name {
           display: block;
@@ -1649,11 +1653,12 @@ export default function MarketplacePage() {
           cursor: pointer;
           color: var(--color-text-muted);
         }
-
-        .close-btn:hover {
-          background: var(--color-mist);
-          color: var(--color-text-muted);
+      @media (hover: hover) and (pointer: fine) {
+          .close-btn:hover {
+              background: var(--color-mist);
+              color: var(--color-text-muted);
         }
+      }
 
         .comparison-header h3 {
           margin: 0;
@@ -1810,10 +1815,11 @@ export default function MarketplacePage() {
           color: var(--color-accent);
           text-decoration: none;
         }
-
-        .become-supplier:hover {
-          text-decoration: underline;
+      @media (hover: hover) and (pointer: fine) {
+          .become-supplier:hover {
+              text-decoration: underline;
         }
+      }
 
         .supplier-list {
           display: flex;
@@ -1931,7 +1937,11 @@ export default function MarketplacePage() {
             grid-template-columns: repeat(2, 1fr);
           }
         }
-      `}</style>
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
+                }
+            `}</style>
     </MainLayout>
   );
 }

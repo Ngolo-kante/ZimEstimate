@@ -371,7 +371,7 @@ function MobileRoomGrid({
                             justifyContent: 'center',
                             cursor: 'pointer',
                             userSelect: 'none',
-                            transition: 'transform 0.2s, background-color 0.2s',
+                            transition: 'none',
                             transform: isSelected ? 'scale(1.05)' : 'scale(1)',
                             padding: '12px',
                         }}

@@ -54,7 +54,7 @@ export default function UpgradePage() {
         <Suspense fallback={
             <MainLayout>
                 <div className="flex items-center justify-center min-h-[400px]">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)]"></div>
+                    <div className="animate-spin motion-reduce:animate-none rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)]"></div>
                 </div>
             </MainLayout>
         }>

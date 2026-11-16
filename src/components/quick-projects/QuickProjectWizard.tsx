@@ -10,7 +10,7 @@ import {
   Info,
   WarningCircle,
 } from '@phosphor-icons/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import { applyDefaultAnswers, getActiveSteps, getVisibleQuestions, isStepComplete, updateAnswer } from '@/lib/quick-projects/engine/boqEngine';
@@ -61,7 +61,7 @@ function OptionGrid({
             key={opt.value}
             type="button"
             onClick={() => toggle(opt.value)}
-            className={`group relative flex flex-col items-start p-4 rounded-xl border transition-all duration-200 text-left ${active ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50'} ${opt.recommended && !active ? 'border-amber-200 bg-amber-50/30' : ''}`}
+            className={`group relative flex flex-col items-start p-4 rounded-xl border transition-none duration-200 text-left ${active ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50'} ${opt.recommended && !active ? 'border-amber-200 bg-amber-50/30' : ''}`}
           >
             <div className="flex w-full items-start justify-between gap-2">
               <span className={`text-sm font-semibold block ${active ? 'text-blue-900' : 'text-slate-800'}`}>
@@ -70,7 +70,7 @@ function OptionGrid({
               {active ? (
                 <CheckCircle weight="fill" className="text-blue-600 flex-shrink-0" size={20} />
               ) : (
-                <div className={`w-5 h-5 rounded-full border border-slate-300 flex-shrink-0 group-hover:border-blue-300 transition-colors ${multi ? 'rounded-md' : ''}`} />
+                <div className={`w-5 h-5 rounded-full border border-slate-300 flex-shrink-0 group-hover:border-blue-300 transition-none ${multi ? 'rounded-md' : ''}`} />
               )}
             </div>
             {opt.recommended && !active && <span className="inline-block mt-2 px-2 py-0.5 rounded bg-amber-100/80 text-amber-700 text-[10px] font-bold uppercase tracking-wider">Recommended</span>}
@@ -110,13 +110,13 @@ function QuestionField({
   const hasError = showValidation && question.required !== false && isEmpty;
 
   return (
-    <div className={`mb-8 p-6 rounded-2xl bg-white border shadow-sm transition-colors ${hasError ? 'border-red-300 bg-red-50/30' : 'border-slate-200/60'}`}>
+    <div className={`mb-8 p-6 rounded-2xl bg-white border shadow-sm transition-none ${hasError ? 'border-red-300 bg-red-50/30' : 'border-slate-200/60'}`}>
       <label className="block text-base font-bold text-slate-900 mb-1">{question.title}</label>
       {question.description && <p className="text-sm text-slate-500 mb-4">{question.description}</p>}
 
       {/* Toggle */}
       {question.type === 'toggle' && (
-        <label className="flex items-center gap-3 cursor-pointer mt-4 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-slate-50 transition-colors">
+        <label className="flex items-center gap-3 cursor-pointer mt-4 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-slate-50 transition-none">
           <div className="relative">
             <input
               type="checkbox"
@@ -124,7 +124,7 @@ function QuestionField({
               checked={Boolean(val ?? question.defaultValue)}
               onChange={(e) => onChange(question.id, e.target.checked)}
             />
-            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-none peer-checked:bg-blue-600"></div>
           </div>
           <span className="text-sm font-medium text-slate-900">{Boolean(val ?? question.defaultValue) ? 'Yes' : 'No'}</span>
         </label>
@@ -135,7 +135,7 @@ function QuestionField({
         <select
           value={(val as string) ?? ''}
           onChange={(e) => onChange(question.id, e.target.value)}
-          className={`w-full mt-4 rounded-xl border px-4 py-3 text-base outline-none transition bg-white appearance-none cursor-pointer focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${hasError ? 'border-red-400' : 'border-slate-300'}`}
+          className={`w-full mt-4 rounded-xl border px-4 py-3 text-base outline-none transition-none bg-white appearance-none cursor-pointer focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${hasError ? 'border-red-400' : 'border-slate-300'}`}
         >
           <option value="" disabled>Select an option...</option>
           {(question.options ?? []).map((opt) => (
@@ -197,7 +197,7 @@ function QuestionField({
         <div className="flex items-center gap-3 mt-4">
           <input
             type="number"
-            className={`w-full max-w-[200px] rounded-xl border px-4 py-3 text-base outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${hasError ? 'border-red-400' : 'border-slate-300'}`}
+            className={`w-full max-w-[200px] rounded-xl border px-4 py-3 text-base outline-none transition-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${hasError ? 'border-red-400' : 'border-slate-300'}`}
             value={(val as number) ?? (question.defaultValue as number) ?? ''}
             min={question.min}
             max={question.max}
@@ -212,7 +212,7 @@ function QuestionField({
       {question.type === 'text' && (
         <input
           type="text"
-          className={`w-full mt-4 rounded-xl border px-4 py-3 text-base outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${hasError ? 'border-red-400' : 'border-slate-300'}`}
+          className={`w-full mt-4 rounded-xl border px-4 py-3 text-base outline-none transition-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${hasError ? 'border-red-400' : 'border-slate-300'}`}
           placeholder={question.placeholder ?? ''}
           value={(val as string) ?? ''}
           onChange={(e) => onChange(question.id, e.target.value)}
@@ -223,7 +223,7 @@ function QuestionField({
       {question.notSureOption && (
         <button
           type="button"
-          className={`mt-4 text-sm font-medium transition-colors ${isNS ? 'text-blue-600 hover:text-blue-700' : 'text-slate-400 hover:text-slate-600 underline underline-offset-4 decoration-slate-300 hover:decoration-slate-400'}`}
+          className={`mt-4 text-sm font-medium transition-none ${isNS ? 'text-blue-600 hover:text-blue-700' : 'text-slate-400 hover:text-slate-600 underline underline-offset-4 decoration-slate-300 hover:decoration-slate-400'}`}
           onClick={() => onNotSure(question.id, !isNS)}
         >
           {isNS ? '← I know the specifics now, go back to options' : "I'm not sure, use safe estimates"}
@@ -268,12 +268,8 @@ function StepView({
 }) {
   const questions = getVisibleQuestions(step, answers, notSureIds);
   return (
-    <motion.div
+    <div
       key={step.id}
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
       className="w-full"
     >
       <div className="mb-8">
@@ -293,7 +289,7 @@ function StepView({
           />
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -418,7 +414,7 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
   if (boqItems) {
     return (
       <div className="w-full max-w-5xl mx-auto animate-fade-in pb-24">
-        <button onClick={handleBack} className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors mb-6">
+        <button onClick={handleBack} className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-none mb-6">
           <ArrowLeft size={16} /> Back to questions
         </button>
         <QuickBOQTable
@@ -444,7 +440,7 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
           <span className="text-blue-600">{progressPct}%</span>
         </div>
         <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full transition-all duration-500 ease-out" style={{ width: `${progressPct}%` }} />
+          <div className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full transition-none duration-500 ease-out" style={{ width: `${progressPct}%` }} />
         </div>
       </div>
 

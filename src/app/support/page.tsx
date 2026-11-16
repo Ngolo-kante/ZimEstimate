@@ -35,7 +35,7 @@ const CATEGORIES = [
 
 const INPUT =
   'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5 ' +
-  'text-sm text-[var(--color-text)] transition focus:border-[var(--color-accent)] focus:outline-none ' +
+  'text-sm text-[var(--color-text)] transition-none focus:border-[var(--color-accent)] focus:outline-none ' +
   'focus:ring-2 focus:ring-[var(--color-accent)]/20';
 
 const LABEL = 'mb-1.5 block text-xs font-bold text-[var(--color-text-secondary)]';
@@ -127,7 +127,7 @@ function SupportForm() {
             </p>
             <Link
               href="/home"
-              className="mt-5 inline-flex rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-95"
+              className="mt-5 inline-flex rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-white transition-none hover:brightness-95"
             >
               Back to ZimEstimate
             </Link>

@@ -196,12 +196,13 @@ export default function TemplatesPage() {
           font-size: 0.875rem;
           color: var(--color-text-secondary);
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: none;
         }
-
-        .category-btn:hover {
-          border-color: var(--color-accent);
+      @media (hover: hover) and (pointer: fine) {
+          .category-btn:hover {
+              border-color: var(--color-accent);
         }
+      }
 
         .category-btn.active {
           background: var(--color-primary);

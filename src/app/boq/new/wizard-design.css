@@ -73,13 +73,13 @@
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--wiz-primary) 0%, #60A5FA 100%);
-  transition: width 0.5s ease;
+  transition: none;
 }
 
 .wiz-step-dot {
   height: 6px;
   border-radius: 999px;
-  transition: all 0.3s;
+  transition: none;
 }
 .wiz-step-dot--active    { background: var(--wiz-primary);    width: 32px; }
 .wiz-step-dot--complete  { background: #93C5FD;               width: 16px; cursor: pointer; }
@@ -101,7 +101,7 @@
   font-weight:    600;
   line-height:    1;
   cursor:         pointer;
-  transition:     background 0.2s, border-color 0.2s, color 0.2s;
+  transition: none;
 }
 
 .wiz-step-chip__num {
@@ -131,9 +131,10 @@
   border-color: #BFDBFE;
   color:        #1D4ED8;
 }
-.wiz-step-chip--done:hover {
-  background:   #DBEAFE;
-  border-color: #93C5FD;
+@media (hover: hover) and (pointer: fine) {
+    .wiz-step-chip--done:hover {
+      background:   #DBEAFE;
+      border-color: #93C5FD;}
 }
 .wiz-step-chip--done .wiz-step-chip__num {
   background: #BFDBFE;
@@ -193,12 +194,14 @@
   color:           var(--wiz-primary-text);
   background:      var(--wiz-primary);
   box-shadow:      0 2px 8px rgba(59,130,246,0.30);
-  transition:      background 0.15s, box-shadow 0.15s, transform 0.1s;
+  transition: none;
   border:          none;
   cursor:          pointer;
   letter-spacing:  0.01em;
 }
-.wiz-btn-primary:hover  { background: var(--wiz-primary-dark);  box-shadow: 0 4px 14px rgba(59,130,246,0.4); transform: translateY(-1px); }
+@media (hover: hover) and (pointer: fine) {
+    .wiz-btn-primary:hover {     background: var(--wiz-primary-dark);  box-shadow: 0 4px 14px rgba(59,130,246,0.4); }
+}
 .wiz-btn-primary:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(59,130,246,0.2); }
 
 .wiz-btn-secondary {
@@ -212,10 +215,12 @@
   color:           var(--wiz-text-muted);
   background:      transparent;
   border:          1.5px solid #E2E8F0;
-  transition:      background 0.15s, border-color 0.15s;
+  transition: none;
   cursor:          pointer;
 }
-.wiz-btn-secondary:hover { background: #F1F5F9; border-color: #CBD5E1; color: var(--wiz-text-primary); }
+@media (hover: hover) and (pointer: fine) {
+    .wiz-btn-secondary:hover {     background: #F1F5F9; border-color: #CBD5E1; color: var(--wiz-text-primary); }
+}
 
 .wiz-btn-save {
   display:         inline-flex;
@@ -228,10 +233,12 @@
   color:           var(--wiz-primary-dark);
   background:      #EFF6FF;
   border:          1.5px solid rgba(59,130,246,0.25);
-  transition:      background 0.15s;
+  transition: none;
   cursor:          pointer;
 }
-.wiz-btn-save:hover { background: #DBEAFE; }
+@media (hover: hover) and (pointer: fine) {
+    .wiz-btn-save:hover {     background: #DBEAFE; }
+}
 
 /* ── Info / Warning / Success Alert Banners ────────────────────────────────── */
 .wiz-alert {

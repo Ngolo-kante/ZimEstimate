@@ -3,7 +3,7 @@
 import { isLaborCategory } from '@/lib/calculations/laborSubstages';
 import { materialsBeforeLabor } from '@/lib/boqPresentation';
 import { Fragment, useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import {
   Sparkle,
   Plus,
@@ -224,7 +224,7 @@ export default function BOQTable() {
                   <div
                     key={m.id}
                     style={{ width: `${pct}%` }}
-                    className="h-full transition-all duration-300 first:rounded-l-full last:rounded-r-full bg-[var(--color-accent)] opacity-85 hover:opacity-100"
+                    className="h-full transition-none duration-300 first:rounded-l-full last:rounded-r-full bg-[var(--color-accent)] opacity-85 hover:opacity-100"
                     title={`${MILESTONE_LABELS[m.id] || m.id}: ${formatUSD(sub)} (${pct.toFixed(1)}%)`}
                   />
                 );
@@ -245,7 +245,7 @@ export default function BOQTable() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 aria-label="Search line items by name or unit"
-                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] py-2 pl-9 pr-3 text-xs sm:text-sm text-[var(--color-text)] placeholder-[var(--color-text-secondary)] outline-none transition focus:border-[var(--color-accent)] focus:bg-[var(--color-surface)]"
+                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] py-2 pl-9 pr-3 text-xs sm:text-sm text-[var(--color-text)] placeholder-[var(--color-text-secondary)] outline-none transition-none focus:border-[var(--color-accent)] focus:bg-[var(--color-surface)]"
               />
             </div>
 
@@ -255,7 +255,7 @@ export default function BOQTable() {
               onClick={() => setFilterModifiedOnly(!filterModifiedOnly)}
               aria-pressed={filterModifiedOnly}
               aria-label="Toggle filter for edited line items only"
-              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-none ${
                 filterModifiedOnly
                   ? 'border-[var(--color-accent)] bg-[var(--color-accent-bg)] text-[var(--color-accent)]'
                   : 'border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface)]'
@@ -271,7 +271,7 @@ export default function BOQTable() {
             type="button"
             onClick={toggleExpandAll}
             aria-label={allExpanded ? 'Collapse all milestones' : 'Expand all milestones'}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-xs font-medium text-[var(--color-text)] hover:bg-[var(--color-surface)] transition"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-xs font-medium text-[var(--color-text)] hover:bg-[var(--color-surface)] transition-none"
           >
             {allExpanded ? <ArrowsIn size={14} /> : <ArrowsOut size={14} />}
             <span>{allExpanded ? 'Collapse All' : 'Expand All'}</span>
@@ -302,7 +302,7 @@ export default function BOQTable() {
           return (
             <section
               key={milestone.id}
-              className="overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface)] shadow-sm transition hover:border-[var(--color-border)]"
+              className="overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface)] shadow-sm transition-none hover:border-[var(--color-border)]"
             >
               {/* Milestone Accordion Header */}
               <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-light)] bg-[var(--color-background)] px-4 py-3.5 sm:px-6">
@@ -337,14 +337,10 @@ export default function BOQTable() {
               </header>
 
               {/* Milestone Content Panel */}
-              <AnimatePresence initial={false}>
+              <AnimatePresence>
                 {milestone.expanded && (
-                  <motion.div
+                  <div
                     id={`milestone-panel-${milestone.id}`}
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2, ease: 'easeInOut' }}
                   >
                     {filteredItems.length === 0 ? (
                       <div className="p-8 text-center text-xs sm:text-sm text-[var(--color-text-muted)]">
@@ -431,7 +427,7 @@ export default function BOQTable() {
                                             )
                                           }
                                           aria-label={`Decrease quantity of ${item.materialName}`}
-                                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:ring-1 focus-visible:ring-[var(--color-accent)]"
+                                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] transition-none hover:bg-[var(--color-background)] focus-visible:ring-1 focus-visible:ring-[var(--color-accent)]"
                                         >
                                           <Minus size={12} />
                                         </button>
@@ -460,7 +456,7 @@ export default function BOQTable() {
                                             )
                                           }
                                           aria-label={`Increase quantity of ${item.materialName}`}
-                                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:ring-1 focus-visible:ring-[var(--color-accent)]"
+                                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] transition-none hover:bg-[var(--color-background)] focus-visible:ring-1 focus-visible:ring-[var(--color-accent)]"
                                         >
                                           <Plus size={12} />
                                         </button>
@@ -508,7 +504,7 @@ export default function BOQTable() {
                                             onClick={() => handleRevertItem(milestone.id, item)}
                                             title="Revert to calculated quantity"
                                             aria-label={`Revert ${item.materialName} to calculated quantity`}
-                                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-accent)] hover:bg-[var(--color-accent-bg)] transition"
+                                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-accent)] hover:bg-[var(--color-accent-bg)] transition-none"
                                           >
                                             <ArrowCounterClockwise size={14} />
                                           </button>
@@ -518,7 +514,7 @@ export default function BOQTable() {
                                           onClick={() => removeMilestoneItem(milestone.id, item.id)}
                                           title="Delete line item"
                                           aria-label={`Delete ${item.materialName}`}
-                                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-border-light)] bg-[var(--color-surface)] text-[var(--color-error)] hover:bg-[var(--color-error-bg)] transition"
+                                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-border-light)] bg-[var(--color-surface)] text-[var(--color-error)] hover:bg-[var(--color-error-bg)] transition-none"
                                         >
                                           <Trash size={14} />
                                         </button>}
@@ -729,14 +725,14 @@ export default function BOQTable() {
                             <button
                               type="button"
                               onClick={() => setAddingToMilestone(milestone.id)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] transition shadow-2xs"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] transition-none shadow-2xs"
                             >
                               <Plus size={14} className="text-[var(--color-accent)]" /> Add Item
                             </button>
                             {milestone.id !== 'project_fees' && <button
                               type="button"
                               onClick={() => addAiSuggestion(milestone.id)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-accent)]/30 bg-[var(--color-accent-bg)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] hover:opacity-90 transition shadow-2xs"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-accent)]/30 bg-[var(--color-accent-bg)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] hover:opacity-90 transition-none shadow-2xs"
                             >
                               <Sparkle size={14} /> AI Allowance
                             </button>}
@@ -747,7 +743,7 @@ export default function BOQTable() {
                         </div>
                       )}
                     </div>
-                  </motion.div>
+                  </div>
                 )}
               </AnimatePresence>
             </section>
@@ -770,7 +766,7 @@ export default function BOQTable() {
           <button
             type="button"
             onClick={toggleExpandAll}
-            className="rounded-xl border border-[var(--color-primary-light)] bg-[var(--color-primary-dark)] px-4 py-2.5 text-xs font-bold text-[var(--color-surface)] hover:bg-[var(--color-primary-light)] transition"
+            className="rounded-xl border border-[var(--color-primary-light)] bg-[var(--color-primary-dark)] px-4 py-2.5 text-xs font-bold text-[var(--color-surface)] hover:bg-[var(--color-primary-light)] transition-none"
           >
             {allExpanded ? 'Collapse All' : 'Expand All'}
           </button>

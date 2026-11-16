@@ -24,7 +24,7 @@ export function LineWhyButton({ open, onToggle, name }: { open: boolean; onToggl
       onClick={onToggle}
       aria-expanded={open}
       aria-label={`${open ? 'Hide' : 'Show'} why ${name} is on this estimate`}
-      className={`mt-0.5 inline-flex items-center rounded px-1 text-xs font-bold transition ${
+      className={`mt-0.5 inline-flex items-center rounded px-1 text-xs font-bold transition-none ${
         open ? 'text-[var(--color-text)]' : 'text-[var(--color-accent)] hover:underline'
       }`}
     >
@@ -110,7 +110,7 @@ export function LineWhyPanel({ item, stage }: { item: BOQItem; stage: string }) 
         <p className={note ? 'mt-2' : ''}>A fuller explanation is not available right now.</p>
       ) : (
         <p className={`inline-flex items-center gap-1.5 ${note ? 'mt-2' : ''}`}>
-          <CircleNotch size={12} weight="bold" className="animate-spin" /> Explaining…
+          <CircleNotch size={12} weight="bold" className="animate-spin motion-reduce:animate-none" /> Explaining…
         </p>
       )}
     </div>

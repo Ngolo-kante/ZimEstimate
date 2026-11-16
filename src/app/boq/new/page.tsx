@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { FloppyDisk, X, CircleNotch, CaretLeft, CaretRight, Check, ShareNetwork, FileArrowDown } from '@phosphor-icons/react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -202,7 +202,6 @@ function BoqNewPageContent() {
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   // Opening from a template lands on the finished BOQ, so start there rather than
   // rendering step one and jumping, which also keeps setState out of the effect.
-  const [shakeError, setShakeError] = useState(false);
   const { error: showError } = useToast();
 
   const {
@@ -863,9 +862,7 @@ function BoqNewPageContent() {
       // Publish the per-field errors so the inputs can mark themselves. The
       // toast alone never said which field was at fault.
       setValidationErrors(validation.errors as Record<string, string>);
-      setShakeError(true);
       if (validation.message) showError(validation.message);
-      setTimeout(() => setShakeError(false), 500);
       return;
     }
 
@@ -896,7 +893,7 @@ function BoqNewPageContent() {
               <span className="font-semibold" style={{color:'var(--wiz-text-primary)'}}>{projectDetails.name || 'Untitled Estimate'}{projectDetails.buildingType === 'double_storey' ? ' (double storey)' : ''}</span>
               {isAutoSaving ? (
                 <span className="wiz-badge-saving inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wider">
-                  <CircleNotch weight="bold" className="animate-spin" /> Saving
+                  <CircleNotch weight="bold" className="animate-spin motion-reduce:animate-none" /> Saving
                 </span>
               ) : hasUnsavedChanges ? (
                 <span className="wiz-badge-unsaved inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wider">
@@ -954,13 +951,9 @@ function BoqNewPageContent() {
 
               {/* Step Content */}
               <div className="flex-1 space-y-5 relative">
-                <AnimatePresence mode="popLayout" initial={false}>
-                  <motion.div
+                <AnimatePresence mode="popLayout">
+                  <div
                     key={currentStep}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3, ease: 'easeOut' }}
                     className="space-y-5"
                   >
                     {currentStep === 0 && (
@@ -1007,7 +1000,7 @@ function BoqNewPageContent() {
                         <ReviewTabs projectId={project?.id} isSaving={isSaving} onSave={() => { if (!requirePlanReview()) return; if (!isAuthenticated) setShowSavePrompt(true); else void runSave(false); }} />
                       </>
                     )}
-                  </motion.div>
+                  </div>
                 </AnimatePresence>
               </div>
 
@@ -1035,15 +1028,13 @@ function BoqNewPageContent() {
                 </button>
 
                 {currentStep < WIZARD_STEPS.length - 1 ? (
-                  <motion.button
+                  <button
                     type="button"
                     onClick={handleNextStep}
-                    animate={{ x: shakeError ? [-5, 5, -5, 5, 0] : 0 }}
-                    transition={{ duration: 0.4 }}
                     className="wiz-btn-primary"
                   >
                     Continue <CaretRight size={16} />
-                  </motion.button>
+                  </button>
                 ) : (
                   /* Save Project / Share / Download BOQ, in that order — the
                      same row the budget estimator tabs use, so the actions do
@@ -1058,7 +1049,7 @@ function BoqNewPageContent() {
                      unlabelled tick is a guess. */
                   <div className="flex items-center justify-end gap-2 min-w-0">
                     <button type="button" onClick={handleSave} className="wiz-btn-primary shrink-0">
-                      {isSaving ? <><CircleNotch weight="bold" className="animate-spin" /> Saving</> : <><Check weight="bold" size={16} /> Save<span className="hidden sm:inline">&nbsp;Project</span></>}
+                      {isSaving ? <><CircleNotch weight="bold" className="animate-spin motion-reduce:animate-none" /> Saving</> : <><Check weight="bold" size={16} /> Save<span className="hidden sm:inline">&nbsp;Project</span></>}
                     </button>
                     <button type="button" onClick={handleShareEstimate} aria-label="Share estimate" title="Share" className="wiz-btn-secondary shrink-0">
                       <ShareNetwork size={16} weight="bold" /> <span className="hidden sm:inline">Share</span>

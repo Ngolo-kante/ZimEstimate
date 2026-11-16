@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
 import { Package } from '@phosphor-icons/react';
 
 export interface EmptyStateAction {
@@ -34,7 +33,6 @@ export default function EmptyState({
   action,
   className = '',
 }: EmptyStateProps) {
-  const reduceMotion = useReducedMotion();
   const displayTitle = headline || title || 'No items found';
 
   const renderIcon = () => {
@@ -63,7 +61,7 @@ export default function EmptyState({
     );
 
     const baseStyles =
-      'inline-flex items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-xs sm:text-sm font-bold text-[var(--color-surface)] shadow-sm transition-all hover:bg-[var(--color-primary-light)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] active:scale-[0.98] cursor-pointer';
+      'inline-flex items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-xs sm:text-sm font-bold text-[var(--color-surface)] shadow-sm transition-none hover:bg-[var(--color-primary-light)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] active:scale-[0.98] cursor-pointer';
 
     if (actionObj.href) {
       return (
@@ -86,10 +84,7 @@ export default function EmptyState({
   };
 
   return (
-    <motion.div
-      initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-      animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-      transition={{ duration: reduceMotion ? 0 : 0.25, ease: 'easeOut' }}
+    <div
       role="region"
       aria-label={displayTitle}
       className={`flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-10 sm:px-8 sm:py-14 text-center shadow-xs ${className}`}
@@ -109,6 +104,6 @@ export default function EmptyState({
 
       {/* Action Button */}
       {action && <div className="mt-6">{renderAction()}</div>}
-    </motion.div>
+    </div>
   );
 }

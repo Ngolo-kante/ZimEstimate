@@ -16,7 +16,7 @@ import {
   Warning,
   Wallet,
 } from '@phosphor-icons/react';
-import { useCurrency } from './CurrencyToggle';
+import { formatUsd, formatQuantity } from '@/lib/format';
 import { projectMoney, savingsPace, type SavingsPeriod } from '@/lib/projects/budgetMath';
 
 // Email and WhatsApp first: what people in Zimbabwe actually use. Telegram
@@ -60,11 +60,10 @@ export default function BudgetPlanner({
   onSetReminder,
   criticalItemsUsd = 0,
 }: BudgetPlannerProps) {
-  const { exchangeRate, formatPrice } = useCurrency();
   // Seeded from the project, so leaving Budget and coming back (or
   // reloading) shows the target that was chosen, not the default.
   const [planMode, setPlanMode] = useState<PlanMode>(savingsMode);
-  const [customAmount, setCustomAmount] = useState(savingsCustomUsd ? String(savingsCustomUsd) : '');
+  const [customAmount, setCustomAmount] = useState(savingsCustomUsd != null ? String(savingsCustomUsd) : '');
   const [localTargetDate, setLocalTargetDate] = useState(targetDate || '');
   const [targetSave, setTargetSave] = useState<SaveState>('idle');
   const [dateSave, setDateSave] = useState<SaveState>('idle');
@@ -156,7 +155,7 @@ export default function BudgetPlanner({
     }
   };
 
-  const formatAmount = (amount: number) => formatPrice(amount, amount * exchangeRate);
+  const formatAmount = formatUsd;
 
   const status = isOverBudget
     ? { tone: 'status-warning', icon: <Warning size={16} weight="fill" />, text: `Over budget by ${formatAmount(m.overspentUsd)}` }
@@ -253,7 +252,7 @@ export default function BudgetPlanner({
           <div className="progress-fill" style={{ width: `${displayedProgress}%` }} />
         </div>
         <div className="progress-caption">
-          <span>{formatAmount(m.spentUsd)} spent · {percentSpent.toFixed(0)}% of the {m.basis === 'limit' ? 'limit' : 'estimate'}</span>
+          <span>{formatAmount(m.spentUsd)} spent · {formatQuantity(Math.round(percentSpent))}% of the {m.basis === 'limit' ? 'limit' : 'estimate'}</span>
           <span>{formatAmount(m.budgetUsd)} {m.basis === 'limit' ? 'limit' : 'estimate'}</span>
         </div>
       </section>
@@ -324,7 +323,7 @@ export default function BudgetPlanner({
                 <span className="helper-text" id="budget-target-date-help">
                   {dateSave === 'failed'
                     ? <span className="save-note bad">The date could not be saved, so it was put back. Try again.</span>
-                    : daysUntilTarget > 0 ? `${daysUntilTarget} day${daysUntilTarget === 1 ? '' : 's'} to reach your target` : 'Select a future date'}
+                    : daysUntilTarget > 0 ? `${formatQuantity(daysUntilTarget)} day${daysUntilTarget === 1 ? '' : 's'} to reach your target` : 'Select a future date'}
                   {dateSave === 'saving' && <span className="save-note"> · Saving…</span>}
                   {dateSave === 'saved' && <span className="save-note ok"> · Saved</span>}
                 </span>
@@ -494,7 +493,7 @@ export default function BudgetPlanner({
 
         .metric-grid {
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: minmax(0, 1fr);
           border-block: 1px solid var(--color-border-light);
         }
 
@@ -508,8 +507,8 @@ export default function BudgetPlanner({
           padding: 13px 12px;
         }
 
-        .metric:nth-child(odd) {
-          border-right: 1px solid var(--color-border-light);
+        .metric:not(:last-child) {
+          border-bottom: 1px solid var(--color-border-light);
         }
 
         .metric:nth-child(-n + 2) {
@@ -561,7 +560,7 @@ export default function BudgetPlanner({
           height: 100%;
           border-radius: inherit;
           background: var(--color-success);
-          transition: width 450ms cubic-bezier(0.22, 1, 0.36, 1);
+          transition: none;
         }
 
         .is-over .progress-fill {
@@ -682,7 +681,7 @@ export default function BudgetPlanner({
           font: inherit;
           font-size: 0.75rem;
           font-weight: 700;
-          transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+          transition: none;
         }
 
         .toggle-btn.active {
@@ -718,7 +717,7 @@ export default function BudgetPlanner({
           font: inherit;
           /* 16px: iOS zooms the page into anything smaller. */
           font-size: 1rem;
-          transition: border-color 160ms ease, box-shadow 160ms ease;
+          transition: none;
         }
 
         .modern-input:focus-visible,
@@ -777,6 +776,7 @@ export default function BudgetPlanner({
 
         .savings-row {
           display: flex;
+          flex-wrap: wrap;
           min-height: 48px;
           align-items: center;
           justify-content: space-between;
@@ -804,6 +804,7 @@ export default function BudgetPlanner({
         }
 
         .savings-row small {
+          flex-shrink: 0;
           padding: 3px 5px;
           border-radius: 4px;
           background: var(--color-success-bg);
@@ -813,6 +814,7 @@ export default function BudgetPlanner({
         }
 
         .savings-row strong {
+          flex-shrink: 0;
           text-align: right;
           color: var(--color-text);
           font-size: 0.8125rem;
@@ -873,10 +875,11 @@ export default function BudgetPlanner({
         .reminder-action span {
           flex: 1;
         }
-
-        .reminder-action:hover {
-          color: var(--color-accent-dark);
+      @media (hover: hover) and (pointer: fine) {
+          .reminder-action:hover {
+              color: var(--color-accent-dark);
         }
+      }
 
         .reminder-action:focus-visible {
           border-radius: 4px;
@@ -953,7 +956,13 @@ export default function BudgetPlanner({
 
         /* Four across only when the planner itself is wide enough — with the
            project sidebar open on a tablet it is far narrower than the screen. */
-        @container (min-width: 720px) {
+        @container (min-width: 480px) {
+          .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .metric:nth-child(odd) { border-right: 1px solid var(--color-border-light); }
+          .metric:nth-child(n + 3) { border-bottom: 0; }
+        }
+
+        @container (min-width: 880px) {
           .metric-grid {
             grid-template-columns: repeat(4, minmax(0, 1fr));
           }
@@ -967,6 +976,9 @@ export default function BudgetPlanner({
             border-right: 1px solid var(--color-border-light);
           }
         }
+
+        .progress-caption, .workspace-header { flex-wrap: wrap; }
+        .progress-caption span { min-width: 0; }
 
         .status-attention {
           color: #92400e;

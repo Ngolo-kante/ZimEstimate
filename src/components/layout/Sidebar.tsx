@@ -186,13 +186,15 @@ export default function Sidebar() {
           border-radius: var(--radius-md);
           color: rgba(255, 255, 255, 0.7);
           text-decoration: none;
-          transition: background-color 0.2s ease, color 0.2s ease;
+          transition: none;
         }
         @media (hover: hover) and (pointer: fine) {
-          .nav-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--color-text-inverse);
+        @media (hover: hover) and (pointer: fine) {
+            .nav-item:hover {
+                background: rgba(255, 255, 255, 0.1);
+                color: var(--color-text-inverse);
           }
+        }
         }
 
         .nav-item.active {
@@ -261,13 +263,15 @@ export default function Sidebar() {
           cursor: pointer;
           padding: var(--spacing-xs);
           border-radius: var(--radius-sm);
-          transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+          transition: none;
         }
         @media (hover: hover) and (pointer: fine) {
-          .logout-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--color-text-inverse);
+        @media (hover: hover) and (pointer: fine) {
+            .logout-btn:hover {
+                background: rgba(255, 255, 255, 0.1);
+                color: var(--color-text-inverse);
           }
+        }
         }
       `}</style>
     </aside>

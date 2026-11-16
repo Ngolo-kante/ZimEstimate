@@ -149,7 +149,11 @@ function ExportContent() {
                     }
                     @keyframes spin { to { transform: rotate(360deg); } }
                     p { color: var(--color-text-secondary); }
-                `}</style>
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
+                }
+            `}</style>
             </MainLayout>
         );
     }
@@ -180,6 +184,7 @@ function ExportContent() {
                     }
                     h2 { color: var(--color-text); margin: 0; }
                     p { margin: 0; }
+
                 `}</style>
             </MainLayout>
         );
@@ -369,9 +374,10 @@ function ExportContent() {
                     font-size: 0.875rem;
                     margin-bottom: var(--spacing-md);
                 }
-
-                .back-link:hover {
-                    color: var(--color-primary);
+                @media (hover: hover) and (pointer: fine) {
+                    .back-link:hover {
+                        color: var(--color-primary);
+                }
                 }
 
                 h1 {
@@ -550,6 +556,8 @@ function ExportContent() {
                         flex-wrap: wrap;
                     }
                 }
+
+
             `}</style>
         </MainLayout>
     );

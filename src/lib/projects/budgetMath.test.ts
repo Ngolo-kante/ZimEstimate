@@ -50,3 +50,20 @@ describe('savings pace', () => {
     expect(savingsPace(1000, 0)).toBeNull();
   });
 });
+
+
+describe('worst-case budget scenarios', () => {
+  it('keeps the estimate overage distinct from spending for a seven-figure limit', () => {
+    const money = projectMoney({ estimateUsd: 1607487.24, limitUsd: 1250000, spentUsd: 0 });
+    expect(money.estimateOverLimitUsd).toBeCloseTo(357487.24, 2);
+    expect(money.overspentUsd).toBe(0);
+    expect(money.stillToFundUsd).toBe(1607487.24);
+  });
+
+  it.each([7, 260 * 7])('handles a savings horizon of %i days', (days) => {
+    const pace = savingsPace(1250000, days)!;
+    expect(pace.perWeek).toBeCloseTo(1250000 / (days / 7), 2);
+    expect(pace.perDay).toBeCloseTo(1250000 / days, 2);
+    expect(savingsPace(0, days)).toBeNull();
+  });
+});

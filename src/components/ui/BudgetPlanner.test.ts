@@ -41,6 +41,10 @@ describe('budget saved values', () => {
     expect(find(render(props), 'budget-target-amount')?.props.value).toBe('15000');
   });
 
+  it('restores an explicitly saved zero target', () => {
+    expect(find(render({ estimateUsd: 1607487.24, savingsMode: 'custom', savingsCustomUsd: 0 }), 'budget-target-amount')?.props.value).toBe('0');
+  });
+
   it.each([false, 'throw'])('restores the saved date when persistence fails (%s)', async (failure) => {
     const props = {
       estimateUsd: 1000, targetDate: '2026-12-01',

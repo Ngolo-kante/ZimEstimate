@@ -128,7 +128,7 @@ export default function AdminOverviewPage() {
           {attention.map((item) => {
             const waiting = (item.value ?? 0) > 0;
             return (
-              <Link key={item.label} href={item.href} className={`rounded-xl border p-5 shadow-sm transition hover:shadow-md ${waiting ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'}`}>
+              <Link key={item.label} href={item.href} className={`rounded-xl border p-5 shadow-sm transition-none hover:shadow-md ${waiting ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'}`}>
                 <div className="text-xs font-bold uppercase tracking-wide text-slate-600">{item.label}</div>
                 <div className="mt-2 text-3xl font-bold tabular-nums text-slate-950">{loading ? '…' : n(item.value)}</div>
                 <div className={`mt-1 text-sm font-semibold ${waiting ? 'text-amber-900' : 'text-slate-500'}`}>{waiting ? `${item.action} →` : 'Nothing waiting'}</div>

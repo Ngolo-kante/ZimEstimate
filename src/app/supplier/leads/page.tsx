@@ -362,7 +362,9 @@ export default function SupplierLeadsPage() {
             text-decoration: none;
             margin-bottom: 12px;
           }
-          .back-link:hover { color: #1e40af; }
+@media (hover: hover) and (pointer: fine) {
+    .back-link:hover {     color: #1e40af; }
+}
           .header-label {
             font-size: 12px;
             font-weight: 600;
@@ -392,13 +394,15 @@ export default function SupplierLeadsPage() {
             color: #64748b;
             border-bottom: 2px solid transparent;
             margin-bottom: -2px;
-            transition: color 0.15s, border-color 0.15s;
+            transition: none;
           }
           .leads-tab.active {
             color: #1e40af;
             border-bottom-color: #1e40af;
           }
-          .leads-tab:hover:not(.active) { color: #334155; }
+@media (hover: hover) and (pointer: fine) {
+    .leads-tab:hover:not(.active) {     color: #334155; }
+}
           .tab-badge {
             background: #e2e8f0;
             color: #475569;

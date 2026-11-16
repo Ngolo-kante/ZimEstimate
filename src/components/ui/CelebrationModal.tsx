@@ -45,7 +45,7 @@ function ConfettiAnimation({ isActive }: { isActive: boolean }) {
     const [particles, setParticles] = useState<Particle[]>([]);
 
     useEffect(() => {
-        if (!isActive) {
+        if (!isActive || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             // eslint-disable-next-line react-hooks/set-state-in-effect -- reset animation state
             setParticles([]);
             return;
@@ -106,15 +106,16 @@ function ConfettiAnimation({ isActive }: { isActive: boolean }) {
                     key={p.id}
                     className="confetti-particle"
                     style={{
-                        left: `${p.x}%`,
-                        top: `${p.y}%`,
+                        left: 0,
+                        top: 0,
                         backgroundColor: p.color,
-                        transform: `rotate(${p.rotation}deg) scale(${p.scale})`,
+                        transform: `translate(${p.x}cqw, ${p.y}cqh) rotate(${p.rotation}deg) scale(${p.scale})`,
                     }}
                 />
             ))}
             <style jsx>{`
                 .confetti-container {
+                    container-type: size;
                     position: absolute;
                     inset: 0;
                     overflow: hidden;
@@ -127,6 +128,7 @@ function ConfettiAnimation({ isActive }: { isActive: boolean }) {
                     height: 10px;
                     border-radius: 2px;
                 }
+
             `}</style>
         </div>
     );
@@ -239,7 +241,7 @@ export function CelebrationModal({
                         justify-content: center;
                         z-index: 1000;
                         padding: 1rem;
-                        animation: fadeIn 0.2s ease-out;
+                        animation: fadeIn 200ms var(--ease-out);
                     }
 
                     @keyframes fadeIn {
@@ -256,14 +258,14 @@ export function CelebrationModal({
                         width: 100%;
                         text-align: center;
                         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-                        animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                        animation: scaleIn 200ms var(--ease-out);
                         overflow: hidden;
                     }
 
                     @keyframes scaleIn {
                         from {
                             opacity: 0;
-                            transform: scale(0.9) translateY(20px);
+                            transform: scale(0.96) translateY(20px);
                         }
                         to {
                             opacity: 1;
@@ -275,8 +277,8 @@ export function CelebrationModal({
                         position: absolute;
                         top: 16px;
                         right: 16px;
-                        width: 36px;
-                        height: 36px;
+                        width: 44px;
+                        height: 44px;
                         border-radius: 50%;
                         border: none;
                         background: rgba(0, 0, 0, 0.1);
@@ -285,13 +287,15 @@ export function CelebrationModal({
                         align-items: center;
                         justify-content: center;
                         color: #374151;
-                        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+                        transition: none;
                         z-index: 20;
                     }
 
                     @media (hover: hover) and (pointer: fine) {
-                      .close-btn:hover {
-                          background: rgba(0, 0, 0, 0.15);
+                      @media (hover: hover) and (pointer: fine) {
+                          .close-btn:hover {
+                              background: rgba(0, 0, 0, 0.15);
+                      }
                       }
                     }
 
@@ -302,14 +306,10 @@ export function CelebrationModal({
 
                     .icon-container {
                         margin-bottom: 20px;
-                        animation: bounce 0.5s ease-out 0.3s both;
+                        animation: none;
                     }
 
-                    @keyframes bounce {
-                        0% { transform: scale(0); }
-                        50% { transform: scale(1.2); }
-                        100% { transform: scale(1); }
-                    }
+
 
                     .icon-container :global(.icon) {
                         margin: 0 auto;
@@ -403,7 +403,12 @@ export function CelebrationModal({
                             grid-template-columns: 1fr 1fr;
                         }
                     }
-                `}</style>
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                    @keyframes scaleIn { from { opacity: 0; } to { opacity: 1; } }
+                }
+            `}</style>
             </div>
         </div>
     );

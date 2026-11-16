@@ -73,7 +73,7 @@ export default function FindContractorCTA({ projectType, area, className = '' }:
       </div>
       <Link
         href={contractorSearchHref(projectType, area)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-none hover:bg-blue-700"
       >
         Find a contractor
         <ArrowRight size={14} weight="bold" />

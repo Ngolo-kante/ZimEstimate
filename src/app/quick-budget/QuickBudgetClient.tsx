@@ -1058,7 +1058,7 @@ export default function QuickBudgetPage() {
           opacity: 0.62;
           pointer-events: none;
           z-index: -1;
-          animation: drift 9s ease-in-out infinite alternate;
+          animation: none;
         }
 
         .ambient-one {
@@ -1120,12 +1120,13 @@ export default function QuickBudgetPage() {
           background: var(--color-surface, #fff);
           font: inherit;
           cursor: pointer;
-          transition: border-color 0.18s ease, background 0.18s ease;
+          transition: none;
         }
-
-        .budget-mode-card:hover {
-          border-color: #94a3b8;
+      @media (hover: hover) and (pointer: fine) {
+          .budget-mode-card:hover {
+              border-color: #94a3b8;
         }
+      }
 
         .budget-mode-card.is-active {
           border-color: var(--color-accent, #2E6CF6);
@@ -1372,14 +1373,14 @@ export default function QuickBudgetPage() {
           font-weight: 700;
           color: var(--color-primary);
           cursor: pointer;
-          transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+          transition: none;
         }
-
-        .preset:hover {
-          transform: translateY(-1px);
-          border-color: rgba(46, 108, 246, 0.56);
-          box-shadow: 0 6px 14px rgba(78, 154, 247, 0.2);
+      @media (hover: hover) and (pointer: fine) {
+          .preset:hover {
+              border-color: rgba(46, 108, 246, 0.56);
+              box-shadow: 0 6px 14px rgba(78, 154, 247, 0.2);
         }
+      }
 
         .preset.active {
           border-color: rgba(46, 108, 246, 0.66);
@@ -1400,7 +1401,7 @@ export default function QuickBudgetPage() {
           border-radius: 50%;
           padding: 11px;
           box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
-          animation: pulse 3.8s ease-in-out infinite;
+          animation: none;
         }
 
         .coverage-ring > div {
@@ -1571,7 +1572,7 @@ export default function QuickBudgetPage() {
           height: 22px;
           border-radius: 999px;
           background: #cbd5e1;
-          transition: background 0.2s;
+          transition: none;
         }
         .labour-switch .knob::after {
           content: '';
@@ -1582,7 +1583,7 @@ export default function QuickBudgetPage() {
           height: 16px;
           border-radius: 50%;
           background: #fff;
-          transition: transform 0.2s;
+          transition: none;
         }
         .labour-switch.on .knob {
           background: #2e6cf6;
@@ -1708,7 +1709,7 @@ export default function QuickBudgetPage() {
           border-radius: 999px;
           background: linear-gradient(90deg, rgba(226, 232, 240, 0.95), rgba(241, 245, 249, 0.95), rgba(226, 232, 240, 0.95));
           background-size: 220% 100%;
-          animation: shimmer 1.15s linear infinite;
+          animation: none;
         }
 
         @keyframes spin {
@@ -1717,35 +1718,11 @@ export default function QuickBudgetPage() {
           }
         }
 
-        @keyframes shimmer {
-          0% {
-            background-position: 200% 0;
-          }
-          100% {
-            background-position: -30% 0;
-          }
-        }
 
-        @keyframes pulse {
-          0% {
-            transform: scale(1);
-          }
-          50% {
-            transform: scale(1.015);
-          }
-          100% {
-            transform: scale(1);
-          }
-        }
 
-        @keyframes drift {
-          from {
-            transform: translate3d(0, 0, 0);
-          }
-          to {
-            transform: translate3d(8px, -8px, 0);
-          }
-        }
+
+
+
 
         @media (max-width: 1120px) {
           .workspace-grid {
@@ -1784,7 +1761,11 @@ export default function QuickBudgetPage() {
             width: 100%;
           }
         }
-      `}</style>
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
+                }
+            `}</style>
     </MainLayout>
   );
 }

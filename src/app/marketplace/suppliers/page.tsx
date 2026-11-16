@@ -312,13 +312,14 @@ export default function SupplierDirectoryPage() {
           padding: var(--space-2) var(--space-3);
           border-radius: var(--radius-md);
           border: 1px solid var(--color-border-light);
-          transition: all var(--duration-fast);
+          transition: none;
         }
-
-        .back-link:hover {
-          border-color: var(--color-accent);
-          color: var(--color-accent);
+      @media (hover: hover) and (pointer: fine) {
+          .back-link:hover {
+              border-color: var(--color-accent);
+              color: var(--color-accent);
         }
+      }
 
         .directory-filters {
           display: flex;
@@ -341,14 +342,15 @@ export default function SupplierDirectoryPage() {
           cursor: pointer;
           color: var(--color-text-secondary);
           font-weight: var(--font-medium);
-          transition: all var(--duration-fast);
+          transition: none;
           font-family: var(--font-body);
         }
-
-        .pill:hover {
-          background: var(--color-mist);
-          color: var(--color-text);
+      @media (hover: hover) and (pointer: fine) {
+          .pill:hover {
+              background: var(--color-mist);
+              color: var(--color-text);
         }
+      }
 
         .pill.active {
           background: rgba(46, 108, 246, 0.1);
@@ -383,15 +385,15 @@ export default function SupplierDirectoryPage() {
           display: flex;
           flex-direction: column;
           gap: var(--space-4);
-          transition: transform var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out);
+          transition: none;
           box-shadow: var(--shadow-card);
         }
-
-        .supplier-card:hover {
-          transform: translateY(-4px);
-          border-color: var(--color-accent);
-          box-shadow: var(--shadow-lg);
+      @media (hover: hover) and (pointer: fine) {
+          .supplier-card:hover {
+              border-color: var(--color-accent);
+              box-shadow: var(--shadow-lg);
         }
+      }
 
         .card-header {
           display: flex;
@@ -471,11 +473,12 @@ export default function SupplierDirectoryPage() {
           color: var(--color-accent);
           text-decoration: none;
           font-weight: var(--font-semibold);
-          transition: color 0.2s;
+          transition: none;
         }
-        
-        .view-link:hover {
-            color: var(--color-accent-dark);
+        @media (hover: hover) and (pointer: fine) {
+            .view-link:hover {
+                color: var(--color-accent-dark);
+        }
         }
 
         .contact {
@@ -507,17 +510,17 @@ export default function SupplierDirectoryPage() {
           font-weight: var(--font-semibold);
           color: var(--color-primary);
           cursor: pointer;
-          transition: all var(--duration-fast);
+          transition: none;
           box-shadow: var(--shadow-sm);
         }
-
-        .load-more-btn:hover:not(:disabled) {
-          background: var(--color-primary);
-          border-color: var(--color-primary);
-          color: var(--color-white);
-          transform: translateY(-1px);
-          box-shadow: var(--shadow-md);
+      @media (hover: hover) and (pointer: fine) {
+          .load-more-btn:hover:not(:disabled) {
+              background: var(--color-primary);
+              border-color: var(--color-primary);
+              color: var(--color-white);
+              box-shadow: var(--shadow-md);
         }
+      }
 
         .load-more-btn:disabled {
           opacity: 0.6;
@@ -542,7 +545,11 @@ export default function SupplierDirectoryPage() {
              grid-template-columns: 1fr;
           }
         }
-      `}</style>
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
+                }
+            `}</style>
     </MainLayout>
   );
 }

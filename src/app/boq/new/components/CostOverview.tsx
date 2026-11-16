@@ -66,7 +66,7 @@ export default function CostOverview() {
                 type="button"
                 aria-pressed={density === option.id}
                 onClick={() => updateProjectDetails({ residentialDensity: option.id })}
-                className={`rounded-xl border p-3 text-left transition ${density === option.id ? 'border-[var(--color-accent)] bg-[var(--color-accent-bg,#EFF6FF)] ring-1 ring-[var(--color-accent)]' : 'border-[var(--color-border-light)] hover:border-[var(--color-accent)]'}`}
+                className={`rounded-xl border p-3 text-left transition-none ${density === option.id ? 'border-[var(--color-accent)] bg-[var(--color-accent-bg,#EFF6FF)] ring-1 ring-[var(--color-accent)]' : 'border-[var(--color-border-light)] hover:border-[var(--color-accent)]'}`}
               >
                 <span className="block text-sm font-semibold text-[var(--color-text)]">{option.label} area</span>
                 <span className="block text-xs text-[var(--color-text-muted)]">{option.example}</span>

@@ -120,7 +120,7 @@
   font-weight: 800;
   line-height: 1.2;
   text-decoration: none;
-  transition: transform 160ms ease, background 160ms ease, color 160ms ease;
+  transition: none;
 }
 
 .primaryCta {
@@ -128,22 +128,21 @@
   background: #fff;
   border: 1px solid #fff;
 }
-
-.primaryCta:hover {
-  color: #0b1f3b;
-  background: #edf3ff;
-  transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) {
+    .primaryCta:hover {
+      color: #0b1f3b;
+      background: #edf3ff;}
 }
 
 .secondaryCta {
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.42);
 }
-
-.secondaryCta:hover {
-  color: #fff;
-  border-color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+@media (hover: hover) and (pointer: fine) {
+    .secondaryCta:hover {
+      color: #fff;
+      border-color: #fff;
+      background: rgba(255, 255, 255, 0.08);}
 }
 
 .assurances {
@@ -522,11 +521,10 @@
   color: #163865;
   background: #fff;
 }
-
-.lightCta:hover {
-  color: #163865;
-  background: #eef4ff;
-  transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) {
+    .lightCta:hover {
+      color: #163865;
+      background: #eef4ff;}
 }
 
 .faq {

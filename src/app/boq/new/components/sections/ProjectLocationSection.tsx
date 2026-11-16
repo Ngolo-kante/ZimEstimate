@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { City, Tree, MapPinPlus, MapPin, CheckCircle, Info } from '@phosphor-icons/react';
 import { useBoqWizardStore } from '@/store/boqWizardStore';
 
@@ -64,7 +63,7 @@ export default function ProjectLocationSection() {
             placeholder="e.g. Borrowdale Family Home"
             aria-invalid={nameError ? true : undefined}
             aria-describedby={nameError ? 'project-name-error' : undefined}
-            className={`w-full rounded-2xl border bg-white px-5 py-4 text-base font-medium wiz-text-primary placeholder:text-[var(--color-text-muted)] shadow-sm outline-none transition focus:ring-2 ${
+            className={`w-full rounded-2xl border bg-white px-5 py-4 text-base font-medium wiz-text-primary placeholder:text-[var(--color-text-muted)] shadow-sm outline-none transition-none focus:ring-2 ${
               nameError
                 ? 'border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[var(--color-error)]/15'
                 : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/15'
@@ -102,7 +101,7 @@ export default function ProjectLocationSection() {
               value={projectDetails.locationCity}
               onChange={(e) => updateProjectDetails({ locationCity: e.target.value })}
               placeholder="City / Town (e.g. Harare)"
-              className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-10 pr-5 text-sm wiz-text-primary placeholder:text-[var(--color-text-muted)] shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-10 pr-5 text-sm wiz-text-primary placeholder:text-[var(--color-text-muted)] shadow-sm outline-none transition-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
             />
             <datalist id="zw-cities">
               {ZIMBABWE_CITIES.map((c) => <option key={c} value={c} />)}
@@ -114,7 +113,7 @@ export default function ProjectLocationSection() {
               value={projectDetails.specificLocation}
               onChange={(e) => updateProjectDetails({ specificLocation: e.target.value })}
               placeholder="Specific area (e.g. Borrowdale Brooke)"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm wiz-text-primary placeholder:text-[var(--color-text-muted)] shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm wiz-text-primary placeholder:text-[var(--color-text-muted)] shadow-sm outline-none transition-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
             />
           </div>
         </div>
@@ -132,13 +131,11 @@ export default function ProjectLocationSection() {
             const Icon = type.icon;
             const isSelected = projectDetails.locationType === type.value;
             return (
-              <motion.button
+              <button
                 key={type.value}
                 type="button"
-                whileHover={{ scale: 1.01, y: -2 }}
-                whileTap={{ scale: 0.98 }}
                 onClick={() => updateProjectDetails({ locationType: type.value })}
-                className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-all duration-200 ${
+                className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-none duration-200 ${
                   isSelected
                     ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                     : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-md'
@@ -156,20 +153,18 @@ export default function ProjectLocationSection() {
                   <div className={`font-semibold text-sm ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{type.label}</div>
                   <div className={`mt-0.5 text-xs ${isSelected ? 'text-blue-700/80' : 'wiz-text-muted'}`}>{type.hint}</div>
                 </div>
-              </motion.button>
+              </button>
             );
           })}
         </div>
 
         {ctx && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div
             className={`wiz-alert ${ctx.color === 'amber' ? 'wiz-alert--warn' : 'wiz-alert--info'}`}
           >
             <Info size={16} weight="fill" className="wiz-alert__icon" />
             <p>{ctx.text}</p>
-          </motion.div>
+          </div>
         )}
       </div>
     </div>

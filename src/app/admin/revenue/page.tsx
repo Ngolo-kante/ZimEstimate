@@ -182,7 +182,9 @@ export default function AdminRevenuePage() {
           display: inline-flex; align-items: center; gap: 6px;
           color: #64748b; font-size: 14px; text-decoration: none; margin-bottom: 10px;
         }
-        .back-link:hover { color: #1e40af; }
+@media (hover: hover) and (pointer: fine) {
+    .back-link:hover {     color: #1e40af; }
+}
         h1 { font-size: 26px; font-weight: 700; color: #0f172a; margin: 0; }
         .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
         .metric-label { font-size: 12px; font-weight: 600; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; }
@@ -195,7 +197,7 @@ export default function AdminRevenuePage() {
         .plan-bar-label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #334155; min-width: 180px; }
         .plan-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
         .plan-bar-track { flex: 1; height: 10px; background: #f1f5f9; border-radius: 5px; overflow: hidden; }
-        .plan-bar-fill { height: 100%; border-radius: 5px; transition: width 0.4s; }
+        .plan-bar-fill { height: 100%; border-radius: 5px; transition: none; }
         .plan-bar-count { font-size: 14px; font-weight: 600; color: #334155; min-width: 30px; text-align: right; }
         .empty-state { color: #94a3b8; text-align: center; padding: 24px; }
         .payments-table { display: flex; flex-direction: column; }

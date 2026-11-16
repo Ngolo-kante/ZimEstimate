@@ -25,7 +25,7 @@ export default function RoomPickerDropdown({ isOpen, onToggle, onAddRoom }: Room
                     fontWeight: 600,
                     color: '#374151',
                     cursor: 'pointer',
-                    transition: 'all 0.2s',
+                    transition: 'none',
                 }}
             >
                 {isOpen ? <X size={18} /> : <Plus size={18} />}
@@ -64,7 +64,7 @@ export default function RoomPickerDropdown({ isOpen, onToggle, onAddRoom }: Room
                                 color: '#374151',
                                 cursor: 'pointer',
                                 textAlign: 'left',
-                                transition: 'all 0.2s',
+                                transition: 'none',
                             }}
                             onMouseEnter={(e) => {
                                 e.currentTarget.style.background = '#eff6ff';

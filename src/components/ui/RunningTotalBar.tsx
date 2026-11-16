@@ -79,16 +79,12 @@ export function RunningTotalBar({
                         font-size: 1rem;
                         font-weight: 700;
                         font-feature-settings: 'tnum';
-                        transition: transform 0.3s, color 0.3s;
+                        transition: none;
                     }
                     .amount.pulse {
-                        animation: pulse 0.3s ease-out;
+                        animation: none;
                     }
-                    @keyframes pulse {
-                        0% { transform: scale(1); }
-                        50% { transform: scale(1.1); color: #22c55e; }
-                        100% { transform: scale(1); }
-                    }
+
                 `}</style>
             </div>
         );
@@ -205,13 +201,10 @@ export function RunningTotalBar({
                 }
 
                 .total-amount.updating {
-                    animation: countUp 0.3s ease-out;
+                    animation: none;
                 }
 
-                @keyframes countUp {
-                    0% { transform: translateY(10px); opacity: 0.5; }
-                    100% { transform: translateY(0); opacity: 1; }
-                }
+
 
                 .trend {
                     display: flex;
@@ -280,7 +273,7 @@ export function RunningTotalBar({
                 .progress-bar-fill {
                     height: 100%;
                     border-radius: 3px;
-                    transition: width 0.5s ease-out;
+                    transition: none;
                 }
 
                 .progress-label {

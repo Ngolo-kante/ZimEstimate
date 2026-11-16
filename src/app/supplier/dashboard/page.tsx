@@ -483,7 +483,7 @@ export default function SupplierDashboardPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Spinner size={32} className="animate-spin text-accent" />
+        <Spinner size={32} className="animate-spin motion-reduce:animate-none text-accent" />
       </div>
     );
   }
@@ -565,7 +565,7 @@ export default function SupplierDashboardPage() {
 
           <Link
             href="/"
-            className="px-4 py-2 bg-mist rounded-md text-secondary text-sm border border-border-light hover:border-accent hover:text-accent transition-colors"
+            className="px-4 py-2 bg-mist rounded-md text-secondary text-sm border border-border-light hover:border-accent hover:text-accent transition-none"
           >
             Back to Home
           </Link>
@@ -587,7 +587,7 @@ export default function SupplierDashboardPage() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-5 py-4 bg-transparent border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${isActive
+                className={`flex items-center gap-2 px-5 py-4 bg-transparent border-b-2 font-medium text-sm whitespace-nowrap transition-none ${isActive
                     ? 'border-accent text-accent font-semibold'
                     : 'border-transparent text-secondary hover:text-text'
                   }`}
@@ -674,33 +674,33 @@ export default function SupplierDashboardPage() {
               <div className="flex flex-wrap gap-4">
                 <button
                   onClick={() => setActiveTab('products')}
-                  className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-white rounded-md font-semibold hover:bg-accent-dark transition-colors shadow-sm"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-white rounded-md font-semibold hover:bg-accent-dark transition-none shadow-sm"
                 >
                   <Plus size={18} weight="bold" />
                   Add Product
                 </button>
                 <Link
                   href="/supplier/analytics"
-                  className="inline-flex items-center gap-2 px-5 py-3 bg-mist text-text border border-border-light rounded-md font-semibold hover:bg-white hover:border-accent hover:text-accent transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-mist text-text border border-border-light rounded-md font-semibold hover:bg-white hover:border-accent hover:text-accent transition-none"
                 >
                   <ChartLine size={18} weight="bold" />
                   View Analytics
                 </Link>
                 <Link
                   href="/supplier/leads"
-                  className="inline-flex items-center gap-2 px-5 py-3 bg-mist text-text border border-border-light rounded-md font-semibold hover:bg-white hover:border-accent hover:text-accent transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-mist text-text border border-border-light rounded-md font-semibold hover:bg-white hover:border-accent hover:text-accent transition-none"
                 >
                   Customer Leads
                 </Link>
                 <Link
                   href="/supplier/billing"
-                  className="inline-flex items-center gap-2 px-5 py-3 bg-surface text-secondary border border-border-light rounded-md font-semibold hover:border-accent hover:text-accent transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-surface text-secondary border border-border-light rounded-md font-semibold hover:border-accent hover:text-accent transition-none"
                 >
                   Billing &amp; Plan
                 </Link>
                 <button
                   onClick={() => setActiveTab('settings')}
-                  className="inline-flex items-center gap-2 px-5 py-3 bg-surface text-secondary border border-border-light rounded-md font-semibold hover:border-accent hover:text-accent transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-surface text-secondary border border-border-light rounded-md font-semibold hover:border-accent hover:text-accent transition-none"
                 >
                   <PencilSimple size={18} />
                   Edit Profile
@@ -736,7 +736,7 @@ export default function SupplierDashboardPage() {
               </h2>
               <Link
                 href={`/supplier/products/add`}
-                className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-white rounded-md font-semibold hover:bg-accent-dark transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-white rounded-md font-semibold hover:bg-accent-dark transition-none shadow-sm"
               >
                 <Plus size={18} weight="bold" />
                 Add Product
@@ -755,7 +755,7 @@ export default function SupplierDashboardPage() {
                 <div className="flex justify-center mt-4">
                   <Link
                     href={`/supplier/products/add`}
-                    className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-white rounded-md font-semibold hover:bg-accent-dark transition-colors shadow-sm"
+                    className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-white rounded-md font-semibold hover:bg-accent-dark transition-none shadow-sm"
                   >
                     <Plus size={18} weight="bold" />
                     Add Your First Product
@@ -771,7 +771,7 @@ export default function SupplierDashboardPage() {
                   >
                     <button
                       onClick={() => toggleCategory(category)}
-                      className="w-full flex justify-between items-center px-6 py-4 bg-mist border-none cursor-pointer text-left hover:bg-surface transition-colors"
+                      className="w-full flex justify-between items-center px-6 py-4 bg-mist border-none cursor-pointer text-left hover:bg-surface transition-none"
                     >
                       <span className="font-semibold text-primary">
                         {category} ({categoryProducts.length})
@@ -823,13 +823,13 @@ export default function SupplierDashboardPage() {
                                 <div className="flex gap-2">
                                   <Link
                                     href={`/supplier/products/edit/${product.id}`}
-                                    className="p-2 bg-mist rounded text-secondary hover:bg-white hover:text-accent transition-colors"
+                                    className="p-2 bg-mist rounded text-secondary hover:bg-white hover:text-accent transition-none"
                                   >
                                     <PencilSimple size={16} />
                                   </Link>
                                   <button
                                     onClick={() => handleDeleteProduct(product.id)}
-                                    className="p-2 bg-error/10 rounded text-error hover:bg-error/20 transition-colors cursor-pointer border-none"
+                                    className="p-2 bg-error/10 rounded text-error hover:bg-error/20 transition-none cursor-pointer border-none"
                                   >
                                     <Trash size={16} />
                                   </button>
@@ -862,7 +862,7 @@ export default function SupplierDashboardPage() {
                   setRfqInbox(rfqs);
                   setRfqLoading(false);
                 }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-surface text-secondary border border-border-light rounded-md font-medium hover:border-accent hover:text-accent transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-surface text-secondary border border-border-light rounded-md font-medium hover:border-accent hover:text-accent transition-none cursor-pointer"
               >
                 Refresh
               </button>
@@ -870,7 +870,7 @@ export default function SupplierDashboardPage() {
 
             {rfqLoading ? (
               <div className="bg-surface rounded-xl p-8 flex justify-center shadow-card border border-border-light reveal">
-                <Spinner size={32} className="animate-spin text-accent" />
+                <Spinner size={32} className="animate-spin motion-reduce:animate-none text-accent" />
               </div>
             ) : rfqInbox.length === 0 ? (
               <div className="bg-surface rounded-xl p-12 text-center shadow-card border border-border-light grid gap-3 reveal">
@@ -993,7 +993,7 @@ export default function SupplierDashboardPage() {
                       <button
                         onClick={() => handleSubmitQuote(rfq)}
                         disabled={isLocked}
-                        className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-md font-semibold transition-colors shadow-sm ${isLocked
+                        className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-md font-semibold transition-none shadow-sm ${isLocked
                             ? 'bg-border-light text-muted cursor-not-allowed'
                             : 'bg-accent text-white hover:bg-accent-dark'
                           }`}
@@ -1106,7 +1106,7 @@ export default function SupplierDashboardPage() {
               <div className="mt-2">
                 <Link
                   href="/supplier/profile/edit"
-                  className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-white rounded-md font-semibold hover:bg-accent-dark transition-colors shadow-sm"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-white rounded-md font-semibold hover:bg-accent-dark transition-none shadow-sm"
                 >
                   <PencilSimple size={18} />
                   Edit Profile
@@ -1155,7 +1155,7 @@ export default function SupplierDashboardPage() {
                   <button
                     onClick={handleDocumentUpload}
                     disabled={documentUploading || !hasSelectedDocs}
-                    className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md font-semibold transition-colors shadow-sm w-full sm:w-auto ${documentUploading || !hasSelectedDocs
+                    className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md font-semibold transition-none shadow-sm w-full sm:w-auto ${documentUploading || !hasSelectedDocs
                         ? 'bg-border-light text-muted cursor-not-allowed'
                         : 'bg-accent text-white hover:bg-accent-dark'
                       }`}
@@ -1232,7 +1232,7 @@ export default function SupplierDashboardPage() {
                   <button
                     onClick={handleCreateApiKey}
                     disabled={apiKeyProcessing || apiKeysLoading}
-                    className={`inline-flex items-center justify-center gap-2 px-4 py-2 bg-accent text-white rounded-md font-semibold transition-colors shadow-sm w-full sm:w-auto ${apiKeyProcessing ? 'bg-border-light text-muted cursor-not-allowed' : 'hover:bg-accent-dark'
+                    className={`inline-flex items-center justify-center gap-2 px-4 py-2 bg-accent text-white rounded-md font-semibold transition-none shadow-sm w-full sm:w-auto ${apiKeyProcessing ? 'bg-border-light text-muted cursor-not-allowed' : 'hover:bg-accent-dark'
                       }`}
                   >
                     {apiKeyProcessing ? 'Creating...' : 'Create API Key'}
@@ -1253,7 +1253,7 @@ export default function SupplierDashboardPage() {
                       />
                       <button
                         onClick={handleCopyApiKey}
-                        className="px-4 py-2 bg-white border border-border-light text-text rounded-md hover:border-accent hover:text-accent transition-colors flex items-center gap-2"
+                        className="px-4 py-2 bg-white border border-border-light text-text rounded-md hover:border-accent hover:text-accent transition-none flex items-center gap-2"
                       >
                         <ClipboardText size={16} /> Copy
                       </button>
@@ -1301,7 +1301,7 @@ export default function SupplierDashboardPage() {
                                   <button
                                     onClick={() => handleRevokeApiKey(key.id)}
                                     disabled={apiKeyProcessing}
-                                    className="px-3 py-1 bg-error/10 text-error border border-error/30 rounded text-sm font-semibold hover:bg-error/20 transition-colors"
+                                    className="px-3 py-1 bg-error/10 text-error border border-error/30 rounded text-sm font-semibold hover:bg-error/20 transition-none"
                                   >
                                     Revoke
                                   </button>

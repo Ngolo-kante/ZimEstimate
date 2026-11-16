@@ -77,10 +77,10 @@
   font-size: 0.78rem;
   cursor: pointer;
 }
-
-.examples button:hover {
-  border-color: #efb760;
-  color: white;
+@media (hover: hover) and (pointer: fine) {
+    .examples button:hover {
+      border-color: #efb760;
+      color: white;}
 }
 
 .result {
@@ -160,10 +160,10 @@
   color: #475569;
   background: #f8fafc;
 }
-
-.light .examples button:hover {
-  border-color: #efb760;
-  color: #0b1f3b;
+@media (hover: hover) and (pointer: fine) {
+    .light .examples button:hover {
+      border-color: #efb760;
+      color: #0b1f3b;}
 }
 
 .light .result {
@@ -173,4 +173,8 @@
 
 .light .message {
   color: #8a4b0f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
 }

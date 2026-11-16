@@ -123,7 +123,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
               type="button"
               onClick={exportEstimate}
               title="Export estimate"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-[var(--color-text-muted)] hover:bg-slate-50 hover:text-slate-700 transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-[var(--color-text-muted)] hover:bg-slate-50 hover:text-slate-700 transition-none"
             >
               <DownloadSimple size={16} />
             </button>
@@ -131,7 +131,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
               type="button"
               onClick={() => void shareEstimate()}
               title="Share estimate"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-[var(--color-text-muted)] hover:bg-slate-50 hover:text-slate-700 transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-[var(--color-text-muted)] hover:bg-slate-50 hover:text-slate-700 transition-none"
             >
               <ShareNetwork size={16} />
             </button>
@@ -150,7 +150,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
         </div>
         <div className="h-1.5 rounded-full bg-slate-200">
           <div
-            className="h-1.5 rounded-full transition-all duration-500"
+            className="h-1.5 rounded-full transition-none duration-500"
             style={{
               width: `${Math.min(100, Math.max(0, health.weightedScorePct))}%`,
               backgroundColor: health.weightedScorePct >= 70 ? '#3B82F6' : health.weightedScorePct >= 40 ? '#F59E0B' : '#EF4444',
@@ -176,7 +176,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
               className="flex w-full items-center justify-between px-3 py-2 text-left"
             >
               <span className="inline-flex items-center gap-1 text-sm text-slate-700">
-                <CaretDown className={`h-3 w-3 transition-transform ${row.expanded ? 'rotate-180' : ''}`} />
+                <CaretDown className={`h-3 w-3 transition-none ${row.expanded ? 'rotate-180' : ''}`} />
                 {row.label}
               </span>
               <span className="text-sm font-semibold wiz-text-primary">{formatAmount(row.total, currency, exchangeRate)}</span>

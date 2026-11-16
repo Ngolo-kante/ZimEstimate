@@ -322,7 +322,9 @@ export default function SupplierBillingPage() {
             text-decoration: none;
             margin-bottom: 12px;
           }
-          .back-link:hover { color: #1e40af; }
+@media (hover: hover) and (pointer: fine) {
+    .back-link:hover {     color: #1e40af; }
+}
           .header-label {
             font-size: 12px;
             font-weight: 600;
@@ -407,7 +409,9 @@ export default function SupplierBillingPage() {
             text-decoration: none;
             margin-left: auto;
           }
-          .upgrade-hint:hover { text-decoration: underline; }
+@media (hover: hover) and (pointer: fine) {
+    .upgrade-hint:hover {     text-decoration: underline; }
+}
           .no-payments {
             text-align: center;
             padding: 48px 24px;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Wall, CheckCircle, Info, Truck, Question, HardHat, Package } from '@phosphor-icons/react';
 import { BRICK_INFO, CEMENT_INFO, type BrickType, type CementType } from '@/lib/vision/types';
 import type { FinishLevel } from '@/lib/calculations';
@@ -127,7 +127,7 @@ export default function MaterialsSection() {
           {(Object.entries(ROOF_SHAPES) as [RoofShape, (typeof ROOF_SHAPES)[RoofShape]][]).map(([id, option]) => (
             <button key={id} type="button" onClick={() => updateProjectDetails({ roofShape: id })}
               aria-pressed={(projectDetails.roofShape || DEFAULT_ROOF_SHAPE) === id}
-              className={`flex items-start gap-3 rounded-xl border p-3 text-left transition ${((projectDetails.roofShape || DEFAULT_ROOF_SHAPE) === id) ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-slate-200 hover:border-blue-300'}`}>
+              className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-none ${((projectDetails.roofShape || DEFAULT_ROOF_SHAPE) === id) ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-slate-200 hover:border-blue-300'}`}>
               <RoofShapeIcon shape={id} className="mt-0.5 h-6 w-12 shrink-0 text-slate-700" />
               <span className="min-w-0">
                 <span className="block text-sm font-semibold text-slate-900">{option.label}</span>
@@ -147,7 +147,7 @@ export default function MaterialsSection() {
           {(Object.entries(ROOF_COVERINGS) as [RoofCovering, (typeof ROOF_COVERINGS)[RoofCovering]][]).map(([id, option]) => (
             <button key={id} type="button" onClick={() => updateProjectDetails({ roofCovering: id })}
               aria-pressed={(projectDetails.roofCovering || 'ibr_05') === id}
-              className={`flex items-start gap-3 rounded-xl border p-3 text-left transition ${((projectDetails.roofCovering || 'ibr_05') === id) ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-slate-200 hover:border-blue-300'}`}>
+              className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-none ${((projectDetails.roofCovering || 'ibr_05') === id) ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-slate-200 hover:border-blue-300'}`}>
               <RoofProfileIcon covering={id} className="mt-0.5 h-6 w-12 shrink-0 text-slate-700" />
               <span className="min-w-0">
               <span className="block text-sm font-semibold text-slate-900">{option.label}</span>
@@ -170,12 +170,10 @@ export default function MaterialsSection() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <motion.button
+          <button
             type="button"
-            whileHover={{ scale: 1.01, y: -1 }}
-            whileTap={{ scale: 0.98 }}
             onClick={() => setLaborType('materials_only')}
-            className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-all duration-200 ${
+            className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-none duration-200 ${
               laborType === 'materials_only'
                 ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                 : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
@@ -196,14 +194,12 @@ export default function MaterialsSection() {
             <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
               laborType === 'materials_only' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 wiz-text-muted'
             }`}>Lower estimate</span>
-          </motion.button>
+          </button>
 
-          <motion.button
+          <button
             type="button"
-            whileHover={{ scale: 1.01, y: -1 }}
-            whileTap={{ scale: 0.98 }}
             onClick={() => setLaborType('materials_labor')}
-            className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-all duration-200 ${
+            className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-none duration-200 ${
               laborType === 'materials_labor'
                 ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                 : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
@@ -224,7 +220,7 @@ export default function MaterialsSection() {
             <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
               laborType === 'materials_labor' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 wiz-text-muted'
             }`}>Full cost picture</span>
-          </motion.button>
+          </button>
         </div>
       </div>
 
@@ -241,13 +237,11 @@ export default function MaterialsSection() {
           {BRICK_KNOWLEDGE_OPTIONS.map((opt) => {
             const isSelected = brickKnowledge === opt.value;
             return (
-              <motion.button
+              <button
                 key={opt.value}
                 type="button"
-                whileHover={{ scale: 1.01, y: -1 }}
-                whileTap={{ scale: 0.98 }}
                 onClick={() => handleBrickKnowledge(opt.value)}
-                className={`group relative flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-all duration-200 ${
+                className={`group relative flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-none duration-200 ${
                   isSelected
                     ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                     : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
@@ -256,7 +250,7 @@ export default function MaterialsSection() {
                 {isSelected && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-blue-500" />}
                 <div className={`text-sm font-semibold ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>{opt.label}</div>
                 <p className={`text-xs ${isSelected ? 'text-slate-600' : 'wiz-text-muted'} leading-relaxed`}>{opt.description}</p>
-              </motion.button>
+              </button>
             );
           })}
         </div>
@@ -264,25 +258,19 @@ export default function MaterialsSection() {
         {/* Not sure info */}
         <AnimatePresence>
           {brickKnowledge === 'not_sure' && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4 }}
+            <div
               className="wiz-alert wiz-alert--info"
             >
               <Info size={14} weight="fill" className="wiz-alert__icon" />
               <p>Your estimate will be based on <strong>Red Common Bricks</strong> — the most widely used brick type in Zimbabwe. You can change this later.</p>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
 
         {/* Brick type selector — shown for single or mix */}
         <AnimatePresence>
           {showBrickSelector && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4 }}
+            <div
               className="space-y-3"
             >
               <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
@@ -292,11 +280,9 @@ export default function MaterialsSection() {
                 {BRICK_OPTIONS.map((opt) => {
                   const isSelected = activeBrick.includes(opt.value);
                   return (
-                    <motion.button
+                    <button
                       key={opt.value}
                       type="button"
-                      whileHover={{ scale: 1.01, y: -1 }}
-                      whileTap={{ scale: 0.98 }}
                       onClick={() => {
                         if (brickKnowledge === 'single') {
                           // Single select — replace
@@ -305,7 +291,7 @@ export default function MaterialsSection() {
                           toggleBrick(opt.value);
                         }
                       }}
-                      className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-4 text-left transition-all duration-200 ${
+                      className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-4 text-left transition-none duration-200 ${
                         isSelected
                           ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                           : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
@@ -319,11 +305,11 @@ export default function MaterialsSection() {
                         <div className={`text-sm font-semibold ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>{opt.label}</div>
                         <div className={`mt-0.5 text-xs ${isSelected ? 'text-slate-600' : 'wiz-text-muted'} leading-relaxed`}>{opt.hint}</div>
                       </div>
-                    </motion.button>
+                    </button>
                   );
                 })}
               </div>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>
@@ -341,13 +327,11 @@ export default function MaterialsSection() {
           {CEMENT_KNOWLEDGE_OPTIONS.map((opt) => {
             const isSelected = cementKnowledge === opt.value;
             return (
-              <motion.button
+              <button
                 key={opt.value}
                 type="button"
-                whileHover={{ scale: 1.01, y: -1 }}
-                whileTap={{ scale: 0.98 }}
                 onClick={() => handleCementKnowledge(opt.value)}
-                className={`group relative flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-all duration-200 ${
+                className={`group relative flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-none duration-200 ${
                   isSelected
                     ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                     : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
@@ -356,7 +340,7 @@ export default function MaterialsSection() {
                 {isSelected && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-blue-500" />}
                 <div className={`text-sm font-semibold ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>{opt.label}</div>
                 <p className={`text-xs ${isSelected ? 'text-slate-600' : 'wiz-text-muted'} leading-relaxed`}>{opt.description}</p>
-              </motion.button>
+              </button>
             );
           })}
         </div>
@@ -364,25 +348,19 @@ export default function MaterialsSection() {
         {/* Not sure info */}
         <AnimatePresence>
           {cementKnowledge === 'not_sure' && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4 }}
+            <div
               className="wiz-alert wiz-alert--info"
             >
               <Info size={14} weight="fill" className="wiz-alert__icon" />
               <p>Your estimate will be based on <strong>Standard Cement 32.5N</strong> — the most common grade for general building in Zimbabwe.</p>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
 
         {/* Cement type selector */}
         <AnimatePresence>
           {showCementSelector && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4 }}
+            <div
               className="space-y-3"
             >
               <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
@@ -392,11 +370,9 @@ export default function MaterialsSection() {
                 {CEMENT_OPTIONS.map((opt) => {
                   const isSelected = activeCement.includes(opt.value);
                   return (
-                    <motion.button
+                    <button
                       key={opt.value}
                       type="button"
-                      whileHover={{ scale: 1.01, y: -1 }}
-                      whileTap={{ scale: 0.98 }}
                       onClick={() => {
                         if (cementKnowledge === 'single') {
                           updateProjectDetails({ cementTypes: [opt.value] });
@@ -404,7 +380,7 @@ export default function MaterialsSection() {
                           toggleCement(opt.value);
                         }
                       }}
-                      className={`group relative flex items-start gap-4 rounded-2xl border p-5 text-left transition-all duration-200 ${
+                      className={`group relative flex items-start gap-4 rounded-2xl border p-5 text-left transition-none duration-200 ${
                         isSelected
                           ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                           : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
@@ -425,11 +401,11 @@ export default function MaterialsSection() {
                         </div>
                         <p className={`mt-1 text-xs ${isSelected ? 'text-slate-600' : 'wiz-text-muted'}`}>{opt.hint}</p>
                       </div>
-                    </motion.button>
+                    </button>
                   );
                 })}
               </div>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>
@@ -444,12 +420,10 @@ export default function MaterialsSection() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <motion.button
+          <button
             type="button"
-            whileHover={{ scale: 1.01, y: -1 }}
-            whileTap={{ scale: 0.98 }}
             onClick={() => setIncludeTransport(true)}
-            className={`group relative flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-all duration-200 ${
+            className={`group relative flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-none duration-200 ${
               includeTransport === true
                 ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                 : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
@@ -463,14 +437,12 @@ export default function MaterialsSection() {
             <p className={`text-xs ${includeTransport === true ? 'text-slate-600' : 'wiz-text-muted'}`}>
               Add a percentage to material costs for delivery.
             </p>
-          </motion.button>
+          </button>
 
-          <motion.button
+          <button
             type="button"
-            whileHover={{ scale: 1.01, y: -1 }}
-            whileTap={{ scale: 0.98 }}
             onClick={() => setIncludeTransport(false)}
-            className={`group relative flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-all duration-200 ${
+            className={`group relative flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-none duration-200 ${
               includeTransport === false
                 ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                 : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
@@ -484,16 +456,13 @@ export default function MaterialsSection() {
             <p className={`text-xs ${includeTransport === false ? 'text-slate-600' : 'wiz-text-muted'}`}>
               I&apos;ll arrange my own transport or add this later.
             </p>
-          </motion.button>
+          </button>
         </div>
 
         {/* Transport percentage input */}
         <AnimatePresence>
           {includeTransport === true && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4 }}
+            <div
               className="space-y-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-5"
             >
               <div className="flex items-center justify-between flex-wrap gap-3">
@@ -512,7 +481,7 @@ export default function MaterialsSection() {
                     max="50"
                     value={transportPercentage}
                     onChange={(e) => setTransportPercentage(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-4 pr-8 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-4 pr-8 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[var(--color-text-muted)]">%</span>
                 </div>
@@ -522,7 +491,7 @@ export default function MaterialsSection() {
                 <Info size={14} weight="fill" className="wiz-alert__icon" />
                 <p>This markup will be applied across all material line items in your BOQ. You can adjust individual items in the review step.</p>
               </div>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>
@@ -545,13 +514,11 @@ export default function MaterialsSection() {
           {FINISH_LEVEL_CHOICES.map((opt) => {
             const isSelected = projectDetails.finishLevel === opt.value;
             return (
-              <motion.button
+              <button
                 key={opt.value}
                 type="button"
-                whileHover={{ scale: 1.01, y: -1 }}
-                whileTap={{ scale: 0.98 }}
                 onClick={() => updateProjectDetails({ finishLevel: opt.value })}
-                className={`flex flex-col gap-1 rounded-2xl border p-4 text-left transition-all duration-200 ${
+                className={`flex flex-col gap-1 rounded-2xl border p-4 text-left transition-none duration-200 ${
                   isSelected
                     ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                     : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
@@ -559,7 +526,7 @@ export default function MaterialsSection() {
               >
                 <span className="text-sm font-bold wiz-text-primary">{opt.label}</span>
                 <span className="text-xs text-[var(--color-text-muted)]">{opt.description}</span>
-              </motion.button>
+              </button>
             );
           })}
         </div>

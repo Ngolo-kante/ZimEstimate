@@ -5,7 +5,7 @@ import { formatUsd, formatQuantity } from '@/lib/format';
 import '@/styles/budget-explorer.css';
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import CostDonut, { SERIES_COLORS } from '@/components/ui/CostDonut';
@@ -375,7 +375,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
       <div className="w-full max-w-5xl mx-auto animate-fade-in pb-24">
         <button
           onClick={() => setBoqItems(null)}
-          className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors mb-6"
+          className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-none mb-6"
         >
           <ArrowLeft size={16} /> Back to Budget Explorer
         </button>
@@ -464,7 +464,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
     <div className="budget-explorer w-full min-w-0 max-w-4xl mx-auto pb-24">
       {/* Back */}
       {onBack && (
-        <button onClick={onBack} className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors mb-6">
+        <button onClick={onBack} className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-none mb-6">
           <ArrowLeft size={16} /> {backLabel}
         </button>
       )}
@@ -560,7 +560,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
               <button
                 key={opt.id}
                 onClick={() => setPurpose(opt.id)}
-                className={`choice-btn text-left p-2.5 rounded-lg border text-sm transition-colors ${
+                className={`choice-btn text-left p-2.5 rounded-lg border text-sm transition-none ${
                   purpose === opt.id ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-muted)] text-blue-800' : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-blue-300'
                 }`}
               >
@@ -609,7 +609,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
         )}
         <div className="h-3 w-full bg-[var(--color-border-light)] rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-500 ease-out ${
+            className={`h-full rounded-full transition-none duration-500 ease-out ${
               budgetPct > 100 ? 'bg-red-500' : budgetPct > 90 ? 'bg-amber-500' : 'bg-gradient-to-r from-[var(--color-accent)] to-emerald-400'
             }`}
             style={{ width: `${Math.min(budgetPct, 100)}%` }}
@@ -673,7 +673,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
           return (
             <div
               key={card.id}
-              className={`explorer-card rounded-2xl border transition-all duration-200 overflow-hidden ${
+              className={`explorer-card rounded-2xl border transition-none duration-200 overflow-hidden ${
                 card.enabled ? 'border-blue-200 bg-[var(--color-surface)] shadow-sm' : 'border-[var(--color-border)] bg-slate-50/50 opacity-60'
               }`}
             >
@@ -681,9 +681,9 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
               <div className="flex items-center gap-3 p-4">
                 <button
                   onClick={() => toggleCard(card.id)}
-                  className={`component-toggle relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${card.enabled ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border-dark)]'}`}
+                  className={`component-toggle relative w-11 h-6 rounded-full transition-none flex-shrink-0 ${card.enabled ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border-dark)]'}`}
                 >
-                  <div className={`component-toggle-knob absolute top-0.5 w-5 h-5 rounded-full bg-[var(--color-surface)] shadow transition-transform ${card.enabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+                  <div className={`component-toggle-knob absolute top-0.5 w-5 h-5 rounded-full bg-[var(--color-surface)] shadow transition-none ${card.enabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
                 </button>
                 <div className={`flex-shrink-0 ${card.enabled ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}`}>{card.icon}</div>
                 <div className="flex-1 min-w-0">
@@ -696,7 +696,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                   <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 truncate">{card.description}</p>
                 </div>
                 {hasOptions && card.enabled && (
-                  <button onClick={() => toggleExpand(card.id)} className="p-1.5 rounded-lg hover:bg-[var(--color-border-light)] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors flex-shrink-0">
+                  <button onClick={() => toggleExpand(card.id)} className="p-1.5 rounded-lg hover:bg-[var(--color-border-light)] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-none flex-shrink-0">
                     {isExpanded ? <CaretUp size={16} /> : <CaretDown size={16} />}
                   </button>
                 )}
@@ -705,11 +705,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
               {/* Expanded options */}
               <AnimatePresence>
                 {isExpanded && card.enabled && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
+                  <div
                     className="overflow-hidden"
                   >
                     <div className="px-4 pb-4 pt-1 border-t border-[var(--color-border-light)]">
@@ -727,7 +723,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                               <button
                                 key={opt.id}
                                 onClick={() => { setUserPickedComponents(true); setPumpType(opt.id); }}
-                                className={`choice-btn flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
+                                className={`choice-btn flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-none ${
                                   pumpType === opt.id ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
                                 }`}
                               >
@@ -758,7 +754,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                               <button
                                 key={opt.id}
                                 onClick={() => { setUserPickedComponents(true); setCasingGrade(opt.id); }}
-                                className={`choice-btn flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-colors ${
+                                className={`choice-btn flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-none ${
                                   casingGrade === opt.id ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
                                 }`}
                               >
@@ -786,7 +782,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                                 <button
                                   key={opt.id}
                                   onClick={() => { setUserPickedComponents(true); setTankSize(opt.id); }}
-                                  className={`choice-btn flex flex-col items-center p-3 rounded-xl border text-sm transition-colors ${
+                                  className={`choice-btn flex flex-col items-center p-3 rounded-xl border text-sm transition-none ${
                                     tankSize === opt.id ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
                                   }`}
                                 >
@@ -810,7 +806,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                         </div>
                       )}
                     </div>
-                  </motion.div>
+                  </div>
                 )}
               </AnimatePresence>
             </div>

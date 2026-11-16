@@ -154,7 +154,7 @@ export default function AddProductPage() {
         justifyContent: 'center',
         backgroundColor: '#f8fafc',
       }}>
-        <Spinner size={32} className="animate-spin" style={{ color: '#3b82f6' }} />
+        <Spinner size={32} className="animate-spin motion-reduce:animate-none" style={{ color: '#3b82f6' }} />
       </div>
     );
   }
@@ -497,7 +497,7 @@ export default function AddProductPage() {
             >
               {saving ? (
                 <>
-                  <Spinner size={20} className="animate-spin" />
+                  <Spinner size={20} className="animate-spin motion-reduce:animate-none" />
                   Adding...
                 </>
               ) : (

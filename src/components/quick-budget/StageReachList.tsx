@@ -189,7 +189,9 @@ export default function StageReachList({ rows, lines, onStatusChange }: {
           display: grid; grid-template-columns: 22px minmax(0, 1fr) auto 16px; align-items: center; gap: 12px;
           width: 100%; padding: 14px 16px; border: none; background: none; text-align: left; cursor: pointer; color: inherit; font: inherit;
         }
-        .head:hover { background: #f8fafc; }
+@media (hover: hover) and (pointer: fine) {
+    .head:hover {     background: #f8fafc; }
+}
         .head:focus-visible { outline: 2px solid #2e6cf6; outline-offset: -2px; }
         .mark { display: inline-flex; }
         .covered .mark { color: #16a34a; }
@@ -221,7 +223,7 @@ export default function StageReachList({ rows, lines, onStatusChange }: {
         .status button.on { border-color: #2e6cf6; background: #eff6ff; color: #1e3a8a; }
         .status button:disabled { opacity: 0.45; cursor: not-allowed; }
         .status button:focus-visible { outline: 2px solid #2e6cf6; outline-offset: 2px; }
-        :global(.caret) { color: #94a3b8; transition: transform 0.15s ease; }
+        :global(.caret) { color: #94a3b8; transition: none; }
         :global(.caret.up) { transform: rotate(180deg); }
         .track { height: 4px; margin: -4px 16px 12px 50px; border-radius: 999px; background: #f1f5f9; overflow: hidden; }
         .track span { display: block; height: 100%; border-radius: inherit; background: #f59e0b; }

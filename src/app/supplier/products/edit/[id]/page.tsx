@@ -173,7 +173,7 @@ export default function EditProductPage() {
         justifyContent: 'center',
         backgroundColor: '#f8fafc',
       }}>
-        <Spinner size={32} className="animate-spin" style={{ color: '#3b82f6' }} />
+        <Spinner size={32} className="animate-spin motion-reduce:animate-none" style={{ color: '#3b82f6' }} />
       </div>
     );
   }
@@ -256,7 +256,7 @@ export default function EditProductPage() {
                   border: 'none',
                   cursor: 'pointer',
                   position: 'relative',
-                  transition: 'background-color 0.2s',
+                  transition: 'none',
                 }}
               >
                 <span style={{
@@ -268,7 +268,7 @@ export default function EditProductPage() {
                   borderRadius: '50%',
                   backgroundColor: 'white',
                   boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                  transition: 'left 0.2s',
+                  transition: 'none',
                 }} />
               </button>
             </div>
@@ -476,7 +476,7 @@ export default function EditProductPage() {
               >
                 {saving ? (
                   <>
-                    <Spinner size={20} className="animate-spin" />
+                    <Spinner size={20} className="animate-spin motion-reduce:animate-none" />
                     Saving...
                   </>
                 ) : (
@@ -506,7 +506,7 @@ export default function EditProductPage() {
                 }}
               >
                 {deleting ? (
-                  <Spinner size={20} className="animate-spin" />
+                  <Spinner size={20} className="animate-spin motion-reduce:animate-none" />
                 ) : (
                   <Trash size={20} />
                 )}

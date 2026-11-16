@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
 
 export type LoadingVariant = 'table' | 'cards' | 'page';
 
@@ -26,10 +25,8 @@ export default function LoadingState({
   label = 'Loading content, please wait...',
 }: LoadingStateProps) {
   const renderSkeletonBox = (boxClassName: string, key?: React.Key) => (
-    <motion.div
+    <div
       key={key}
-      animate={{ opacity: [0.4, 0.85, 0.4] }}
-      transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
       className={`rounded-lg bg-[var(--color-border-light)] motion-reduce:animate-none ${boxClassName}`}
     />
   );

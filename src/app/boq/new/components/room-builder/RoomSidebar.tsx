@@ -143,7 +143,7 @@ export default function RoomSidebar({
                                     fontWeight: 600,
                                     color: showEnSuitePicker ? '#0891b2' : '#2563eb',
                                     cursor: 'pointer',
-                                    transition: 'all 0.2s',
+                                    transition: 'none',
                                 }}
                             >
                                 <Plus size={14} weight="bold" />
@@ -178,7 +178,7 @@ export default function RoomSidebar({
                                                 color: '#1f2937',
                                                 cursor: 'pointer',
                                                 textAlign: 'left',
-                                                transition: 'all 0.2s',
+                                                transition: 'none',
                                             }}
                                         >
                                             {type.icon === 'toilet' && <Toilet size={18} color={type.color} weight="fill" />}
@@ -250,7 +250,7 @@ export default function RoomSidebar({
                                         border: `1px solid ${(selectedRoom.materialId || 'brick-common') === type.id ? '#3b82f6' : '#e5e7eb'}`,
                                         borderRadius: '8px',
                                         cursor: 'pointer',
-                                        transition: 'all 0.2s',
+                                        transition: 'none',
                                     }}
                                 >
                                     <div style={{

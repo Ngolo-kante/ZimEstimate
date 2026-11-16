@@ -105,7 +105,7 @@ export default function StageSavingsToggle(props: StageSavingsToggleProps) {
                 .progress-fill {
                     height: 100%;
                     background: var(--color-accent);
-                    transition: width 0.5s ease;
+                    transition: none;
                 }
 
                 .card-stats {

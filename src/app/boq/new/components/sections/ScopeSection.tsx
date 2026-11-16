@@ -29,7 +29,7 @@ export default function ScopeSection() {
       <div className="flex items-center gap-3">
         <div className="h-2 flex-1 rounded-full bg-slate-100 overflow-hidden">
           <div
-            className="h-full rounded-full transition-all duration-500"
+            className="h-full rounded-full transition-none duration-500"
             style={{ width: `${(selectedCount / totalStages) * 100}%`, backgroundColor: 'var(--wiz-jade)' }}
           />
         </div>
@@ -45,7 +45,7 @@ export default function ScopeSection() {
           return (
             <div
               key={stage.id}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-none ${
                 isIncluded
                   ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                   : 'bg-slate-100 text-[var(--color-text-muted)] border border-slate-200 line-through'

@@ -2,7 +2,7 @@
 
 import { useMemo, useEffect, useState } from 'react';
 import { useIsClient } from '@/hooks/useIsClient';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import {
@@ -289,7 +289,7 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
   if (boqItems) {
     return (
       <div className="w-full max-w-5xl mx-auto animate-fade-in pb-24">
-        <button onClick={goBack} className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors mb-6">
+        <button onClick={goBack} className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-none mb-6">
           ← Back to wizard
         </button>
         <QuickBOQTable
@@ -316,7 +316,7 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
           <span className="text-blue-600">{progressPct}%</span>
         </div>
         <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full transition-all duration-500 ease-out" style={{ width: `${progressPct}%` }} />
+          <div className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full transition-none duration-500 ease-out" style={{ width: `${progressPct}%` }} />
         </div>
       </div>
 
@@ -328,12 +328,8 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
       </div>
 
       <AnimatePresence mode="wait">
-        <motion.div
+        <div
           key={currentStep}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
           className="w-full"
         >
 
@@ -346,11 +342,11 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
                 key={intent}
                 type="button"
                 onClick={() => updateAnswers({ intent })}
-                className={`group relative flex flex-col items-start p-4 rounded-xl border transition-all duration-200 text-left ${active ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50'}`}
+                className={`group relative flex flex-col items-start p-4 rounded-xl border transition-none duration-200 text-left ${active ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50'}`}
               >
                 <div className="flex w-full items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                     <Lightning size={20} className={active ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500 transition-colors'} />
+                     <Lightning size={20} className={active ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500 transition-none'} />
                      <span className={`text-sm font-semibold ${active ? 'text-blue-900' : 'text-slate-800'}`}>
                        {SOLAR_INTENT_LABELS[intent]}
                      </span>
@@ -358,7 +354,7 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
                   {active ? (
                     <CheckCircle weight="fill" className="text-blue-600 flex-shrink-0" size={20} />
                   ) : (
-                    <div className="w-5 h-5 rounded-full border border-slate-300 flex-shrink-0 group-hover:border-blue-300 transition-colors" />
+                    <div className="w-5 h-5 rounded-full border border-slate-300 flex-shrink-0 group-hover:border-blue-300 transition-none" />
                   )}
                 </div>
               </button>
@@ -385,7 +381,7 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
               <button
                 key={item.id}
                 type="button"
-                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full border text-sm transition-colors ${answers.propertyType === item.id ? 'border-blue-600 bg-blue-50 text-blue-800 font-medium' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'}`}
+                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full border text-sm transition-none ${answers.propertyType === item.id ? 'border-blue-600 bg-blue-50 text-blue-800 font-medium' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'}`}
                 onClick={() => updateAnswers({ propertyType: item.id as PropertyType })}
               >
                 <HouseSimple size={16} />
@@ -405,7 +401,7 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
                 key={hours}
                 type="button"
                 onClick={() => updateAnswers({ backupHours: hours })}
-                className={`flex flex-col items-center justify-center p-6 rounded-xl border transition-all duration-200 ${active ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 shadow-sm text-blue-700' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50 text-slate-600'}`}
+                className={`flex flex-col items-center justify-center p-6 rounded-xl border transition-none duration-200 ${active ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 shadow-sm text-blue-700' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50 text-slate-600'}`}
               >
                 <SunDim size={28} className="mb-2" />
                 <span className="font-semibold">{hours} hrs</span>
@@ -421,7 +417,7 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
           {SOLAR_APPLIANCES.map((appliance) => {
             const selection = answers.appliances[appliance.id];
             return (
-              <div key={appliance.id} className={`p-4 rounded-xl border transition-colors ${selection.include ? 'border-blue-500 bg-blue-50/20 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
+              <div key={appliance.id} className={`p-4 rounded-xl border transition-none ${selection.include ? 'border-blue-500 bg-blue-50/20 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -508,7 +504,7 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
 
       {currentStep === 'simultaneous' && (
         <div className="grid gap-3 p-6 rounded-2xl bg-white border border-slate-200/60 shadow-sm">
-          <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+          <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-none">
             <input
               type="checkbox"
               className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
@@ -522,7 +518,7 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
             />
             <span className="text-slate-700 font-medium">Kettle and microwave run together</span>
           </label>
-          <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+          <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-none">
             <input
               type="checkbox"
               className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
@@ -536,7 +532,7 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
             />
             <span className="text-slate-700 font-medium">Pump runs with household loads</span>
           </label>
-          <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+          <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-none">
             <input
               type="checkbox"
               className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
@@ -840,18 +836,14 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
         </div>
       )}
 
-        </motion.div>
+        </div>
       </AnimatePresence>
 
       {/* ── Brand Picker ─────────────────────────────────────────────────── */}
       <AnimatePresence mode="wait">
         {currentStep === 'brands' && (
-          <motion.div
+          <div
             key="brands"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
             className="form-grid"
           >
             <div>
@@ -903,17 +895,13 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
                 ))}
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* ── Optional Costs ───────────────────────────────────────────────── */}
         {currentStep === 'optional_costs' && (
-          <motion.div
+          <div
             key="optional-costs"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
             className="grid gap-2"
           >
             {[
@@ -921,12 +909,12 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
               { id: 'install',     label: 'Installation labour (25% of hardware)', val: includeInstall, set: setIncludeInstall },
               { id: 'contingency', label: 'Contingency (5%)', val: includeContingency, set: setIncludeContingency },
             ].map((opt) => (
-              <label key={opt.id} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50">
+              <label key={opt.id} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-none hover:bg-slate-50">
                 <input type="checkbox" checked={opt.val} onChange={(e) => opt.set(e.target.checked)} className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0" />
                 <span className="font-medium text-slate-800">{opt.label}</span>
               </label>
             ))}
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
 

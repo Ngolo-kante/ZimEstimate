@@ -185,11 +185,15 @@ export default function SupplierNotificationsPage() {
         .filter-btn.active { background: white; color: #0f172a; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
         .count { background: #2563eb; color: white; font-size: 0.65rem; border-radius: 20px; padding: 1px 6px; }
         .btn-mark-all { display: flex; align-items: center; gap: 5px; background: none; border: 1px solid #e2e8f0; border-radius: 7px; padding: 6px 12px; font-size: 0.8rem; color: #64748b; cursor: pointer; }
-        .btn-mark-all:hover { background: #f8fafc; }
+@media (hover: hover) and (pointer: fine) {
+    .btn-mark-all:hover {     background: #f8fafc; }
+}
         .notif-list { display: flex; flex-direction: column; gap: 8px; }
-        .notif-card { display: flex; align-items: flex-start; gap: 14px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; cursor: pointer; transition: border-color 0.15s; position: relative; }
+        .notif-card { display: flex; align-items: flex-start; gap: 14px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; cursor: pointer; transition: none; position: relative; }
         .notif-card.unread { border-left: 3px solid #2563eb; }
-        .notif-card:hover { border-color: #93c5fd; }
+@media (hover: hover) and (pointer: fine) {
+    .notif-card:hover {     border-color: #93c5fd; }
+}
         .notif-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .notif-body { flex: 1; min-width: 0; }
         .notif-title { font-size: 0.875rem; font-weight: 700; color: #0f172a; margin-bottom: 3px; }

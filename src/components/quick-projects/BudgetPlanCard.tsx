@@ -137,7 +137,7 @@ export default function BudgetPlanCard({
         }
         .empty { margin: 0; font-size: 0.875rem; color: var(--color-text-secondary); }
         .bar { height: 8px; border-radius: 999px; background: var(--color-background); overflow: hidden; }
-        .fill { height: 100%; background: var(--color-accent); transition: width 0.3s ease; }
+        .fill { height: 100%; background: var(--color-accent); transition: none; }
         .progress-line { margin: 10px 0 0; font-size: 0.9rem; color: var(--color-text-secondary); }
         .progress-line strong { color: var(--color-text); }
         .status {

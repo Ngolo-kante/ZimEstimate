@@ -366,11 +366,12 @@ export default function SupplierDetailPage() {
           color: inherit;
           text-decoration: none;
         }
-
-        .meta-row a:hover {
-          color: var(--color-accent);
-          text-decoration: underline;
+      @media (hover: hover) and (pointer: fine) {
+          .meta-row a:hover {
+              color: var(--color-accent);
+              text-decoration: underline;
         }
+      }
 
         .rating {
           display: inline-flex;
@@ -461,13 +462,14 @@ export default function SupplierDetailPage() {
           font-size: 0.85rem;
           font-weight: 600;
           text-decoration: none;
-          transition: filter 0.15s ease, border-color 0.15s ease;
+          transition: none;
         }
-
-        .contact-btn:hover {
-          filter: brightness(0.97);
-          border-color: var(--color-accent);
+      @media (hover: hover) and (pointer: fine) {
+          .contact-btn:hover {
+              filter: brightness(0.97);
+              border-color: var(--color-accent);
         }
+      }
 
         .contact-btn.primary {
           background: var(--color-accent);

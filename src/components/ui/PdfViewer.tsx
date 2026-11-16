@@ -179,7 +179,7 @@ export default function PdfViewer({ source, title, height = '70vh' }: PdfViewerP
   }
 
   const controlClass =
-    'inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] transition hover:border-[var(--color-accent)] disabled:opacity-40 disabled:hover:border-[var(--color-border)]';
+    'inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] transition-none hover:border-[var(--color-accent)] disabled:opacity-40 disabled:hover:border-[var(--color-border)]';
 
   return (
     <div className="flex w-full flex-col gap-2" aria-label={title} role="document">

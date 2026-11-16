@@ -203,9 +203,13 @@ export default function SupplierDocumentsPage() {
         .status.pending { color: #b45309; background: #fffbeb; }
         .status.rejected { color: #b91c1c; background: #fef2f2; }
         .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; border: 1px solid #e2e8f0; color: #64748b; text-decoration: none; }
-        .icon-btn:hover { background: #f8fafc; color: #2563eb; }
+@media (hover: hover) and (pointer: fine) {
+    .icon-btn:hover {     background: #f8fafc; color: #2563eb; }
+}
         .upload-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; color: #334155; cursor: pointer; }
-        .upload-btn:hover:not(:disabled) { background: #f8fafc; border-color: #93c5fd; color: #2563eb; }
+@media (hover: hover) and (pointer: fine) {
+    .upload-btn:hover:not(:disabled) {     background: #f8fafc; border-color: #93c5fd; color: #2563eb; }
+}
         .upload-btn:disabled { opacity: 0.6; cursor: default; }
         .empty-state { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 80px 40px; text-align: center; color: #94a3b8; }
         .empty-state h3 { font-size: 1rem; font-weight: 700; color: #1e293b; margin: 16px 0 8px; }

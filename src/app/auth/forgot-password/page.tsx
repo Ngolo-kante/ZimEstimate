@@ -217,9 +217,10 @@ export default function ForgotPasswordPage() {
                     text-decoration: none;
                     font-weight: 500;
                 }
-
-                .auth-footer :global(a:hover) {
-                    text-decoration: underline;
+                @media (hover: hover) and (pointer: fine) {
+                    .auth-footer :global(a:hover) {
+                        text-decoration: underline;
+                }
                 }
             `}</style>
         </>

@@ -130,13 +130,15 @@ export default function DashboardShell({
           color: var(--color-text-secondary);
           font-size: 0.9rem;
           font-weight: 500;
-          transition: background-color 0.2s ease, color 0.2s ease;
+          transition: none;
         }
         @media (hover: hover) and (pointer: fine) {
-          .nav-item:hover {
-            background: rgba(78, 154, 247, 0.08);
-            color: var(--color-primary);
+        @media (hover: hover) and (pointer: fine) {
+            .nav-item:hover {
+                background: rgba(78, 154, 247, 0.08);
+                color: var(--color-primary);
           }
+        }
         }
 
         .nav-item.active {
@@ -254,7 +256,7 @@ export default function DashboardShell({
             left: 0;
             top: 0;
             transform: translateX(-100%);
-            transition: transform 0.25s ease;
+            transition: none;
             z-index: 200;
             width: 260px;
           }

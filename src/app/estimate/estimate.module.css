@@ -166,13 +166,12 @@
   border: 1px solid #d9dde3;
   border-radius: 10px;
   text-decoration: none;
-  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  transition: none;
 }
-
-.tile:hover {
-  border-color: var(--tone);
-  box-shadow: 0 4px 14px rgba(11, 31, 59, 0.08);
-  transform: translateY(-1px);
+@media (hover: hover) and (pointer: fine) {
+    .tile:hover {
+      border-color: var(--tone);
+      box-shadow: 0 4px 14px rgba(11, 31, 59, 0.08);}
 }
 
 .tile:focus-visible {
@@ -213,12 +212,11 @@
 .tileArrow {
   flex: 0 0 auto;
   color: #9aa6b4;
-  transition: color 150ms ease, transform 150ms ease;
+  transition: none;
 }
-
-.tile:hover .tileArrow {
-  color: var(--tone);
-  transform: translateX(2px);
+@media (hover: hover) and (pointer: fine) {
+    .tile:hover .tileArrow {
+      color: var(--tone);}
 }
 
 @media (max-width: 900px) {
@@ -287,7 +285,8 @@
   .tileArrow {
     transition: none;
   }
-  .tile:hover {
-    transform: none;
+@media (hover: hover) and (pointer: fine) {
+    .tile:hover {
   }
+}
 }

@@ -66,7 +66,7 @@ export default function SavingOverlay({
                     align-items: center;
                     justify-content: center;
                     z-index: 9999;
-                    animation: fadeIn 0.3s ease;
+                    animation: fadeIn 200ms var(--ease-out);
                 }
 
                 @keyframes fadeIn {
@@ -87,7 +87,7 @@ export default function SavingOverlay({
                     background: var(--color-surface);
                     border-radius: var(--radius-xl);
                     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-                    animation: slideUp 0.4s ease;
+                    animation: slideUp 200ms var(--ease-out);
                     min-width: 280px;
                 }
 
@@ -112,7 +112,7 @@ export default function SavingOverlay({
 
                 .saving-icon :global(.success-icon) {
                     color: var(--color-success);
-                    animation: popIn 0.4s ease;
+                    animation: none;
                 }
 
                 @keyframes spin {
@@ -124,17 +124,7 @@ export default function SavingOverlay({
                     }
                 }
 
-                @keyframes popIn {
-                    from {
-                        transform: scale(0);
-                    }
-                    50% {
-                        transform: scale(1.2);
-                    }
-                    to {
-                        transform: scale(1);
-                    }
-                }
+
 
                 .saving-message {
                     font-size: 1.125rem;
@@ -184,7 +174,7 @@ export default function SavingOverlay({
                     height: 8px;
                     background: var(--color-primary);
                     border-radius: 50%;
-                    animation: bounce 1.4s infinite ease-in-out both;
+                    animation: none;
                 }
 
                 .dot:nth-child(1) {
@@ -195,15 +185,10 @@ export default function SavingOverlay({
                     animation-delay: -0.16s;
                 }
 
-                @keyframes bounce {
-                    0%,
-                    80%,
-                    100% {
-                        transform: scale(0);
-                    }
-                    40% {
-                        transform: scale(1);
-                    }
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                    @keyframes slideUp { from { opacity: 0; } to { opacity: 1; } }
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
                 }
             `}</style>
         </>

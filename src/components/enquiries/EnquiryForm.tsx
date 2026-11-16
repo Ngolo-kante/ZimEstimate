@@ -168,9 +168,11 @@ export default function EnquiryForm({ contractorId, supplierId, recipientName }:
           font-size: 0.875rem;
           font-weight: 600;
           cursor: pointer;
-          transition: background 0.2s ease;
+          transition: none;
         }
-        .open-btn:hover { background: #1e40af; }
+@media (hover: hover) and (pointer: fine) {
+    .open-btn:hover {     background: #1e40af; }
+}
         form {
           display: flex;
           flex-direction: column;
@@ -211,9 +213,13 @@ export default function EnquiryForm({ contractorId, supplierId, recipientName }:
           cursor: pointer;
         }
         .cancel { background: #fff; border: 1px solid #cbd5e1; color: #475569; }
-        .cancel:hover:not(:disabled) { background: #f8fafc; }
+@media (hover: hover) and (pointer: fine) {
+    .cancel:hover:not(:disabled) {     background: #f8fafc; }
+}
         .submit { background: #1d4ed8; border: none; color: #fff; }
-        .submit:hover:not(:disabled) { background: #1e40af; }
+@media (hover: hover) and (pointer: fine) {
+    .submit:hover:not(:disabled) {     background: #1e40af; }
+}
         .cancel:disabled, .submit:disabled { opacity: 0.6; cursor: default; }
         @media (max-width: 520px) {
           .row { flex-direction: column; }

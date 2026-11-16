@@ -65,7 +65,7 @@ function LoginForm() {
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-primary)]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)]"></div>
+                <div className="animate-spin motion-reduce:animate-none rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)]"></div>
             </div>
         );
     }
@@ -222,13 +222,14 @@ function LoginForm() {
                     border: 1px solid var(--color-border);
                     border-radius: var(--radius-md);
                     cursor: pointer;
-                    transition: all 0.2s ease;
+                    transition: none;
                     color: #333;
                 }
-
-                .google-btn:hover {
-                    background: var(--color-bg-secondary);
-                    border-color: var(--color-primary);
+                @media (hover: hover) and (pointer: fine) {
+                    .google-btn:hover {
+                        background: var(--color-bg-secondary);
+                        border-color: var(--color-primary);
+                }
                 }
 
                 .divider {
@@ -274,9 +275,10 @@ function LoginForm() {
                     text-decoration: none;
                     font-weight: 500;
                 }
-
-                .forgot-row :global(a:hover) {
-                    text-decoration: underline;
+                @media (hover: hover) and (pointer: fine) {
+                    .forgot-row :global(a:hover) {
+                        text-decoration: underline;
+                }
                 }
 
                 .auth-footer {
@@ -291,9 +293,10 @@ function LoginForm() {
                     text-decoration: none;
                     font-weight: 500;
                 }
-
-                .auth-footer :global(a:hover) {
-                    text-decoration: underline;
+                @media (hover: hover) and (pointer: fine) {
+                    .auth-footer :global(a:hover) {
+                        text-decoration: underline;
+                }
                 }
             `}</style>
         </>
@@ -304,7 +307,7 @@ export default function LoginPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-primary)]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)]"></div>
+                <div className="animate-spin motion-reduce:animate-none rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)]"></div>
             </div>
         }>
             <LoginForm />

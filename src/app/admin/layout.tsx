@@ -248,10 +248,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </main>
 
       <style jsx>{`
-        @keyframes pulse-dot {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(0.75); }
-        }
+
 
         .admin-shell {
           display: flex;
@@ -274,7 +271,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           height: 100dvh;
           overflow-y: auto;
           overflow-x: hidden;
-          transition: width 0.3s cubic-bezier(0.2,0,0,1), min-width 0.3s cubic-bezier(0.2,0,0,1);
+          transition: none;
         }
 
         .admin-sidebar.collapsed {
@@ -308,7 +305,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           flex-direction: column;
           gap: 3px;
           overflow: hidden;
-          transition: opacity 0.3s cubic-bezier(0.2,0,0,1), max-width 0.3s cubic-bezier(0.2,0,0,1);
+          transition: none;
           max-width: 160px;
           opacity: 1;
         }
@@ -384,7 +381,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           font-weight: 500;
           color: #5a6f8d;
           background: rgba(255,255,255,0.55);
-          transition: all 0.3s cubic-bezier(0.2,0,0,1);
+          transition: none;
           white-space: nowrap;
           overflow: hidden;
           position: relative;
@@ -395,16 +392,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           padding: 10px 0;
           gap: 0;
         }
-
-        .sidebar-nav :global(.nav-item:hover) {
-          color: #164d83;
-          background: #edf6ff;
-          transform: translateX(2px);
+      @media (hover: hover) and (pointer: fine) {
+          .sidebar-nav :global(.nav-item:hover) {
+              color: #164d83;
+              background: #edf6ff;
         }
-
-        .sidebar-nav :global(.nav-item.collapsed:hover) {
-          transform: none;
+      }
+@media (hover: hover) and (pointer: fine) {
+    .sidebar-nav :global(.nav-item.collapsed:hover) {
         }
+}
 
         .sidebar-nav :global(.nav-item.active) {
           color: #164d83;
@@ -430,12 +427,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           border-radius: 50%;
           background: #2f76c5;
           box-shadow: 0 0 8px rgba(47,118,197,0.4);
-          animation: pulse-dot 2s ease-in-out infinite;
+          animation: none;
         }
 
         .nav-label {
           overflow: hidden;
-          transition: opacity 0.3s cubic-bezier(0.2,0,0,1), max-width 0.3s cubic-bezier(0.2,0,0,1);
+          transition: none;
           max-width: 160px;
           opacity: 1;
         }
@@ -464,7 +461,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           text-decoration: none;
           font-size: 0.75rem;
           color: #7689a5;
-          transition: all 0.3s cubic-bezier(0.2,0,0,1);
+          transition: none;
           white-space: nowrap;
           overflow: hidden;
         }
@@ -473,15 +470,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           justify-content: center;
           padding: 7px 0;
         }
-
-        .sidebar-bottom :global(.back-site:hover) {
-          color: #255f9b;
-          background: rgba(233,244,255,0.65);
+      @media (hover: hover) and (pointer: fine) {
+          .sidebar-bottom :global(.back-site:hover) {
+              color: #255f9b;
+              background: rgba(233,244,255,0.65);
         }
+      }
 
         .back-label {
           overflow: hidden;
-          transition: opacity 0.3s cubic-bezier(0.2,0,0,1), max-width 0.3s cubic-bezier(0.2,0,0,1);
+          transition: none;
           max-width: 160px;
           opacity: 1;
         }
@@ -503,16 +501,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           cursor: pointer;
           color: #6f86a9;
           border-radius: 8px;
-          transition: all 0.3s cubic-bezier(0.2,0,0,1);
+          transition: none;
         }
-
-        .collapse-toggle:hover {
-          background: rgba(233,244,255,0.65);
-          color: #255f9b;
+      @media (hover: hover) and (pointer: fine) {
+          .collapse-toggle:hover {
+              background: rgba(233,244,255,0.65);
+              color: #255f9b;
         }
+      }
 
         .toggle-icon {
-          transition: transform 0.3s cubic-bezier(0.2,0,0,1);
+          transition: none;
         }
 
         .toggle-icon.collapsed {
@@ -525,7 +524,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           gap: 8px;
           padding: 8px 12px;
           overflow: hidden;
-          transition: padding 0.3s cubic-bezier(0.2,0,0,1);
+          transition: none;
         }
 
         .user-row.collapsed {
@@ -556,7 +555,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           gap: 2px;
           min-width: 0;
           overflow: hidden;
-          transition: opacity 0.3s cubic-bezier(0.2,0,0,1), max-width 0.3s cubic-bezier(0.2,0,0,1);
+          transition: none;
           max-width: 120px;
           opacity: 1;
         }
@@ -590,14 +589,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           border-radius: 6px;
           display: flex;
           align-items: center;
-          transition: all 0.2s ease;
+          transition: none;
           flex-shrink: 0;
         }
-
-        .sign-out-btn:hover {
-          color: #ef4444;
-          background: rgba(239,68,68,0.08);
+      @media (hover: hover) and (pointer: fine) {
+          .sign-out-btn:hover {
+              color: #ef4444;
+              background: rgba(239,68,68,0.08);
         }
+      }
 
         .admin-content {
           flex: 1;
@@ -631,10 +631,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           background: #fff;
           color: #0f294b;
           cursor: pointer;
-          transition: background 0.2s ease, transform 0.2s ease;
+          transition: none;
         }
-
-        .mobile-menu-btn:hover { background: #edf6ff; }
+@media (hover: hover) and (pointer: fine) {
+    .mobile-menu-btn:hover {     background: #edf6ff; }
+}
         .mobile-menu-btn:active { transform: scale(0.96); }
 
         .mobile-topbar :global(.mobile-topbar-logo) {
@@ -658,7 +659,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           border: none;
           padding: 0;
           cursor: pointer;
-          animation: backdrop-fade 0.2s ease;
+          animation: backdrop-fade 200ms var(--ease-out);
         }
 
         @keyframes backdrop-fade {
@@ -681,10 +682,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           cursor: pointer;
           align-items: center;
           justify-content: center;
-          transition: background 0.2s ease;
+          transition: none;
         }
-
-        .mobile-close-btn:hover { background: rgba(233,244,255,0.8); color: #0f294b; }
+@media (hover: hover) and (pointer: fine) {
+    .mobile-close-btn:hover {     background: rgba(233,244,255,0.8); color: #0f294b; }
+}
 
         @media (max-width: 768px) {
           .admin-shell {
@@ -704,7 +706,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             min-width: 280px;
             height: 100dvh;
             transform: translateX(-100%);
-            transition: transform 0.3s cubic-bezier(0.2,0,0,1);
+            transition: none;
             box-shadow: 30px 0 60px rgba(6,20,47,0.25);
           }
 
@@ -734,7 +736,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             width: 100%;
           }
         }
-      `}</style>
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes backdrop-fade { from { opacity: 0; } to { opacity: 1; } }
+                }
+            `}</style>
     </div>
   );
 }

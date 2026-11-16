@@ -334,7 +334,9 @@ export default function ScraperReviewPage() {
                     font-size: 0.9rem;
                     margin-bottom: 16px;
                 }
-                .back-link:hover { color: #0f172a; }
+@media (hover: hover) and (pointer: fine) {
+    .back-link:hover {     color: #0f172a; }
+}
 
                 .header-main {
                     display: flex;
@@ -438,9 +440,11 @@ export default function ScraperReviewPage() {
 
                 .source-link {
                     color: #94a3b8;
-                    transition: color 0.2s;
+                    transition: none;
                 }
-                .source-link:hover { color: #3b82f6; }
+@media (hover: hover) and (pointer: fine) {
+    .source-link:hover {     color: #3b82f6; }
+}
 
                 .method-badge {
                     display: inline-block;
@@ -499,19 +503,21 @@ export default function ScraperReviewPage() {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    transition: all 0.2s;
+                    transition: none;
                 }
-
-                .action-btn.confirm:hover {
-                    background: #dcfce7;
-                    border-color: #86efac;
-                    color: #166534;
+                @media (hover: hover) and (pointer: fine) {
+                    .action-btn.confirm:hover {
+                        background: #dcfce7;
+                        border-color: #86efac;
+                        color: #166534;
                 }
-
-                .action-btn.reject:hover {
-                    background: #fee2e2;
-                    border-color: #fca5a5;
-                    color: #991b1b;
+                }
+                @media (hover: hover) and (pointer: fine) {
+                    .action-btn.reject:hover {
+                        background: #fee2e2;
+                        border-color: #fca5a5;
+                        color: #991b1b;
+                }
                 }
 
                 .action-btn:disabled {
@@ -543,6 +549,10 @@ export default function ScraperReviewPage() {
                 @media (max-width: 900px) {
                     .stats-row { grid-template-columns: 1fr; }
                     .review-table { display: block; overflow-x: auto; }
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
                 }
             `}</style>
         </>

@@ -172,16 +172,16 @@ export default function AIHubPage() {
 
         .feature-card {
           height: 100%;
-          transition: all 0.3s ease;
+          transition: none;
           position: relative;
           overflow: hidden;
         }
-
-        .feature-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-          border-color: var(--color-accent);
+      @media (hover: hover) and (pointer: fine) {
+          .feature-card:hover {
+              box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+              border-color: var(--color-accent);
         }
+      }
 
         .feature-badge {
           position: absolute;

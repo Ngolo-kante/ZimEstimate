@@ -74,7 +74,7 @@ const STEP_META: Record<Step, { label: string; icon: React.ElementType }> = {
 
 const INPUT =
   'w-full rounded-lg border bg-[var(--color-surface)] px-3.5 py-2.5 text-sm text-[var(--color-text)] ' +
-  'transition focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20';
+  'transition-none focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20';
 
 const inputBorder = (invalid?: string) =>
   invalid ? 'border-[var(--color-error)]' : 'border-[var(--color-border)]';
@@ -380,7 +380,7 @@ export default function SupplierRegisterPage() {
     return (
       <MainLayout title="Become a Supplier">
         <div className="flex min-h-[60vh] items-center justify-center">
-          <Spinner size={32} className="animate-spin text-[var(--color-accent)]" />
+          <Spinner size={32} className="animate-spin motion-reduce:animate-none text-[var(--color-accent)]" />
         </div>
       </MainLayout>
     );
@@ -450,7 +450,7 @@ export default function SupplierRegisterPage() {
             {existingApplication.status === 'approved' && (
               <Link
                 href="/supplier/dashboard"
-                className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[var(--color-success)] px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-95"
+                className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[var(--color-success)] px-5 py-2.5 text-sm font-semibold text-white transition-none hover:brightness-95"
               >
                 Go to Dashboard
                 <ArrowRight size={16} weight="bold" />
@@ -460,7 +460,7 @@ export default function SupplierRegisterPage() {
 
           <Link
             href="/"
-            className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text-secondary)] transition hover:text-[var(--color-accent)]"
+            className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text-secondary)] transition-none hover:text-[var(--color-accent)]"
           >
             <ArrowLeft size={16} />
             Back to Home
@@ -483,7 +483,7 @@ export default function SupplierRegisterPage() {
         <header className="mb-6">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text-secondary)] transition hover:text-[var(--color-accent)]"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text-secondary)] transition-none hover:text-[var(--color-accent)]"
           >
             <ArrowLeft size={16} />
             Back to Home
@@ -508,7 +508,7 @@ export default function SupplierRegisterPage() {
             return (
               <li key={step} className="flex items-center gap-2">
                 <div
-                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-none ${
                     active
                       ? 'border-[var(--color-accent)] bg-[var(--color-accent)] text-white'
                       : done
@@ -717,7 +717,7 @@ export default function SupplierRegisterPage() {
                         type="button"
                         aria-pressed={on}
                         onClick={() => toggleCategory(category)}
-                        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-none ${
                           on
                             ? 'border-[var(--color-accent)] bg-[var(--color-accent)] text-white'
                             : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent)]'
@@ -1038,7 +1038,7 @@ export default function SupplierRegisterPage() {
               <button
                 type="button"
                 onClick={goToPrevStep}
-                className="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-secondary)] transition hover:border-[var(--color-accent)]"
+                className="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-secondary)] transition-none hover:border-[var(--color-accent)]"
               >
                 <ArrowLeft size={16} />
                 Back
@@ -1052,9 +1052,9 @@ export default function SupplierRegisterPage() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-white transition-none hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {submitting ? <Spinner size={16} className="animate-spin" /> : <Check size={16} weight="bold" />}
+                {submitting ? <Spinner size={16} className="animate-spin motion-reduce:animate-none" /> : <Check size={16} weight="bold" />}
                 Submit Application
               </button>
             ) : (
@@ -1062,9 +1062,9 @@ export default function SupplierRegisterPage() {
                 type="button"
                 onClick={goToNextStep}
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-white transition-none hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {submitting && <Spinner size={16} className="animate-spin" />}
+                {submitting && <Spinner size={16} className="animate-spin motion-reduce:animate-none" />}
                 {currentStep === 'account' ? 'Create account and continue' : 'Continue'}
                 <ArrowRight size={16} weight="bold" />
               </button>

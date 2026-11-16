@@ -171,14 +171,15 @@ export default function GoogleSignInButton({
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: none;
         color: #333;
       }
-
-      .google-btn:hover:not(:disabled) {
-        background: var(--color-bg-secondary);
-        border-color: var(--color-primary);
+    @media (hover: hover) and (pointer: fine) {
+        .google-btn:hover:not(:disabled) {
+            background: var(--color-bg-secondary);
+            border-color: var(--color-primary);
       }
+    }
 
       .google-btn:disabled {
         opacity: 0.6;

@@ -10,20 +10,10 @@
     gap: var(--space-6);
     max-width: 900px;
     margin: 0 auto;
-    animation: settingsFadeIn var(--duration-normal) ease-out;
+    animation: none;
 }
 
-@keyframes settingsFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
 
 /* ---- Page Header ---- */
 .settings-header {
@@ -83,13 +73,12 @@
     border-radius: 8px;
     overflow: hidden;
     box-shadow: none;
-    transition: box-shadow var(--duration-normal) ease, border-color var(--duration-normal) ease;
+    transition: none;
 }
 @media (hover: hover) and (pointer: fine) {
-.settings-card:hover {
-    box-shadow: none;
-    border-color: var(--color-border-dark);
-}
+    .settings-card:hover {
+        box-shadow: none;
+        border-color: var(--color-border-dark);}
 }
 
 .settings-card-header {
@@ -167,7 +156,7 @@
     font-size: var(--text-sm);
     color: var(--color-text);
     background: var(--color-background);
-    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+    transition: none;
 }
 
 .form-input.compact {
@@ -208,7 +197,7 @@
     border-radius: 99px;
     border: none;
     cursor: pointer;
-    transition: background var(--duration-normal) ease;
+    transition: none;
     flex-shrink: 0;
 }
 
@@ -223,7 +212,7 @@
     background: var(--color-white);
     border-radius: 50%;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-    transition: transform var(--duration-normal) cubic-bezier(0.4, 0.0, 0.2, 1);
+    transition: none;
     transform: translateX(2px);
 }
 
@@ -241,17 +230,16 @@
     border-radius: var(--radius-md);
     margin-bottom: var(--space-3);
     background: var(--color-surface);
-    transition: background-color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+    transition: none;
 }
 
 .stage-toggle-card:last-child {
     margin-bottom: 0;
 }
 @media (hover: hover) and (pointer: fine) {
-.stage-toggle-card:hover {
-    border-color: var(--color-border-dark);
-    background: var(--color-mist);
-}
+    .stage-toggle-card:hover {
+        border-color: var(--color-border-dark);
+        background: var(--color-mist);}
 }
 
 .stage-toggle-card.active {
@@ -274,7 +262,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease;
+    transition: none;
 }
 
 .stage-toggle-card.active .stage-icon {
@@ -305,9 +293,8 @@
     scroll-margin-top: 88px;
 }
 @media (hover: hover) and (pointer: fine) {
-.notification-centre:hover {
-    border-color: rgba(46, 108, 246, 0.3);
-}
+    .notification-centre:hover {
+        border-color: rgba(46, 108, 246, 0.3);}
 }
 
 .notification-centre .settings-card-header {
@@ -366,13 +353,12 @@
     font-size: var(--text-sm);
     font-weight: var(--font-medium);
     cursor: pointer;
-    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+    transition: none;
 }
 @media (hover: hover) and (pointer: fine) {
-.channel-option:hover {
-    background: var(--color-mist);
-    border-color: var(--color-border-dark);
-}
+    .channel-option:hover {
+        background: var(--color-mist);
+        border-color: var(--color-border-dark);}
 }
 
 .channel-option.selected {
@@ -418,12 +404,11 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     overflow: hidden;
-    transition: border-color var(--duration-normal) ease, box-shadow var(--duration-normal) ease;
+    transition: none;
 }
 @media (hover: hover) and (pointer: fine) {
-.alert-row:hover {
-    border-color: var(--color-border-dark);
-}
+    .alert-row:hover {
+        border-color: var(--color-border-dark);}
 }
 
 .alert-row.enabled {
@@ -438,13 +423,12 @@
     justify-content: space-between;
     padding: var(--space-4);
     cursor: pointer;
-    transition: background var(--duration-fast) ease;
+    transition: none;
     gap: var(--space-3);
 }
 @media (hover: hover) and (pointer: fine) {
-.alert-row-header:hover {
-    background: rgba(248, 250, 252, 0.6);
-}
+    .alert-row-header:hover {
+        background: rgba(248, 250, 252, 0.6);}
 }
 
 .alert-row-left {
@@ -463,12 +447,10 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: transform var(--duration-fast) ease;
+    transition: none;
 }
 @media (hover: hover) and (pointer: fine) {
-.alert-row:hover .alert-icon-badge {
-    transform: scale(1.05);
-}
+    .alert-row:hover .alert-icon-badge {}
 }
 
 .alert-row-text h4 {
@@ -519,12 +501,11 @@
     display: flex;
     align-items: center;
     color: var(--color-text-muted);
-    transition: color var(--duration-fast) ease;
+    transition: none;
 }
 @media (hover: hover) and (pointer: fine) {
-.alert-row-header:hover .alert-caret {
-    color: var(--color-accent);
-}
+    .alert-row-header:hover .alert-caret {
+        color: var(--color-accent);}
 }
 
 /* Alert Row Body (expanded) */
@@ -591,13 +572,12 @@
     font-size: var(--text-xs);
     font-weight: var(--font-semibold);
     cursor: pointer;
-    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+    transition: none;
 }
 @media (hover: hover) and (pointer: fine) {
-.freq-chip:hover {
-    background: var(--color-mist);
-    border-color: var(--color-border-dark);
-}
+    .freq-chip:hover {
+        background: var(--color-mist);
+        border-color: var(--color-border-dark);}
 }
 
 .freq-chip.selected {
@@ -681,9 +661,8 @@
     border-radius: 14px;
 }
 @media (hover: hover) and (pointer: fine) {
-.settings-card:hover {
-    border-color: var(--color-border);
-}
+    .settings-card:hover {
+        border-color: var(--color-border);}
 }
 
 /* A plain heading now, not a button: nothing to open or close. */
@@ -859,5 +838,16 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .alert-row:hover .alert-icon-badge { transform: none !important; }
+    .alert-row:hover .alert-icon-badge { }
 }
+
+/* Form columns must shrink independently of long project names. */
+.settings-page, .settings-card, .settings-card-content, .form-group,
+.form-input-wrapper, .stage-info, .stage-text, .notif-header-row > div,
+.settings-card-header > span { min-width: 0; }
+.settings-page { width: 100%; overflow-wrap: anywhere; }
+.form-grid { grid-template-columns: minmax(0, 1fr); }
+.stage-icon, .settings-card-icon, .stage-toggle-card svg { flex-shrink: 0; }
+@media (min-width: 640px) { .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.project-name-input { min-width: 0; min-height: 100px; resize: vertical; overflow-wrap: anywhere; font-size: 16px; }

@@ -86,7 +86,7 @@ export default function QuickProjectPage({ params }: { params: Promise<{ type: s
       <div className="max-w-4xl mx-auto px-4 py-8 md:py-12 animate-fade-in">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm font-medium text-slate-500 mb-8">
-          <Link href="/quick-projects" className="flex items-center gap-1.5 hover:text-blue-600 transition-colors">
+          <Link href="/quick-projects" className="flex items-center gap-1.5 hover:text-blue-600 transition-none">
             <ArrowLeft size={16} />
             Quick Projects
           </Link>

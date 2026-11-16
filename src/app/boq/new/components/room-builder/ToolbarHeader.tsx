@@ -288,7 +288,7 @@ export default function ToolbarHeader({
                         height: '4px',
                         borderRadius: '2px',
                         background: step <= 3 ? '#10b981' : '#e5e7eb',
-                        transition: 'all 0.3s',
+                        transition: 'none',
                     }} />
                 ))}
                 {isMobile && (

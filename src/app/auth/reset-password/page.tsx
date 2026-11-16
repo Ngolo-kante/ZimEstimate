@@ -311,9 +311,14 @@ export default function ResetPasswordPage() {
                     text-decoration: none;
                     font-weight: 500;
                 }
+                @media (hover: hover) and (pointer: fine) {
+                    .auth-footer :global(a:hover) {
+                        text-decoration: underline;
+                }
+                }
 
-                .auth-footer :global(a:hover) {
-                    text-decoration: underline;
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
                 }
             `}</style>
         </>

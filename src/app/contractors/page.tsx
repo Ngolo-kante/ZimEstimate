@@ -178,7 +178,7 @@ export default function ContractorsPage() {
 
           {loading ? (
             <div className={styles.statePanel}>
-              <SpinnerGap size={32} className="animate-spin" />
+              <SpinnerGap size={32} className="animate-spin motion-reduce:animate-none" />
               <p>Loading listed contractors...</p>
             </div>
           ) : error ? (
@@ -219,7 +219,7 @@ export default function ContractorsPage() {
               {hasMore && !searchQuery.trim() && (
                 <div className={styles.loadMore}>
                   <button type="button" onClick={() => loadContractors(contractors.length, true)} disabled={loadingMore}>
-                    {loadingMore && <SpinnerGap size={16} className="animate-spin" />}
+                    {loadingMore && <SpinnerGap size={16} className="animate-spin motion-reduce:animate-none" />}
                     Load more contractors
                   </button>
                 </div>

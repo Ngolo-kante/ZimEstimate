@@ -39,19 +39,20 @@ export default function Card({
                       0 10px 15px -3px rgba(0, 0, 0, 0.01),
                       0 0 0 1px rgba(226, 232, 240, 0.6);
           border: none;
-          transition: background-color 0.3s ease, border-color 0.3s ease;
+          transition: none;
         }
 
         .card.clickable {
           cursor: pointer;
         }
         @media (hover: hover) and (pointer: fine) {
-          .card.clickable:hover {
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05),
-            0 8px 10px -6px rgba(0, 0, 0, 0.01),
-            0 0 0 1px rgba(59, 130, 246, 0.5);
-            transform: translateY(-4px);
+        @media (hover: hover) and (pointer: fine) {
+            .card.clickable:hover {
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05),
+                0 8px 10px -6px rgba(0, 0, 0, 0.01),
+                0 0 0 1px rgba(59, 130, 246, 0.5);
           }
+        }
         }
 
         .card.selected {
@@ -77,9 +78,11 @@ export default function Card({
           background: linear-gradient(145deg, #ffffff, #f8fafc);
         }
         @media (hover: hover) and (pointer: fine) {
-          .card-choice:hover {
-            background: #ffffff;
+        @media (hover: hover) and (pointer: fine) {
+            .card-choice:hover {
+                background: #ffffff;
           }
+        }
         }
 
         /* Material Card Variant */
@@ -92,7 +95,9 @@ export default function Card({
 
 
                 @media (prefers-reduced-motion: reduce) {
-                    .card.clickable:hover { transform: none !important; }
+@media (hover: hover) and (pointer: fine) {
+    .card.clickable:hover { }
+}
                 }
             `}</style>
     </>

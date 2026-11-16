@@ -180,7 +180,9 @@ export default function SupplierProductsPage() {
         .stock-label { font-size: 0.8rem; }
         .row-actions { display: flex; align-items: center; gap: 6px; }
         .icon-btn { background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px 8px; cursor: pointer; color: #64748b; display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; text-decoration: none; }
-        .icon-btn:hover { background: #f1f5f9; }
+@media (hover: hover) and (pointer: fine) {
+    .icon-btn:hover {     background: #f1f5f9; }
+}
         .icon-btn.danger { border-color: #fecaca; color: #dc2626; background: #fef2f2; }
         .confirm-delete { display: flex; gap: 4px; }
         .empty-state { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 60px; text-align: center; color: #94a3b8; }

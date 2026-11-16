@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import React from "react";
 
@@ -26,16 +25,13 @@ export const AnimatedHero = ({
         >
             {/* Background radial gradient */}
             <div className="absolute inset-0 w-full h-full bg-slate-50 z-0">
-                <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-2xl opacity-10 animate-blob"></div>
-                <div className="absolute top-0 -right-4 w-72 h-72 bg-emerald-400 rounded-full mix-blend-multiply filter blur-2xl opacity-10 animate-blob animation-delay-2000"></div>
-                <div className="absolute -bottom-8 left-20 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-2xl opacity-10 animate-blob animation-delay-4000"></div>
+                <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-2xl opacity-10"></div>
+                <div className="absolute top-0 -right-4 w-72 h-72 bg-emerald-400 rounded-full mix-blend-multiply filter blur-2xl opacity-10 animation-delay-2000"></div>
+                <div className="absolute -bottom-8 left-20 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-2xl opacity-10 animation-delay-4000"></div>
             </div>
 
             <div className="z-10 w-full h-full flex flex-col pb-16 pt-24 px-6 relative">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
+                <div
                     /* The preview sits absolutely at 45% width from lg up, so the
                        copy has to stop short of it. 48% leaves clearance against
                        the card's 45% plus its right offset; wider than that and
@@ -51,16 +47,13 @@ export const AnimatedHero = ({
                             {actions}
                         </div>
                     )}
-                </motion.div>
+                </div>
                 {children && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
+                    <div
                         className="mt-12 lg:mt-0 lg:absolute lg:right-12 lg:top-1/2 lg:-translate-y-1/2 w-full lg:w-[45%] z-20"
                     >
                         {children}
-                    </motion.div>
+                    </div>
                 )}
             </div>
 

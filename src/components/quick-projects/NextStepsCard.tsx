@@ -84,9 +84,11 @@ export default function NextStepsCard({
           display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
           padding: 12px 14px; border-radius: 10px; cursor: pointer; text-decoration: none;
           border: 1px solid var(--color-border); background: var(--color-background);
-          color: var(--color-text); transition: border-color 0.15s, background 0.15s;
+          color: var(--color-text); transition: none;
         }
-        .steps :global(.step:hover) { border-color: var(--color-accent); background: var(--color-surface); }
+@media (hover: hover) and (pointer: fine) {
+    .steps :global(.step:hover) {     border-color: var(--color-accent); background: var(--color-surface); }
+}
         .steps :global(.step:disabled) { opacity: 0.6; cursor: default; }
         .step-text { display: grid; gap: 2px; flex: 1; min-width: 0; }
         .step-title { font-size: 0.9rem; font-weight: 600; }

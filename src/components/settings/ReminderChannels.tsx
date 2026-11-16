@@ -91,7 +91,11 @@ export default function ReminderChannels({ phoneNumber }: { phoneNumber: string 
         button:disabled { opacity: 0.6; cursor: default; }
         :global(.spin) { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
+                }
+            `}</style>
     </div>
   );
 }

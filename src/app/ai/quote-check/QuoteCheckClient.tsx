@@ -376,7 +376,11 @@ function QuoteCheckContent() {
           .actions button { flex: 1; }
           .spacer { display: none; }
         }
-      `}</style>
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
+                }
+            `}</style>
     </div>
   );
 }

@@ -262,7 +262,9 @@ export default function AdminTicketsPage() {
         .admin-loading { text-align: center; padding: 60px; color: #64748b; }
         .admin-header { margin-bottom: 24px; }
         .back-link { display: inline-flex; align-items: center; gap: 6px; color: #64748b; font-size: 14px; text-decoration: none; margin-bottom: 10px; }
-        .back-link:hover { color: #1e40af; }
+@media (hover: hover) and (pointer: fine) {
+    .back-link:hover {     color: #1e40af; }
+}
         h1 { font-size: 26px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
         .header-sub { font-size: 14px; color: #94a3b8; margin: 0; }
         .filters-row { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; }
@@ -273,7 +275,9 @@ export default function AdminTicketsPage() {
         .ticket-item {
           padding: 14px 12px; border-bottom: 1px solid #f1f5f9; cursor: pointer; border-radius: 8px;
         }
-        .ticket-item:hover { background: #f8fafc; }
+@media (hover: hover) and (pointer: fine) {
+    .ticket-item:hover {     background: #f8fafc; }
+}
         .ticket-item.active { background: #eff6ff; }
         .ticket-item-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
         .ticket-subject { font-size: 14px; font-weight: 600; color: #1e293b; }
@@ -282,13 +286,17 @@ export default function AdminTicketsPage() {
         .detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
         h3 { font-size: 16px; font-weight: 700; color: #1e293b; margin: 0; }
         .close-btn { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 4px; }
-        .close-btn:hover { color: #475569; }
+@media (hover: hover) and (pointer: fine) {
+    .close-btn:hover {     color: #475569; }
+}
         .detail-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
         .status-select { padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; }
         .detail-requester { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 13px; color: #334155; }
         .detail-requester-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #94a3b8; font-weight: 700; }
         .detail-requester a { color: #1e40af; font-weight: 600; text-decoration: none; }
-        .detail-requester a:hover { text-decoration: underline; }
+@media (hover: hover) and (pointer: fine) {
+    .detail-requester a:hover {     text-decoration: underline; }
+}
         .detail-desc { font-size: 14px; color: #475569; margin: 0 0 16px; line-height: 1.6; }
         .replies-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; max-height: 300px; overflow-y: auto; }
         .reply { padding: 10px 14px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0; }

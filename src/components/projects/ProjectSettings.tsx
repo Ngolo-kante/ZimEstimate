@@ -474,9 +474,9 @@ export default function ProjectSettings({
                         <Field className="min-w-0">
                             <FieldLabel className="form-label" htmlFor="settings-name">Project name</FieldLabel>
                             <div className="form-input-wrapper">
-                                <Input className="!h-11 bg-sc-background text-sc-foreground transition-none pr-11"
+                                <textarea className="form-input project-name-input"
                                     id="settings-name"
-                                    type="text"
+                                    rows={4}
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                 />

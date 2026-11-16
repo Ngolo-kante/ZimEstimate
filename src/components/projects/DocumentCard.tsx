@@ -52,7 +52,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
     };
 
     const formatFileSize = (bytes: number): string => {
-        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024) return formatQuantity(bytes) + ' B';
         if (bytes < 1024 * 1024) return formatQuantity(bytes / 1024) + ' KB';
         return formatQuantity(bytes / (1024 * 1024)) + ' MB';
     };
@@ -106,7 +106,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     border: 1px solid #d7e6f5;
                     border-radius: 16px;
                     padding: 20px;
-                    transition: background-color 0.2s ease, border-color 0.2s ease;
+                    transition: none;
                     display: flex;
                     flex-direction: column;
                     gap: 16px;
@@ -118,7 +118,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                   .document-card:hover {
                       border-color: #b9d4ef;
                       box-shadow: 0 12px 20px -8px rgba(22, 77, 131, 0.24), 0 4px 8px -2px rgba(22, 77, 131, 0.08);
-                      transform: translateY(-2px);
+
                   }
                 }
 
@@ -129,6 +129,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                 }
 
                 .file-icon {
+                    flex-shrink: 0;
                     width: 48px;
                     height: 48px;
                     display: flex;
@@ -152,11 +153,12 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     color: #64748b;
                 }
 
-                .saved-label { font-size: .8rem; color: #166534; background: #f0fdf4; padding: 4px 8px; border-radius: 4px; }
+                .saved-label { flex-shrink: 0; font-size: .8rem; color: #166534; background: #f0fdf4; padding: 4px 8px; border-radius: 4px; }
                 .thumbnail { padding: 0; border: 0; background: #f1f5f9; border-radius: 6px; cursor: pointer; overflow: hidden; }
                 .thumbnail img { display: block; width: 100%; height: 120px; object-fit: cover; }
                 .document-actions { display: flex; gap: 6px; flex-wrap: wrap; }
                 .document-actions button { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; color: #0b1f3b; font-size: .8rem; cursor: pointer; }
+                .document-actions :global(svg) { flex-shrink: 0; }
                 .document-actions .danger { color: #b91c1c; }
                 button:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
                 .card-body {
@@ -196,6 +198,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                 }
 
                 .category-badge {
+                    flex-shrink: 0;
                     font-size: 12px;
                     font-weight: 600;
                     text-transform: uppercase;
@@ -216,7 +219,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
 
 
                 @media (prefers-reduced-motion: reduce) {
-                    .document-card:hover { transform: none !important; }
+                    .document-card:hover { }
                 }
             `}</style>
         </>

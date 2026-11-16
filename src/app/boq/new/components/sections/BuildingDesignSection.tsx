@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import {
   PencilRuler, Ruler, HouseLine, Buildings, FileArrowUp,
   Plus, Minus, Trash, PlusCircle, CheckCircle, ArrowsOut,
@@ -114,13 +114,13 @@ const Stepper = ({
   onChange: (v: number) => void;
   onRemove?: () => void;
 }) => (
-  <div className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-2.5 transition-colors hover:border-slate-300">
+  <div className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-2.5 transition-none hover:border-slate-300">
     <div className="flex items-center gap-2">
       {onRemove && (
         <button
           type="button"
           onClick={onRemove}
-          className="text-[var(--color-text-muted)] hover:text-red-500 transition-colors"
+          className="text-[var(--color-text-muted)] hover:text-red-500 transition-none"
           title={`Remove ${label}`}
         >
           <Trash size={15} weight="bold" />
@@ -132,7 +132,7 @@ const Stepper = ({
       <button
         type="button"
         onClick={() => onChange(Math.max(0, value - 1))}
-        className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+        className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-none"
       >
         <Minus size={13} weight="bold" />
       </button>
@@ -140,7 +140,7 @@ const Stepper = ({
       <button
         type="button"
         onClick={() => onChange(value + 1)}
-        className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+        className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-none"
       >
         <Plus size={13} weight="bold" />
       </button>
@@ -293,13 +293,11 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
             const Icon = type.icon;
             const isSelected = projectDetails.buildingType === type.value;
             return (
-              <motion.button
+              <button
                 key={type.value}
                 type="button"
-                whileHover={{ scale: 1.015, y: -2 }}
-                whileTap={{ scale: 0.97 }}
                 onClick={() => updateProjectDetails({ buildingType: type.value })}
-                className={`group relative flex items-start gap-4 rounded-2xl border p-5 text-left transition-all duration-200 ${
+                className={`group relative flex items-start gap-4 rounded-2xl border p-5 text-left transition-none duration-200 ${
                   isSelected
                     ? `bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm`
                     : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
@@ -308,7 +306,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                 {isSelected && (
                    <CheckCircle weight="fill" size={18} className="absolute top-4 right-4 text-blue-500" />
                 )}
-                <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl transition-colors ${
+                <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl transition-none ${
                   isSelected ? type.iconBg : type.iconBg
                 }`}>
                   <Icon size={22} weight="regular" className={isSelected ? type.iconColor : type.iconColor} />
@@ -317,7 +315,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                   <div className={`font-bold text-base ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>{type.label}</div>
                   <p className={`mt-1 text-xs leading-relaxed ${isSelected ? 'text-slate-600' : 'wiz-text-muted'}`}>{type.description}</p>
                 </div>
-              </motion.button>
+              </button>
             );
           })}
         </div>
@@ -325,10 +323,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
         {/* Storey info callout — only shown for double storey */}
         <AnimatePresence>
           {projectDetails.buildingType === 'double_storey' && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4 }}
+            <div
               className="wiz-alert wiz-alert--info"
             >
               <Info size={15} weight="fill" className="wiz-alert__icon" />
@@ -337,7 +332,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                 first-floor slab, a staircase and the upper floor&apos;s walls. A suspended
                 slab needs an engineer&apos;s design.
               </p>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>
@@ -361,7 +356,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
             value={projectDetails.floorPlanSize}
             onChange={(e) => updateProjectDetails({ floorPlanSize: e.target.value })}
             placeholder="e.g. 150"
-            className={`w-full rounded-2xl border py-4 pl-10 pr-12 text-base font-semibold wiz-text-primary shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-[var(--color-text-muted)] ${
+            className={`w-full rounded-2xl border py-4 pl-10 pr-12 text-base font-semibold wiz-text-primary shadow-sm outline-none transition-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-[var(--color-text-muted)] ${
               showAreaWarning ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'
             }`}
           />
@@ -387,7 +382,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
               value={projectDetails.standSize}
               onChange={(e) => updateProjectDetails({ standSize: e.target.value })}
               placeholder="e.g. 600"
-              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-12 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-[var(--color-text-muted)]"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-12 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-[var(--color-text-muted)]"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[var(--color-text-muted)]">m²</span>
           </div>
@@ -406,7 +401,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
               value={projectDetails.wallHeight}
               onChange={(e) => updateProjectDetails({ wallHeight: e.target.value })}
               placeholder="2.7"
-              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm wiz-text-primary shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:text-[var(--color-text-muted)]"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm wiz-text-primary shadow-sm outline-none transition-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:text-[var(--color-text-muted)]"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-[var(--color-text-muted)]">m</span>
           </div>
@@ -428,11 +423,9 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
             const Icon = mode.icon;
             const isSelected = geometryMode === mode.key;
             return (
-              <motion.button
+              <button
                 key={mode.key}
                 type="button"
-                whileHover={{ scale: 1.015, y: -2 }}
-                whileTap={{ scale: 0.97 }}
                 onClick={() => {
                   setGeometryMode(mode.key);
 
@@ -456,7 +449,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   });
                 }}
-                className={`relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-all duration-200 ${
+                className={`relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-none duration-200 ${
                   isSelected
                     ? `bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm`
                     : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
@@ -476,7 +469,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                   </span>
                 )}
 
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition-none ${
                   isSelected ? mode.iconBg : mode.iconBg
                 }`}>
                   <Icon size={20} weight="regular" className={isSelected ? mode.iconColor : mode.iconColor} />
@@ -493,32 +486,27 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                     {mode.tip}
                   </div>
                 )}
-              </motion.button>
+              </button>
             );
           })}
         </div>
 
         {geometryMode === null && (
-          <motion.div
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div
             className="wiz-alert wiz-alert--info"
           >
             <Info size={15} weight="fill" className="wiz-alert__icon" />
             <p>Select a method above to continue building your estimate.</p>
-          </motion.div>
+          </div>
         )}
       </div>
 
       {/* ── Quick mode content ────────────────────────────────────────── */}
       <AnimatePresence>
         {geometryMode === 'quick' && (
-          <motion.div
+          <div
             id="plan-details-panel"
             style={{ scrollMarginTop: 160 }}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
             className="space-y-6 rounded-2xl border border-slate-100 bg-slate-50/60 p-5"
           >
             <div className="flex items-center justify-between flex-wrap gap-3">
@@ -568,7 +556,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                             <button
                               key={room.key}
                               type="button"
-                              className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 hover:wiz-text-primary transition-colors sm:py-2"
+                              className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 hover:wiz-text-primary transition-none sm:py-2"
                               onClick={() => {
                                 setActiveRoomKeys((prev) => [...prev, room.key]);
                                 updateProjectDetails({ roomInputs: { ...projectDetails.roomInputs, [room.key]: '1' } });
@@ -618,16 +606,13 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                 <Stepper label="Windows" value={totalWindows} onChange={setTotalWindows} />
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {geometryMode === 'detailed' && (
-          <motion.div
+          <div
             id="plan-details-panel"
             style={{ scrollMarginTop: 160 }}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
             className="rounded-2xl border border-blue-100 bg-blue-50/40 p-5"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -643,7 +628,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                 type="button"
                 data-testid="launch-floor-plan-editor"
                 onClick={onLaunchRoomBuilder}
-                className="rounded-xl border border-blue-200 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                className="rounded-xl border border-blue-200 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-50 hover:border-blue-300 transition-none"
               >
                 Launch Floor Plan Editor
               </button>
@@ -654,16 +639,13 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                 <span className="font-bold text-slate-800 text-sm">{detailedArea.toFixed(1)} m²</span>
               </div>
             )}
-          </motion.div>
+          </div>
         )}
 
         {geometryMode === 'upload' && (
-          <motion.div
+          <div
             id="plan-details-panel"
             style={{ scrollMarginTop: 160 }}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
             className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/40 p-10 text-center"
           >
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-100 bg-white shadow-sm mb-4">
@@ -696,7 +678,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
             >
               {planStatus === 'reading' ? (
                 <>
-                  <SpinnerGap size={16} className="animate-spin" />
+                  <SpinnerGap size={16} className="animate-spin motion-reduce:animate-none" />
                   Reading your plan…
                 </>
               ) : (
@@ -799,7 +781,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                 </button>
               </div>
             )}
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

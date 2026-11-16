@@ -80,7 +80,7 @@
   height: 100%;
   border-radius: inherit;
   background: var(--color-accent);
-  transition: width 450ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: none;
 }
 
 .compliance-overview-counts {
@@ -131,9 +131,9 @@
   text-align: left;
   cursor: pointer;
 }
-
-.compliance-next-action:hover {
-  background: var(--color-accent-muted);
+@media (hover: hover) and (pointer: fine) {
+    .compliance-next-action:hover {
+      background: var(--color-accent-muted);}
 }
 
 .compliance-next-action > span:first-child {
@@ -150,8 +150,8 @@
 .compliance-next-action strong {
   overflow: hidden;
   font-size: var(--text-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .compliance-next-stage {
@@ -186,7 +186,7 @@
 .compliance-channel-row .compliance-channel-link {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 4px;
   border: 0;
   background: transparent;
@@ -229,9 +229,9 @@
   text-align: left;
   cursor: pointer;
 }
-
-.compliance-stage-header:hover {
-  background: var(--color-mist);
+@media (hover: hover) and (pointer: fine) {
+    .compliance-stage-header:hover {
+      background: var(--color-mist);}
 }
 
 .compliance-stage-header .stage-heading {
@@ -306,7 +306,7 @@
 .compliance-stage-body {
   padding: var(--space-4);
   border-top: 1px solid var(--color-border-light);
-  animation: compliance-reveal 180ms ease-out;
+  animation: none;
 }
 
 .compliance-certificate-list {
@@ -367,7 +367,7 @@
   border: 2px solid var(--color-border-dark);
   border-radius: 50%;
   color: transparent;
-  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+  transition: none;
 }
 
 .compliance-cert-row.is-done .cert-check,
@@ -449,7 +449,7 @@
   display: grid;
   width: 44px;
   height: 44px;
-  flex: 0 0 36px;
+  flex: 0 0 44px;
   place-items: center;
   padding: 0;
   border: 1px solid var(--color-border);
@@ -458,21 +458,21 @@
   color: var(--color-text-secondary);
   cursor: pointer;
 }
-
-.compliance-icon-button:hover,
+@media (hover: hover) and (pointer: fine) {
+    .compliance-icon-button:hover,
 .compliance-icon-button.is-active {
-  border-color: var(--color-accent);
-  color: var(--color-accent-dark);
-  background: var(--color-accent-muted);
+      border-color: var(--color-accent);
+      color: var(--color-accent-dark);
+      background: var(--color-accent-muted);}
 }
 
 .compliance-task-delete {
   border-color: transparent;
 }
-
-.compliance-task-delete:hover {
-  color: var(--color-danger);
-  background: rgba(220, 38, 38, 0.06);
+@media (hover: hover) and (pointer: fine) {
+    .compliance-task-delete:hover {
+      color: var(--color-danger);
+      background: rgba(220, 38, 38, 0.06);}
 }
 
 .compliance-reminder-panel {
@@ -483,7 +483,7 @@
   padding: var(--space-3);
   border-radius: 7px;
   background: var(--color-mist);
-  animation: compliance-reveal 160ms ease-out;
+  animation: none;
 }
 
 .compliance-reminder-panel label {
@@ -522,8 +522,8 @@
   overflow: hidden;
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .compliance-task-row.is-done .task-title {
@@ -553,11 +553,11 @@
   font-weight: var(--font-semibold);
   cursor: pointer;
 }
-
-.compliance-add-task-trigger:hover,
+@media (hover: hover) and (pointer: fine) {
+    .compliance-add-task-trigger:hover,
 .compliance-cancel-button:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+      text-decoration: underline;
+      text-underline-offset: 3px;}
 }
 
 .compliance-add-task-row {
@@ -565,7 +565,7 @@
   align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-3);
-  animation: compliance-reveal 160ms ease-out;
+  animation: none;
 }
 
 .compliance-add-task-row input {
@@ -615,10 +615,7 @@
   line-height: 1.5;
 }
 
-@keyframes compliance-reveal {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+
 
 @media (max-width: 680px) {
   .compliance-overview-main {
@@ -686,10 +683,7 @@
   }
 
   .compliance-cert-row .cert-desc {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    overflow-wrap: anywhere;
   }
 
   .compliance-status-select {
@@ -760,9 +754,9 @@
 
   .compliance-icon-button,
   .compliance-task-delete {
-    width: 40px;
-    height: 40px;
-    flex-basis: 40px;
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
   }
 }
 
@@ -788,3 +782,14 @@
     font-size: 16px;
   }
 }
+
+/* Long task names and owner addresses remain readable at phone widths. */
+.compliance-channel-row { flex-wrap: wrap; }
+.compliance-channel-row > span:not(.channel-icon) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.compliance-channel-row .channel-icon, .compliance-tracker svg,
+.compliance-overview-title-row strong, .compliance-overview-counts dd,
+.compliance-cert-row .cert-required { flex-shrink: 0; }
+.compliance-stage-header .stage-heading, .compliance-stage-header .stage-heading > div,
+.compliance-cert-row .cert-label { min-width: 0; overflow-wrap: anywhere; }
+.compliance-cert-row .cert-label { flex-wrap: wrap; }
+.compliance-task-toggle { min-height: 44px; }

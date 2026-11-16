@@ -643,7 +643,7 @@ function AnalyticsContent() {
             width: 100%;
             border-radius: 12px;
             background: linear-gradient(180deg, rgba(78, 154, 247, 0.9), rgba(6, 20, 47, 0.8));
-            transition: height 0.3s ease;
+            transition: none;
           }
 
           .mini-bar span {
@@ -791,7 +791,11 @@ function AnalyticsContent() {
               grid-row-gap: 8px;
             }
           }
-        `}</style>
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
+                }
+            `}</style>
       </MainLayout>
     </ProtectedRoute>
   );

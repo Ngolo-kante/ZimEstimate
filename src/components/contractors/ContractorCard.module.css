@@ -8,13 +8,12 @@
   border: 1px solid #d8e0eb;
   border-radius: 8px;
   box-shadow: 0 5px 18px rgba(11, 31, 59, 0.05);
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition: none;
 }
-
-.card:hover {
-  border-color: #9db8dd;
-  box-shadow: 0 10px 26px rgba(11, 31, 59, 0.1);
-  transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) {
+    .card:hover {
+      border-color: #9db8dd;
+      box-shadow: 0 10px 26px rgba(11, 31, 59, 0.1);}
 }
 
 .identity {

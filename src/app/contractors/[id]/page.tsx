@@ -34,14 +34,14 @@ export default function ContractorDetailPage() {
   return (
     <MainLayout fullWidth>
       <main className="mx-auto w-full max-w-5xl px-4 py-8 md:px-8 md:py-10">
-        <Link href="/contractors" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-blue-700">
+        <Link href="/contractors" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition-none hover:text-blue-700">
           <ArrowLeft size={16} weight="bold" />
           Back to contractor directory
         </Link>
 
         {loading ? (
           <div className="mt-8 flex min-h-72 flex-col items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white text-slate-500">
-            <SpinnerGap size={32} className="animate-spin" />
+            <SpinnerGap size={32} className="animate-spin motion-reduce:animate-none" />
             <p>Loading contractor profile...</p>
           </div>
         ) : !contractor ? (
@@ -98,13 +98,13 @@ export default function ContractorDetailPage() {
                 <h2 className="text-base font-bold text-slate-950">Public contact details</h2>
                 <div className="mt-4 space-y-3 text-sm text-slate-700">
                   {contractor.contact_phone && (
-                    <a href={`tel:${contractor.contact_phone}`} className="flex min-w-0 items-center gap-2 rounded-md bg-white p-3 transition hover:text-blue-700">
+                    <a href={`tel:${contractor.contact_phone}`} className="flex min-w-0 items-center gap-2 rounded-md bg-white p-3 transition-none hover:text-blue-700">
                       <Phone size={17} weight="duotone" className="shrink-0 text-slate-400" />
                       <span className="truncate font-mono text-xs">{contractor.contact_phone}</span>
                     </a>
                   )}
                   {contractor.contact_email && (
-                    <a href={`mailto:${contractor.contact_email}`} className="flex min-w-0 items-center gap-2 rounded-md bg-white p-3 transition hover:text-blue-700">
+                    <a href={`mailto:${contractor.contact_email}`} className="flex min-w-0 items-center gap-2 rounded-md bg-white p-3 transition-none hover:text-blue-700">
                       <EnvelopeSimple size={17} weight="duotone" className="shrink-0 text-slate-400" />
                       <span className="truncate">{contractor.contact_email}</span>
                     </a>

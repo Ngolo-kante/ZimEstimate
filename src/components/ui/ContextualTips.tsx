@@ -288,13 +288,15 @@ export function ContextualTips({
                         align-items: center;
                         justify-content: center;
                         color: #64748b;
-                        transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+                        transition: none;
                     }
 
                     @media (hover: hover) and (pointer: fine) {
-                      .tip-dismiss:hover {
-                          background: rgba(0, 0, 0, 0.05);
-                          color: #64748b;
+                      @media (hover: hover) and (pointer: fine) {
+                          .tip-dismiss:hover {
+                              background: rgba(0, 0, 0, 0.05);
+                              color: #64748b;
+                      }
                       }
                     }
                 `}</style>
@@ -373,12 +375,14 @@ export function ContextualTips({
                     border: none;
                     background: #f8fafc;
                     cursor: pointer;
-                    transition: background 0.15s;
+                    transition: none;
                 }
 
                 @media (hover: hover) and (pointer: fine) {
-                  .sidebar-toggle:hover {
-                      background: #f1f5f9;
+                  @media (hover: hover) and (pointer: fine) {
+                      .sidebar-toggle:hover {
+                          background: #f1f5f9;
+                  }
                   }
                 }
 
@@ -396,7 +400,7 @@ export function ContextualTips({
 
                 .toggle-chevron {
                     color: #64748b;
-                    transition: transform 0.2s;
+                    transition: none;
                 }
 
                 .toggle-chevron.expanded {
@@ -446,13 +450,15 @@ export function ContextualTips({
                     align-items: center;
                     justify-content: center;
                     color: #64748b;
-                    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+                    transition: none;
                 }
 
                 @media (hover: hover) and (pointer: fine) {
-                  .tip-dismiss:hover {
-                      background: rgba(0, 0, 0, 0.08);
-                      color: #64748b;
+                  @media (hover: hover) and (pointer: fine) {
+                      .tip-dismiss:hover {
+                          background: rgba(0, 0, 0, 0.08);
+                          color: #64748b;
+                  }
                   }
                 }
 
@@ -482,8 +488,10 @@ export function ContextualTips({
                 }
 
                 @media (hover: hover) and (pointer: fine) {
-                  .tip-link:hover {
-                      text-decoration: underline;
+                  @media (hover: hover) and (pointer: fine) {
+                      .tip-link:hover {
+                          text-decoration: underline;
+                  }
                   }
                 }
             `}</style>

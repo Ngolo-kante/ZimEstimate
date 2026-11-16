@@ -39,7 +39,7 @@ export default function ContactSupportLink({
   return (
     <Link
       href={query ? `/support?${query}` : '/support'}
-      className={`inline-flex items-center gap-1.5 font-semibold text-[var(--color-accent)] underline-offset-2 transition hover:underline ${className}`}
+      className={`inline-flex items-center gap-1.5 font-semibold text-[var(--color-accent)] underline-offset-2 transition-none hover:underline ${className}`}
     >
       {showIcon && <ChatCircleText size={15} weight="duotone" aria-hidden />}
       {children}

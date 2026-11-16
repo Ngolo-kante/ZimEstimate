@@ -137,7 +137,7 @@ export default function NotificationsPage() {
                         {unreadCount > 0 && (
                             <button
                                 onClick={handleMarkAllRead}
-                                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-none"
                                 title="Mark all as read"
                             >
                                 <Check size={16} />
@@ -152,7 +152,7 @@ export default function NotificationsPage() {
                     <div className="flex border-b border-slate-100">
                         <button
                             onClick={() => setActiveTab('all')}
-                            className={`flex-1 px-6 py-4 text-sm font-medium text-center border-b-2 transition-colors ${activeTab === 'all'
+                            className={`flex-1 px-6 py-4 text-sm font-medium text-center border-b-2 transition-none ${activeTab === 'all'
                                     ? 'border-blue-500 text-blue-600'
                                     : 'border-transparent text-slate-500 hover:text-slate-700'
                                 }`}
@@ -161,7 +161,7 @@ export default function NotificationsPage() {
                         </button>
                         <button
                             onClick={() => setActiveTab('unread')}
-                            className={`flex-1 px-6 py-4 text-sm font-medium text-center border-b-2 transition-colors ${activeTab === 'unread'
+                            className={`flex-1 px-6 py-4 text-sm font-medium text-center border-b-2 transition-none ${activeTab === 'unread'
                                     ? 'border-blue-500 text-blue-600'
                                     : 'border-transparent text-slate-500 hover:text-slate-700'
                                 }`}
@@ -183,7 +183,7 @@ export default function NotificationsPage() {
                             filteredNotifications.map((notification) => (
                                 <div
                                     key={notification.id}
-                                    className={`p-6 flex gap-4 transition-colors hover:bg-slate-50 group ${!notification.is_read ? 'bg-blue-50/30' : ''}`}
+                                    className={`p-6 flex gap-4 transition-none hover:bg-slate-50 group ${!notification.is_read ? 'bg-blue-50/30' : ''}`}
                                 >
                                     <div className="flex-shrink-0 mt-1">
                                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${!notification.is_read ? 'bg-white shadow-sm' : 'bg-slate-100'}`}>
@@ -210,11 +210,11 @@ export default function NotificationsPage() {
                                                     </div>
                                             </div>
 
-                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-none">
                                                 {!notification.is_read && (
                                                     <button
                                                         onClick={() => handleMarkRead(notification.id)}
-                                                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-none"
                                                         title="Mark as read"
                                                     >
                                                         <CheckCircle size={18} />
@@ -222,7 +222,7 @@ export default function NotificationsPage() {
                                                 )}
                                                 <button
                                                     onClick={() => handleDelete(notification.id)}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-none"
                                                     title="Delete"
                                                 >
                                                     <Trash size={18} />

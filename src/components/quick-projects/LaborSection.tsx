@@ -70,7 +70,7 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
           role="switch"
           aria-checked={labor.enabled}
           onClick={() => onChange({ ...labor, enabled: !labor.enabled })}
-          className={`inline-flex flex-shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
+          className={`inline-flex flex-shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold transition-none ${
             labor.enabled
               ? 'border-blue-600 bg-blue-600 text-white'
               : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400'
@@ -98,7 +98,7 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
                 role="tab"
                 aria-selected={labor.method === method}
                 onClick={() => onChange({ ...labor, method })}
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-none ${
                   labor.method === method
                     ? 'bg-white text-slate-900 shadow-sm'
                     : 'text-slate-500 hover:text-slate-700'

@@ -255,7 +255,7 @@ export default function FloorPlanRenderer({
                                 background: localWastage === pct ? '#3b82f6' : '#fff',
                                 color: localWastage === pct ? '#fff' : '#64748b',
                                 boxShadow: localWastage === pct ? '0 2px 8px rgba(59,130,246,0.3)' : '0 1px 2px rgba(0,0,0,0.05)',
-                                transition: 'all 0.2s',
+                                transition: 'none',
                             }}
                         >
                             {pct}%
@@ -308,7 +308,7 @@ export default function FloorPlanRenderer({
                                     stroke={isSelected ? '#3b82f6' : '#64748b'}
                                     strokeWidth={isSelected ? 3 : 1.5}
                                     rx="4"
-                                    style={{ transition: 'all 0.2s' }}
+                                    style={{ transition: 'none' }}
                                 />
 
                                 {/* Selection highlight */}
@@ -413,14 +413,11 @@ export default function FloorPlanRenderer({
                             borderTop: '1px solid #e2e8f0',
                             padding: '16px',
                             boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
-                            animation: 'slideUp 0.2s ease-out',
+                            animation: 'none',
                         }}
                     >
                         <style>{`
-              @keyframes slideUp {
-                from { transform: translateY(100%); opacity: 0; }
-                to { transform: translateY(0); opacity: 1; }
-              }
+
             `}</style>
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>

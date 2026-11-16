@@ -224,21 +224,25 @@ export default function InlineEdit({
         }
 
         @media (hover: hover) and (pointer: fine) {
-          .inline-edit-display:hover {
-            background: var(--color-background);
+        @media (hover: hover) and (pointer: fine) {
+            .inline-edit-display:hover {
+                background: var(--color-background);
           }
+        }
         }
 
         .inline-edit-display :global(.edit-icon) {
           opacity: 0;
           color: var(--color-text-muted);
-          transition: opacity 0.15s ease;
+          transition: none;
         }
 
         @media (hover: hover) and (pointer: fine) {
-          .inline-edit-display:hover :global(.edit-icon) {
-            opacity: 1;
+        @media (hover: hover) and (pointer: fine) {
+            .inline-edit-display:hover :global(.edit-icon) {
+                opacity: 1;
           }
+        }
         }
 
         .placeholder {

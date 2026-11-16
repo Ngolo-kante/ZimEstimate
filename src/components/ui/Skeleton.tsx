@@ -59,17 +59,10 @@ export function Skeleton({
                         #f1f5f9 63%
                     );
                     background-size: 400% 100%;
-                    animation: shimmer 1.4s ease infinite;
+                    animation: none;
                 }
 
-                @keyframes shimmer {
-                    0% {
-                        background-position: 100% 50%;
-                    }
-                    100% {
-                        background-position: 0 50%;
-                    }
-                }
+
             `}</style>
         </>
     );

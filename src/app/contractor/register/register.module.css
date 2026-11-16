@@ -315,7 +315,7 @@
   padding: 3px;
   background: #a8b3c2;
   border-radius: 12px;
-  transition: background-color 160ms ease;
+  transition: none;
 }
 
 .toggle i {
@@ -325,7 +325,7 @@
   background: white;
   border-radius: 50%;
   box-shadow: 0 1px 3px rgba(11, 31, 59, 0.25);
-  transition: transform 160ms ease;
+  transition: none;
 }
 
 .visibilityChoice strong,

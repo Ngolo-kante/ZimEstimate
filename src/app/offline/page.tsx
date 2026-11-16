@@ -147,13 +147,13 @@ export default function OfflinePage() {
 
         .feature-card {
           text-align: center;
-          transition: all 0.2s ease;
+          transition: none;
         }
-
-        .feature-card:hover {
-          transform: translateY(-2px);
-          border-color: var(--color-accent);
+      @media (hover: hover) and (pointer: fine) {
+          .feature-card:hover {
+              border-color: var(--color-accent);
         }
+      }
 
         .feature-card :global(.card-content) {
           display: flex;
@@ -162,10 +162,11 @@ export default function OfflinePage() {
           gap: var(--spacing-sm);
           color: var(--color-text-secondary);
         }
-
-        .feature-card:hover :global(.card-content) {
-          color: var(--color-accent);
+      @media (hover: hover) and (pointer: fine) {
+          .feature-card:hover :global(.card-content) {
+              color: var(--color-accent);
         }
+      }
 
         .feature-card span {
           font-size: 0.875rem;

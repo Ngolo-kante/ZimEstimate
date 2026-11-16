@@ -1,5 +1,6 @@
 'use client';
 
+import { formatQuantity } from '@/lib/format';
 import { Field, FieldGroup, FieldLabel } from '@/components/shadcn/field';
 import { NativeSelect } from '@/components/shadcn/native-select';
 
@@ -136,7 +137,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
         <>
             <div className="documents-tab">
                 <div className="tab-header">
-                    <p className="file-count">{filteredDocuments.length} files</p>
+                    <p className="file-count">{formatQuantity(filteredDocuments.length)} file{filteredDocuments.length === 1 ? '' : 's'}</p>
                     <FieldGroup className="!w-auto"><Field>
                         <FieldLabel className="sr-only" htmlFor="documents-category-filter">Filter documents</FieldLabel>
 
@@ -178,7 +179,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                     <div className="empty-state">
                         <File size={48} weight="light" />
                         <h4>No documents in this category</h4>
-                        <p>{documents.length} document{documents.length === 1 ? '' : 's'} in other categories.</p>
+                        <p>{formatQuantity(documents.length)} document{documents.length === 1 ? '' : 's'} in other categories.</p>
                         <button type="button" className="state-action" onClick={() => setFilter('all')}>Show all documents</button>
                     </div>
                 ) : filteredDocuments.length === 0 ? (
@@ -252,7 +253,6 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                 }
 
                 .documents-tab:hover {
-                    transform: none;
                     box-shadow: none;
                 }
 
@@ -377,7 +377,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
 
                 .documents-grid {
                     display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
                     gap: 14px;
                 }
 
@@ -421,11 +421,14 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                     font-weight: 600;
                     color: var(--color-text);
                     overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
+                    min-width: 0;
+                    overflow-wrap: anywhere;
                 }
 
                 .preview-header button {
+                    flex-shrink: 0;
+                    min-width: 44px;
+                    min-height: 44px;
                     background: none;
                     border: none;
                     font-size: 1.5rem;
@@ -484,6 +487,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                 }
 
                 @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
                     .documents-tab {
                         transition: none;
                         transform: none !important;

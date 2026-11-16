@@ -756,13 +756,14 @@ function SettingsContent() {
                     font-size: 0.78rem;
                     font-weight: 620;
                     text-decoration: none;
-                    transition: background 0.15s ease, color 0.15s ease;
+                    transition: none;
                 }
-
-                .settings-nav a:hover,
+                @media (hover: hover) and (pointer: fine) {
+                    .settings-nav a:hover,
                 .settings-nav a:focus-visible {
-                    color: #0b1f3b;
-                    background: #edf2f7;
+                        color: #0b1f3b;
+                        background: #edf2f7;
+                }
                 }
 
                 .settings-nav a:focus-visible {
@@ -867,7 +868,7 @@ function SettingsContent() {
                     border: 1px solid #e2e8f0;
                     border-radius: 7px;
                     background: #ffffff;
-                    transition: all 0.2s;
+                    transition: none;
                     position: relative;
                 }
 
@@ -1005,7 +1006,7 @@ function SettingsContent() {
                     inset: 0;
                     background: #e2e8f0;
                     border-radius: 999px;
-                    transition: 0.2s;
+                    transition: none;
                 }
 
                 .toggle-slider::before {
@@ -1017,7 +1018,7 @@ function SettingsContent() {
                     top: 4px;
                     background: white;
                     border-radius: 999px;
-                    transition: 0.2s;
+                    transition: none;
                     box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
                 }
 
@@ -1064,7 +1065,7 @@ function SettingsContent() {
                     padding: 6px 12px;
                     border-radius: 6px;
                     cursor: pointer;
-                    transition: 0.2s;
+                    transition: none;
                 }
 
                 .chip.active {
@@ -1153,13 +1154,14 @@ function SettingsContent() {
                     border-radius: 7px;
                     background: #ffffff;
                     cursor: pointer;
-                    transition: all 0.2s;
+                    transition: none;
                     position: relative;
                 }
-
-                .currency-option:hover {
-                    border-color: #cbd5e1;
-                    background: #f8fafc;
+                @media (hover: hover) and (pointer: fine) {
+                    .currency-option:hover {
+                        border-color: #cbd5e1;
+                        background: #f8fafc;
+                }
                 }
 
                 .currency-option.active {
@@ -1233,16 +1235,17 @@ function SettingsContent() {
                     text-decoration: none;
                     margin-top: 4px;
                 }
-
-                .upgrade-link:hover {
-                    text-decoration: underline;
+                @media (hover: hover) and (pointer: fine) {
+                    .upgrade-link:hover {
+                        text-decoration: underline;
+                }
                 }
 
                 /* Danger Zone */
                 .settings-card.danger {
                     border-color: #fecaca;
                 }
-                
+
                 .danger-row {
                     display: flex;
                     justify-content: space-between;
@@ -1275,9 +1278,10 @@ function SettingsContent() {
                     font-weight: 650;
                     text-decoration: none;
                 }
-
-                :global(.request-delete-link:hover) {
-                    background: #fef2f2;
+                @media (hover: hover) and (pointer: fine) {
+                    :global(.request-delete-link:hover) {
+                        background: #fef2f2;
+                }
                 }
 
                 @media (max-width: 900px) {
@@ -1358,7 +1362,7 @@ function SettingsContent() {
                         align-items: flex-start;
                         gap: 16px;
                     }
-                    
+
                     .danger-row button {
                         width: 100%;
                     }
@@ -1398,7 +1402,7 @@ function SettingsContent() {
                         max-width: 210px;
                     }
                 }
-                
+
                 .loading-state {
                     display: flex;
                     flex-direction: column;
@@ -1408,7 +1412,7 @@ function SettingsContent() {
                     gap: 16px;
                     color: #64748b;
                 }
-                
+
                 .spinner {
                     width: 32px;
                     height: 32px;
@@ -1420,6 +1424,10 @@ function SettingsContent() {
 
                 @keyframes spin {
                     to { transform: rotate(360deg); }
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
                 }
             `}</style>
         </MainLayout>

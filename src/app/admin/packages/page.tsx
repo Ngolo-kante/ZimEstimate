@@ -225,12 +225,16 @@ export default function AdminPackagesPage() {
         .admin-loading { text-align: center; padding: 60px; color: #64748b; }
         .admin-header { margin-bottom: 24px; }
         .back-link { display: inline-flex; align-items: center; gap: 6px; color: #64748b; font-size: 14px; text-decoration: none; margin-bottom: 10px; }
-        .back-link:hover { color: #1e40af; }
+@media (hover: hover) and (pointer: fine) {
+    .back-link:hover {     color: #1e40af; }
+}
         h1 { font-size: 26px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
         .header-sub { font-size: 14px; color: #94a3b8; margin: 0; }
         .top-action { margin-bottom: 20px; }
         .close-btn { background: none; border: none; cursor: pointer; color: #94a3b8; }
-        .close-btn:hover { color: #475569; }
+@media (hover: hover) and (pointer: fine) {
+    .close-btn:hover {     color: #475569; }
+}
         .form-card { margin-bottom: 24px; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
         .form-field label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
@@ -250,7 +254,9 @@ export default function AdminPackagesPage() {
         .w70 { width: 70px; }
         .w90 { width: 90px; }
         .remove-btn { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 6px; flex-shrink: 0; }
-        .remove-btn:hover { color: #dc2626; }
+@media (hover: hover) and (pointer: fine) {
+    .remove-btn:hover {     color: #dc2626; }
+}
         .form-summary { padding: 12px 0; font-size: 14px; color: #475569; display: flex; gap: 20px; border-top: 1px solid #f1f5f9; margin-bottom: 12px; }
         .form-active { margin-bottom: 16px; }
         .toggle-label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #334155; cursor: pointer; }

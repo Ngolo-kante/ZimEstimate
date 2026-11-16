@@ -148,7 +148,9 @@ export default function AdminLogsPage() {
         .admin-loading { text-align: center; padding: 60px; color: #64748b; }
         .admin-header { margin-bottom: 24px; }
         .back-link { display: inline-flex; align-items: center; gap: 6px; color: #64748b; font-size: 14px; text-decoration: none; margin-bottom: 10px; }
-        .back-link:hover { color: #1e40af; }
+@media (hover: hover) and (pointer: fine) {
+    .back-link:hover {     color: #1e40af; }
+}
         h1 { font-size: 26px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
         .header-sub { font-size: 14px; color: #94a3b8; margin: 0; }
         .filters-row { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
@@ -162,7 +164,9 @@ export default function AdminLogsPage() {
           padding: 12px; cursor: pointer; font-size: 13px; color: #334155;
           align-items: center; gap: 8px;
         }
-        .log-row:hover { background: #f8fafc; }
+@media (hover: hover) and (pointer: fine) {
+    .log-row:hover {     background: #f8fafc; }
+}
         .log-time { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #94a3b8; }
         .action-chip {
           display: inline-block; padding: 2px 8px; background: #f1f5f9;

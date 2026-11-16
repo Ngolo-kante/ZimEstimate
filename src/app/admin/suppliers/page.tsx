@@ -256,7 +256,7 @@ export default function AdminSuppliersPage() {
         justifyContent: 'center',
         backgroundColor: '#f8fafc',
       }}>
-        <Spinner size={32} className="animate-spin" style={{ color: '#3b82f6' }} />
+        <Spinner size={32} className="animate-spin motion-reduce:animate-none" style={{ color: '#3b82f6' }} />
       </div>
     );
   }
@@ -418,7 +418,7 @@ export default function AdminSuppliersPage() {
                       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                       cursor: 'pointer',
                       border: selectedApp?.id === app.id ? '2px solid #3b82f6' : '2px solid transparent',
-                      transition: 'all 0.2s ease',
+                      transition: 'none',
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
@@ -792,7 +792,7 @@ export default function AdminSuppliersPage() {
                     }}
                   >
                     {processing ? (
-                      <Spinner size={18} className="animate-spin" />
+                      <Spinner size={18} className="animate-spin motion-reduce:animate-none" />
                     ) : (
                       <CheckCircle size={18} weight="bold" />
                     )}
@@ -916,7 +916,7 @@ export default function AdminSuppliersPage() {
                   fontWeight: 500,
                 }}
               >
-                {processing && <Spinner size={18} className="animate-spin" />}
+                {processing && <Spinner size={18} className="animate-spin motion-reduce:animate-none" />}
                 Reject
               </button>
             </div>

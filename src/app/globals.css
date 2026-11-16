@@ -5,6 +5,13 @@
 @import "tw-animate-css";
 @import "../styles/shadcn.css";
 
+/* Tailwind hover utilities follow the same pointer policy as component CSS. */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { @slot; }
+  }
+}
+
 /* ============================================
    ZimEstimate Design DNA - Benti Design System
    Brand Colors: Deep Navy + Vibrant Blue
@@ -191,10 +198,11 @@
     color: var(--color-primary);
     text-decoration: none;
   }
-
-  a:hover {
-    color: var(--color-accent);
+@media (hover: hover) and (pointer: fine) {
+    a:hover {
+        color: var(--color-accent);
   }
+}
 }
 
 /* Button Base */
@@ -206,7 +214,7 @@
   padding: 0.75rem 1.5rem;
   font-weight: 500;
   border-radius: var(--radius-md);
-  transition: all 0.2s ease;
+  transition: none;
   cursor: pointer;
   border: none;
 }
@@ -215,9 +223,9 @@
   background: var(--color-accent);
   color: var(--color-text-inverse);
 }
-
-.btn-primary:hover {
-  background: var(--color-accent-dark);
+@media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover {
+      background: var(--color-accent-dark);}
 }
 
 .btn-secondary {
@@ -225,10 +233,10 @@
   border: 1px solid var(--color-border);
   color: var(--color-text);
 }
-
-.btn-secondary:hover {
-  background: var(--color-surface);
-  border-color: var(--color-primary);
+@media (hover: hover) and (pointer: fine) {
+    .btn-secondary:hover {
+      background: var(--color-surface);
+      border-color: var(--color-primary);}
 }
 
 /* Card Base */
@@ -239,17 +247,13 @@
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--color-border-light);
 }
-
-.card:hover {
-  box-shadow: var(--shadow-md);
+@media (hover: hover) and (pointer: fine) {
+    .card:hover {
+      box-shadow: var(--shadow-md);}
 }
 
 /* Progress Ring Animation */
-@keyframes progress-ring {
-  from {
-    stroke-dashoffset: 283;
-  }
-}
+
 
 /* Touch input readability and native gesture handling. */
 @media (pointer: coarse) {

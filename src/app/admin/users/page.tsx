@@ -295,7 +295,9 @@ export default function AdminUsersPage() {
           display: inline-flex; align-items: center; gap: 6px;
           color: #64748b; font-size: 14px; text-decoration: none; margin-bottom: 10px;
         }
-        .back-link:hover { color: #1e40af; }
+@media (hover: hover) and (pointer: fine) {
+    .back-link:hover {     color: #1e40af; }
+}
         h1 { font-size: 26px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
         .header-sub { font-size: 14px; color: #94a3b8; margin: 0; }
         .filters-row { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }

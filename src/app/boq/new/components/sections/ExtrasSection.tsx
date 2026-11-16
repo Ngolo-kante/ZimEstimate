@@ -47,7 +47,7 @@ function Segmented<T extends string | number>({ label, value, options, onChange 
             type="button"
             aria-pressed={value === option.value}
             onClick={() => onChange(option.value)}
-            className={`min-h-9 rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${value === option.value ? 'border-blue-500 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300'}`}
+            className={`min-h-9 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-none ${value === option.value ? 'border-blue-500 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300'}`}
           >
             {option.label}
           </button>
@@ -187,7 +187,7 @@ export default function ExtrasSection() {
         const on = extras[id].enabled;
         const subtotal = subtotals.get(id);
         return (
-          <section key={id} className={`overflow-hidden rounded-2xl border bg-white transition ${on ? 'border-blue-400 ring-1 ring-blue-400' : 'border-slate-200'}`}>
+          <section key={id} className={`overflow-hidden rounded-2xl border bg-white transition-none ${on ? 'border-blue-400 ring-1 ring-blue-400' : 'border-slate-200'}`}>
             <div className="flex items-start gap-3 p-4 sm:p-5">
               <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${on ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>{ICONS[id]}</span>
               <div className="min-w-0 flex-1">
@@ -205,9 +205,9 @@ export default function ExtrasSection() {
                 aria-checked={on}
                 aria-label={`Add ${info.label}`}
                 onClick={() => set(id, { enabled: !on } as Partial<HouseExtras[typeof id]>)}
-                className={`relative h-6 w-11 shrink-0 rounded-full transition ${on ? 'bg-blue-600' : 'bg-slate-300'}`}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-none ${on ? 'bg-blue-600' : 'bg-slate-300'}`}
               >
-                <span aria-hidden="true" className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${on ? 'left-[22px]' : 'left-0.5'}`} />
+                <span aria-hidden="true" className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-none ${on ? 'left-[22px]' : 'left-0.5'}`} />
               </button>
             </div>
             {on && options(id) && <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-4 sm:px-5">{options(id)}</div>}

@@ -329,7 +329,7 @@ export default function ScraperPage() {
                                 <Plus size={16} weight="bold" /> New Scraper
                             </Button>
                             <Button onClick={handleRunAll} disabled={isBulkRunning} className="run-all-btn">
-                                <ArrowsClockwise size={18} className={isBulkRunning ? 'animate-spin' : ''} weight="bold" />
+                                <ArrowsClockwise size={18} className={isBulkRunning ? 'animate-spin motion-reduce:animate-none' : ''} weight="bold" />
                                 {isBulkRunning ? 'Running Jobs...' : 'Sync Visible Scrapers'}
                             </Button>
                         </div>
@@ -615,10 +615,11 @@ export default function ScraperPage() {
                     color: #64748b;
                     font-size: 0.9rem;
                     text-decoration: none;
-                    transition: color 0.2s;
+                    transition: none;
                 }
-                
-                .back-link:hover { color: #0f172a; }
+@media (hover: hover) and (pointer: fine) {
+    .back-link:hover {     color: #0f172a; }
+}
 
                 .status-indicator {
                     display: flex;
@@ -635,7 +636,7 @@ export default function ScraperPage() {
                     border-radius: 50%;
                 }
                 .status-dot.ready { background: #22c55e; box-shadow: 0 0 0 2px #dcfce7; }
-                .status-dot.processing { background: #3b82f6; box-shadow: 0 0 0 2px #dbeafe; animation: pulse 1.5s infinite; }
+                .status-dot.processing { background: #3b82f6; box-shadow: 0 0 0 2px #dbeafe; animation: none; }
 
                 .header-main {
                     display: flex;
@@ -651,9 +652,9 @@ export default function ScraperPage() {
                     margin: 0 0 8px 0;
                     letter-spacing: -0.02em;
                 }
-                
+
                 .header-main p { color: #64748b; margin: 0; }
-                
+
                 .header-actions {
                     display: flex;
                     gap: 12px;
@@ -671,10 +672,12 @@ export default function ScraperPage() {
                     font-size: 0.9rem;
                     font-weight: 600;
                     text-decoration: none;
-                    transition: all 0.2s;
+                    transition: none;
                 }
-                .review-link-btn:hover {
-                    background: #fde68a;
+                @media (hover: hover) and (pointer: fine) {
+                    .review-link-btn:hover {
+                        background: #fde68a;
+                }
                 }
 
                 .run-all-btn :global(button) {
@@ -701,7 +704,7 @@ export default function ScraperPage() {
                 .progress-fill {
                     height: 100%;
                     background: #3b82f6;
-                    transition: width 0.3s ease;
+                    transition: none;
                 }
 
                 .progress-text {
@@ -718,7 +721,7 @@ export default function ScraperPage() {
                 }
 
                 .search-filter { flex: 1; max-width: 400px; }
-                
+
                 .category-filter select {
                     height: 100%;
                     padding: 0 16px;
@@ -742,16 +745,17 @@ export default function ScraperPage() {
                     border: 1px solid #e2e8f0;
                     border-radius: 16px;
                     padding: 24px;
-                    transition: all 0.2s;
+                    transition: none;
                     display: flex;
                     flex-direction: column;
                 }
-                
-                .config-card:hover {
-                    border-color: #cbd5e1;
-                    box-shadow: 0 4px 20px -4px rgba(0,0,0,0.05);
+                @media (hover: hover) and (pointer: fine) {
+                    .config-card:hover {
+                        border-color: #cbd5e1;
+                        box-shadow: 0 4px 20px -4px rgba(0,0,0,0.05);
                 }
-                
+                }
+
                 .config-card.inactive { opacity: 0.7; }
 
                 .card-header {
@@ -762,7 +766,7 @@ export default function ScraperPage() {
                 }
 
                 .site-info h3 { margin: 8px 0 0 0; font-size: 1.1rem; font-weight: 700; }
-                
+
                 .status-badge {
                     font-size: 0.7rem;
                     text-transform: uppercase;
@@ -771,7 +775,7 @@ export default function ScraperPage() {
                     font-weight: 600;
                     letter-spacing: 0.05em;
                 }
-                
+
                 .status-badge.active { background: #dcfce7; color: #166534; }
                 .status-badge.paused { background: #f1f5f9; color: #64748b; }
                 .status-badge.mode-badge { background: #dbeafe; color: #1d4ed8; }
@@ -779,7 +783,7 @@ export default function ScraperPage() {
                 .badge-row { display: flex; gap: 6px; flex-wrap: wrap; }
 
                 .card-actions { display: flex; gap: 8px; }
-                
+
                 .card-actions button {
                     width: 32px;
                     height: 32px;
@@ -791,11 +795,14 @@ export default function ScraperPage() {
                     background: white;
                     color: #64748b;
                     cursor: pointer;
-                    transition: all 0.2s;
+                    transition: none;
                 }
-                
-                .card-actions button:hover { border-color: #94a3b8; color: #0f172a; }
-                .card-actions button.delete:hover { border-color: #fecaca; color: #ef4444; background: #fef2f2; }
+@media (hover: hover) and (pointer: fine) {
+    .card-actions button:hover {     border-color: #94a3b8; color: #0f172a; }
+}
+@media (hover: hover) and (pointer: fine) {
+    .card-actions button.delete:hover {     border-color: #fecaca; color: #ef4444; background: #fef2f2; }
+}
 
                 .card-details {
                     flex: 1;
@@ -807,7 +814,7 @@ export default function ScraperPage() {
 
                 .detail-item { display: flex; flex-direction: column; gap: 4px; }
                 .detail-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-                
+
                 .label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; }
                 .value { font-size: 0.9rem; font-family: monospace; color: #334155; }
                 .value.url { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -828,29 +835,29 @@ export default function ScraperPage() {
                 }
 
                 .test-btn { width: 100%; border-color: #e2e8f0; }
-                
+
                 /* Modal */
                 .modal-overlay {
                     position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
                     display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;
                 }
-                
+
                 .modal-content {
                     background: white; width: 100%; max-width: 500px;
                     border-radius: 20px; padding: 32px;
                     box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2);
                 }
-                
+
                 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
                 .modal-header h3 { margin: 0; font-size: 1.25rem; }
                 .modal-header button { font-size: 1.5rem; color: #94a3b8; background: none; border: none; cursor: pointer; }
-                
+
                 .form-group { margin-bottom: 16px; }
                 .form-group label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; color: #475569; }
                 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-                
+
                 select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; }
-                
+
                 .selectors-section { background: #f8fafc; padding: 16px; border-radius: 12px; margin-bottom: 24px; border: 1px solid #e2e8f0; }
                 .selectors-section h4 { margin: 0 0 12px 0; font-size: 0.9rem; color: #64748b; }
 
@@ -865,9 +872,11 @@ export default function ScraperPage() {
                     font-size: 0.9rem;
                     font-weight: 500;
                     cursor: pointer;
-                    transition: all 0.2s;
+                    transition: none;
                 }
-                .mode-btn:hover { border-color: #94a3b8; }
+@media (hover: hover) and (pointer: fine) {
+    .mode-btn:hover {     border-color: #94a3b8; }
+}
                 .mode-btn.active {
                     background: #0f172a;
                     color: white;
@@ -879,12 +888,12 @@ export default function ScraperPage() {
                     color: #94a3b8;
                     margin-top: 4px;
                 }
-                
+
                 .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
 
                 .loading-state { text-align: center; padding: 60px; color: #94a3b8; }
                 .spinner { width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s infinite; margin: 0 auto 16px auto; }
-                
+
                 .empty-state {
                     text-align: center; padding: 60px; border: 2px dashed #e2e8f0; border-radius: 20px;
                     color: #94a3b8;
@@ -892,7 +901,7 @@ export default function ScraperPage() {
                 .empty-state h3 { color: #0f172a; margin: 16px 0 8px 0; }
                 .empty-state p { margin-bottom: 24px; }
 
-                @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
                 @keyframes spin { to { transform: rotate(360deg); } }
 
                 @media (max-width: 768px) {
@@ -901,7 +910,11 @@ export default function ScraperPage() {
                     .header-actions button { flex: 1; }
                     .filters-row { flex-direction: column; }
                 }
-             `}</style>
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
+                }
+            `}</style>
         </>
     );
 }

@@ -446,7 +446,7 @@ export default function SupplierAnalyticsPage() {
           .timeline-bar .bar-fill {
             width: 100%;
             border-radius: 12px;
-            transition: height 0.3s ease;
+            transition: none;
           }
 
           .timeline-bar span {
@@ -525,7 +525,11 @@ export default function SupplierAnalyticsPage() {
               grid-template-columns: 1fr;
             }
           }
-        `}</style>
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
+                }
+            `}</style>
       </>
     </ProtectedRoute>
   );

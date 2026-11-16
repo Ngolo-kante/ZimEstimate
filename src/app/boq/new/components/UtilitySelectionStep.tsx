@@ -92,7 +92,7 @@ export default function UtilitySelectionStep({ selection, onToggle }: UtilitySel
         .reveal-card {
           opacity: 0;
           transform: translateY(20px);
-          transition: opacity 0.6s ease, transform 0.6s ease;
+          transition: none;
         }
 
         .reveal-card.in-view {
@@ -105,16 +105,16 @@ export default function UtilitySelectionStep({ selection, onToggle }: UtilitySel
           height: 100%;
           cursor: pointer;
           border: 2px solid transparent !important; /* Force override */
-          transition: all 0.2s ease;
+          transition: none;
           position: relative;
           overflow: hidden;
         }
-
-        :global(.utility-card:hover) {
-          border-color: var(--color-border) !important;
-          transform: translateY(-2px);
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      @media (hover: hover) and (pointer: fine) {
+          :global(.utility-card:hover) {
+              border-color: var(--color-border) !important;
+              box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
+      }
 
         :global(.utility-card.selected) {
           border-color: var(--color-accent) !important;
@@ -162,7 +162,7 @@ export default function UtilitySelectionStep({ selection, onToggle }: UtilitySel
           align-items: center;
           justify-content: center;
           color: var(--color-accent);
-          transition: all 0.2s ease;
+          transition: none;
           flex-shrink: 0;
         }
 

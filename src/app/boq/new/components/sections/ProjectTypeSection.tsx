@@ -1,7 +1,7 @@
 'use client';
 
 import { type ComponentType } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import {
   HouseLine,
   Wrench,
@@ -87,24 +87,22 @@ export default function ProjectTypeSection() {
             const Icon = PROJECT_TYPE_ICONS[type.id];
             const isSelected = selectedType === type.id;
             return (
-              <motion.button
+              <button
                 key={type.id}
                 type="button"
-                whileHover={{ scale: 1.015, y: -2 }}
-                whileTap={{ scale: 0.97 }}
                 onClick={() => handleSelectType(type.id as ProjectTypeId)}
-                className={`group relative flex flex-col items-start gap-4 rounded-2xl border p-6 text-left transition-all duration-200 shadow-sm ${
+                className={`group relative flex flex-col items-start gap-4 rounded-2xl border p-6 text-left transition-none duration-200 shadow-sm ${
                   isSelected
                     ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                     : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-md'
                 }`}
               >
                 {/* Selected indicator */}
-                <div className={`absolute top-4 right-4 transition-all duration-200 ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
+                <div className={`absolute top-4 right-4 transition-none duration-200 ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
                   <CheckCircle weight="fill" size={20} className="text-blue-500" />
                 </div>
 
-                <div className={`flex h-12 w-12 items-center justify-center rounded-xl transition-colors ${
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl transition-none ${
                   isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 wiz-text-muted group-hover:bg-blue-50 group-hover:text-blue-600'
                 }`}>
                   {Icon && <Icon size={22} weight={isSelected ? 'fill' : 'regular'} />}
@@ -125,7 +123,7 @@ export default function ProjectTypeSection() {
                 }`}>
                   {type.id === 'full_house' ? 'All Stages' : 'Select Stages'}
                 </div>
-              </motion.button>
+              </button>
             );
           })}
         </div>
@@ -134,28 +132,20 @@ export default function ProjectTypeSection() {
       {/* Full House confirmation */}
       <AnimatePresence>
         {selectedType === 'full_house' && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
+          <div
           >
             <div className="wiz-alert wiz-alert--info">
               <Info size={14} weight="fill" className="wiz-alert__icon" />
               <p>All {MANUAL_BUILDER_STAGES.length} building stages will be included: {MANUAL_BUILDER_STAGES.map((stage) => stage.label).join(', ').replace(/, ([^,]*)$/, ' and $1')}.</p>
             </div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
       {/* ── Stage Toggles — only shown for "Building in Stages" ─────────── */}
       <AnimatePresence>
         {selectedType === 'building_in_stages' && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
+          <div
           >
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
@@ -172,18 +162,17 @@ export default function ProjectTypeSection() {
                 const isSelected = (selectedStages ?? []).includes(stage.id);
 
                 return (
-                  <motion.button
+                  <button
                     key={stage.id}
                     type="button"
-                    whileTap={{ scale: 0.97 }}
                     onClick={() => handleToggleStage(stage.id)}
-                    className={`group relative flex items-start gap-3 rounded-xl border p-4 text-left transition-all duration-200 ${
+                    className={`group relative flex items-start gap-3 rounded-xl border p-4 text-left transition-none duration-200 ${
                       isSelected
                         ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
                         : 'border-slate-200 bg-white opacity-60 hover:opacity-90 hover:border-blue-200 hover:shadow-sm'
                     }`}
                   >
-                    <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
+                    <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-none ${
                       isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-[var(--color-text-muted)]'
                     }`}>
                       <StageIcon size={16} weight={isSelected ? 'fill' : 'regular'} />
@@ -196,10 +185,10 @@ export default function ProjectTypeSection() {
                         {stage.description}
                       </p>
                     </div>
-                    <div className={`flex-shrink-0 mt-0.5 transition-all duration-200 ${isSelected ? 'opacity-100' : 'opacity-0'}`}>
+                    <div className={`flex-shrink-0 mt-0.5 transition-none duration-200 ${isSelected ? 'opacity-100' : 'opacity-0'}`}>
                       <Check weight="bold" size={14} className="text-blue-500" />
                     </div>
-                  </motion.button>
+                  </button>
                 );
               })}
             </div>
@@ -216,7 +205,7 @@ export default function ProjectTypeSection() {
                 <p>Click any stage to toggle it. At least one stage must remain selected.</p>
               </div>
             )}
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

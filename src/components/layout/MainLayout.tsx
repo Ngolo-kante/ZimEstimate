@@ -129,7 +129,7 @@ function MobileBottomNav() {
           border-radius: 8px;
           background: transparent;
           border: 1px solid transparent;
-          transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+          transition: none;
         }
 
         .nav-text {
@@ -312,13 +312,15 @@ export default function MainLayout({
           font-size: 0.875rem;
           font-family: inherit;
           cursor: pointer;
-          transition: color 0.2s ease;
+          transition: none;
         }
         @media (hover: hover) and (pointer: fine) {
-          .footer-right :global(a:hover),
+        @media (hover: hover) and (pointer: fine) {
+            .footer-right :global(a:hover),
           .footer-right button:hover {
-            color: var(--color-primary);
+                color: var(--color-primary);
           }
+        }
         }
 
         @media (max-width: 900px) {

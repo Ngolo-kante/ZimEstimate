@@ -47,7 +47,7 @@ export default function Button({
           gap: 0.5rem;
           font-weight: 500;
           border-radius: var(--radius-md);
-          transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, color 160ms ease;
+          transition: transform 160ms var(--ease-out);
           cursor: pointer;
           border: none;
           font-family: inherit;
@@ -58,12 +58,14 @@ export default function Button({
           cursor: not-allowed;
         }
 
-        .btn:active:not(:disabled) { transform: scale(0.97); }
+        .btn:active:not(:disabled):not(:focus-visible) { transform: scale(0.97); }
 
         @media (prefers-reduced-motion: reduce) {
-          .btn { transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, color 160ms ease; }
-          .btn:active:not(:disabled) { transform: none; }
+          .btn { transition: none; }
+          .btn:active:not(:disabled):not(:focus-visible) { transform: none; }
         }
+
+        .btn:focus-visible { transition: none; }
 
         /* Sizes */
         .btn-sm {
@@ -87,9 +89,11 @@ export default function Button({
           color: white;
         }
         @media (hover: hover) and (pointer: fine) {
-          .btn-primary:hover:not(:disabled) {
-            background: var(--color-accent-dark);
+        @media (hover: hover) and (pointer: fine) {
+            .btn-primary:hover:not(:disabled) {
+                background: var(--color-accent-dark);
           }
+        }
         }
 
         .btn-secondary {
@@ -98,10 +102,12 @@ export default function Button({
           color: var(--color-text);
         }
         @media (hover: hover) and (pointer: fine) {
-          .btn-secondary:hover:not(:disabled) {
-            background: var(--color-surface);
-            border-color: var(--color-primary);
+        @media (hover: hover) and (pointer: fine) {
+            .btn-secondary:hover:not(:disabled) {
+                background: var(--color-surface);
+                border-color: var(--color-primary);
           }
+        }
         }
 
         .btn-ghost {
@@ -109,10 +115,12 @@ export default function Button({
           color: var(--color-text-secondary);
         }
         @media (hover: hover) and (pointer: fine) {
-          .btn-ghost:hover:not(:disabled) {
-            background: var(--color-border-light);
-            color: var(--color-text);
+        @media (hover: hover) and (pointer: fine) {
+            .btn-ghost:hover:not(:disabled) {
+                background: var(--color-border-light);
+                color: var(--color-text);
           }
+        }
         }
 
         .btn-danger {
@@ -120,9 +128,11 @@ export default function Button({
           color: white;
         }
         @media (hover: hover) and (pointer: fine) {
-          .btn-danger:hover:not(:disabled) {
-            background: #dc2626;
+        @media (hover: hover) and (pointer: fine) {
+            .btn-danger:hover:not(:disabled) {
+                background: #dc2626;
           }
+        }
         }
 
         .full-width {
@@ -149,7 +159,11 @@ export default function Button({
             transform: rotate(360deg);
           }
         }
-      `}</style>
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
+                }
+            `}</style>
     </>
   );
 }

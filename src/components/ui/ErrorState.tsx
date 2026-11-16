@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
 import { WarningCircle, ArrowCounterClockwise, CaretDown, CaretUp } from '@phosphor-icons/react';
 
 export interface ErrorStateProps {
@@ -25,13 +24,9 @@ export default function ErrorState({
   className = '',
 }: ErrorStateProps) {
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
-  const reduceMotion = useReducedMotion();
 
   return (
-    <motion.div
-      initial={reduceMotion ? false : { opacity: 0, scale: 0.98 }}
-      animate={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
-      transition={{ duration: 0.2, ease: 'easeOut' }}
+    <div
       role="alert"
       aria-live="assertive"
       className={`flex flex-col items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-8 sm:px-8 sm:py-10 text-center shadow-xs ${className}`}
@@ -57,21 +52,18 @@ export default function ErrorState({
             onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
             aria-expanded={showTechnicalDetails}
             aria-label="Toggle technical error details"
-            className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--color-muted)] hover:text-[var(--color-text-secondary)] transition outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-accent)] rounded px-1"
+            className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--color-muted)] hover:text-[var(--color-text-secondary)] transition-none outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-accent)] rounded px-1"
           >
             <span>{showTechnicalDetails ? 'Hide details' : 'Technical details'}</span>
             {showTechnicalDetails ? <CaretUp size={12} /> : <CaretDown size={12} />}
           </button>
 
           {showTechnicalDetails && (
-            <motion.div
-              initial={reduceMotion ? false : { height: 0, opacity: 0 }}
-              animate={reduceMotion ? undefined : { height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
+            <div
               className="mt-2 overflow-hidden rounded-xl border border-[var(--color-border-light)] bg-[var(--color-background)] p-3 text-left font-mono text-[12px] text-[var(--color-text-secondary)] break-all"
             >
               <code>{technicalDetail}</code>
-            </motion.div>
+            </div>
           )}
         </div>
       )}
@@ -82,7 +74,7 @@ export default function ErrorState({
           <button
             type="button"
             onClick={onRetry}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-xs sm:text-sm font-bold text-[var(--color-surface)] shadow-sm transition-all hover:bg-[var(--color-primary-light)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] cursor-pointer"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-xs sm:text-sm font-bold text-[var(--color-surface)] shadow-sm transition-none hover:bg-[var(--color-primary-light)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] cursor-pointer"
             aria-label={retryLabel}
           >
             <ArrowCounterClockwise size={16} />
@@ -90,6 +82,6 @@ export default function ErrorState({
           </button>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }

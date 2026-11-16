@@ -499,13 +499,13 @@ export default function MarketInsightsPage() {
           align-items: flex-start;
           gap: var(--space-4);
           box-shadow: var(--shadow-sm);
-          transition: transform var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out);
+          transition: none;
         }
-
-        .stat-card:hover {
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-md);
+      @media (hover: hover) and (pointer: fine) {
+          .stat-card:hover {
+              box-shadow: var(--shadow-md);
         }
+      }
 
         /* The cards are buttons now: they sort or filter the list. */
         button.stat-card {
@@ -652,15 +652,16 @@ export default function MarketInsightsPage() {
           color: var(--color-text-secondary);
           font-weight: var(--font-medium);
           cursor: pointer;
-          transition: all var(--duration-fast) var(--ease-default);
+          transition: none;
           text-align: left;
           font-family: var(--font-body);
         }
-
-        .category-pill:hover {
-          background: var(--color-mist);
-          color: var(--color-text);
+      @media (hover: hover) and (pointer: fine) {
+          .category-pill:hover {
+              background: var(--color-mist);
+              color: var(--color-text);
         }
+      }
 
         .category-pill.active {
           background: rgba(46, 108, 246, 0.08);
@@ -709,10 +710,11 @@ export default function MarketInsightsPage() {
           outline: none;
           font-family: var(--font-body);
         }
-        
-        .sort-control select:hover {
-          color: var(--color-primary);
+      @media (hover: hover) and (pointer: fine) {
+          .sort-control select:hover {
+              color: var(--color-primary);
         }
+      }
 
         .prices-container {
           background: var(--color-surface);
@@ -749,18 +751,19 @@ export default function MarketInsightsPage() {
           color: var(--color-text);
           vertical-align: middle;
         }
-        
+
         .prices-table tr:last-child td {
           border-bottom: none;
         }
-        
+
         .prices-table tr:nth-child(even) {
           background-color: var(--table-zebra-bg);
         }
-
-        .prices-table tr:hover {
-          background-color: var(--table-row-hover);
+      @media (hover: hover) and (pointer: fine) {
+          .prices-table tr:hover {
+              background-color: var(--table-row-hover);
         }
+      }
 
         .material-info {
           display: flex;
@@ -799,7 +802,7 @@ export default function MarketInsightsPage() {
         .trend-badge.up { background: rgba(22, 163, 74, 0.1); color: var(--color-emerald); }
         .trend-badge.down { background: rgba(220, 38, 38, 0.1); color: var(--color-danger); }
         .trend-badge.stable { background: var(--color-mist); color: var(--color-text-secondary); }
-        
+
         .dash {
           width: 6px;
           height: 2px;
@@ -841,10 +844,11 @@ export default function MarketInsightsPage() {
           color: var(--color-accent);
           text-decoration: none;
         }
-
-        .join-cta__actions :global(a:hover) {
-          text-decoration: underline;
+      @media (hover: hover) and (pointer: fine) {
+          .join-cta__actions :global(a:hover) {
+              text-decoration: underline;
         }
+      }
 
         .market-disclaimer {
           display: flex;
@@ -857,15 +861,16 @@ export default function MarketInsightsPage() {
           color: var(--color-text-secondary);
           font-size: var(--text-sm);
         }
-        
+
         .market-disclaimer p { margin: 0; }
         .quote-link {
           color: var(--color-accent);
           font-weight: var(--font-medium);
           text-decoration: none;
         }
-        
-        .quote-link:hover { text-decoration: underline; }
+@media (hover: hover) and (pointer: fine) {
+    .quote-link:hover {     text-decoration: underline; }
+}
 
         .loading-state {
           display: flex;
@@ -876,7 +881,7 @@ export default function MarketInsightsPage() {
           color: var(--color-text-muted);
           gap: var(--space-4);
         }
-        
+
         .spinner {
           width: 32px;
           height: 32px;
@@ -885,7 +890,7 @@ export default function MarketInsightsPage() {
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
         }
-        
+
         @keyframes spin { to { transform: rotate(360deg); } }
 
         @media (max-width: 900px) {
@@ -944,7 +949,11 @@ export default function MarketInsightsPage() {
             .prices-table td.col-name { display: block; text-align: left; padding: 12px 0 10px; }
             .prices-table td.col-name::before { content: none; }
         }
-      `}</style>
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
+                }
+            `}</style>
     </MainLayout>
   );
 }

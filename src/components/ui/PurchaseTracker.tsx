@@ -208,14 +208,16 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
           border: 1px solid var(--color-border-light);
           border-radius: var(--radius-md);
           padding: var(--spacing-md);
-          transition: background-color 0.2s ease, border-color 0.2s ease;
+          transition: none;
           box-shadow: 0 10px 20px rgba(6, 20, 47, 0.06);
         }
 
         @media (hover: hover) and (pointer: fine) {
-          .purchase-tracker:hover {
-            border-color: var(--color-border);
+        @media (hover: hover) and (pointer: fine) {
+            .purchase-tracker:hover {
+                border-color: var(--color-border);
           }
+        }
         }
 
         .purchase-tracker.purchased {
@@ -235,13 +237,15 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
           cursor: pointer;
           padding: 4px;
           color: var(--color-border);
-          transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+          transition: none;
         }
 
         @media (hover: hover) and (pointer: fine) {
-          .status-btn:hover {
-            color: var(--color-accent);
+        @media (hover: hover) and (pointer: fine) {
+            .status-btn:hover {
+                color: var(--color-accent);
           }
+        }
         }
 
         .status-btn.checked {
@@ -325,14 +329,16 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
           font-size: 0.75rem;
           color: var(--color-text-secondary);
           cursor: pointer;
-          transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+          transition: none;
         }
 
         @media (hover: hover) and (pointer: fine) {
-          .edit-btn:hover {
-            border-color: var(--color-accent);
-            color: var(--color-accent);
+        @media (hover: hover) and (pointer: fine) {
+            .edit-btn:hover {
+                border-color: var(--color-accent);
+                color: var(--color-accent);
           }
+        }
         }
 
         .edit-panel {
@@ -418,9 +424,11 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
         }
 
         @media (hover: hover) and (pointer: fine) {
-          .cancel-btn:hover {
-            background: var(--color-background);
+        @media (hover: hover) and (pointer: fine) {
+            .cancel-btn:hover {
+                background: var(--color-background);
           }
+        }
         }
 
         .save-btn {
@@ -430,9 +438,11 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
         }
 
         @media (hover: hover) and (pointer: fine) {
-          .save-btn:hover {
-            background: var(--color-success-dark, #059669);
+        @media (hover: hover) and (pointer: fine) {
+            .save-btn:hover {
+                background: var(--color-success-dark, #059669);
           }
+        }
         }
 
         @media (max-width: 640px) {
@@ -462,7 +472,7 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
           width: 10px;
           height: 10px;
           top: -10px;
-          animation: confetti-fall 2.5s ease-out forwards;
+          animation: none;
         }
 
         .confetti-piece:nth-child(odd) {
@@ -473,18 +483,7 @@ export default function PurchaseTracker({ item, onUpdate, onPurchase }: Purchase
           transform: rotate(45deg);
         }
 
-        @keyframes confetti-fall {
-          0% {
-            top: -10px;
-            opacity: 1;
-            transform: translateX(0) rotate(0deg);
-          }
-          100% {
-            top: 100%;
-            opacity: 0;
-            transform: translateX(calc(-50px + 100px * var(--random, 0.5))) rotate(720deg);
-          }
-        }
+
 
         .purchase-tracker {
           position: relative;

@@ -104,7 +104,7 @@ export default function BudgetFitExplorer({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-blue-700"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition-none hover:text-blue-700"
         >
           <ArrowLeft size={16} />
           {backLabel}
@@ -141,7 +141,7 @@ export default function BudgetFitExplorer({
                   type="button"
                   aria-pressed={active}
                   onClick={() => setVariant(option.value)}
-                  className={`rounded-xl border p-3 text-left transition ${
+                  className={`rounded-xl border p-3 text-left transition-none ${
                     active
                       ? 'border-blue-500 bg-blue-50/60 ring-1 ring-blue-500'
                       : 'border-slate-200 bg-white hover:border-slate-300'

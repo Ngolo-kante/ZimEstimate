@@ -502,7 +502,9 @@ function BoqScannerContent() {
           font-size: max(0.85rem, 16px);
         }
         .row .remove { padding: 7px; border: none; background: none; color: var(--color-text-muted); }
-        .row .remove:hover { color: var(--color-error); }
+@media (hover: hover) and (pointer: fine) {
+    .row .remove:hover {     color: var(--color-error); }
+}
         .row-note { grid-column: 1 / -1; margin: 2px 0 0; font-size: 0.75rem; color: var(--color-warning); }
 
         .save-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
@@ -520,7 +522,11 @@ function BoqScannerContent() {
           .row .remove { grid-column: 2; justify-self: end; }
           .save-row button, .upload-actions button { flex: 1; }
         }
-      `}</style>
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
+                }
+            `}</style>
     </div>
   );
 }

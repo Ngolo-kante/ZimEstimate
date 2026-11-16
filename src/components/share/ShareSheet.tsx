@@ -181,7 +181,11 @@ export default function ShareSheet({ isOpen, onClose, name, summary, hasItems, b
         .note, .loading { margin: 10px 0 0; font-size: 0.8rem; color: var(--color-text-secondary); display: flex; align-items: center; gap: 6px; }
         :global(.spin) { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
+                }
+            `}</style>
     </div>
   );
 }

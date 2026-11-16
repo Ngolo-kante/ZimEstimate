@@ -191,9 +191,11 @@ export default function ProjectPickerModal({
                 }
 
                 @media (hover: hover) and (pointer: fine) {
-                  .close-btn:hover {
-                      background: var(--color-border-light);
-                      color: var(--color-text);
+                  @media (hover: hover) and (pointer: fine) {
+                      .close-btn:hover {
+                          background: var(--color-border-light);
+                          color: var(--color-text);
+                  }
                   }
                 }
 
@@ -237,14 +239,16 @@ export default function ProjectPickerModal({
                     border: 2px solid transparent;
                     border-radius: var(--radius-md);
                     cursor: pointer;
-                    transition: background-color 0.15s ease, border-color 0.15s ease;
+                    transition: none;
                     margin-bottom: var(--spacing-sm);
                     text-align: left;
                 }
 
                 @media (hover: hover) and (pointer: fine) {
-                  .project-item:hover {
-                      border-color: var(--color-border);
+                  @media (hover: hover) and (pointer: fine) {
+                      .project-item:hover {
+                          border-color: var(--color-border);
+                  }
                   }
                 }
 
@@ -302,6 +306,10 @@ export default function ProjectPickerModal({
                     gap: var(--spacing-sm);
                     padding: var(--spacing-lg);
                     border-top: 1px solid var(--color-border-light);
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
                 }
             `}</style>
         </>

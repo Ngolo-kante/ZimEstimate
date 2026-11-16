@@ -194,7 +194,7 @@ export default function QuickBOQTable({
           <h2 className="text-xl font-bold text-slate-900">Project Cost Summary</h2>
           <button
             onClick={() => setClientView(false)}
-            className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+            className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-none"
           >
             Back to full BOQ
           </button>
@@ -248,7 +248,7 @@ export default function QuickBOQTable({
           {isContractor && (
             <button
               onClick={() => setClientView(true)}
-              className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-none"
             >
               Client view
             </button>
@@ -256,7 +256,7 @@ export default function QuickBOQTable({
 
           <button
             onClick={() => handleAuthGatedAction('pdf')}
-            className="min-h-11 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            className="min-h-11 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-none"
           >
             {!isAuthenticated && <Lock size={12} />}
             <Download size={14} />
@@ -265,7 +265,7 @@ export default function QuickBOQTable({
 
           <button
             onClick={() => handleAuthGatedAction('save')}
-            className="min-h-11 inline-flex items-center gap-1.5 rounded-lg border border-blue-600 bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors shadow-sm"
+            className="min-h-11 inline-flex items-center gap-1.5 rounded-lg border border-blue-600 bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-none shadow-sm"
           >
             {!isAuthenticated && <Lock size={12} />}
             <FloppyDisk size={14} />
@@ -474,7 +474,7 @@ export default function QuickBOQTable({
                           aria-label={`${item.included ? 'Remove' : 'Add'} ${item.description} ${item.included ? 'from' : 'to'} the BOQ`}
                           aria-pressed={item.included}
                           onClick={() => toggleItem(item.id)}
-                          className="p-1 rounded hover:bg-slate-100 transition-colors"
+                          className="p-1 rounded hover:bg-slate-100 transition-none"
                         >
                           {item.included ? (
                             <ToggleRight
@@ -500,7 +500,7 @@ export default function QuickBOQTable({
           <button
             type="button"
             onClick={() => addCustomItem('Custom')}
-            className="min-h-11 inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            className="min-h-11 inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-none"
           >
             <Plus size={12} /> Add Item
           </button>

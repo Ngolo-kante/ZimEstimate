@@ -186,7 +186,7 @@ export default function ContractorProfilePage() {
             {contractor?.is_listed && (
               <Link
                 href={`/contractors/${contractor.id}`}
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition-none hover:bg-blue-700"
               >
                 View public profile
                 <ArrowRight size={15} weight="bold" />
@@ -197,7 +197,7 @@ export default function ContractorProfilePage() {
 
         {authLoading || loading ? (
           <div className="mt-6 flex min-h-72 flex-col items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white text-slate-500">
-            <SpinnerGap size={32} className="animate-spin" />
+            <SpinnerGap size={32} className="animate-spin motion-reduce:animate-none" />
             <p>Loading contractor profile...</p>
           </div>
         ) : !isContractor ? (
@@ -294,7 +294,7 @@ export default function ContractorProfilePage() {
                           <button
                             type="button"
                             onClick={() => markEnquiryRead(enquiry.id)}
-                            className="ml-auto rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-600 transition hover:bg-slate-50"
+                            className="ml-auto rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-600 transition-none hover:bg-slate-50"
                           >
                             Mark as read
                           </button>
@@ -314,7 +314,7 @@ export default function ContractorProfilePage() {
                   <input
                     value={form.company_name}
                     onChange={(event) => updateField('company_name', event.target.value)}
-                    className="h-11 rounded-md border border-slate-200 px-3 font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="h-11 rounded-md border border-slate-200 px-3 font-normal outline-none transition-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     required
                   />
                 </label>
@@ -328,7 +328,7 @@ export default function ContractorProfilePage() {
                     step="0.5"
                     value={form.default_markup_pct}
                     onChange={(event) => updateField('default_markup_pct', event.target.value)}
-                    className="h-11 rounded-md border border-slate-200 px-3 font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="h-11 rounded-md border border-slate-200 px-3 font-normal outline-none transition-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                   />
                 </label>
 
@@ -337,7 +337,7 @@ export default function ContractorProfilePage() {
                   <input
                     value={form.contact_phone}
                     onChange={(event) => updateField('contact_phone', event.target.value)}
-                    className="h-11 rounded-md border border-slate-200 px-3 font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="h-11 rounded-md border border-slate-200 px-3 font-normal outline-none transition-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     placeholder="+263..."
                   />
                 </label>
@@ -348,7 +348,7 @@ export default function ContractorProfilePage() {
                     type="email"
                     value={form.contact_email}
                     onChange={(event) => updateField('contact_email', event.target.value)}
-                    className="h-11 rounded-md border border-slate-200 px-3 font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="h-11 rounded-md border border-slate-200 px-3 font-normal outline-none transition-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     placeholder="name@example.com"
                   />
                 </label>
@@ -361,7 +361,7 @@ export default function ContractorProfilePage() {
                     max="80"
                     value={form.years_experience}
                     onChange={(event) => updateField('years_experience', event.target.value)}
-                    className="h-11 rounded-md border border-slate-200 px-3 font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="h-11 rounded-md border border-slate-200 px-3 font-normal outline-none transition-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                   />
                 </label>
               </div>
@@ -372,7 +372,7 @@ export default function ContractorProfilePage() {
                   value={form.about}
                   onChange={(event) => updateField('about', event.target.value)}
                   rows={5}
-                  className="resize-y rounded-md border border-slate-200 px-3 py-3 font-normal leading-6 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className="resize-y rounded-md border border-slate-200 px-3 py-3 font-normal leading-6 outline-none transition-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                   placeholder="Describe your work, preferred project types, and how clients should contact you."
                 />
               </label>
@@ -387,7 +387,7 @@ export default function ContractorProfilePage() {
                         type="button"
                         key={trade}
                         onClick={() => toggleArrayValue('trades', trade)}
-                        className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
+                        className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition-none ${
                           active
                             ? 'border-blue-600 bg-blue-600 text-white'
                             : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50'
@@ -410,7 +410,7 @@ export default function ContractorProfilePage() {
                         type="button"
                         key={area}
                         onClick={() => toggleArrayValue('service_areas', area)}
-                        className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
+                        className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition-none ${
                           active
                             ? 'border-slate-950 bg-slate-950 text-white'
                             : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
@@ -464,9 +464,9 @@ export default function ContractorProfilePage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition-none hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {saving && <SpinnerGap size={16} className="animate-spin" />}
+                {saving && <SpinnerGap size={16} className="animate-spin motion-reduce:animate-none" />}
                 Save contractor profile
               </button>
             </aside>

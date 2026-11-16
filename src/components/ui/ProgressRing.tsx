@@ -80,7 +80,7 @@ export default function ProgressRing({
         .progress-ring-progress {
           fill: none;
           stroke-linecap: round;
-          transition: stroke-dashoffset 0.5s ease;
+          transition: none;
         }
 
         .progress-label {
@@ -159,7 +159,7 @@ export function ProgressBar({
         .progress-bar-fill {
           height: 100%;
           border-radius: ${height}px;
-          transition: width 0.3s ease;
+          transition: none;
         }
 
         .progress-bar-label {

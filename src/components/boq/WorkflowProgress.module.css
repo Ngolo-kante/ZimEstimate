@@ -33,7 +33,7 @@
   display: block;
   background: #2563eb;
   border-radius: inherit;
-  transition: width 240ms ease;
+  transition: none;
 }
 
 .steps {

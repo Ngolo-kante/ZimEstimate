@@ -612,7 +612,7 @@ export default function TopNavbar() {
           font-weight: 500;
           color: var(--color-text-secondary);
           text-decoration: none;
-          transition: background-color 0.2s ease, color 0.2s ease;
+          transition: none;
         }
 
         .nav-menu-container {
@@ -636,7 +636,7 @@ export default function TopNavbar() {
           border: 1px solid #d8e0eb;
           border-radius: 8px;
           box-shadow: 0 18px 44px rgba(11, 31, 59, 0.16);
-          animation: slideUpFade 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+          animation: none;
         }
 
         .nav-dropdown-label {
@@ -657,17 +657,19 @@ export default function TopNavbar() {
           border-radius: 6px;
           color: var(--color-text-secondary);
           text-decoration: none;
-          transition: background 0.15s ease, color 0.15s ease;
+          transition: none;
         }
         :global(.nav-dropdown-link.active) {
           color: var(--color-primary);
           background: #f2f6fa;
         }
         @media (hover: hover) and (pointer: fine) {
-          :global(.nav-dropdown-link:hover) {
-            color: var(--color-primary);
-            background: #f2f6fa;
+        @media (hover: hover) and (pointer: fine) {
+            :global(.nav-dropdown-link:hover) {
+                color: var(--color-primary);
+                background: #f2f6fa;
           }
+        }
         }
 
         :global(.nav-dropdown-link strong) {
@@ -690,17 +692,21 @@ export default function TopNavbar() {
           width: 0;
           height: 2px;
           background-color: var(--color-primary);
-          transition: width 0.25s ease;
+          transition: none;
         }
         @media (hover: hover) and (pointer: fine) {
-          .nav-link:hover {
-            color: var(--color-text);
+        @media (hover: hover) and (pointer: fine) {
+            .nav-link:hover {
+                color: var(--color-text);
           }
         }
+        }
         @media (hover: hover) and (pointer: fine) {
-          .nav-link:hover::after {
-            width: 100%;
+        @media (hover: hover) and (pointer: fine) {
+            .nav-link:hover::after {
+                width: 100%;
           }
+        }
         }
 
         .nav-link.active {
@@ -732,17 +738,19 @@ export default function TopNavbar() {
           font-weight: 700;
           text-decoration: none;
           white-space: nowrap;
-          transition: border-color 0.15s ease, background 0.15s ease;
+          transition: none;
         }
         :global(.admin-panel-link.active) {
           border-color: var(--color-accent);
           background: var(--color-accent-muted);
         }
         @media (hover: hover) and (pointer: fine) {
-          :global(.admin-panel-link:hover) {
-            border-color: var(--color-accent);
-            background: var(--color-accent-muted);
+        @media (hover: hover) and (pointer: fine) {
+            :global(.admin-panel-link:hover) {
+                border-color: var(--color-accent);
+                background: var(--color-accent-muted);
           }
+        }
         }
 
         /* Generic Menu Container */
@@ -762,7 +770,7 @@ export default function TopNavbar() {
           box-shadow: 0 18px 44px rgba(11, 31, 59, 0.16);
           z-index: 200;
           overflow: hidden;
-          animation: slideUpFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          animation: none;
           transform-origin: top right;
         }
 
@@ -770,10 +778,7 @@ export default function TopNavbar() {
           width: 320px;
         }
 
-        @keyframes slideUpFade {
-          from { opacity: 0; transform: translateY(4px) scale(0.98); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
+
 
         /* Icon Buttons */
         .icon-btn {
@@ -787,17 +792,19 @@ export default function TopNavbar() {
           border-radius: 12px;
           color: var(--color-text-secondary);
           cursor: pointer;
-          transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+          transition: none;
         }
         .icon-btn.active {
           background: rgba(0,0,0,0.04);
           color: var(--color-text);
         }
         @media (hover: hover) and (pointer: fine) {
-          .icon-btn:hover {
-            background: rgba(0,0,0,0.04);
-            color: var(--color-text);
+        @media (hover: hover) and (pointer: fine) {
+            .icon-btn:hover {
+                background: rgba(0,0,0,0.04);
+                color: var(--color-text);
           }
+        }
         }
 
         .notification-btn {
@@ -828,7 +835,7 @@ export default function TopNavbar() {
           border-radius: 8px;
           color: var(--color-text);
           cursor: pointer;
-          transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+          transition: none;
           padding: 0 8px 0 0;
           gap: 8px;
         }
@@ -837,10 +844,12 @@ export default function TopNavbar() {
           box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
         @media (hover: hover) and (pointer: fine) {
-          .user-btn:hover {
-            border-color: var(--color-accent);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        @media (hover: hover) and (pointer: fine) {
+            .user-btn:hover {
+                border-color: var(--color-accent);
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
           }
+        }
         }
 
         .trigger-avatar {
@@ -895,7 +904,7 @@ export default function TopNavbar() {
 
         .profile-caret {
           color: var(--color-text-muted);
-          transition: transform 0.18s ease;
+          transition: none;
         }
 
         .profile-caret.open {
@@ -1059,9 +1068,11 @@ export default function TopNavbar() {
           border: 1px solid var(--color-primary);
         }
         @media (hover: hover) and (pointer: fine) {
-          :global(.auth-btn-primary:hover) {
-            background: var(--color-primary-dark);
+        @media (hover: hover) and (pointer: fine) {
+            :global(.auth-btn-primary:hover) {
+                background: var(--color-primary-dark);
           }
+        }
         }
 
         :global(.auth-btn-secondary) {
@@ -1070,9 +1081,11 @@ export default function TopNavbar() {
           border: 1px solid var(--color-primary);
         }
         @media (hover: hover) and (pointer: fine) {
-          :global(.auth-btn-secondary:hover) {
-            background: var(--color-primary-bg);
+        @media (hover: hover) and (pointer: fine) {
+            :global(.auth-btn-secondary:hover) {
+                background: var(--color-primary-bg);
           }
+        }
         }
 
         /* Sign-in-free quick actions below the auth buttons. Dedicated class
@@ -1089,14 +1102,16 @@ export default function TopNavbar() {
           color: var(--color-text-secondary);
           text-decoration: none;
           box-sizing: border-box;
-          transition: background 0.15s ease, color 0.15s ease;
+          transition: none;
           border-radius: 6px;
         }
         @media (hover: hover) and (pointer: fine) {
-          :global(.quick-link:hover) {
-            background: #f2f6fa;
-            color: var(--color-primary);
+        @media (hover: hover) and (pointer: fine) {
+            :global(.quick-link:hover) {
+                background: #f2f6fa;
+                color: var(--color-primary);
           }
+        }
         }
 
         :global(.admin-quick-link) {
@@ -1149,22 +1164,26 @@ export default function TopNavbar() {
           border: none;
           text-decoration: none;
           cursor: pointer;
-          transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+          transition: none;
           text-align: left;
         }
         @media (hover: hover) and (pointer: fine) {
-          .menu-item:hover {
-            background: #f9fafb;
-            color: var(--color-text);
+        @media (hover: hover) and (pointer: fine) {
+            .menu-item:hover {
+                background: #f9fafb;
+                color: var(--color-text);
           }
+        }
         }
 
         .menu-item.upgrade { color: #2563eb; }
         .menu-item.logout { color: #ef4444; }
         @media (hover: hover) and (pointer: fine) {
-          .menu-item.logout:hover {
-            background: #fef2f2;
+        @media (hover: hover) and (pointer: fine) {
+            .menu-item.logout:hover {
+                background: #fef2f2;
           }
+        }
         }
 
         /* Notifications Specific */
@@ -1210,13 +1229,15 @@ export default function TopNavbar() {
             gap: 12px;
             align-items: start;
             border-bottom: 1px solid var(--color-border-light);
-            transition: bg 0.2s;
+            transition: none;
             cursor: pointer;
         }
         @media (hover: hover) and (pointer: fine) {
-          .notification-item:hover {
-            background: #f9fafb;
+        @media (hover: hover) and (pointer: fine) {
+            .notification-item:hover {
+                background: #f9fafb;
           }
+        }
         }
 
         .notification-item:last-child { border-bottom: none; }
@@ -1278,9 +1299,11 @@ export default function TopNavbar() {
             text-decoration: none;
         }
         @media (hover: hover) and (pointer: fine) {
-          .view-all-link:hover {
-            color: var(--color-primary);
+        @media (hover: hover) and (pointer: fine) {
+            .view-all-link:hover {
+                color: var(--color-primary);
           }
+        }
         }
 
         .mobile-toggle {
@@ -1309,13 +1332,15 @@ export default function TopNavbar() {
           font-weight: 500;
           color: var(--color-text-secondary);
           text-decoration: none;
-          transition: background 0.15s ease, color 0.15s ease;
+          transition: none;
         }
         @media (hover: hover) and (pointer: fine) {
-          :global(.mobile-nav-link:hover) {
-            background: rgba(0, 0, 0, 0.04);
-            color: var(--color-text);
+        @media (hover: hover) and (pointer: fine) {
+            :global(.mobile-nav-link:hover) {
+                background: rgba(0, 0, 0, 0.04);
+                color: var(--color-text);
           }
+        }
         }
 
         :global(.mobile-nav-link.active) {

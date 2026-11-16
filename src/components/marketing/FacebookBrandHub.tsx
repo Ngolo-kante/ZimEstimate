@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   WhatsappLogo,
   Sparkle,
@@ -48,6 +48,7 @@ const REFERENCE_PRICES = [
 ];
 
 export default function FacebookBrandHub() {
+  const reducedMotion = useReducedMotion();
   const [copiedShare, setCopiedShare] = useState(false);
   const [showWhatsappModal, setShowWhatsappModal] = useState(false);
 
@@ -99,7 +100,7 @@ https://zimestimate.com/quick-budget`;
             <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0">
               <Link
                 href="/quick-budget"
-                className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-xs sm:text-sm font-bold text-[var(--color-surface)] shadow-sm transition hover:bg-[var(--color-primary-light)] active:scale-[0.98]"
+                className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-xs sm:text-sm font-bold text-[var(--color-surface)] shadow-sm transition-none hover:bg-[var(--color-primary-light)] active:scale-[0.98]"
               >
                 <Sparkle size={16} className="text-[var(--color-accent)]" />
                 <span>Check your budget</span>
@@ -107,7 +108,7 @@ https://zimestimate.com/quick-budget`;
               <button
                 type="button"
                 onClick={() => setShowWhatsappModal(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3.5 py-2.5 text-xs sm:text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface)] transition"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3.5 py-2.5 text-xs sm:text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface)] transition-none"
               >
                 <Copy size={16} />
                 <span className="hidden sm:inline">Share</span>
@@ -219,7 +220,7 @@ https://zimestimate.com/quick-budget`;
             </p>
             <Link
               href="/quick-budget"
-              className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[var(--color-accent)] py-2.5 text-xs font-bold text-[var(--color-surface)] hover:bg-[var(--color-accent-dark)] transition"
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[var(--color-accent)] py-2.5 text-xs font-bold text-[var(--color-surface)] hover:bg-[var(--color-accent-dark)] transition-none"
             >
               <span>Open the estimator</span>
               <ArrowRight size={14} />
@@ -237,7 +238,7 @@ https://zimestimate.com/quick-budget`;
             <button
               type="button"
               onClick={() => setShowWhatsappModal(true)}
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-background)] transition"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-background)] transition-none"
             >
               Get the message
             </button>
@@ -249,15 +250,17 @@ https://zimestimate.com/quick-budget`;
       <AnimatePresence>
         {showWhatsappModal && (
           <motion.div
+            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, transition: { duration: 0.1 } }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+              initial={{ scale: reducedMotion ? 1 : 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+              exit={{ scale: reducedMotion ? 1 : 0.95, opacity: 0, transition: { duration: 0.1 } }}
               className="w-full max-w-md rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-6 shadow-xl space-y-4"
             >
               <div className="flex items-center justify-between border-b border-[var(--color-border-light)] pb-3">
@@ -280,7 +283,7 @@ https://zimestimate.com/quick-budget`;
                 <button
                   type="button"
                   onClick={handleCopyShareText}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-xs font-bold text-[var(--color-surface)] hover:opacity-90 transition"
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-xs font-bold text-[var(--color-surface)] hover:opacity-90 transition-none"
                 >
                   {copiedShare ? <Check size={16} /> : <Copy size={16} />}
                   <span>{copiedShare ? 'Copied' : 'Copy message'}</span>
