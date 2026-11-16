@@ -40,11 +40,12 @@ export function useListFilters(projects: Project[], quickItems: SavedWorkItem[])
 
     const typeFilters = useMemo(() => buildTypeFilters(projects.length, quickItems), [projects.length, quickItems]);
 
-    const projectStats = useMemo(() => portfolioStats(projects), [projects]);
+    const projectStats = useMemo(() => portfolioStats(projects.filter(p => p.status !== 'archived')), [projects]);
 
     const activeFilterCount = countActiveFilters(statusFilter, scopeFilter);
 
     const clearFilters = () => {
+        setTypeFilter('all');
         setSearchQuery('');
         setStatusFilter('all');
         setScopeFilter('all');

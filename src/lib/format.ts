@@ -10,8 +10,9 @@ export function formatQuantity(n: number | null | undefined, unit?: string): str
     return quantityFormatter.format(n) + (unit ? ` ${unit}` : '');
 }
 
-export function formatUsd(n: number | null | undefined, opts?: { wholeDollars?: boolean }): string {
+export function formatUsd(n: number | null | undefined, opts?: { wholeDollars?: boolean; compact?: boolean }): string {
     if (n == null || !Number.isFinite(n)) return '—';
+    if (opts?.compact && Math.abs(n) >= 1_000_000) return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 }).format(n);
     if (opts?.wholeDollars) return wholeUsdFormatter.format(n);
     return (n !== 0 && Math.abs(n) < 1 ? centsUsdFormatter : usdFormatter).format(n);
 }

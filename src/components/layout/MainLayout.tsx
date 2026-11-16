@@ -31,7 +31,7 @@ function MobileBottomNav() {
   // menu. Five items is the practical ceiling at 375px.
   const navItems = [
     { label: 'Home', href: '/home', icon: House },
-    { label: 'Projects', href: '/projects/dashboard', icon: Folders },
+    { label: 'My projects', href: '/projects', icon: Folders },
     { label: 'Budget', href: '/quick-budget', icon: Calculator },
     { label: 'Quick', href: '/quick-projects', icon: Lightning },
     { label: 'Settings', href: '/settings', icon: Gear },
@@ -41,7 +41,7 @@ function MobileBottomNav() {
     if (href === '/home') {
       return pathname === '/home' || pathname === '/';
     }
-    if (href === '/projects/dashboard') {
+    if (href === '/projects') {
       return pathname.startsWith('/projects');
     }
     // /quick-budget and /quick-projects share a prefix, so a plain startsWith

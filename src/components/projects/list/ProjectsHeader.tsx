@@ -9,9 +9,7 @@ export default function ProjectsHeader({ canCreateProject }: { canCreateProject:
     return (
         <header className="projects-header">
             <div>
-                <span className="projects-eyebrow">Project workspace</span>
                 <h1>My projects</h1>
-                <p>Open a build, compare estimates, or continue where you left off.</p>
             </div>
             <div className="projects-header-actions">
                 {/* The start page lists every kind of estimate — full house,

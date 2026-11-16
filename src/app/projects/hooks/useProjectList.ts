@@ -5,15 +5,17 @@ import type { ReadonlyURLSearchParams } from 'next/navigation';
 import { getProjects } from '@/lib/services/projects';
 import { listSavedWork, type SavedWorkItem } from '@/lib/services/savedWork';
 import { clearOptimisticProjectCard, getOptimisticProjectCard } from '@/lib/projectCreationCache';
+import { projectListDb } from '@/lib/projects/listData';
 import { supabase } from '@/lib/supabase';
-import type { Project } from '@/lib/database.types';
+import { pickContinueProject, type ProjectOpen } from '@/lib/projects/listPresentation';
+import type { BOQItem, ProjectStage, PurchaseRecord, Project } from '@/lib/database.types';
 
 type Router = { replace: (href: string) => void };
 
 /**
  * Everything the person has saved: full builds and quick estimates, kept
- * fresh (on focus, realtime changes and a visible-page polling fallback), plus the card
- * shown while a just-created project is still saving and the "saved" notice.
+ * fresh on focus, realtime changes and visible-page polling. A pending creation
+ * keeps the page skeleton visible until the real project can be placed in its list.
  */
 export function useProjectList({
     searchParams,
@@ -26,12 +28,14 @@ export function useProjectList({
 }) {
     const readOptimisticProject = () => getOptimisticProjectCard();
     const [projects, setProjects] = useState<Project[]>([]);
-    // Quick estimates live in a different table and used to have their own tab,
-    // which asked the user to remember which kind of thing they had made in
-    // order to find it again. They render as cards in the same grid now.
+    // Quick estimates are loaded separately and rendered in their own section.
     const [quickItems, setQuickItems] = useState<SavedWorkItem[]>([]);
     const [optimisticProject, setOptimisticProject] = useState<{ id: string; name: string; location: string } | null>(() => readOptimisticProject());
-    const [isLoading, setIsLoading] = useState(() => !readOptimisticProject());
+    const [isLoading, setIsLoading] = useState(true);
+    const [opens, setOpens] = useState<ProjectOpen[]>([]);
+    const [stages, setStages] = useState<ProjectStage[]>([]);
+    const [continueItems, setContinueItems] = useState<BOQItem[]>([]);
+    const [continuePurchases, setContinuePurchases] = useState<PurchaseRecord[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [highlightedProjectId, setHighlightedProjectId] = useState<string | null>(null);
     const realtimeRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -57,13 +61,26 @@ export function useProjectList({
             if (loadError) {
                 setError(loadError.message);
             } else {
-                setProjects(loadedProjects);
+                const ownProjects = loadedProjects.filter(p => p.owner_id === profileId);
+                const opensResult = profileId ? await projectListDb.from('project_opens').select('project_id, opened_at').eq('user_id', profileId).then(r => r.error ? [] : r.data ?? [], () => []) : [];
+                const candidate = pickContinueProject(ownProjects, opensResult, profileId);
+                const [stageResult, itemResult, purchaseResult] = await Promise.all([
+                    ownProjects.length ? projectListDb.from('project_stages').select('*').in('project_id', ownProjects.map(p => p.id)).order('sort_order').then(r => r.data ?? []) : [],
+                    candidate ? projectListDb.from('boq_items').select('*').eq('project_id', candidate.id).order('sort_order').then(r => r.data ?? []) : [],
+                    candidate ? projectListDb.from('purchase_records').select('*').eq('project_id', candidate.id).then(r => r.data ?? []) : [],
+                ]);
+                setOpens(opensResult);
+                setStages(stageResult);
+                setContinueItems(itemResult);
+                setContinuePurchases(purchaseResult);
+                setProjects(ownProjects);
             }
 
             // listSavedWork returns both kinds; the projects half is already loaded
             // above with the fields this page needs, so only the quick estimates are
             // taken from it.
             setQuickItems(saved.items.filter((i) => i.kind === 'quick'));
+            if (loadError) setOptimisticProject(null);
 
         } catch {
             setError('Projects could not be loaded. Please try again.');
@@ -72,13 +89,12 @@ export function useProjectList({
             refreshInFlight.current = false;
             if (showLoadingState) setIsLoading(false);
         }
-    }, []);
+    }, [profileId]);
 
     // Initial load
     useEffect(() => {
-        loadProjects(!optimisticProject);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        if (profileId) void loadProjects(true);
+    }, [profileId, loadProjects]);
 
     // Handle optimistic project creation
     useEffect(() => {
@@ -90,7 +106,7 @@ export function useProjectList({
                     name: optimistic.name,
                     location: optimistic.location || '',
                 });
-                setIsLoading(false);
+                setIsLoading(true);
             }
             router.replace('/projects');
         }
@@ -106,6 +122,17 @@ export function useProjectList({
             clearOptimisticProjectCard(found.id);
         }
     }, [projects, optimisticProject, isLoading]);
+
+    // A save may still be in flight when navigation lands here. Keep the
+    // skeleton instead of inventing a card outside the real sorted sections.
+    useEffect(() => {
+        if (!optimisticProject || isLoading || error) return;
+        const poll = setInterval(() => { void loadProjects(false); }, 1000);
+        const timeout = setTimeout(() => {
+            setError('Your new project is still saving. Please retry in a moment.');
+        }, 15000);
+        return () => { clearInterval(poll); clearTimeout(timeout); };
+    }, [optimisticProject, isLoading, error, loadProjects]);
 
     useEffect(() => {
         if (!highlightedProjectId) return;
@@ -152,10 +179,10 @@ export function useProjectList({
     // same tick as the highlight would target a card that has not rendered —
     // the list is still loading when the redirect lands.
     useEffect(() => {
-        if (!justSavedId || isLoading) return;
+        if (!justSavedId || isLoading || optimisticProject) return;
         const card = document.querySelector(`[data-saved-id="${justSavedId}"]`);
         card?.scrollIntoView({ block: 'center' });
-    }, [justSavedId, isLoading, projects, quickItems]);
+    }, [justSavedId, isLoading, optimisticProject, projects, quickItems]);
 
     // Refresh when coming from create/delete flows
     useEffect(() => {
@@ -232,7 +259,9 @@ export function useProjectList({
         projects, setProjects,
         quickItems, setQuickItems,
         optimisticProject,
-        isLoading,
+        isLoading: isLoading || Boolean(optimisticProject && !error),
+        stages, continueItems, continuePurchases,
+        continueProject: pickContinueProject(projects, opens, profileId),
         error,
         highlightedProjectId,
         justSaved,

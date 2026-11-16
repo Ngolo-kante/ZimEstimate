@@ -189,6 +189,12 @@ export const TIER_LIMITS = {
 export interface Database {
     public: {
         Tables: {
+            project_opens: {
+                Row: { user_id: string; project_id: string; opened_at: string };
+                Insert: { user_id: string; project_id: string; opened_at?: string };
+                Update: { user_id?: string; project_id?: string; opened_at?: string };
+                Relationships: [];
+            };
             profiles: {
                 Row: {
                     id: string;

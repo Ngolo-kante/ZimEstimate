@@ -27,7 +27,7 @@ interface NavItem {
   href: string;
   description?: string;
   /** Highlight when the path starts with this instead of href — lets
-      "My Projects" stay lit on /projects and /projects/[id], not only on
+      "My projects" stay lit on /projects and /projects/[id], not only on
       its own landing URL. */
   activePrefix?: string;
   hasDropdown?: boolean;
@@ -37,7 +37,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Home', href: '/home' },
   { label: 'Budget Estimator', href: '/quick-budget' },
-  { label: 'My Projects', href: '/projects', activePrefix: '/projects' },
+  { label: 'My projects', href: '/projects', activePrefix: '/projects' },
   { label: 'Quick Projects', href: '/quick-projects' },
   { label: 'Market Insights', href: '/market-insights' },
   { label: 'Templates', href: '/templates' },

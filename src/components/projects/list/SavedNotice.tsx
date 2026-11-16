@@ -1,5 +1,6 @@
 'use client';
 
+import Button from '@/components/ui/Button';
 import Link from 'next/link';
 import { CaretRight, Check, X } from '@phosphor-icons/react';
 
@@ -20,14 +21,14 @@ export default function SavedNotice({
             <Link href={justSaved.href} className="saved-open">
                 Open <CaretRight size={14} weight="bold" />
             </Link>
-            <button
+            <Button variant="secondary"
                 type="button"
                 className="saved-dismiss"
                 aria-label="Dismiss"
                 onClick={onDismiss}
             >
                 <X size={14} weight="bold" />
-            </button>
+            </Button>
         </div>
     );
 }

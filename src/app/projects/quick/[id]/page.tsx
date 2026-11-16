@@ -13,6 +13,7 @@ import { formatUsd } from '@/lib/format';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import ProjectBreadcrumb from '@/components/projects/ProjectBreadcrumb';
 import { useParams, useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import Card from '@/components/ui/Card';
@@ -43,7 +44,7 @@ import SiteView from '@/components/projects/SiteView';
 import { getSiteAccess, type SiteAccess } from '@/lib/services/site';
 import { estimateName as estimateNameFor, quickEstimateTotal } from '@/lib/quick-projects/savedEstimate';
 import type { BOQItem, LaborConfig, QuickBOQ } from '@/lib/quick-projects/engine/types';
-import { ArrowLeft, PencilSimple, ShareNetwork, Download, UserPlus, Warning } from '@phosphor-icons/react';
+import { PencilSimple, ShareNetwork, Download, UserPlus, Warning } from '@phosphor-icons/react';
 import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 import { captureProductEvent } from '@/lib/productAnalytics';
 
@@ -255,7 +256,7 @@ function SavedQuickEstimate() {
             <Warning size={40} weight="duotone" />
             <h2>We could not open that estimate</h2>
             <p>It may have been deleted, or it belongs to another account.</p>
-            <Link href="/projects" className="back-link">Back to my work</Link>
+            <Link href="/projects" className="back-link">My projects</Link>
           </div>
         </Card>
         <style jsx>{`
@@ -273,9 +274,7 @@ function SavedQuickEstimate() {
 
   return (
     <div className="wrap">
-      <Link href="/projects" className="crumb">
-        <ArrowLeft size={16} /> My work
-      </Link>
+      <ProjectBreadcrumb name={estimateName(boq)} />
 
       <header className="head">
         <div className="head-text">
@@ -365,11 +364,6 @@ function SavedQuickEstimate() {
 
       <style jsx>{`
         .wrap { max-width: 1000px; margin: 0 auto; padding: 32px 24px; }
-        .crumb {
-          display: inline-flex; align-items: center; gap: 6px; margin-bottom: 20px;
-          font-size: 0.875rem; font-weight: 500; color: var(--color-text-secondary); text-decoration: none;
-        }
-        .crumb:hover { color: var(--color-accent); }
         .head {
           display: flex; align-items: flex-start; justify-content: space-between;
           gap: 16px; flex-wrap: wrap; margin-bottom: 24px;

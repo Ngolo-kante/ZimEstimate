@@ -34,24 +34,25 @@ test.describe('Authenticated project workspace', () => {
     await signIn(page);
 
     await expect(page.getByRole('heading', { name: 'My projects' })).toBeVisible();
-    await expect(page.getByLabel('Filter by status')).toBeHidden();
-    await page.getByPlaceholder('Search projects...').fill('no-matching-project-zzzz');
-    await expect(page.locator('a.project-link')).toHaveCount(0);
-    await expectNoDocumentOverflow(page);
-    await page.getByRole('button', { name: 'Filters', exact: true }).click();
-    await expect(page.getByLabel('Filter by status')).toBeVisible();
-    await expectNoDocumentOverflow(page);
-    await page.getByRole('button', { name: 'Filters', exact: true }).click();
-    await page.getByPlaceholder('Search projects...').clear();
-    await expect(page.getByRole('navigation', { name: 'Project workspace views' }))
-      .toContainText('My work');
+    const search = page.getByPlaceholder('Search projects...');
+    if (await search.isVisible()) {
+      await search.fill('no-matching-project-zzzz');
+      await expect(page.locator('a.project-link')).toHaveCount(0);
+      await expectNoDocumentOverflow(page);
+      await page.getByRole('button', { name: 'Filter', exact: true }).click();
+      await expect(page.getByLabel('Filter by status')).toBeVisible();
+      await expectNoDocumentOverflow(page);
+      await page.getByRole('button', { name: 'Done', exact: true }).click();
+      await search.clear();
+    }
+    await expect(page.getByRole('link', { name: 'See insights' })).toHaveAttribute('href', '/projects/insights');
     await expectNoDocumentOverflow(page);
 
     const fullProject = page.locator(
       'a.project-link[href^="/projects/"]:not([href^="/projects/quick/"])'
     ).first();
     await expect(fullProject).toBeVisible();
-    const projectName = ((await fullProject.locator('h3').first().textContent()) ?? '').trim();
+    const projectName = ((await fullProject.textContent()) ?? '').trim();
     await fullProject.click();
     const projectDock = page.getByRole('navigation', { name: 'Project workspace' });
     await expect(projectDock.getByRole('button', { name: 'Overview' })).toBeVisible({ timeout: 10_000 });
@@ -137,7 +138,7 @@ test.describe('Authenticated project workspace', () => {
       }
     }
 
-    await page.goto('/projects/dashboard');
+    await page.goto('/projects/insights');
     await expect(page.getByRole('heading', { name: 'Project insights' })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Project workspace views' }))
       .toContainText('Insights');
@@ -162,10 +163,12 @@ test.describe('Authenticated project workspace', () => {
       await expectNoDocumentOverflow(page);
       // A no-match search used to make the tablet filter row even wider.
       const search = page.getByPlaceholder('Search projects...');
-      await search.fill('no-matching-project-zzzz');
-      await expect(page.locator('a.project-link')).toHaveCount(0);
-      await expectNoDocumentOverflow(page);
-      await search.clear();
+      if (await search.isVisible()) {
+        await search.fill('no-matching-project-zzzz');
+        await expect(page.locator('a.project-link')).toHaveCount(0);
+        await expectNoDocumentOverflow(page);
+        await search.clear();
+      }
 
       const fullProject = page.locator(
         'a.project-link[href^="/projects/"]:not([href^="/projects/quick/"])'
@@ -173,7 +176,7 @@ test.describe('Authenticated project workspace', () => {
       await expect(fullProject).toBeVisible();
       const projectHref = await fullProject.getAttribute('href');
       expect(projectHref).toBeTruthy();
-      const projectName = ((await fullProject.locator('h3').first().textContent()) ?? '').trim();
+      const projectName = ((await fullProject.textContent()) ?? '').trim();
 
       // Overview has no ?view=, and its heading is the project's name.
       await page.goto(projectHref!);

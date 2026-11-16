@@ -33,3 +33,15 @@ describe('truncateMiddle', () => {
         expect(truncateMiddle(name, 0)).toBe('');
     });
 });
+
+describe('compact money', () => {
+    it('uses compact figures only from a million and preserves existing formats', () => {
+        expect(formatUsd(1_284_750.55, { compact: true, wholeDollars: true })).toBe('$1.3M');
+        expect(formatUsd(1_000_000, { compact: true })).toBe('$1M');
+        expect(formatUsd(999_999, { compact: true, wholeDollars: true })).toBe('$999,999');
+        expect(formatUsd(16_794, { compact: true, wholeDollars: true })).toBe('$16,794');
+        expect(formatUsd(1_284_750.55)).toBe('$1,284,750.55');
+        expect(formatUsd(-1_284_750.55, { compact: true })).toBe('-$1.3M');
+        expect(formatUsd(null, { compact: true })).toBe('—');
+    });
+});

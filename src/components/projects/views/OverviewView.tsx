@@ -1,7 +1,6 @@
 'use client';
 
-import { isLinePurchased } from '@/lib/projects/itemStatus';
-import Link from 'next/link';
+import { pendingItemsOf } from '@/lib/projects/listPresentation';
 import Card, { CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import SitePhotosPanel from '@/components/projects/SitePhotosPanel';
@@ -83,22 +82,11 @@ export default function OverviewView({
     onApplyPriceUpdates,
 }: OverviewViewProps) {
     const { exchangeRate, formatPrice } = useCurrency();
-    const pendingItems = materialItems.filter(item => !isLinePurchased(item, purchases));
+    const pendingItems = pendingItemsOf(materialItems, purchases);
     return (
         <div className="overview-view space-y-8 max-w-6xl mx-auto">
             <div className="overview-header">
                 <div>
-                    {/* Breadcrumbs */}
-                    <div className="overview-breadcrumb">
-                        <Link
-                            href="/projects"
-                            className="hover:text-accent transition-colors"
-                        >
-                            My projects
-                        </Link>
-                        <span>/</span>
-                        <span className="font-medium text-primary">{project.name}</span>
-                    </div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-primary font-heading break-words">{project.name}</h1>
                     <div className="flex items-center gap-2 text-sm text-secondary mt-1">
                         <MapPin size={16} />

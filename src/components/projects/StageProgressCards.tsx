@@ -1,5 +1,6 @@
 'use client';
 
+import { stageLabels, stageStatusLabels } from '@/lib/projects/listPresentation';
 import { isLinePurchased } from '@/lib/projects/itemStatus';
 import type { PurchaseRecord } from '@/lib/database.types';
 import React from 'react';
@@ -35,21 +36,12 @@ const stageIcons: Record<BOQCategory, React.ComponentType<{ size: number; weight
     exterior: Tree,
 };
 
-const stageLabels: Record<BOQCategory, { short: string; full: string }> = {
-    substructure: { short: 'Foundation', full: 'Site & foundation' },
-    superstructure: { short: 'Walls', full: 'Structural walls' },
-    roofing: { short: 'Roof', full: 'Roofing' },
-    finishing: { short: 'Interior', full: 'Interior finishing' },
-    services: { short: 'Services', full: 'Plumbing & electrical' },
-    exterior: { short: 'Exterior', full: 'External work' },
-};
-
 const statusConfig: Record<StageStatus, { color: string; bg: string; label: string }> = {
-    planning: { color: 'text-slate-500', bg: 'bg-slate-100', label: 'Planning' },
-    pending_approval: { color: 'text-[var(--color-warning-fg)]', bg: 'bg-[var(--color-warning-bg)]', label: 'Pending' },
-    in_progress: { color: 'text-[var(--color-info-fg)]', bg: 'bg-[var(--color-info-bg)]', label: 'In progress' },
-    on_hold: { color: 'text-[var(--color-warning-fg)]', bg: 'bg-[var(--color-warning-bg)]', label: 'On hold' },
-    completed: { color: 'text-[var(--color-success-fg)]', bg: 'bg-[var(--color-success-bg)]', label: 'Complete' },
+    planning: { color: 'text-slate-500', bg: 'bg-slate-100', label: stageStatusLabels.planning },
+    pending_approval: { color: 'text-[var(--color-warning-fg)]', bg: 'bg-[var(--color-warning-bg)]', label: stageStatusLabels.pending_approval },
+    in_progress: { color: 'text-[var(--color-info-fg)]', bg: 'bg-[var(--color-info-bg)]', label: stageStatusLabels.in_progress },
+    on_hold: { color: 'text-[var(--color-warning-fg)]', bg: 'bg-[var(--color-warning-bg)]', label: stageStatusLabels.on_hold },
+    completed: { color: 'text-[var(--color-success-fg)]', bg: 'bg-[var(--color-success-bg)]', label: stageStatusLabels.completed },
 };
 
 export function StageProgressCards({

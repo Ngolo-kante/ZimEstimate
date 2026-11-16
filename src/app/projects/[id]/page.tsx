@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import ProjectBreadcrumb from '@/components/projects/ProjectBreadcrumb';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -25,6 +26,7 @@ import { ProjectDetailSkeleton } from '@/components/ui/Skeleton';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useReminderChannels } from '@/hooks/useReminderChannels';
+import { projectListDb } from '@/lib/projects/listData';
 import { supabase } from '@/lib/supabase';
 import { summariseCompliance } from '@/lib/compliance';
 import { completionRate as completionPercent } from '@/lib/projects/workspaceStats';
@@ -98,6 +100,33 @@ function ProjectDetailContent() {
         setIsComplianceBannerDismissed(false);
     }, [activeTab, activeStageComplianceWarnings.length]);
 
+    const recordedOpen = useRef<string | null>(null);
+    useEffect(() => {
+        if (!project?.id || !profile?.id || isLoading) return;
+        const key = `${profile.id}:${project.id}`;
+        if (recordedOpen.current === key) return;
+        recordedOpen.current = key;
+        // This optional table may not exist yet. Neither errors nor latency affect the workspace.
+        void (async () => {
+            try {
+                await projectListDb.from('project_opens').upsert({ user_id: profile.id, project_id: project.id, opened_at: new Date().toISOString() }, { onConflict: 'user_id,project_id' });
+            } catch { /* Opens are best effort, including before migration 066. */ }
+        })();
+    }, [project?.id, profile?.id, isLoading]);
+
+    const searchParams = useSearchParams();
+    const buyingItemId = searchParams.get('item');
+    const openedBuyingItem = useRef<string | null>(null);
+    useEffect(() => {
+        if (activeView !== 'procurement' || !buyingItemId || isLoading || openedBuyingItem.current === buyingItemId) return;
+        const item = items.find(item => item.id === buyingItemId);
+        if (item) {
+            openedBuyingItem.current = buyingItemId;
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- a Next steps link opens this existing line in Buying
+            setSelectedItemForPurchase(item);
+        }
+    }, [activeView, buyingItemId, isLoading, items]);
+
     // Loading state - skeleton layout
     if (isLoading) {
         return (
@@ -164,6 +193,7 @@ function ProjectDetailContent() {
                         onViewChange={setActiveView}
                     />
 
+                    <ProjectBreadcrumb name={project.name} />
                     <ViewHeader activeView={activeView} projectName={project.name} stats={activeViewStats} />
 
                     {activeView === 'overview' && (
