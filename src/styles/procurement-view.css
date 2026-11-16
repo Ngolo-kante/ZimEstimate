@@ -677,7 +677,7 @@
 .qty-label {
     font-size: 12px;
     text-transform: uppercase;
-    color: var(--color-text-muted);
+    color: #475569; /* on the tinted #f5f7fb panel: muted #64748b is 4.44:1 */
     font-weight: var(--font-semibold);
     letter-spacing: 0.04em;
 }
