@@ -9,6 +9,7 @@
 // The pictures are illustrations, not data: no names, prices or people that
 // could be read as real records.
 
+import SectionLabel from './SectionLabel';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
@@ -206,7 +207,7 @@ export default function FeatureShowcase() {
     >
       <div className={styles.inner}>
         <div className={styles.header}>
-          <span className={styles.eyebrow}>02 · Everything after the estimate</span>
+          <SectionLabel className={styles.eyebrow}>02 · Everything after the estimate</SectionLabel>
           <h2 id="showcase-heading">The estimate does not end at a PDF.</h2>
           <p>Run the build from the same project — even when you are building from abroad.</p>
         </div>

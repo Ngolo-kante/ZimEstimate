@@ -17,6 +17,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import HeroBudgetWidget from '@/components/home/HeroBudgetWidget';
 import SignedInEntryRedirect from '@/components/home/SignedInEntryRedirect';
 import FeatureShowcase from '@/components/home/FeatureShowcase';
+import SectionLabel from '@/components/home/SectionLabel';
 import styles from './home.module.css';
 
 /* The six stages every estimate is priced in, in building order: the same
@@ -117,7 +118,7 @@ export default function HomePage() {
           <div className={styles.sectionInner}>
             <div className={styles.startHeader}>
               <div>
-                <span className={styles.sectionIndex}>01 · Start from what you have</span>
+                <SectionLabel className={styles.sectionIndex}>01 · Start from what you have</SectionLabel>
                 <h2 id="start-heading">What are you starting with?</h2>
               </div>
               <p>Choose a guided build, bring an existing plan or document, or price a smaller project in minutes.</p>

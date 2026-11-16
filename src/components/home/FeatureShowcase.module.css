@@ -16,7 +16,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: var(--color-primary);
+  color: #8a6514;
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 600;
@@ -27,11 +27,37 @@
 
 .eyebrow::before {
   content: '';
-  width: 22px;
+  width: 28px;
   height: 2px;
   flex: none;
-  background: currentColor;
+  background: #d4a73a;
 }
+
+/* Section labels: deep gold text (4.6:1 or more on the light sections) and a
+   brighter gold tick. SectionLabel reveals each once as it scrolls into view
+   (owner, 16 Nov: "needs a golden color and some animation"): the tick draws
+   left to right and the words slide in. Nothing moves under reduced motion. */
+.eyebrow {
+  transition: opacity 400ms cubic-bezier(0.23, 1, 0.32, 1), transform 400ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.eyebrow::before {
+  transform-origin: left center;
+  transition: transform 600ms cubic-bezier(0.23, 1, 0.32, 1) 100ms;
+}
+.eyebrow[data-reveal='waiting'] {
+  opacity: 0;
+  transform: translateX(-8px);
+}
+.eyebrow[data-reveal='waiting']::before {
+  transform: scaleX(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .eyebrow,
+  .eyebrow::before {
+    transition: none;
+  }
+}
+
 
 .header h2 {
   color: var(--color-primary);

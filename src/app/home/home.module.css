@@ -65,8 +65,39 @@ numbered annotations retain the app's drawing language. */
 }
 
 .sectionIndex {
-  color: var(--color-primary);
+  color: #8a6514;
 }
+
+.sectionIndex::before {
+  width: 28px;
+  background: #d4a73a;
+}
+
+/* Section labels: deep gold text (4.6:1 or more on the light sections) and a
+   brighter gold tick. SectionLabel reveals each once as it scrolls into view
+   (owner, 16 Nov: "needs a golden color and some animation"): the tick draws
+   left to right and the words slide in. Nothing moves under reduced motion. */
+.sectionIndex {
+  transition: opacity 400ms cubic-bezier(0.23, 1, 0.32, 1), transform 400ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.sectionIndex::before {
+  transform-origin: left center;
+  transition: transform 600ms cubic-bezier(0.23, 1, 0.32, 1) 100ms;
+}
+.sectionIndex[data-reveal='waiting'] {
+  opacity: 0;
+  transform: translateX(-8px);
+}
+.sectionIndex[data-reveal='waiting']::before {
+  transform: scaleX(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sectionIndex,
+  .sectionIndex::before {
+    transition: none;
+  }
+}
+
 
 /* ── Hero ────────────────────────────────────────────────────────────── */
 
