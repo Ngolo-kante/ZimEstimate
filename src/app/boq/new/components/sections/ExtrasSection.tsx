@@ -76,7 +76,7 @@ function NumberField({ label, value, min, max, step = 1, suffix, onChange }: {
         <input type="number" inputMode="numeric" min={min} max={max} step={step} value={value}
           onChange={(event) => onChange(Math.min(max, Math.max(min, Number(event.target.value) || min)))}
           className={INPUT} />
-        {suffix && <span className="text-xs text-slate-500">{suffix}</span>}
+        {suffix && <span className="text-xs text-[var(--color-text-muted)]">{suffix}</span>}
       </span>
     </label>
   );

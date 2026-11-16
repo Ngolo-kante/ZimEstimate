@@ -95,7 +95,7 @@ export default function SiteConditionsSection() {
                 }`}
               >
                 {/* Slope angle icon illustration */}
-                <div className={`relative flex h-10 w-10 items-center justify-center ${isSelected ? 'text-blue-600' : 'text-slate-400'}`}>
+                <div className={`relative flex h-10 w-10 items-center justify-center ${isSelected ? 'text-blue-600' : 'text-[var(--color-text-muted)]'}`}>
                   <opt.Icon
                     size={28}
                     weight="bold"
@@ -140,7 +140,7 @@ export default function SiteConditionsSection() {
                 }`}
               >
                 <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
-                  isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'
+                  isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-[var(--color-text-muted)]'
                 }`}>
                   {opt.value === 'not_sure'           ? <Question size={15} weight="bold" /> :
                    opt.value === 'loam'               ? <CheckCircle size={15} weight="bold" /> :
@@ -151,7 +151,7 @@ export default function SiteConditionsSection() {
                 <div className="min-w-0">
                   <div className={`text-sm font-semibold ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{opt.label}</div>
                   <div className={`mt-0.5 text-xs ${isSelected ? 'text-blue-700/80' : 'wiz-text-muted'}`}>{opt.hint}</div>
-                  <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                  <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-bold uppercase tracking-wide ${
                     isSelected ? 'bg-blue-100 text-blue-700' : `${rb.bg} ${rb.text}`
                   }`}>
                     {rb.label}
@@ -193,7 +193,7 @@ export default function SiteConditionsSection() {
           <div className="wiz-alert wiz-alert--info">
             <Info size={14} weight="fill" className="wiz-alert__icon" />
             <div>
-              <p className="font-bold text-[11px] uppercase tracking-wider mb-2" style={{color:'var(--wiz-info-text)'}}>Regulatory notes for your location</p>
+              <p className="font-bold text-xs uppercase tracking-wider mb-2" style={{color:'var(--wiz-info-text)'}}>Regulatory notes for your location</p>
               <div className="space-y-1.5">
                 {procedureNotes.map((note) => (
                   <div key={note.id} className="flex items-center gap-2 text-xs">

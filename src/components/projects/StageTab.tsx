@@ -46,12 +46,12 @@ interface StageTabProps {
 }
 
 const categoryLabels: Record<BOQCategory, string> = {
-    substructure: 'Site Preparation & Foundation',
-    superstructure: 'Structural Walls & Frame',
+    substructure: 'Site preparation & foundation',
+    superstructure: 'Structural walls & frame',
     roofing: 'Roofing',
-    finishing: 'Interior & Finishing',
-    services: 'Plumbing & Electrical',
-    exterior: 'External Work',
+    finishing: 'Interior & finishing',
+    services: 'Plumbing & electrical',
+    exterior: 'External work',
 };
 
 export default function StageTab({
@@ -220,7 +220,7 @@ export default function StageTab({
         return (
             <div className="stage-not-applicable">
                 <Warning size={48} weight="light" />
-                <h4>Stage Not Applicable</h4>
+                <h4>Stage not applicable</h4>
                 <p>This stage is not included in your project scope.</p>
 
                 <style jsx>{`

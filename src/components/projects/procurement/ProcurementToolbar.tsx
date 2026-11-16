@@ -46,11 +46,11 @@ export default function ProcurementToolbar({
           onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
           className="status-filter [&_select]:h-11"
         >
-          <option value="all">All Status</option>
-          <option value="outstanding">Needs Purchasing</option>
+          <option value="all">All status</option>
+          <option value="outstanding">Needs purchasing</option>
           <option value="fulfilled">Fulfilled</option>
           <option value="pending">Pending</option>
-          <option value="in_progress">In Progress</option>
+          <option value="in_progress">In progress</option>
           <option value="purchased">Purchased</option>
           <option value="over_purchased">Over-purchased</option>
         </NativeSelect>
@@ -64,9 +64,9 @@ export default function ProcurementToolbar({
             onChange={(e) => setGroupBy(e.target.value as GroupByOption)}
             className="group-select [&_select]:h-11"
           >
-            <option value="stage">By Stage</option>
-            <option value="category">By Category</option>
-            <option value="none">No Grouping</option>
+            <option value="stage">By stage</option>
+            <option value="category">By category</option>
+            <option value="none">No grouping</option>
           </NativeSelect>
         </div>
         <Button className="min-h-11" variant="ghost" icon={<DownloadSimple size={16} />} onClick={onExportCsv} aria-label="Export purchases as CSV">

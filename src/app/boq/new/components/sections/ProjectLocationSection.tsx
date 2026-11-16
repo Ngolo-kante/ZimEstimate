@@ -64,7 +64,7 @@ export default function ProjectLocationSection() {
             placeholder="e.g. Borrowdale Family Home"
             aria-invalid={nameError ? true : undefined}
             aria-describedby={nameError ? 'project-name-error' : undefined}
-            className={`w-full rounded-2xl border bg-white px-5 py-4 text-base font-medium wiz-text-primary placeholder:text-slate-400 shadow-sm outline-none transition focus:ring-2 ${
+            className={`w-full rounded-2xl border bg-white px-5 py-4 text-base font-medium wiz-text-primary placeholder:text-[var(--color-text-muted)] shadow-sm outline-none transition focus:ring-2 ${
               nameError
                 ? 'border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[var(--color-error)]/15'
                 : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/15'
@@ -95,14 +95,14 @@ export default function ProjectLocationSection() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="relative">
-            <MapPin size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <MapPin size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
             <input
               type="text"
               list="zw-cities"
               value={projectDetails.locationCity}
               onChange={(e) => updateProjectDetails({ locationCity: e.target.value })}
               placeholder="City / Town (e.g. Harare)"
-              className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-10 pr-5 text-sm wiz-text-primary placeholder:text-slate-400 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-10 pr-5 text-sm wiz-text-primary placeholder:text-[var(--color-text-muted)] shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
             />
             <datalist id="zw-cities">
               {ZIMBABWE_CITIES.map((c) => <option key={c} value={c} />)}
@@ -114,7 +114,7 @@ export default function ProjectLocationSection() {
               value={projectDetails.specificLocation}
               onChange={(e) => updateProjectDetails({ specificLocation: e.target.value })}
               placeholder="Specific area (e.g. Borrowdale Brooke)"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm wiz-text-primary placeholder:text-slate-400 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm wiz-text-primary placeholder:text-[var(--color-text-muted)] shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
             />
           </div>
         </div>
@@ -148,7 +148,7 @@ export default function ProjectLocationSection() {
                   <CheckCircle weight="fill" size={18} className="absolute top-4 right-4 text-blue-500" />
                 )}
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                  isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600'
+                  isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-[var(--color-text-muted)] group-hover:bg-blue-50 group-hover:text-blue-600'
                 }`}>
                   <Icon size={20} weight={isSelected ? 'fill' : 'regular'} />
                 </div>

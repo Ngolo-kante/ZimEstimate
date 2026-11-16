@@ -58,12 +58,12 @@ interface ComplianceTrackerTabProps {
 }
 
 const STAGE_LABELS: Record<BOQCategory, string> = {
-  substructure: 'Site Preparation & Foundation',
-  superstructure: 'Structural Walls & Frame',
+  substructure: 'Site preparation & foundation',
+  superstructure: 'Structural walls & frame',
   roofing: 'Roofing',
-  finishing: 'Interior & Finishing',
-  services: 'Plumbing & Electrical',
-  exterior: 'External Work',
+  finishing: 'Interior & finishing',
+  services: 'Plumbing & electrical',
+  exterior: 'External work',
 };
 
 const CHANNEL_CONFIG: Record<NotificationChannel, { icon: React.ReactNode; label: string }> = {
@@ -524,7 +524,7 @@ export default function ComplianceTrackerTab({
                                   }
                                 >
                                   <option value="pending">Pending</option>
-                                  <option value="in_progress">In Progress</option>
+                                  <option value="in_progress">In progress</option>
                                   <option value="done">Done</option>
                                 </select>
                                 <button
@@ -569,7 +569,7 @@ export default function ComplianceTrackerTab({
                   <div>
                     <div className="compliance-section-label">
                       <ClipboardText size={14} weight="bold" />
-                      Admin Tasks
+                      Admin tasks
                     </div>
 
                     {adminTasks.map((task) => {

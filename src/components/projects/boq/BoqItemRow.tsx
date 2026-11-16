@@ -94,7 +94,7 @@ export default function BoqItemRow({
                     <div className="item-info">
                         <span className="item-name" title={item.material_name}>{item.material_name}</span>
                         {enablement && (
-                            <span className="enablement-pill">Enablement Cost</span>
+                            <span className="enablement-pill">Enablement cost</span>
                         )}
                         {item.notes && <span className="item-notes">{stripEnablementTag(item.notes)}</span>}
                     </div>
@@ -108,7 +108,7 @@ export default function BoqItemRow({
                 </td>
             )}
             {visibleColumns.actualPrice && (
-                <td data-label="Actual Price" className="col-price text-right">
+                <td data-label="Actual price" className="col-price text-right">
                     <InlineEdit
                         value={actualPrice}
                         type="currency"
@@ -120,7 +120,7 @@ export default function BoqItemRow({
                 </td>
             )}
             {visibleColumns.priceVar && (
-                <td data-label="Price Var %" className="col-var text-right">
+                <td data-label="Price var %" className="col-var text-right">
                     <div className={`variance-badge ${getVarianceState(priceVariance)}`}>
                         {priceVariance === 0 ? <Minus size={10} /> : priceVariance < 0 ? <TrendDown size={12} /> : <TrendUp size={12} />}
                         <span>
@@ -131,7 +131,7 @@ export default function BoqItemRow({
                 </td>
             )}
             {visibleColumns.qty && (
-                <td data-label="Qty (Est)" className="col-qty text-right">
+                <td data-label="Qty (est)" className="col-qty text-right">
                     <InlineEdit
                         value={Number(item.quantity)}
                         type="number"
@@ -143,7 +143,7 @@ export default function BoqItemRow({
                 </td>
             )}
             {visibleColumns.actualQty && (
-                <td data-label="Actual Qty" className="col-qty text-right">
+                <td data-label="Actual qty" className="col-qty text-right">
                     <InlineEdit
                         value={Number(item.actual_quantity ?? item.quantity)}
                         type="number"
@@ -155,7 +155,7 @@ export default function BoqItemRow({
                 </td>
             )}
             {visibleColumns.qtyVar && (
-                <td data-label="Qty Var %" className="col-var text-right">
+                <td data-label="Qty var %" className="col-var text-right">
                     <div className={`variance-badge ${getVarianceState(qtyVariance)}`}>
                         {qtyVariance === 0 ? <Minus size={10} /> : qtyVariance < 0 ? <TrendDown size={12} /> : <TrendUp size={12} />}
                         <span>
@@ -166,21 +166,21 @@ export default function BoqItemRow({
                 </td>
             )}
             {visibleColumns.actualTotal && (
-                <td data-label="Actual Total" className="col-total text-right">
+                <td data-label="Actual total" className="col-total text-right">
                     <div className="line-total">
                         {actualPrice > 0 ? <PriceDisplay priceUsd={lineTotalUsd} priceZwg={lineTotalZwg} bold /> : <span className="muted">No price yet</span>}
                     </div>
                 </td>
             )}
             {visibleColumns.estTotal && (
-                <td data-label="Est Total" className="col-total text-right">
+                <td data-label="Est total" className="col-total text-right">
                     <div className="line-total est">
                         {averagePrice > 0 ? <PriceDisplay priceUsd={estimatedTotal} priceZwg={estimatedTotal * exchangeRate} /> : <span className="muted">No price yet</span>}
                     </div>
                 </td>
             )}
             {visibleColumns.totalVar && (
-                <td data-label="Total Var" className="col-var text-right">
+                <td data-label="Total var" className="col-var text-right">
                     <div className={`variance-badge ${getVarianceState(totalVariance)}`}>
                         {totalVariance === 0 ? <Minus size={10} /> : totalVariance < 0 ? <TrendDown size={12} /> : <TrendUp size={12} />}
                         <span>

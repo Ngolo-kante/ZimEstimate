@@ -20,7 +20,7 @@ const viewDetails: Record<Exclude<ProjectView, 'overview'>, { title: string; des
         description: '',
     },
     usage: {
-        title: 'Usage Tracking',
+        title: 'Usage tracking',
         description: 'Log site consumption and monitor burn-down before materials run low.',
     },
     documents: {

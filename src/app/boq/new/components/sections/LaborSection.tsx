@@ -58,8 +58,8 @@ export default function LaborSection() {
                   <div key={substage.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-800">{substage.label}</p>
-                      <p className="text-xs text-slate-500">{substage.includes}</p>
-                      <details className="mt-1 text-xs text-slate-500"><summary className="cursor-pointer">Where this rate comes from</summary>{substage.source}</details>
+                      <p className="text-xs text-[var(--color-text-muted)]">{substage.includes}</p>
+                      <details className="mt-1 text-xs text-[var(--color-text-muted)]"><summary className="cursor-pointer">Where this rate comes from</summary>{substage.source}</details>
                     </div>
                     <span className="flex items-center gap-2 text-sm text-slate-600">
                       <label className="flex items-center gap-1">
@@ -87,7 +87,7 @@ export default function LaborSection() {
           </section>
         );
       })}
-      <p className="text-xs leading-5 text-slate-500">Labour is a planning allowance based on the work and priced materials. Check subcontractor quotations, site conditions and materials with missing prices before relying on the total.</p>
+      <p className="text-xs leading-5 text-[var(--color-text-muted)]">Labour is a planning allowance based on the work and priced materials. Check subcontractor quotations, site conditions and materials with missing prices before relying on the total.</p>
     </div>
   );
 }

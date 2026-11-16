@@ -139,7 +139,7 @@ export default function ProcurementItemCard({
           <div className="item-history">
             <div className="history-header">
               <Receipt size={14} weight="duotone" />
-              <span>Purchase Ledger ({item.purchaseRecords.length} entries)</span>
+              <span>Purchase ledger ({item.purchaseRecords.length} entries)</span>
             </div>
             <div className="ledger-table-wrapper">
               <table className="ledger-table">
@@ -148,7 +148,7 @@ export default function ProcurementItemCard({
                     <th className="col-date">Date</th>
                     <th className="col-supplier">Supplier</th>
                     <th className="col-qty">Qty</th>
-                    <th className="col-price">Unit Price</th>
+                    <th className="col-price">Unit price</th>
                     <th className="col-total">Total</th>
                     <th className="col-receipt">Receipt</th>
                   </tr>
@@ -195,7 +195,7 @@ export default function ProcurementItemCard({
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={2} className="footer-label">Total Purchased</td>
+                    <td colSpan={2} className="footer-label">Total purchased</td>
                     <td className="col-qty mono bold">{formatQuantity(item.totalPurchased)}</td>
                     <td></td>
                     <td className="col-total mono bold">{!Number(item.unit_price_usd) && item.totalSpent === 0 ? <span className="muted">No price yet</span> : formatPrice(item.totalSpent, item.totalSpent * exchangeRate)}</td>

@@ -48,7 +48,7 @@ export const PROJECT_NAV_ITEMS: { id: ProjectView; label: string; short: string;
     { id: 'boq', label: 'Bill of Quantities', short: 'BOQ', icon: <ListChecks size={20} /> },
     { id: 'compliance', label: 'Compliance', short: 'Compliance', icon: <ShieldCheck size={20} /> },
     { id: 'procurement', label: 'Buying', short: 'Buying', icon: <Truck size={20} /> },
-    { id: 'usage', label: 'Usage Tracking', short: 'Usage', icon: <Clipboard size={20} /> },
+    { id: 'usage', label: 'Usage tracking', short: 'Usage tracking', icon: <Clipboard size={20} /> },
     { id: 'documents', label: 'Documents', short: 'Documents', icon: <Files size={20} /> },
     { id: 'settings', label: 'Settings', short: 'Settings', icon: <Gear size={20} /> },
 ];
@@ -125,7 +125,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                             <Buildings size={20} weight="duotone" />
                         </div>
                         <div className="project-info">
-                            <span className="label">Active Project</span>
+                            <span className="label">Active project</span>
                             <span className="name">{project.name}</span>
                         </div>
                         <CaretDown size={14} className={`caret ${isProjectMenuOpen ? 'open' : ''}`} />
@@ -160,7 +160,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                             <div className="dropdown-divider"></div>
 
                             <Link href="/projects" className="dropdown-item view-all" onClick={() => setIsProjectMenuOpen(false)}>
-                                View All Projects
+                                View all projects
                             </Link>
                         </div>
                     )}
@@ -193,7 +193,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                     className="collapse-toggle"
                     onClick={toggleCollapse}
                     aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                    title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+                    title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                 >
                     <CaretDown size={16} className={`toggle-icon ${isCollapsed ? 'collapsed' : ''}`} />
                 </button>

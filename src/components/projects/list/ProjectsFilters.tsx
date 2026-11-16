@@ -78,7 +78,7 @@ export default function ProjectsFilters({
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value as ProjectStatus | 'all')}
                     >
-                        <option value="all">All Status</option>
+                        <option value="all">All status</option>
                         <option value="draft">Draft</option>
                         <option value="active">Active</option>
                         <option value="completed">Completed</option>
@@ -93,13 +93,13 @@ export default function ProjectsFilters({
                         value={scopeFilter}
                         onChange={(e) => setScopeFilter(e.target.value as ProjectScope | 'all')}
                     >
-                        <option value="all">All Scopes</option>
-                        <option value="entire_house">Full House</option>
-                        <option value="substructure">Site Preparation & Foundation</option>
-                        <option value="superstructure">Structural Walls & Frame</option>
+                        <option value="all">All scopes</option>
+                        <option value="entire_house">Full house</option>
+                        <option value="substructure">Site preparation & foundation</option>
+                        <option value="superstructure">Structural walls & frame</option>
                         <option value="roofing">Roofing</option>
-                        <option value="finishing">Interior & Finishing</option>
-                        <option value="exterior">External Work</option>
+                        <option value="finishing">Interior & finishing</option>
+                        <option value="exterior">External work</option>
                     </select>
                     <CaretDown size={14} />
                 </div>
@@ -111,12 +111,12 @@ export default function ProjectsFilters({
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value as SortOption)}
                     >
-                        <option value="updated_desc">Recently Updated</option>
-                        <option value="updated_asc">Oldest First</option>
+                        <option value="updated_desc">Recently updated</option>
+                        <option value="updated_asc">Oldest first</option>
                         <option value="name_asc">Name A-Z</option>
                         <option value="name_desc">Name Z-A</option>
-                        <option value="budget_desc">Estimate High-Low</option>
-                        <option value="budget_asc">Estimate Low-High</option>
+                        <option value="budget_desc">Estimate high-low</option>
+                        <option value="budget_asc">Estimate low-high</option>
                     </select>
                     <CaretDown size={14} />
                 </div>

@@ -76,7 +76,7 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <MainLayout title="My Projects">
+      <MainLayout title="My projects">
         <ProjectsSubNav active="dashboard" />
         <div className="dashboard-loading">
           <div className="spinner" />
@@ -108,7 +108,7 @@ function DashboardContent() {
 
   if (loadFailed && !analytics) {
     return (
-      <MainLayout title="My Projects">
+      <MainLayout title="My projects">
         <ProjectsSubNav active="dashboard" />
         <div className="dashboard-failed" role="alert">
           <h2>Insights could not be loaded</h2>
@@ -144,7 +144,7 @@ function DashboardContent() {
   // nothing and should start their first project.
   if (!analytics || (analytics.totalProjects === 0 && analytics.quickEstimates === 0)) {
     return (
-      <MainLayout title="My Projects">
+      <MainLayout title="My projects">
         <ProjectsSubNav active="dashboard" />
         <div className="empty-dashboard">
           <Buildings size={64} weight="light" />
@@ -188,21 +188,21 @@ function DashboardContent() {
 
   const kpis = [
     {
-      label: 'Total Spend',
+      label: 'Total spend',
       value: formatValue(analytics.totalSpendUsd),
       sub: 'Across all projects',
       icon: <CurrencyDollar size={18} weight="duotone" />,
       tone: 'default' as const,
     },
     {
-      label: 'Total Budget',
+      label: 'Total budget',
       value: formatValue(analytics.totalBudgetUsd),
       sub: `${analytics.totalProjects} project${analytics.totalProjects !== 1 ? 's' : ''}`,
       icon: <Gauge size={18} weight="duotone" />,
       tone: 'default' as const,
     },
     {
-      label: 'Budget Variance',
+      label: 'Budget variance',
       value: formatValue(Math.abs(analytics.budgetVarianceUsd)),
       sub: analytics.budgetVarianceUsd >= 0 ? 'Under budget' : 'Over budget',
       icon: analytics.budgetVarianceUsd >= 0 ? <TrendUp size={18} weight="duotone" /> : <TrendDown size={18} weight="duotone" />,
@@ -221,7 +221,7 @@ function DashboardContent() {
     ...(analytics.quickEstimates > 0
       ? [
           {
-            label: 'Quick Estimates',
+            label: 'Quick estimates',
             value: String(analytics.quickEstimates),
             sub: `${formatValue(analytics.quickEstimatesValueUsd)} estimated`,
             icon: <Lightning size={18} weight="duotone" />,
@@ -238,7 +238,7 @@ function DashboardContent() {
           <div className="hero-left">
             <div>
               <span className="dash-eyebrow">Portfolio performance</span>
-              <h1>Project Insights</h1>
+              <h1>Project insights</h1>
               <p>Welcome back{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}. Monitor budgets, progress, and purchasing across your builds.</p>
             </div>
           </div>
@@ -276,9 +276,9 @@ function DashboardContent() {
         {/* ── Projects Table ── */}
         <section className="projects-panel">
           <div className="panel-head">
-            <h2>Your Projects</h2>
+            <h2>Your projects</h2>
             <Link href="/projects" className="see-all">
-              All Projects <ArrowRight size={14} />
+              All projects <ArrowRight size={14} />
             </Link>
           </div>
 
@@ -371,19 +371,19 @@ function DashboardContent() {
           {/* Budget Health */}
           <Card className="spend-card">
             <CardHeader>
-              <CardTitle>Budget Health</CardTitle>
+              <CardTitle>Budget health</CardTitle>
               <CardBadge variant={analytics.budgetVarianceUsd >= 0 ? 'success' : 'warning'}>
-                {analytics.budgetVarianceUsd >= 0 ? 'On Track' : 'At Risk'}
+                {analytics.budgetVarianceUsd >= 0 ? 'On track' : 'At risk'}
               </CardBadge>
             </CardHeader>
             <div className="spend-content">
               <div className="spend-row">
                 <div>
-                  <div className="spend-label">Total Spent</div>
+                  <div className="spend-label">Total spent</div>
                   <div className="spend-value">{formatValue(analytics.totalSpendUsd)}</div>
                 </div>
                 <div>
-                  <div className="spend-label">Total Budget</div>
+                  <div className="spend-label">Total budget</div>
                   <div className="spend-value">{formatValue(analytics.totalBudgetUsd)}</div>
                 </div>
                 <div className="progress-ring-lg">
@@ -418,8 +418,8 @@ function DashboardContent() {
           {/* Monthly Spend */}
           <Card className="timeline-card">
             <CardHeader>
-              <CardTitle>Monthly Spend</CardTitle>
-              <CardBadge variant="accent">Last 6 Months</CardBadge>
+              <CardTitle>Monthly spend</CardTitle>
+              <CardBadge variant="accent">Last 6 months</CardBadge>
             </CardHeader>
             <div className="timeline-bars">
               {analytics.spendTimeline.map((point) => {
@@ -441,8 +441,8 @@ function DashboardContent() {
           {/* Top Suppliers */}
           <Card className="suppliers-card">
             <CardHeader>
-              <CardTitle>Top Suppliers</CardTitle>
-              <CardBadge variant="accent">By Spend</CardBadge>
+              <CardTitle>Top suppliers</CardTitle>
+              <CardBadge variant="accent">By spend</CardBadge>
             </CardHeader>
             {analytics.topSuppliers.length === 0 ? (
               <div className="empty-sub">No purchases recorded yet.</div>
@@ -467,7 +467,7 @@ function DashboardContent() {
           {/* Recent Purchases */}
           <Card className="purchases-card">
             <CardHeader>
-              <CardTitle>Recent Purchases</CardTitle>
+              <CardTitle>Recent purchases</CardTitle>
               <Receipt size={18} weight="duotone" />
             </CardHeader>
             {analytics.recentPurchases.length === 0 ? (

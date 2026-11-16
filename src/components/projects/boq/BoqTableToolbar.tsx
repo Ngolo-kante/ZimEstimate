@@ -56,7 +56,7 @@ export default function BoqTableToolbar({
                         >
                             <option value="all">All statuses</option>
                             <option value="pending">Pending</option>
-                            <option value="in_progress">In Progress</option>
+                            <option value="in_progress">In progress</option>
                             <option value="purchased">Purchased</option>
                             <option value="over_purchased">Over-purchased</option>
                         </select>

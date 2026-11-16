@@ -69,6 +69,13 @@ export default function QuickBOQTable({
   const [markupPct, setMarkupPct] = useState(0);
   const [currency] = useState<'USD' | 'ZWG'>('USD');
   const [clientView, setClientView] = useState(false);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const toggleDescription = (id: string) => setExpandedDescriptions((current) => {
+    const next = new Set(current);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
   const zwgRate = 27;
 
   // ── Mutations ────────────────────────────────────────────────────────────
@@ -241,7 +248,7 @@ export default function QuickBOQTable({
           {isContractor && (
             <button
               onClick={() => setClientView(true)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
             >
               Client view
             </button>
@@ -249,7 +256,7 @@ export default function QuickBOQTable({
 
           <button
             onClick={() => handleAuthGatedAction('pdf')}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            className="min-h-11 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
           >
             {!isAuthenticated && <Lock size={12} />}
             <Download size={14} />
@@ -258,7 +265,7 @@ export default function QuickBOQTable({
 
           <button
             onClick={() => handleAuthGatedAction('save')}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-blue-600 bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors shadow-sm"
+            className="min-h-11 inline-flex items-center gap-1.5 rounded-lg border border-blue-600 bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors shadow-sm"
           >
             {!isAuthenticated && <Lock size={12} />}
             <FloppyDisk size={14} />
@@ -298,14 +305,21 @@ export default function QuickBOQTable({
             const dimmed = item.owned || !item.included;
             const displayUnit = currency === 'ZWG' ? item.unitCostUsd * zwgRate : item.unitCostUsd;
             return (
-              <li key={item.id} className={`px-3 py-3 ${dimmed ? 'opacity-50' : ''}`}>
+              <li key={item.id} className={`px-3 py-3 ${dimmed ? 'bg-slate-50' : ''}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="min-w-0 line-clamp-2 [overflow-wrap:anywhere] text-sm font-medium text-slate-800" title={item.description}>{item.description}</p>
+                    <button
+                      type="button"
+                      aria-expanded={expandedDescriptions.has(item.id)}
+                      onClick={() => toggleDescription(item.id)}
+                      className="min-h-11 min-w-0 w-full text-left text-sm font-medium text-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    >
+                      <span className={`[overflow-wrap:anywhere] ${expandedDescriptions.has(item.id) ? '' : 'line-clamp-2'}`}>{item.description}</span>
+                    </button>
                     <div className="mt-0.5 flex flex-wrap gap-1">
-                      {item.brand && <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">{item.brand}</span>}
-                      {item.owned && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">Owned</span>}
-                      {item.optional && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">Optional</span>}
+                      {item.brand && <span className="rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700">{item.brand}</span>}
+                      {item.owned && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">Owned</span>}
+                      {item.optional && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700">Optional</span>}
                     </div>
                   </div>
                   {!item.owned && (
@@ -314,7 +328,7 @@ export default function QuickBOQTable({
                       aria-label={`${item.included ? 'Remove' : 'Add'} ${item.description} ${item.included ? 'from' : 'to'} the BOQ`}
                       aria-pressed={item.included}
                       onClick={() => toggleItem(item.id)}
-                      className="-m-1 p-2 rounded hover:bg-slate-100"
+                      className="min-h-11 min-w-11 -m-1 p-2 rounded hover:bg-slate-100"
                     >
                       {item.included ? <ToggleRight size={24} weight="fill" className="text-green-600" /> : <ToggleLeft size={24} className="text-slate-500" />}
                     </button>
@@ -331,7 +345,7 @@ export default function QuickBOQTable({
                       step={0.01}
                       disabled={dimmed}
                       onChange={(e) => updateQty(item.id, parseFloat(e.target.value) || 0)}
-                      className="w-full rounded border border-slate-300 px-2 py-1.5 text-base text-slate-800 disabled:opacity-50"
+                      className="min-h-11 w-full rounded border border-slate-300 px-2 py-1.5 text-base text-slate-800 disabled:opacity-50"
                     />
                   </label>
                   <span className="pt-4">×</span>
@@ -345,7 +359,7 @@ export default function QuickBOQTable({
                       step={0.01}
                       disabled={dimmed}
                       onChange={(e) => updatePrice(item.id, parseFloat(e.target.value) || 0)}
-                      className="w-full rounded border border-slate-300 px-2 py-1.5 text-base text-slate-800 disabled:opacity-50"
+                      className="min-h-11 w-full rounded border border-slate-300 px-2 py-1.5 text-base text-slate-800 disabled:opacity-50"
                     />
                   </label>
                   <span className="pt-4 pl-1 text-right text-sm font-semibold text-slate-800 whitespace-nowrap">
@@ -379,30 +393,37 @@ export default function QuickBOQTable({
                 return (
                   <tr
                     key={item.id}
-                    className={`border-t border-slate-100 ${dimmed ? 'opacity-40' : ''}`}
+                    className={`border-t border-slate-100 ${dimmed ? 'bg-slate-50' : ''}`}
                   >
                     {/* Description */}
                     <td className="px-4 py-2.5">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="min-w-0 line-clamp-2 [overflow-wrap:anywhere] text-slate-800" title={item.description}>{item.description}</span>
+                        <button
+                      type="button"
+                      aria-expanded={expandedDescriptions.has(item.id)}
+                      onClick={() => toggleDescription(item.id)}
+                      className="min-h-11 min-w-0 w-full text-left text-sm font-medium text-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2"
+                    >
+                      <span className={`[overflow-wrap:anywhere] ${expandedDescriptions.has(item.id) ? '' : 'line-clamp-2'}`}>{item.description}</span>
+                    </button>
                         {item.brand && (
-                          <span className="inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                          <span className="inline-block rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700">
                             {item.brand}
                           </span>
                         )}
                         {item.owned && (
-                          <span className="inline-block rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                          <span className="inline-block rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">
                             Owned
                           </span>
                         )}
                         {item.optional && (
-                          <span className="inline-block rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-600">
+                          <span className="inline-block rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700">
                             Optional
                           </span>
                         )}
                       </div>
                       {item.notes && (
-                        <p className="mt-0.5 text-[11px] text-slate-400">{item.notes}</p>
+                        <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">{item.notes}</p>
                       )}
                     </td>
 
@@ -479,7 +500,7 @@ export default function QuickBOQTable({
           <button
             type="button"
             onClick={() => addCustomItem('Custom')}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            className="min-h-11 inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
           >
             <Plus size={12} /> Add Item
           </button>

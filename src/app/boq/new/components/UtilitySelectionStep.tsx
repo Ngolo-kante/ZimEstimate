@@ -35,7 +35,7 @@ export default function UtilitySelectionStep({ selection, onToggle }: UtilitySel
         {
             key: 'wastewater_enabled' as const,
             label: 'Wastewater',
-            icon: <Toilet size={32} weight="duotone" color="#64748B" />, // Slate-500
+            icon: <Toilet size={32} weight="duotone" color="var(--color-text-secondary)" />, // Slate-500
             description: 'Septic tanks, soakaways, and sewer connections.',
         },
         {

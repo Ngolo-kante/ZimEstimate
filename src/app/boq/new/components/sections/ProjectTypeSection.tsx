@@ -79,7 +79,7 @@ export default function ProjectTypeSection() {
 
       {/* ── Project Type Cards ───────────────────────────────────────────── */}
       <div>
-        <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400 mb-4">
+        <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--color-text-muted)] mb-4">
           Choose your project scope
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -120,7 +120,7 @@ export default function ProjectTypeSection() {
                 </div>
 
                 {/* Scope badge */}
-                <div className={`self-start px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                <div className={`self-start px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                   isSelected ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 wiz-text-muted'
                 }`}>
                   {type.id === 'full_house' ? 'All Stages' : 'Select Stages'}
@@ -158,7 +158,7 @@ export default function ProjectTypeSection() {
             transition={{ duration: 0.35, ease: 'easeOut' }}
           >
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">
+              <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
                 Stages included in this BOQ
               </p>
               <span className="text-xs font-medium wiz-text-muted">
@@ -184,7 +184,7 @@ export default function ProjectTypeSection() {
                     }`}
                   >
                     <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
-                      isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'
+                      isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-[var(--color-text-muted)]'
                     }`}>
                       <StageIcon size={16} weight={isSelected ? 'fill' : 'regular'} />
                     </div>
@@ -192,7 +192,7 @@ export default function ProjectTypeSection() {
                       <div className={`text-sm font-semibold ${isSelected ? 'text-slate-900' : 'text-slate-700'}`}>
                         {stage.label}
                       </div>
-                      <p className={`mt-0.5 text-xs leading-relaxed ${isSelected ? 'text-slate-600' : 'text-slate-400'}`}>
+                      <p className={`mt-0.5 text-xs leading-relaxed ${isSelected ? 'text-slate-600' : 'text-[var(--color-text-muted)]'}`}>
                         {stage.description}
                       </p>
                     </div>

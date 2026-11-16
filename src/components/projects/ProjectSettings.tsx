@@ -55,12 +55,12 @@ type ReminderFrequency = 'daily' | 'weekly' | 'monthly';
 /* ================ CONSTANTS ================ */
 
 const STAGE_CATEGORIES: { id: BOQCategory; label: string; description: string }[] = [
-    { id: 'substructure', label: 'Site Preparation & Foundation', description: 'Foundation work, excavation, and footing.' },
-    { id: 'superstructure', label: 'Structural Walls & Frame', description: 'Brickwork, lintels, and beams up to roof level.' },
+    { id: 'substructure', label: 'Site preparation & foundation', description: 'Foundation work, excavation, and footing.' },
+    { id: 'superstructure', label: 'Structural walls & frame', description: 'Brickwork, lintels, and beams up to roof level.' },
     { id: 'roofing', label: 'Roofing', description: 'Trusses, sheets, tiles, and ceiling.' },
-    { id: 'finishing', label: 'Interior & Finishing', description: 'Plastering, painting, tiling, and glazing.' },
-    { id: 'services', label: 'Plumbing & Electrical', description: 'Pipes, sanitaryware, wiring and fittings.' },
-    { id: 'exterior', label: 'External Work', description: 'Landscaping, paving, and boundary walls.' },
+    { id: 'finishing', label: 'Interior & finishing', description: 'Plastering, painting, tiling, and glazing.' },
+    { id: 'services', label: 'Plumbing & electrical', description: 'Pipes, sanitaryware, wiring and fittings.' },
+    { id: 'exterior', label: 'External work', description: 'Landscaping, paving, and boundary walls.' },
 ];
 
 const CHANNEL_OPTIONS: { id: NotificationChannel; label: string; icon: React.ReactNode }[] = [
@@ -96,7 +96,7 @@ const ALERT_DEFINITIONS: AlertConfig[] = [
     {
         id: 'low_stock',
         icon: <Package size={20} weight="duotone" />,
-        title: 'Low Stock Alerts',
+        title: 'Low stock alerts',
         description: 'Get notified when remaining material drops below a set threshold.',
         color: 'var(--color-amber)',
         hasThreshold: true,
@@ -108,7 +108,7 @@ const ALERT_DEFINITIONS: AlertConfig[] = [
     {
         id: 'price_change',
         icon: <TrendUp size={20} weight="duotone" />,
-        title: 'Price Change Alerts',
+        title: 'Price change alerts',
         description: 'Be alerted when supplier prices change significantly on your BOQ items.',
         color: 'var(--color-danger)',
         hasThreshold: true,
@@ -120,7 +120,7 @@ const ALERT_DEFINITIONS: AlertConfig[] = [
     {
         id: 'budget_reminder',
         icon: <CurrencyDollar size={20} weight="duotone" />,
-        title: 'Budget Reminders',
+        title: 'Budget reminders',
         description: 'Periodic reminders to help you stay on track with project savings targets.',
         color: 'var(--color-accent)',
         hasFrequency: true,
@@ -129,7 +129,7 @@ const ALERT_DEFINITIONS: AlertConfig[] = [
     {
         id: 'upcoming_stage',
         icon: <CalendarCheck size={20} weight="duotone" />,
-        title: 'Upcoming Stage Reminders',
+        title: 'Upcoming stage reminders',
         description: 'Receive reminders before a construction stage is due to begin.',
         color: 'var(--color-clay)',
         hasFrequency: true,
@@ -137,7 +137,7 @@ const ALERT_DEFINITIONS: AlertConfig[] = [
     {
         id: 'admin_tasks',
         icon: <ListChecks size={20} weight="duotone" />,
-        title: 'Admin Task Reminders',
+        title: 'Admin task reminders',
         description: 'Regular nudges for pending admin and compliance tasks on your project.',
         color: 'var(--color-accent)',
         hasFrequency: true,
@@ -145,7 +145,7 @@ const ALERT_DEFINITIONS: AlertConfig[] = [
     {
         id: 'compliance',
         icon: <ShieldCheck size={20} weight="duotone" />,
-        title: 'Compliance Deadline Alerts',
+        title: 'Compliance deadline alerts',
         description: 'Alerts for upcoming certificate and approval deadlines.',
         color: 'var(--color-primary)',
         hasFrequency: true,
@@ -226,7 +226,7 @@ function AlertRow({
                     {/* Amount input (for budget) */}
                     {config.hasAmount && (
                         <div className="alert-config-field">
-                            <label className="form-label">Reminder Amount (USD)</label>
+                            <label className="form-label">Reminder amount (USD)</label>
                             <div className="form-input-wrapper" style={{ maxWidth: '200px' }}>
                                 <span className="currency-prefix">$</span>
                                 <input

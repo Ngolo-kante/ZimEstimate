@@ -6,12 +6,12 @@ const HAS_E2E_CREDS = Boolean(E2E_EMAIL && E2E_PASSWORD);
 
 /** Stage switcher labels, in the order the workspace shows them. */
 const STAGES = [
-  { key: 'substructure', short: 'Foundation', schedule: 'Site Preparation & Foundation' },
-  { key: 'superstructure', short: 'Structure', schedule: 'Structural Walls & Frame' },
+  { key: 'substructure', short: 'Foundation', schedule: 'Site preparation & foundation' },
+  { key: 'superstructure', short: 'Structure', schedule: 'Structural walls & frame' },
   { key: 'roofing', short: 'Roof', schedule: 'Roofing' },
-  { key: 'finishing', short: 'Finishes', schedule: 'Interior & Finishing' },
-  { key: 'services', short: 'Plumbing & Electrical', schedule: 'Plumbing & Electrical' },
-  { key: 'exterior', short: 'External', schedule: 'External Work' },
+  { key: 'finishing', short: 'Finishes', schedule: 'Interior & finishing' },
+  { key: 'services', short: 'Plumbing & electrical', schedule: 'Plumbing & electrical' },
+  { key: 'exterior', short: 'External', schedule: 'External work' },
 ] as const;
 
 /** Every workspace view that has a page heading, by its ?view= value. */
@@ -19,7 +19,7 @@ const VIEW_HEADINGS: Array<{ view: string; heading: string }> = [
   { view: 'boq', heading: 'Bill of Quantities' },
   { view: 'compliance', heading: 'Compliance' },
   { view: 'procurement', heading: 'Buying' },
-  { view: 'usage', heading: 'Usage Tracking' },
+  { view: 'usage', heading: 'Usage tracking' },
   { view: 'documents', heading: 'Documents' },
   { view: 'budget', heading: 'Budget' },
   { view: 'settings', heading: 'Settings' },
@@ -33,7 +33,7 @@ test.describe('Authenticated project workspace', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await signIn(page);
 
-    await expect(page.getByRole('heading', { name: 'My Projects' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'My projects' })).toBeVisible();
     await expect(page.getByLabel('Filter by status')).toBeHidden();
     await page.getByPlaceholder('Search projects...').fill('no-matching-project-zzzz');
     await expect(page.locator('a.project-link')).toHaveCount(0);
@@ -44,7 +44,7 @@ test.describe('Authenticated project workspace', () => {
     await page.getByRole('button', { name: 'Filters', exact: true }).click();
     await page.getByPlaceholder('Search projects...').clear();
     await expect(page.getByRole('navigation', { name: 'Project workspace views' }))
-      .toContainText('My Work');
+      .toContainText('My work');
     await expectNoDocumentOverflow(page);
 
     const fullProject = page.locator(
@@ -60,7 +60,7 @@ test.describe('Authenticated project workspace', () => {
     if (projectName) {
       await expect(page.getByRole('heading', { level: 1, name: projectName })).toBeVisible();
     }
-    await expect(page.getByRole('heading', { name: 'Construction Progress' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Construction progress' })).toBeVisible();
     await expectNoDocumentOverflow(page);
 
     await projectDock.getByRole('button', { name: 'BOQ' }).click();
@@ -71,7 +71,7 @@ test.describe('Authenticated project workspace', () => {
     const structureStage = stageSwitcher.getByRole('button', { name: /^Structure,/ });
     await structureStage.click();
     await expect(structureStage).toHaveAttribute('aria-current', 'step');
-    await expect(page.getByRole('button', { name: /Stage schedule Structural Walls & Frame/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Stage schedule Structural walls & frame/ })).toBeVisible();
     await expectNoDocumentOverflow(page);
 
     // Every stage the project has opens, shows its own schedule, and fits.
@@ -121,24 +121,24 @@ test.describe('Authenticated project workspace', () => {
     await expectNoDocumentOverflow(page);
 
     const moreHeadings: Record<string, string> = {
-      Usage: 'Usage Tracking',
+      'Usage tracking': 'Usage tracking',
       Compliance: 'Compliance',
       Documents: 'Documents',
       Settings: 'Settings',
     };
-    for (const destination of ['Usage', 'Compliance', 'Documents', 'Settings']) {
+    for (const destination of ['Usage tracking', 'Compliance', 'Documents', 'Settings']) {
       await projectDock.getByRole('button', { name: 'More' }).click();
       await page.getByRole('dialog', { name: 'More tools' }).getByRole('button', { name: new RegExp(`^${destination}`) }).click();
       await expect(page.getByRole('heading', { level: 1, name: moreHeadings[destination], exact: true })).toBeVisible();
       await expectNoDocumentOverflow(page);
 
-      if (destination === 'Usage') {
+      if (destination === 'Usage tracking') {
         await visitUsageSections(page);
       }
     }
 
     await page.goto('/projects/dashboard');
-    await expect(page.getByRole('heading', { name: 'Project Insights' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Project insights' })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Project workspace views' }))
       .toContainText('Insights');
     await expectNoDocumentOverflow(page);
@@ -177,7 +177,7 @@ test.describe('Authenticated project workspace', () => {
 
       // Overview has no ?view=, and its heading is the project's name.
       await page.goto(projectHref!);
-      await expect(page.getByRole('heading', { name: 'Construction Progress' })).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByRole('heading', { name: 'Construction progress' })).toBeVisible({ timeout: 15_000 });
       if (projectName) {
         await expect(page.getByRole('heading', { level: 1, name: projectName })).toBeVisible();
       }
@@ -222,7 +222,7 @@ async function signIn(page: Page) {
   await page.getByPlaceholder('Enter your password').fill(E2E_PASSWORD!);
   await page.getByRole('button', { name: 'Sign In' }).click();
   await page.waitForURL('**/projects', { timeout: 20_000 });
-  await expect(page.getByRole('heading', { name: 'My Projects' })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('heading', { name: 'My projects' })).toBeVisible({ timeout: 20_000 });
 }
 
 /** Log, Materials and Ledger; switches usage tracking on first when the project has it off. */

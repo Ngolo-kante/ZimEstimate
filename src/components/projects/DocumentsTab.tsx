@@ -23,9 +23,9 @@ type DocumentFilter = DocumentCategory | 'all' | 'geotech';
 const GEOTECH_DOC_TAG = 'geotech_report';
 
 const FILTER_OPTIONS: { value: DocumentFilter; label: string }[] = [
-    { value: 'all', label: 'All Documents' },
-    { value: 'geotech', label: 'Geotech Reports' },
-    { value: 'plan', label: 'Plans & Drawings' },
+    { value: 'all', label: 'All documents' },
+    { value: 'geotech', label: 'Geotech reports' },
+    { value: 'plan', label: 'Plans & drawings' },
     { value: 'permit', label: 'Permits' },
     { value: 'receipt', label: 'Receipts' },
     { value: 'contract', label: 'Contracts' },

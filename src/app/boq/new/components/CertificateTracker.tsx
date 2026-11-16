@@ -11,7 +11,7 @@ export default function CertificateTracker() {
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-4">
       <h3 className="text-sm font-semibold text-slate-900">Certificate Tracker</h3>
-      <p className="mt-1 text-xs text-slate-500">Monitor mandatory technical and council certificates per stage.</p>
+      <p className="mt-1 text-xs text-[var(--color-text-muted)]">Monitor mandatory technical and council certificates per stage.</p>
 
       <div className="mt-4 space-y-2">
         {STAGE_COMPLIANCE_REQUIREMENTS.map((requirement) => {
@@ -23,12 +23,12 @@ export default function CertificateTracker() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-slate-800">{requirement.label}</p>
-                  <p className="text-xs text-slate-500">{requirement.description}</p>
-                  <p className="mt-1 text-[11px] uppercase tracking-wide text-slate-500">Stage: {requirement.stage}</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">{requirement.description}</p>
+                  <p className="mt-1 text-xs uppercase tracking-wide text-[var(--color-text-muted)]">Stage: {requirement.stage}</p>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${statusMeta.badgeClass}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${statusMeta.badgeClass}`}>
                     {statusMeta.label}
                   </span>
                   <select

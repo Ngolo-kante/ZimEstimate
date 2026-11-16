@@ -12,15 +12,15 @@
 
   /* Midnight Blue — body text (replaces pure black / slate-900) */
   --wiz-text-primary: #1B2A4A;
-  --wiz-text-muted:   #64748B;   /* slate-500                      */
-  --wiz-text-faint:   #94A3B8;   /* slate-400                      */
+  --wiz-text-muted:   #475569;
+  --wiz-text-faint:   #475569;
 
   /* Jade — progress bar & active step indicator */
   --wiz-jade:         #2D9D78;
   --wiz-jade-light:   #E3F5EE;
 
   /* Primary Blue — CTA buttons                                  */
-  --wiz-primary:      #3B82F6;   /* blue-500                       */
+  --wiz-primary:      #2563EB;   /* blue-600                       */
   --wiz-primary-dark: #2563EB;   /* blue-600 — hover state         */
   --wiz-primary-text: #FFFFFF;   /* white text on blue bg           */
 
@@ -51,6 +51,7 @@
 
 /* ── Global wizard wrapper ─────────────────────────────────────────────────── */
 .wiz-root {
+  --color-text-muted: #475569;
   background: var(--wiz-bg);
   color:       var(--wiz-text-primary);
 }
@@ -110,7 +111,7 @@
   width:           18px;
   height:          18px;
   border-radius:   999px;
-  font-size:       0.6875rem;
+  font-size:       0.75rem;
   font-weight:     700;
   flex-shrink:     0;
 }
@@ -142,12 +143,12 @@
 .wiz-step-chip--locked {
   background:   transparent;
   border-color: #E2E8F0;
-  color:        #94A3B8;
+  color:        var(--color-text-secondary);
   cursor:       not-allowed;
 }
 .wiz-step-chip--locked .wiz-step-chip__num {
   background: #F1F5F9;
-  color:      #94A3B8;
+  color:      var(--color-text-secondary);
 }
 
 .wiz-step-chip:focus-visible {
@@ -267,7 +268,7 @@
 
 /* ── Step header label ─────────────────────────────────────────────────────── */
 .wiz-step-label {
-  font-size:    11px;
+  font-size:    12px;
   font-weight:  700;
   letter-spacing: 0.2em;
   text-transform: uppercase;

@@ -11,7 +11,7 @@ export default function PreConstructionChecklist() {
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-4">
       <h3 className="text-sm font-semibold text-slate-900">Pre-Construction Checklist</h3>
-      <p className="mt-1 text-xs text-slate-500">Track key procedures before procurement and site mobilization.</p>
+      <p className="mt-1 text-xs text-[var(--color-text-muted)]">Track key procedures before procurement and site mobilization.</p>
 
       <div className="mt-4 space-y-2">
         {LOCATION_PROCEDURE_RULES.map((rule) => {
@@ -26,8 +26,8 @@ export default function PreConstructionChecklist() {
               />
               <span>
                 <span className="block text-sm font-medium text-slate-800">{rule.label}</span>
-                <span className="block text-xs text-slate-500">{rule.description}</span>
-                <span className="mt-1 inline-block rounded-full bg-slate-200 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-700">
+                <span className="block text-xs text-[var(--color-text-muted)]">{rule.description}</span>
+                <span className="mt-1 inline-block rounded-full bg-slate-200 px-2 py-0.5 text-xs uppercase tracking-wide text-slate-700">
                   {status.replace('_', ' ')}
                 </span>
               </span>

@@ -81,7 +81,7 @@ export default function PurchaseDialog({
           <FieldGroup className="form-section">
             <Field className={cn('form-field', formErrors.supplierName && 'has-error')}>
               <FieldLabel htmlFor="supplier-input">
-                Supplier Name <span className="required">*</span>
+                Supplier name <span className="required">*</span>
               </FieldLabel>
               <Input
                 id="supplier-input"
@@ -131,7 +131,7 @@ export default function PurchaseDialog({
               </Field>
               <Field className={cn('form-field', formErrors.unitPrice && 'has-error')}>
                 <FieldLabel htmlFor="price-input">
-                  Unit Price (USD) <span className="required">*</span>
+                  Unit price (USD) <span className="required">*</span>
                 </FieldLabel>
                 <Input
                   id="price-input"

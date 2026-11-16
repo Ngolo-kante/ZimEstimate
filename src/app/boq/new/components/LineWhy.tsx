@@ -24,7 +24,7 @@ export function LineWhyButton({ open, onToggle, name }: { open: boolean; onToggl
       onClick={onToggle}
       aria-expanded={open}
       aria-label={`${open ? 'Hide' : 'Show'} why ${name} is on this estimate`}
-      className={`mt-0.5 inline-flex items-center rounded px-1 text-[11px] font-bold transition ${
+      className={`mt-0.5 inline-flex items-center rounded px-1 text-xs font-bold transition ${
         open ? 'text-[var(--color-text)]' : 'text-[var(--color-accent)] hover:underline'
       }`}
     >
@@ -87,7 +87,7 @@ export function LineWhyPanel({ item, stage }: { item: BOQItem; stage: string }) 
   }, [key]);
 
   return (
-    <div className="rounded-lg border border-[var(--color-border-light)] bg-[var(--color-background)] px-3 py-2.5 text-xs leading-relaxed text-[var(--color-text-secondary)]">
+    <div className="rounded-lg border border-[var(--color-border-light)] bg-[var(--color-background)] px-3 py-2.5 text-xs leading-relaxed text-[var(--color-text-muted)]">
       {note && (
         <p>
           <span className="font-bold text-[var(--color-text)]">Worked out from: </span>
@@ -104,7 +104,7 @@ export function LineWhyPanel({ item, stage }: { item: BOQItem; stage: string }) 
               {explanation.changesIt.join(' · ')}
             </p>
           )}
-          <p className="mt-1.5 text-[10px] text-[var(--color-text-muted)]">Written by AI from this estimate&rsquo;s own numbers.</p>
+          <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">Written by AI from this estimate&rsquo;s own numbers.</p>
         </div>
       ) : failed ? (
         <p className={note ? 'mt-2' : ''}>A fuller explanation is not available right now.</p>

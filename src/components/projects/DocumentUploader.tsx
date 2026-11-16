@@ -14,9 +14,9 @@ interface DocumentUploaderProps {
     isUploading?: boolean;
 }
 const CATEGORIES: { value: DocumentCategory; label: string }[] = [
-    { value: 'plan', label: 'Plans & Drawings' }, { value: 'permit', label: 'Permits & Approvals' },
+    { value: 'plan', label: 'Plans & drawings' }, { value: 'permit', label: 'Permits & approvals' },
     { value: 'receipt', label: 'Receipts' }, { value: 'contract', label: 'Contracts' },
-    { value: 'photo', label: 'Site Photos' }, { value: 'general', label: 'General' },
+    { value: 'photo', label: 'Site photos' }, { value: 'general', label: 'General' },
 ];
 
 export default function DocumentUploader({ onUpload, isUploading }: DocumentUploaderProps) {

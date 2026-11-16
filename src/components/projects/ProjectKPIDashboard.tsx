@@ -149,7 +149,7 @@ export default function ProjectKPIDashboard({
 
   const kpiCards: KPICard[] = [
     {
-      label: 'Budget vs Actual',
+      label: 'Budget vs actual',
       value: formatPrice(stats.actualTotal, stats.actualTotal * exchangeRate),
       subValue: `Est: ${formatPrice(stats.estimatedTotal, stats.estimatedTotal * exchangeRate)}`,
       trend: stats.budgetVariance > 0 ? 'up' : stats.budgetVariance < 0 ? 'down' : 'neutral',
@@ -158,15 +158,15 @@ export default function ProjectKPIDashboard({
       color: stats.budgetVariance > 0 ? 'red' : 'blue',
     },
     {
-      label: 'Purchased Items',
+      label: 'Purchased items',
       value: `${stats.purchasedItems}/${materialItems.length}`,
       subValue: `${stats.completionRate.toFixed(0)}% complete`,
       icon: <ShoppingCart size={22} weight="duotone" />,
       color: 'blue',
-      action: onNavigate ? { label: 'View All', onClick: () => onNavigate('procurement') } : undefined,
+      action: onNavigate ? { label: 'View all', onClick: () => onNavigate('procurement') } : undefined,
     },
     {
-      label: 'Monthly Spending',
+      label: 'Monthly spending',
       value: formatPrice(stats.thisMonthSpending, stats.thisMonthSpending * exchangeRate),
       subValue: 'This month',
       trend: stats.monthlyTrend > 0 ? 'up' : stats.monthlyTrend < 0 ? 'down' : 'neutral',
@@ -175,7 +175,7 @@ export default function ProjectKPIDashboard({
       color: 'blue',
     },
     {
-      label: 'Remaining Budget',
+      label: 'Remaining budget',
       value: formatPrice(stats.remainingBudget, stats.remainingBudget * exchangeRate),
       subValue: `${stats.budgetUtilization.toFixed(0)}% utilized`,
       icon: <Cube size={22} weight="duotone" />,
@@ -237,7 +237,7 @@ export default function ProjectKPIDashboard({
             <Package size={18} weight="duotone" />
           </div>
           <div className="stat-content">
-            <span className="stat-label">Materials Used</span>
+            <span className="stat-label">Materials used</span>
             <span className="stat-value">{stats.itemsWithUsage} items</span>
             <span className="stat-sub">Value: {formatPrice(stats.usageValue, stats.usageValue * exchangeRate)}</span>
           </div>
@@ -254,7 +254,7 @@ export default function ProjectKPIDashboard({
             <Clock size={18} weight="duotone" />
           </div>
           <div className="stat-content">
-            <span className="stat-label">Pending Purchase</span>
+            <span className="stat-label">Pending purchase</span>
             <span className="stat-value">{stats.pendingItems} items</span>
             <span className="stat-sub">
               {formatPrice(

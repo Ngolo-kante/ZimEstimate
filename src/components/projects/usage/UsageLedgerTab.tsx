@@ -65,7 +65,7 @@ export default function UsageLedgerTab({
                       <th className="col-material">Material</th>
                       <th className="col-qty">Quantity</th>
                       <th className="col-unit">Unit</th>
-                      <th className="col-price">Unit Price</th>
+                      <th className="col-price">Unit price</th>
                       <th className="col-total">Value</th>
                       <th className="col-notes">Notes</th>
                     </tr>

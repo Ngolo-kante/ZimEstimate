@@ -910,6 +910,7 @@ export default function MarketplacePage() {
 
       <style jsx>{`
         .marketplace {
+  --color-text-muted: #475569;
           display: flex;
           flex-direction: column;
           gap: var(--space-6);
@@ -948,6 +949,7 @@ export default function MarketplacePage() {
         }
 
         .category-pill {
+          min-height: 44px;
           display: flex;
           align-items: center;
           gap: var(--space-1);
@@ -956,7 +958,7 @@ export default function MarketplacePage() {
           border: 1px solid var(--color-border-light);
           border-radius: var(--radius-full);
           font-size: var(--text-sm);
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
           cursor: pointer;
           transition: all var(--duration-fast) var(--ease-out);
         }
@@ -968,7 +970,7 @@ export default function MarketplacePage() {
         .category-pill.active {
           background: rgba(46, 108, 246, 0.12);
           border-color: var(--color-accent);
-          color: var(--color-accent);
+          color: var(--color-info-fg);
           font-weight: var(--font-semibold);
         }
 
@@ -1089,7 +1091,7 @@ export default function MarketplacePage() {
 
         .unit {
           font-size: var(--text-xs);
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
         }
 
         .price {
@@ -1114,7 +1116,7 @@ export default function MarketplacePage() {
           display: inline-flex;
           align-items: center;
           gap: 4px;
-          font-size: 0.65rem;
+          font-size: 0.75rem;
           font-weight: 600;
           text-transform: uppercase;
           padding: 2px 6px;
@@ -1128,7 +1130,7 @@ export default function MarketplacePage() {
 
         .source-badge.static {
           background: var(--color-mist);
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
         }
 
         .source-badge.manual {
@@ -1185,7 +1187,7 @@ export default function MarketplacePage() {
           background: var(--color-mist);
           border: none;
           border-radius: var(--radius-md);
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
           cursor: pointer;
           transition: all var(--duration-fast);
         }
@@ -1209,13 +1211,13 @@ export default function MarketplacePage() {
 
         .detail-subtitle {
           font-size: var(--text-sm);
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
           margin: 0;
         }
 
         .detail-specs {
           font-size: var(--text-sm);
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
           background: var(--color-mist);
           padding: var(--space-2);
           border-radius: var(--radius-md);
@@ -1230,7 +1232,7 @@ export default function MarketplacePage() {
 
         .detail-unit .label {
           font-size: var(--text-sm);
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
         }
 
         .detail-unit .value {
@@ -1294,7 +1296,7 @@ export default function MarketplacePage() {
 
         .trend-badge.up { background: rgba(22, 163, 74, 0.12); color: var(--color-emerald); }
         .trend-badge.down { background: rgba(220, 38, 38, 0.12); color: var(--color-danger); }
-        .trend-badge.stable { background: var(--color-mist); color: var(--color-text-secondary); }
+        .trend-badge.stable { background: var(--color-mist); color: var(--color-text-muted); }
 
         .dash {
           width: 8px;
@@ -1315,7 +1317,7 @@ export default function MarketplacePage() {
 
         .info-label {
           display: block;
-          font-size: 0.65rem;
+          font-size: 0.75rem;
           text-transform: uppercase;
           letter-spacing: 0.05em;
           color: var(--color-text-muted);
@@ -1334,7 +1336,7 @@ export default function MarketplacePage() {
         }
 
         .info-value.source.static {
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
         }
 
         .supplier-info {
@@ -1345,7 +1347,7 @@ export default function MarketplacePage() {
           padding-top: var(--space-3);
           border-top: 1px solid var(--color-border-light);
           font-size: 0.8rem;
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
         }
 
         .supplier-info .location {
@@ -1359,7 +1361,7 @@ export default function MarketplacePage() {
         .milestones-used .label {
           display: block;
           font-size: var(--text-sm);
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
           margin-bottom: var(--space-1);
         }
 
@@ -1375,7 +1377,7 @@ export default function MarketplacePage() {
           background: var(--color-mist);
           padding: 2px 8px;
           border-radius: var(--radius-sm);
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
         }
 
         .divider {
@@ -1452,7 +1454,7 @@ export default function MarketplacePage() {
 
         .best-badge {
           display: block;
-          font-size: 0.625rem;
+          font-size: 0.75rem;
           text-transform: uppercase;
           letter-spacing: 0.05em;
           color: var(--color-accent);
@@ -1486,7 +1488,7 @@ export default function MarketplacePage() {
 
         .quantity-row label {
           font-size: var(--text-sm);
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
         }
 
         .quantity-input {
@@ -1650,7 +1652,7 @@ export default function MarketplacePage() {
 
         .close-btn:hover {
           background: var(--color-mist);
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
         }
 
         .comparison-header h3 {
@@ -1663,7 +1665,7 @@ export default function MarketplacePage() {
         .comparison-header p {
           margin: 4px 0 0;
           font-size: var(--text-sm);
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
         }
 
         .comparison-loading {
@@ -1862,7 +1864,7 @@ export default function MarketplacePage() {
           background: var(--color-mist);
           border-radius: var(--radius-md);
           font-size: var(--text-sm);
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
         }
 
         .market-disclaimer p {

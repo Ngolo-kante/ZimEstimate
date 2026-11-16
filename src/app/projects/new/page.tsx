@@ -176,18 +176,18 @@ export default function NewProject() {
 
     const stepRequirements = (() => {
         if (step === 1) {
-            return [{ label: 'Project Type', done: Boolean(formData.projectType) }];
+            return [{ label: 'Project type', done: Boolean(formData.projectType) }];
         }
         if (step === 2) {
             return [{ label: 'Priority', done: Boolean(formData.priority) }];
         }
         if (step === 3) {
             return [
-                { label: 'Project Name', done: Boolean(formData.name.trim()) },
+                { label: 'Project name', done: Boolean(formData.name.trim()) },
                 { label: 'Location', done: Boolean(formData.location.trim()) },
             ];
         }
-        return [{ label: 'Estimate Method', done: Boolean(formData.boqMethod) }];
+        return [{ label: 'Estimate method', done: Boolean(formData.boqMethod) }];
     })();
 
     const getStepTitle = () => {
@@ -247,7 +247,7 @@ export default function NewProject() {
                                 <div className="tile-icon">
                                     <House size={36} weight="duotone" />
                                 </div>
-                                <h3>New House</h3>
+                                <h3>New house</h3>
                                 <p>Building from scratch</p>
                             </button>
 
@@ -307,7 +307,7 @@ export default function NewProject() {
                                 <div className="tile-icon budget">
                                     <CurrencyDollar size={40} weight="duotone" />
                                 </div>
-                                <h3>Budget-Focused</h3>
+                                <h3>Budget-focused</h3>
                                 <p>Find the most cost-effective materials and alternatives</p>
                                 <span className="tile-hint">Best for tight budgets</span>
                             </button>
@@ -321,7 +321,7 @@ export default function NewProject() {
                                 <div className="tile-icon quality">
                                     <Medal size={40} weight="duotone" />
                                 </div>
-                                <h3>Quality-First</h3>
+                                <h3>Quality-first</h3>
                                 <p>Premium materials and trusted suppliers</p>
                                 <span className="tile-hint">Best for long-term value</span>
                             </button>
@@ -335,7 +335,7 @@ export default function NewProject() {
                                 <div className="tile-icon speed">
                                     <Lightning size={40} weight="duotone" />
                                 </div>
-                                <h3>Fast Track</h3>
+                                <h3>Fast track</h3>
                                 <p>Readily available materials for quick completion</p>
                                 <span className="tile-hint">Best for tight deadlines</span>
                             </button>
@@ -390,7 +390,7 @@ export default function NewProject() {
                                 <div className="tile-icon">
                                     <PencilSimple size={40} weight="duotone" />
                                 </div>
-                                <h3>Manual Builder</h3>
+                                <h3>Manual builder</h3>
                                 <p>Build your BOQ step by step with guided inputs</p>
                                 <CardBadge variant="accent">Recommended</CardBadge>
                             </button>
@@ -404,9 +404,9 @@ export default function NewProject() {
                                 <div className="tile-icon">
                                     <FileArrowUp size={40} weight="duotone" />
                                 </div>
-                                <h3>Upload Floor Plan</h3>
+                                <h3>Upload floor plan</h3>
                                 <p>AI analyzes your blueprint to extract measurements</p>
-                                <CardBadge variant="success">Best for Accuracy</CardBadge>
+                                <CardBadge variant="success">Best for accuracy</CardBadge>
                             </button>
 
                             <button
@@ -418,7 +418,7 @@ export default function NewProject() {
                                 <div className="tile-icon">
                                     <Camera size={40} weight="duotone" />
                                 </div>
-                                <h3>Photo Quote</h3>
+                                <h3>Photo quote</h3>
                                 <p>Scan a handwritten quote from your hardware store</p>
                                 <CardBadge variant="default">OCR Powered</CardBadge>
                             </button>
@@ -432,9 +432,9 @@ export default function NewProject() {
                                 <div className="tile-icon">
                                     <Calculator size={40} weight="duotone" />
                                 </div>
-                                <h3>Quick Budget Checker</h3>
+                                <h3>Quick budget checker</h3>
                                 <p>Estimate how far your budget can go by stage before you start BOQ.</p>
-                                <CardBadge variant="accent">Fast Planning</CardBadge>
+                                <CardBadge variant="accent">Fast planning</CardBadge>
                             </button>
                         </div>
                         {fieldErrors.boqMethod && <p className="field-error">{fieldErrors.boqMethod}</p>}

@@ -95,12 +95,12 @@ export default function BoqView({
                             type="button"
                             className={`stage-switcher-item${isActive ? ' active' : ''}${!stage.is_applicable ? ' unavailable' : ''}`}
                             aria-current={isActive ? 'step' : undefined}
-                            aria-label={`${categoryShortLabels[category]}, ${stageItemCount} ${stageItemCount === 1 ? 'item' : 'items'}`}
+                            aria-label={`${categoryShortLabels[category].replace('Electrical', 'electrical')}, ${stageItemCount} ${stageItemCount === 1 ? 'item' : 'items'}`}
                             onClick={() => setActiveTab(category)}
                         >
                             <span className="stage-number">{index + 1}</span>
                             <span className="stage-switcher-copy">
-                                <strong>{categoryShortLabels[category]}</strong>
+                                <strong>{categoryShortLabels[category].replace('Electrical', 'electrical')}</strong>
                                 <small>{stage.is_applicable ? `${stageItemCount} ${stageItemCount === 1 ? 'item' : 'items'}` : 'Not included'}</small>
                             </span>
                         </button>

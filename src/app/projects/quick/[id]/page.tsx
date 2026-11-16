@@ -255,7 +255,7 @@ function SavedQuickEstimate() {
             <Warning size={40} weight="duotone" />
             <h2>We could not open that estimate</h2>
             <p>It may have been deleted, or it belongs to another account.</p>
-            <Link href="/projects" className="back-link">Back to My Work</Link>
+            <Link href="/projects" className="back-link">Back to my work</Link>
           </div>
         </Card>
         <style jsx>{`
@@ -274,7 +274,7 @@ function SavedQuickEstimate() {
   return (
     <div className="wrap">
       <Link href="/projects" className="crumb">
-        <ArrowLeft size={16} /> My Work
+        <ArrowLeft size={16} /> My work
       </Link>
 
       <header className="head">

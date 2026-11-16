@@ -895,15 +895,15 @@ function BoqNewPageContent() {
             <div className="flex items-center gap-3">
               <span className="font-semibold" style={{color:'var(--wiz-text-primary)'}}>{projectDetails.name || 'Untitled Estimate'}{projectDetails.buildingType === 'double_storey' ? ' (double storey)' : ''}</span>
               {isAutoSaving ? (
-                <span className="wiz-badge-saving inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                <span className="wiz-badge-saving inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wider">
                   <CircleNotch weight="bold" className="animate-spin" /> Saving
                 </span>
               ) : hasUnsavedChanges ? (
-                <span className="wiz-badge-unsaved inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                <span className="wiz-badge-unsaved inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wider">
                   Unsaved
                 </span>
               ) : project?.id ? (
-                <span className="wiz-badge-saved inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                <span className="wiz-badge-saved inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wider">
                   <FloppyDisk weight="fill" /> Saved
                 </span>
               ) : null}
@@ -1091,7 +1091,7 @@ function BoqNewPageContent() {
             <div className="relative z-[210] flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
               <div>
                 <h2 className="font-semibold text-slate-900">Interactive Floor Plan</h2>
-                <p className="text-xs text-slate-500">{geometryMode === 'upload' ? 'Correct imported rooms; the drawing’s overall door and window counts stay intact.' : 'Draw rooms to calculate derived area and openings.'}</p>
+                <p className="text-xs text-[var(--color-text-muted)]">{geometryMode === 'upload' ? 'Correct imported rooms; the drawing’s overall door and window counts stay intact.' : 'Draw rooms to calculate derived area and openings.'}</p>
               </div>
               <button
                 type="button"
@@ -1129,7 +1129,7 @@ function BoqNewPageContent() {
                 <FloppyDisk size={28} weight="duotone" />
               </div>
               <h3 className="text-lg font-semibold text-slate-900">Save to Dashboard</h3>
-              <p className="mt-2 text-sm text-slate-500">Sign in or create an account to save and continue this estimate later.</p>
+              <p className="mt-2 text-sm text-[var(--color-text-muted)]">Sign in or create an account to save and continue this estimate later.</p>
 
               <div className="mt-6 space-y-2">
                 <button
@@ -1148,7 +1148,7 @@ function BoqNewPageContent() {
                 </button>
                 <button
                   type="button"
-                  className="w-full rounded-xl py-2.5 text-sm font-medium text-slate-500 hover:text-slate-700"
+                  className="w-full rounded-xl py-2.5 text-sm font-medium text-[var(--color-text-muted)] hover:text-slate-700"
                   onClick={() => setShowSavePrompt(false)}
                 >
                   Cancel

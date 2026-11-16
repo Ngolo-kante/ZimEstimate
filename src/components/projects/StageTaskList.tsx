@@ -42,7 +42,7 @@ export default function StageTaskList({
                 <div className="section-header">
                     <div className="header-title">
                         <ListChecks size={20} weight="duotone" />
-                        <h4>Admin & Compliance Tasks</h4>
+                        <h4>Admin & compliance tasks</h4>
                     </div>
                     <div className="header-meta">
                         {!showAddForm && !isCollapsed && (

@@ -51,12 +51,12 @@ function formatDateOnly(value: string): string {
 }
 
 const STAGE_LABELS: Record<string, string> = {
-  substructure: 'Site Preparation & Foundation',
-  superstructure: 'Structural Walls & Frame',
+  substructure: 'Site preparation & foundation',
+  superstructure: 'Structural walls & frame',
   roofing: 'Roofing',
-  finishing: 'Interior & Finishing',
-  services: 'Plumbing & Electrical',
-  exterior: 'External Work',
+  finishing: 'Interior & finishing',
+  services: 'Plumbing & electrical',
+  exterior: 'External work',
 };
 
 const STATUS_STYLES: Record<string, string> = {

@@ -25,7 +25,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { label: 'Home', href: '/home', icon: <House size={20} weight="light" /> },
   { label: 'Projects', href: '/projects', icon: <Folders size={20} weight="light" /> },
-  { label: 'Quick Projects', href: '/quick-projects', icon: <Lightning size={20} weight="light" /> },
+  { label: 'Quick projects', href: '/quick-projects', icon: <Lightning size={20} weight="light" /> },
   { label: 'Marketplace', href: '/marketplace', icon: <Storefront size={20} weight="light" /> },
   { label: 'Templates', href: '/templates', icon: <Sparkle size={20} weight="light" /> },
   { label: 'Insights', href: '/market-insights', icon: <TrendUp size={20} weight="light" /> },

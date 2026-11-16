@@ -26,7 +26,7 @@ export default function UsageMaterialsTab({
   return (
     <div className="materials-tab">
       <div className="materials-header">
-        <h3>Material Usage History</h3>
+        <h3>Material usage history</h3>
         <p>Click on a material to see its usage history.</p>
       </div>
       <div className="materials-list">
@@ -118,7 +118,7 @@ export default function UsageMaterialsTab({
                     </tbody>
                     <tfoot>
                       <tr>
-                        <td className="footer-label">Total Used</td>
+                        <td className="footer-label">Total used</td>
                         <td className="col-qty bold">{formatQuantity(stat.usedQty)} {stat.item.unit}</td>
                         <td></td>
                       </tr>

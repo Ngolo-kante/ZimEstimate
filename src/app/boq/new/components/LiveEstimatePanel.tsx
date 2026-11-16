@@ -123,7 +123,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
               type="button"
               onClick={exportEstimate}
               title="Export estimate"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-[var(--color-text-muted)] hover:bg-slate-50 hover:text-slate-700 transition-colors"
             >
               <DownloadSimple size={16} />
             </button>
@@ -131,7 +131,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
               type="button"
               onClick={() => void shareEstimate()}
               title="Share estimate"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-[var(--color-text-muted)] hover:bg-slate-50 hover:text-slate-700 transition-colors"
             >
               <ShareNetwork size={16} />
             </button>
@@ -143,7 +143,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
       {/* ── Compact health bar ──────────────────────────────────── */}
       <div className="px-5 py-3 border-b border-slate-100">
         <div className="flex items-center justify-between text-xs mb-1.5">
-          <span className="font-medium text-slate-500">Estimate Health</span>
+          <span className="font-medium text-[var(--color-text-muted)]">Estimate Health</span>
           <span data-testid="live-health" className="font-semibold wiz-text-primary">
             {health.weightedScorePct.toFixed(0)}%
           </span>
@@ -158,7 +158,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
           />
         </div>
         {health.missingCriticalItemIds.length > 0 && (
-          <div className="mt-1.5 flex items-start gap-1.5 text-[11px] text-amber-600">
+          <div className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-600">
             <WarningCircle size={12} className="mt-0.5 flex-shrink-0" />
             <span>{health.missingCriticalItemIds.length} critical items missing</span>
           </div>
@@ -167,7 +167,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
 
       {/* ── Cost Breakdown ──────────────────────────────────────── */}
       <div className="px-5 py-4 space-y-2">
-        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Cost Breakdown</p>
+        <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Cost Breakdown</p>
         {breakdown.map((row) => (
           <div key={row.id} className="rounded-lg border border-slate-200 bg-slate-50">
             <button
@@ -190,9 +190,9 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
                   </div>
                 ))}
                 {row.items.filter((item) => !isLaborCategory(item.category)).length > 5 && (
-                  <p className="text-[11px] wiz-text-muted">+{row.items.filter((item) => !isLaborCategory(item.category)).length - 5} more items</p>
+                  <p className="text-xs wiz-text-muted">+{row.items.filter((item) => !isLaborCategory(item.category)).length - 5} more items</p>
                 )}
-                {row.items.some((item) => isLaborCategory(item.category)) && <p className="pt-2 text-xs font-semibold text-slate-500">Labour</p>}
+                {row.items.some((item) => isLaborCategory(item.category)) && <p className="pt-2 text-xs font-semibold text-[var(--color-text-muted)]">Labour</p>}
                 {row.items.filter((item) => isLaborCategory(item.category)).map((item) => (
                   <div key={item.id} className="flex items-center justify-between text-xs text-slate-600">
                     <span className="truncate pr-3">{item.materialName}</span>

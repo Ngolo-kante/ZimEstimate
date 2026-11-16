@@ -112,7 +112,7 @@ export default function StageUsageSection({
                 <div className="section-header" onClick={() => setExpanded(!expanded)}>
                     <div className="header-info">
                         <TrendDown size={20} weight="duotone" />
-                        <h4>Usage Tracking</h4>
+                        <h4>Usage tracking</h4>
                     </div>
                     <div className="header-stats">
                         <div className="stat">

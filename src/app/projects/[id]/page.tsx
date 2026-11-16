@@ -114,11 +114,11 @@ function ProjectDetailContent() {
             <MainLayout title="Error">
                 <div className="project-workspace-error error-state">
                     <Warning size={48} weight="light" />
-                    <h2>Project Not Found</h2>
+                    <h2>Project not found</h2>
                     <p>{error || 'The requested project could not be found.'}</p>
                     <Link href="/projects?refresh=1">
                         <Button variant="secondary" icon={<ArrowLeft size={18} />}>
-                            Back to Projects
+                            Back to projects
                         </Button>
                     </Link>
                 </div>

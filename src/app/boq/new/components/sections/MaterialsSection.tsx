@@ -157,7 +157,7 @@ export default function MaterialsSection() {
           ))}
         </div>
         {projectDetails.roofCovering === 'concrete_tile' && <p className="rounded-lg bg-amber-50 p-3 text-xs text-amber-900">Concrete tiles are heavier than sheets. The frame is a preliminary allowance; have a roof designer confirm timber sizes, spacing, pitch and fixings. Fixings and ridge pieces need a local quote.</p>}
-        <p className="text-xs text-slate-500">Pitch and sheet lengths are estimated from floor area and the roof shape; verify them against the roof plan and supplier quote.</p>
+        <p className="text-xs text-[var(--color-text-muted)]">Pitch and sheet lengths are estimated from floor area and the roof shape; verify them against the roof plan and supplier quote.</p>
       </div>
 
       {/* ── Materials Only vs Materials + Labour ─────────────────── */}
@@ -183,7 +183,7 @@ export default function MaterialsSection() {
           >
             {laborType === 'materials_only' && <CheckCircle weight="fill" size={16} className="absolute top-4 right-4 text-blue-500" />}
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-              laborType === 'materials_only' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'
+              laborType === 'materials_only' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-[var(--color-text-muted)]'
             }`}>
               <Package size={20} weight="regular" />
             </div>
@@ -193,7 +193,7 @@ export default function MaterialsSection() {
                 Exclude labour — I have my own crew or will price labour separately.
               </p>
             </div>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
               laborType === 'materials_only' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 wiz-text-muted'
             }`}>Lower estimate</span>
           </motion.button>
@@ -211,7 +211,7 @@ export default function MaterialsSection() {
           >
             {laborType === 'materials_labor' && <CheckCircle weight="fill" size={16} className="absolute top-4 right-4 text-blue-500" />}
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-              laborType === 'materials_labor' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'
+              laborType === 'materials_labor' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-[var(--color-text-muted)]'
             }`}>
               <HardHat size={20} weight="regular" />
             </div>
@@ -221,7 +221,7 @@ export default function MaterialsSection() {
                 Include skilled and unskilled labour allowances in your estimate.
               </p>
             </div>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
               laborType === 'materials_labor' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 wiz-text-muted'
             }`}>Full cost picture</span>
           </motion.button>
@@ -285,7 +285,7 @@ export default function MaterialsSection() {
               exit={{ opacity: 0, y: 4 }}
               className="space-y-3"
             >
-              <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">
+              <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
                 {brickKnowledge === 'single' ? 'Select your brick/block type' : 'Select all brick/block types you\'ll use'}
               </p>
               <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
@@ -313,7 +313,7 @@ export default function MaterialsSection() {
                     >
                       {isSelected && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-blue-500" />}
                       <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${isSelected ? 'bg-blue-100' : 'bg-slate-100'}`}>
-                        <Wall size={18} weight="regular" className={isSelected ? 'text-blue-600' : 'text-slate-400'} />
+                        <Wall size={18} weight="regular" className={isSelected ? 'text-blue-600' : 'text-[var(--color-text-muted)]'} />
                       </div>
                       <div>
                         <div className={`text-sm font-semibold ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>{opt.label}</div>
@@ -385,7 +385,7 @@ export default function MaterialsSection() {
               exit={{ opacity: 0, y: 4 }}
               className="space-y-3"
             >
-              <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">
+              <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
                 {cementKnowledge === 'single' ? 'Select your cement grade' : 'Both grades selected'}
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -414,12 +414,12 @@ export default function MaterialsSection() {
                       <div className={`mt-1 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${
                         isSelected ? 'bg-blue-100' : 'bg-slate-100'
                       }`}>
-                        <Wall size={20} weight="regular" className={isSelected ? 'text-blue-600' : 'text-slate-400'} />
+                        <Wall size={20} weight="regular" className={isSelected ? 'text-blue-600' : 'text-[var(--color-text-muted)]'} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className={`font-semibold text-sm ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>{opt.label}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
                             isSelected ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 wiz-text-muted'
                           }`}>{opt.badge}</span>
                         </div>
@@ -457,7 +457,7 @@ export default function MaterialsSection() {
           >
             {includeTransport === true && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-blue-500" />}
             <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${includeTransport === true ? 'bg-blue-100' : 'bg-slate-100'}`}>
-              <Truck size={18} weight="regular" className={includeTransport === true ? 'text-blue-600' : 'text-slate-400'} />
+              <Truck size={18} weight="regular" className={includeTransport === true ? 'text-blue-600' : 'text-[var(--color-text-muted)]'} />
             </div>
             <div className={`text-sm font-semibold ${includeTransport === true ? 'text-slate-900' : 'text-slate-800'}`}>Yes, add transport</div>
             <p className={`text-xs ${includeTransport === true ? 'text-slate-600' : 'wiz-text-muted'}`}>
@@ -478,7 +478,7 @@ export default function MaterialsSection() {
           >
             {includeTransport === false && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-blue-500" />}
             <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${includeTransport === false ? 'bg-blue-100' : 'bg-slate-100'}`}>
-              <Question size={18} weight="regular" className={includeTransport === false ? 'text-blue-600' : 'text-slate-400'} />
+              <Question size={18} weight="regular" className={includeTransport === false ? 'text-blue-600' : 'text-[var(--color-text-muted)]'} />
             </div>
             <div className={`text-sm font-semibold ${includeTransport === false ? 'text-slate-900' : 'text-slate-800'}`}>No, skip for now</div>
             <p className={`text-xs ${includeTransport === false ? 'text-slate-600' : 'wiz-text-muted'}`}>
@@ -514,7 +514,7 @@ export default function MaterialsSection() {
                     onChange={(e) => setTransportPercentage(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-4 pr-8 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">%</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[var(--color-text-muted)]">%</span>
                 </div>
               </div>
 
@@ -531,7 +531,7 @@ export default function MaterialsSection() {
       <div className="space-y-4">
         <div>
           <h3 className="text-base font-bold wiz-text-primary">Finish level</h3>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
             Sets how much of the floor is tiled, how many coats of paint, and the extent of wet-area tiling.
           </p>
         </div>
@@ -558,7 +558,7 @@ export default function MaterialsSection() {
                 }`}
               >
                 <span className="text-sm font-bold wiz-text-primary">{opt.label}</span>
-                <span className="text-xs text-slate-500">{opt.description}</span>
+                <span className="text-xs text-[var(--color-text-muted)]">{opt.description}</span>
               </motion.button>
             );
           })}

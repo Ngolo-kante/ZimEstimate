@@ -12,9 +12,9 @@ interface StageMetadataHeaderProps {
 
 const statusOptions: { value: StageStatus; label: string; icon: React.ReactNode; color: string }[] = [
     { value: 'planning', label: 'Planning', icon: <Clock size={16} />, color: 'var(--color-text-muted)' },
-    { value: 'pending_approval', label: 'Pending Approval', icon: <CircleNotch size={16} />, color: 'var(--color-warning-fg)' },
-    { value: 'in_progress', label: 'In Progress', icon: <Flag size={16} />, color: 'var(--color-info-fg)' },
-    { value: 'on_hold', label: 'On Hold', icon: <Pause size={16} />, color: 'var(--color-text-secondary)' },
+    { value: 'pending_approval', label: 'Pending approval', icon: <CircleNotch size={16} />, color: 'var(--color-warning-fg)' },
+    { value: 'in_progress', label: 'In progress', icon: <Flag size={16} />, color: 'var(--color-info-fg)' },
+    { value: 'on_hold', label: 'On hold', icon: <Pause size={16} />, color: 'var(--color-text-secondary)' },
     { value: 'completed', label: 'Completed', icon: <CheckCircle size={16} />, color: 'var(--color-success-fg)' },
 ];
 

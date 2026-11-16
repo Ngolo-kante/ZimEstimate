@@ -120,7 +120,7 @@ const Stepper = ({
         <button
           type="button"
           onClick={onRemove}
-          className="text-slate-400 hover:text-red-500 transition-colors"
+          className="text-[var(--color-text-muted)] hover:text-red-500 transition-colors"
           title={`Remove ${label}`}
         >
           <Trash size={15} weight="bold" />
@@ -354,18 +354,18 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
           </p>
         </div>
         <div className="relative max-w-xs">
-          <Ruler size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Ruler size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
           <input
             id="top-floor-area"
             type="number"
             value={projectDetails.floorPlanSize}
             onChange={(e) => updateProjectDetails({ floorPlanSize: e.target.value })}
             placeholder="e.g. 150"
-            className={`w-full rounded-2xl border py-4 pl-10 pr-12 text-base font-semibold wiz-text-primary shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-slate-400 ${
+            className={`w-full rounded-2xl border py-4 pl-10 pr-12 text-base font-semibold wiz-text-primary shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-[var(--color-text-muted)] ${
               showAreaWarning ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'
             }`}
           />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400">m²</span>
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[var(--color-text-muted)]">m²</span>
         </div>
         {showAreaWarning && (
           <div className="wiz-alert wiz-alert--warn max-w-xs">
@@ -377,19 +377,19 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
         {/* Stand size — drives boundary wall length for exterior works */}
         <div className="pt-1">
           <label htmlFor="stand-size" className="mb-2 block text-sm font-semibold text-slate-700">
-            Stand size <span className="font-normal text-slate-400">(optional)</span>
+            Stand size <span className="font-normal text-[var(--color-text-muted)]">(optional)</span>
           </label>
           <div className="relative max-w-xs">
-            <Ruler size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Ruler size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
             <input
               id="stand-size"
               type="number"
               value={projectDetails.standSize}
               onChange={(e) => updateProjectDetails({ standSize: e.target.value })}
               placeholder="e.g. 600"
-              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-12 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-slate-400"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-12 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-[var(--color-text-muted)]"
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400">m²</span>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[var(--color-text-muted)]">m²</span>
           </div>
           <p className="mt-2 max-w-xs text-xs wiz-text-muted">
             Used to size the boundary wall and gates. Left blank, we assume a 600m² stand.
@@ -400,17 +400,17 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
         <div className="pt-1">
           <label className="mb-2 block text-sm font-semibold text-slate-700">Wall height</label>
           <div className="relative max-w-xs">
-            <ArrowsOut size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <ArrowsOut size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
             <input
               type="number"
               value={projectDetails.wallHeight}
               onChange={(e) => updateProjectDetails({ wallHeight: e.target.value })}
               placeholder="2.7"
-              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm wiz-text-primary shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:text-slate-400"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm wiz-text-primary shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:text-[var(--color-text-muted)]"
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">m</span>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-[var(--color-text-muted)]">m</span>
           </div>
-          <p className="mt-1.5 text-xs text-slate-400">Standard Zimbabwean residential ceiling height is 2.7 m.</p>
+          <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">Standard Zimbabwean residential ceiling height is 2.7 m.</p>
         </div>
       </div>
 
@@ -466,12 +466,12 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                   <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-blue-500" />
                 )}
                 {'badge' in mode && mode.badge && !isSelected && (
-                  <span className={`absolute top-3 right-3 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest ${mode.badgeColor}`}>
+                  <span className={`absolute top-3 right-3 rounded-full border px-2 py-0.5 text-xs font-bold uppercase tracking-widest ${mode.badgeColor}`}>
                     {mode.badge}
                   </span>
                 )}
                 {'badge' in mode && mode.badge && isSelected && (
-                  <span className={`absolute top-3 right-3 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest ${mode.badgeColor}`}>
+                  <span className={`absolute top-3 right-3 rounded-full border px-2 py-0.5 text-xs font-bold uppercase tracking-widest ${mode.badgeColor}`}>
                     {mode.badge}
                   </span>
                 )}
@@ -488,7 +488,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
 
                 {/* Tip badge at the bottom — shown when not selected */}
                 {'tip' in mode && mode.tip && !isSelected && (
-                  <div className={`flex items-center gap-1 self-start rounded-full border px-2 py-0.5 text-[10px] font-semibold ${mode.tipColor}`}>
+                  <div className={`flex items-center gap-1 self-start rounded-full border px-2 py-0.5 text-xs font-semibold ${mode.tipColor}`}>
                     <Lightbulb size={10} weight="fill" />
                     {mode.tip}
                   </div>
@@ -523,7 +523,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
           >
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h4 className="text-sm font-bold wiz-text-primary">Rooms <span className="font-normal text-slate-400">(optional)</span></h4>
+                <h4 className="text-sm font-bold wiz-text-primary">Rooms <span className="font-normal text-[var(--color-text-muted)]">(optional)</span></h4>
                 <p className="text-xs wiz-text-muted mt-0.5">Defining rooms increases estimate accuracy.</p>
               </div>
               {availableRooms.length > 0 && (
@@ -557,7 +557,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                           <button
                             type="button"
                             onClick={() => setIsRoomMenuOpen(false)}
-                            className="rounded-lg px-2 py-1 text-sm text-slate-500"
+                            className="rounded-lg px-2 py-1 text-sm text-[var(--color-text-muted)]"
                             aria-label="Close"
                           >
                             ✕
@@ -604,14 +604,14 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                 );
               })}
               {activeRoomKeys.length === 0 && (
-                <div className="col-span-full rounded-xl border border-dashed border-slate-200 py-8 text-center text-sm text-slate-400">
+                <div className="col-span-full rounded-xl border border-dashed border-slate-200 py-8 text-center text-sm text-[var(--color-text-muted)]">
                   No rooms added yet — click &ldquo;Add room&rdquo; above.
                 </div>
               )}
             </div>
 
             <div>
-              <h4 className="text-sm font-bold wiz-text-primary mb-1">Openings <span className="font-normal text-slate-400">(optional)</span></h4>
+              <h4 className="text-sm font-bold wiz-text-primary mb-1">Openings <span className="font-normal text-[var(--color-text-muted)]">(optional)</span></h4>
               <p className="text-xs wiz-text-muted mb-3">Doors and windows affect finishing and joinery costs.</p>
               <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                 <Stepper label="Internal Doors" value={totalDoors} onChange={setTotalDoors} />
@@ -667,7 +667,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
             className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/40 p-10 text-center"
           >
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-100 bg-white shadow-sm mb-4">
-              <FileArrowUp size={26} weight="regular" className="text-slate-400" />
+              <FileArrowUp size={26} weight="regular" className="text-[var(--color-text-muted)]" />
             </div>
             <h3 className="text-base font-bold text-slate-800 mb-1.5">Upload Floor Plan</h3>
             <p className="text-sm wiz-text-muted mb-5 max-w-sm mx-auto leading-relaxed">

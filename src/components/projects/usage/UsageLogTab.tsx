@@ -110,7 +110,7 @@ export default function UsageLogTab({
           <div className="reminder-left">
             <BellRinging size={18} weight="duotone" />
             <div>
-              <h4>Usage Alerts</h4>
+              <h4>Usage alerts</h4>
               <p>
                 Alerts via <strong>{CHANNEL_INFO[preferredChannel].label}</strong>
                 {' '}{CHANNEL_INFO[preferredChannel].icon}
@@ -124,7 +124,7 @@ export default function UsageLogTab({
               onClick={onNavigateToSettings}
             >
               <Gear size={16} />
-              Configure in Settings
+              Configure in settings
             </button>
           )}
         </div>

@@ -43,7 +43,7 @@ interface PurchaseFormState {
 
 const statusLabels: Record<TrackingStatus, string> = {
   pending: 'Pending',
-  in_progress: 'In Progress',
+  in_progress: 'In progress',
   completed: 'Completed',
   over_purchased: 'Over-purchased',
 };
@@ -299,7 +299,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
     <div className="tracking-page">
       <div className="tracking-header">
         <div>
-          <h2>Tracking & Procurement</h2>
+          <h2>Tracking & procurement</h2>
           <p>Track purchases against estimated quantities and suppliers.</p>
         </div>
         <div className="summary-cards">
@@ -308,7 +308,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
             <span className="value">{summary.counts.pending}</span>
           </div>
           <div className="summary-card">
-            <span className="label">In Progress</span>
+            <span className="label">In progress</span>
             <span className="value">{summary.counts.in_progress}</span>
           </div>
           <div className="summary-card">
@@ -353,7 +353,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as TrackingStatus | 'all')}>
             <option value="all">All statuses</option>
             <option value="pending">Pending</option>
-            <option value="in_progress">In Progress</option>
+            <option value="in_progress">In progress</option>
             <option value="completed">Completed</option>
             <option value="over_purchased">Over-purchased</option>
           </select>
@@ -364,12 +364,12 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
             <thead>
               <tr>
                 <th>Item</th>
-                <th className="num">Est Qty</th>
+                <th className="num">Est qty</th>
                 <th className="num">Purchased</th>
                 <th className="num">Remaining</th>
-                <th className="num">Avg Price</th>
-                <th className="num">Total Spent</th>
-                <th>Last Purchase</th>
+                <th className="num">Avg price</th>
+                <th className="num">Total spent</th>
+                <th>Last purchase</th>
                 <th>Status</th>
                 <th className="actions">Actions</th>
               </tr>
@@ -431,7 +431,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                                 <tr>
                                   <th>Supplier</th>
                                   <th className="num">Qty</th>
-                                  <th className="num">Unit Price</th>
+                                  <th className="num">Unit price</th>
                                   <th className="num">Total</th>
                                   <th>Date</th>
                                   <th className="actions">Actions</th>
@@ -490,7 +490,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
             </div>
             <div className="modal-body">
               <div className="field">
-                <label>Supplier Name</label>
+                <label>Supplier name</label>
                 <input
                   type="text"
                   list="supplier-list"
@@ -517,7 +517,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                   />
                 </div>
                 <div className="field">
-                  <label>Unit Price (USD)</label>
+                  <label>Unit price (USD)</label>
                   <input
                     type="number"
                     min="0"
@@ -527,7 +527,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                   />
                 </div>
                 <div className="field">
-                  <label>Purchase Date</label>
+                  <label>Purchase date</label>
                   <input
                     type="date"
                     value={formState.purchasedAt}

@@ -175,7 +175,7 @@ function ProjectsContent() {
                 isOpen={!!deleteTarget}
                 onClose={() => setDeleteTarget(null)}
                 onConfirm={confirmDelete}
-                title={deleteTarget?.kind === 'quick' ? 'Delete Estimate' : 'Delete Project'}
+                title={deleteTarget?.kind === 'quick' ? 'Delete estimate' : 'Delete project'}
                 message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone and all associated data will be permanently removed.`}
                 confirmText="Delete"
                 cancelText="Cancel"

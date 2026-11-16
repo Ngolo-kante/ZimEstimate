@@ -90,7 +90,7 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                                 <div className="form-group">
                                     <label>
                                         <User size={14} />
-                                        Assigned To
+                                        Assigned to
                                     </label>
                                     <input
                                         type="text"
@@ -102,7 +102,7 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                                 <div className="form-group">
                                     <label>
                                         <NotePencil size={14} />
-                                        Verification Note
+                                        Verification note
                                     </label>
                                     <input
                                         type="text"

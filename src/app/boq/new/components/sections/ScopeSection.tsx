@@ -48,7 +48,7 @@ export default function ScopeSection() {
               className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
                 isIncluded
                   ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                  : 'bg-slate-100 text-slate-400 border border-slate-200 line-through'
+                  : 'bg-slate-100 text-[var(--color-text-muted)] border border-slate-200 line-through'
               }`}
             >
               {isIncluded && <Check size={11} weight="bold" className="text-emerald-600" />}

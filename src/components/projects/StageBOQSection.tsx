@@ -297,14 +297,14 @@ export default function StageBOQSection({
 
                     <div className="header-actions">
                         <div className="stat-pill">
-                            <span className="label">Actual Total</span>
+                            <span className="label">Actual total</span>
                             <span className="value">
                                 <PriceDisplay priceUsd={stageActualTotal} priceZwg={stageActualTotal * exchangeRate} bold />
                             </span>
                         </div>
 
                         <div className="stat-pill">
-                            <span className="label">Est Total</span>
+                            <span className="label">Est total</span>
                             <span className="value">
                                 <PriceDisplay priceUsd={stageEstimatedTotal} priceZwg={stageEstimatedTotal * exchangeRate} bold />
                             </span>
@@ -364,16 +364,16 @@ export default function StageBOQSection({
                             <Table className="boq-table">
                                 <TableHeader>
                                     <tr>
-                                        {visibleColumns.item && <th className="col-item">Item Description</th>}
-                                        {visibleColumns.avgPrice && <th className="col-price text-right">Avg. Price</th>}
-                                        {visibleColumns.actualPrice && <th className="col-price text-right">Actual Price</th>}
-                                        {visibleColumns.priceVar && <th className="col-var text-right">Price Var %</th>}
-                                        {visibleColumns.qty && <th className="col-qty text-right">Qty (Est)</th>}
-                                        {visibleColumns.actualQty && <th className="col-qty text-right">Actual Qty</th>}
-                                        {visibleColumns.qtyVar && <th className="col-var text-right">Qty Var %</th>}
-                                        {visibleColumns.actualTotal && <th className="col-total text-right">Actual Total</th>}
-                                        {visibleColumns.estTotal && <th className="col-total text-right">Est Total</th>}
-                                        {visibleColumns.totalVar && <th className="col-var text-right">Total Var</th>}
+                                        {visibleColumns.item && <th className="col-item">Item description</th>}
+                                        {visibleColumns.avgPrice && <th className="col-price text-right">Avg. price</th>}
+                                        {visibleColumns.actualPrice && <th className="col-price text-right">Actual price</th>}
+                                        {visibleColumns.priceVar && <th className="col-var text-right">Price var %</th>}
+                                        {visibleColumns.qty && <th className="col-qty text-right">Qty (est)</th>}
+                                        {visibleColumns.actualQty && <th className="col-qty text-right">Actual qty</th>}
+                                        {visibleColumns.qtyVar && <th className="col-var text-right">Qty var %</th>}
+                                        {visibleColumns.actualTotal && <th className="col-total text-right">Actual total</th>}
+                                        {visibleColumns.estTotal && <th className="col-total text-right">Est total</th>}
+                                        {visibleColumns.totalVar && <th className="col-var text-right">Total var</th>}
                                         {visibleColumns.usage && <th className="col-usage text-right">Usage</th>}
                                         {visibleColumns.status && <th className="col-status">Status</th>}
                                         <th className="col-actions"></th>

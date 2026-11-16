@@ -53,7 +53,7 @@ export default function ProcurementPurchasesTab({ purchases, items, stats, onOpe
     return (
       <div className="ledger-content">
         <div className="ledger-header-bar">
-          <h3>Purchase Ledger</h3>
+          <h3>Purchase ledger</h3>
           <span className="ledger-total">{purchases.length} {purchases.length === 1 ? 'transaction' : 'transactions'} • Total: {formatPrice(stats.totalSpent, stats.totalSpent * exchangeRate)}</span>
         </div>
 
@@ -86,7 +86,7 @@ export default function ProcurementPurchasesTab({ purchases, items, stats, onOpe
                       <TableHead className="col-supplier">Supplier</TableHead>
                       <TableHead className="col-qty">Qty</TableHead>
                       <TableHead className="col-unit">Unit</TableHead>
-                      <TableHead className="col-price">Unit Price</TableHead>
+                      <TableHead className="col-price">Unit price</TableHead>
                       <TableHead className="col-total">Total</TableHead>
                       <TableHead className="col-receipt">Receipt</TableHead>
                     </TableRow>

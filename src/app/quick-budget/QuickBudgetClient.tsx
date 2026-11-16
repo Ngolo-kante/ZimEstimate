@@ -1035,6 +1035,7 @@ export default function QuickBudgetPage() {
           padding: 0 0 48px;
         }
         .budget-checker-page {
+  --color-text-muted: #475569;
           position: relative;
           max-width: 1260px;
           margin: 0 auto;
@@ -1155,7 +1156,7 @@ export default function QuickBudgetPage() {
         .status-pill {
           border-radius: 999px;
           padding: 4px 10px;
-          font-size: 0.68rem;
+          font-size: 0.75rem;
           letter-spacing: 0.06em;
           text-transform: uppercase;
           font-weight: 700;
@@ -1193,7 +1194,7 @@ export default function QuickBudgetPage() {
         }
 
         .assumption-label {
-          font-size: 0.72rem;
+          font-size: 0.75rem;
           font-weight: 700;
           letter-spacing: 0.06em;
           text-transform: uppercase;
@@ -1201,7 +1202,7 @@ export default function QuickBudgetPage() {
         }
 
         .assumption small {
-          font-size: 0.74rem;
+          font-size: 0.75rem;
           color: var(--color-text-muted);
         }
 
@@ -1334,7 +1335,7 @@ export default function QuickBudgetPage() {
         }
 
         .section-head span {
-          font-size: 0.7rem;
+          font-size: 0.75rem;
           color: var(--color-text-muted);
           text-transform: uppercase;
           letter-spacing: 0.07em;
@@ -1348,7 +1349,7 @@ export default function QuickBudgetPage() {
         .field label {
           display: block;
           margin-bottom: 6px;
-          font-size: 0.72rem;
+          font-size: 0.75rem;
           letter-spacing: 0.09em;
           text-transform: uppercase;
           font-weight: 700;
@@ -1367,7 +1368,7 @@ export default function QuickBudgetPage() {
           border-radius: 999px;
           background: white;
           padding: 6px 10px;
-          font-size: 0.72rem;
+          font-size: 0.75rem;
           font-weight: 700;
           color: var(--color-primary);
           cursor: pointer;
@@ -1416,7 +1417,7 @@ export default function QuickBudgetPage() {
         }
 
         .coverage-ring span {
-          font-size: 0.67rem;
+          font-size: 0.75rem;
           letter-spacing: 0.09em;
           text-transform: uppercase;
           color: var(--color-text-muted);
@@ -1443,7 +1444,7 @@ export default function QuickBudgetPage() {
 
         .result-stats span {
           display: block;
-          font-size: 0.66rem;
+          font-size: 0.75rem;
           letter-spacing: 0.09em;
           text-transform: uppercase;
           color: var(--color-text-muted);
@@ -1494,11 +1495,11 @@ export default function QuickBudgetPage() {
         }
         .roof-sub {
           margin: 10px 0 6px;
-          font-size: 0.72rem;
+          font-size: 0.75rem;
           font-weight: 700;
           letter-spacing: 0.04em;
           text-transform: uppercase;
-          color: #64748b;
+          color: var(--color-text-muted);
         }
         .roof-sub:first-of-type {
           margin-top: 0;
@@ -1545,7 +1546,7 @@ export default function QuickBudgetPage() {
           margin: 6px 0 0;
           font-size: 0.75rem;
           line-height: 1.4;
-          color: #64748b;
+          color: var(--color-text-muted);
         }
         .labour-switch {
           display: inline-flex;
@@ -1623,7 +1624,7 @@ export default function QuickBudgetPage() {
 
         .note {
           margin: 10px 0 0;
-          font-size: 0.74rem;
+          font-size: 0.75rem;
           color: var(--color-text-muted);
           line-height: 1.5;
         }
@@ -1661,7 +1662,7 @@ export default function QuickBudgetPage() {
           margin: 0;
           font-size: 0.86rem;
           line-height: 1.6;
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
           max-width: 430px;
         }
 
@@ -1682,7 +1683,7 @@ export default function QuickBudgetPage() {
         .loading-card p {
           margin: 0;
           font-size: 0.9rem;
-          color: var(--color-text-secondary);
+          color: var(--color-text-muted);
           font-weight: 600;
         }
 
@@ -1770,6 +1771,7 @@ export default function QuickBudgetPage() {
 
         @media (max-width: 640px) {
           .budget-checker-page {
+  --color-text-muted: #475569;
             padding: 14px 12px 74px;
           }
 

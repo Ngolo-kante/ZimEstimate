@@ -189,7 +189,7 @@ export default function BOQTable() {
                 {totalItemsCount} Line Items
               </span>
             </div>
-            <p className="mt-1 text-xs sm:text-sm text-[var(--color-text-secondary)]">
+            <p className="mt-1 text-xs sm:text-sm text-[var(--color-text-muted)]">
               Inspect generated materials, adjust quantities inline, and manage your project cost baseline.
             </p>
           </div>
@@ -197,7 +197,7 @@ export default function BOQTable() {
           {/* Grand Total Hero Display */}
           <div className="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-primary)] p-4 text-[var(--color-surface)] lg:min-w-[280px]">
             <div>
-              <p className="text-xs uppercase tracking-wider text-[var(--color-text-secondary)] font-medium">Grand Total Baseline</p>
+              <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-medium">Grand Total Baseline</p>
               <p className="text-2xl font-black tracking-tight text-[var(--color-surface)]">{formatUSD(grandTotal)}</p>
             </div>
             <div className="text-right">
@@ -211,7 +211,7 @@ export default function BOQTable() {
         {/* Milestone Cost Distribution Progress Bar */}
         {grandTotal > 0 && (
           <div className="mt-5 space-y-2">
-            <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)] font-medium">
+            <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)] font-medium">
               <span>Cost Allocation Breakdown</span>
               <span>{visibleMilestones.length} Active Milestones</span>
             </div>
@@ -238,7 +238,7 @@ export default function BOQTable() {
           <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
             {/* Search Input */}
             <div className="relative flex-1">
-              <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" />
+              <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
               <input
                 type="text"
                 placeholder="Search BOQ items and fees..."
@@ -258,7 +258,7 @@ export default function BOQTable() {
               className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
                 filterModifiedOnly
                   ? 'border-[var(--color-accent)] bg-[var(--color-accent-bg)] text-[var(--color-accent)]'
-                  : 'border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]'
+                  : 'border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface)]'
               }`}
             >
               <PencilSimple size={14} />
@@ -321,7 +321,7 @@ export default function BOQTable() {
                       <span className="text-sm sm:text-base font-bold text-[var(--color-text)]">
                         {MILESTONE_LABELS[milestone.id] || milestone.id}
                       </span>
-                      <span className="rounded-full bg-[var(--color-border-light)] px-2 py-0.5 text-xs font-semibold text-[var(--color-text-secondary)]">
+                      <span className="rounded-full bg-[var(--color-border-light)] px-2 py-0.5 text-xs font-semibold text-[var(--color-text-muted)]">
                         {milestone.items.length} items
                       </span>
                     </div>
@@ -330,7 +330,7 @@ export default function BOQTable() {
 
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-wider text-[var(--color-text-secondary)] font-semibold">Subtotal</p>
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-semibold">Subtotal</p>
                     <p className="text-sm sm:text-base font-extrabold text-[var(--color-text)]">{formatUSD(subtotal)}</p>
                   </div>
                 </div>
@@ -347,7 +347,7 @@ export default function BOQTable() {
                     transition={{ duration: 0.2, ease: 'easeInOut' }}
                   >
                     {filteredItems.length === 0 ? (
-                      <div className="p-8 text-center text-xs sm:text-sm text-[var(--color-text-secondary)]">
+                      <div className="p-8 text-center text-xs sm:text-sm text-[var(--color-text-muted)]">
                         {milestone.items.length === 0
                           ? 'No items generated for this milestone yet.'
                           : 'No items match your active search or filter criteria.'}
@@ -358,7 +358,7 @@ export default function BOQTable() {
                         <div className="hidden md:block overflow-x-auto">
                           <table className="w-full text-left text-xs sm:text-sm border-collapse" aria-label={`${MILESTONE_LABELS[milestone.id] || milestone.id} Table`}>
                             <thead>
-                              <tr className="border-b border-[var(--color-border-light)] bg-[var(--color-background)] text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
+                              <tr className="border-b border-[var(--color-border-light)] bg-[var(--color-background)] text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
                                 <th scope="col" className="px-5 py-3">{milestone.id === 'project_fees' ? 'Fee / Description' : 'Material / Description'}</th>
                                 <th scope="col" className="px-4 py-3 text-center">Quantity</th>
                                 <th scope="col" className="px-4 py-3 text-left">Unit</th>
@@ -379,7 +379,7 @@ export default function BOQTable() {
                                 return (
                                   <Fragment key={item.id}>
                                     {isLaborCategory(item.category) && (index === 0 || !isLaborCategory(filteredItems[index - 1].category)) && (
-                                      <tr><th colSpan={7} scope="colgroup" className="px-5 py-2 text-left text-xs font-semibold text-slate-500">Labour</th></tr>
+                                      <tr><th colSpan={7} scope="colgroup" className="px-5 py-2 text-left text-xs font-semibold text-[var(--color-text-muted)]">Labour</th></tr>
                                     )}
                                   <tr
                                     className={`transition hover:bg-[var(--color-background)] ${
@@ -402,10 +402,10 @@ export default function BOQTable() {
                                         className="w-full rounded-md border border-transparent bg-transparent py-1 px-1.5 text-xs sm:text-sm font-semibold text-[var(--color-text)] outline-none hover:border-[var(--color-border)] focus:border-[var(--color-accent)] focus:bg-[var(--color-surface)]"
                                       />
                                       {isModified && (
-                                        <div className="mt-0.5 flex items-center gap-1 px-1 text-[10px] font-bold text-[var(--color-accent)]">
+                                        <div className="mt-0.5 flex items-center gap-1 px-1 text-xs font-bold text-[var(--color-accent)]">
                                           <span>Edited</span>
                                           {item.calculatedQuantity !== undefined && (
-                                            <span className="text-[var(--color-text-secondary)] font-normal">
+                                            <span className="text-[var(--color-text-muted)] font-normal">
                                               (Calc: {item.calculatedQuantity})
                                             </span>
                                           )}
@@ -468,14 +468,14 @@ export default function BOQTable() {
                                     </td>
 
                                     {/* Unit */}
-                                    <td className="px-4 py-3 align-middle text-xs text-[var(--color-text-secondary)] font-medium">
+                                    <td className="px-4 py-3 align-middle text-xs text-[var(--color-text-muted)] font-medium">
                                       {item.unit}
                                     </td>
 
                                     {/* Unit Price */}
                                     <td className="px-4 py-3 align-middle text-right font-medium text-[var(--color-text)]">
                                       <div className="inline-flex items-center gap-1 justify-end">
-                                        <span className="text-xs text-[var(--color-text-secondary)]">$</span>
+                                        <span className="text-xs text-[var(--color-text-muted)]">$</span>
                                         <input
                                           type="number"
                                           min="0"
@@ -551,7 +551,7 @@ export default function BOQTable() {
 
                             return (
                               <div key={item.id} className="p-4 space-y-3 bg-[var(--color-surface)]">
-                                {isLaborCategory(item.category) && (index === 0 || !isLaborCategory(filteredItems[index - 1].category)) && <h4 className="text-xs font-semibold text-slate-500">Labour</h4>}
+                                {isLaborCategory(item.category) && (index === 0 || !isLaborCategory(filteredItems[index - 1].category)) && <h4 className="text-xs font-semibold text-[var(--color-text-muted)]">Labour</h4>}
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex-1">
                                     <input
@@ -568,7 +568,7 @@ export default function BOQTable() {
                                       className="w-full rounded-md border border-transparent bg-transparent py-0.5 text-xs font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-border)]"
                                     />
                                     {isModified && (
-                                      <p className="mt-0.5 text-[10px] font-bold text-[var(--color-accent)]">
+                                      <p className="mt-0.5 text-xs font-bold text-[var(--color-accent)]">
                                         Edited {item.calculatedQuantity !== undefined && `(Calc: ${item.calculatedQuantity})`}
                                       </p>
                                     )}
@@ -581,7 +581,7 @@ export default function BOQTable() {
 
                                   <div className="text-right">
                                     <p className="text-xs font-extrabold text-[var(--color-text)]">{formatUSD(lineTotal)}</p>
-                                    <p className="text-[10px] text-[var(--color-text-secondary)] font-medium">${item.actualPriceUsd} / {item.unit}</p>
+                                    <p className="text-xs text-[var(--color-text-muted)] font-medium">${item.actualPriceUsd} / {item.unit}</p>
                                   </div>
                                 </div>
 
@@ -630,7 +630,7 @@ export default function BOQTable() {
                                     >
                                       <Plus size={12} />
                                     </button>}
-                                    <span className="ml-1 text-[11px] text-[var(--color-text-secondary)] font-semibold">{item.unit}</span>
+                                    <span className="ml-1 text-xs text-[var(--color-text-muted)] font-semibold">{item.unit}</span>
                                   </div>
 
                                   <div className="flex items-center gap-2">
@@ -695,7 +695,7 @@ export default function BOQTable() {
                           </div>
                           <div className="flex items-center justify-between pt-1">
                             <div className="flex items-center gap-1 text-xs">
-                              <span className="text-[var(--color-text-secondary)] font-medium">Unit Price (USD):</span>
+                              <span className="text-[var(--color-text-muted)] font-medium">Unit Price (USD):</span>
                               <input
                                 type="number"
                                 placeholder="Price USD"
@@ -709,7 +709,7 @@ export default function BOQTable() {
                               <button
                                 type="button"
                                 onClick={() => setAddingToMilestone(null)}
-                                className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-background)]"
+                                className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-background)]"
                               >
                                 Cancel
                               </button>
@@ -741,7 +741,7 @@ export default function BOQTable() {
                               <Sparkle size={14} /> AI Allowance
                             </button>}
                           </div>
-                          <span className="text-[11px] text-[var(--color-text-secondary)] font-semibold">
+                          <span className="text-xs text-[var(--color-text-muted)] font-semibold">
                             Subtotal: {formatUSD(subtotal)}
                           </span>
                         </div>
@@ -758,9 +758,9 @@ export default function BOQTable() {
       {/* ── Footer Grand Total Banner ───────────────────────────────────────── */}
       <section className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-primary)] p-5 text-[var(--color-surface)] shadow-md">
         <div>
-          <p className="text-xs uppercase tracking-wider text-[var(--color-text-secondary)] font-semibold">Finalized BOQ Total</p>
+          <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-semibold">Finalized BOQ Total</p>
           <p className="text-2xl sm:text-3xl font-black text-[var(--color-surface)]">{formatUSD(grandTotal)}</p>
-          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
             {laborType === 'materials_labor'
               ? 'Includes priced materials, labour and professional fees for the active scope.'
               : 'Includes priced materials and professional fees for the active scope. Labour is not included.'}

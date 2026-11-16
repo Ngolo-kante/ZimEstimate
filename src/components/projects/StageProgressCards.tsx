@@ -36,19 +36,19 @@ const stageIcons: Record<BOQCategory, React.ComponentType<{ size: number; weight
 };
 
 const stageLabels: Record<BOQCategory, { short: string; full: string }> = {
-    substructure: { short: 'Foundation', full: 'Site & Foundation' },
-    superstructure: { short: 'Walls', full: 'Structural Walls' },
+    substructure: { short: 'Foundation', full: 'Site & foundation' },
+    superstructure: { short: 'Walls', full: 'Structural walls' },
     roofing: { short: 'Roof', full: 'Roofing' },
-    finishing: { short: 'Interior', full: 'Interior Finishing' },
-    services: { short: 'Services', full: 'Plumbing & Electrical' },
-    exterior: { short: 'Exterior', full: 'External Work' },
+    finishing: { short: 'Interior', full: 'Interior finishing' },
+    services: { short: 'Services', full: 'Plumbing & electrical' },
+    exterior: { short: 'Exterior', full: 'External work' },
 };
 
 const statusConfig: Record<StageStatus, { color: string; bg: string; label: string }> = {
     planning: { color: 'text-slate-500', bg: 'bg-slate-100', label: 'Planning' },
     pending_approval: { color: 'text-[var(--color-warning-fg)]', bg: 'bg-[var(--color-warning-bg)]', label: 'Pending' },
-    in_progress: { color: 'text-[var(--color-info-fg)]', bg: 'bg-[var(--color-info-bg)]', label: 'In Progress' },
-    on_hold: { color: 'text-[var(--color-warning-fg)]', bg: 'bg-[var(--color-warning-bg)]', label: 'On Hold' },
+    in_progress: { color: 'text-[var(--color-info-fg)]', bg: 'bg-[var(--color-info-bg)]', label: 'In progress' },
+    on_hold: { color: 'text-[var(--color-warning-fg)]', bg: 'bg-[var(--color-warning-bg)]', label: 'On hold' },
     completed: { color: 'text-[var(--color-success-fg)]', bg: 'bg-[var(--color-success-bg)]', label: 'Complete' },
 };
 
