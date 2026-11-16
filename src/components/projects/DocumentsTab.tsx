@@ -333,9 +333,9 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                     padding: var(--spacing-2xl);
                     text-align: center;
                     color: var(--color-text-muted);
-                    background: rgba(247, 251, 255, 0.85);
+                    background: #f8fafc;
                     border-radius: 16px;
-                    border: 1px dashed #c9ddef;
+                    border: 1px dashed #cbd5e1;
                 }
 
                 .setup-state {

@@ -492,7 +492,8 @@ export default function SiteView({ target, embedded = false, onInvite }: SiteVie
         .site :global(.usage-note) { grid-column: 1 / 3; }
         .site :global(.row) { display: flex; gap: 8px; flex-wrap: wrap; }
         .site :global(button) { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 10px 14px; border-radius: 9px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-weight: 600; font-size: 0.88rem; cursor: pointer; }
-        .site :global(button.primary) { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+        .site.embedded :global(button.primary) { background: transparent; border-color: var(--color-border); color: var(--color-text); }
+        .site:not(.embedded) :global(button.primary) { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
         .site :global(button:disabled) { opacity: 0.6; }
         .site :global(button:focus-visible), .site :global(summary:focus-visible) { outline: 2px solid var(--color-focus-ring, #2e6cf6); outline-offset: 2px; }
         .site :global(.photos) { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }

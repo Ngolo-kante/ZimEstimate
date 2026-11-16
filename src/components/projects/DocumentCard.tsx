@@ -1,5 +1,6 @@
 'use client';
 
+import { Badge } from '@/components/shadcn/badge';
 import { truncateMiddle, formatQuantity } from '@/lib/format';
 
 import { useEffect, useState } from 'react';
@@ -92,7 +93,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     <button type="button" className="danger" onClick={() => onDelete(document.id)}><Trash size={16} /> Remove</button>
                 </div>
                 <div className="card-footer">
-                    <span className="category-badge">{CATEGORY_LABELS[document.category] || document.category}</span>
+                    <Badge variant="secondary">{CATEGORY_LABELS[document.category] || document.category}</Badge>
                     <span className="file-meta">
                         {formatFileSize(document.file_size)} • {formatDate(document.created_at)}
                     </span>
@@ -138,28 +139,14 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     border-radius: 12px;
                 }
 
-                .file-icon.image {
-                    background: var(--color-accent-muted);
-                    color: var(--color-accent);
-                }
-
-                .file-icon.pdf {
-                    background: linear-gradient(135deg, #fef2f2, #fee2e2);
-                    color: #dc2626;
-                }
-
-                .file-icon.default {
-                    background: #f1f5f9;
-                    color: #64748b;
-                }
-
-                .saved-label { flex-shrink: 0; font-size: .8rem; color: #166534; background: #f0fdf4; padding: 4px 8px; border-radius: 4px; }
+                .file-icon.image, .file-icon.pdf, .file-icon.default { background: #f1f5f9; color: #64748b; }
+                .saved-label { flex-shrink: 0; font-size: .8rem; color: #475569; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; }
                 .thumbnail { padding: 0; border: 0; background: #f1f5f9; border-radius: 6px; cursor: pointer; overflow: hidden; }
                 .thumbnail img { display: block; width: 100%; height: 120px; object-fit: cover; }
                 .document-actions { display: flex; gap: 6px; flex-wrap: wrap; }
                 .document-actions button { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; color: #0b1f3b; font-size: .8rem; cursor: pointer; }
                 .document-actions :global(svg) { flex-shrink: 0; }
-                .document-actions .danger { color: #b91c1c; }
+                .document-actions .danger { color: #b91c1c; border-color: transparent; background: transparent; }
                 button:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
                 .card-body {
                     min-width: 0;
@@ -195,18 +182,6 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     gap: 8px;
                     padding-top: 16px;
                     border-top: 1px solid #f1f5f9;
-                }
-
-                .category-badge {
-                    flex-shrink: 0;
-                    font-size: 12px;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    padding: 4px 8px;
-                    background: #ecf4ff;
-                    color: #356a9f;
-                    border-radius: 99px;
                 }
 
                 .file-meta {

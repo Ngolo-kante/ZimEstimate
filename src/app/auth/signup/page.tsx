@@ -1,5 +1,6 @@
 'use client';
 
+import AuthBrand from '@/components/auth/AuthBrand';
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -121,6 +122,7 @@ function SignupForm() {
         return (
             <>
                 <div className="auth-page">
+                    <AuthBrand />
                     <div className="auth-container">
                         <div className="success-content">
                             <CheckCircle size={64} weight="duotone" className="success-icon" />
@@ -143,8 +145,10 @@ function SignupForm() {
                 <style jsx>{`
                     .auth-page {
                         min-height: 100dvh;
-                        display: flex;
-                        align-items: center;
+                        display: grid;
+                        grid-template-columns: minmax(0, 400px);
+                        gap: 16px;
+                        align-content: center;
                         justify-content: center;
                         padding: var(--spacing-lg);
                         background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
@@ -193,7 +197,14 @@ function SignupForm() {
                     .success-content strong {
                         color: var(--color-text);
                     }
-                `}</style>
+                    @media (min-width: 900px) {
+                    .auth-page { grid-template-columns: minmax(0, 440px) minmax(0, 520px); gap: 0; align-items: stretch; }
+                    .auth-container { grid-column: 1; grid-row: 1; max-width: none; border-radius: 12px 0 0 12px; align-content: center; }
+                    .auth-page :global(aside) { grid-column: 2; grid-row: 1; border-radius: 0 12px 12px 0; }
+                }
+                .contractor-cta :global(a) { color: #1d4ed8; display: inline-flex; align-items: center; min-height: 44px; }
+                .contractor-cta :global(a:hover) { text-decoration: underline; }
+            `}</style>
             </>
         );
     }
@@ -201,6 +212,7 @@ function SignupForm() {
     return (
         <>
             <div className="auth-page">
+                <AuthBrand />
                 <div className="auth-container">
                     {/* Logo & Header */}
                     <div className="auth-header">
@@ -301,6 +313,7 @@ function SignupForm() {
                             Sell building materials?{' '}
                             <Link href="/supplier/register">Register as a supplier</Link>
                         </p>
+                        <p className="contractor-cta"><Link href="/contractor/register">Register as a contractor</Link></p>
                     </div>
                 </div>
             </div>
@@ -308,9 +321,11 @@ function SignupForm() {
             <style jsx>{`
                 .auth-page {
                     min-height: 100dvh;
-                    display: flex;
-                    align-items: center;
+                    display: grid;
+                    grid-template-columns: minmax(0, 400px);
+                    align-content: center;
                     justify-content: center;
+                    gap: 16px;
                     padding: var(--spacing-lg);
                     background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
                 }
@@ -478,6 +493,13 @@ function SignupForm() {
                         text-decoration: underline;
                 }
                 }
+                @media (min-width: 900px) {
+                    .auth-page { grid-template-columns: minmax(0, 440px) minmax(0, 520px); gap: 0; align-items: stretch; }
+                    .auth-container { grid-column: 1; grid-row: 1; max-width: none; border-radius: 12px 0 0 12px; align-content: center; }
+                    .auth-page :global(aside) { grid-column: 2; grid-row: 1; border-radius: 0 12px 12px 0; }
+                }
+                .contractor-cta :global(a) { color: #1d4ed8; display: inline-flex; align-items: center; min-height: 44px; }
+                .contractor-cta :global(a:hover) { text-decoration: underline; }
             `}</style>
         </>
     );

@@ -56,10 +56,10 @@ export default function FindContractorCTA({ projectType, area, className = '' }:
 
   return (
     <div
-      className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3.5 ${className}`}
+      className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 ${className}`}
     >
       <div className="flex items-start gap-3">
-        <UsersThree size={20} weight="duotone" className="mt-0.5 flex-shrink-0 text-blue-600" />
+        <UsersThree size={20} weight="duotone" className="mt-0.5 flex-shrink-0 text-slate-500" />
         <div>
           <p className="text-sm font-bold text-slate-900">Ready to build this?</p>
           <p className="mt-0.5 text-xs leading-relaxed text-slate-600">
@@ -73,7 +73,7 @@ export default function FindContractorCTA({ projectType, area, className = '' }:
       </div>
       <Link
         href={contractorSearchHref(projectType, area)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-none hover:bg-blue-700"
+        className="min-h-11 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-none hover:bg-slate-50"
       >
         Find a contractor
         <ArrowRight size={14} weight="bold" />

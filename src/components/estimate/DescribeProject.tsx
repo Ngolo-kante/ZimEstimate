@@ -5,6 +5,7 @@
 // guess costs a glance rather than a confusing page; the tiles stay below
 // for anyone who would rather pick.
 
+import DescribeConversation from './DescribeConversation';
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { ArrowRight, CircleNotch, Sparkle } from '@phosphor-icons/react';
@@ -19,9 +20,11 @@ const EXAMPLES = [
 ];
 
 export default function DescribeProject({
+  conversation = false,
   label = 'Or describe it in a sentence',
   tone = 'dark',
 }: {
+  conversation?: boolean;
   label?: string;
   /** Dark navy backgrounds (the default, /estimate) or white sections (home). */
   tone?: 'dark' | 'light';
@@ -57,6 +60,8 @@ export default function DescribeProject({
     event.preventDefault();
     void read(text);
   };
+
+  if (conversation) return <DescribeConversation />;
 
   return (
     <div className={`${styles.box} ${tone === 'light' ? styles.light : ''}`}>

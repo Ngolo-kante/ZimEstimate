@@ -1,5 +1,6 @@
 'use client';
 
+import AuthBrand from '@/components/auth/AuthBrand';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -83,6 +84,7 @@ function LoginForm() {
     return (
         <>
             <div className="auth-page">
+                <AuthBrand />
                 <div className="auth-container">
                     {/* Logo & Header */}
                     <div className="auth-header">
@@ -154,6 +156,7 @@ function LoginForm() {
                             Don&apos;t have an account?{' '}
                             <Link href={`/auth/signup${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`}>Sign up</Link>
                         </p>
+                    <p className="contractor-cta"><Link href="/contractor/register">Register as a contractor</Link></p>
                     </div>
                 </div>
             </div>
@@ -165,9 +168,11 @@ function LoginForm() {
 
                 .auth-page {
                     min-height: 100dvh;
-                    display: flex;
-                    align-items: center;
+                    display: grid;
+                    grid-template-columns: minmax(0, 400px);
+                    align-content: center;
                     justify-content: center;
+                    gap: 16px;
                     padding: var(--spacing-lg);
                     background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
                 }
@@ -313,6 +318,13 @@ function LoginForm() {
                         text-decoration: underline;
                 }
                 }
+                @media (min-width: 900px) {
+                    .auth-page { grid-template-columns: minmax(0, 440px) minmax(0, 520px); gap: 0; align-items: stretch; }
+                    .auth-container { grid-column: 1; grid-row: 1; max-width: none; border-radius: 12px 0 0 12px; align-content: center; }
+                    .auth-page :global(aside) { grid-column: 2; grid-row: 1; border-radius: 0 12px 12px 0; }
+                }
+                .contractor-cta :global(a) { color: #1d4ed8; display: inline-flex; align-items: center; min-height: 44px; }
+                .contractor-cta :global(a:hover) { text-decoration: underline; }
             `}</style>
         </>
     );

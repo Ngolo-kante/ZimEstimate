@@ -27,7 +27,6 @@ interface ProjectType {
   minutes: number;
   category: string;
   popular?: boolean;
-  tone: 'solar' | 'water' | 'borehole' | 'septic' | 'fencing' | 'paving';
 }
 
 // Ordered by the strongest everyday homeowner entry points: power, stored
@@ -41,7 +40,6 @@ const PROJECT_TYPES: ProjectType[] = [
     minutes: 7,
     category: 'Energy',
     popular: true,
-    tone: 'solar',
   },
   {
     id: 'water',
@@ -51,7 +49,6 @@ const PROJECT_TYPES: ProjectType[] = [
     minutes: 5,
     category: 'Water storage',
     popular: true,
-    tone: 'water',
   },
   {
     id: 'borehole',
@@ -60,7 +57,6 @@ const PROJECT_TYPES: ProjectType[] = [
     icon: CirclesThree,
     minutes: 4,
     category: 'Water supply',
-    tone: 'borehole',
   },
   {
     id: 'septic',
@@ -69,7 +65,6 @@ const PROJECT_TYPES: ProjectType[] = [
     icon: Toilet,
     minutes: 5,
     category: 'Sanitation',
-    tone: 'septic',
   },
   {
     id: 'fencing',
@@ -78,7 +73,6 @@ const PROJECT_TYPES: ProjectType[] = [
     icon: Rows,
     minutes: 4,
     category: 'Site security',
-    tone: 'fencing',
   },
   {
     id: 'paving',
@@ -87,7 +81,6 @@ const PROJECT_TYPES: ProjectType[] = [
     icon: Path,
     minutes: 4,
     category: 'External works',
-    tone: 'paving',
   },
 ];
 
@@ -162,7 +155,7 @@ export default function QuickProjectsPage() {
                 <Link
                   key={project.id}
                   href={`/quick-projects/${project.id}`}
-                  className={`${styles.card} ${styles[project.tone]}`}
+                  className={styles.card}
                   style={{ '--card-order': index } as CSSProperties}
                 >
                   <div className={styles.cardTopline}>

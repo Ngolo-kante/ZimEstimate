@@ -162,7 +162,7 @@ export default function BudgetPlanCard({
           padding: 9px 16px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
           border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text);
         }
-        .edit-actions .primary { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+        .edit-actions .primary { background: transparent; border-color: var(--color-border); color: var(--color-text); }
         .edit-actions button:disabled { opacity: 0.6; cursor: default; }
 
         @media (min-width: 520px) {

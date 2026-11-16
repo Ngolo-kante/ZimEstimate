@@ -70,15 +70,15 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
           role="switch"
           aria-checked={labor.enabled}
           onClick={() => onChange({ ...labor, enabled: !labor.enabled })}
-          className={`inline-flex flex-shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold transition-none ${
+          className={`min-h-11 inline-flex flex-shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold transition-none ${
             labor.enabled
-              ? 'border-blue-600 bg-blue-600 text-white'
+              ? 'border-slate-600 bg-slate-50 text-slate-900'
               : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400'
           }`}
         >
           <span
             aria-hidden="true"
-            className={`h-2 w-2 rounded-full ${labor.enabled ? 'bg-white' : 'bg-slate-400'}`}
+            className={`h-2 w-2 rounded-full ${labor.enabled ? 'bg-slate-700' : 'bg-slate-400'}`}
           />
           {labor.enabled ? 'Included' : 'Excluded'}
         </button>

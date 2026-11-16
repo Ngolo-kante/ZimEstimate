@@ -121,7 +121,7 @@ export default function DocumentUploader({ onUpload, isUploading }: DocumentUplo
                 input, select { width: 100%; min-width: 0; min-height: 46px; padding: 10px; border: 1px solid #b8c7d8; border-radius: 6px; background: white; font: inherit; }
                 :is(input, select, button):focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
                 .error { color: #b91c1c; margin: 14px 0 0; }
-                .status { color: #166534; margin: 12px 0 0; }
+                .status { color: #475569; margin: 12px 0 0; }
                 .status:empty { display: none; }
                 @media(max-width: 600px) { .uploader { padding: 18px 14px; } .fields { grid-template-columns: 1fr; } input, select { font-size: 16px; } }
             `}</style>

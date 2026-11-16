@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { MobileStartButton } from '@/components/projects/StartOptions';
 import TopNavbar from './TopNavbar';
 import { CurrencyProvider } from '../ui/CurrencyToggle';
 import InstallPromptBanner from '../ui/InstallPromptBanner';
@@ -210,7 +211,7 @@ export default function MainLayout({
           </div>
         </main>
 
-        {!hideBottomNav && <MobileBottomNav />}
+        {!hideBottomNav && <><MobileBottomNav /><MobileStartButton /></>}
 
         {/* Footer */}
         <footer className="app-footer">

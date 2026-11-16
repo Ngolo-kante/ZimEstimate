@@ -61,7 +61,7 @@ function OptionGrid({
             key={opt.value}
             type="button"
             onClick={() => toggle(opt.value)}
-            className={`group relative flex flex-col items-start p-4 rounded-xl border transition-none duration-200 text-left ${active ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50'} ${opt.recommended && !active ? 'border-amber-200 bg-amber-50/30' : ''}`}
+            className={`group relative flex flex-col items-start p-4 rounded-xl border transition-none duration-200 text-left ${active ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50'} `}
           >
             <div className="flex w-full items-start justify-between gap-2">
               <span className={`text-sm font-semibold block ${active ? 'text-blue-900' : 'text-slate-800'}`}>
@@ -73,7 +73,7 @@ function OptionGrid({
                 <div className={`w-5 h-5 rounded-full border border-slate-300 flex-shrink-0 group-hover:border-blue-300 transition-none ${multi ? 'rounded-md' : ''}`} />
               )}
             </div>
-            {opt.recommended && !active && <span className="inline-block mt-2 px-2 py-0.5 rounded bg-amber-100/80 text-amber-700 text-[10px] font-bold uppercase tracking-wider">Recommended</span>}
+            {opt.recommended && !active && <span className="inline-block mt-2 px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider">Recommended</span>}
             {opt.description && <p className={`mt-2 text-xs leading-relaxed ${active ? 'text-blue-700' : 'text-slate-500'}`}>{opt.description}</p>}
           </button>
         );

@@ -14,7 +14,7 @@
   padding: 52px max(32px, calc((100% - 1180px) / 2)) 44px;
   color: white;
   background: #0b1f3b;
-  border-bottom: 4px solid #f2c94c;
+  border-bottom: 1px solid #d8e0eb;
 }
 
 .headerCopy {
@@ -140,8 +140,8 @@
 }
 
 .card {
-  --project-accent: #1d5fbf;
-  --project-soft: #eef4ff;
+  --project-accent: #64748b;
+  --project-soft: #f1f5f9;
   min-width: 0;
   min-height: 232px;
   display: flex;
@@ -150,7 +150,7 @@
   color: #0f172a;
   background: white;
   border: 1px solid #d8e0eb;
-  border-top: 3px solid var(--project-accent);
+  border-top: 1px solid #d8e0eb;
   border-radius: 8px;
   text-decoration: none;
   box-shadow: 0 6px 18px rgba(11, 31, 59, 0.05);
@@ -170,35 +170,11 @@
   outline-offset: 3px;
 }
 
-.solar {
-  --project-accent: #d8a600;
-  --project-soft: #fff8d9;
-}
 
-.water {
-  --project-accent: #2672c9;
-  --project-soft: #eaf4ff;
-}
 
-.borehole {
-  --project-accent: #16837b;
-  --project-soft: #e5f7f4;
-}
 
-.septic {
-  --project-accent: #b66519;
-  --project-soft: #fff0df;
-}
 
-.fencing {
-  --project-accent: #3d7d45;
-  --project-soft: #ebf6ec;
-}
 
-.paving {
-  --project-accent: #667085;
-  --project-soft: #eef0f3;
-}
 
 .cardTopline {
   min-height: 24px;
@@ -224,9 +200,9 @@
 .popular {
   margin-left: auto;
   padding: 4px 7px;
-  color: #775500;
-  background: #fff5c2;
-  border: 1px solid #f0d978;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #d8e0eb;
   border-radius: 5px;
   font-size: 12px;
   font-weight: 800;

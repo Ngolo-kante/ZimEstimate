@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from '@/components/shadcn/drawer';
 import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
 import Card, { CardContent } from '@/components/ui/Card';
@@ -321,155 +322,15 @@ export default function MarketplacePage() {
     setCompareTargetId(alternativeMaterials[0].id);
   }, [selectedMaterial, alternativeMaterials]);
 
-  return (
-    <MainLayout title="Marketplace">
-      <div className="marketplace">
-        {/* Search and Filters */}
-        <div className="search-section reveal" data-delay="1">
-          <div className="search-box">
-            <Input
-              placeholder="Search materials (e.g., cement, rebar, IBR sheets)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              icon={<MagnifyingGlass size={18} weight="light" />}
-            />
-          </div>
-          <div className="filter-actions">
-            <Button
-              variant={trustedOnly ? 'primary' : 'secondary'}
-              icon={<ShieldCheck size={18} />}
-              size="sm"
-              onClick={() => setTrustedOnly(!trustedOnly)}
-            >
-              Checked prices only
-            </Button>
-            <Link href="/marketplace/suppliers" className="dir-link">
-              <Button variant="secondary" size="sm" icon={<Storefront size={18} />}>
-                Supplier Directory
-              </Button>
-            </Link>
-          </div>
-        </div>
+  const [phone, setPhone] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)');
+    const sync = () => setPhone(media.matches);
+    sync(); media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
 
-        {/* Category Pills */}
-        <div className="category-section reveal" data-delay="2">
-          <button
-            className={`category-pill ${selectedCategory === 'all' ? 'active' : ''}`}
-            onClick={() => setSelectedCategory('all')}
-          >
-            All Materials
-          </button>
-          {categories.map((cat) => {
-            const info = categoryInfo[cat];
-            const IconComponent = categoryIcons[info.icon] || Cube;
-            return (
-              <button
-                key={cat}
-                className={`category-pill ${selectedCategory === cat ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(cat)}
-              >
-                <IconComponent size={16} weight="light" />
-                {info.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Main Content */}
-        <div className="content-grid">
-          {/* Material List */}
-          <div className="materials-list">
-            {isLoadingPrices && (
-              <div className="loading-banner">
-                <div className="spinner" />
-                <span>Loading live prices...</span>
-              </div>
-            )}
-
-            {Object.entries(groupedMaterials).map(([category, items], groupIndex) => (
-              <div
-                key={category}
-                className="category-group reveal"
-                data-delay={(groupIndex % 5) + 1}
-              >
-                <h3 className="category-title">
-                  {categoryInfo[category as MaterialCategory]?.label || category}
-                  <span className="count">{items.length}</span>
-                </h3>
-                <div className="materials-grid">
-                  {items.map((material, index) => {
-                    const livePrice = livePrices.get(material.id);
-                    const hasAlert = priceAlerts.has(material.id);
-                    const supplierCount = getPricesForMaterial(material.id).length;
-                    const delay = (index % 5) + 1;
-
-                    return (
-                      <div key={material.id} className="material-card-wrapper reveal" data-delay={delay}>
-                        <Card
-                          className={`material-card ${selectedMaterial?.id === material.id ? 'selected' : ''}`}
-                          onClick={() => setSelectedMaterial(material)}
-                        >
-                          <CardContent>
-                            <div className="material-header">
-                              <span className="material-name">{material.name}</span>
-                              <span className="material-subcategory">{material.subcategory}</span>
-                            </div>
-                            <div className="material-details">
-                              <span className="unit">{material.unit}</span>
-                              {livePrice && (
-                                <span className="price">
-                                  <PriceDisplay priceUsd={livePrice.priceUsd} priceZwg={livePrice.priceZwg} />
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Price metadata row */}
-                            {livePrice && (
-                              <div className="price-meta">
-                                <span className={`source-badge ${livePrice.source}`}>
-                                  {livePrice.source === 'scraped' ? (
-                                    <><Database size={10} /> Live</>
-                                  ) : livePrice.source === 'manual' ? (
-                                    <><Info size={10} /> Updated by ZimEstimate</>
-                                  ) : (
-                                    <><Info size={10} /> Static</>
-                                  )}
-                                </span>
-                                <span className="supplier-count">
-                                  {supplierCount} suppliers
-                                </span>
-                                <span className="last-updated">
-                                  <Clock size={10} />
-                                  {formatLastUpdated(livePrice.lastUpdated)}
-                                </span>
-                                {hasAlert && (
-                                  <Bell size={12} weight="fill" className="alert-indicator" />
-                                )}
-                              </div>
-                            )}
-
-                            {material.specifications && (
-                              <p className="specs">{material.specifications}</p>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-
-            {filteredMaterials.length === 0 && (
-              <div className="empty-state reveal" data-delay="2">
-                <p>No materials found matching your search.</p>
-              </div>
-            )}
-          </div>
-
-          {/* Detail Panel */}
-          <div className="detail-panel reveal" data-delay="3">
-            {selectedMaterial ? (
+  const materialDetail = selectedMaterial ? (
               <Card className="detail-card">
                 <CardContent>
                   <div className="detail-header">
@@ -733,11 +594,8 @@ export default function MarketplacePage() {
                   </div>
                 </CardContent>
               </Card>
-            )}
-
-            {/* Was "Trusted Suppliers": real business names with star ratings
-                nobody gave them. Real suppliers appear in the directory once
-                they register. */}
+            );
+  const supplierCard = (
             <Card className="suppliers-card">
               <CardContent>
                 <h3 className="suppliers-header">
@@ -754,8 +612,169 @@ export default function MarketplacePage() {
                 </Link>
               </CardContent>
             </Card>
+  );
+
+  return (
+    <MainLayout title="Marketplace">
+      <div className="marketplace">
+        {/* Search and Filters */}
+        <div className="search-section reveal" data-delay="1">
+          <div className="search-box">
+            <Input
+              placeholder="Search materials (e.g., cement, rebar, IBR sheets)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              icon={<MagnifyingGlass size={18} weight="light" />}
+            />
+          </div>
+          <div className="filter-actions">
+            <Button
+              variant={trustedOnly ? 'primary' : 'secondary'}
+              icon={<ShieldCheck size={18} />}
+              size="sm"
+              onClick={() => setTrustedOnly(!trustedOnly)}
+            >
+              Checked prices only
+            </Button>
+            <Link href="/marketplace/suppliers" className="dir-link">
+              <Button variant="secondary" size="sm" icon={<Storefront size={18} />}>
+                Supplier Directory
+              </Button>
+            </Link>
           </div>
         </div>
+
+        {/* Category Pills */}
+        <div className="category-section reveal" data-delay="2">
+          <button
+            className={`category-pill ${selectedCategory === 'all' ? 'active' : ''}`}
+            onClick={() => setSelectedCategory('all')}
+          >
+            All Materials
+          </button>
+          {categories.map((cat) => {
+            const info = categoryInfo[cat];
+            const IconComponent = categoryIcons[info.icon] || Cube;
+            return (
+              <button
+                key={cat}
+                className={`category-pill ${selectedCategory === cat ? 'active' : ''}`}
+                onClick={() => setSelectedCategory(cat)}
+              >
+                <IconComponent size={16} weight="light" />
+                {info.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Main Content */}
+        <div className="content-grid">
+          {/* Material List */}
+          <div className="materials-list">
+            {isLoadingPrices && (
+              <div className="loading-banner">
+                <div className="spinner" />
+                <span>Loading live prices...</span>
+              </div>
+            )}
+
+            {Object.entries(groupedMaterials).map(([category, items], groupIndex) => (
+              <div
+                key={category}
+                className="category-group reveal"
+                data-delay={(groupIndex % 5) + 1}
+              >
+                <h3 className="category-title">
+                  {categoryInfo[category as MaterialCategory]?.label || category}
+                  <span className="count">{items.length}</span>
+                </h3>
+                <div className="materials-grid">
+                  {items.map((material, index) => {
+                    const livePrice = livePrices.get(material.id);
+                    const hasAlert = priceAlerts.has(material.id);
+                    const supplierCount = getPricesForMaterial(material.id).length;
+                    const delay = (index % 5) + 1;
+
+                    return (
+                      <div key={material.id} className="material-card-wrapper reveal" data-delay={delay}>
+                        <Card
+                          className={`material-card ${selectedMaterial?.id === material.id ? 'selected' : ''}`}
+                          onClick={() => setSelectedMaterial(material)}
+                        >
+                          <CardContent>
+                            <div className="material-header">
+                              <span className="material-name">{material.name}</span>
+                              <span className="material-subcategory">{material.subcategory}</span>
+                            </div>
+                            <div className="material-details">
+                              <span className="unit">{material.unit}</span>
+                              {livePrice && (
+                                <span className="price">
+                                  <PriceDisplay priceUsd={livePrice.priceUsd} priceZwg={livePrice.priceZwg} />
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Price metadata row */}
+                            {livePrice && (
+                              <div className="price-meta">
+                                <span className={`source-badge ${livePrice.source}`}>
+                                  {livePrice.source === 'scraped' ? (
+                                    <><Database size={10} /> Live</>
+                                  ) : livePrice.source === 'manual' ? (
+                                    <><Info size={10} /> Updated by ZimEstimate</>
+                                  ) : (
+                                    <><Info size={10} /> Static</>
+                                  )}
+                                </span>
+                                <span className="supplier-count">
+                                  {supplierCount} suppliers
+                                </span>
+                                <span className="last-updated">
+                                  <Clock size={10} />
+                                  {formatLastUpdated(livePrice.lastUpdated)}
+                                </span>
+                                {hasAlert && (
+                                  <Bell size={12} weight="fill" className="alert-indicator" />
+                                )}
+                              </div>
+                            )}
+
+                            {material.specifications && (
+                              <p className="specs">{material.specifications}</p>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {filteredMaterials.length === 0 && (
+              <div className="empty-state reveal" data-delay="2">
+                <p>No materials found matching your search.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Detail Panel */}
+          <div className="detail-panel reveal" data-delay="3">
+            {!phone && materialDetail}
+            {!phone && supplierCard}
+          </div>
+        </div>
+
+        {phone && <div className="mobile-supplier-flow">{supplierCard}</div>}
+        <Drawer open={phone && !!selectedMaterial} onOpenChange={open => { if (!open) setSelectedMaterial(null); }}>
+          <DrawerContent className="motion-reduce:[animation:none!important] motion-reduce:[transition:none!important] z-[150] overflow-y-auto pb-[env(safe-area-inset-bottom)]">
+            <DrawerHeader><DrawerTitle>{selectedMaterial?.name || 'Material details'}</DrawerTitle><DrawerDescription>Details and supplier prices</DrawerDescription></DrawerHeader>
+            {phone && selectedMaterial && materialDetail}
+            <DrawerClose className="m-4 min-h-11 rounded-lg border border-sc-border">Close</DrawerClose>
+          </DrawerContent>
+        </Drawer>
 
         <div className="market-disclaimer reveal" data-delay="2">
           <p>
@@ -1927,6 +1946,10 @@ export default function MarketplacePage() {
           }
         }
 
+        @media (max-width: 767px) {
+          .detail-panel { display: none; }
+          .mobile-supplier-flow :global(.suppliers-card) { display: block; }
+        }
         @media (max-width: 640px) {
           .compare-row {
             grid-template-columns: 1fr;

@@ -43,14 +43,13 @@ export const metadata: Metadata = {
  */
 
 type Tile = { title: string; detail: string; href: string; icon: Icon };
-type Group = { id: string; title: string; note: string; tone: 'blue' | 'amber' | 'green' | 'slate'; tiles: Tile[] };
+type Group = { id: string; title: string; note: string; tiles: Tile[] };
 
 const groups: Group[] = [
   {
     id: 'house',
     title: 'Build a house',
     note: 'A full bill of quantities, or just the stage you are on.',
-    tone: 'blue',
     tiles: [
       { title: 'Full house estimate', detail: 'Every stage, foundations to finishes', href: '/boq/new?method=manual&fresh=1&preset=full_house', icon: HouseLine },
       { title: 'Estimate by stage', detail: 'Only the stages you are ready for', href: '/boq/new?method=manual&fresh=1&preset=building_in_stages', icon: Buildings },
@@ -63,7 +62,6 @@ const groups: Group[] = [
     id: 'projects',
     title: 'Price a project',
     note: 'Answer a few questions, get a priced list of materials.',
-    tone: 'amber',
     tiles: [
       { title: 'Solar system', detail: 'Panels, inverter and batteries', href: '/quick-projects/solar', icon: SolarPanel },
       { title: 'Borehole', detail: 'Drilling, casing and pump', href: '/quick-projects/borehole', icon: Drop },
@@ -77,7 +75,6 @@ const groups: Group[] = [
     id: 'budget',
     title: 'What can my budget buy?',
     note: 'Type what you have to spend and see how far it goes.',
-    tone: 'green',
     tiles: [
       { title: 'House build', detail: 'Which stage your money reaches', href: '/quick-budget', icon: Calculator },
       { title: 'Solar', detail: 'The system your budget buys', href: '/quick-budget?mode=solar', icon: SolarPanel },
@@ -90,7 +87,6 @@ const groups: Group[] = [
     id: 'more',
     title: 'More',
     note: 'Already have a quote, or ready to build.',
-    tone: 'slate',
     tiles: [
       { title: 'Check a builder\'s quote', detail: 'Each price against the market', href: '/ai/quote-check', icon: Scales },
       { title: 'Scan a BOQ', detail: 'Turn a photo into a project', href: '/ai/boq-scanner', icon: FileMagnifyingGlass },
@@ -113,7 +109,7 @@ export default function EstimateServicesPage() {
               <span className={styles.eyebrow}>Start an estimate</span>
               <h1>What do you need to work out?</h1>
               <p>Pick the closest match. You can change quantities, prices and materials before saving.</p>
-              <DescribeProject />
+              <DescribeProject conversation />
             </div>
             <div className={styles.heroNote}>
               <ListChecks size={22} weight="duotone" aria-hidden="true" />
@@ -127,7 +123,7 @@ export default function EstimateServicesPage() {
 
         <section className={styles.directory} aria-label={`${total} ways to begin`}>
           {groups.map((group) => (
-            <div key={group.id} className={`${styles.group} ${styles[group.tone]}`}>
+            <div key={group.id} className={styles.group}>
               <div className={styles.groupHeader}>
                 <h2>{group.title}</h2>
                 <p>{group.note}</p>

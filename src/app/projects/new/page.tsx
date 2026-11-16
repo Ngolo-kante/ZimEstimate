@@ -1,5 +1,6 @@
 'use client';
 
+import StartOptions from '@/components/projects/StartOptions';
 import { useId } from 'react';
 
 import { Field, FieldGroup, FieldLabel } from '@/components/shadcn/field';
@@ -51,6 +52,7 @@ export default function NewProject() {
     const router = useRouter();
     const { error: showError, success: showSuccess } = useToast();
     const [step, setStep] = useState(1);
+    const [houseChosen, setHouseChosen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState<ProjectFormData>({
         name: '',
@@ -239,7 +241,8 @@ export default function NewProject() {
                 {stepMessage && <div className="step-alert">{stepMessage}</div>}
 
                 {/* Step 1: Project Type Selection */}
-                {step === 1 && (
+                {step === 1 && !houseChosen && <StartOptions onHouse={() => setHouseChosen(true)} />}
+                {step === 1 && houseChosen && (
                     <div className="step-content">
                         <div className={`tiles-grid four-cols ${fieldErrors.projectType ? 'has-error' : ''}`}>
                             <button
@@ -446,7 +449,7 @@ export default function NewProject() {
                 )}
 
                 {/* Navigation */}
-                <div className="step-navigation">
+                <div className="step-navigation" hidden={step === 1 && !houseChosen} style={step === 1 && !houseChosen ? { display: 'none' } : undefined}>
                     {step > 1 && (
                         <Button
                             variant="secondary"

@@ -21,6 +21,7 @@ import { quickCostSlices } from '@/lib/quick-projects/costSplit';
 import ContractorMarkup from './ContractorMarkup';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { persistQuickBOQSession, PENDING_QUICK_SAVE_KEY } from '@/lib/services/quickBoq';
+import Button from '@/components/ui/Button';
 import FindContractorCTA from '@/components/contractors/FindContractorCTA';
 import ContactSupportLink from '@/components/support/ContactSupportLink';
 
@@ -263,14 +264,9 @@ export default function QuickBOQTable({
             PDF
           </button>
 
-          <button
-            onClick={() => handleAuthGatedAction('save')}
-            className="min-h-11 inline-flex items-center gap-1.5 rounded-lg border border-blue-600 bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-none shadow-sm"
-          >
-            {!isAuthenticated && <Lock size={12} />}
-            <FloppyDisk size={14} />
-            Save BOQ
-          </button>
+          <Button size="sm" onClick={() => handleAuthGatedAction('save')} className="min-h-11">
+            {!isAuthenticated && <Lock size={12} />}<FloppyDisk size={14} /> Save BOQ
+          </Button>
         </div>
       </div>
 
