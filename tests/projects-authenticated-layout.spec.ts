@@ -91,7 +91,7 @@ test.describe('Authenticated project workspace', () => {
     // Labelled "Budget spent" until the bar named what it measures against.
     await expect(page.getByRole('progressbar', { name: /^Share of the (BOQ estimate|budget limit) spent$/ })).toBeVisible();
     await expect(page.getByText('Add BOQ items to calculate a plan')).toBeVisible();
-    await page.getByRole('button', { name: 'Custom' }).click();
+    await page.getByRole('tab', { name: 'Custom' }).click();
     await page.getByLabel('Target amount').fill('15000');
     await expect(page.getByText('Amounts to set aside')).toBeVisible();
     // Was a "Set delivery reminders" button; the reminder now waits for a target date.

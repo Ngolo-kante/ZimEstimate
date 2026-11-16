@@ -1,7 +1,7 @@
 'use client';
 
 import { formatQuantity } from '@/lib/format';
-import { Field, FieldGroup, FieldLabel } from '@/components/shadcn/field';
+import { Field, FieldGroup } from '@/components/shadcn/field';
 import { NativeSelect } from '@/components/shadcn/native-select';
 
 
@@ -138,8 +138,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
             <div className="documents-tab">
                 <div className="tab-header">
                     <p className="file-count">{formatQuantity(filteredDocuments.length)} file{filteredDocuments.length === 1 ? '' : 's'}</p>
-                    <FieldGroup className="!w-auto"><Field>
-                        <FieldLabel className="sr-only" htmlFor="documents-category-filter">Filter documents</FieldLabel>
+                    <FieldGroup className="w-full sm:w-56"><Field>
 
                         <NativeSelect className="w-full [&_select]:!h-11 [&_select]:bg-sc-background [&_select]:text-base [&_select]:transition-none"
                             id="documents-category-filter" aria-label="Filter documents"

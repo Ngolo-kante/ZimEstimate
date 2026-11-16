@@ -88,7 +88,7 @@ export default function ProjectViewTabs({
             <div className="sheet-header">
               <div>
                 <p>Project workspace</p>
-                <DrawerTitle asChild><h2 id="project-more-title">More tools</h2></DrawerTitle>
+                <DrawerTitle asChild><h2>More tools</h2></DrawerTitle>
               </div>
               <button type="button" className="sheet-close" onClick={() => setIsMoreOpen(false)} aria-label="Close project tools">
                 <X size={19} />
