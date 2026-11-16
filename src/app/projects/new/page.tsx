@@ -47,6 +47,8 @@ type ProjectWizardErrors = Partial<Record<ProjectWizardField, string>>;
 import { storeEstimateHandoff } from '@/lib/estimateHandoff';
 import { useToast } from '@/components/ui/Toast';
 
+const STEP_NAMES = ['Project type', 'Priority', 'Project details', 'Estimate method'];
+
 export default function NewProject() {
     const controlId = useId();
     const router = useRouter();
@@ -211,18 +213,24 @@ export default function NewProject() {
     return (
         <MainLayout title="New project">
             <div className="new-project">
-                {/* Progress Bar */}
+                {/* Where you are, in words. The old numbered circles under a bar
+                    read as carousel dots ("is this slideable?"), so the steps
+                    are a plain label and a four-part bar, nothing to swipe. */}
                 <div className="progress-container">
-                    <div className="progress-bar">
-                        <div className="progress-fill" style={{ width: `${(step / 4) * 100}%` }} />
-                    </div>
-                    <div className="progress-steps">
-                        {[1, 2, 3, 4].map((s) => (
-                            <div key={s} className={`progress-step ${step >= s ? 'active' : ''} ${step === s ? 'current' : ''}`}>
-                                {step > s ? <CheckCircle size={20} weight="fill" /> : s}
-                            </div>
+                    <p className="progress-label">
+                        Step {step} of 4 <span>· {STEP_NAMES[step - 1]}</span>
+                    </p>
+                    <ol className="progress-segments" aria-label="Progress">
+                        {STEP_NAMES.map((name, i) => (
+                            <li
+                                key={name}
+                                className={`progress-segment ${step > i ? 'filled' : ''}`}
+                                aria-current={step === i + 1 ? 'step' : undefined}
+                            >
+                                <span className="sr-only">{name}{step > i + 1 ? ', done' : ''}</span>
+                            </li>
                         ))}
-                    </div>
+                    </ol>
                 </div>
 
                 {/* Step Header */}
@@ -494,48 +502,35 @@ export default function NewProject() {
                     margin-bottom: 48px;
                 }
 
-                .progress-bar {
-                    height: 4px;
-                    background: #e2e8f0;
-                    border-radius: 2px;
-                    overflow: hidden;
-                    margin-bottom: 16px;
-                }
-
-                .progress-fill {
-                    height: 100%;
-                    background: linear-gradient(90deg, #FCA311, #f59e0b);
-                    border-radius: 2px;
-                    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                }
-
-                .progress-steps {
-                    display: flex;
-                    justify-content: space-between;
-                    padding: 0 10%;
-                }
-
-                .progress-step {
-                    width: 32px;
-                    height: 32px;
-                    border-radius: 50%;
-                    background: #e2e8f0;
-                    color: #475569;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
+                .progress-label {
+                    margin: 0 0 10px;
                     font-size: 0.875rem;
                     font-weight: 600;
-                    transition: none;
-                }
-
-                .progress-step.active {
-                    background: #FCA311;
                     color: #0f172a;
                 }
 
-                .progress-step.current {
-                    box-shadow: 0 0 0 4px rgba(252, 163, 17, 0.2);
+                .progress-label span {
+                    font-weight: 500;
+                    color: #64748b;
+                }
+
+                .progress-segments {
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 6px;
+                    margin: 0;
+                    padding: 0;
+                    list-style: none;
+                }
+
+                .progress-segment {
+                    height: 6px;
+                    border-radius: 3px;
+                    background: #e2e8f0;
+                }
+
+                .progress-segment.filled {
+                    background: var(--color-accent);
                 }
 
                 /* Step Header */
@@ -574,7 +569,7 @@ export default function NewProject() {
                     border-radius: 999px;
                     border: 1px solid #d7e6f5;
                     background: #f8fbff;
-                    color: #6b7f98;
+                    color: #475569;
                     font-size: 0.75rem;
                     font-weight: 600;
                 }
@@ -586,7 +581,7 @@ export default function NewProject() {
                 }
 
                 .meta-dot {
-                    color: #9aa9bd;
+                    color: #64748b;
                     font-size: 0.9rem;
                     line-height: 1;
                 }
@@ -811,9 +806,6 @@ export default function NewProject() {
                         font-size: 1rem;
                     }
 
-                    .progress-steps {
-                        padding: 0;
-                    }
                 }
 
                 @media (max-width: 480px) {
