@@ -19,5 +19,6 @@ Finding IDs refer to the audit. Each batch is one brief in this folder, one comm
 | 4 | Usage and BOQ as compact rows; BOQ table first on desktop | H5 (Usage, BOQ), H4, M5, M6 | `shadcn`, `gestures`, `/prototype` | Brief written; Codex run queued 15 Nov, unreviewed. |
 | 5 | Overview, projects list and Budget Estimator order | H6, H9, H10 | `apple-hig-review`, `/prototype` | Brief written; Codex run queued 15 Nov, unreviewed (takes the audit's first option, no side-by-side prototypes). |
 | 6 | Status colours, motion items 1–5, phone baseline | M4, M8, M9, motion table | `animate`, `choreograph`, `/review-animations` | Brief written; Codex run queued 15 Nov, unreviewed. |
-
-Not planned yet: the six October items the audit did not re-check.
+| 7 | Leftovers from batches 1–3 | M2 (sentence case), quick-estimate names on a phone, C2/H12 on public pages, H6 (Overview still ~3,000px) | `break-ui`, `apple-hig-review` | Brief written 15 Nov; Codex run queued after batch 6, unreviewed. |
+| 8 | The six October items never re-checked | Budget target lost, date not rolled back, Insights failure looks empty, empty document filter text, Google button overflow, `7.199999999999999` | `diagnosing-bugs` | Brief written 15 Nov; Codex run queued after batch 7, unreviewed. |
+After batch 8: re-run the full audit (`docs/UX_AUDIT_2026-11-15.md` method) and compare.
