@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle } from '@phosphor-icons/react';
+import { CaretRight, CheckCircle } from '@phosphor-icons/react';
 import { estimateStageReach } from '@/lib/estimators/stageBudgetEstimator';
 import { captureProductEvent, getBudgetBand } from '@/lib/productAnalytics';
 
@@ -84,7 +84,7 @@ function BuildingHouse({ coverage, complete }: { coverage: Record<string, number
           still visible as what the money is for. */}
       <g opacity="0.12">
         <rect x="38" y="116" width="114" height="10" rx="2" fill="#94A3B8" />
-        <rect x="44" y="66" width="102" height="50" fill="#C97B5A" />
+        <rect x="44" y="66" width="102" height="50" fill="var(--color-accent)" />
         <polygon points="36,66 95,32 154,66" fill="#475569" />
         <rect x="85" y="88" width="20" height="28" rx="1.5" fill="#0B1F3B" />
         <rect x="54" y="76" width="17" height="15" rx="1.5" fill="#0B1F3B" />
@@ -104,8 +104,8 @@ function BuildingHouse({ coverage, complete }: { coverage: Record<string, number
         const y = 116 - (i + 1) * 12.5;
         return (
           <g key={`w${i}`} style={{ ...FADE, opacity: piece(walls, i, 4) }} className="motion-reduce:transition-none">
-            <rect x="44" y={y} width="102" height="12.5" fill="#C97B5A" />
-            <line x1="44" y1={y} x2="146" y2={y} stroke="#B4663F" strokeWidth="1" />
+            <rect x="44" y={y} width="102" height="12.5" fill="var(--color-accent)" />
+            <line x1="44" y1={y} x2="146" y2={y} stroke="var(--color-primary)" strokeWidth="1" />
           </g>
         );
       })}
@@ -250,7 +250,7 @@ export default function HeroBudgetWidget() {
       <div className="relative h-full w-full p-4 sm:p-5 md:p-6 flex flex-col gap-2.5 sm:gap-3">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#a4532b]" style={{ fontFamily: 'var(--font-mono)' }}>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]" style={{ fontFamily: 'var(--font-mono)' }}>
             Budget check
           </span>
           <span className="text-xs font-semibold text-[var(--color-success-fg)] bg-[var(--color-success-bg)] border border-[var(--color-success-border)] rounded-full px-2 py-0.5 flex items-center gap-1">
@@ -380,9 +380,9 @@ export default function HeroBudgetWidget() {
               floor_area_m2: PLAN_AREA_M2,
               location_category: PLAN_LOCATION,
             })}
-            className="flex-shrink-0 inline-flex min-h-[36px] items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-bold text-[#0B1F3B] hover:bg-blue-50 transition-colors whitespace-nowrap"
+            className="flex-shrink-0 inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-bold text-[#0B1F3B] active:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white [@media(hover:hover)_and_(pointer:fine)]:hover:bg-blue-50 transition-colors whitespace-nowrap"
           >
-            Customize <ArrowRight size={12} weight="bold" />
+            Customize <CaretRight size={12} weight="bold" aria-hidden="true" />
           </Link>
         </div>
 

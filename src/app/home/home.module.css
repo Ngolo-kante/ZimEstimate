@@ -1,20 +1,13 @@
-/* ─── The home page as a drawing sheet ─────────────────────────────────────
-   A build starts as a drawing, so the page is laid out like one: a navy
-   sheet ruled with a drafting grid, annotations in the monospace hand a
-   draughtsman uses for dimensions, brick-clay for the one thing that
-   matters in each view, and the house that builds itself as the drawing on
-   the sheet. Sections are numbered like sheets in a set.
-
-   Colours stay the brand's own (design-tokens.css): navy, electric blue,
-   clay. Clay is lightened where it sits on navy so it holds 7:1 as text. */
+/* The home page as a drawing sheet: navy, blue, drafting grid and
+numbered annotations retain the app's drawing language. */
 
 .page {
   --sheet: var(--color-primary);
   --sheet-deep: #071428;
   --rule: rgba(148, 184, 235, 0.09);
   --rule-strong: rgba(148, 184, 235, 0.16);
-  --clay: var(--color-clay);
-  --clay-on-navy: #f3a57c;
+  --action: var(--color-accent);
+  --accent-on-navy: #bfdbfe;
   --ink-soft: #c9d6ea;
   --paper: #fbfaf7;
   --hairline: #e4e1d8;
@@ -65,11 +58,11 @@
 }
 
 .eyebrow {
-  color: var(--clay-on-navy);
+  color: var(--accent-on-navy);
 }
 
 .sectionIndex {
-  color: #a4532b;
+  color: var(--color-primary);
 }
 
 /* ── Hero ────────────────────────────────────────────────────────────── */
@@ -78,22 +71,22 @@
   position: relative;
   isolation: isolate;
   background:
-    radial-gradient(900px 520px at 82% 38%, rgba(46, 108, 246, 0.26), transparent 62%),
-    radial-gradient(520px 360px at 6% 104%, rgba(217, 122, 74, 0.16), transparent 70%),
-    linear-gradient(180deg, var(--sheet) 0%, var(--sheet-deep) 100%);
+  radial-gradient(900px 520px at 82% 38%, rgba(46, 108, 246, 0.26), transparent 62%),
+  radial-gradient(520px 360px at 6% 104%, rgba(46, 108, 246, 0.16), transparent 70%),
+  linear-gradient(180deg, var(--sheet) 0%, var(--sheet-deep) 100%);
 }
 
 /* The drafting grid: fine squares, with a heavier line every fifth. It
-   fades out toward the copy so the words sit on plain navy. */
+fades out toward the copy so the words sit on plain navy. */
 .heroGrid {
   position: absolute;
   inset: 0;
   z-index: -1;
   background-image:
-    linear-gradient(var(--rule-strong) 1px, transparent 1px),
-    linear-gradient(90deg, var(--rule-strong) 1px, transparent 1px),
-    linear-gradient(var(--rule) 1px, transparent 1px),
-    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  linear-gradient(var(--rule-strong) 1px, transparent 1px),
+  linear-gradient(90deg, var(--rule-strong) 1px, transparent 1px),
+  linear-gradient(var(--rule) 1px, transparent 1px),
+  linear-gradient(90deg, var(--rule) 1px, transparent 1px);
   background-size: 160px 160px, 160px 160px, 32px 32px, 32px 32px;
   background-position: -1px -1px;
   -webkit-mask-image: linear-gradient(100deg, transparent 4%, rgba(0, 0, 0, 0.5) 38%, #000 70%);
@@ -138,10 +131,10 @@
   text-wrap: balance;
 }
 
-/* The part that matters, in brick, underlined like a dimension. */
+/* The part that matters, in blue, underlined like a dimension. */
 .hero h1 em {
   position: relative;
-  color: var(--clay-on-navy);
+  color: var(--accent-on-navy);
   font-style: normal;
   white-space: nowrap;
 }
@@ -154,7 +147,7 @@
   bottom: -0.08em;
   height: 0.09em;
   border-radius: 2px;
-  background: var(--clay);
+  background: var(--action);
   transform-origin: left center;
   animation: draw 700ms 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
@@ -194,7 +187,7 @@
   transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
 }
 
-/* Two equal white ways in; the first carries the weight. */
+/* The primary action carries the weight. */
 .primaryButton,
 .closingButton {
   box-shadow: 0 12px 30px -10px rgba(3, 12, 28, 0.7), inset 0 -3px 0 rgba(11, 31, 59, 0.12);
@@ -207,21 +200,25 @@
   padding: 5px;
   border-radius: 8px;
   color: white;
-  background: var(--clay);
+  background: var(--action);
   transition: transform 180ms ease;
 }
-
-.primaryButton:hover,
-.secondaryButton:hover,
-.closingButton:hover {
-  transform: translateY(-2px);
-  background: #f1f5fd;
+@media (hover: hover) and (pointer: fine) {
+  .primaryButton:hover,
+  .secondaryButton:hover,
+  .closingButton:hover {
+    transform: translateY(-2px);
+    background: #f1f5fd;
+  }
 }
 
-.primaryButton:hover > svg:last-child,
-.closingButton:hover > svg:last-child {
-  transform: translateX(3px);
+@media (hover: hover) and (pointer: fine) {
+  .primaryButton:hover > svg:last-child,
+  .closingButton:hover > svg:last-child {
+    transform: translateX(3px);
+  }
 }
+
 
 .secondaryArrow {
   flex: 0 0 auto;
@@ -249,11 +246,13 @@
   text-decoration-color: rgba(201, 214, 234, 0.4);
   text-underline-offset: 4px;
 }
-
-.heroTextLink:hover {
-  color: white;
-  text-decoration-color: white;
+@media (hover: hover) and (pointer: fine) {
+  .heroTextLink:hover {
+    color: white;
+    text-decoration-color: white;
+  }
 }
+
 
 .heroAssurances {
   display: flex;
@@ -275,7 +274,7 @@
 }
 
 /* The six stages every estimate is priced in, drawn as a dimension line.
-   It is the page's one piece of drawing language outside the house itself. */
+It is the page's one piece of drawing language outside the house itself. */
 .stageLine {
   position: relative;
   display: grid;
@@ -321,7 +320,7 @@
 }
 
 .stageLine li span {
-  color: var(--clay-on-navy);
+  color: var(--accent-on-navy);
   font-family: var(--font-mono);
   font-size: 0.66rem;
   font-weight: 600;
@@ -370,7 +369,7 @@
 }
 
 /* Describe-your-project, between the heading and the ways in. */
-.describeRow {
+.page .startSection .describeRow {
   max-width: 760px;
   margin: 28px 0 26px;
 }
@@ -387,6 +386,7 @@
   --method-accent: var(--color-accent);
   position: relative;
   min-width: 0;
+  min-height: 44px;
   display: flex;
   flex-direction: column;
   padding: 22px;
@@ -398,12 +398,14 @@
   text-decoration: none;
   transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
 }
-
-.startCard:hover {
-  border-color: var(--method-accent);
-  box-shadow: 0 18px 36px -18px rgba(11, 31, 59, 0.28);
-  transform: translateY(-3px);
+@media (hover: hover) and (pointer: fine) {
+  .startCard:hover {
+    border-color: var(--method-accent);
+    box-shadow: 0 18px 36px -18px rgba(11, 31, 59, 0.28);
+    transform: translateY(-3px);
+  }
 }
+
 
 .startCard:focus-visible {
   outline: 3px solid var(--color-focus-ring);
@@ -426,7 +428,7 @@
 }
 
 .startCardRank {
-  color: #a4532b;
+  color: var(--color-primary);
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 600;
@@ -450,7 +452,7 @@
   padding: 3px 9px;
   border-radius: 999px;
   color: #0b1f3b;
-  background: var(--clay-on-navy);
+  background: var(--accent-on-navy);
   font-size: 0.7rem;
   font-weight: 700;
   line-height: 1.2;
@@ -475,10 +477,12 @@
   background: #edf3ff;
   transition: transform 200ms ease;
 }
-
-.startCard:hover .startCardIcon {
-  transform: rotate(-5deg) scale(1.06);
+@media (hover: hover) and (pointer: fine) {
+  .startCard:hover .startCardIcon {
+    transform: rotate(-5deg) scale(1.06);
+  }
 }
+
 
 .startCardCopy {
   min-width: 0;
@@ -529,21 +533,23 @@
   background: var(--color-primary);
   transition: transform 200ms ease, background-color 200ms ease;
 }
-
-.startCard:hover .startCardArrow {
-  background: var(--method-accent);
-  transform: translateX(3px);
+@media (hover: hover) and (pointer: fine) {
+  .startCard:hover .startCardArrow {
+    background: var(--method-accent);
+    transform: translateX(3px);
+  }
 }
 
-/* The lead card is a piece of the sheet: navy, ruled, with a clay arrow. */
+
+/* The lead card is a piece of the sheet: navy, ruled, with a blue arrow. */
 .startCard:nth-child(1) {
-  --method-accent: var(--clay-on-navy);
+  --method-accent: var(--accent-on-navy);
   padding: 28px;
   border-color: transparent;
   color: white;
   background:
-    radial-gradient(420px 300px at 100% 0%, rgba(46, 108, 246, 0.35), transparent 70%),
-    linear-gradient(180deg, var(--sheet), var(--sheet-deep));
+  radial-gradient(420px 300px at 100% 0%, rgba(46, 108, 246, 0.35), transparent 70%),
+  linear-gradient(180deg, var(--sheet), var(--sheet-deep));
 }
 
 .startCard:nth-child(1)::before {
@@ -551,8 +557,8 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(var(--rule) 1px, transparent 1px),
-    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  linear-gradient(var(--rule) 1px, transparent 1px),
+  linear-gradient(90deg, var(--rule) 1px, transparent 1px);
   background-size: 28px 28px;
   -webkit-mask-image: linear-gradient(200deg, #000, transparent 70%);
   mask-image: linear-gradient(200deg, #000, transparent 70%);
@@ -564,7 +570,7 @@
 }
 
 .startCard:nth-child(1) .startCardRank {
-  color: var(--clay-on-navy);
+  color: var(--accent-on-navy);
 }
 
 .startCard:nth-child(1) .startCardCategory,
@@ -604,12 +610,15 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--clay);
+  background: var(--action);
+}
+@media (hover: hover) and (pointer: fine) {
+  .startCard:nth-child(1):hover .startCardArrow {
+    background: var(--accent-on-navy);
+    color: var(--color-primary);
+  }
 }
 
-.startCard:nth-child(1):hover .startCardArrow {
-  background: var(--clay-on-navy);
-}
 
 /* ── Closing ─────────────────────────────────────────────────────────── */
 
@@ -620,8 +629,8 @@
   flex-direction: column;
   justify-content: center;
   background:
-    radial-gradient(700px 420px at 12% 0%, rgba(46, 108, 246, 0.22), transparent 66%),
-    linear-gradient(180deg, var(--sheet), var(--sheet-deep));
+  radial-gradient(700px 420px at 12% 0%, rgba(46, 108, 246, 0.22), transparent 66%),
+  linear-gradient(180deg, var(--sheet), var(--sheet-deep));
 }
 
 .closingSection::before {
@@ -630,8 +639,8 @@
   inset: 0;
   z-index: -1;
   background-image:
-    linear-gradient(var(--rule) 1px, transparent 1px),
-    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  linear-gradient(var(--rule) 1px, transparent 1px),
+  linear-gradient(90deg, var(--rule) 1px, transparent 1px);
   background-size: 32px 32px;
   -webkit-mask-image: linear-gradient(260deg, #000, transparent 62%);
   mask-image: linear-gradient(260deg, #000, transparent 62%);
@@ -682,7 +691,7 @@
 
 .closingPanelTitle {
   display: block;
-  color: var(--clay-on-navy);
+  color: var(--accent-on-navy);
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 600;
@@ -708,16 +717,18 @@
   text-decoration: none;
   transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
 }
-
-.closingGuide:hover {
-  border-color: rgba(255, 255, 255, 0.34);
-  background: rgba(255, 255, 255, 0.13);
-  transform: translateX(3px);
+@media (hover: hover) and (pointer: fine) {
+  .closingGuide:hover {
+    border-color: rgba(255, 255, 255, 0.34);
+    background: rgba(255, 255, 255, 0.13);
+    transform: translateX(3px);
+  }
 }
+
 
 .closingGuide > svg:first-child {
   flex-shrink: 0;
-  color: var(--clay-on-navy);
+  color: var(--accent-on-navy);
 }
 
 .closingGuide > span {
@@ -757,10 +768,12 @@
   font-weight: 650;
   text-decoration: none;
 }
-
-.contractorLine a:hover {
-  text-decoration: underline;
+@media (hover: hover) and (pointer: fine) {
+  .contractorLine a:hover {
+    text-decoration: underline;
+  }
 }
+
 
 /* ── Motion ──────────────────────────────────────────────────────────── */
 
@@ -834,8 +847,8 @@
 }
 
 /* MainLayout leaves 100px under the page for the phone tab bar, but the
-   footer below already allows for it, so on the home page it showed as an
-   empty strip between the closing band and the footer. */
+footer below already allows for it, so on the home page it showed as an
+empty strip between the closing band and the footer. */
 @media (max-width: 900px) {
   .page {
     margin-bottom: -100px;
@@ -902,7 +915,7 @@
   }
 
   /* Words only at this width: with an icon each, "Upload your plan" broke
-     onto a second line. */
+  onto a second line. */
   .heroActions .primaryButton > svg,
   .heroActions .secondaryButton > svg {
     display: none;
@@ -932,7 +945,7 @@
     display: none;
   }
 
-  .describeRow {
+  .page .startSection .describeRow {
     margin: 18px 0 20px;
   }
 
@@ -942,7 +955,7 @@
   }
 
   /* A row per way in: icon, title, one line, arrow. The lead card keeps
-     its navy and a little more room. */
+  its navy and a little more room. */
   .startCard {
     padding: 14px 58px 14px 14px;
     border-radius: 16px;
@@ -1049,11 +1062,99 @@
   .closingGuide {
     transition: none;
   }
-
-  .primaryButton:hover,
-  .secondaryButton:hover,
-  .closingButton:hover,
-  .closingGuide:hover {
-    transform: none;
+  @media (hover: hover) and (pointer: fine) {
+    .primaryButton:hover,
+    .secondaryButton:hover,
+    .closingButton:hover,
+    .closingGuide:hover {
+      transform: none;
+    }
   }
+
+}
+
+/* Press feedback also works on touch screens, independent of hover. */
+.startCard:active {
+  background: #dbeafe;
+}
+
+.startCard:nth-child(1):active {
+  background: #183b68;
+}
+
+/* Keep the shared describe form's home palette local to this page. */
+.page .startSection .describeRow label {
+  color: var(--color-primary);
+}
+
+.page .startSection .describeRow form button,
+.page .startSection .describeRow a {
+  color: white;
+  background: var(--color-primary);
+  min-height: 44px;
+}
+
+.page .startSection .describeRow a {
+  background: #1d4ed8;
+}
+
+.page .startSection .describeRow [role='status'] {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.page .startSection .describeRow [role='status'] li {
+  color: var(--color-primary);
+  background: #dbeafe;
+}
+
+.page .startSection .describeRow [role='status'] p,
+.page .startSection .describeRow p[role='status'] {
+  color: var(--color-primary);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .page .startSection .describeRow button:hover {
+    border-color: var(--color-accent);
+  }
+}
+
+.primaryButton,
+.closingButton {
+  color: white;
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.primaryButton > svg:last-child,
+.closingButton > svg:last-child {
+  background: var(--color-primary);
+}
+
+.startHeader h2,
+.startCard h3 {
+  color: var(--color-primary);
+}
+
+.startCard:nth-child(1) h3 {
+  color: white;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .primaryButton:hover,
+  .closingButton:hover {
+    background: #1d4ed8;
+  }
+}
+
+.page .startSection .describeRow button:active,
+.page .startSection .describeRow a:active {
+  background: #dbeafe;
+  color: var(--color-primary);
+}
+
+.page .startSection .describeRow button:focus-visible,
+.page .startSection .describeRow a:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 3px;
 }

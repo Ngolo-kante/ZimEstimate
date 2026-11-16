@@ -16,7 +16,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: #a4532b;
+  color: var(--color-primary);
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 600;
@@ -34,6 +34,7 @@
 }
 
 .header h2 {
+  color: var(--color-primary);
   margin: 14px 0 0;
   font-family: var(--font-heading);
   font-size: clamp(2rem, 3.2vw, 2.75rem);
@@ -234,7 +235,7 @@
   height: 26px;
   margin-left: auto;
   border-radius: 5px;
-  background: linear-gradient(135deg, #c97b5a 0 45%, #94a3b8 45% 60%, #bfdbfe 60%);
+  background: linear-gradient(135deg, var(--color-accent) 0 45%, #94a3b8 45% 60%, #bfdbfe 60%);
 }
 
 .feedNote {
@@ -475,7 +476,7 @@
   border: 1px solid #dbe4ef;
   border-radius: 10px;
   background: white;
-  color: #b91c1c;
+  color: var(--color-primary);
   font-size: 0.8rem;
   font-weight: 700;
 }
@@ -564,6 +565,7 @@
   }
 
   .header h2 {
+  color: var(--color-primary);
     font-size: 2rem;
   }
 

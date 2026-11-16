@@ -3,6 +3,7 @@ import {
   ArrowRight,
   BookOpenText,
   Calculator,
+  CaretRight,
   CheckCircle,
   FileText,
   Lightning,
@@ -157,7 +158,7 @@ export default function HomePage() {
                     <div className={styles.startCardFooter}>
                       <span className={styles.startCardDetail}>{item.detail}</span>
                       <span className={styles.startCardArrow} aria-hidden="true">
-                        <ArrowRight size={16} weight="bold" />
+                        <CaretRight size={16} weight="bold" />
                       </span>
                     </div>
                   </Link>
