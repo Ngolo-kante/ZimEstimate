@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { GoogleLogo } from '@phosphor-icons/react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import {
   createNoncePair,
@@ -10,6 +9,19 @@ import {
   type GoogleCredentialResponse,
 } from '@/lib/googleIdentity';
 import { sanitizeAuthRedirect } from '@/lib/authRedirect';
+import css from './GoogleSignInButton.module.css';
+
+/** Google's standard four-colour "G", as their branding guidelines require. */
+function GoogleMark() {
+  return (
+    <svg className={css.mark} viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  );
+}
 
 /**
  * "Continue with Google" that keeps Google's sign-in screen on our own origin.
@@ -31,7 +43,7 @@ interface GoogleSignInButtonProps {
 export default function GoogleSignInButton({
   redirectTo = '/dashboard',
   onError,
-  className = 'google-btn',
+  className,
 }: GoogleSignInButtonProps) {
   const { signInWithGoogle, signInWithGoogleIdToken } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -152,70 +164,25 @@ export default function GoogleSignInButton({
     // call time, so a parent re-rendering cannot rebuild Google's button.
   }, [safeRedirectTo]);
 
-  // Styles live here rather than on the pages: styled-jsx scopes to the
-  // component that declares it, so the .google-btn rules on the login and
-  // signup pages stop applying the moment the button moves into this file.
-  const styles = (
-    <style jsx>{`
-      .google-btn {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: var(--spacing-sm);
-        padding: 0.75rem;
-        font-size: 0.9375rem;
-        font-weight: 500;
-        font-family: inherit;
-        background: white;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        cursor: pointer;
-        transition: none;
-        color: #333;
-      }
-    @media (hover: hover) and (pointer: fine) {
-        .google-btn:hover:not(:disabled) {
-            background: var(--color-bg-secondary);
-            border-color: var(--color-primary);
-      }
-    }
-
-      .google-btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-
-      /* Google renders its own iframe button; centre it and let it fill the
-         column so it lines up with the email form below. */
-      .google-gsi {
-        width: 100%;
-        max-width: 100%;
-        min-height: 44px;
-        display: flex;
-        justify-content: center;
-        /* Never wider than the column, even mid-resize. */
-        overflow: hidden;
-      }
-    `}</style>
-  );
-
   if (useFallback) {
     return (
       <>
-        <button type="button" className={className} onClick={handleFallback} disabled={isWorking}>
-          <GoogleLogo size={20} weight="bold" />
-          Continue with Google
+        <button
+          type="button"
+          className={className ? `${css.button} ${className}` : css.button}
+          onClick={handleFallback}
+          disabled={isWorking}
+        >
+          <GoogleMark />
+          <span>Continue with Google</span>
         </button>
-        {styles}
       </>
     );
   }
 
   return (
     <>
-      <div ref={containerRef} className="google-gsi" aria-busy={isWorking} />
-      {styles}
+      <div ref={containerRef} className={css.gsi} aria-busy={isWorking} />
     </>
   );
 }

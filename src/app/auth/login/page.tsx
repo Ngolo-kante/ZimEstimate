@@ -4,7 +4,7 @@ import AuthBrand from '@/components/auth/AuthBrand';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Envelope, Lock, Buildings } from '@phosphor-icons/react';
+import { Envelope, Lock } from '@phosphor-icons/react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import Button from '@/components/ui/Button';
@@ -88,10 +88,6 @@ function LoginForm() {
                 <div className="auth-container">
                     {/* Logo & Header */}
                     <div className="auth-header">
-                        <Link href="/home" className="logo">
-                            <Buildings size={40} weight="duotone" />
-                            <span className="logo-text">ZimEstimate</span>
-                        </Link>
                         <h1>Welcome back</h1>
                         <p>Sign in to continue to your projects</p>
                     </div>
@@ -191,21 +187,6 @@ function LoginForm() {
                     margin-bottom: var(--spacing-lg);
                 }
 
-                .auth-header :global(.logo) {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: var(--spacing-sm);
-                    color: var(--color-primary);
-                    text-decoration: none;
-                    margin-bottom: var(--spacing-md);
-                }
-
-                .logo-text {
-                    font-size: 1.5rem;
-                    font-weight: 700;
-                    color: var(--color-text);
-                }
-
                 .auth-header h1 {
                     font-size: 1.5rem;
                     font-weight: 600;
@@ -226,30 +207,6 @@ function LoginForm() {
                     color: var(--color-error);
                     font-size: 0.875rem;
                     margin-bottom: var(--spacing-md);
-                }
-
-                .google-btn {
-                    width: 100%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: var(--spacing-sm);
-                    padding: 0.75rem;
-                    font-size: 0.9375rem;
-                    font-weight: 500;
-                    font-family: inherit;
-                    background: white;
-                    border: 1px solid var(--color-border);
-                    border-radius: var(--radius-md);
-                    cursor: pointer;
-                    transition: none;
-                    color: #333;
-                }
-                @media (hover: hover) and (pointer: fine) {
-                    .google-btn:hover {
-                        background: var(--color-bg-secondary);
-                        border-color: var(--color-primary);
-                }
                 }
 
                 .divider {
