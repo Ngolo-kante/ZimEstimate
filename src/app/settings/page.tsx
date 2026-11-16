@@ -452,8 +452,13 @@ function SettingsContent() {
                                             <span className="toggle-hint">Quote requests, quotes and updates</span>
                                         </div>
                                         <label className="toggle">
-                                            <Input
+                                            {/* A plain input: the shared Input component wraps its own
+                                                field, so this page's styles could not hide it and a
+                                                tick box showed next to the switch. */}
+                                            <input
                                                 type="checkbox"
+                                                role="switch"
+                                                aria-label="Email notifications"
                                                 checked={notifyEmail}
                                                 onChange={(e) => setNotifyEmail(e.target.checked)}
                                             />
@@ -471,8 +476,13 @@ function SettingsContent() {
                                             <span className="toggle-hint">Instant alerts to your phone</span>
                                         </div>
                                         <label className="toggle">
-                                            <Input
+                                            {/* A plain input: the shared Input component wraps its own
+                                                field, so this page's styles could not hide it and a
+                                                tick box showed next to the switch. */}
+                                            <input
                                                 type="checkbox"
+                                                role="switch"
+                                                aria-label="WhatsApp notifications"
                                                 checked={notifyWhatsapp}
                                                 onChange={(e) => setNotifyWhatsapp(e.target.checked)}
                                             />
