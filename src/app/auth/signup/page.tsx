@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { sanitizeAuthRedirect } from '@/lib/authRedirect';
+import ResendConfirmation from '@/components/auth/ResendConfirmation';
 import { captureProductEvent, identifyAnalyticsUser } from '@/lib/productAnalytics';
 
 function SignupForm() {
@@ -128,6 +129,8 @@ function SignupForm() {
                                 We&apos;ve sent a confirmation link to <strong>{email}</strong>.
                                 Click the link to activate your account.
                             </p>
+                            <p className="success-hint">Nothing after a few minutes? Check your spam folder, or send it again.</p>
+                            <ResendConfirmation email={email} startCoolingDown />
                             <Link href="/auth/login">
                                 <Button variant="secondary" fullWidth>
                                     Back to Sign In
@@ -176,6 +179,15 @@ function SignupForm() {
                         color: var(--color-text-secondary);
                         margin-bottom: var(--spacing-lg);
                         line-height: 1.6;
+                    }
+
+                    .success-content .success-hint {
+                        font-size: 0.875rem;
+                        margin-bottom: var(--spacing-md);
+                    }
+
+                    .success-content :global(.resend-confirmation) {
+                        margin-bottom: var(--spacing-sm);
                     }
 
                     .success-content strong {

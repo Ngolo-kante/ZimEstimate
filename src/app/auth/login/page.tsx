@@ -10,6 +10,8 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { sanitizeAuthRedirect } from '@/lib/authRedirect';
+import { describeCallbackError, isEmailNotConfirmedError } from '@/lib/authConfirmation';
+import ResendConfirmation from '@/components/auth/ResendConfirmation';
 
 function LoginForm() {
     const router = useRouter();
@@ -20,19 +22,27 @@ function LoginForm() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // Set when sign-in failed only because the address is not confirmed yet.
+    const [unconfirmedEmail, setUnconfirmedEmail] = useState('');
 
-    const callbackError = searchParams.get('error');
+    const callbackError = describeCallbackError(searchParams.get('error'));
     const redirect = sanitizeAuthRedirect(searchParams.get('redirect'));
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setUnconfirmedEmail('');
         setIsSubmitting(true);
 
         const { error: signInError } = await signIn(email, password);
 
         if (signInError) {
-            setError(signInError.message);
+            if (isEmailNotConfirmedError(signInError)) {
+                setUnconfirmedEmail(email.trim());
+                setError('Please confirm your email first. We sent you a link when you signed up.');
+            } else {
+                setError(signInError.message);
+            }
             setIsSubmitting(false);
         } else {
             // Fetch profile to determine role-based redirect
@@ -86,10 +96,11 @@ function LoginForm() {
 
                     {/* Error Messages */}
                     {(error || callbackError) && (
-                        <div className="error-alert">
-                            {error || 'Authentication failed. Please try again.'}
+                        <div className="error-alert" role="alert">
+                            {error || callbackError}
                         </div>
                     )}
+                    {unconfirmedEmail && <div className="resend-wrap"><ResendConfirmation email={unconfirmedEmail} /></div>}
 
                     {/* Google Sign In */}
                     <GoogleSignInButton
@@ -148,6 +159,10 @@ function LoginForm() {
             </div>
 
             <style jsx>{`
+                .resend-wrap {
+                    margin-bottom: var(--spacing-lg);
+                }
+
                 .auth-page {
                     min-height: 100dvh;
                     display: flex;
