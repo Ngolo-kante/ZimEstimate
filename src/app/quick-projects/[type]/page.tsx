@@ -83,9 +83,9 @@ export default function QuickProjectPage({ params }: { params: Promise<{ type: s
 
   return (
     <MainLayout>
-      <div className="max-w-4xl mx-auto px-4 py-8 md:py-12 animate-fade-in">
+      <div className="max-w-6xl mx-auto px-4 py-6 md:py-8 animate-fade-in">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm font-medium text-slate-500 mb-8">
+        <nav className="flex items-center gap-2 text-sm font-medium text-slate-500 mb-4">
           <Link href="/quick-projects" className="flex items-center gap-1.5 hover:text-blue-600 transition-none">
             <ArrowLeft size={16} />
             Quick Projects
@@ -94,8 +94,8 @@ export default function QuickProjectPage({ params }: { params: Promise<{ type: s
           <span className="text-slate-900">{PROJECT_TITLES[type]}</span>
         </nav>
 
-        <header className="mb-10 text-center md:text-left">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3">{PROJECT_TITLES[type]}</h1>
+        <header className="mb-6 text-center md:text-left">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-2">{PROJECT_TITLES[type]}</h1>
           <p className="text-lg text-slate-500">
             Answer a few questions to get your customised Bill of Quantities.
           </p>

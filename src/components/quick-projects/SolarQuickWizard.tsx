@@ -308,9 +308,9 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
   const progressPct = Math.round((stepIndex / activeSteps.length) * 100);
 
   return (
-    <div className="w-full max-w-3xl mx-auto pb-24">
+    <div className="w-full pb-24">
       {/* Progress */}
-      <div className="mb-10">
+      <div className="mb-6">
         <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
           <span>Step {stepIndex + 1} of {activeSteps.length}</span>
           <span className="text-blue-600">{progressPct}%</span>
@@ -321,7 +321,7 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
       </div>
 
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-5">
         <span className="text-xs font-bold uppercase tracking-[0.2em] text-blue-500 mb-2 block">SOLAR GUIDED SETUP</span>
         <h2 className="text-2xl font-bold text-slate-900 mb-2">{stepTitles[currentStep].title}</h2>
         <p className="text-slate-600 text-base">{stepTitles[currentStep].subtitle}</p>
@@ -334,7 +334,7 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
         >
 
       {currentStep === 'intent' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
           {INTENTS.map((intent) => {
             const active = answers.intent === intent;
             return (
@@ -918,7 +918,7 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
         )}
       </AnimatePresence>
 
-      <div className="mt-12 flex items-center justify-between border-t border-slate-200/50 pt-6">
+      <div className="mt-8 flex items-center justify-between border-t border-slate-200/50 pt-5">
         <div>
           {(!isFirst || boqItems) && (
              <Button variant="secondary" onClick={goBack} className="bg-white">
@@ -947,7 +947,7 @@ function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: Solar
 export default function SolarQuickWizard(props: SolarQuickWizardProps) {
   const isClient = useIsClient();
   if (!isClient) {
-    return <div className="mx-auto w-full max-w-3xl pb-24" aria-busy="true"><div className="h-2 w-full animate-pulse rounded-full bg-slate-100" /></div>;
+    return <div className="w-full pb-24" aria-busy="true"><div className="h-2 w-full animate-pulse rounded-full bg-slate-100" /></div>;
   }
   return <SolarQuickWizardInner {...props} />;
 }

@@ -53,7 +53,7 @@ function OptionGrid({
   }
 
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 ${hasError ? 'rounded-xl ring-2 ring-red-300 ring-offset-2' : ''}`}>
+    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4 ${hasError ? 'rounded-xl ring-2 ring-red-300 ring-offset-2' : ''}`}>
       {options.map((opt) => {
         const active = selected.includes(opt.value);
         return (
@@ -272,7 +272,7 @@ function StepView({
       key={step.id}
       className="w-full"
     >
-      <div className="mb-8">
+      <div className="mb-5">
         <h2 className="text-2xl font-bold text-slate-900 mb-2">{step.title}</h2>
         {step.subtitle && <p className="text-slate-600 text-base">{step.subtitle}</p>}
       </div>
@@ -432,9 +432,9 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
 
   // ── Step Wizard View ───────────────────────────────────────────────────────
   return (
-    <div className="w-full max-w-3xl mx-auto pb-24">
+    <div className="w-full pb-24">
       {/* Progress */}
-      <div className="mb-10">
+      <div className="mb-6">
         <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
           <span>Step {stepIndex + 1} of {totalSteps}</span>
           <span className="text-blue-600">{progressPct}%</span>
@@ -464,7 +464,7 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
           it Continue and Cancel sat underneath the nav bar and could not be
           tapped — the same collision that hid Back and Continue in the manual
           builder. */}
-      <div className="flex items-center justify-between mt-12 pt-6 pb-24 lg:pb-0 border-t border-slate-200/50">
+      <div className="flex items-center justify-between mt-8 pt-5 pb-24 lg:pb-0 border-t border-slate-200/50">
         <div>
           {stepIndex > 0 ? (
             <Button variant="secondary" icon={<ArrowLeft size={16} />} onClick={handleBack} className="bg-white">
@@ -501,7 +501,7 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
 export default function QuickProjectWizard(props: QuickProjectWizardProps) {
   const isClient = useIsClient();
   if (!isClient) {
-    return <div className="mx-auto w-full max-w-3xl pb-24" aria-busy="true"><div className="h-2 w-full animate-pulse rounded-full bg-slate-100" /></div>;
+    return <div className="w-full pb-24" aria-busy="true"><div className="h-2 w-full animate-pulse rounded-full bg-slate-100" /></div>;
   }
   return <QuickProjectWizardInner {...props} />;
 }
