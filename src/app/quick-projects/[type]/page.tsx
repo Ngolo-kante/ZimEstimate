@@ -95,8 +95,8 @@ export default function QuickProjectPage({ params }: { params: Promise<{ type: s
         </nav>
 
         <header className="mb-6 text-center md:text-left">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-2">{PROJECT_TITLES[type]}</h1>
-          <p className="text-lg text-slate-500">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-1">{PROJECT_TITLES[type]}</h1>
+          <p className="text-base text-slate-500">
             Answer a few questions to get your customised Bill of Quantities.
           </p>
         </header>
