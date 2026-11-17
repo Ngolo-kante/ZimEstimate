@@ -114,21 +114,6 @@ export default function QuickProjectsPage() {
             <h1>Quick Projects</h1>
             <p>Choose one job, answer the essentials, and leave with a priced Bill of Quantities.</p>
           </div>
-
-          <div className={styles.headerMeta} aria-label="Quick project summary">
-            <div>
-              <strong>6</strong>
-              <span>Project types</span>
-            </div>
-            <div>
-              <strong>4–7</strong>
-              <span>Minutes</span>
-            </div>
-            <div>
-              <strong>BOQ</strong>
-              <span>Ready to edit</span>
-            </div>
-          </div>
         </header>
 
         <section className={styles.selector} aria-labelledby="project-selector-title">

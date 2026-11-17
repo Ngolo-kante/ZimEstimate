@@ -5,7 +5,6 @@ import {
   Blueprint,
   BookOpen,
   Buildings,
-  Calculator,
   Cylinder,
   Drop,
   FileMagnifyingGlass,
@@ -34,11 +33,12 @@ export const metadata: Metadata = {
  *
  * It used to list seven large cards, which left out most of what the site
  * prices — boreholes, water tanks, septic tanks, fencing and paving had no
- * door from here at all. Small tiles in four groups fit all of it, and on a
+ * door from here at all. Small tiles in three groups fit all of it, and on a
  * phone several rows show at once instead of one card per screen.
  *
  * Deliberately not listed: the "Price Outlook" page, whose figures are
- * hard-coded rather than calculated.
+ * hard-coded rather than calculated; and "What can my budget buy?", which
+ * repeated the jobs above (owner, 17 Nov) and lives in the Budget Estimator.
  */
 
 type Tile = { title: string; detail: string; href: string; icon: Icon };
@@ -68,18 +68,6 @@ const groups: Group[] = [
       { title: 'Septic tank', detail: 'Tank and soakaway', href: '/quick-projects/septic', icon: Toilet },
       { title: 'Fencing & walls', detail: 'Precast, brick, palisade or mesh', href: '/quick-projects/fencing', icon: Rows },
       { title: 'Paving & driveways', detail: 'Pavers, slabs or cobbles', href: '/quick-projects/paving', icon: GridFour },
-    ],
-  },
-  {
-    id: 'budget',
-    title: 'What can my budget buy?',
-    note: 'Type what you have to spend and see how far it goes.',
-    tiles: [
-      { title: 'House build', detail: 'Which stage your money reaches', href: '/quick-budget', icon: Calculator },
-      { title: 'Solar', detail: 'The system your budget buys', href: '/quick-budget?mode=solar', icon: SolarPanel },
-      { title: 'Borehole', detail: 'Depth and pump it covers', href: '/quick-budget?mode=borehole', icon: Drop },
-      { title: 'Fencing', detail: 'How many metres it covers', href: '/quick-budget?mode=fencing', icon: Rows },
-      { title: 'Paving', detail: 'How many square metres', href: '/quick-budget?mode=paving', icon: GridFour },
     ],
   },
   {
