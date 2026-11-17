@@ -1,7 +1,7 @@
 'use client';
 
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/shadcn/collapsible';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ComponentType } from 'react';
 import ReminderChannels from '@/components/settings/ReminderChannels';
 import { useReminderChannels } from '@/hooks/useReminderChannels';
 import MainLayout from '@/components/layout/MainLayout';
@@ -10,6 +10,7 @@ import { Field, FieldLabel } from '@/components/shadcn/field';
 import { Input } from '@/components/shadcn/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shadcn/tabs';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import groupStyles from './settings-groups.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Currency } from '@/lib/database.types';
@@ -41,7 +42,10 @@ function SettingsContent() {
     // /settings#notifications (or the older #email anchor) open the right tab.
     const SECTION_TABS = ['profile', 'preferences', 'plan', 'notifications', 'security'];
     const [phone, setPhone] = useState(false);
-    const [openCard, setOpenCard] = useState('Personal information');
+    const [, setOpenCard] = useState('Personal information');
+    // Phone: the five sections are collapsed rows (owner, 17 Nov), opened one or
+    // more at a time; desktop keeps the tabs.
+    const [openGroups, setOpenGroups] = useState<string[]>([]);
     useEffect(() => {
         const media = window.matchMedia('(max-width: 767px)');
         const sync = () => setPhone(media.matches);
@@ -54,6 +58,7 @@ function SettingsContent() {
         const tab = hash === 'email' ? 'profile' : hash;
         if (SECTION_TABS.includes(tab)) {
             setSection(tab);
+            setOpenGroups([tab]);
             setOpenCard(({ profile: 'Personal information', preferences: 'Currency', plan: 'Subscription', notifications: 'Notifications', security: 'Security' } as Record<string, string>)[tab]);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -72,6 +77,21 @@ function SettingsContent() {
         setOpenCard(({ profile: 'Personal information', preferences: 'Currency', plan: 'Subscription', notifications: 'Notifications', security: 'Security' } as Record<string, string>)[value]);
         window.history.replaceState(null, '', `#${value}`);
     };
+    const toggleGroup = (id: string) => setOpenGroups(open => {
+        const next = open.includes(id) ? open.filter(g => g !== id) : [...open, id];
+        window.history.replaceState(null, '', next.includes(id) ? `#${id}` : window.location.pathname);
+        return next;
+    });
+    // A parent row on a phone: the section name with a chevron that turns when open.
+    const groupRow = (id: string, label: string, Icon: ComponentType<{ size?: number; weight?: 'duotone' }>) => phone ? (
+        <button type="button" className={groupStyles.row} aria-expanded={openGroups.includes(id)} aria-controls={`group-${id}`} onClick={() => toggleGroup(id)}>
+            <span className={groupStyles.icon}><Icon size={20} weight="duotone" /></span>
+            <span className={groupStyles.label}>{label}</span>
+            <CaretRight size={18} className={groupStyles.caret} aria-hidden="true" />
+        </button>
+    ) : null;
+    // On a phone every panel stays mounted and its row decides whether it shows.
+    const groupProps = (id: string) => phone ? { forceMount: true as const, hidden: !openGroups.includes(id), id: `group-${id}` } : {};
     const [fullName, setFullName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [preferredCurrency, setPreferredCurrency] = useState<Currency>('USD');
@@ -291,8 +311,8 @@ function SettingsContent() {
 
                     <div className="settings-grid">
                     {/* Profile Section */}
-                    <TabsContent value="profile" asChild><Collapsible open={!phone || openCard === 'Personal information'} onOpenChange={open => setOpenCard(open ? 'Personal information' : '')} asChild><section className="settings-card">
-                        <CollapsibleTrigger asChild disabled={!phone}><button type="button" className="card-header accordion-heading">
+                    {groupRow('profile', 'Profile', User)}<TabsContent {...groupProps('profile')} value="profile" asChild><Collapsible open onOpenChange={open => setOpenCard(open ? 'Personal information' : '')} asChild><section className="settings-card">
+                        <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                             <div className="header-icon user">
                                 <User size={20} weight="bold" />
                             </div>
@@ -383,8 +403,8 @@ function SettingsContent() {
                     {/* Preferences & Security Grid */}
                     <div className="split-grid">
                         {/* Currency Preference */}
-                        <TabsContent value="preferences" asChild><Collapsible open={!phone || openCard === 'Currency'} onOpenChange={open => setOpenCard(open ? 'Currency' : '')} asChild><section className="settings-card">
-                            <CollapsibleTrigger asChild disabled={!phone}><button type="button" className="card-header accordion-heading">
+                        {groupRow('preferences', 'Preferences', CurrencyDollar)}<TabsContent {...groupProps('preferences')} value="preferences" asChild><Collapsible open onOpenChange={open => setOpenCard(open ? 'Currency' : '')} asChild><section className="settings-card">
+                            <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                                 <div className="header-icon currency">
                                     <CurrencyDollar size={20} weight="bold" />
                                 </div>
@@ -399,8 +419,8 @@ function SettingsContent() {
                         </section></Collapsible></TabsContent>
 
                         {/* Subscription */}
-                        <TabsContent value="plan" asChild><Collapsible open={!phone || openCard === 'Subscription'} onOpenChange={open => setOpenCard(open ? 'Subscription' : '')} asChild><section className="settings-card">
-                            <CollapsibleTrigger asChild disabled={!phone}><button type="button" className="card-header accordion-heading">
+                        {groupRow('plan', 'Plan', Crown)}<TabsContent {...groupProps('plan')} value="plan" asChild><Collapsible open onOpenChange={open => setOpenCard(open ? 'Subscription' : '')} asChild><section className="settings-card">
+                            <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                                 <div className="header-icon premium">
                                     <Crown size={20} weight="bold" />
                                 </div>
@@ -433,9 +453,9 @@ function SettingsContent() {
                     </div>
 
                     {/* Notification Preferences */}
-                    <TabsContent value="notifications" className="settings-panel">
-                        <Collapsible open={!phone || openCard === 'Notifications'} onOpenChange={open => setOpenCard(open ? 'Notifications' : '')} asChild><section className="settings-card" id="notifications">
-                            <CollapsibleTrigger asChild disabled={!phone}><button type="button" className="card-header accordion-heading">
+                    {groupRow('notifications', 'Notifications', Bell)}<TabsContent {...groupProps('notifications')} value="notifications" className="settings-panel">
+                        <Collapsible open onOpenChange={open => setOpenCard(open ? 'Notifications' : '')} asChild><section className="settings-card" id="notifications">
+                            <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                                 <div className="header-icon notification">
                                     <Bell size={20} weight="bold" />
                                 </div>
@@ -539,8 +559,8 @@ function SettingsContent() {
                             </div></CollapsibleContent>
                         </section></Collapsible>
 
-                        <Collapsible open={!phone || openCard === 'Delivery activity'} onOpenChange={open => setOpenCard(open ? 'Delivery activity' : '')} asChild><section className="settings-card">
-                            <CollapsibleTrigger asChild disabled={!phone}><button type="button" className="card-header accordion-heading">
+                        <Collapsible open onOpenChange={open => setOpenCard(open ? 'Delivery activity' : '')} asChild><section className="settings-card">
+                            <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                                 <div className="header-icon activity">
                                     <DeviceMobile size={20} weight="bold" />
                                 </div>
@@ -572,8 +592,8 @@ function SettingsContent() {
                     </TabsContent>
 
                     {/* Password Section */}
-                    <TabsContent value="security" className="settings-panel"><Collapsible open={!phone || openCard === 'Security'} onOpenChange={open => setOpenCard(open ? 'Security' : '')} asChild><section className="settings-card" id="security">
-                        <CollapsibleTrigger asChild disabled={!phone}><button type="button" className="card-header accordion-heading">
+                    {groupRow('security', 'Security', Lock)}<TabsContent {...groupProps('security')} value="security" className="settings-panel"><Collapsible open onOpenChange={open => setOpenCard(open ? 'Security' : '')} asChild><section className="settings-card" id="security">
+                        <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                             <div className="header-icon security">
                                 <Lock size={20} weight="bold" />
                             </div>
@@ -624,8 +644,8 @@ function SettingsContent() {
                     </section></Collapsible>
 
                     {/* Danger zone */}
-                    <Collapsible open={!phone || openCard === 'Danger zone'} onOpenChange={open => setOpenCard(open ? 'Danger zone' : '')} asChild><section className="settings-card danger">
-                        <CollapsibleTrigger asChild disabled={!phone}><button type="button" className="card-header accordion-heading">
+                    <Collapsible open onOpenChange={open => setOpenCard(open ? 'Danger zone' : '')} asChild><section className="settings-card danger">
+                        <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                             <div className="header-icon danger">
                                 <WarningCircle size={20} weight="bold" />
                             </div>
@@ -654,7 +674,7 @@ function SettingsContent() {
             <style jsx>{`
                 .accordion-heading { width: 100%; text-align: left; font: inherit; color: inherit; background: transparent; border: 0; }
                 .accordion-heading:disabled { opacity: 1; cursor: default; }
-                @media (max-width: 767px) { .accordion-heading { min-height: 44px; cursor: pointer; } .accordion-heading::after { content: '+'; margin-left: auto; } .accordion-heading[data-state="open"]::after { content: '−'; } }
+                @media (max-width: 767px) { .settings-sidebar { display: none; } }
                 .settings-container {
                     max-width: 1240px;
                     margin: 0 auto;

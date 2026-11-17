@@ -146,8 +146,13 @@ test.describe('Authenticated project workspace', () => {
 
     await page.goto('/settings');
     await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
-    await expect(page.getByRole('tablist', { name: 'Settings sections' }))
-      .toContainText('Notifications');
+    // On a phone the sections are collapsed rows (no tab strip); opening one
+    // shows its panel.
+    const notificationsRow = page.getByRole('button', { name: 'Notifications', exact: true });
+    await expect(notificationsRow).toHaveAttribute('aria-expanded', 'false');
+    await notificationsRow.click();
+    await expect(notificationsRow).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByRole('switch', { name: 'Email notifications' })).toBeAttached();
     await expect(page.getByRole('link', { name: 'Contact support' }).first())
       .toHaveAttribute('href', '/support');
     await expectNoDocumentOverflow(page);
