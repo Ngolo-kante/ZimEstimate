@@ -177,15 +177,22 @@
   outline-offset: 2px;
 }
 
+/* Duotone icons as in the starred Start something new design (16 Nov): navy
+   outline, soft gold fill, on a pale tile. Same look across the start screens. */
 .tileIcon {
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  color: var(--tone);
-  background: color-mix(in srgb, var(--tone) 10%, white);
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  color: var(--color-primary);
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.tileIcon svg [opacity='0.2'] {
+  fill: #e9c46a;
+  opacity: 0.75;
 }
 
 .tileText {

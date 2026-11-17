@@ -133,7 +133,7 @@ export default function EstimateServicesPage() {
                     <li key={tile.href}>
                       <Link href={tile.href} className={styles.tile}>
                         <span className={styles.tileIcon}>
-                          <TileIcon size={20} weight="duotone" aria-hidden="true" />
+                          <TileIcon size={22} weight="duotone" aria-hidden="true" />
                         </span>
                         <span className={styles.tileText}>
                           <strong>{tile.title}</strong>

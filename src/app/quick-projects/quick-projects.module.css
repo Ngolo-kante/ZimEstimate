@@ -218,17 +218,23 @@
   margin-top: 18px;
 }
 
+/* Duotone icons as in the starred Start something new design (16 Nov): navy
+   outline, soft gold fill, on a pale tile. Same look across the start screens. */
 .iconBox {
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--project-accent);
-  background: var(--project-soft);
-  border: 1px solid color-mix(in srgb, var(--project-accent) 22%, white);
-  border-radius: 7px;
+  color: var(--color-primary);
+  background: #f1f5f9;
+  border-radius: 12px;
   transition: none;
+}
+
+.iconBox svg [opacity='0.2'] {
+  fill: #e9c46a;
+  opacity: 0.75;
 }
 @media (hover: hover) and (pointer: fine) {
     .card:hover .iconBox {}

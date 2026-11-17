@@ -480,9 +480,16 @@ It is the page's one piece of drawing language outside the house itself. */
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  color: var(--color-accent-dark);
-  background: #edf3ff;
+  color: var(--color-primary);
+  background: #f1f5f9;
   transition: transform 200ms ease;
+}
+
+/* Duotone icons as in the starred Start something new design (16 Nov): navy
+   outline, soft gold fill, on a pale tile. Same look across the start screens. */
+.startCardIcon svg [opacity='0.2'] {
+  fill: #e9c46a;
+  opacity: 0.75;
 }
 @media (hover: hover) and (pointer: fine) {
   .startCard:hover .startCardIcon {
