@@ -1,0 +1,15 @@
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+.card { position: relative; display: flex; flex-direction: column; align-items: flex-start; min-height: 132px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 16px; background: white; color: #14213d; text-align: left; cursor: pointer; transition: transform 160ms ease, border-color 160ms ease, background 160ms ease; }
+.card:active { transform: scale(.98); }
+.card:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }
+.selected { border-color: #1d4ed8; background: #eff6ff; }
+.popular { border-color: #e9c46a; background: #fffdf7; }
+.icon { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 12px; border-radius: 12px; background: #f1f5f9; color: #14213d; }
+.icon svg [opacity='0.2'] { fill: #e9c46a; opacity: .75; }
+.name { font-size: 16px; font-weight: 600; }
+.detail { margin-top: 4px; font-size: 13px; line-height: 1.4; color: #475569; }
+.price { margin-top: 10px; font-size: 14px; font-weight: 700; }
+.badge { position: absolute; top: 10px; right: 10px; padding: 2px 8px; border: 1px solid #e9c46a; border-radius: 999px; background: #fbf3dc; color: #7a5a12; font-size: 12px; font-weight: 600; }
+.package { min-height: 140px; }
+@media (hover: hover) and (pointer: fine) { .card:hover { border-color: #1d4ed8; } }
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } .card:active { transform: none; } }

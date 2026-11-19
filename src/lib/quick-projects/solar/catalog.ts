@@ -47,7 +47,7 @@ export const SOLAR_INTENT_LABELS = {
 
 // ─── Standard Tiers ───────────────────────────────────────────────────────────
 
-export const INVERTER_TIERS = [3, 5, 8, 10, 12];
+export const INVERTER_TIERS = [1, 3, 5, 8, 10, 12];
 export const BATTERY_TIERS = [5, 10, 15, 20];
 
 // ─── Price Benchmarks (2025 mid-range) ────────────────────────────────────────

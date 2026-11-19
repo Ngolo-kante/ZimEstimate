@@ -1,953 +1,279 @@
 'use client';
 
-import { useMemo, useEffect, useState } from 'react';
-import { useIsClient } from '@/hooks/useIsClient';
-import { AnimatePresence } from 'framer-motion';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { BatteryCharging, Lightning, Question, SolarPanel } from '@phosphor-icons/react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import {
-  Lightning,
-  CheckCircle,
-  Warning,
-  HouseSimple,
-  MapPin,
-  SunDim,
-} from '@phosphor-icons/react';
-import {
-  buildDefaultSelections,
-  computeSolarSizing,
-  estimateHardwareCost,
-} from '@/lib/quick-projects/solar/calculations';
-import {
-  SOLAR_APPLIANCES,
-  SOLAR_INTENT_LABELS,
-  SOLAR_PANEL_WATT,
-} from '@/lib/quick-projects/solar/catalog';
-import type {
-  PropertyType,
-  RoofShading,
-  RoofType,
-  SolarIntent,
-  SolarWizardAnswers,
-  SolarWizardOutput,
-} from '@/lib/quick-projects/solar/types';
-import { solarSizingToBOQ } from '@/lib/quick-projects/solar/boq';
+import { useIsClient } from '@/hooks/useIsClient';
+import { buildDefaultSelections, computeSolarSizing, estimateHardwareCost } from '@/lib/quick-projects/solar/calculations';
+import { SOLAR_APPLIANCES, SOLAR_PACKAGES, type SolarPackage } from '@/lib/quick-projects/solar/catalog';
+import { solarPackageToBOQ, solarSizingToBOQ } from '@/lib/quick-projects/solar/boq';
+import type { SolarWizardAnswers, SolarWizardOutput, SolarSizingResult } from '@/lib/quick-projects/solar/types';
 import type { BOQItem, LaborConfig } from '@/lib/quick-projects/engine/types';
-import QuickBOQTable from './QuickBOQTable';
-import SolarBudgetExplorer from './SolarBudgetExplorer';
 import { restoreQuickBOQSession, clearQuickBOQSession } from '@/lib/services/quickBoq';
+import QuickBOQTable from './QuickBOQTable';
+import styles from './WizardChoices.module.css';
 
-const INTENTS: SolarIntent[] = ['backup', 'heavy_backup', 'off_grid', 'replace', 'budget', 'quote_check'];
-
-const defaultAnswers: SolarWizardAnswers = {
-  intent: null,
-  backupHours: null,
-  location: '',
-  propertyType: null,
+const defaults: SolarWizardAnswers = {
+  intent: null, backupHours: null, location: '', propertyType: null,
   appliances: buildDefaultSelections(),
-  simultaneousLoads: {
-    kettleMicrowave: false,
-    pumpWithHouse: false,
-    geyserWithHouse: false,
-  },
-  roof: {
-    type: null,
-    shading: null,
-    orientation: '',
-    spaceM2: null,
-  },
-  existing: {
-    hasExisting: false,
-    inverterKva: null,
-    batteryKwh: null,
-    panelCount: null,
-    issues: '',
-  },
+  simultaneousLoads: { kettleMicrowave: false, pumpWithHouse: false, geyserWithHouse: false },
+  roof: { type: null, shading: null, orientation: '', spaceM2: null },
+  existing: { hasExisting: false, inverterKva: null, batteryKwh: null, panelCount: null, issues: '' },
   budgetUsd: null,
-  quote: {
-    totalUsd: null,
-    inverterKva: null,
-    batteryKwh: null,
-    panelCount: null,
-    panelWatt: null,
-    notes: '',
-  },
+  quote: { totalUsd: null, inverterKva: null, batteryKwh: null, panelCount: null, panelWatt: null, notes: '' },
 };
 
-const stepOrder = [
-  'intent',
-  'context',
-  'backup',
-  'appliances',
-  'simultaneous',
-  'roof',
-  'existing',
-  'budget',
-  'quote',
-  'results',
-  'brands',
-  'optional_costs',
-] as const;
-
-type StepId = typeof stepOrder[number];
-
-const stepTitles: Record<StepId, { title: string; subtitle: string }> = {
-  intent: {
-    title: 'What do you want from solar?',
-    subtitle: 'This helps us tailor the system to your goals in Zimbabwe.',
-  },
-  context: {
-    title: 'Property context',
-    subtitle: 'Location and property type help us frame usage patterns.',
-  },
-  backup: {
-    title: 'Backup hours',
-    subtitle: 'Most households target 4–8 hours due to ZESA outages.',
-  },
-  appliances: {
-    title: 'Appliance audit',
-    subtitle: 'Tick what you need during outages. Heavy loads increase system size.',
-  },
-  simultaneous: {
-    title: 'Simultaneous loads',
-    subtitle: 'These raise inverter size because motors have surge power.',
-  },
-  roof: {
-    title: 'Roof and installation',
-    subtitle: `Each panel needs about 2 m². Panel wattage assumed at ${SOLAR_PANEL_WATT}W.`,
-  },
-  existing: {
-    title: 'Existing system (optional)',
-    subtitle: 'Tell us what you already have so we can size upgrades properly.',
-  },
-  budget: {
-    title: 'Budget fit',
-    subtitle: 'We will propose the best system within your budget.',
-  },
-  quote: {
-    title: 'Quote check',
-    subtitle: 'Let us sanity‑check a supplier quote against market tiers.',
-  },
-  results: {
-    title: 'Solar recommendation',
-    subtitle: 'Here is your sizing summary and cost estimate.',
-  },
-  brands: {
-    title: 'Brand preferences',
-    subtitle: 'Select your preferred equipment brands or leave as "No preference".',
-  },
-  optional_costs: {
-    title: 'Optional costs',
-    subtitle: 'Toggle any additional cost items you want included in the BOQ.',
-  },
-};
-
-interface SolarQuickWizardProps {
+const groups = [
+  { label: '1kVA', match: (kva: number) => kva < 2, icon: Lightning },
+  { label: '3kVA', match: (kva: number) => kva >= 2 && kva < 4, icon: BatteryCharging },
+  { label: '5kVA', match: (kva: number) => kva >= 4 && kva < 7, icon: SolarPanel },
+  { label: '8kVA and up', match: (kva: number) => kva >= 7, icon: SolarPanel },
+];
+function typicalHomeSelections() {
+  const selections = buildDefaultSelections();
+  for (const id of ['lights', 'tv', 'wifi', 'phone_charger', 'fridge']) {
+    selections[id] = { ...selections[id], include: true, qty: id === 'lights' ? 6 : 1, hours: id === 'lights' ? 6 : 4 };
+  }
+  return selections;
+}
+type Path = 'size' | 'guided' | 'quote';
+type Step = 'size' | 'options' | 'backup' | 'appliances' | 'results' | 'quote';
+interface Props {
   onChange: (output: SolarWizardOutput & { boqItems?: BOQItem[] }) => void;
   isContractor?: boolean;
   onSave?: (output: SolarWizardOutput & { boqItems?: BOQItem[] }) => void;
 }
 
-function SolarQuickWizardInner({ onChange, isContractor = false, onSave }: SolarQuickWizardProps) {
-  // Restored from a save attempt that bounced through sign-in, or from "Edit
-  // inputs" on a saved estimate. Read in a lazy initialiser so restored state
-  // is on screen immediately rather than flashing the first question.
-  const restored = useState(() =>
-    typeof window === 'undefined' ? null : restoreQuickBOQSession()
-  )[0];
-  const restoredSolar = restored?.projectType === 'solar' ? restored : null;
-
-  // Cleared here rather than in the read, so StrictMode's second invocation of
-  // the initialiser above still sees the value.
-  useEffect(() => {
-    if (restoredSolar) clearQuickBOQSession();
-  }, [restoredSolar]);
-
-  // Merged over the defaults rather than replacing them, so a session saved
-  // before a new question was added still yields a complete answer set.
-  const [answers, setAnswers] = useState<SolarWizardAnswers>(
-    restoredSolar?.answers
-      ? { ...defaultAnswers, ...(restoredSolar.answers as Partial<SolarWizardAnswers>) }
-      : defaultAnswers
-  );
-  const [currentStep, setCurrentStep] = useState<StepId>('intent');
-
-  // Brand preferences
+function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props) {
+  const restored = useState(() => typeof window === 'undefined' ? null : restoreQuickBOQSession())[0];
+  const saved = restored?.projectType === 'solar' ? restored : null;
+  useEffect(() => { if (saved) clearQuickBOQSession(); }, [saved]);
+  const [answers, setAnswers] = useState<SolarWizardAnswers>(() => {
+    const old = saved?.answers as Partial<SolarWizardAnswers> | undefined;
+    return { ...defaults, ...old, appliances: { ...buildDefaultSelections(), ...old?.appliances },
+      simultaneousLoads: { ...defaults.simultaneousLoads, ...old?.simultaneousLoads },
+      roof: { ...defaults.roof, ...old?.roof }, existing: { ...defaults.existing, ...old?.existing },
+      quote: { ...defaults.quote, ...old?.quote } };
+  });
+  const restoredIntent = (saved?.answers as Partial<SolarWizardAnswers> | undefined)?.intent;
+  const [path, setPath] = useState<Path>(restoredIntent === 'quote_check' ? 'quote' : restoredIntent ? 'guided' : 'size');
+  const [step, setStep] = useState<Step>(restoredIntent === 'quote_check' ? 'quote' : restoredIntent ? 'backup' : 'size');
+  const [groupIndex, setGroupIndex] = useState<number | null>(null);
+  const [packageId, setPackageId] = useState<string | null>(null);
   const [panelBrand, setPanelBrand] = useState('no_pref');
   const [inverterBrand, setInverterBrand] = useState('no_pref');
   const [batteryBrand, setBatteryBrand] = useState('no_pref');
+  const [transport, setTransport] = useState(false);
+  const [install, setInstall] = useState(true);
+  const [contingency, setContingency] = useState(false);
+  const [boqItems, setBoqItems] = useState<BOQItem[] | null>(saved?.boqItems?.length ? saved.boqItems : null);
+  const [labor, setLabor] = useState<LaborConfig>(saved?.labor ?? { enabled: false, method: 'percentage', percentage: 25 });
+  const selectedPackage = SOLAR_PACKAGES.find((pkg) => pkg.id === packageId) ?? null;
+  const result = useMemo(() => path === 'guided' && step === 'results' ? computeSolarSizing(answers) : null, [answers, path, step]);
+  const cost = result ? estimateHardwareCost(result) : null;
+  const length = path === 'guided' ? 4 : path === 'quote' ? 3 : 2;
+  const number = step === 'size' ? 1 : step === 'options' || step === 'backup' || step === 'quote' ? 2 : step === 'appliances' ? 3 : path === 'quote' ? 3 : 4;
 
-  // Optional costs
-  const [includeTransport, setIncludeTransport] = useState(false);
-  const [includeInstall, setIncludeInstall] = useState(true);
-  const [includeContingency, setIncludeContingency] = useState(false);
-
-  // An empty list means "reopen the questions with these answers filled in",
-  // which is what Edit inputs wants; only a populated list jumps to the BOQ.
-  const [boqItems, setBoqItems] = useState<BOQItem[] | null>(
-    restoredSolar?.boqItems?.length ? restoredSolar.boqItems : null
-  );
-  const [labor, setLabor] = useState<LaborConfig>(
-    restoredSolar?.labor ?? { enabled: false, method: 'percentage', percentage: 25 }
-  );
-
-  const activeSteps = useMemo(() => {
-    return stepOrder.filter((step) => {
-      if (step === 'backup') {
-        return ['backup', 'heavy_backup', 'off_grid', 'replace', 'budget'].includes(answers.intent || '');
-      }
-      if (step === 'appliances' || step === 'simultaneous' || step === 'roof') {
-        return answers.intent !== 'quote_check';
-      }
-      if (step === 'existing') {
-        return answers.intent === 'replace';
-      }
-      if (step === 'budget') {
-        return answers.intent === 'budget';
-      }
-      if (step === 'quote') {
-        return answers.intent === 'quote_check';
-      }
-      // brands and optional_costs only for non-quote-check
-      if (step === 'brands' || step === 'optional_costs') {
-        return answers.intent !== 'quote_check';
-      }
-      return true;
-    });
-  }, [answers.intent]);
-
-  const stepIndex = activeSteps.indexOf(currentStep);
-  const isFirst = stepIndex === 0;
-  const isLast = stepIndex === activeSteps.length - 1;
-
-  const result = useMemo(() => {
-    if (!answers.intent || answers.intent === 'quote_check') return null;
-    return computeSolarSizing(answers);
-  }, [answers]);
-
-  const costEstimate = result ? estimateHardwareCost(result) : null;
-
-  const emitChange = (nextAnswers: SolarWizardAnswers) => {
-    const nextResult = nextAnswers.intent && nextAnswers.intent !== 'quote_check'
-      ? computeSolarSizing(nextAnswers)
-      : null;
-    onChange({ answers: nextAnswers, result: nextResult });
-  };
-
-  const updateAnswers = (updates: Partial<SolarWizardAnswers>) => {
-    setAnswers((prev) => {
-      const next = { ...prev, ...updates };
-      emitChange(next);
+  const update = (patch: Partial<SolarWizardAnswers>) => {
+    setAnswers((before) => {
+      const next = { ...before, ...patch };
+      onChange({ answers: next, result: next.intent === 'quote_check' ? null : computeSolarSizing(next) });
       return next;
     });
   };
-
-  const goNext = () => {
-    if (isLast) {
-      // Generate BOQ on last step
-      if (result) {
-        const augAnswers = {
-          ...answers,
-          panel_brand: panelBrand,
-          inverter_brand: inverterBrand,
-          battery_brand: batteryBrand,
-          include_transport: includeTransport,
-          include_install: includeInstall,
-          include_contingency: includeContingency,
-        };
-        const items = solarSizingToBOQ(result, augAnswers as Parameters<typeof solarSizingToBOQ>[1]);
-        setBoqItems(items);
-      }
-      return;
-    }
-    const nextStep = activeSteps[stepIndex + 1];
-    if (nextStep) setCurrentStep(nextStep);
+  const packageResult = (pkg: SolarPackage): SolarSizingResult => ({
+    peakLoadWatts: pkg.kva * 800, inverterKva: pkg.kva, batteryKwh: pkg.batteryKwh,
+    solarArrayKw: +(pkg.panelCount * pkg.panelWatt / 1000).toFixed(2), panelCount: pkg.panelCount,
+    dailyEnergyKwh: 0, tier: pkg.kva <= 3 ? 'small' : pkg.kva <= 5 ? 'standard' : 'large',
+    estimatedCostUsd: { low: pkg.price, high: pkg.price }, warnings: [],
+  });
+  const packageTotal = selectedPackage
+    ? solarPackageToBOQ(selectedPackage, { include_transport: transport, include_install: install, include_contingency: contingency })
+        .reduce((sum, item) => sum + item.totalCostUsd, 0)
+    : null;
+  const formatUsd = (value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+  const makeBoq = () => {
+    const sizing = selectedPackage ? packageResult(selectedPackage) : result;
+    if (!sizing) return;
+    // A package with its own brands is priced as the supplier sells it; once
+    // the person changes a brand it is a custom build, priced part by part.
+    const ownBrands = panelBrand === 'no_pref' && inverterBrand === 'no_pref' && batteryBrand === 'no_pref';
+    const parts = selectedPackage && ownBrands ? solarPackageToBOQ(selectedPackage, {
+      include_transport: transport, include_install: install, include_contingency: contingency,
+    }) : solarSizingToBOQ(sizing, {
+      ...answers,
+      panel_brand: panelBrand === 'no_pref' ? selectedPackage?.panelBrandKey : panelBrand,
+      inverter_brand: inverterBrand === 'no_pref' ? selectedPackage?.inverterBrandKey : inverterBrand,
+      battery_brand: batteryBrand === 'no_pref' ? selectedPackage?.batteryBrandKey : batteryBrand,
+      include_transport: transport, include_install: install && !selectedPackage?.includesInstall,
+      include_contingency: contingency,
+    });
+    setBoqItems(parts);
+    onChange({ answers, result: sizing, boqItems: parts });
   };
-
-  const goBack = () => {
-    if (boqItems) {
-      setBoqItems(null);
-      return;
-    }
-    if (isFirst) return;
-    const prevStep = activeSteps[stepIndex - 1];
-    if (prevStep) setCurrentStep(prevStep);
+  const back = () => {
+    if (boqItems) { setBoqItems(null); return; }
+    if (step === 'results') setStep(path === 'quote' ? 'quote' : 'appliances');
+    else if (step === 'appliances') setStep('backup');
+    else setStep('size');
   };
+  if (boqItems) return <div className="w-full max-w-5xl mx-auto pb-24">
+    <button type="button" className="min-h-11 text-sm text-slate-600" onClick={back}>← Back to wizard</button>
+    <QuickBOQTable projectType="solar" initialItems={boqItems} labor={labor} onLaborChange={setLabor}
+      isContractor={isContractor} answers={answers as unknown as Record<string, unknown>}
+      onSave={onSave ? (items) => onSave({ answers, result: selectedPackage ? packageResult(selectedPackage) : result, boqItems: items }) : undefined} />
+  </div>;
+  const title = step === 'size' ? 'What size are you looking at?' : step === 'options' ? `Your ${groups[groupIndex ?? 0].label} options` :
+    step === 'backup' ? 'Backup hours' : step === 'appliances' ? 'Appliances' : step === 'quote' ? 'Check your solar quote' : 'Solar recommendation';
+  return <div className="w-full pb-24">
+    <div className="mb-6 text-sm font-semibold text-slate-500">Step {number} of {length}</div>
+    <p className="mb-2 text-sm font-semibold text-blue-700">Solar setup</p>
+    <h2 className="mb-2 text-2xl font-bold text-slate-900">{title}</h2>
+    {step === 'size' && <>
+      <p className="mb-5 text-slate-600">Most homes start with 1kVA and add more later.</p>
+      <div className={styles.grid}>{groups.map((group, index) => {
+        const packages = SOLAR_PACKAGES.filter((pkg) => group.match(pkg.kva));
+        const cheapest = Math.min(...packages.map((pkg) => pkg.price));
+        const Icon = group.icon;
+        return <button type="button" key={group.label} className={`${styles.card} ${index === 0 ? styles.popular : ''}`}
+          onClick={() => { setPath('size'); setGroupIndex(index); setPackageId(null); setStep('options'); update({ intent: 'backup' }); }}>
+          <span className={styles.icon}><Icon size={28} weight="duotone" /></span>
+          <span className={styles.name}>{group.label}</span>
+          <span className={styles.detail}>{packages[0]?.appliances}</span>
+          <span className={styles.price}>From {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(cheapest)}</span>
+          {index === 0 && <span className={styles.badge}>Most popular</span>}
+        </button>;
+      })}
+      <button type="button" className={styles.card} onClick={() => { setPath('guided'); setStep('backup'); update({ intent: 'backup' }); }}>
+        <span className={styles.icon}><Question size={28} weight="duotone" /></span>
+        <span className={styles.name}>Not sure? Help me choose</span>
+        <span className={styles.detail}>Answer a few questions for a recommendation.</span>
+      </button></div>
+      <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+        <Link className="min-h-11 content-center text-blue-700 underline" href="/quick-budget?mode=solar">Have a budget? See what it buys</Link>
+        <button type="button" className="min-h-11 text-left text-blue-700 underline" onClick={() => { setPath('quote'); setStep('quote'); update({ intent: 'quote_check' }); }}>Check a solar quote you have</button>
+      </div>
+    </>}
+    {step === 'options' && <div className="grid gap-4">
+      {SOLAR_PACKAGES.filter((pkg) => groups[groupIndex ?? 0].match(pkg.kva)).sort((a, b) => a.price - b.price).map((pkg, index) =>
+        <button type="button" key={pkg.id} className={`${styles.card} ${styles.package} ${packageId === pkg.id ? styles.selected : ''}`} onClick={() => setPackageId(pkg.id)}>
+          <span className={styles.icon}><SolarPanel size={28} weight="duotone" /></span>
+          <span className={styles.name}>{pkg.name}</span>
+          <span className={styles.detail}>{pkg.appliances}</span>
+          <span className={styles.price}>${pkg.price.toLocaleString('en-US')}</span>
+          {index === 0 && <span className={styles.badge}>Lowest price</span>}
+        </button>)}
+      {selectedPackage && <>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <h3 className="mb-3 font-semibold text-slate-900">Included parts</h3>
+          <ol className="grid gap-2 text-sm text-slate-700">
+            <li>Battery: {selectedPackage.batteryKwh} kWh</li>
+            <li>Panels: {selectedPackage.panelCount} × {selectedPackage.panelWatt} W</li>
+            <li>Inverter: {selectedPackage.kva} kVA</li>
+            <li>Wiring kit and protection</li>
+            <li>Labour: {selectedPackage.includesInstall ? 'Included in package' : install ? 'Added below' : 'Not included'}</li>
+          </ol>
+          {/* The card shows the supplier's package price; the BOQ adds wiring,
+              protection and the extras ticked below, so say what it comes to. */}
+          {packageTotal !== null && <p className="mt-4 border-t border-slate-100 pt-3 text-sm text-slate-700">
+            Package {formatUsd(selectedPackage.price)} plus wiring, protection and the extras below: <strong className="text-slate-900">about {formatUsd(packageTotal)}</strong>
+          </p>}
+        </div>
+        {preferences()}
+      </>}
+    </div>}
+    {step === 'backup' && <div className={styles.grid}>{[2, 4, 6, 8, 12, 24].map((hours) =>
+      <button type="button" key={hours} className={`${styles.card} ${answers.backupHours === hours ? styles.selected : ''}`}
+        onClick={() => update({ backupHours: hours, intent: hours >= 8 ? 'off_grid' : 'backup' })}>
+        <span className={styles.icon}><BatteryCharging size={28} weight="duotone" /></span><span className={styles.name}>{hours} hours</span>
+        <span className={styles.detail}>{hours >= 8 ? 'Off-grid' : 'Backup'}</span>
+      </button>)}
+      <button type="button" className={styles.card} onClick={() => update({ backupHours: 4, intent: 'backup' })}>
+        <span className={styles.icon}><Question size={28} weight="duotone" /></span><span className={styles.name}>Not sure — use 4 hours</span>
+      </button></div>}
+    {step === 'appliances' && <div className="grid gap-3">
+      <button type="button" className="min-h-11 justify-self-start text-sm font-semibold text-blue-700 underline" onClick={() => update({ appliances: typicalHomeSelections() })}>Not sure — use a typical home</button>
+      {SOLAR_APPLIANCES.map((appliance) => {
+        const selection = answers.appliances[appliance.id] ?? { id: appliance.id, include: false, qty: 0, hours: 0 };
+        const loadKey = appliance.id === 'kettle' || appliance.id === 'microwave' ? 'kettleMicrowave' :
+          appliance.id === 'geyser' ? 'geyserWithHouse' : appliance.category === 'pump' ? 'pumpWithHouse' : null;
+        return <div key={appliance.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+          <label className="flex min-h-11 items-center gap-3 font-semibold text-slate-900">
+            <input type="checkbox" checked={selection.include} onChange={(event) => update({ appliances: { ...answers.appliances, [appliance.id]: { ...selection, include: event.target.checked, qty: event.target.checked ? selection.qty || 1 : 0, hours: event.target.checked ? selection.hours || 2 : 0 } } })} />
+            {appliance.label}<span className="ml-auto text-sm text-slate-500">{appliance.watts} W</span>
+          </label>
+          {selection.include && <div className="mt-3 grid grid-cols-2 gap-3">
+            <Input label="Qty" type="number" min={1} value={selection.qty || ''} onChange={(event) => update({ appliances: { ...answers.appliances, [appliance.id]: { ...selection, qty: Number(event.target.value) } } })} />
+            <Input label="Hours/day" type="number" min={0} value={selection.hours || ''} onChange={(event) => update({ appliances: { ...answers.appliances, [appliance.id]: { ...selection, hours: Number(event.target.value) } } })} />
+            {loadKey && <label className="col-span-2 flex min-h-11 items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={answers.simultaneousLoads[loadKey]} onChange={(event) => update({ simultaneousLoads: { ...answers.simultaneousLoads, [loadKey]: event.target.checked } })} />Runs at the same time as other loads</label>}
+          </div>}
+        </div>;
+      })}
+    </div>}
+    {step === 'results' && path === 'guided' && result && <div className="grid gap-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-700">
+        <h3 className="mb-3 text-lg font-semibold text-slate-900">Recommended system</h3>
+        <p>Inverter: <strong>{result.inverterKva} kVA</strong></p><p>Battery: <strong>{result.batteryKwh} kWh</strong></p>
+        <p>Solar array: <strong>{result.solarArrayKw} kW</strong> · {result.panelCount} panels</p>
+        <p>Daily energy: {result.dailyEnergyKwh} kWh</p>
+        {cost && <p className="mt-2">Estimated total: ${cost.total.toLocaleString('en-US')}</p>}
+        <p className="mt-3">Each panel needs about 2 m² of roof.</p>
+        {result.warnings.map((warning) => <p className="mt-2 text-amber-700" key={warning}>{warning}</p>)}
+      </div>
+      {preferences()}
+    </div>}
+    {step === 'quote' && <div className="grid gap-3">
+      {([
+        ['totalUsd', 'Quoted total price (USD)'], ['inverterKva', 'Inverter size (kVA)'], ['batteryKwh', 'Battery size (kWh)'],
+        ['panelCount', 'Panel count'], ['panelWatt', 'Panel wattage'],
+      ] as const).map(([key, label]) => <Input key={key} label={label} type="number" min={0} value={answers.quote[key] ?? ''} onChange={(event) => update({ quote: { ...answers.quote, [key]: Number(event.target.value) } })} />)}
+      <Input label="Notes about the quote" value={answers.quote.notes} onChange={(event) => update({ quote: { ...answers.quote, notes: event.target.value } })} />
+    </div>}
+    {step === 'results' && path === 'quote' && <div className="rounded-2xl border border-slate-200 bg-white p-5">
+      <h3 className="font-semibold">Quote check summary</h3>
+      <p>We will compare your quote against Zimbabwe system tiers once you save this quick project.</p>
+      <p>Quoted total: {answers.quote.totalUsd ? `$${answers.quote.totalUsd}` : 'Not provided'}</p>
+      <p>Inverter: {answers.quote.inverterKva ?? 'Not provided'} kVA</p>
+      <p>Battery: {answers.quote.batteryKwh ?? 'Not provided'} kWh</p>
+      <p>Panels: {answers.quote.panelCount ?? 'Not provided'}</p>
+    </div>}
+    {step !== 'size' && <div className="mt-8 flex justify-between border-t border-slate-200 pt-5">
+      <Button variant="secondary" onClick={back}>Back</Button>
+      {step === 'options' ? <Button variant="primary" onClick={makeBoq} disabled={!selectedPackage}>Generate BOQ</Button> :
+        step === 'backup' ? <Button variant="primary" onClick={() => setStep('appliances')}>Continue</Button> :
+        step === 'appliances' || step === 'quote' ? <Button variant="primary" onClick={() => setStep('results')}>Continue</Button> :
+        path === 'guided' ? <Button variant="primary" onClick={makeBoq}>Generate BOQ</Button> : null}
+    </div>}
+  </div>;
 
-  // ── Budget Explorer view ─────────────────────────────────────────────────
-  if (answers.intent === 'budget' && currentStep !== 'intent') {
-    return (
-      <SolarBudgetExplorer
-        onBack={() => setCurrentStep('intent')}
-        isContractor={isContractor}
-        onSave={onSave ? (output) => onSave(output) : undefined}
-      />
-    );
+  function preferences() {
+    return <>
+      <details className="rounded-2xl border border-slate-200 bg-white p-4">
+        <summary className="min-h-11 cursor-pointer font-semibold text-slate-900">Change brands <span className="font-normal text-slate-500">(No preference)</span></summary>
+        <div className="grid gap-3 pt-3">{([
+          ['Panel brand', panelBrand, setPanelBrand, [['no_pref', 'No preference'], ['ja_solar', 'JA Solar'], ['canadian_solar', 'Canadian Solar'], ['cheapest', 'Cheapest available']]],
+          ['Inverter brand', inverterBrand, setInverterBrand, [['no_pref', 'No preference'], ['deye', 'Deye'], ['victron', 'Victron'], ['solarmd', 'SolarMD']]],
+          ['Battery brand', batteryBrand, setBatteryBrand, [['no_pref', 'No preference'], ['pylontech', 'Pylontech'], ['freedom_won', 'Freedom Won']]],
+        ] as const).map(([label, value, setter, options]) => <label key={label} className="grid gap-1 text-sm font-medium text-slate-700">{label}
+          <select className="min-h-11 rounded-xl border border-slate-300 bg-white px-3" value={value} onChange={(event) => setter(event.target.value)}>
+            {options.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+          </select></label>)}</div>
+      </details>
+      <div className="grid gap-2">
+        <h3 className="font-semibold text-slate-900">Optional costs</h3>
+        {([['Equipment delivery / transport', transport, setTransport], ['Installation labour', install, setInstall], ['Contingency (5%)', contingency, setContingency]] as const).map(([label, value, setter]) =>
+          <label key={label} className="flex min-h-11 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-medium text-slate-800">
+            <input type="checkbox" checked={value} onChange={(event) => setter(event.target.checked)} />{label}
+          </label>)}
+      </div>
+    </>;
   }
-
-  // ── BOQ results view ──────────────────────────────────────────────────────
-  if (boqItems) {
-    return (
-      <div className="w-full max-w-5xl mx-auto animate-fade-in pb-24">
-        <button onClick={goBack} className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-none mb-6">
-          ← Back to wizard
-        </button>
-        <QuickBOQTable
-          projectType="solar"
-          initialItems={boqItems}
-          labor={labor}
-          onLaborChange={setLabor}
-          isContractor={isContractor}
-          answers={answers as unknown as Record<string, unknown>}
-          onSave={onSave ? (items) => onSave({ answers, result, boqItems: items }) : undefined}
-        />
-      </div>
-    );
-  }
-
-  const progressPct = Math.round((stepIndex / activeSteps.length) * 100);
-
-  return (
-    <div className="w-full pb-24">
-      {/* Progress */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-          <span>Step {stepIndex + 1} of {activeSteps.length}</span>
-          <span className="text-blue-600">{progressPct}%</span>
-        </div>
-        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full transition-none duration-500 ease-out" style={{ width: `${progressPct}%` }} />
-        </div>
-      </div>
-
-      {/* Header */}
-      <div className="mb-5">
-        <span className="text-xs font-bold uppercase tracking-[0.2em] text-blue-500 mb-2 block">SOLAR GUIDED SETUP</span>
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">{stepTitles[currentStep].title}</h2>
-        <p className="text-slate-600 text-base">{stepTitles[currentStep].subtitle}</p>
-      </div>
-
-      <AnimatePresence mode="wait">
-        <div
-          key={currentStep}
-          className="w-full"
-        >
-
-      {currentStep === 'intent' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
-          {INTENTS.map((intent) => {
-            const active = answers.intent === intent;
-            return (
-              <button
-                key={intent}
-                type="button"
-                onClick={() => updateAnswers({ intent })}
-                className={`group relative flex flex-col items-start p-4 rounded-xl border transition-none duration-200 text-left ${active ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50'}`}
-              >
-                <div className="flex w-full items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                     <Lightning size={20} className={active ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500 transition-none'} />
-                     <span className={`text-sm font-semibold ${active ? 'text-blue-900' : 'text-slate-800'}`}>
-                       {SOLAR_INTENT_LABELS[intent]}
-                     </span>
-                  </div>
-                  {active ? (
-                    <CheckCircle weight="fill" className="text-blue-600 flex-shrink-0" size={20} />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full border border-slate-300 flex-shrink-0 group-hover:border-blue-300 transition-none" />
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {currentStep === 'context' && (
-        <div className="grid gap-6">
-          <Input
-            label="City / Suburb"
-            placeholder="e.g. Borrowdale, Harare"
-            value={answers.location}
-            onChange={(event) => updateAnswers({ location: event.target.value })}
-          />
-          <div className="flex flex-wrap gap-2">
-            {[
-              { id: 'apartment', label: 'Apartment' },
-              { id: 'house', label: 'House' },
-              { id: 'farm', label: 'Farm / Plot' },
-              { id: 'business', label: 'Business' },
-            ].map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full border text-sm transition-none ${answers.propertyType === item.id ? 'border-blue-600 bg-blue-50 text-blue-800 font-medium' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'}`}
-                onClick={() => updateAnswers({ propertyType: item.id as PropertyType })}
-              >
-                <HouseSimple size={16} />
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {currentStep === 'backup' && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {[2, 4, 6, 8, 12, 24].map((hours) => {
-            const active = answers.backupHours === hours;
-            return (
-              <button
-                key={hours}
-                type="button"
-                onClick={() => updateAnswers({ backupHours: hours })}
-                className={`flex flex-col items-center justify-center p-6 rounded-xl border transition-none duration-200 ${active ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 shadow-sm text-blue-700' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50 text-slate-600'}`}
-              >
-                <SunDim size={28} className="mb-2" />
-                <span className="font-semibold">{hours} hrs</span>
-                <span className="text-xs opacity-70">backup</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {currentStep === 'appliances' && (
-        <div className="grid gap-3">
-          {SOLAR_APPLIANCES.map((appliance) => {
-            const selection = answers.appliances[appliance.id];
-            return (
-              <div key={appliance.id} className={`p-4 rounded-xl border transition-none ${selection.include ? 'border-blue-500 bg-blue-50/20 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selection.include}
-                    className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
-                    onChange={(event) => {
-                      const include = event.target.checked;
-                      setAnswers((prev) => {
-                        const next = {
-                          ...prev,
-                          appliances: {
-                            ...prev.appliances,
-                            [appliance.id]: {
-                              ...prev.appliances[appliance.id],
-                              include,
-                              qty: include ? prev.appliances[appliance.id].qty || 1 : 0,
-                              hours: include ? prev.appliances[appliance.id].hours || 2 : 0,
-                            },
-                          },
-                        };
-                        emitChange(next);
-                        return next;
-                      });
-                    }}
-                  />
-                  <span className="font-semibold text-slate-900">{appliance.label}</span>
-                  <small className="ml-auto text-slate-500 font-medium">{appliance.watts}W</small>
-                </label>
-                {selection.include && (
-                  <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-blue-100/50">
-                    <Input
-                      label="Qty"
-                      type="number"
-                      min={1}
-                      value={selection.qty || ''}
-                      onChange={(event) => {
-                        const qty = Number(event.target.value);
-                        setAnswers((prev) => {
-                          const next = {
-                            ...prev,
-                            appliances: {
-                              ...prev.appliances,
-                              [appliance.id]: {
-                                ...prev.appliances[appliance.id],
-                                qty,
-                              },
-                            },
-                          };
-                          emitChange(next);
-                          return next;
-                        });
-                      }}
-                    />
-                    <Input
-                      label="Hours/day"
-                      type="number"
-                      min={0}
-                      value={selection.hours || ''}
-                      onChange={(event) => {
-                        const hours = Number(event.target.value);
-                        setAnswers((prev) => {
-                          const next = {
-                            ...prev,
-                            appliances: {
-                              ...prev.appliances,
-                              [appliance.id]: {
-                                ...prev.appliances[appliance.id],
-                                hours,
-                              },
-                            },
-                          };
-                          emitChange(next);
-                          return next;
-                        });
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {currentStep === 'simultaneous' && (
-        <div className="grid gap-3 p-6 rounded-2xl bg-white border border-slate-200/60 shadow-sm">
-          <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-none">
-            <input
-              type="checkbox"
-              className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
-              checked={answers.simultaneousLoads.kettleMicrowave}
-              onChange={(event) => updateAnswers({
-                simultaneousLoads: {
-                  ...answers.simultaneousLoads,
-                  kettleMicrowave: event.target.checked,
-                },
-              })}
-            />
-            <span className="text-slate-700 font-medium">Kettle and microwave run together</span>
-          </label>
-          <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-none">
-            <input
-              type="checkbox"
-              className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
-              checked={answers.simultaneousLoads.pumpWithHouse}
-              onChange={(event) => updateAnswers({
-                simultaneousLoads: {
-                  ...answers.simultaneousLoads,
-                  pumpWithHouse: event.target.checked,
-                },
-              })}
-            />
-            <span className="text-slate-700 font-medium">Pump runs with household loads</span>
-          </label>
-          <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-none">
-            <input
-              type="checkbox"
-              className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0"
-              checked={answers.simultaneousLoads.geyserWithHouse}
-              onChange={(event) => updateAnswers({
-                simultaneousLoads: {
-                  ...answers.simultaneousLoads,
-                  geyserWithHouse: event.target.checked,
-                },
-              })}
-            />
-            <span className="text-slate-700 font-medium">Geyser runs with household loads</span>
-          </label>
-        </div>
-      )}
-
-      {currentStep === 'roof' && (
-        <div className="grid gap-6">
-          <Input
-            label="Roof orientation"
-            placeholder="e.g. North-facing"
-            value={answers.roof.orientation}
-            onChange={(event) => updateAnswers({
-              roof: { ...answers.roof, orientation: event.target.value },
-            })}
-          />
-          <Input
-            label="Roof space (m²)"
-            type="number"
-            min={0}
-            value={answers.roof.spaceM2 || ''}
-            onChange={(event) => updateAnswers({
-              roof: { ...answers.roof, spaceM2: Number(event.target.value) },
-            })}
-          />
-          <div className="pill-grid">
-            {[
-              { id: 'tile', label: 'Tile' },
-              { id: 'ibr', label: 'IBR' },
-              { id: 'concrete', label: 'Concrete' },
-              { id: 'other', label: 'Other' },
-            ].map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`pill ${answers.roof.type === item.id ? 'active' : ''}`}
-                onClick={() => updateAnswers({ roof: { ...answers.roof, type: item.id as RoofType } })}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-          <div className="pill-grid">
-            {[
-              { id: 'none', label: 'No shading' },
-              { id: 'partial', label: 'Partial shading' },
-              { id: 'heavy', label: 'Heavy shading' },
-            ].map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`pill ${answers.roof.shading === item.id ? 'active' : ''}`}
-                onClick={() => updateAnswers({ roof: { ...answers.roof, shading: item.id as RoofShading } })}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {currentStep === 'existing' && (
-        <div className="form-grid">
-          <label className="checkline">
-            <input
-              type="checkbox"
-              checked={answers.existing.hasExisting}
-              onChange={(event) => updateAnswers({
-                existing: { ...answers.existing, hasExisting: event.target.checked },
-              })}
-            />
-            I already have a solar system
-          </label>
-          {answers.existing.hasExisting && (
-            <>
-              <Input
-                label="Current inverter (kVA)"
-                type="number"
-                min={0}
-                value={answers.existing.inverterKva || ''}
-                onChange={(event) => updateAnswers({
-                  existing: { ...answers.existing, inverterKva: Number(event.target.value) },
-                })}
-              />
-              <Input
-                label="Current battery (kWh)"
-                type="number"
-                min={0}
-                value={answers.existing.batteryKwh || ''}
-                onChange={(event) => updateAnswers({
-                  existing: { ...answers.existing, batteryKwh: Number(event.target.value) },
-                })}
-              />
-              <Input
-                label="Current panel count"
-                type="number"
-                min={0}
-                value={answers.existing.panelCount || ''}
-                onChange={(event) => updateAnswers({
-                  existing: { ...answers.existing, panelCount: Number(event.target.value) },
-                })}
-              />
-              <Input
-                label="Main issues (optional)"
-                placeholder="e.g. Battery not lasting, inverter trips"
-                value={answers.existing.issues}
-                onChange={(event) => updateAnswers({
-                  existing: { ...answers.existing, issues: event.target.value },
-                })}
-              />
-            </>
-          )}
-        </div>
-      )}
-
-      {currentStep === 'budget' && (
-        <div className="form-grid">
-          <Input
-            label="Target budget (USD)"
-            type="number"
-            min={0}
-            value={answers.budgetUsd || ''}
-            onChange={(event) => updateAnswers({ budgetUsd: Number(event.target.value) })}
-          />
-          <div className="info-card">
-            <MapPin size={18} />
-            <p>
-              We will size the system to fit your budget and show trade‑offs (backup hours or heavy loads).
-            </p>
-          </div>
-        </div>
-      )}
-
-      {currentStep === 'quote' && (
-        <div className="form-grid">
-          <Input
-            label="Quoted total price (USD)"
-            type="number"
-            min={0}
-            value={answers.quote.totalUsd || ''}
-            onChange={(event) => updateAnswers({
-              quote: { ...answers.quote, totalUsd: Number(event.target.value) },
-            })}
-          />
-          <Input
-            label="Inverter size (kVA)"
-            type="number"
-            min={0}
-            value={answers.quote.inverterKva || ''}
-            onChange={(event) => updateAnswers({
-              quote: { ...answers.quote, inverterKva: Number(event.target.value) },
-            })}
-          />
-          <Input
-            label="Battery size (kWh)"
-            type="number"
-            min={0}
-            value={answers.quote.batteryKwh || ''}
-            onChange={(event) => updateAnswers({
-              quote: { ...answers.quote, batteryKwh: Number(event.target.value) },
-            })}
-          />
-          <Input
-            label="Panel count"
-            type="number"
-            min={0}
-            value={answers.quote.panelCount || ''}
-            onChange={(event) => updateAnswers({
-              quote: { ...answers.quote, panelCount: Number(event.target.value) },
-            })}
-          />
-          <Input
-            label="Panel wattage"
-            type="number"
-            min={0}
-            value={answers.quote.panelWatt || ''}
-            onChange={(event) => updateAnswers({
-              quote: { ...answers.quote, panelWatt: Number(event.target.value) },
-            })}
-          />
-          <Input
-            label="Notes about the quote"
-            placeholder="e.g. Deye inverter, Dyness battery, 2 year warranty"
-            value={answers.quote.notes}
-            onChange={(event) => updateAnswers({
-              quote: { ...answers.quote, notes: event.target.value },
-            })}
-          />
-        </div>
-      )}
-
-      {currentStep === 'results' && result && (
-        <div className="results-grid">
-          <div className="results-card">
-            <h4>Recommended System</h4>
-            <div className="results-row">
-              <span>Inverter size</span>
-              <strong>{result.inverterKva} kVA</strong>
-            </div>
-            <div className="results-row">
-              <span>Battery storage</span>
-              <strong>{result.batteryKwh} kWh</strong>
-            </div>
-            <div className="results-row">
-              <span>Solar array</span>
-              <strong>{result.solarArrayKw} kW</strong>
-            </div>
-            <div className="results-row">
-              <span>Panels needed</span>
-              <strong>{result.panelCount} panels</strong>
-            </div>
-            <div className="results-row">
-              <span>Daily energy</span>
-              <strong>{result.dailyEnergyKwh} kWh</strong>
-            </div>
-            <div className="tier-pill">Tier: {result.tier}</div>
-          </div>
-
-          <div className="results-card">
-            <h4>Estimated Cost (USD)</h4>
-            {costEstimate && (
-              <>
-                <div className="results-row">
-                  <span>Hardware</span>
-                  <strong>${costEstimate.hardware}</strong>
-                </div>
-                <div className="results-row">
-                  <span>Installation</span>
-                  <strong>${costEstimate.install}</strong>
-                </div>
-                <div className="results-row">
-                  <span>Total</span>
-                  <strong>${costEstimate.total}</strong>
-                </div>
-              </>
-            )}
-            <div className="hint">Typical range: ${result.estimatedCostUsd.low}–${result.estimatedCostUsd.high}</div>
-          </div>
-
-          {result.warnings.length > 0 && (
-            <div className="results-card warning">
-              <h4>
-                <Warning size={18} /> Notes
-              </h4>
-              <ul>
-                {result.warnings.map((note) => (
-                  <li key={note}>{note}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="results-card summary">
-            <h4>Summary</h4>
-            <p>
-              This sizing is tailored for Zimbabwe load‑shedding and assumes hybrid backup usage.
-            </p>
-            <div className="summary-pill">
-              <CheckCircle size={16} /> Ready to save this quick project
-            </div>
-          </div>
-        </div>
-      )}
-
-      {currentStep === 'results' && answers.intent === 'quote_check' && (
-        <div className="results-grid">
-          <div className="results-card warning">
-            <h4>
-              <Warning size={18} /> Quote check summary
-            </h4>
-            <p>
-              We will compare your quote against Zimbabwe system tiers once you save this quick project.
-            </p>
-            <div className="results-row">
-              <span>Quoted total</span>
-              <strong>{answers.quote.totalUsd ? `$${answers.quote.totalUsd}` : 'Not provided'}</strong>
-            </div>
-            <div className="results-row">
-              <span>Inverter</span>
-              <strong>{answers.quote.inverterKva ? `${answers.quote.inverterKva} kVA` : 'Not provided'}</strong>
-            </div>
-            <div className="results-row">
-              <span>Battery</span>
-              <strong>{answers.quote.batteryKwh ? `${answers.quote.batteryKwh} kWh` : 'Not provided'}</strong>
-            </div>
-            <div className="results-row">
-              <span>Panels</span>
-              <strong>{answers.quote.panelCount ? `${answers.quote.panelCount} panels` : 'Not provided'}</strong>
-            </div>
-          </div>
-        </div>
-      )}
-
-        </div>
-      </AnimatePresence>
-
-      {/* ── Brand Picker ─────────────────────────────────────────────────── */}
-      <AnimatePresence mode="wait">
-        {currentStep === 'brands' && (
-          <div
-            key="brands"
-            className="form-grid"
-          >
-            <div>
-              <label className="field-label">Solar Panel Brand</label>
-              <div className="pill-grid">
-                {[
-                  { id: 'ja_solar', label: 'JA Solar' },
-                  { id: 'canadian_solar', label: 'Canadian Solar' },
-                  { id: 'no_pref', label: 'No preference' },
-                  { id: 'cheapest', label: 'Cheapest available' },
-                ].map((b) => (
-                  <button key={b.id} type="button" className={`pill ${panelBrand === b.id ? 'pill--active' : ''}`} onClick={() => setPanelBrand(b.id)}>
-                    {b.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="field-label">Inverter Brand</label>
-              <div className="pill-grid">
-                {[
-                  { id: 'deye',    label: 'Deye' },
-                  { id: 'victron', label: 'Victron' },
-                  { id: 'solarmd', label: 'SolarMD' },
-                  { id: 'no_pref', label: 'No preference' },
-                ].map((b) => (
-                  <button key={b.id} type="button" className={`pill ${inverterBrand === b.id ? 'pill--active' : ''}`} onClick={() => setInverterBrand(b.id)}>
-                    {b.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="field-label">Battery Brand</label>
-              <div className="pill-grid">
-                {[
-                  { id: 'pylontech',   label: 'Pylontech' },
-                  { id: 'freedom_won', label: 'Freedom Won' },
-                  { id: 'no_pref',     label: 'No preference' },
-                ].map((b) => (
-                  <button
-                    key={b.id}
-                    type="button"
-                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm ${batteryBrand === b.id ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
-                    onClick={() => setBatteryBrand(b.id)}
-                  >
-                    {b.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Optional Costs ───────────────────────────────────────────────── */}
-        {currentStep === 'optional_costs' && (
-          <div
-            key="optional-costs"
-            className="grid gap-2"
-          >
-            {[
-              { id: 'transport',   label: 'Equipment delivery / transport', val: includeTransport, set: setIncludeTransport },
-              { id: 'install',     label: 'Installation labour (25% of hardware)', val: includeInstall, set: setIncludeInstall },
-              { id: 'contingency', label: 'Contingency (5%)', val: includeContingency, set: setIncludeContingency },
-            ].map((opt) => (
-              <label key={opt.id} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-none hover:bg-slate-50">
-                <input type="checkbox" checked={opt.val} onChange={(e) => opt.set(e.target.checked)} className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 focus:ring-offset-0" />
-                <span className="font-medium text-slate-800">{opt.label}</span>
-              </label>
-            ))}
-          </div>
-        )}
-      </AnimatePresence>
-
-      <div className="mt-8 flex items-center justify-between border-t border-slate-200/50 pt-5">
-        <div>
-          {(!isFirst || boqItems) && (
-             <Button variant="secondary" onClick={goBack} className="bg-white">
-               Back
-             </Button>
-          )}
-        </div>
-        <Button
-          variant="primary"
-          onClick={goNext}
-          className={isLast ? "bg-emerald-600 shadow-lg shadow-emerald-500/25 hover:bg-emerald-700 text-white" : "shadow-lg shadow-blue-500/25"}
-        >
-          {isLast ? 'Generate BOQ' : 'Continue'}
-        </Button>
-      </div>
-    </div>
-  );
 }
 
-/**
- * The wizard restores a session from browser storage in its first render
- * (a save that went through sign-in, or "Edit inputs"). The server cannot see
- * that storage, so it renders this placeholder, and the wizard mounts on the
- * client with the restored session already in place.
- */
-export default function SolarQuickWizard(props: SolarQuickWizardProps) {
+export default function SolarQuickWizard(props: Props) {
   const isClient = useIsClient();
-  if (!isClient) {
-    return <div className="w-full pb-24" aria-busy="true"><div className="h-2 w-full animate-pulse rounded-full bg-slate-100" /></div>;
-  }
+  if (!isClient) return <div className="h-2 w-full rounded-full bg-slate-100" aria-busy="true" />;
   return <SolarQuickWizardInner {...props} />;
 }

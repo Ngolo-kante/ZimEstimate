@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   solarBalanceOfSystemCost,
+  solarPackageToBOQ,
   solarSizingToBOQ,
   solarWiringKitItems,
   SOLAR_INSTALL_LABOR_PCT,
 } from './boq';
 import type { SolarSizingResult, SolarWizardAnswers } from './types';
+import { SOLAR_PACKAGES } from './catalog';
 
 const baseResult: SolarSizingResult = {
   peakLoadWatts: 4000,
@@ -172,5 +174,38 @@ describe('solarSizingToBOQ', () => {
       expect(item?.owned).toBe(true);
       expect(item?.included).toBe(false);
     }
+  });
+});
+
+describe('solarPackageToBOQ', () => {
+  const pkg = SOLAR_PACKAGES.find((p) => p.id === 'pkg_1kva_economy')!;
+
+  it('lists the package hardware as one line at its listed price', () => {
+    const items = solarPackageToBOQ(pkg, { include_protection: false });
+    expect(items).toHaveLength(1);
+    expect(items[0].id).toBe('sol_package');
+    expect(items[0].totalCostUsd).toBe(pkg.price);
+    expect(items.some((i) => ['sol_panels', 'sol_inverter', 'sol_batteries'].includes(i.id))).toBe(false);
+  });
+
+  it('prices labour as a share of the package, and skips it when the package includes installation', () => {
+    const withLabour = solarPackageToBOQ(pkg, { include_protection: false, include_install: true });
+    const labour = withLabour.find((i) => i.id === 'sol_install')!;
+    expect(labour.totalCostUsd).toBeCloseTo(pkg.price * SOLAR_INSTALL_LABOR_PCT, 2);
+    const installed = solarPackageToBOQ({ ...pkg, includesInstall: true }, { include_protection: false, include_install: true });
+    expect(installed.some((i) => i.id === 'sol_install')).toBe(false);
+  });
+
+  it('keeps the wiring kit as its own lines by default', () => {
+    const items = solarPackageToBOQ(pkg);
+    expect(items.length).toBeGreaterThan(1);
+    expect(items[0].totalCostUsd).toBe(pkg.price);
+  });
+
+  it('gives packages under 2kVA the basic wiring kit', () => {
+    const small = solarPackageToBOQ(pkg, { include_install: false });
+    expect(small.some((i) => i.id === 'sol_combiner')).toBe(false);
+    const big = SOLAR_PACKAGES.find((p) => p.kva >= 5)!;
+    expect(solarPackageToBOQ(big, { include_install: false }).some((i) => i.id === 'sol_combiner')).toBe(true);
   });
 });

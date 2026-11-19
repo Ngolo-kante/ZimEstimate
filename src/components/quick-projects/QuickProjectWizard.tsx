@@ -9,6 +9,7 @@ import {
   CheckCircle,
   Info,
   WarningCircle,
+  House,
 } from '@phosphor-icons/react';
 import { AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
@@ -17,6 +18,7 @@ import { applyDefaultAnswers, getActiveSteps, getVisibleQuestions, isStepComplet
 import type { Answers, BOQItem, LaborConfig, QuestionFlow, QuestionOption, WizardStep } from '@/lib/quick-projects/engine/types';
 import QuickBOQTable from './QuickBOQTable';
 import BoreholeBudgetExplorer from './BoreholeBudgetExplorer';
+import styles from './WizardChoices.module.css';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -61,8 +63,9 @@ function OptionGrid({
             key={opt.value}
             type="button"
             onClick={() => toggle(opt.value)}
-            className={`group relative flex flex-col items-start p-4 rounded-xl border transition-none duration-200 text-left ${active ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50'} `}
+            className={`${styles.card} ${active ? styles.selected : ''}`}
           >
+            <span className={styles.icon}><House size={28} weight="duotone" /></span>
             <div className="flex w-full items-start justify-between gap-2">
               <span className={`text-sm font-semibold block ${active ? 'text-blue-900' : 'text-slate-800'}`}>
                 {opt.label}
@@ -73,8 +76,8 @@ function OptionGrid({
                 <div className={`w-5 h-5 rounded-full border border-slate-300 flex-shrink-0 group-hover:border-blue-300 transition-none ${multi ? 'rounded-md' : ''}`} />
               )}
             </div>
-            {opt.recommended && !active && <span className="inline-block mt-2 px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider">Recommended</span>}
-            {opt.description && <p className={`mt-2 text-xs leading-relaxed ${active ? 'text-blue-700' : 'text-slate-500'}`}>{opt.description}</p>}
+            {opt.recommended && !active && <span className="mt-2 rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">Recommended</span>}
+            {opt.description && <p className={styles.detail}>{opt.description}</p>}
           </button>
         );
       })}
@@ -146,13 +149,19 @@ function QuestionField({
 
       {/* Select — Card layout (default) */}
       {question.type === 'select' && question.layout !== 'dropdown' && !isNS && (
-        <OptionGrid
+        <><OptionGrid
           options={question.options ?? []}
           value={(val as string) ?? ''}
           multi={false}
           onChange={(v) => onChange(question.id, v)}
           hasError={hasError}
         />
+        {!question.notSureOption && !question.options?.some((opt) => opt.value === 'not_sure') && question.options?.find((opt) => opt.recommended) && (
+          <button type="button" className="mt-3 min-h-11 text-sm font-medium text-blue-700 underline"
+            onClick={() => onChange(question.id, question.options?.find((opt) => opt.recommended)?.value)}>
+            Not sure — use {question.options.find((opt) => opt.recommended)?.label}
+          </button>
+        )}</>
       )}
 
       {/* Multi-select */}
@@ -435,7 +444,7 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
     <div className="w-full pb-24">
       {/* Progress */}
       <div className="mb-6">
-        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+        <div className="flex items-center justify-between text-sm font-semibold text-slate-500 mb-3">
           <span>Step {stepIndex + 1} of {totalSteps}</span>
           <span className="text-blue-600">{progressPct}%</span>
         </div>

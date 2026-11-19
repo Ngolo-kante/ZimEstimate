@@ -10,6 +10,7 @@ import {
   PANEL_BRANDS,
   MAINTENANCE_SERVICES,
   getRequiredZeraTier,
+  type SolarPackage,
 } from './catalog';
 
 // ─── Price Catalog ─────────────────────────────────────────────────────────────
@@ -270,6 +271,58 @@ export function solarSizingToBOQ(
     items.push(makeItem('sol_contingency', 'Contingency', 'Contingency (5%)', 1, 'lump sum', +(hardware * 0.05).toFixed(2), { optional: true }));
   }
 
+  return items;
+}
+
+/**
+ * A ready-made supplier package as a BOQ. The package's hardware (inverter,
+ * battery, panels) is one line at its listed price. Pricing those parts from
+ * the catalogue instead made the $749 1kVA kit a $1,242 BOQ: suppliers sell
+ * bundles below the sum of the separate parts. Wiring, transport, labour and
+ * contingency follow as their own lines, as in solarSizingToBOQ, with labour
+ * a share of the package price and left out when the package includes it.
+ */
+export function solarPackageToBOQ(
+  pkg: SolarPackage,
+  options: {
+    include_protection?: boolean;
+    include_transport?: boolean;
+    include_install?: boolean;
+    include_contingency?: boolean;
+    install_labor_pct?: number;
+    wiring_kit?: SolarWiringKit;
+  } = {}
+): BOQItem[] {
+  const systemWatts = pkg.panelCount * pkg.panelWatt;
+  const items: BOQItem[] = [
+    makeItem(
+      'sol_package', 'Solar package',
+      `${pkg.name}: ${pkg.kva}kVA inverter, ${pkg.batteryKwh}kWh battery, ${pkg.panelCount} × ${pkg.panelWatt}W panels`,
+      1, 'package', pkg.price,
+      { notes: `Listed package price${pkg.provider ? ` (${pkg.provider})` : ''}. Confirm with the supplier before you buy.` }
+    ),
+  ];
+  if (options.include_protection !== false) {
+    // A 1kVA starter with one or two panels needs the basic kit, not the
+    // combiner, surge and trunking a multi-string system does.
+    items.push(...solarWiringKitItems(pkg.panelCount, pkg.batteryKwh > 0, options.wiring_kit ?? (pkg.kva < 2 ? 'basic' : 'full')));
+  }
+  if (options.include_transport) {
+    items.push(makeItem('sol_transport', 'Site Work', 'Equipment delivery / transport', 1, 'trip', SOLAR_PRICES.transport, { optional: true }));
+  }
+  if (options.include_install && !pkg.includesInstall) {
+    const pct =
+      typeof options.install_labor_pct === 'number' && Number.isFinite(options.install_labor_pct)
+        ? Math.min(0.4, Math.max(0.05, options.install_labor_pct))
+        : SOLAR_PRICES.install_labor_pct;
+    items.push(makeItem('sol_install', 'Labor', `Installation labour (${Math.round(pct * 100)}% of the package)`, 1, 'lump sum', +(pkg.price * pct).toFixed(2), {
+      optional: true,
+      notes: `Requires ZERA ${getRequiredZeraTier(systemWatts)} licensed technician for this ${(systemWatts / 1000).toFixed(1)}kW system`,
+    }));
+  }
+  if (options.include_contingency) {
+    items.push(makeItem('sol_contingency', 'Contingency', 'Contingency (5%)', 1, 'lump sum', +(pkg.price * 0.05).toFixed(2), { optional: true }));
+  }
   return items;
 }
 
