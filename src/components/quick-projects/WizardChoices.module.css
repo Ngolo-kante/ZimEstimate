@@ -8,7 +8,6 @@
 .icon svg [opacity='0.2'] { fill: #e9c46a; opacity: .75; }
 .name { font-size: 16px; font-weight: 600; }
 .detail { margin-top: 4px; font-size: 13px; line-height: 1.4; color: #475569; }
-.price { margin-top: 10px; font-size: 14px; font-weight: 700; }
 .badge { position: absolute; top: 10px; right: 10px; padding: 2px 8px; border: 1px solid #e9c46a; border-radius: 999px; background: #fbf3dc; color: #7a5a12; font-size: 12px; font-weight: 600; }
 .package { min-height: 140px; }
 @media (hover: hover) and (pointer: fine) { .card:hover { border-color: #1d4ed8; } }

@@ -89,11 +89,7 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
     dailyEnergyKwh: 0, tier: pkg.kva <= 3 ? 'small' : pkg.kva <= 5 ? 'standard' : 'large',
     estimatedCostUsd: { low: pkg.price, high: pkg.price }, warnings: [],
   });
-  const packageTotal = selectedPackage
-    ? solarPackageToBOQ(selectedPackage, { include_transport: transport, include_install: install, include_contingency: contingency })
-        .reduce((sum, item) => sum + item.totalCostUsd, 0)
-    : null;
-  const formatUsd = (value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+  const packageBrandsKept = panelBrand === 'no_pref' && inverterBrand === 'no_pref' && batteryBrand === 'no_pref';
   const makeBoq = () => {
     const sizing = selectedPackage ? packageResult(selectedPackage) : result;
     if (!sizing) return;
@@ -101,7 +97,7 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
     // the person changes a brand it is a custom build, priced part by part.
     const ownBrands = panelBrand === 'no_pref' && inverterBrand === 'no_pref' && batteryBrand === 'no_pref';
     const parts = selectedPackage && ownBrands ? solarPackageToBOQ(selectedPackage, {
-      include_transport: transport, include_install: install, include_contingency: contingency,
+      include_transport: transport, include_contingency: contingency,
     }) : solarSizingToBOQ(sizing, {
       ...answers,
       panel_brand: panelBrand === 'no_pref' ? selectedPackage?.panelBrandKey : panelBrand,
@@ -135,14 +131,12 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
       <p className="mb-5 text-slate-600">Most homes start with 1kVA and add more later.</p>
       <div className={styles.grid}>{groups.map((group, index) => {
         const packages = SOLAR_PACKAGES.filter((pkg) => group.match(pkg.kva));
-        const cheapest = Math.min(...packages.map((pkg) => pkg.price));
         const Icon = group.icon;
         return <button type="button" key={group.label} className={`${styles.card} ${index === 0 ? styles.popular : ''}`}
           onClick={() => { setPath('size'); setGroupIndex(index); setPackageId(null); setStep('options'); update({ intent: 'backup' }); }}>
           <span className={styles.icon}><Icon size={28} weight="duotone" /></span>
           <span className={styles.name}>{group.label}</span>
           <span className={styles.detail}>{packages[0]?.appliances}</span>
-          <span className={styles.price}>From {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(cheapest)}</span>
           {index === 0 && <span className={styles.badge}>Most popular</span>}
         </button>;
       })}
@@ -162,7 +156,6 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
           <span className={styles.icon}><SolarPanel size={28} weight="duotone" /></span>
           <span className={styles.name}>{pkg.name}</span>
           <span className={styles.detail}>{pkg.appliances}</span>
-          <span className={styles.price}>${pkg.price.toLocaleString('en-US')}</span>
           {index === 0 && <span className={styles.badge}>Lowest price</span>}
         </button>)}
       {selectedPackage && <>
@@ -172,14 +165,9 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
             <li>Battery: {selectedPackage.batteryKwh} kWh</li>
             <li>Panels: {selectedPackage.panelCount} × {selectedPackage.panelWatt} W</li>
             <li>Inverter: {selectedPackage.kva} kVA</li>
-            <li>Wiring kit and protection</li>
-            <li>Labour: {selectedPackage.includesInstall ? 'Included in package' : install ? 'Added below' : 'Not included'}</li>
+            <li>Wiring and protection: included</li>
+            <li>Installation: included</li>
           </ol>
-          {/* The card shows the supplier's package price; the BOQ adds wiring,
-              protection and the extras ticked below, so say what it comes to. */}
-          {packageTotal !== null && <p className="mt-4 border-t border-slate-100 pt-3 text-sm text-slate-700">
-            Package {formatUsd(selectedPackage.price)} plus wiring, protection and the extras below: <strong className="text-slate-900">about {formatUsd(packageTotal)}</strong>
-          </p>}
         </div>
         {preferences()}
       </>}
@@ -263,7 +251,8 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
       </details>
       <div className="grid gap-2">
         <h3 className="font-semibold text-slate-900">Optional costs</h3>
-        {([['Equipment delivery / transport', transport, setTransport], ['Installation labour', install, setInstall], ['Contingency (5%)', contingency, setContingency]] as const).map(([label, value, setter]) =>
+        {/* A package's price already includes installation, so it has no switch. */}
+        {([['Equipment delivery / transport', transport, setTransport], ...(selectedPackage && packageBrandsKept ? [] : [['Installation labour', install, setInstall]] as const), ['Contingency (5%)', contingency, setContingency]] as const).map(([label, value, setter]) =>
           <label key={label} className="flex min-h-11 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-medium text-slate-800">
             <input type="checkbox" checked={value} onChange={(event) => setter(event.target.checked)} />{label}
           </label>)}
