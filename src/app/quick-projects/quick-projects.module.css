@@ -417,3 +417,21 @@
   }
 }
 }
+
+@media (max-width: 640px) {
+  .page {
+    background: var(--color-primary);
+  }
+
+  .header {
+    border-bottom-color: #354962;
+  }
+
+  .sectionHeader h2 {
+    color: white;
+  }
+
+  .sectionHeader > div > span {
+    color: #bcd2f0;
+  }
+}

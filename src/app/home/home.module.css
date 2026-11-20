@@ -1079,3 +1079,21 @@ empty strip between the closing band and the footer. */
     background: #1d4ed8;
   }
 }
+
+@media (max-width: 640px) {
+  .startSection {
+    background: var(--color-primary);
+  }
+
+  .startHeader h2 {
+    color: white;
+  }
+
+  .startHeader > p {
+    color: #dbe6f5;
+  }
+
+  .startHeader .sectionIndex {
+    color: #f4ce77;
+  }
+}

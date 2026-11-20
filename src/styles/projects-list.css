@@ -137,3 +137,34 @@
     .projects-list .project-card:hover { border-color: #94a3b8; }
     .projects-list .continue-next li a:hover .step-meta svg { color: #2563eb; }
 }
+
+@media (max-width: 640px) {
+    .main-content:has(.projects-list.projects-page) {
+        background: var(--color-primary);
+    }
+
+    .projects-list .projects-header h1,
+    .projects-list .projects-section-heading,
+    .projects-list .shared-section h2 {
+        color: white;
+    }
+
+    .projects-list .portfolio-strip,
+    .projects-list .portfolio-strip strong,
+    .projects-list .error-state {
+        color: #dbe6f5;
+    }
+
+    .projects-list .portfolio-strip a {
+        color: #bcd2f0;
+    }
+
+    .projects-list .usage-limit {
+        color: #f4ce77;
+    }
+
+    .projects-list .archive-heading {
+        background: transparent;
+        color: white;
+    }
+}

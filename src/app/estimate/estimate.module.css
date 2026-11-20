@@ -43,6 +43,18 @@
   padding-block: 44px 40px;
 }
 
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-bottom: 12px;
+  color: white;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .eyebrow {
   display: block;
   color: #cbd5e1;
@@ -294,4 +306,26 @@
     .tile:hover {
   }
 }
+}
+
+@media (max-width: 640px) {
+  .page {
+    background: var(--color-primary);
+  }
+
+  .hero {
+    border-bottom-color: #354962;
+  }
+
+  .groupHeader {
+    border-left-color: #bcd2f0;
+  }
+
+  .groupHeader h2 {
+    color: white;
+  }
+
+  .groupHeader p {
+    color: #dbe6f5;
+  }
 }

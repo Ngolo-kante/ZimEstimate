@@ -11,7 +11,7 @@ import ProjectViewTabs from '@/components/projects/ProjectViewTabs';
 import InviteModal from '@/components/projects/InviteModal';
 import SiteView from '@/components/projects/SiteView';
 import ProjectShareSheet from '@/components/projects/ProjectShareSheet';
-import SidebarSpine from '@/components/projects/SidebarSpine';
+import SidebarSpine, { PROJECT_NAV_ITEMS } from '@/components/projects/SidebarSpine';
 import ViewHeader from '@/components/projects/views/ViewHeader';
 import OverviewView from '@/components/projects/views/OverviewView';
 import BoqView from '@/components/projects/views/BoqView';
@@ -193,7 +193,12 @@ function ProjectDetailContent() {
                         onViewChange={setActiveView}
                     />
 
-                    <ProjectBreadcrumb name={project.name} />
+                    <ProjectBreadcrumb
+                        name={activeView === 'overview'
+                            ? project.name
+                            : PROJECT_NAV_ITEMS.find(item => item.id === activeView)?.label ?? project.name}
+                        overviewHref={activeView === 'overview' ? undefined : `/projects/${project.id}`}
+                    />
                     <ViewHeader activeView={activeView} projectName={project.name} stats={activeViewStats} />
 
                     {activeView === 'overview' && (

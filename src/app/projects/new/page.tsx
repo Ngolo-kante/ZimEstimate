@@ -1,6 +1,7 @@
 'use client';
 
 import StartOptions from '@/components/projects/StartOptions';
+import ProjectBreadcrumb from '@/components/projects/ProjectBreadcrumb';
 import { useId } from 'react';
 
 import { Field, FieldGroup, FieldLabel } from '@/components/shadcn/field';
@@ -213,6 +214,7 @@ export default function NewProject() {
     return (
         <MainLayout title="New project">
             <div className="new-project">
+                <ProjectBreadcrumb name="New project" />
                 {/* Where you are, in words. The old numbered circles under a bar
                     read as carousel dots ("is this slideable?"), so the steps
                     are a plain label and a four-part bar, nothing to swipe. */}
@@ -458,17 +460,18 @@ export default function NewProject() {
 
                 {/* Navigation */}
                 <div className="step-navigation" hidden={step === 1 && !houseChosen} style={step === 1 && !houseChosen ? { display: 'none' } : undefined}>
-                    {step > 1 && (
+                    {(step > 1 || houseChosen) && (
                         <Button
                             variant="secondary"
                             icon={<ArrowLeft size={18} weight="bold" />}
                             onClick={() => {
                                 setFieldErrors({});
                                 setStepMessage(null);
-                                setStep(step - 1);
+                                if (step > 1) setStep(step - 1);
+                                else setHouseChosen(false);
                             }}
                         >
-                            Back
+                            {step > 1 ? 'Back' : 'Back to estimate options'}
                         </Button>
                     )}
                     <div className="nav-spacer" />

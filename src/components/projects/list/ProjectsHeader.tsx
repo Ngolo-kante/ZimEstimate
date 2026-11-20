@@ -15,7 +15,7 @@ export default function ProjectsHeader({ canCreateProject }: { canCreateProject:
                 {/* The start page lists every kind of estimate — full house,
                     by stage, from a plan, solar, borehole and the rest —
                     rather than dropping straight into the house builder. */}
-                <Link href="/estimate">
+                <Link href="/estimate?from=projects">
                     <Button
                         icon={<Plus size={18} weight="bold" />}
                         disabled={!canCreateProject()}

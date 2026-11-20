@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import {
+  ArrowLeft,
   ArrowRight,
   Blueprint,
   BookOpen,
@@ -85,7 +86,8 @@ const groups: Group[] = [
 
 const total = groups.reduce((sum, group) => sum + group.tiles.length, 0);
 
-export default function EstimateServicesPage() {
+export default async function EstimateServicesPage({ searchParams }: PageProps<'/estimate'>) {
+  const fromProjects = (await searchParams).from === 'projects';
   return (
     <MainLayout fullWidth>
       <div className={styles.page}>
@@ -93,6 +95,12 @@ export default function EstimateServicesPage() {
           <div className={styles.heroGrid} aria-hidden="true" />
           <div className={styles.heroInner}>
             <div className={styles.heroCopy}>
+              {fromProjects && (
+                <Link href="/projects" className={styles.backLink}>
+                  <ArrowLeft size={16} aria-hidden="true" />
+                  Back to My projects
+                </Link>
+              )}
               <span className={styles.eyebrow}>Start an estimate</span>
               <h1>What do you need to work out?</h1>
               <p>Pick the closest match. You can change quantities, prices and materials before saving.</p>
