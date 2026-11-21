@@ -436,8 +436,8 @@ function DashboardContent() {
               <div className="list-section">
                 {analytics.topSuppliers.map((supplier) => (
                   <div key={supplier.name} className="list-row">
-                    <div className="list-icon supplier-icon">
-                      <Storefront size={15} weight="duotone" />
+                    <div className="list-icon">
+                      <Storefront size={15} weight="duotone" aria-hidden="true" />
                     </div>
                     <span className="list-name">{supplier.name}</span>
                     <div className="list-bar">
@@ -462,8 +462,8 @@ function DashboardContent() {
               <div className="list-section">
                 {analytics.recentPurchases.slice(0, 5).map((purchase) => (
                   <div key={purchase.id} className="list-row">
-                    <div className="list-icon purchase-icon">
-                      <Package size={15} weight="duotone" />
+                    <div className="list-icon">
+                      <Package size={15} weight="duotone" aria-hidden="true" />
                     </div>
                     <div className="list-info">
                       <span className="list-name">{purchase.materialName}</span>
@@ -990,16 +990,8 @@ function DashboardContent() {
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
-        }
-
-        .supplier-icon {
-          background: #eff6ff;
-          color: var(--color-accent);
-        }
-
-        .purchase-icon {
-          background: #f0fdf4;
-          color: var(--color-success);
+          background: var(--color-info-bg);
+          color: var(--color-info-fg);
         }
 
         .list-name {

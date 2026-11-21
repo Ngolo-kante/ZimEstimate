@@ -549,6 +549,57 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+.project-usage .usage-navigation {
+    --usage-tab-ink: var(--color-text-secondary);
+    --usage-tab-selected: var(--color-accent-dark);
+    --usage-tab-rule: var(--color-border);
+    gap: 0;
+    padding: 0;
+    border-block-end: 1px solid var(--usage-tab-rule);
+    margin-block-end: 8px;
+}
+
+.project-usage .usage-navigation [role="tab"] {
+    min-width: 0;
+    min-height: 48px;
+    gap: 6px;
+    padding-inline: 4px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--usage-tab-ink);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.project-usage .usage-navigation [role="tab"]::after {
+    bottom: -1px;
+    inset-inline: 0;
+    height: 3px;
+    background: var(--usage-tab-selected);
+    transition: none;
+}
+
+.project-usage .usage-navigation [role="tab"][aria-selected="true"],
+.project-usage .usage-navigation [role="tab"]:hover {
+    color: var(--usage-tab-selected);
+}
+
+.project-usage .usage-navigation [role="tab"]:focus-visible {
+    z-index: 1;
+    outline: 2px solid var(--usage-tab-selected);
+    outline-offset: -4px;
+    box-shadow: none;
+}
+
+@media (max-width: 640px) {
+    .project-workspace .project-usage .usage-navigation {
+        --usage-tab-ink: #e2e8f0;
+        --usage-tab-selected: var(--color-gold-on-navy);
+        --usage-tab-rule: #536680;
+    }
+}
+
 .project-usage .usage-tab-switcher {
     gap: 4px;
     padding: 4px;
@@ -602,19 +653,7 @@
     font-size: 0.875rem;
 }
 
-.project-usage .tab-label-short {
-  display: none;
-}
-
 @media (max-width: 480px) {
-  .project-usage .tab-label-long {
-    display: none;
-  }
-
-  .project-usage .tab-label-short {
-    display: inline;
-  }
-
   .project-usage .usage-tab {
     gap: 5px;
     padding: 8px 6px;

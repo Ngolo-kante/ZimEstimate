@@ -1,7 +1,6 @@
 'use client';
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shadcn/tabs';
-import { Badge } from '@/components/shadcn/badge';
 
 import { formatQuantity } from '@/lib/format';
 
@@ -205,23 +204,19 @@ export default function ProjectUsageView({
 
   return (
     <div className="project-usage usage-page">
-      {/* Tab Navigation */}
-      {/* Three equal columns that always fit: as a row that could not
-          shrink it pushed the page to 426px on a 390px phone and cut off
-          the ledger. Short labels on small screens. */}
       <Tabs value={activeTab} onValueChange={value => setActiveTab(value as UsageTab)}>
-      <TabsList aria-label="Usage tracking" className="usage-tab-switcher !h-auto !w-full !grid grid-cols-3">
-        <TabsTrigger className="min-h-11 min-w-0 px-1 text-sc-muted-foreground transition-none" value="log">
-          <Plus className="hidden sm:block" size={16} weight="duotone" aria-hidden="true" />
-          <span className="tab-label-long">Log usage</span><span className="tab-label-short">Log</span>
+      <TabsList variant="line" aria-label="Usage tracking" className="usage-navigation !grid !h-auto !w-full grid-cols-3">
+        <TabsTrigger value="log">
+          <Plus size={16} aria-hidden="true" />
+          Log
         </TabsTrigger>
-        <TabsTrigger className="min-h-11 min-w-0 px-1 text-sc-muted-foreground transition-none" value="materials">
-          <Package className="hidden sm:block" size={16} weight="duotone" aria-hidden="true" />Materials<Badge variant="secondary">{items.length}</Badge>
+        <TabsTrigger value="materials">
+          <Package size={16} aria-hidden="true" />
+          Materials
         </TabsTrigger>
-        <TabsTrigger className="min-h-11 min-w-0 px-1 text-sc-muted-foreground transition-none" value="ledger">
-          <Receipt className="hidden sm:block" size={16} weight="duotone" aria-hidden="true" />
-          <span className="tab-label-long">Usage ledger</span><span className="tab-label-short">Ledger</span>
-          {usageHistory.length > 0 && <Badge variant="secondary">{usageHistory.length}</Badge>}
+        <TabsTrigger value="ledger">
+          <Receipt size={16} aria-hidden="true" />
+          Ledger
         </TabsTrigger>
       </TabsList>
 

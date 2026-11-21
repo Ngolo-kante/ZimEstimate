@@ -228,10 +228,11 @@ export default function StageBOQSection({
                         <Button
                             variant="secondary"
                             size="sm"
-                            icon={<Plus size={14} />}
+                            icon={<Plus size={14} aria-hidden="true" />}
+                            aria-label={addLabel}
                             onClick={() => setShowAddForm(prev => !prev)}
                         >
-                            {addLabel}
+                            Add
                         </Button>
                     </div>
                     {showAddForm && (
@@ -301,8 +302,9 @@ export default function StageBOQSection({
                         <Button
                             variant="secondary"
                             size="sm"
-                            icon={<Plus size={14} />}
+                            icon={<Plus size={14} aria-hidden="true" />}
                             className="add-btn-header"
+                            aria-label={addLabel}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setShowAddForm(prev => !prev);

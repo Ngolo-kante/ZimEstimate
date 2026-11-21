@@ -6,11 +6,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Camera, CircleNotch } from '@phosphor-icons/react';
+import Card, { CardTitle } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { prepareImageForUpload } from '@/lib/compressImage';
 import { getSitePhotos, uploadSitePhoto, type SitePhoto } from '@/lib/services/site';
 
-export default function SitePhotosPanel({ projectId, onPhotoCountChange }: { projectId: string; onPhotoCountChange?: (count: number) => void }) {
+export default function SitePhotosPanel({ projectId }: { projectId: string }) {
   const { success, error: showError } = useToast();
   const [photos, setPhotos] = useState<SitePhoto[] | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -22,10 +23,6 @@ export default function SitePhotosPanel({ projectId, onPhotoCountChange }: { pro
     return () => { active = false; };
   }, [projectId]);
 
-  useEffect(() => {
-    if (photos !== null) onPhotoCountChange?.(photos.length);
-  }, [photos, onPhotoCountChange]);
-
   const add = async (chosen: File | undefined) => {
     if (!chosen) return;
     setUploading(true);
@@ -36,9 +33,9 @@ export default function SitePhotosPanel({ projectId, onPhotoCountChange }: { pro
   };
 
   return (
-    <section className="panel">
+    <Card>
       <div className="head">
-        <h3>Site photos</h3>
+        <CardTitle>Site photos</CardTitle>
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { void add(e.target.files?.[0]); e.target.value = ''; }} />
         <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}>
           {uploading ? <CircleNotch size={15} className="spin" /> : <Camera size={15} />} Add photo
@@ -61,10 +58,8 @@ export default function SitePhotosPanel({ projectId, onPhotoCountChange }: { pro
         </div>
       )}
       <style jsx>{`
-        .panel { margin-top: 20px; padding: 16px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface); }
         .head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
-        h3 { margin: 0; font-size: 1rem; font-weight: 700; color: var(--color-text); }
-        button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+        button { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-size: 0.82rem; font-weight: 600; cursor: pointer; }
         button:disabled { opacity: 0.6; }
         .muted { margin: 0; color: var(--color-text-secondary); font-size: 0.82rem; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
@@ -74,6 +69,6 @@ export default function SitePhotosPanel({ projectId, onPhotoCountChange }: { pro
         :global(.spin) { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
-    </section>
+    </Card>
   );
 }

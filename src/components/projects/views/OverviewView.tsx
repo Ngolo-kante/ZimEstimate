@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/shadcn/collapsible';
 import { pendingItemsOf } from '@/lib/projects/listPresentation';
 import Card, { CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -15,7 +13,7 @@ import type { PriceUpdate } from '@/lib/projects/priceUpdates';
 import type { PurchaseStats } from '@/lib/projects/workspaceStats';
 import type { BOQCategory, BOQItem, Project, ProjectStageWithTasks, PurchaseRecord } from '@/lib/database.types';
 import {
-    CaretDown,
+    CaretRight,
     ShareNetwork,
     UserPlus,
     MapPin,
@@ -84,7 +82,6 @@ export default function OverviewView({
     onIgnorePriceUpdates,
     onApplyPriceUpdates,
 }: OverviewViewProps) {
-    const [photoCount, setPhotoCount] = useState<number | null>(null);
     const { exchangeRate, formatPrice } = useCurrency();
     const pendingItems = pendingItemsOf(materialItems, purchases);
     return (
@@ -190,6 +187,7 @@ export default function OverviewView({
                                     onClick={() => setActiveView('procurement')}
                                 >
                                     View all {pendingItems.length} pending items
+                                    <CaretRight size={16} weight="bold" aria-hidden="true" />
                                 </button>
                             )}
                         </div>
@@ -239,125 +237,91 @@ export default function OverviewView({
             </div>
             <div className="space-y-3">
                 {priceUpdates.length > 0 && (
-                    <Collapsible>
-                        <CollapsibleTrigger className="overview-details-trigger price-update-trigger">
-                            <span className="flex min-w-0 items-center gap-2">
-                                <TrendUp size={18} weight="bold" aria-hidden="true" />
-                                Price updates available
-                            </span>
-                            <span className="overview-details-summary">
-                                {priceUpdates.length} {priceUpdates.length === 1 ? 'item' : 'items'}
-                            </span>
-                            <CaretDown size={18} aria-hidden="true" />
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="overview-details-content">
-                            <div className="pt-2">
-                                <Card>
-                                    <p className="text-sm text-secondary">
-                                        New market prices detected for {priceUpdatePreview}.
-                                        Applying updates will change your estimated totals.
-                                    </p>
-                                    <div className="mt-3 flex flex-wrap gap-2">
-                                        <Button size="sm" variant="secondary" onClick={onIgnorePriceUpdates}>
-                                            Ignore
-                                        </Button>
-                                        <Button size="sm" onClick={onApplyPriceUpdates} loading={isPriceUpdateLoading}>
-                                            Apply updates
-                                        </Button>
-                                    </div>
-                                </Card>
-                            </div>
-                        </CollapsibleContent>
-                    </Collapsible>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>
+                                <span className="flex items-center gap-2">
+                                    <TrendUp size={18} weight="bold" className="shrink-0 text-[var(--color-gold-ink)]" aria-hidden="true" />
+                                    Price updates available
+                                </span>
+                            </CardTitle>
+                        </CardHeader>
+                        <p className="text-sm text-secondary">
+                            New market prices detected for {priceUpdatePreview}.
+                            Applying updates will change your estimated totals.
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            <Button size="sm" variant="secondary" onClick={onIgnorePriceUpdates}>
+                                Ignore
+                            </Button>
+                            <Button size="sm" onClick={onApplyPriceUpdates} loading={isPriceUpdateLoading}>
+                                Apply updates
+                            </Button>
+                        </div>
+                    </Card>
                 )}
 
-                <Collapsible>
-                    <CollapsibleTrigger className="overview-details-trigger">
-                        <span>Compliance</span>
-                        <span className="overview-details-summary">{complianceSummary.doneCerts} of {complianceSummary.totalCerts} certificates</span>
-                        <CaretDown size={18} aria-hidden="true" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="overview-details-content">
-                        <div className="pt-2">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Compliance snapshot</CardTitle>
-                                </CardHeader>
-                                {/* Counted exactly as the Compliance counts them
-                                    (summariseCompliance), so the two pages agree. */}
-                                <div className="space-y-4">
-                                    <div className="flex flex-wrap justify-between items-center gap-2 py-2 border-b border-border-light">
-                                        <span className="text-sm text-secondary">Certificates</span>
-                                        <span className="font-medium text-primary">
-                                            {complianceSummary.doneCerts}/{complianceSummary.totalCerts}
-                                        </span>
-                                    </div>
-                                    <div className="flex flex-wrap justify-between items-center gap-2 py-2 border-b border-border-light">
-                                        <span className="text-sm text-secondary">Admin tasks</span>
-                                        <span className="font-medium text-primary">
-                                            {complianceSummary.doneTasks}/{complianceSummary.totalTasks}
-                                        </span>
-                                    </div>
-                                    {complianceSummary.next ? (
-                                        <div className="text-xs">
-                                            <span className="text-secondary">Next {complianceSummary.next.type === 'Certificate' ? 'certificate' : 'task'}: </span>
-                                            <span className="font-medium text-primary">{complianceSummary.next.label}</span>
-                                            <span className="text-secondary"> · {complianceSummary.next.stageName}</span>
-                                        </div>
-                                    ) : complianceSummary.total > 0 ? (
-                                        <div className="text-xs font-medium text-green-700">All certificates and tasks are done.</div>
-                                    ) : (
-                                        <div className="text-xs text-secondary">No stages switched on yet.</div>
-                                    )}
-                                    <Button size="sm" variant="secondary" className="w-full" onClick={() => setActiveView('compliance')}>
-                                        Open compliance
-                                    </Button>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Compliance</CardTitle>
+                    </CardHeader>
+                    <div className="space-y-4">
+                        <div className="flex flex-wrap justify-between items-center gap-2 py-2 border-b border-border-light">
+                            <span className="text-sm text-secondary">Certificates</span>
+                            <span className="font-medium text-primary">
+                                {complianceSummary.doneCerts}/{complianceSummary.totalCerts}
+                            </span>
+                        </div>
+                        <div className="flex flex-wrap justify-between items-center gap-2 py-2 border-b border-border-light">
+                            <span className="text-sm text-secondary">Admin tasks</span>
+                            <span className="font-medium text-primary">
+                                {complianceSummary.doneTasks}/{complianceSummary.totalTasks}
+                            </span>
+                        </div>
+                        {complianceSummary.next ? (
+                            <div className="text-xs">
+                                <span className="text-secondary">Next {complianceSummary.next.type === 'Certificate' ? 'certificate' : 'task'}: </span>
+                                <span className="font-medium text-primary">{complianceSummary.next.label}</span>
+                                <span className="text-secondary"> · {complianceSummary.next.stageName}</span>
+                            </div>
+                        ) : complianceSummary.total > 0 ? (
+                            <div className="text-xs font-medium text-green-700">All certificates and tasks are done.</div>
+                        ) : (
+                            <div className="text-xs text-secondary">No stages switched on yet.</div>
+                        )}
+                        <Button size="sm" variant="secondary" className="w-full" onClick={() => setActiveView('compliance')}>
+                            Open compliance
+                        </Button>
 
-                                    <div className="pt-2 border-t border-border-light space-y-2">
-                                        <div className="flex justify-between items-center text-xs">
-                                            <span className="text-secondary">Soil type</span>
-                                            <span className="font-medium text-primary">
-                                                {soilLabel(project.soil_type) ?? 'Not set'}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs">
-                                            <span className="text-secondary">Site slope</span>
-                                            <span className="font-medium text-primary">
-                                                {slopeLabel(project.site_slope) ?? 'Not set'}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs">
-                                            <span className="text-secondary">Geotech report</span>
-                                            <span className={`font-medium ${project.geotech_report_uploaded ? 'text-green-700' : 'text-slate-600'}`}>
-                                                {project.geotech_report_uploaded ? 'Uploaded' : 'Not uploaded'}
-                                            </span>
-                                        </div>
-                                        {geotechDocumentSummary && (
-                                            <div className="text-xs text-secondary">
-                                                {geotechDocumentSummary.fileName} ({new Date(geotechDocumentSummary.createdAt).toLocaleDateString()})
-                                            </div>
-                                        )}
-                                    </div>
+                        <div className="pt-2 border-t border-border-light space-y-2">
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-secondary">Soil type</span>
+                                <span className="font-medium text-primary">
+                                    {soilLabel(project.soil_type) ?? 'Not set'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-secondary">Site slope</span>
+                                <span className="font-medium text-primary">
+                                    {slopeLabel(project.site_slope) ?? 'Not set'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-secondary">Geotech report</span>
+                                <span className={`font-medium ${project.geotech_report_uploaded ? 'text-green-700' : 'text-slate-600'}`}>
+                                    {project.geotech_report_uploaded ? 'Uploaded' : 'Not uploaded'}
+                                </span>
+                            </div>
+                            {geotechDocumentSummary && (
+                                <div className="text-xs text-secondary">
+                                    {geotechDocumentSummary.fileName} ({new Date(geotechDocumentSummary.createdAt).toLocaleDateString()})
                                 </div>
-                            </Card>
+                            )}
                         </div>
-                    </CollapsibleContent>
-                </Collapsible>
+                    </div>
+                </Card>
 
-                <Collapsible>
-                    <CollapsibleTrigger className="overview-details-trigger">
-                        <span>Site photos</span>
-                        <span className="overview-details-summary">
-                            {photoCount === null ? 'Loading photos…' : `${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}`}
-                        </span>
-                        <CaretDown size={18} aria-hidden="true" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent forceMount className="overview-details-content">
-                        <div className="pt-2">
-                            <SitePhotosPanel projectId={projectId} onPhotoCountChange={setPhotoCount} />
-                        </div>
-                    </CollapsibleContent>
-                </Collapsible>
+                <SitePhotosPanel projectId={projectId} />
             </div>
         </div>
     );
