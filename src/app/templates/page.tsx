@@ -95,7 +95,7 @@ export default function TemplatesPage() {
                       <IconComponent size={28} weight="light" />
                     </div>
                     {template.popularity && (
-                      <CardBadge variant={template.popularity === 'Premium' ? 'accent' : 'success'}>
+                      <CardBadge variant="featured">
                         {template.popularity}
                       </CardBadge>
                     )}

@@ -242,6 +242,8 @@
 }
 
 /* Tables */
+.ds-table-scroll { max-width: 100%; overflow-x: auto; }
+
 .ds-table {
   width: 100%;
   border-collapse: collapse;

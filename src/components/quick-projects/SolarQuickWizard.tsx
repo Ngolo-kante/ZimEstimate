@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { BatteryCharging, Lightning, Question, SolarPanel } from '@phosphor-icons/react';
+import { CardBadge } from '@/components/ui/CardBadge';
+import { BatteryCharging, CheckCircle, Lightning, Question, SolarPanel } from '@phosphor-icons/react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useIsClient } from '@/hooks/useIsClient';
@@ -137,7 +138,7 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
           <span className={styles.icon}><Icon size={28} weight="duotone" /></span>
           <span className={styles.name}>{group.label}</span>
           <span className={styles.detail}>{packages[0]?.appliances}</span>
-          {index === 0 && <span className={styles.badge}>Most popular</span>}
+          {index === 0 && <CardBadge variant="featured" className={styles.badge}>Most popular</CardBadge>}
         </button>;
       })}
       <button type="button" className={styles.card} onClick={() => { setPath('guided'); setStep('backup'); update({ intent: 'backup' }); }}>
@@ -152,11 +153,11 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
     </>}
     {step === 'options' && <div className="grid gap-4">
       {SOLAR_PACKAGES.filter((pkg) => groups[groupIndex ?? 0].match(pkg.kva)).sort((a, b) => a.price - b.price).map((pkg, index) =>
-        <button type="button" key={pkg.id} className={`${styles.card} ${styles.package} ${packageId === pkg.id ? styles.selected : ''}`} onClick={() => setPackageId(pkg.id)}>
+        <button type="button" key={pkg.id} aria-pressed={packageId === pkg.id} className={`${styles.card} ${styles.package} ${packageId === pkg.id ? styles.selected : ''}`} onClick={() => setPackageId(pkg.id)}>
           <span className={styles.icon}><SolarPanel size={28} weight="duotone" /></span>
-          <span className={styles.name}>{pkg.name}</span>
+          <span className={styles.name}>{pkg.name}{packageId === pkg.id && <CheckCircle className={styles.choiceCheck} weight="fill" aria-hidden="true" />}</span>
           <span className={styles.detail}>{pkg.appliances}</span>
-          {index === 0 && <span className={styles.badge}>Lowest price</span>}
+          {index === 0 && <CardBadge variant="info" className={styles.badge}>Lowest price</CardBadge>}
         </button>)}
       {selectedPackage && <>
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -173,9 +174,9 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
       </>}
     </div>}
     {step === 'backup' && <div className={styles.grid}>{[2, 4, 6, 8, 12, 24].map((hours) =>
-      <button type="button" key={hours} className={`${styles.card} ${answers.backupHours === hours ? styles.selected : ''}`}
+      <button type="button" key={hours} aria-pressed={answers.backupHours === hours} className={`${styles.card} ${answers.backupHours === hours ? styles.selected : ''}`}
         onClick={() => update({ backupHours: hours, intent: hours >= 8 ? 'off_grid' : 'backup' })}>
-        <span className={styles.icon}><BatteryCharging size={28} weight="duotone" /></span><span className={styles.name}>{hours} hours</span>
+        <span className={styles.icon}><BatteryCharging size={28} weight="duotone" /></span><span className={styles.name}>{hours} hours{answers.backupHours === hours && <CheckCircle className={styles.choiceCheck} weight="fill" aria-hidden="true" />}</span>
         <span className={styles.detail}>{hours >= 8 ? 'Off-grid' : 'Backup'}</span>
       </button>)}
       <button type="button" className={styles.card} onClick={() => update({ backupHours: 4, intent: 'backup' })}>

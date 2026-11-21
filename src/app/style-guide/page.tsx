@@ -1,3 +1,6 @@
+import Button from '@/components/ui/Button';
+import { CardBadge } from '@/components/ui/CardBadge';
+
 export default function StyleGuidePage() {
   return (
     <main className="ds-page">
@@ -9,34 +12,35 @@ export default function StyleGuidePage() {
             keep buttons, cards, inputs, and tables consistent across the app.
           </p>
         </div>
-        <div className="ds-surface">
-          <div className="ds-card-meta">
-            <span>Tokens</span>
-            <span>v1 · Feb 10, 2026</span>
-          </div>
-          <p>
-            Built on the Design Direction Draft with electric blue accents, deep navy
-            foundations, and data-forward layouts.
-          </p>
-        </div>
       </header>
 
       <section className="ds-section">
         <h2>Buttons</h2>
         <p>Primary actions, secondary utilities, and destructive states.</p>
         <div className="ds-row">
-          <button className="ds-btn ds-btn--primary">Primary</button>
-          <button className="ds-btn ds-btn--secondary">Secondary</button>
-          <button className="ds-btn ds-btn--ghost">Ghost</button>
-          <button className="ds-btn ds-btn--danger">Danger</button>
-          <button className="ds-btn ds-btn--primary" disabled>
-            Disabled
-          </button>
+          <Button variant="primary">Primary</Button>
+          <Button variant="secondary">Secondary</Button>
+          <Button variant="ghost">Ghost</Button>
+          <Button variant="danger">Danger</Button>
+          <Button variant="primary" disabled>Disabled</Button>
         </div>
         <div className="ds-row" style={{ marginTop: "var(--space-4)" }}>
-          <button className="ds-btn ds-btn--primary ds-btn--sm">Small</button>
-          <button className="ds-btn ds-btn--primary">Medium</button>
-          <button className="ds-btn ds-btn--primary ds-btn--lg">Large</button>
+          <Button variant="primary" size="sm">Small</Button>
+          <Button variant="primary">Medium</Button>
+          <Button variant="primary" size="lg">Large</Button>
+        </div>
+      </section>
+
+      <section className="ds-section" id="badges">
+        <h2>Badges</h2>
+        <p>Brass marks recommendations. Project and payment statuses use a separate set of colors and symbols.</p>
+        <div className="ds-row">
+          <CardBadge variant="featured">Recommended</CardBadge>
+          <CardBadge>Draft</CardBadge>
+          <CardBadge variant="info">In progress</CardBadge>
+          <CardBadge variant="success">Paid</CardBadge>
+          <CardBadge variant="warning">Needs review</CardBadge>
+          <CardBadge variant="error">Over budget</CardBadge>
         </div>
       </section>
 
@@ -47,13 +51,13 @@ export default function StyleGuidePage() {
           <article className="ds-card">
             <div className="ds-card-meta">
               <span>Project</span>
-              <span>Draft</span>
+              <CardBadge>Draft</CardBadge>
             </div>
             <h3>Hillcrest Duplex</h3>
             <p>Bulawayo · 2 floors · 240 sqm</p>
             <div className="ds-card-actions">
-              <button className="ds-btn ds-btn--secondary ds-btn--sm">View</button>
-              <button className="ds-btn ds-btn--primary ds-btn--sm">Edit</button>
+              <Button variant="secondary" size="sm">View</Button>
+              <Button variant="primary" size="sm">Edit</Button>
             </div>
           </article>
           <article className="ds-card">
@@ -64,7 +68,7 @@ export default function StyleGuidePage() {
             <h3>Material Requests</h3>
             <p>Track suppliers, compare quotes, and accept bids.</p>
             <div className="ds-card-actions">
-              <button className="ds-btn ds-btn--secondary ds-btn--sm">Review</button>
+              <Button variant="secondary" size="sm">Review</Button>
             </div>
           </article>
           <article className="ds-card">
@@ -75,7 +79,7 @@ export default function StyleGuidePage() {
             <h3>Spend Snapshot</h3>
             <p>Budget remaining: $32,450 · Variance: -4.8%</p>
             <div className="ds-card-actions">
-              <button className="ds-btn ds-btn--ghost ds-btn--sm">Details</button>
+              <Button variant="ghost" size="sm">Details</Button>
             </div>
           </article>
         </div>
@@ -127,7 +131,7 @@ export default function StyleGuidePage() {
       <section className="ds-section">
         <h2>Tables</h2>
         <p>Dense information with clear hierarchy and hover states.</p>
-        <div className="ds-surface">
+        <div className="ds-surface ds-table-scroll">
           <table className="ds-table">
             <thead>
               <tr>

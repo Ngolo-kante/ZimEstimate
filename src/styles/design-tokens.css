@@ -46,15 +46,28 @@
    * COLORS
    * ======================================== */
 
+  /* Midnight navigation and blueprint panels; ice surfaces carry dense estimates. */
+  --studio-midnight: #0b192e;
+  --studio-steel: #1c3050;
+  --studio-line: #3b5272;
+  --studio-ink: #f1f5fc;
+  --studio-muted: #c1cfe2;
+  --studio-brass: #f4c669;
+  --studio-grid:
+    linear-gradient(to right, rgb(161 190 235 / 8%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(161 190 235 / 8%) 1px, transparent 1px);
+  --studio-grid-size: 28px 28px;
+  --mobile-nav-height: calc(60px + env(safe-area-inset-bottom, 0px));
+
   /* Primary */
-  --color-primary: #0B1F3B;         /* Deep Navy */
-  --color-primary-light: #1A3A5C;
+  --color-primary: var(--studio-midnight);         /* Deep Navy */
+  --color-primary-light: var(--studio-steel);
   --color-primary-dark: #061526;
 
   /* Accent */
-  --color-accent: #2E6CF6;          /* Electric Blue */
-  --color-accent-light: #5A8DF7;
-  --color-accent-dark: #1E4FD9;
+  --color-accent: #265cdb;          /* Electric Blue */
+  --color-accent-light: #7099f7;
+  --color-accent-dark: #1848b9;
   --color-accent-muted: rgba(46, 108, 246, 0.12);
 
   /* Support Colors */
@@ -66,12 +79,12 @@
   /* Neutrals */
   --color-slate: #1F2937;
   --color-slate-light: #374151;
-  --color-mist: #F5F7FB;
+  --color-mist: #e4ebf4;
   --color-white: #FFFFFF;
 
   /* Borders */
-  --color-border: #E2E8F0;
-  --color-border-light: rgba(148, 163, 184, 0.25);
+  --color-border: #cbd6e4;
+  --color-border-light: #d7e0eb;
   --color-border-dark: #CBD5E1;
 
   /* Text */
@@ -81,10 +94,10 @@
   --color-text-inverse: #FFFFFF;
 
   /* Surfaces */
-  --color-surface: #FFFFFF;
+  --color-surface: #fafcff;
   --color-surface-raised: #FFFFFF;
   --color-surface-overlay: rgba(15, 23, 42, 0.5);
-  --color-background: #F8FAFC;
+  --color-background: #eaf0f7;
   --color-background-alt: linear-gradient(180deg, rgba(10, 24, 52, 0.04), rgba(255, 255, 255, 0.9));
 
   /* ========================================
@@ -126,7 +139,7 @@
   --shadow-md: 0 4px 6px rgba(15, 23, 42, 0.07);
   --shadow-lg: 0 12px 24px rgba(15, 23, 42, 0.06);
   --shadow-xl: 0 20px 40px rgba(15, 23, 42, 0.1);
-  --shadow-card: 0 12px 24px rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 2px 6px rgb(11 25 46 / 5%);
   --shadow-button: 0 2px 4px rgba(15, 23, 42, 0.1);
 
   /* ========================================
@@ -203,7 +216,7 @@
 
   /* Cards */
   --card-padding: var(--space-5);
-  --card-radius: 18px;
+  --card-radius: 12px;
   --card-shadow: var(--shadow-card);
   --card-border: 1px solid var(--color-border-light);
   --card-bg: var(--color-surface);

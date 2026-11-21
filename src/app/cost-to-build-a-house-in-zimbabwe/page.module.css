@@ -2,7 +2,7 @@
   --color-text-muted: #475569;
   margin: -32px -24px 0;
   color: var(--color-text);
-  background: #f7f8f4;
+  background: var(--color-background);
   overflow: hidden;
 }
 
@@ -10,21 +10,11 @@
   position: relative;
   overflow: hidden;
   color: #fff;
-  background: #0b1f3b;
+  background-color: var(--studio-steel);
+  background-image: var(--studio-grid);
+  background-size: var(--studio-grid-size);
 }
 
-.blueprintGrid {
-  position: absolute;
-  inset: 0;
-  opacity: 0.16;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px),
-    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-  background-size: 96px 96px, 96px 96px, 24px 24px, 24px 24px;
-  mask-image: linear-gradient(90deg, #000 0%, transparent 72%);
-}
 
 .hero::after {
   content: '';

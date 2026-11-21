@@ -11,6 +11,7 @@ import { CurrencyProvider } from "@/components/ui/CurrencyToggle";
 import { ToastProvider } from "@/components/ui/Toast";
 import ProductAnalyticsProvider from "@/components/providers/ProductAnalyticsProvider";
 import { getSiteUrl } from "@/lib/siteUrl";
+import StyledJsxRegistry from "./registry";
 import "./globals.css";
 
 const sora = Sora({
@@ -112,7 +113,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FFFFFF", // Matches the light header surface.
+  themeColor: "#0b192e",
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
   width: "device-width",
@@ -134,18 +135,20 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>
-          <ProductAnalyticsProvider>
-            <ServiceWorkerProvider>
-              <CurrencyProvider>
-                <ToastProvider>
-                  {children}
-                  <Analytics />
-                </ToastProvider>
-              </CurrencyProvider>
-            </ServiceWorkerProvider>
-          </ProductAnalyticsProvider>
-        </AuthProvider>
+        <StyledJsxRegistry>
+          <AuthProvider>
+            <ProductAnalyticsProvider>
+              <ServiceWorkerProvider>
+                <CurrencyProvider>
+                  <ToastProvider>
+                    {children}
+                    <Analytics />
+                  </ToastProvider>
+                </CurrencyProvider>
+              </ServiceWorkerProvider>
+            </ProductAnalyticsProvider>
+          </AuthProvider>
+        </StyledJsxRegistry>
       </body>
     </html>
   );

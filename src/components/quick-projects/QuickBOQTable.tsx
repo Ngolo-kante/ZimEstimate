@@ -211,7 +211,7 @@ export default function QuickBOQTable({
                 return (
                   <tr key={cat} className="border-t border-slate-100 first:border-t-0">
                     <td className="px-4 py-3 font-medium text-slate-700">{cat === 'Labor' ? 'Labour' : cat}</td>
-                    <td className="whitespace-nowrap tabular-nums px-4 py-3 text-right font-medium text-slate-900">
+                    <td className="whitespace-nowrap font-mono tabular-nums px-4 py-3 text-right font-medium text-slate-900">
                       {fmt(catTotal, currency, zwgRate)}
                     </td>
                   </tr>
@@ -220,7 +220,7 @@ export default function QuickBOQTable({
               {markupPct > 0 && (
                 <tr className="border-t border-slate-200 bg-slate-50">
                   <td className="px-4 py-3 text-slate-600">Contractor markup ({markupPct}%)</td>
-                  <td className="whitespace-nowrap tabular-nums px-4 py-3 text-right font-medium text-slate-900">
+                  <td className="whitespace-nowrap font-mono tabular-nums px-4 py-3 text-right font-medium text-slate-900">
                     {fmt(totals.markupUsd, currency, zwgRate)}
                   </td>
                 </tr>
@@ -228,9 +228,9 @@ export default function QuickBOQTable({
             </tbody>
           </table>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-900 px-5 py-4 text-white">
+        <div className="rounded-xl border border-slate-200 bg-[var(--studio-steel)] px-5 py-4 text-white">
           <p className="text-xs uppercase tracking-wider text-slate-400">Grand Total</p>
-          <p className="whitespace-nowrap tabular-nums text-2xl font-bold">
+          <p className="whitespace-nowrap font-mono tabular-nums text-2xl font-bold">
             {fmt(totals.grandTotalUsd, currency, zwgRate)}
           </p>
         </div>
@@ -457,7 +457,7 @@ export default function QuickBOQTable({
                     </td>
 
                     {/* Line total */}
-                    <td className="whitespace-nowrap tabular-nums px-4 py-2.5 font-medium text-slate-800">
+                    <td className="whitespace-nowrap font-mono tabular-nums px-4 py-2.5 font-medium text-slate-800">
                       {dimmed ? '\u2014' : item.unitCostUsd > 0 ? fmt(lineTotal, currency, zwgRate) : <span className="text-slate-400">No price yet</span>}
                     </td>
 
@@ -525,11 +525,11 @@ export default function QuickBOQTable({
       )}
 
       {/* ── Grand Total (dark box — matching manual builder) ──────────── */}
-      <div className="rounded-xl border border-slate-200 bg-slate-900 px-5 py-4 text-white">
+      <div className="rounded-xl border border-slate-200 bg-[var(--studio-steel)] px-5 py-4 text-white">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-wider text-slate-400">Grand Total</p>
-            <p className="whitespace-nowrap tabular-nums text-2xl font-bold mt-0.5">
+            <p className="whitespace-nowrap font-mono tabular-nums text-2xl font-bold mt-0.5">
               {fmt(totals.grandTotalUsd, currency, zwgRate)}
             </p>
           </div>

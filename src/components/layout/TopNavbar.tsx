@@ -24,17 +24,8 @@ import {
 } from '@phosphor-icons/react';
 import { useAuth } from '@/components/providers/AuthProvider';
 
-interface NavItem {
-  label: string;
-  href: string;
-  description?: string;
-  /** Highlight when the path starts with this instead of href — lets
-      "My projects" stay lit on /projects and /projects/[id], not only on
-      its own landing URL. */
-  activePrefix?: string;
-  hasDropdown?: boolean;
-  adminOnly?: boolean;
-}
+import { MobileStartButton } from '@/components/projects/StartOptions';
+import { exploreNavItems, type NavItem } from './navigation';
 
 const navItems: NavItem[] = [
   { label: 'Home', href: '/home' },
@@ -50,13 +41,6 @@ const navItems: NavItem[] = [
 ];
 
 const primaryNavItems = navItems.slice(0, 4);
-const exploreNavItems: NavItem[] = [
-  { label: 'Market Insights', href: '/market-insights', description: 'Track current material prices' },
-  { label: 'Templates', href: '/templates', description: 'Start from a proven build' },
-  { label: 'Marketplace', href: '/marketplace', description: 'Find materials and suppliers' },
-  { label: 'Contractors', href: '/contractors', description: 'Browse verified professionals' },
-];
-
 type NavNotification = { id: string; title: string; time: string; unread: boolean; href: string | null };
 
 async function fetchNavNotifications(userId: string): Promise<NavNotification[]> {
@@ -88,7 +72,7 @@ function timeAgo(timestamp: string): string {
   return days < 7 ? `${days} d ago` : new Date(timestamp).toLocaleDateString();
 }
 
-export default function TopNavbar() {
+export default function TopNavbar({ showMobileStart = false }: { showMobileStart?: boolean }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -211,13 +195,14 @@ export default function TopNavbar() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="desktop-nav">
+        <nav className="desktop-nav" aria-label="Main navigation">
           {primaryNavItems
             .filter((item) => !item.adminOnly || isAdmin)
             .map((item) => (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive(item) ? 'page' : undefined}
               className={`nav-link ${isActive(item) ? 'active' : ''}`}
             >
               <span className="nav-label">{item.label}</span>
@@ -259,6 +244,7 @@ export default function TopNavbar() {
 
         {/* Right Section */}
         <div className="navbar-right">
+          {showMobileStart && <MobileStartButton />}
           {isAdmin && (
             <Link
               href="/admin"
@@ -520,6 +506,7 @@ export default function TopNavbar() {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive(item) ? 'page' : undefined}
                 className={`mobile-nav-link ${isActive(item) ? 'active' : ''}`}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -535,10 +522,8 @@ export default function TopNavbar() {
           position: sticky;
           top: 0;
           z-index: 100;
-          background: rgba(255, 255, 255, 0.85);
-          border-bottom: 1px solid var(--color-border-light);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
+          background: var(--studio-midnight);
+          border-bottom: 1px solid var(--studio-line);
         }
 
         .navbar-container {
@@ -564,6 +549,9 @@ export default function TopNavbar() {
         }
 
         .logo-icon {
+          padding: 3px;
+          border-radius: 7px;
+          background: #fff;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -573,19 +561,21 @@ export default function TopNavbar() {
         .desktop-nav {
           display: flex;
           align-items: center;
-          gap: 20px;
+          gap: 3px;
         }
 
-        .nav-link {
+        .desktop-nav :global(.nav-link) {
           position: relative;
           display: flex;
           align-items: center;
           gap: 6px;
           white-space: nowrap;
-          padding: 20px 0; /* Add vertical padding for clickable area */
+          padding: 10px 12px;
+          min-height: 44px;
+          border-radius: 7px;
           font-size: 0.9375rem; /* Slightly larger for readability */
           font-weight: 500;
-          color: var(--color-text-secondary);
+          color: var(--studio-muted);
           text-decoration: none;
           transition: none;
         }
@@ -659,39 +649,24 @@ export default function TopNavbar() {
           line-height: 1.3;
         }
 
-        .nav-link::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 0;
-          height: 2px;
-          background-color: var(--color-primary);
-          transition: none;
+        .desktop-nav :global(.nav-link.active) {
+          color: var(--studio-brass);
+          background: var(--studio-steel);
         }
         @media (hover: hover) and (pointer: fine) {
-        @media (hover: hover) and (pointer: fine) {
-            .nav-link:hover {
-                color: var(--color-text);
+          .desktop-nav :global(.nav-link:hover) {
+            background: var(--studio-steel);
+            color: white;
           }
         }
+        .top-navbar :global(:focus-visible) {
+          outline: 2px solid var(--color-focus-ring);
+          outline-offset: 2px;
         }
-        @media (hover: hover) and (pointer: fine) {
-        @media (hover: hover) and (pointer: fine) {
-            .nav-link:hover::after {
-                width: 100%;
-          }
-        }
-        }
-
-        .nav-link.active {
-          color: var(--color-primary);
-          font-weight: 600;
-        }
-
-        .nav-link.active::after {
-          width: 100%;
-        }
+        .navbar-container > :global(a:focus-visible),
+        .desktop-nav :global(.nav-link:focus-visible),
+        .menu-container > button:focus-visible,
+        .mobile-toggle:focus-visible { outline-color: var(--studio-brass); }
 
         .navbar-right {
           display: flex;
@@ -745,9 +720,11 @@ export default function TopNavbar() {
           box-shadow: 0 18px 44px rgba(11, 31, 59, 0.16);
           z-index: 200;
           overflow: hidden;
-          animation: none;
+          animation: menu-enter 150ms var(--ease-out);
           transform-origin: top right;
         }
+
+        @keyframes menu-enter { from { opacity: 0; transform: translateY(-3px) scale(.98); } to { opacity: 1; transform: none; } }
 
         .notification-dropdown {
           width: 320px;
@@ -765,19 +742,19 @@ export default function TopNavbar() {
           background: transparent;
           border: 1px solid transparent;
           border-radius: 12px;
-          color: var(--color-text-secondary);
+          color: var(--studio-muted);
           cursor: pointer;
           transition: none;
         }
         .icon-btn.active {
-          background: rgba(0,0,0,0.04);
-          color: var(--color-text);
+          background: var(--studio-steel);
+          color: white;
         }
         @media (hover: hover) and (pointer: fine) {
         @media (hover: hover) and (pointer: fine) {
             .icon-btn:hover {
-                background: rgba(0,0,0,0.04);
-                color: var(--color-text);
+                background: var(--studio-steel);
+                color: white;
           }
         }
         }
@@ -805,10 +782,10 @@ export default function TopNavbar() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #fff;
-          border: 1px solid var(--color-border-light);
+          background: var(--studio-steel);
+          border: 1px solid var(--studio-line);
           border-radius: 8px;
-          color: var(--color-text);
+          color: var(--studio-ink);
           cursor: pointer;
           transition: none;
           padding: 0 8px 0 0;
@@ -854,7 +831,7 @@ export default function TopNavbar() {
         }
 
         .trigger-copy {
-          width: 108px;
+          max-width: 108px;
           min-width: 0;
           display: flex;
           flex-direction: column;
@@ -872,20 +849,20 @@ export default function TopNavbar() {
         }
 
         .trigger-name {
-          color: var(--color-text);
+          color: var(--studio-ink);
           font-size: 0.78rem;
           font-weight: 700;
           line-height: 1.2;
         }
 
         .trigger-meta {
-          color: var(--color-text-muted);
+          color: var(--studio-muted);
           font-size: 12px;
           line-height: 1.2;
         }
 
         .profile-caret {
-          color: var(--color-text-muted);
+          color: var(--studio-muted);
           transition: none;
         }
 
@@ -1349,7 +1326,7 @@ export default function TopNavbar() {
         }
         }
 
-        .mobile-toggle {
+        .mobile-menu, .mobile-toggle {
           display: none;
         }
 
@@ -1403,18 +1380,18 @@ export default function TopNavbar() {
         }
 
         /* Typography - Concept */
-        .logo-text { font-size: 1.25rem; font-weight: 800; color: #0f172a; letter-spacing: -0.03em; }
+        .logo-text { font-size: 1.25rem; font-weight: 800; color: var(--studio-ink); letter-spacing: -0.03em; }
 
         @media (max-width: 1100px) {
           .desktop-nav { display: none; }
-          .mobile-toggle { display: flex; align-items: center; justify-content: center; border: none; background: none; width: 40px; height: 40px; }
-          .mobile-menu { display: block; border-top: 1px solid var(--color-border-light); background: #fff; padding: 16px; }
+          .mobile-toggle { color: var(--studio-ink); display: flex; align-items: center; justify-content: center; border: none; background: none; width: 40px; height: 40px; }
+          .mobile-menu { max-height: calc(100dvh - 125px); overflow-y: auto; display: block; border-top: 1px solid var(--color-border-light); background: #fff; padding: 16px; }
           .notification-btn { display: none; }
         }
 
         @media (max-width: 640px) {
-          .navbar-container { padding: 0 12px; height: 56px; }
-          .navbar-right { gap: 8px; }
+          .navbar-container { padding: 0 12px; height: 50px; }
+          .navbar-right { gap: 4px; }
           .logo-text { font-size: 1.05rem; }
           :global(a.zim-navbar-logo) { gap: 8px; }
           .trigger-copy,
@@ -1451,6 +1428,9 @@ export default function TopNavbar() {
           }
         }
 
+        @media (max-width: 380px) {
+          .navbar-container:has(:global(.admin-panel-link)) .logo-text { display: none; }
+        }
         @media (prefers-reduced-motion: reduce) {
           .dropdown-menu,
           .nav-dropdown { animation: none; }

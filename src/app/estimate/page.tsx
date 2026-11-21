@@ -92,7 +92,6 @@ export default async function EstimateServicesPage({ searchParams }: PageProps<'
     <MainLayout fullWidth mobileNavy>
       <div className={styles.page}>
         <header className={styles.hero}>
-          <div className={styles.heroGrid} aria-hidden="true" />
           <div className={styles.heroInner}>
             <div className={styles.heroCopy}>
               {fromProjects && (

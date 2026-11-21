@@ -49,32 +49,14 @@
   position: absolute;
   top: 10px;
   right: 10px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: #fbf3dc;
-  border: 1px solid #e9c46a;
-  color: #7a5a12;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.4;
 }
 
 .tile {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
+  composes: tile from '../ui/EstimateIcon.module.css';
   margin-bottom: 12px;
-  border-radius: 12px;
-  background: #f1f5f9;
-  color: var(--color-primary);
 }
 
 /* Duotone: navy outline with a soft gold fill instead of a faint navy one. */
-.tile svg [opacity='0.2'] {
-  fill: #e9c46a;
-  opacity: 0.75;
-}
 
 .name {
   font-size: 1rem;

@@ -9,10 +9,11 @@ import {
   CheckCircle,
   Info,
   WarningCircle,
-  House,
+  CheckSquare,
 } from '@phosphor-icons/react';
 import { AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { CardBadge } from '@/components/ui/CardBadge';
 import Button from '@/components/ui/Button';
 import Switch from '@/components/ui/Switch';
 import { applyDefaultAnswers, getActiveSteps, getVisibleQuestions, isStepComplete, updateAnswer } from '@/lib/quick-projects/engine/boqEngine';
@@ -46,6 +47,8 @@ function OptionGrid({
 }) {
   const selected = Array.isArray(value) ? value : value ? [value] : [];
 
+  const SelectedIcon = multi ? CheckSquare : CheckCircle;
+
   function toggle(v: string) {
     if (multi) {
       const next = selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v];
@@ -63,21 +66,21 @@ function OptionGrid({
           <button
             key={opt.value}
             type="button"
+            aria-pressed={active}
             onClick={() => toggle(opt.value)}
-            className={`${styles.card} ${active ? styles.selected : ''}`}
+            className={`${styles.card} ${styles.answer} ${active ? styles.selected : ''}`}
           >
-            <span className={styles.icon}><House size={28} weight="duotone" /></span>
             <div className="flex w-full items-start justify-between gap-2">
               <span className={`text-sm font-semibold block ${active ? 'text-blue-900' : 'text-slate-800'}`}>
                 {opt.label}
               </span>
               {active ? (
-                <CheckCircle weight="fill" className="text-blue-600 flex-shrink-0" size={20} />
+                <SelectedIcon weight="fill" className="text-blue-600 flex-shrink-0" size={20} aria-hidden="true" />
               ) : (
-                <div className={`w-5 h-5 rounded-full border border-slate-300 flex-shrink-0 group-hover:border-blue-300 transition-none ${multi ? 'rounded-md' : ''}`} />
+                <span aria-hidden="true" className={`size-5 shrink-0 border border-slate-400 ${multi ? 'rounded-md' : 'rounded-full'}`} />
               )}
             </div>
-            {opt.recommended && !active && <span className="mt-2 rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">Recommended</span>}
+            {opt.recommended && !active && <CardBadge variant="featured" className="mt-2">Recommended</CardBadge>}
             {opt.description && <p className={styles.detail}>{opt.description}</p>}
           </button>
         );
@@ -116,7 +119,7 @@ function QuestionField({
   const hasError = showValidation && question.required !== false && isEmpty;
 
   return (
-    <div className={`mb-8 p-6 rounded-2xl bg-white border shadow-sm transition-none ${hasError ? 'border-red-300 bg-red-50/30' : 'border-slate-200/60'}`}>
+    <div className={`mb-6 p-4 sm:p-6 rounded-xl bg-surface border transition-none ${hasError ? 'border-red-300 bg-red-50/30' : 'border-slate-200/60'}`}>
       <label className="block text-base font-bold text-slate-900 mb-1">{question.title}</label>
       {question.description && <p className="text-sm text-slate-500 mb-4">{question.description}</p>}
 
@@ -451,7 +454,7 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
           <span className="text-blue-600">{progressPct}%</span>
         </div>
         <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full transition-none duration-500 ease-out" style={{ width: `${progressPct}%` }} />
+          <div className="h-full bg-accent rounded-full motion-safe:transition-[width] motion-safe:duration-200" style={{ width: `${progressPct}%` }} />
         </div>
       </div>
 

@@ -12,67 +12,29 @@
   }
 }
 
-/* ============================================
-   ZimEstimate Design DNA - Benti Design System
-   Brand Colors: Deep Navy + Vibrant Blue
-   Updated: 2026-02-01
-   ============================================ */
-
 :root {
-  /* Primary Colors - Deep Navy (Trust, Architecture)
-     Values below are design-tokens.css's palette, approved 2026-02-10. This
-     block used to redeclare its own values after importing design-tokens.css,
-     so its old values silently won and the approved palette never rendered. */
-  --color-primary: #0B1F3B;
-  /* Deep Navy */
-  --color-primary-light: #1A3A5C;
-  /* Navy Light */
-  --color-primary-dark: #061526;
-  /* Navy Dark */
-
-  /* Accent Colors - Electric Blue (Action, Modern) */
-  --color-accent: #2E6CF6;
-  /* Electric Blue */
-  --color-accent-light: #5A8DF7;
-  /* Light Blue Tint */
-  --color-accent-dark: #1E4FD9;
-  /* Blue Hover */
   --color-accent-bg: rgba(46, 108, 246, 0.12);
 
   /* Readable links and metadata on navy, and gold accents for selection. */
-  --color-gold-on-navy: #f4ce77;
+  --color-gold-on-navy: var(--studio-brass);
   --color-selected-surface: #fff3cd;
   --color-selected-ink: #62420a;
   --color-gold-ink: #805509;
+  --color-featured-bg: #fff4d8;
+  --color-featured-border: #e6cc88;
   --color-link-on-navy: #bcd2f0;
   --color-muted-on-navy: #dbe6f5;
 
-  /* Backgrounds */
-  --color-background: #F8FAFC;
-  /* Off-White */
-  --color-surface: #FFFFFF;
-  --color-surface-elevated: #FFFFFF;
-
-  /* Text */
-  --color-text: #0F172A;
-  --color-text-secondary: #64748B;
-  /* Muted Gray */
-  --color-text-muted: #64748b;
+  --color-surface-elevated: #fff;
   /* Example text inside empty fields: clearly lighter than labels and typed
-     answers so it never reads as filled in (owner, 16 Nov). About 3.2:1. */
-  --color-placeholder: #8792a2;
+     answers so it never reads as filled in (owner, 16 Nov). Readable on ice and white surfaces. */
+  --color-placeholder: #65748a;
   /* Disabled Gray */
   --color-text-inverse: #FFFFFF;
 
   /* Tinted backgrounds */
   --color-primary-bg: rgba(46, 108, 246, 0.12);
   --color-error-bg: rgba(220, 38, 38, 0.1);
-
-  /* Borders */
-  --color-border: #E2E8F0;
-  /* Input borders, dividers */
-  --color-border-light: rgba(148, 163, 184, 0.25);
-  /* Subtle borders */
 
   /* Status Colors */
   --color-success: #16A34A;
@@ -140,8 +102,8 @@
 
 /* Tailwind Theme Inline */
 @theme inline {
-  --color-oxford-blue: #0B1F3B;
-  --color-vibrant-blue: #2E6CF6;
+  --color-oxford-blue: var(--color-primary);
+  --color-vibrant-blue: var(--color-accent);
 
   /* Semantic Colors */
   --color-primary: var(--color-primary);
@@ -182,10 +144,10 @@
   --color-muted: var(--color-text-muted);
 
   /* Fonts */
-  --font-heading: var(--font-geist-sans);
-  --font-body: var(--font-geist-sans);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sora), sans-serif;
+  --font-body: var(--font-instrument-sans), sans-serif;
+  --font-sans: var(--font-instrument-sans), sans-serif;
+  --font-mono: var(--font-plex-mono), monospace;
 }
 
 /* Base Styles.
@@ -204,6 +166,10 @@
     color: var(--color-text);
     font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   }
+
+  :where(h1, h2, h3) { font-family: var(--font-heading); }
+  :where(table, input[inputmode="numeric"], input[type="number"]) { font-variant-numeric: tabular-nums; }
+  ::selection { color: var(--studio-midnight); background: #f8d995; }
 
   a {
     color: var(--color-primary);

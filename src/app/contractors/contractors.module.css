@@ -2,13 +2,15 @@
   margin: -32px -24px 0;
   min-height: 100dvh;
   color: #0f172a;
-  background: #f4f7fb;
+  background: var(--color-background);
 }
 
 .hero {
   color: white;
-  background: #0b1f3b;
-  border-bottom: 5px solid #2563eb;
+  background-color: var(--studio-steel);
+  background-image: var(--studio-grid);
+  background-size: var(--studio-grid-size);
+  border-bottom: 1px solid var(--studio-line);
 }
 
 .heroInner,

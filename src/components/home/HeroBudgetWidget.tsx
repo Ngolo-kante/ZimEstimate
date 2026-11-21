@@ -251,23 +251,19 @@ export default function HeroBudgetWidget() {
     : '';
 
   return (
-    <div className="hero-preview relative w-full overflow-hidden rounded-[22px] bg-white shadow-[0_44px_90px_-34px_rgba(3,12,28,0.75),0_0_0_1px_rgba(11,31,59,0.08)]">
+    <div className="hero-preview relative w-full overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
       <div className="relative h-full w-full p-4 sm:p-5 md:p-6 flex flex-col gap-2.5 sm:gap-3">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]" style={{ fontFamily: 'var(--font-mono)' }}>
+          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]" style={{ fontFamily: 'var(--font-mono)' }}>
             Budget check
-          </span>
-          <span className="text-xs font-semibold text-[var(--color-success-fg)] bg-[var(--color-success-bg)] border border-[var(--color-success-border)] rounded-full px-2 py-0.5 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)]" aria-hidden="true" />
-            Try it
           </span>
         </div>
 
         <div>
-          <h3 className="text-lg md:text-xl font-extrabold text-slate-900 leading-tight tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+          <h2 className="text-lg md:text-xl font-extrabold text-slate-900 leading-tight tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
             How far will your money go?
-          </h3>
+          </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             Type an amount — watch the house build itself.
           </p>
@@ -328,6 +324,17 @@ export default function HeroBudgetWidget() {
               <span className="text-xs font-bold uppercase tracking-normal text-slate-400 flex-shrink-0">USD</span>
             </div>
           </label>
+          <div role="group" aria-label="Example budgets" className="grid grid-cols-3 gap-2">
+            {[10000, 25000, 40000].map((amount) => (
+              <button
+                key={amount}
+                type="button"
+                aria-pressed={parsedBudget === amount}
+                onClick={() => handleInput(String(amount))}
+                className="min-h-11 rounded-md border border-sc-border bg-white font-mono text-sm text-slate-700 hover:border-blue-600 focus-visible:outline-2 focus-visible:outline-blue-600 aria-pressed:border-blue-700 aria-pressed:bg-blue-50 aria-pressed:text-blue-800"
+              >${amount.toLocaleString('en-US')}</button>
+            ))}
+          </div>
         </div>
 
         {/* Stage coverage bars */}
@@ -342,7 +349,7 @@ export default function HeroBudgetWidget() {
                 </span>
                 <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-[var(--color-success)] transition-all duration-500 motion-reduce:transition-none"
+                    className="h-full rounded-full bg-[var(--color-success)] transition-[width] duration-200 motion-reduce:transition-none"
                     // In building order: each stage starts a moment after the one before.
                     style={{ width: `${pct}%`, transitionDelay: `${index * 70}ms` }}
                   />

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { CardBadge } from '@/components/ui/CardBadge';
 import type { ComponentType } from 'react';
 import { House, ChatTeardropText, SolarPanel, Drop, GridFour, Plus } from '@phosphor-icons/react';
 import { usePathname } from 'next/navigation';
@@ -40,7 +41,7 @@ export default function StartOptions({ onHouse }: { onHouse?: () => void }) {
       <span className={styles.tile}><Icon size={28} weight="duotone" aria-hidden="true" /></span>
       <span className={styles.name}>{label}</span>
       <span className={styles.detail}>{detail}</span>
-      {popular && <span className={styles.badge}>Popular</span>}
+      {popular && <CardBadge variant="featured" className={styles.badge}>Popular</CardBadge>}
     </>;
     const className = `${styles.card} ${popular ? styles.popular : ''}`;
     return onHouse && label === 'House'
@@ -52,5 +53,21 @@ export default function StartOptions({ onHouse }: { onHouse?: () => void }) {
 export function MobileStartButton() {
   const pathname = usePathname();
   if (!['/', '/home', '/projects', '/projects/quick'].includes(pathname)) return null;
-  return <Drawer><DrawerTrigger asChild><button type="button" aria-label="Start something new" className="fixed right-4 z-[110] flex h-14 w-14 items-center justify-center rounded-full bg-sc-primary text-sc-primary-foreground shadow-lg md:hidden" style={{ bottom: 'calc(90px + env(safe-area-inset-bottom, 0px))' }}><Plus size={28} aria-hidden="true" /></button></DrawerTrigger><DrawerContent className={`${styles.startSheet} motion-reduce:[animation:none!important] motion-reduce:[transition:none!important] z-[150] max-h-[85dvh] pb-[env(safe-area-inset-bottom)]`}><DrawerHeader className={`${styles.header} text-left!`}><DrawerTitle className={styles.title}>Start something new</DrawerTitle><DrawerDescription>Choose what you want to estimate.</DrawerDescription></DrawerHeader><DrawerScrollArea className="px-4"><StartOptions /></DrawerScrollArea><DrawerClose className={`${styles.close} m-4 min-h-11 rounded-xl border border-sc-border font-medium`}>Close</DrawerClose></DrawerContent></Drawer>;
+  return (
+    <Drawer>
+      <DrawerTrigger asChild>
+        <button type="button" aria-label="Start something new" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-sc-primary text-sc-primary-foreground md:hidden">
+          <Plus size={20} weight="bold" aria-hidden="true" />
+        </button>
+      </DrawerTrigger>
+      <DrawerContent className={`${styles.startSheet} motion-reduce:[animation:none!important] motion-reduce:[transition:none!important] z-[150] max-h-[85dvh] pb-[env(safe-area-inset-bottom)]`}>
+        <DrawerHeader className={`${styles.header} text-left!`}>
+          <DrawerTitle className={styles.title}>Start something new</DrawerTitle>
+          <DrawerDescription>Choose what you want to estimate.</DrawerDescription>
+        </DrawerHeader>
+        <DrawerScrollArea className="px-4"><StartOptions /></DrawerScrollArea>
+        <DrawerClose className={`${styles.close} m-4 min-h-11 rounded-xl border border-sc-border font-medium`}>Close</DrawerClose>
+      </DrawerContent>
+    </Drawer>
+  );
 }

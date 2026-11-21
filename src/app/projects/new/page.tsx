@@ -409,7 +409,7 @@ export default function NewProject() {
                                 </div>
                                 <h3>Manual builder</h3>
                                 <p>Build your BOQ step by step with guided inputs</p>
-                                <CardBadge variant="accent">Recommended</CardBadge>
+                                <CardBadge variant="featured">Recommended</CardBadge>
                             </button>
 
                             <button
@@ -423,7 +423,7 @@ export default function NewProject() {
                                 </div>
                                 <h3>Upload floor plan</h3>
                                 <p>AI analyzes your blueprint to extract measurements</p>
-                                <CardBadge variant="success">Best for accuracy</CardBadge>
+                                <CardBadge variant="featured">Best for accuracy</CardBadge>
                             </button>
 
                             <button
@@ -492,17 +492,16 @@ export default function NewProject() {
                 .new-project {
                     max-width: 900px;
                     margin: 0 auto;
-                    padding-bottom: 40px;
-                    background: rgba(255, 255, 255, 0.68);
-                    border: 1px solid rgba(211, 211, 215, 0.72);
-                    border-radius: 24px;
+                    background: var(--color-surface);
+                    border: var(--card-border);
+                    border-radius: var(--card-radius);
                     padding: 24px;
-                    box-shadow: 0 18px 32px rgba(6, 20, 47, 0.06);
+                    box-shadow: var(--card-shadow);
                 }
 
                 /* Progress Bar */
                 .progress-container {
-                    margin-bottom: 48px;
+                    margin-bottom: 28px;
                 }
 
                 .progress-label {

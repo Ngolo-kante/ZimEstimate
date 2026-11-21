@@ -70,7 +70,7 @@ export default function DashboardShell({
           min-height: 100dvh;
           display: flex;
           flex-direction: column;
-          background: #f4f6fb;
+          background: var(--color-background);
         }
 
         .sidebar-head {

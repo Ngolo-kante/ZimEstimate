@@ -9,7 +9,7 @@
 .projects-list .projects-content { transition: opacity 150ms cubic-bezier(.23, 1, .32, 1); }
 .projects-list .projects-grid { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 16px; }
 .projects-list .project-card-wrap { min-width: 0; position: relative; }
-.projects-list .project-card { height: 100%; display: flex; flex-direction: column; gap: 16px; position: relative; border: 1px solid var(--color-border); box-shadow: 0 2px 6px rgb(15 23 42 / 3%); border-radius: 16px; }
+.projects-list .project-card { height: 100%; display: flex; flex-direction: column; gap: 16px; position: relative; border: var(--card-border); box-shadow: var(--card-shadow); border-radius: var(--card-radius); }
 .projects-list .project-card:active { background: #eff6ff; }
 .projects-list .project-card .card-header { margin: 0; align-items: flex-start; }
 /* Leave the title room for the 44px menu button in the top-right corner. */
@@ -26,7 +26,7 @@
 .projects-list svg { flex-shrink: 0; }
 .projects-list .project-budget { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; background: #f8fafc; border-radius: 10px; }
 .projects-list .budget-label, .projects-list .build-type { font-size: 12px; color: #475569; }
-.projects-list .budget-value { text-align: right; font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.projects-list .budget-value { font-family: var(--font-mono); text-align: right; font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .projects-list .muted { color: #475569; font-weight: 400; font-size: 14px; }
 .projects-list .highlight-new { border-color: var(--color-accent); }
 .projects-list .portfolio-strip { display: flex; flex-direction: column; align-items: flex-start; gap: 0; margin-bottom: 24px; font-size: 14px; color: #475569; }

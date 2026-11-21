@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CardBadge } from '@/components/ui/CardBadge';
 import {
   ArrowRight,
   BookOpenText,
@@ -136,7 +137,7 @@ export default function HomePage() {
                       <span className={styles.startCardRank}>{String(index + 1).padStart(2, '0')}</span>
                       <span className={styles.startCardCategory}>{item.category}</span>
                       {item.recommended && (
-                        <span className={styles.startCardBadge}>Best for full builds</span>
+                        <CardBadge variant="featured" className={styles.startCardBadge}>Best for full builds</CardBadge>
                       )}
                     </div>
                     <div className={styles.startCardBody}>

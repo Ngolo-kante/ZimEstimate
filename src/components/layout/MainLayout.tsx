@@ -1,12 +1,13 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import DescribeChatBubble from '@/components/estimate/DescribeChatBubble';
-import { MobileStartButton } from '@/components/projects/StartOptions';
 import TopNavbar from './TopNavbar';
+import { exploreNavItems } from './navigation';
+import { Drawer, DrawerClose, DrawerContent, DrawerHeader, DrawerScrollArea, DrawerTitle, DrawerTrigger } from '@/components/shadcn/drawer';
 import { CurrencyProvider } from '../ui/CurrencyToggle';
 import InstallPromptBanner from '../ui/InstallPromptBanner';
 import {
@@ -14,7 +15,8 @@ import {
   Folders,
   Calculator,
   Lightning,
-  Gear,
+  List,
+  CaretRight,
 } from '@phosphor-icons/react';
 
 interface MainLayoutProps {
@@ -27,6 +29,13 @@ interface MainLayoutProps {
 
 function MobileBottomNav() {
   const pathname = usePathname();
+  const [moreOpen, setMoreOpen] = useState(false);
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 901px)');
+    const closeOnDesktop = () => { if (desktop.matches) setMoreOpen(false); };
+    desktop.addEventListener('change', closeOnDesktop);
+    return () => desktop.removeEventListener('change', closeOnDesktop);
+  }, []);
 
   // Budget Estimator earns a slot here because it is a top-level destination in
   // the desktop navigation and the main entry point for someone sizing up a
@@ -37,7 +46,7 @@ function MobileBottomNav() {
     { label: 'My projects', href: '/projects', icon: Folders },
     { label: 'Budget', href: '/quick-budget', icon: Calculator },
     { label: 'Quick', href: '/quick-projects', icon: Lightning },
-    { label: 'Settings', href: '/settings', icon: Gear },
+
   ];
 
   const isActive = (href: string) => {
@@ -54,6 +63,14 @@ function MobileBottomNav() {
     }
     return pathname.startsWith(href);
   };
+
+  const moreItems = [
+    ...exploreNavItems,
+    { label: 'House Cost Guide', href: '/cost-to-build-a-house-in-zimbabwe' },
+    { label: 'Settings', href: '/settings' },
+    { label: 'Help & support', href: '/support' },
+  ];
+  const moreActive = moreItems.some((item) => isActive(item.href));
 
   return (
     <nav className="mobile-bottom-nav" aria-label="Primary navigation">
@@ -75,6 +92,29 @@ function MobileBottomNav() {
         );
       })}
 
+      <Drawer open={moreOpen} onOpenChange={setMoreOpen}>
+        <DrawerTrigger asChild>
+          <button type="button" className={`mobile-nav-item ${moreActive || moreOpen ? 'active' : ''}`}>
+            <span className="nav-pill"><List size={22} aria-hidden="true" /></span>
+            <span className="nav-text">More</span>
+          </button>
+        </DrawerTrigger>
+        <DrawerContent aria-describedby={undefined}>
+          <DrawerHeader><DrawerTitle>More destinations</DrawerTitle></DrawerHeader>
+          <DrawerScrollArea className="px-4">
+            {moreItems.map((item) => (
+              <DrawerClose asChild key={item.href}>
+                <Link href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}
+                  className="flex min-h-12 items-center justify-between border-b border-sc-border px-2 font-semibold aria-[current=page]:bg-sc-accent">
+                  {item.label}<CaretRight size={16} aria-hidden="true" />
+                </Link>
+              </DrawerClose>
+            ))}
+          </DrawerScrollArea>
+          <DrawerClose className="m-4 mb-[max(1rem,env(safe-area-inset-bottom))] min-h-11 rounded-lg border border-sc-border font-semibold">Close</DrawerClose>
+        </DrawerContent>
+      </Drawer>
+
       <style jsx>{`
         .mobile-bottom-nav {
           display: none;
@@ -82,15 +122,14 @@ function MobileBottomNav() {
           bottom: 0;
           left: 0;
           right: 0;
-          height: 74px;
-          background: rgba(255, 255, 255, 0.96);
-          border-top: 1px solid #d8e0eb;
+          height: var(--mobile-nav-height);
+          background: var(--studio-midnight);
+          border-top: 1px solid var(--studio-line);
           /* 16px side padding cost 32px that five items cannot spare at 375px. */
-          padding: 7px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+          padding: 2px 8px calc(2px + env(safe-area-inset-bottom, 0px));
           z-index: 100;
           box-shadow: 0 -8px 24px rgba(11, 31, 59, 0.09);
-          backdrop-filter: blur(14px);
-          -webkit-backdrop-filter: blur(14px);
+
         }
 
         @media (max-width: 900px) {
@@ -115,7 +154,11 @@ function MobileBottomNav() {
           justify-content: center;
           gap: 3px;
           text-decoration: none;
-          color: #5b6b82;
+          color: var(--studio-muted);
+          min-height: 48px;
+          background: transparent;
+          border: 0;
+          cursor: pointer;
           /* Full-height target: the whole column is tappable, not just the icon. */
           padding: 4px 2px;
           min-width: 0;
@@ -143,17 +186,11 @@ function MobileBottomNav() {
           white-space: nowrap;
         }
 
-        /* Navy rather than the blue accent: on a white bar in daylight it is
-           the higher-contrast pair, and site users are often outdoors. */
-        :global(.mobile-nav-item.active) {
-          color: var(--color-primary);
-        }
-
+        :global(.mobile-nav-item.active) { color: var(--studio-ink); }
         :global(.mobile-nav-item.active) .nav-pill {
-          color: white;
-          background: var(--color-primary);
-          border-color: var(--color-primary);
-          box-shadow: 0 3px 8px rgba(11, 31, 59, 0.18);
+          color: var(--studio-brass);
+          background: var(--studio-steel);
+          border-color: var(--studio-line);
         }
 
         :global(.mobile-nav-item.active) .nav-text {
@@ -204,7 +241,7 @@ export default function MainLayout({
   return (
     <CurrencyProvider>
       <div className="app-layout">
-        <TopNavbar />
+        <TopNavbar showMobileStart={!hideBottomNav} />
         <InstallPromptBanner />
         <main className={`main-content${mobileNavy ? ' mobile-navy' : ''}`}>
           {/* Page Content */}
@@ -214,7 +251,7 @@ export default function MainLayout({
           </div>
         </main>
 
-        {!hideBottomNav && <><MobileBottomNav /><MobileStartButton /></>}
+        {!hideBottomNav && <MobileBottomNav />}
 
         <DescribeChatBubble />
 
@@ -280,8 +317,8 @@ export default function MainLayout({
         }
 
         .app-footer {
-          background: #f4f6fb;
-          color: #475569;
+          background: var(--studio-midnight);
+          color: var(--studio-muted);
           padding: 20px 0;
           margin-top: auto;
           border-top: 1px solid var(--color-border-light);
@@ -305,7 +342,9 @@ export default function MainLayout({
 
         .footer-right {
           display: flex;
-          gap: 24px;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 4px 20px;
         }
 
         .footer-right :global(a),
@@ -315,7 +354,7 @@ export default function MainLayout({
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          color: #475569;
+          color: var(--studio-muted);
           background: transparent;
           border: 0;
           padding: 0;
@@ -329,7 +368,7 @@ export default function MainLayout({
         @media (hover: hover) and (pointer: fine) {
             .footer-right :global(a:hover),
           .footer-right button:hover {
-                color: var(--color-primary);
+                color: var(--studio-brass);
           }
         }
         }

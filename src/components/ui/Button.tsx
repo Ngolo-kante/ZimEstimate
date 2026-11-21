@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -25,29 +27,26 @@ export default function Button({
     <>
       <button
         className={`btn btn-${variant} btn-${size} ${fullWidth ? 'full-width' : ''} ${className}`}
+        aria-busy={loading || undefined}
         disabled={disabled || loading}
         {...props}
       >
-        {loading ? (
-          <span className="spinner" />
-        ) : (
-          <>
-            {icon && iconPosition === 'left' && <span className="btn-icon">{icon}</span>}
-            {children && <span className="btn-text">{children}</span>}
-            {icon && iconPosition === 'right' && <span className="btn-icon">{icon}</span>}
-          </>
-        )}
+        {icon && iconPosition === 'left' && <span className="btn-icon">{icon}</span>}
+        {children && <span className="btn-text">{children}</span>}
+        {icon && iconPosition === 'right' && <span className="btn-icon">{icon}</span>}
+        {loading && <span className="spinner" aria-hidden="true" />}
       </button>
 
       <style jsx>{`
         .btn {
+          position: relative;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 0.5rem;
-          font-weight: 500;
+          font-weight: 600;
           border-radius: var(--radius-md);
-          transition: transform 160ms var(--ease-out);
+          transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast), border-color var(--duration-fast), box-shadow var(--duration-fast);
           cursor: pointer;
           border: none;
           font-family: inherit;
@@ -58,14 +57,14 @@ export default function Button({
           cursor: not-allowed;
         }
 
-        .btn:active:not(:disabled):not(:focus-visible) { transform: scale(0.97); }
+        .btn:active:not(:disabled):not(:focus-visible) { transform: translateY(1px); }
 
         @media (prefers-reduced-motion: reduce) {
           .btn { transition: none; }
           .btn:active:not(:disabled):not(:focus-visible) { transform: none; }
         }
 
-        .btn:focus-visible { transition: none; }
+        .btn:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 2px; transition: none; }
 
         /* Sizes */
         .btn-sm {
@@ -88,52 +87,34 @@ export default function Button({
           background: var(--color-accent);
           color: white;
         }
-        @media (hover: hover) and (pointer: fine) {
-        @media (hover: hover) and (pointer: fine) {
-            .btn-primary:hover:not(:disabled) {
-                background: var(--color-accent-dark);
-          }
-        }
-        }
 
         .btn-secondary {
-          background: transparent;
-          border: 1px solid var(--color-border);
-          color: var(--color-text);
-        }
-        @media (hover: hover) and (pointer: fine) {
-        @media (hover: hover) and (pointer: fine) {
-            .btn-secondary:hover:not(:disabled) {
-                background: var(--color-surface);
-                border-color: var(--color-primary);
-          }
-        }
+          background: var(--color-info-bg);
+          border: 1px solid var(--color-info-border);
+          color: var(--color-accent-dark);
         }
 
-        .btn-ghost {
-          background: transparent;
-          color: var(--color-text-secondary);
-        }
+        .btn-ghost { background: transparent; color: var(--color-text-secondary); }
+        .btn-danger { background: var(--color-danger-fg); color: white; }
+
         @media (hover: hover) and (pointer: fine) {
-        @media (hover: hover) and (pointer: fine) {
-            .btn-ghost:hover:not(:disabled) {
-                background: var(--color-border-light);
-                color: var(--color-text);
+          .btn-primary:hover:not(:disabled) {
+            background: var(--color-accent-dark);
+            box-shadow: 0 2px 6px rgb(24 72 185 / 22%);
           }
-        }
+          .btn-secondary:hover:not(:disabled) {
+            background: #e2ecfc;
+            border-color: var(--color-accent);
+          }
+          .btn-ghost:hover:not(:disabled) {
+            background: var(--color-border-light);
+            color: var(--color-text);
+          }
+          .btn-danger:hover:not(:disabled) { background: #991b1b; }
         }
 
-        .btn-danger {
-          background: var(--color-error);
-          color: white;
-        }
-        @media (hover: hover) and (pointer: fine) {
-        @media (hover: hover) and (pointer: fine) {
-            .btn-danger:hover:not(:disabled) {
-                background: #dc2626;
-          }
-        }
-        }
+        .btn[aria-busy='true'] { cursor: progress; }
+        .btn[aria-busy='true'] :is(.btn-icon, .btn-text) { opacity: 0; }
 
         .full-width {
           width: 100%;
@@ -146,6 +127,7 @@ export default function Button({
         }
 
         .spinner {
+          position: absolute;
           width: 1rem;
           height: 1rem;
           border: 2px solid currentColor;
@@ -160,10 +142,10 @@ export default function Button({
           }
         }
 
-                @media (prefers-reduced-motion: reduce) {
-                    @keyframes spin { from { opacity: .5; } to { opacity: 1; } }
-                }
-            `}</style>
+        @media (prefers-reduced-motion: reduce) {
+          .spinner { animation: none; }
+        }
+      `}</style>
     </>
   );
 }

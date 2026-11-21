@@ -254,16 +254,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .admin-shell {
           display: flex;
           min-height: 100dvh;
-          background: #f1f5f9;
+          background: var(--color-background);
         }
 
         .admin-sidebar {
           width: 220px;
           min-width: 220px;
-          background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(246,250,255,0.9));
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border-right: 1px solid rgba(211,211,215,0.75);
+          background: var(--studio-midnight);
+          border-right: 1px solid var(--studio-line);
           box-shadow: 18px 0 30px rgba(6,20,47,0.035);
           display: flex;
           flex-direction: column;
@@ -286,7 +284,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           gap: 10px;
           padding: 18px 14px;
           text-decoration: none;
-          border-bottom: 1px solid rgba(211,211,215,0.6);
+          border-bottom: 1px solid var(--studio-line);
           flex-shrink: 0;
           overflow: hidden;
           white-space: nowrap;
@@ -299,6 +297,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         .logo-img {
           flex-shrink: 0;
+          background: white;
+          border-radius: 4px;
         }
 
         .sidebar-logo-text {
@@ -320,7 +320,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .logo-name {
           font-size: 0.875rem;
           font-weight: 700;
-          color: #0f294b;
+          color: var(--studio-ink);
           letter-spacing: -0.02em;
           line-height: 1;
         }
@@ -330,8 +330,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.08em;
-          color: #19508a;
-          background: linear-gradient(135deg, #ecf4ff, #d6e8ff);
+          color: var(--studio-brass);
+          background: var(--studio-steel);
           padding: 2px 6px;
           border-radius: 4px;
           width: fit-content;
@@ -359,7 +359,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           font-weight: 700;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          color: #7a8aa3;
+          color: var(--studio-muted);
           white-space: nowrap;
           overflow: hidden;
         }
@@ -368,7 +368,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           height: 1px;
           padding: 0;
           margin: 6px 12px;
-          background: rgba(211,211,215,0.8);
+          background: var(--studio-line);
         }
 
         .sidebar-nav :global(.nav-item) {
@@ -380,8 +380,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           text-decoration: none;
           font-size: 0.8125rem;
           font-weight: 500;
-          color: #5a6f8d;
-          background: rgba(255,255,255,0.55);
+          color: var(--studio-muted);
+          background: transparent;
           transition: none;
           white-space: nowrap;
           overflow: hidden;
@@ -395,8 +395,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
       @media (hover: hover) and (pointer: fine) {
           .sidebar-nav :global(.nav-item:hover) {
-              color: #164d83;
-              background: #edf6ff;
+              color: var(--studio-brass);
+              background: var(--studio-steel);
         }
       }
 @media (hover: hover) and (pointer: fine) {
@@ -405,9 +405,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 }
 
         .sidebar-nav :global(.nav-item.active) {
-          color: #164d83;
+          color: var(--studio-brass);
           font-weight: 600;
-          background: linear-gradient(135deg, #e9f4ff, #f3f9ff);
+          background: var(--studio-steel);
           box-shadow: 0 10px 18px rgba(22,77,131,0.14);
         }
 
@@ -426,8 +426,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background: #2f76c5;
-          box-shadow: 0 0 8px rgba(47,118,197,0.4);
+          background: var(--studio-brass);
           animation: none;
         }
 
@@ -446,7 +445,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         .sidebar-bottom {
           padding: 10px 10px;
-          border-top: 1px solid rgba(211,211,215,0.6);
+          border-top: 1px solid var(--studio-line);
           display: flex;
           flex-direction: column;
           gap: 4px;
@@ -461,7 +460,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           border-radius: 10px;
           text-decoration: none;
           font-size: 0.75rem;
-          color: #7689a5;
+          color: var(--studio-muted);
           transition: none;
           white-space: nowrap;
           overflow: hidden;
@@ -473,8 +472,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
       @media (hover: hover) and (pointer: fine) {
           .sidebar-bottom :global(.back-site:hover) {
-              color: #255f9b;
-              background: rgba(233,244,255,0.65);
+              color: var(--studio-ink);
+              background: var(--studio-steel);
         }
       }
 
@@ -500,14 +499,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           background: none;
           border: none;
           cursor: pointer;
-          color: #6f86a9;
+          color: var(--studio-muted);
           border-radius: 8px;
           transition: none;
         }
       @media (hover: hover) and (pointer: fine) {
           .collapse-toggle:hover {
-              background: rgba(233,244,255,0.65);
-              color: #255f9b;
+              background: var(--studio-steel);
+              color: var(--studio-ink);
         }
       }
 
@@ -539,8 +538,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           width: 30px;
           height: 30px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #ecf4ff, #d6e8ff);
-          color: #19508a;
+          background: var(--studio-steel);
+          color: var(--studio-brass);
           font-weight: 700;
           font-size: 0.8rem;
           display: flex;
@@ -570,7 +569,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .user-name {
           font-size: 0.75rem;
           font-weight: 600;
-          color: #0f294b;
+          color: var(--studio-ink);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -578,13 +577,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         .user-role {
           font-size: 0.65rem;
-          color: #7689a5;
+          color: var(--studio-muted);
         }
 
         .sign-out-btn {
           background: none;
           border: none;
-          color: #7891b5;
+          color: var(--studio-muted);
           cursor: pointer;
           padding: 5px;
           border-radius: 6px;
@@ -615,10 +614,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           align-items: center;
           gap: 12px;
           padding: 10px 14px;
-          background: rgba(255,255,255,0.92);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border-bottom: 1px solid rgba(211,211,215,0.75);
+          background: var(--studio-midnight);
+          border-bottom: 1px solid var(--studio-line);
         }
 
         .mobile-menu-btn {
@@ -628,14 +625,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           width: 38px;
           height: 38px;
           border-radius: 10px;
-          border: 1px solid rgba(211,211,215,0.75);
-          background: #fff;
-          color: #0f294b;
+          border: 1px solid var(--studio-line);
+          background: var(--studio-steel);
+          color: var(--studio-ink);
           cursor: pointer;
           transition: none;
         }
 @media (hover: hover) and (pointer: fine) {
-    .mobile-menu-btn:hover {     background: #edf6ff; }
+    .mobile-menu-btn:hover {     background: var(--studio-steel); }
 }
         .mobile-menu-btn:active { transform: scale(0.96); }
 
@@ -644,7 +641,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           align-items: center;
           gap: 8px;
           text-decoration: none;
-          color: #0f294b;
+          color: var(--studio-ink);
           font-weight: 700;
           font-size: 0.9rem;
           letter-spacing: -0.01em;
@@ -679,14 +676,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           border-radius: 8px;
           background: transparent;
           border: none;
-          color: #5a6f8d;
+          color: var(--studio-muted);
           cursor: pointer;
           align-items: center;
           justify-content: center;
           transition: none;
         }
 @media (hover: hover) and (pointer: fine) {
-    .mobile-close-btn:hover {     background: rgba(233,244,255,0.8); color: #0f294b; }
+    .mobile-close-btn:hover {     background: var(--studio-steel); color: var(--studio-ink); }
 }
 
         @media (max-width: 768px) {

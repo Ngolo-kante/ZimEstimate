@@ -57,7 +57,9 @@
   top: 92px;
   padding: 24px;
   color: white;
-  background: #0b1f3b;
+  background-color: var(--studio-steel);
+  background-image: var(--studio-grid);
+  background-size: var(--studio-grid-size);
   border-radius: 8px;
 }
 

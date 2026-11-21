@@ -46,6 +46,10 @@ test.describe('Public launch surfaces', () => {
     await expect(budgetInput).toHaveValue('15,000', { timeout: 20_000 });
     // The plan being costed has to be visible, not buried in the footnote.
     await expect(page.getByText('120m²', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '$40,000', exact: true }).click();
+    await expect(budgetInput).toHaveValue('40,000');
+    await expect(page.getByRole('link', { name: 'Customize' }))
+      .toHaveAttribute('href', '/quick-budget?budget=40000&area=120');
     await budgetInput.fill('');
     await budgetInput.pressSequentially('25000');
     await expect(page.getByRole('link', { name: 'Customize' }))
@@ -59,6 +63,11 @@ test.describe('Public launch surfaces', () => {
     await expect(page.getByRole('img', {
       name: 'Illustration of a house building up stage by stage as the budget increases',
     })).toBeVisible();
+    const more = page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'More' });
+    await more.click();
+    await expect(page.getByRole('dialog').getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings');
+    await page.keyboard.press('Escape');
+    await expect(more).toBeFocused();
     const mobileWidth = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
       content: document.documentElement.scrollWidth,
@@ -107,13 +116,13 @@ test.describe('Public launch surfaces', () => {
 
   test('estimate directory connects each need to the right service', async ({ page }) => {
     await page.goto('/estimate');
-    await expect(page.getByRole('heading', { name: 'What do you need to work out?' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Start an estimate', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: /Full house estimate/ }))
       .toHaveAttribute('href', '/boq/new?method=manual&fresh=1&preset=full_house');
     await expect(page.getByRole('link', { name: /Estimate by stage/ }))
       .toHaveAttribute('href', '/boq/new?method=manual&fresh=1&preset=building_in_stages');
-    await expect(page.getByRole('link', { name: /The system your budget buys/ }))
-      .toHaveAttribute('href', '/quick-budget?mode=solar');
+    await expect(page.getByRole('link', { name: /^Solar system Panels/ }))
+      .toHaveAttribute('href', '/quick-projects/solar');
     await expect(page.getByRole('link', { name: /Read my floor plan/ }))
       .toHaveAttribute('href', '/ai/vision-takeoff');
 

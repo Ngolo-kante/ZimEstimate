@@ -785,7 +785,12 @@ export default function MarketInsightsPage() {
           color: var(--color-text-muted);
         }
 
+        @media (min-width: 769px) {
+          .prices-table .col-price, .prices-table .col-trend { text-align: right; }
+        }
+
         .price-tag {
+          font-variant-numeric: tabular-nums;
           font-family: var(--font-mono);
           font-weight: var(--font-medium);
           color: var(--color-primary);

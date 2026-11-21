@@ -22,6 +22,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { validateDocumentFile } from '@/lib/documentFiles';
+import BrickLoader from '@/components/ui/BrickLoader';
 import WorkflowProgress from '@/components/boq/WorkflowProgress';
 import { readEstimateHandoff } from '@/lib/estimateHandoff';
 import { supabase } from '@/lib/supabase';
@@ -317,7 +318,7 @@ function BoqScannerContent() {
               disabled={!file || stage === 'scanning'}
             >
               {stage === 'scanning'
-                ? <><CircleNotch size={16} weight="bold" className="spin" /> Reading…</>
+                ? <><BrickLoader /> Reading…</>
                 : 'Scan document'}
             </button>
           </div>
@@ -326,7 +327,7 @@ function BoqScannerContent() {
               and inventing steps to fill the wait is what the page this replaces
               did instead of working. */}
           {stage === 'scanning' && (
-            <p className="scanning-note">Reading the document. This usually takes a few seconds.</p>
+            <p className="scanning-note" role="status">Reading the document. This usually takes a few seconds.</p>
           )}
         </section>
       )}

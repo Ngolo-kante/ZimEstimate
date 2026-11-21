@@ -562,8 +562,6 @@ export default function QuickBudgetPage() {
   return (
     <MainLayout fullWidth mobileNavy title="Budget Estimator">
       <div className="budget-checker-page">
-        <div className="ambient ambient-one" aria-hidden />
-        <div className="ambient ambient-two" aria-hidden />
 
         {/* What kind of budget? The house estimator used to be the whole page,
             with no sign that solar and borehole budgets existed at all. */}
@@ -1041,38 +1039,6 @@ export default function QuickBudgetPage() {
           flex-direction: column;
           gap: 18px;
           isolation: isolate;
-          /* The decorative .ambient blurs are absolutely positioned 30-40px
-             outside this container, which pushed the document wider than the
-             viewport between roughly 1150px and 1260px. Clip them here — no
-             sticky descendants, so clipping is safe. */
-          overflow-x: clip;
-        }
-
-        .ambient {
-          position: absolute;
-          border-radius: 999px;
-          filter: blur(18px);
-          opacity: 0.62;
-          pointer-events: none;
-          z-index: -1;
-          animation: none;
-        }
-
-        .ambient-one {
-          width: 280px;
-          height: 280px;
-          right: -30px;
-          top: -35px;
-          background: radial-gradient(circle, rgba(78, 154, 247, 0.38), rgba(78, 154, 247, 0));
-        }
-
-        .ambient-two {
-          width: 260px;
-          height: 260px;
-          left: -40px;
-          bottom: 12%;
-          background: radial-gradient(circle, rgba(6, 20, 47, 0.22), rgba(6, 20, 47, 0));
-          animation-delay: 0.9s;
         }
 
         .budget-modes {
@@ -1282,11 +1248,11 @@ export default function QuickBudgetPage() {
 
         .control-panel,
         .results-panel {
-          border-radius: 18px;
-          border: 1px solid rgba(148, 163, 184, 0.25);
-          background: rgba(255, 255, 255, 0.93);
+          border-radius: var(--card-radius);
+          border: var(--card-border);
+          background: var(--color-surface);
           padding: 14px;
-          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.07);
+          box-shadow: var(--card-shadow);
         }
 
         .control-panel {
@@ -1404,6 +1370,19 @@ export default function QuickBudgetPage() {
           margin-bottom: 12px;
         }
 
+        @media (min-width: 1121px) and (min-height: 740px) {
+          .result-top {
+            position: sticky;
+            top: 65px;
+            z-index: 2;
+            padding-block: 8px;
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+          }
+
+          .results-panel :global(:focus-visible) { scroll-margin-top: 260px; }
+        }
+
         .coverage-ring {
           width: 130px;
           height: 130px;
@@ -1463,20 +1442,23 @@ export default function QuickBudgetPage() {
         }
 
         .result-stats .move-in-total {
-          background: color-mix(in srgb, var(--color-selected-surface) 45%, white);
-          border-color: var(--color-gold-on-navy);
+          background: var(--studio-steel);
+          border-color: var(--studio-line);
         }
 
+        .result-stats .move-in-total strong, .move-in-total .add-later-total { color: var(--studio-ink); }
         .move-in-total > span {
           display: flex;
           align-items: center;
           gap: 5px;
-          color: var(--color-selected-ink);
+          color: var(--studio-brass);
         }
 
         .move-in-total > span :global(svg) {
           flex: none;
         }
+
+        .result-stats strong, .add-later-price { font-family: var(--font-mono); }
 
         .result-stats strong {
           font-size: 0.93rem;
@@ -1738,9 +1720,6 @@ export default function QuickBudgetPage() {
             padding: 14px 12px 74px;
           }
 
-          .ambient {
-            display: none;
-          }
 
           .control-panel,
           .results-panel {

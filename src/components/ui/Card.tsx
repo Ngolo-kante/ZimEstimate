@@ -24,40 +24,40 @@ export default function Card({
         onClick={onClick}
         role={isClickable ? 'button' : undefined}
         tabIndex={isClickable ? 0 : undefined}
-        onKeyDown={isClickable ? (e) => e.key === 'Enter' && onClick?.() : undefined}
+        onKeyDown={isClickable ? (event) => {
+          if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            onClick?.();
+          }
+        } : undefined}
       >
         {children}
       </div>
 
       <style jsx>{`
         .card {
-          background: #ffffff;
-          border-radius: 20px;
+          background: var(--card-bg);
+          border-radius: var(--card-radius);
           padding: 24px;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 
-                      0 2px 4px -1px rgba(0, 0, 0, 0.01),
-                      0 10px 15px -3px rgba(0, 0, 0, 0.01),
-                      0 0 0 1px rgba(226, 232, 240, 0.6);
-          border: none;
-          transition: none;
+          border: var(--card-border);
+          box-shadow: var(--card-shadow);
         }
 
         .card.clickable {
           cursor: pointer;
+          transition: border-color var(--duration-fast), background-color var(--duration-fast);
+        }
+        .card.clickable:focus-visible {
+          outline: 3px solid var(--color-focus-ring);
+          outline-offset: 2px;
         }
         @media (hover: hover) and (pointer: fine) {
-        @media (hover: hover) and (pointer: fine) {
-            .card.clickable:hover {
-                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05),
-                0 8px 10px -6px rgba(0, 0, 0, 0.01),
-                0 0 0 1px rgba(59, 130, 246, 0.5);
-          }
-        }
+          .card.clickable:hover { border-color: var(--color-accent); }
         }
 
         .card.selected {
           border-color: var(--color-accent);
-          box-shadow: 0 0 0 2px rgba(78, 154, 247, 0.4), 0 10px 25px -5px rgba(78, 154, 247, 0.15);
+          box-shadow: inset 0 0 0 1px var(--color-accent);
         }
 
         /* Dashboard Card Variant */
@@ -75,15 +75,9 @@ export default function Card({
           flex-direction: column;
           align-items: center;
           gap: 16px;
-          background: linear-gradient(145deg, #ffffff, #f8fafc);
+          background: var(--card-bg);
         }
-        @media (hover: hover) and (pointer: fine) {
-        @media (hover: hover) and (pointer: fine) {
-            .card-choice:hover {
-                background: #ffffff;
-          }
-        }
-        }
+        .card-choice.selected { background: var(--color-info-bg); }
 
         /* Material Card Variant */
         .card-material {
@@ -94,12 +88,10 @@ export default function Card({
         }
 
 
-                @media (prefers-reduced-motion: reduce) {
-@media (hover: hover) and (pointer: fine) {
-    .card.clickable:hover { }
-}
-                }
-            `}</style>
+        @media (prefers-reduced-motion: reduce) {
+          .card.clickable { transition: none; }
+        }
+      `}</style>
     </>
   );
 }
@@ -153,63 +145,4 @@ export function CardContent({ children, className = '' }: { children: React.Reac
   );
 }
 
-export function CardBadge({
-  children,
-  variant = 'default'
-}: {
-  children: React.ReactNode;
-  variant?: 'default' | 'success' | 'warning' | 'accent' | 'error' | 'info';
-}) {
-  return (
-    <>
-      <span className={`card-badge badge-${variant}`}>{children}</span>
-      <style jsx>{`
-        /* One recipe per meaning, each pair at least 4.5:1 on its own
-           background (the default badge was #64748B on a translucent grey,
-           about 3.9:1). Meaning: neutral = draft or planned; accent = action
-           or selection; warning = needs attention; error = blocking or over
-           budget; success = done or on track. */
-        .card-badge {
-          display: inline-flex;
-          align-items: center;
-          padding: 0.25rem 0.75rem;
-          font-size: 0.75rem;
-          font-weight: 600;
-          border-radius: 9999px;
-          white-space: nowrap;
-        }
-
-        .badge-default {
-          background: #f1f5f9;
-          color: #334155;
-        }
-
-        .badge-success {
-          background: #dcfce7;
-          color: #166534;
-        }
-
-        .badge-warning {
-          background: #fef3c7;
-          color: #92400e;
-        }
-
-        .badge-accent {
-          background: #e0ebff;
-          color: #1e4fc2;
-        }
-
-        .badge-error {
-          background: #fee2e2;
-          color: #b91c1c;
-        }
-
-        .badge-info {
-          background: #eff6ff;
-          color: #1d4ed8;
-        }
-
-            `}</style>
-    </>
-  );
-}
+export { CardBadge } from './CardBadge';

@@ -1,5 +1,6 @@
 'use client';
 
+import BrickLoader from './BrickLoader';
 import { CircleNotch, CheckCircle, Circle } from '@phosphor-icons/react';
 
 interface SavingOverlayProps {
@@ -20,12 +21,12 @@ export default function SavingOverlay({
     return (
         <>
             <div className="saving-overlay">
-                <div className="saving-content">
+                <div className="saving-content" role="status">
                     <div className="saving-icon">
                         {success ? (
                             <CheckCircle size={48} weight="fill" className="success-icon" />
                         ) : (
-                            <CircleNotch size={48} weight="bold" className="spinner" />
+                            <BrickLoader />
                         )}
                     </div>
                     <p className="saving-message">{message}</p>
@@ -41,13 +42,6 @@ export default function SavingOverlay({
                                     <span className="step-label">{step.label}</span>
                                 </div>
                             ))}
-                        </div>
-                    )}
-                    {!success && (
-                        <div className="saving-dots">
-                            <span className="dot"></span>
-                            <span className="dot"></span>
-                            <span className="dot"></span>
                         </div>
                     )}
                 </div>
@@ -103,6 +97,7 @@ export default function SavingOverlay({
                 }
 
                 .saving-icon {
+                    font-size: 1.75rem;
                     color: var(--color-primary);
                 }
 
@@ -162,27 +157,6 @@ export default function SavingOverlay({
                     align-items: center;
                     justify-content: center;
                     width: 18px;
-                }
-
-                .saving-dots {
-                    display: flex;
-                    gap: 6px;
-                }
-
-                .dot {
-                    width: 8px;
-                    height: 8px;
-                    background: var(--color-primary);
-                    border-radius: 50%;
-                    animation: none;
-                }
-
-                .dot:nth-child(1) {
-                    animation-delay: -0.32s;
-                }
-
-                .dot:nth-child(2) {
-                    animation-delay: -0.16s;
                 }
 
                 @media (prefers-reduced-motion: reduce) {

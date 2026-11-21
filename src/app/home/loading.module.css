@@ -443,31 +443,29 @@
   }
 }
 
-/* ─── In line with the redrawn home page (home.module.css) ─────────────────
-   The hero is a ruled navy sheet with the budget check hanging off its
-   bottom edge, and the ways in are a tall lead card with three beside it.
-   These follow that geometry so nothing jumps when the page arrives. */
-
 .page {
-  background: #fbfaf7;
+  background: var(--studio-midnight);
 }
 
 .hero {
   height: auto;
   min-height: 0;
-  background:
-    radial-gradient(900px 520px at 82% 38%, rgba(46, 108, 246, 0.26), transparent 62%),
-    linear-gradient(180deg, var(--color-primary) 0%, #071428 100%);
+  background: var(--studio-midnight);
 }
 
 .heroInner {
   grid-template-columns: minmax(0, 1.05fr) minmax(400px, 0.78fr);
-  gap: 64px;
-  padding-block: 72px 0;
+  gap: 18px;
+  padding-block: 28px 36px;
 }
 
 .heroCopy {
-  padding-bottom: 76px;
+  padding: clamp(24px, 3.3vw, 50px);
+  border: 1px solid var(--studio-line);
+  border-radius: 14px;
+  background-color: var(--studio-steel);
+  background-image: var(--studio-grid);
+  background-size: var(--studio-grid-size);
 }
 
 .headingLine {
@@ -506,9 +504,9 @@
 }
 
 .heroBudget {
-  max-width: 480px;
-  align-self: end;
-  margin-bottom: -64px;
+  max-width: none;
+  align-self: center;
+  margin: 0;
 }
 
 .widgetBox {
@@ -516,8 +514,8 @@
 }
 
 .startSection {
-  padding: 136px 0 88px;
-  background: #fbfaf7;
+  padding: 32px 0 64px;
+  background: var(--studio-midnight);
   border-bottom: 0;
 }
 
@@ -546,7 +544,7 @@
   grid-column: 2 / span 2;
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 860px) {
   .heroInner {
     grid-template-columns: 1fr;
     gap: 36px;
@@ -554,7 +552,7 @@
   }
 
   .heroCopy {
-    padding-bottom: 0;
+    padding: 32px;
   }
 
   .heroBudget {
@@ -582,8 +580,8 @@
 
 @media (max-width: 640px) {
   .heroInner {
-    gap: 26px;
-    padding-block: 30px 36px;
+    gap: 12px;
+    padding: 12px;
   }
 
   .headingLine {

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { CardBadge } from '@/components/ui/CardBadge';
 import MainLayout from '@/components/layout/MainLayout';
 import { listQuickBOQs } from '@/lib/services/quickBoq';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -106,11 +107,10 @@ export default function QuickProjectsPage() {
   const totalSaved = Object.values(savedCounts).reduce((sum, count) => sum + count, 0);
 
   return (
-    <MainLayout mobileNavy>
+    <MainLayout fullWidth mobileNavy>
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerCopy}>
-            <span className={styles.eyebrow}>Focused estimates</span>
             <h1>Quick Projects</h1>
             <p>Choose one job, answer the essentials, and leave with a priced Bill of Quantities.</p>
           </div>
@@ -119,7 +119,6 @@ export default function QuickProjectsPage() {
         <section className={styles.selector} aria-labelledby="project-selector-title">
           <div className={styles.sectionHeader}>
             <div>
-              <span>Start here</span>
               <h2 id="project-selector-title">Select the job you are pricing</h2>
             </div>
             {totalSaved > 0 && (
@@ -132,7 +131,7 @@ export default function QuickProjectsPage() {
           </div>
 
           <div className={styles.grid}>
-            {PROJECT_TYPES.map((project, index) => {
+            {PROJECT_TYPES.map((project) => {
               const ProjectIcon = project.icon;
               const count = savedCounts[project.id] || 0;
 
@@ -141,12 +140,10 @@ export default function QuickProjectsPage() {
                   key={project.id}
                   href={`/quick-projects/${project.id}`}
                   className={styles.card}
-                  style={{ '--card-order': index } as CSSProperties}
                 >
                   <div className={styles.cardTopline}>
-                    <span className={styles.rank}>{String(index + 1).padStart(2, '0')}</span>
                     <span className={styles.category}>{project.category}</span>
-                    {project.popular && <span className={styles.popular}>Most requested</span>}
+                    {project.popular && <CardBadge variant="featured" className={styles.popular}>Most requested</CardBadge>}
                   </div>
 
                   <div className={styles.cardBody}>
@@ -163,7 +160,7 @@ export default function QuickProjectsPage() {
                     <span><Timer size={15} /> About {project.minutes} min</span>
                     {count > 0 && <span><FolderOpen size={14} /> {count} saved</span>}
                     <span className={styles.openAction} aria-hidden="true">
-                      <ArrowRight size={17} weight="bold" />
+                      Start estimate <ArrowRight size={15} weight="bold" />
                     </span>
                   </div>
                 </Link>

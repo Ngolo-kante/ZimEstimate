@@ -1,4 +1,6 @@
-.panel { background: var(--color-primary); color: white; padding: 18px 24px; border-radius: 12px; }
+.panel { background-color: var(--studio-steel);
+  background-image: var(--studio-grid);
+  background-size: var(--studio-grid-size); color: white; padding: 18px 24px; border-radius: 12px; }
 .logo { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; font-size: 1.25rem; color: white; text-decoration: none; border-radius: 8px; }
 .logo:focus-visible { outline: 2px solid #bfdbfe; outline-offset: 4px; }
 .panel h2 { margin: 14px 0 0; font-size: 1rem; line-height: 1.4; color: white; }

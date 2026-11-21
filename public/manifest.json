@@ -4,8 +4,8 @@
     "description": "Construction cost estimation app for Zimbabwe - Build smarter estimates with AI-powered tools.",
     "start_url": "/home",
     "display": "standalone",
-    "background_color": "#F5F5F5",
-    "theme_color": "#14213D",
+    "background_color": "#eaf0f7",
+    "theme_color": "#0b192e",
     "orientation": "portrait-primary",
     "scope": "/",
     "categories": [

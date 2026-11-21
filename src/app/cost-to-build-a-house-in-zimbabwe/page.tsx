@@ -196,7 +196,7 @@ export default function HouseCostZimbabwePage() {
         />
 
         <section className={styles.hero} aria-labelledby="house-cost-heading">
-          <div className={styles.blueprintGrid} aria-hidden="true" />
+
           <div className={styles.heroInner}>
             <div className={styles.heroCopy}>
               <div className={styles.kicker}>

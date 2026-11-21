@@ -6,12 +6,12 @@
 /* ── Token Definitions ─────────────────────────────────────────────────────── */
 :root {
   /* Backgrounds */
-  --wiz-bg:           #F7F6F3;   /* Cloud Dancer — warm off-white  */
-  --wiz-surface:      #FFFFFF;
-  --wiz-surface-muted:#F4F3F0;   /* slightly warmer than bg        */
+  --wiz-bg:           var(--color-background);
+  --wiz-surface:      var(--color-surface);
+  --wiz-surface-muted:var(--color-mist);
 
   /* Midnight Blue — body text (replaces pure black / slate-900) */
-  --wiz-text-primary: #1B2A4A;
+  --wiz-text-primary: var(--color-primary);
   --wiz-text-muted:   #475569;
   --wiz-text-faint:   #475569;
 
@@ -20,8 +20,8 @@
   --wiz-jade-light:   #E3F5EE;
 
   /* Primary Blue — CTA buttons                                  */
-  --wiz-primary:      #2563EB;   /* blue-600                       */
-  --wiz-primary-dark: #2563EB;   /* blue-600 — hover state         */
+  --wiz-primary:      var(--color-accent);
+  --wiz-primary-dark: var(--color-accent-dark);
   --wiz-primary-text: #FFFFFF;   /* white text on blue bg           */
 
   /* Wasabi — kept for legacy / progress bar accent only          */
@@ -72,7 +72,7 @@
 .wiz-progress-bar-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--wiz-primary) 0%, #60A5FA 100%);
+  background: var(--wiz-primary);
   transition: none;
 }
 

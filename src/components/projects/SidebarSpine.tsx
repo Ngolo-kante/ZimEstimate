@@ -207,9 +207,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                     .sidebar-spine {
                         width: 272px;
                         height: calc(100dvh - 64px);
-                        background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(246, 250, 255, 0.9));
-                        backdrop-filter: blur(16px);
-                        -webkit-backdrop-filter: blur(16px);
+                        background: var(--studio-midnight);
                         border-right: 1px solid rgba(211, 211, 215, 0.75);
                         display: flex;
                         flex-direction: column;
@@ -423,11 +421,11 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         gap: 12px;
                         padding: 11px 14px;
                         border-radius: 12px;
-                        background: rgba(255, 255, 255, 0.55);
+                        background: transparent;
                         border: none;
                         text-align: left;
                         cursor: pointer;
-                        color: #5a6f8d;
+                        color: var(--studio-muted);
                         transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
                         position: relative;
                         font-weight: 500;
@@ -442,15 +440,15 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
 
                     @media (hover: hover) and (pointer: fine) {
                       .nav-item:hover {
-                          background: #edf6ff;
-                          color: #164d83;
+                          background: var(--studio-steel);
+                          color: var(--studio-brass);
                           transform: translateX(2px);
                       }
                     }
 
                     .nav-item.active {
-                        background: linear-gradient(135deg, #e9f4ff, #f3f9ff);
-                        color: #164d83;
+                        background: var(--studio-steel);
+                        color: var(--studio-brass);
                         font-weight: 600;
                         box-shadow: 0 10px 18px rgba(22, 77, 131, 0.14);
                     }
@@ -500,18 +498,14 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         transform: translateY(-50%);
                         width: 5px;
                         height: 5px;
-                        background: #2f76c5;
+                        background: var(--studio-brass);
                         border-radius: 50%;
                         box-shadow: 0 0 8px rgba(47, 118, 197, 0.4);
                         opacity: 1;
                         transition: opacity 0.2s;
-                        animation: pulseIndicator 1.8s ease-in-out infinite;
+
                     }
 
-                    @keyframes pulseIndicator {
-                        0%, 100% { opacity: 0.95; filter: brightness(1); }
-                        50% { opacity: 0.55; filter: brightness(1.2); }
-                    }
 
                     .sidebar-spine.collapsed .active-indicator {
                         right: 6px;
@@ -527,15 +521,15 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         border: none;
                         border-top: 1px solid rgba(211, 211, 215, 0.8);
                         background: transparent;
-                        color: #6f86a9;
+                        color: var(--studio-muted);
                         cursor: pointer;
                         transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
                     }
 
                     @media (hover: hover) and (pointer: fine) {
                       .collapse-toggle:hover {
-                          background: rgba(233, 244, 255, 0.65);
-                          color: #255f9b;
+                          background: var(--studio-steel);
+                          color: var(--studio-ink);
                       }
                     }
 

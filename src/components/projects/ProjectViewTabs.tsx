@@ -134,10 +134,10 @@ export default function ProjectViewTabs({
             bottom: 0;
             display: grid;
             grid-template-columns: repeat(5, minmax(0, 1fr));
-            min-height: 72px;
-            padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
-            border-top: 1px solid #d8e0eb;
-            background: rgba(255, 255, 255, 0.98);
+            min-height: var(--mobile-nav-height);
+            padding: 2px 6px calc(2px + env(safe-area-inset-bottom, 0px));
+            border-top: 1px solid var(--studio-line);
+            background: var(--studio-midnight);
             box-shadow: 0 -8px 24px rgba(11, 31, 59, 0.1);
             backdrop-filter: blur(14px);
             -webkit-backdrop-filter: blur(14px);
@@ -145,7 +145,7 @@ export default function ProjectViewTabs({
 
           .dock-item {
             min-width: 0;
-            min-height: 56px;
+            min-height: 48px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -154,8 +154,7 @@ export default function ProjectViewTabs({
             padding: 4px 1px;
             border: 0;
             border-radius: 7px;
-            /* #475569 on white is 7.6:1; the old #748196 was 3.95:1 at 10px. */
-            color: #475569;
+            color: var(--studio-muted);
             background: transparent;
             font: inherit;
             font-size: 12px;
@@ -179,14 +178,14 @@ export default function ProjectViewTabs({
           }
 
           .dock-item.active {
-            color: #0b1f3b;
+            color: var(--studio-ink);
             font-weight: 760;
           }
 
           .dock-item.active .dock-icon {
-            color: #fff;
-            border-color: #0b1f3b;
-            background: #0b1f3b;
+            color: var(--studio-brass);
+            border-color: var(--studio-line);
+            background: var(--studio-steel);
           }
 
           .dock-item:focus-visible,

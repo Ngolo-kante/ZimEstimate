@@ -3,7 +3,7 @@
      which counts a desktop scrollbar and made the page scroll sideways. */
   margin: -32px -24px 0;
   color: var(--color-text);
-  background: #f8fafc;
+  background: var(--color-background);
   overflow-x: hidden;
 }
 
@@ -11,20 +11,12 @@
   position: relative;
   overflow: hidden;
   color: white;
-  background: #0b1f3b;
+  background-color: var(--studio-steel);
+  background-image: var(--studio-grid);
+  background-size: var(--studio-grid-size);
   border-bottom: 1px solid #cbd5e1;
 }
 
-.heroGrid {
-  position: absolute;
-  inset: 0;
-  opacity: 0.16;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.18) 1px, transparent 1px);
-  background-size: 34px 34px;
-  mask-image: linear-gradient(90deg, black, transparent 78%);
-}
 
 .heroInner,
 .directory {
