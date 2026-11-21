@@ -7,7 +7,7 @@ import Input from '@/components/ui/Input';
 import CostDonut, { SERIES_COLORS } from '@/components/ui/CostDonut';
 import '@/styles/budget-explorer.css';
 import { useMemo, useState } from 'react';
-import { ArrowLeft, Warning, CheckCircle } from '@phosphor-icons/react';
+import { CaretLeft, Warning, CheckCircle } from '@phosphor-icons/react';
 import { fitQuantityToBudget, totalOf } from '@/lib/quick-projects/fitQuantityToBudget';
 import type { Answers, BOQItem, LaborConfig } from '@/lib/quick-projects/engine/types';
 
@@ -104,9 +104,9 @@ export default function BudgetFitExplorer({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition-none hover:text-blue-700"
+          className="explorer-back"
         >
-          <ArrowLeft size={16} />
+          <CaretLeft size={16} weight="bold" aria-hidden="true" />
           {backLabel}
         </button>
       )}

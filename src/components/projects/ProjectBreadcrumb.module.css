@@ -13,3 +13,35 @@
     font-weight: 700;
     overflow-wrap: anywhere;
 }
+.trail {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    color: var(--project-breadcrumb-link, #1d4ed8);
+    font-weight: 600;
+}
+
+
+@media (max-width: 640px) {
+    .trail { flex-wrap: nowrap; }
+    .ancestor, .separator, .backLabel { display: none; }
+    .back {
+        flex: 0 0 44px;
+        justify-content: center;
+        border: 1px solid var(--color-border);
+        border-radius: 10px;
+        background: var(--color-surface);
+        color: var(--color-primary);
+    }
+    .back:active { background: var(--color-selected-surface); }
+}

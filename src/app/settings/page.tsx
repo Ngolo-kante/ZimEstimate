@@ -1,5 +1,7 @@
 'use client';
 
+import Switch from '@/components/ui/Switch';
+
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/shadcn/collapsible';
 import { useState, useEffect, type ComponentType } from 'react';
 import ReminderChannels from '@/components/settings/ReminderChannels';
@@ -471,19 +473,7 @@ function SettingsContent() {
                                             <span className="toggle-label">Email</span>
                                             <span className="toggle-hint">Quote requests, quotes and updates</span>
                                         </div>
-                                        <label className="toggle">
-                                            {/* A plain input: the shared Input component wraps its own
-                                                field, so this page's styles could not hide it and a
-                                                tick box showed next to the switch. */}
-                                            <input
-                                                type="checkbox"
-                                                role="switch"
-                                                aria-label="Email notifications"
-                                                checked={notifyEmail}
-                                                onChange={(e) => setNotifyEmail(e.target.checked)}
-                                            />
-                                            <span className="toggle-slider" />
-                                        </label>
+                                        <Switch checked={notifyEmail} label="Email notifications" onCheckedChange={setNotifyEmail} />
                                     </div>
                                     {/* Only once WhatsApp can actually send (its provider settings
                                         are in place). Push notifications were listed here too, but
@@ -495,19 +485,7 @@ function SettingsContent() {
                                             <span className="toggle-label">WhatsApp</span>
                                             <span className="toggle-hint">Instant alerts to your phone</span>
                                         </div>
-                                        <label className="toggle">
-                                            {/* A plain input: the shared Input component wraps its own
-                                                field, so this page's styles could not hide it and a
-                                                tick box showed next to the switch. */}
-                                            <input
-                                                type="checkbox"
-                                                role="switch"
-                                                aria-label="WhatsApp notifications"
-                                                checked={notifyWhatsapp}
-                                                onChange={(e) => setNotifyWhatsapp(e.target.checked)}
-                                            />
-                                            <span className="toggle-slider" />
-                                        </label>
+                                        <Switch checked={notifyWhatsapp} label="WhatsApp notifications" onCheckedChange={setNotifyWhatsapp} />
                                     </div>
                                     )}
                                 </div>
@@ -1046,53 +1024,6 @@ function SettingsContent() {
                     color: #64748b;
                 }
 
-                .toggle {
-                    position: relative;
-                    width: 48px;
-                    height: 28px;
-                }
-
-                .toggle input {
-                    opacity: 0;
-                    width: 0;
-                    height: 0;
-                }
-
-                .toggle-slider {
-                    position: absolute;
-                    cursor: pointer;
-                    inset: 0;
-                    background: #e2e8f0;
-                    border-radius: 999px;
-                    transition: none;
-                }
-
-                .toggle-slider::before {
-                    position: absolute;
-                    content: '';
-                    height: 20px;
-                    width: 20px;
-                    left: 4px;
-                    top: 4px;
-                    background: white;
-                    border-radius: 999px;
-                    transition: none;
-                    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
-                }
-
-                .toggle input:checked + .toggle-slider {
-                    background: #2563eb;
-                }
-
-                .toggle input:checked + .toggle-slider::before {
-                    transform: translateX(20px);
-                }
-
-                .toggle.disabled {
-                    opacity: 0.6;
-                    pointer-events: none;
-                }
-
                 .notification-section {
                     border-top: 1px solid #f1f5f9;
                     padding-top: 16px;
@@ -1460,9 +1391,6 @@ function SettingsContent() {
                 .input-box { padding-block: 0; }
                 :global(.settings-container .form-group label) { color: var(--color-text-secondary); font-size: 12px; }
                 .text-link, .chip { min-height: 44px; }
-                .toggle { height: 44px; flex-shrink: 0; }
-                .toggle-slider { top: 8px; bottom: 8px; }
-                .toggle:focus-within { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 8px; }
                 :global(.settings-container .upgrade-link), :global(.settings-container .request-delete-link) { min-height: 44px; }
                 :global(.settings-container .upgrade-link) { white-space: nowrap; }
                 :global(.settings-container .upgrade-link svg) { flex-shrink: 0; }

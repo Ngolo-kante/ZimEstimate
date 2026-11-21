@@ -1,5 +1,7 @@
 'use client';
 
+import Switch from '@/components/ui/Switch';
+
 import { formatUsd, formatQuantity } from '@/lib/format';
 
 // v2 — combo packages + kVA guide
@@ -28,7 +30,7 @@ import {
   FloppyDisk,
   ShareNetwork,
   FileText,
-  ArrowLeft,
+  CaretLeft,
   ArrowsClockwise,
   Coins,
   Star,
@@ -403,8 +405,8 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
   );
   const zeraTier = getRequiredZeraTier(allocation.panels.count * pBrand.watt);
 
-  const toggleCard = useCallback((id: string) => {
-    setEnabledCards((prev) => ({ ...prev, [id]: !prev[id] }));
+  const setCardEnabled = useCallback((id: string, checked: boolean) => {
+    setEnabledCards((prev) => ({ ...prev, [id]: checked }));
   }, []);
 
   const toggleExpand = useCallback((id: string) => {
@@ -580,9 +582,9 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       <div className="w-full max-w-5xl mx-auto animate-fade-in pb-24">
         <button
           onClick={() => setBoqItems(null)}
-          className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-none mb-6"
+          className="explorer-back mb-6"
         >
-          <ArrowLeft size={16} /> Back to Budget Explorer
+          <CaretLeft size={16} weight="bold" aria-hidden="true" /> Back to Budget Explorer
         </button>
         <QuickBOQTable
           projectType="solar"
@@ -764,9 +766,9 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       {onBack && (
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-none mb-6"
+          className="explorer-back mb-6"
         >
-          <ArrowLeft size={16} /> {backLabel}
+          <CaretLeft size={16} weight="bold" aria-hidden="true" /> {backLabel}
         </button>
       )}
 
@@ -859,7 +861,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       <AnimatePresence>
         {comboLoaded && (
           <div
-            className="flex items-center gap-3 p-3 rounded-xl bg-[var(--color-accent-muted)] border border-blue-200 mb-4"
+            className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border border-blue-200 mb-4"
           >
             <CheckCircle size={16} weight="fill" className="text-[var(--color-accent)] flex-shrink-0" />
             <p className="text-sm text-blue-800 flex-1">
@@ -1064,7 +1066,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
               if (bandCards.length === 0) return null;
               return (
                 <div key={band}>
-                  <div className="mb-2 px-1">
+                  <div className="explorer-band-heading mb-2 px-1">
                     <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
                       {BAND_LABELS[band].title}
                     </p>
@@ -1084,24 +1086,17 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                             ? 'border-amber-300 bg-amber-50/60'
                             : card.enabled
                               ? 'border-blue-200 bg-[var(--color-surface)] shadow-sm'
-                              : 'border-[var(--color-border)] bg-slate-50/50 opacity-60'
+                              : 'border-[var(--color-border)] bg-slate-50/50'
                         }`}
                       >
                         {/* Card header */}
                         <div className="flex items-center gap-3 p-4">
                           {/* Toggle switch */}
-                          <button
-                            onClick={() => toggleCard(card.id)}
-                            className={`component-toggle relative w-11 h-6 rounded-full transition-none flex-shrink-0 ${
-                              card.enabled ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border-dark)]'
-                            }`}
-                          >
-                            <div
-                              className={`component-toggle-knob absolute top-0.5 w-5 h-5 rounded-full bg-[var(--color-surface)] shadow transition-none ${
-                                card.enabled ? 'translate-x-[22px]' : 'translate-x-0.5'
-                              }`}
-                            />
-                          </button>
+                          <Switch
+                              checked={Boolean(card.enabled)}
+                              label={`Include ${card.label}`}
+                              onCheckedChange={(checked) => setCardEnabled(card.id, checked)}
+                          />
 
                           {/* Icon + label */}
                           <div className={`flex-shrink-0 ${card.enabled ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}`}>
@@ -1528,7 +1523,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
           {/* ── Action Buttons ────────────────────────────────────────────────── */}
           {/* Same three actions, same order and labels as the house and borehole
               budget tabs — see the note in quick-budget/QuickBudgetClient.tsx. */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-6 border-t border-[var(--color-border)]">
+          <div className="explorer-actions flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-6 border-t border-[var(--color-border)]">
             <Button
               variant="primary"
               icon={<FloppyDisk size={16} />}

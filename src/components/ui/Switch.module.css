@@ -1,0 +1,41 @@
+.control {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.control:focus-visible {
+  outline: 2px solid var(--color-accent-dark);
+  outline-offset: 2px;
+}
+
+.track {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  width: 48px;
+  height: 26px;
+  padding-inline: 3px;
+  border-radius: 999px;
+  background: #64748b;
+}
+
+.thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-surface);
+}
+
+.track[data-state='checked'] {
+  justify-content: flex-end;
+  background: var(--color-accent-dark);
+}

@@ -1,5 +1,7 @@
 'use client';
 
+import Switch from '@/components/ui/Switch';
+
 import { formatUsd, formatQuantity } from '@/lib/format';
 
 import '@/styles/budget-explorer.css';
@@ -22,7 +24,7 @@ import {
   FloppyDisk,
   ShareNetwork,
   FileText,
-  ArrowLeft,
+  CaretLeft,
   Funnel,
   Gauge,
 } from '@phosphor-icons/react';
@@ -259,8 +261,8 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
   const remaining = budget - totalAllocated;
   const budgetPct = Math.min(100, Math.round((totalAllocated / budget) * 100));
 
-  const toggleCard = useCallback((id: string) => {
-    setEnabledCards((prev) => ({ ...prev, [id]: !prev[id] }));
+  const setCardEnabled = useCallback((id: string, checked: boolean) => {
+    setEnabledCards((prev) => ({ ...prev, [id]: checked }));
   }, []);
 
   const toggleExpand = useCallback((id: string) => {
@@ -375,9 +377,9 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
       <div className="w-full max-w-5xl mx-auto animate-fade-in pb-24">
         <button
           onClick={() => setBoqItems(null)}
-          className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-none mb-6"
+          className="explorer-back mb-6"
         >
-          <ArrowLeft size={16} /> Back to Budget Explorer
+          <CaretLeft size={16} weight="bold" aria-hidden="true" /> Back to Budget Explorer
         </button>
         <QuickBOQTable
           projectType="borehole"
@@ -464,8 +466,8 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
     <div className="budget-explorer w-full min-w-0 max-w-4xl mx-auto pb-24">
       {/* Back */}
       {onBack && (
-        <button onClick={onBack} className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-none mb-6">
-          <ArrowLeft size={16} /> {backLabel}
+        <button onClick={onBack} className="explorer-back mb-6">
+          <CaretLeft size={16} weight="bold" aria-hidden="true" /> {backLabel}
         </button>
       )}
 
@@ -590,7 +592,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
       </div>
 
       {/* ── Budget Progress Bar ──────────────────────────────────────────────── */}
-      <div className="mb-6">
+      <div className="explorer-card mb-6 border border-slate-200 p-3">
         <div className="flex justify-between text-sm mb-2">
           <span className="whitespace-nowrap tabular-nums font-semibold text-slate-700">{formatUsd(totalAllocated, { wholeDollars: true })} allocated</span>
           <span className={`font-semibold ${remaining >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
@@ -674,17 +676,16 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
             <div
               key={card.id}
               className={`explorer-card rounded-2xl border transition-none duration-200 overflow-hidden ${
-                card.enabled ? 'border-blue-200 bg-[var(--color-surface)] shadow-sm' : 'border-[var(--color-border)] bg-slate-50/50 opacity-60'
+                card.enabled ? 'border-blue-200 bg-[var(--color-surface)] shadow-sm' : 'border-[var(--color-border)] bg-slate-50/50'
               }`}
             >
               {/* Header */}
               <div className="flex items-center gap-3 p-4">
-                <button
-                  onClick={() => toggleCard(card.id)}
-                  className={`component-toggle relative w-11 h-6 rounded-full transition-none flex-shrink-0 ${card.enabled ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border-dark)]'}`}
-                >
-                  <div className={`component-toggle-knob absolute top-0.5 w-5 h-5 rounded-full bg-[var(--color-surface)] shadow transition-none ${card.enabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
-                </button>
+                <Switch
+                    checked={Boolean(card.enabled)}
+                    label={`Include ${card.label}`}
+                    onCheckedChange={(checked) => setCardEnabled(card.id, checked)}
+                />
                 <div className={`flex-shrink-0 ${card.enabled ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}`}>{card.icon}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
@@ -696,7 +697,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
                   <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 truncate">{card.description}</p>
                 </div>
                 {hasOptions && card.enabled && (
-                  <button onClick={() => toggleExpand(card.id)} className="p-1.5 rounded-lg hover:bg-[var(--color-border-light)] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-none flex-shrink-0">
+                  <button type="button" aria-label={`Options for ${card.label}`} aria-expanded={isExpanded} onClick={() => toggleExpand(card.id)} className="p-1.5 rounded-lg hover:bg-[var(--color-border-light)] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-none flex-shrink-0">
                     {isExpanded ? <CaretUp size={16} /> : <CaretDown size={16} />}
                   </button>
                 )}
@@ -846,7 +847,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
 
       {/* ZESA tip for electric pumps */}
       {pumpType === 'electric' && enabledCards.pump && (
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-[var(--color-accent-muted)] border border-blue-100/50 mb-6">
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 border border-blue-100 mb-6">
           <Info size={18} className="flex-shrink-0 mt-0.5 text-[var(--color-accent)]" />
           <div className="text-sm text-blue-800">
             <strong>Electric pump selected.</strong> Ensure you have reliable ZESA power or a generator. Consider hybrid if power is intermittent — it auto-switches between solar and grid.
@@ -857,7 +858,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
       {/* ── Action Buttons ───────────────────────────────────────────────────── */}
       {/* Same three actions, same order and labels as the house and solar budget
           tabs — see the note in quick-budget/QuickBudgetClient.tsx. */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-6 border-t border-[var(--color-border)]">
+      <div className="explorer-actions flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-6 border-t border-[var(--color-border)]">
         <Button
           variant="primary"
           icon={<FloppyDisk size={16} />}

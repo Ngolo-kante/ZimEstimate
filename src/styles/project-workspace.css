@@ -254,6 +254,10 @@ body:where(:has(.project-dashboard-shell)) {
 }
 
 .project-workspace .stage-switcher-item.active .stage-number {
+    width: auto;
+    min-width: 25px;
+    padding-inline: 4px;
+    gap: 3px;
     border-color: rgba(255, 255, 255, 0.35);
     background: rgba(255, 255, 255, 0.12);
     color: #fff;
@@ -553,6 +557,10 @@ body:where(:has(.project-dashboard-shell)) {
         min-width: 116px;
         min-height: 54px;
         scroll-snap-align: start;
+    }
+
+    .project-workspace .stage-switcher-item.active {
+        min-width: 138px;
     }
 
     .project-workspace .compliance-warning-banner {

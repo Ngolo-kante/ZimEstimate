@@ -1,5 +1,7 @@
 'use client';
 
+import Switch from '@/components/ui/Switch';
+
 import type { ReactNode } from 'react';
 import { Door, Drop, HouseLine, Lightning, ShieldCheck, SolarPanel, Tent, Thermometer, Toilet } from '@phosphor-icons/react';
 import {
@@ -199,16 +201,11 @@ export default function ExtrasSection() {
                   </p>
                 )}
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={on}
-                aria-label={`Add ${info.label}`}
-                onClick={() => set(id, { enabled: !on } as Partial<HouseExtras[typeof id]>)}
-                className={`relative h-6 w-11 shrink-0 rounded-full transition-none ${on ? 'bg-blue-600' : 'bg-slate-300'}`}
-              >
-                <span aria-hidden="true" className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-none ${on ? 'left-[22px]' : 'left-0.5'}`} />
-              </button>
+              <Switch
+                checked={on}
+                label={`Add ${info.label}`}
+                onCheckedChange={(enabled) => set(id, { enabled } as Partial<HouseExtras[typeof id]>)}
+              />
             </div>
             {on && options(id) && <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-4 sm:px-5">{options(id)}</div>}
           </section>

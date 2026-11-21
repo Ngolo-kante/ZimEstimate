@@ -264,6 +264,17 @@
     outline-offset: 2px;
   }
 
+  .backLink {
+    width: 44px;
+    justify-content: center;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-surface);
+    color: var(--color-primary);
+  }
+
+  .backLink span { display: none; }
+
   .groupHeader {
     border-left-color: var(--color-link-on-navy);
   }

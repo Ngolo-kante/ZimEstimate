@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import {
-  ArrowLeft,
   ArrowRight,
   Blueprint,
   BookOpen,
   Buildings,
+  CaretLeft,
   Cylinder,
   Drop,
   FileMagnifyingGlass,
@@ -96,9 +96,9 @@ export default async function EstimateServicesPage({ searchParams }: PageProps<'
           <div className={styles.heroInner}>
             <div className={styles.heroCopy}>
               {fromProjects && (
-                <Link href="/projects" className={styles.backLink}>
-                  <ArrowLeft size={16} aria-hidden="true" />
-                  Back to My projects
+                <Link href="/projects" className={styles.backLink} aria-label="Back to My projects">
+                  <CaretLeft size={20} weight="bold" aria-hidden="true" />
+                  <span>Back to My projects</span>
                 </Link>
               )}
               <h1>Start an estimate</h1>

@@ -1,6 +1,7 @@
 'use client';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
+import Switch, { SwitchIndicator } from '@/components/ui/Switch';
 import { useId } from 'react';
 
 import { Field, FieldGroup, FieldLabel } from '@/components/shadcn/field';
@@ -197,16 +198,11 @@ function AlertRow({
                         <p>{config.description}</p>
                     </div>
                 </div>
-                <button
-                    type="button"
-                    role="switch"
-                    aria-checked={state.enabled}
-                    aria-label={`${config.title}: ${state.enabled ? 'on' : 'off'}`}
-                    className={`switch-btn ${state.enabled ? 'active' : ''}`}
-                    onClick={() => onChange({ enabled: !state.enabled })}
-                >
-                    <span className="switch-slider" />
-                </button>
+                <Switch
+                    checked={state.enabled}
+                    label={config.title}
+                    onCheckedChange={(enabled) => onChange({ enabled })}
+                />
             </div>
 
             {/* Settings show as soon as the alert is on — no second click. */}
@@ -527,9 +523,7 @@ export default function ProjectSettings({
                                         <p>{stage.description}</p>
                                     </span>
                                 </span>
-                                <span className={`switch-btn ${isVisible ? 'active' : ''}`} aria-hidden="true">
-                                    <span className="switch-slider" />
-                                </span>
+                                <SwitchIndicator checked={isVisible} />
                             </button>
                         );
                     })}

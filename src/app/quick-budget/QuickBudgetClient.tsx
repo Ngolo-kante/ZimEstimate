@@ -1,5 +1,7 @@
 'use client';
 
+import Switch from '@/components/ui/Switch';
+
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
@@ -30,6 +32,7 @@ import { COUNCIL_TARIFF, councilFeesTotal } from '@/lib/projectFees';
 import { DEFAULT_ROOF_COVERING, DEFAULT_ROOF_SHAPE, ROOF_COVERINGS, ROOF_SHAPES, type RoofCovering, type RoofShape } from '@/lib/calculations/roofingOptions';
 import { captureProductEvent, getBudgetBand, recordSharedLinkArrival } from '@/lib/productAnalytics';
 import {
+  Check,
   House,
   SunHorizon,
   Drop,
@@ -590,7 +593,9 @@ export default function QuickBudgetPage() {
                   className={`budget-mode-card${active ? ' is-active' : ''}`}
                   title={mode.hint}
                 >
-                  <Icon size={18} weight={active ? 'fill' : 'duotone'} aria-hidden="true" />
+                  {active
+                    ? <Check size={18} weight="bold" aria-hidden="true" />
+                    : <Icon size={18} weight="duotone" aria-hidden="true" />}
                   <strong>{mode.title}</strong>
                 </button>
               );
@@ -735,16 +740,7 @@ export default function QuickBudgetPage() {
               <div className="assumption">
                 <span className="assumption-label">Labour</span>
                 <div className="labour-row">
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={includeLabor}
-                    aria-label="Include labour"
-                    className={`labour-switch ${includeLabor ? 'on' : ''}`}
-                    onClick={() => setIncludeLabor((value) => !value)}
-                  >
-                    <span className="knob" aria-hidden="true" />
-                  </button>
+                  <Switch checked={includeLabor} label="Include labour" onCheckedChange={setIncludeLabor} />
                   <span className="labour-off">{includeLabor ? 'Labour included' : 'Materials only'}</span>
                 </div>
                 {includeLabor && (
@@ -982,6 +978,7 @@ export default function QuickBudgetPage() {
                 <div className="actions">
                   <Button
                     variant="primary"
+                    className="save-budget-action"
                     icon={<FloppyDisk size={16} />}
                     onClick={handleSaveProject}
                     loading={isSavingProject}
@@ -1092,6 +1089,14 @@ export default function QuickBudgetPage() {
 
         /* One row on a phone, swiped sideways, rather than three rows of tabs. */
         @media (max-width: 640px) {
+          :global(.main-content.mobile-navy > .page-content:has(> .budget-checker-page)) {
+            padding-inline: 4px;
+          }
+
+          :global(.main-content.mobile-navy > .page-content:has(> .budget-checker-page) > .page-title) {
+            margin-inline: 12px;
+          }
+
           .budget-modes__grid {
             flex-wrap: nowrap;
             overflow-x: auto;
@@ -1569,48 +1574,6 @@ export default function QuickBudgetPage() {
           line-height: 1.4;
           color: var(--color-text-muted);
         }
-        .labour-switch {
-          display: inline-flex;
-          align-items: center;
-          min-height: 44px;
-          padding: 0;
-          border: none;
-          background: none;
-          cursor: pointer;
-        }
-
-        .labour-switch:focus-visible {
-          outline: 2px solid #2e6cf6;
-          outline-offset: 2px;
-          border-radius: 999px;
-        }
-
-        .labour-switch .knob {
-          position: relative;
-          flex-shrink: 0;
-          width: 38px;
-          height: 22px;
-          border-radius: 999px;
-          background: #cbd5e1;
-          transition: none;
-        }
-        .labour-switch .knob::after {
-          content: '';
-          position: absolute;
-          top: 3px;
-          left: 3px;
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          background: #fff;
-          transition: none;
-        }
-        .labour-switch.on .knob {
-          background: #2e6cf6;
-        }
-        .labour-switch.on .knob::after {
-          transform: translateX(16px);
-        }
         .budget-split {
           border: 1px solid #e2e8f0;
           border-radius: 14px;
@@ -1781,11 +1744,25 @@ export default function QuickBudgetPage() {
 
           .control-panel,
           .results-panel {
-            padding: 11px;
+            padding: 8px;
+          }
+
+          .actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .actions :global(.save-budget-action) {
+            grid-column: 1 / -1;
           }
 
           .actions :global(.btn) {
             width: 100%;
+            min-height: 44px;
+          }
+
+          .actions :global(.btn-secondary) {
+            padding-inline: 8px;
           }
         }
 

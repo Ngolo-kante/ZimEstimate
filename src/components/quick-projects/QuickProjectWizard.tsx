@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useEffect, useState } from 'react';
+import { useCallback, useMemo, useEffect, useId, useState } from 'react';
 import { useIsClient } from '@/hooks/useIsClient';
 import { restoreQuickBOQSession, clearQuickBOQSession } from '@/lib/services/quickBoq';
 import {
@@ -14,6 +14,7 @@ import {
 import { AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
+import Switch from '@/components/ui/Switch';
 import { applyDefaultAnswers, getActiveSteps, getVisibleQuestions, isStepComplete, updateAnswer } from '@/lib/quick-projects/engine/boqEngine';
 import type { Answers, BOQItem, LaborConfig, QuestionFlow, QuestionOption, WizardStep } from '@/lib/quick-projects/engine/types';
 import QuickBOQTable from './QuickBOQTable';
@@ -102,7 +103,9 @@ function QuestionField({
   onNotSure: (id: string, on: boolean) => void;
   showValidation: boolean;
 }) {
+  const switchId = useId();
   const val = answers[question.id];
+  const toggleChecked = Boolean(val ?? question.defaultValue);
   const isNS = notSureIds.has(question.id);
   const tip = question.recommendation?.(answers);
 
@@ -119,18 +122,17 @@ function QuestionField({
 
       {/* Toggle */}
       {question.type === 'toggle' && (
-        <label className="flex items-center gap-3 cursor-pointer mt-4 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-slate-50 transition-none">
-          <div className="relative">
-            <input
-              type="checkbox"
-              className="sr-only peer"
-              checked={Boolean(val ?? question.defaultValue)}
-              onChange={(e) => onChange(question.id, e.target.checked)}
-            />
-            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-none peer-checked:bg-blue-600"></div>
-          </div>
-          <span className="text-sm font-medium text-slate-900">{Boolean(val ?? question.defaultValue) ? 'Yes' : 'No'}</span>
-        </label>
+        <div className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-2">
+          <Switch
+            id={switchId}
+            checked={toggleChecked}
+            label={question.title}
+            onCheckedChange={(checked) => onChange(question.id, checked)}
+          />
+          <label htmlFor={switchId} className="flex min-h-11 flex-1 cursor-pointer items-center text-sm font-medium text-slate-900">
+            {toggleChecked ? 'Yes' : 'No'}
+          </label>
+        </div>
       )}
 
       {/* Select — Dropdown layout */}

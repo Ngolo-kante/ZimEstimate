@@ -1,5 +1,6 @@
 'use client';
 
+import Switch from '@/components/ui/Switch';
 import { formatUsd } from '@/lib/format';
 
 import type { LaborConfig } from '@/lib/quick-projects/engine/types';
@@ -65,23 +66,11 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
           </p>
         </div>
 
-        <button
-          type="button"
-          role="switch"
-          aria-checked={labor.enabled}
-          onClick={() => onChange({ ...labor, enabled: !labor.enabled })}
-          className={`min-h-11 inline-flex flex-shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold transition-none ${
-            labor.enabled
-              ? 'border-slate-600 bg-slate-50 text-slate-900'
-              : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400'
-          }`}
-        >
-          <span
-            aria-hidden="true"
-            className={`h-2 w-2 rounded-full ${labor.enabled ? 'bg-slate-700' : 'bg-slate-400'}`}
-          />
-          {labor.enabled ? 'Included' : 'Excluded'}
-        </button>
+        <Switch
+          checked={labor.enabled}
+          label="Include labour"
+          onCheckedChange={(enabled) => onChange({ ...labor, enabled })}
+        />
       </div>
 
       {labor.enabled && (

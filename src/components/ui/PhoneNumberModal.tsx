@@ -133,6 +133,21 @@ export default function PhoneNumberModal({
           justify-content: flex-end;
           gap: 12px;
         }
+
+        @media (max-width: 640px) {
+          .modal-content { background: var(--color-primary); }
+          .modal-header h2, .modal-content :global(.input-label) { color: var(--color-text-inverse); }
+          .modal-description { color: var(--color-muted-on-navy); }
+          .modal-content :global(.input-error) { color: #fecaca; }
+          .close-btn, .modal-actions :global(.btn-ghost) {
+            background: var(--color-surface);
+            color: var(--color-primary);
+          }
+          .close-btn:focus-visible, .modal-content :global(.btn:focus-visible) {
+            outline: 2px solid var(--color-gold-on-navy);
+            outline-offset: 2px;
+          }
+        }
       `}</style>
     </>
   );

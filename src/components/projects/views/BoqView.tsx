@@ -8,7 +8,7 @@ import ProjectCostSplit from '@/components/projects/ProjectCostSplit';
 import type { ProjectView } from '@/components/projects/SidebarSpine';
 import { STAGE_CATEGORIES, STAGE_SHORT_LABELS as categoryShortLabels } from '@/lib/projects/workspaceStages';
 import type { BOQCategory, BOQItem, ProjectStageWithTasks, PurchaseRecord } from '@/lib/database.types';
-import { WarningCircle, X } from '@phosphor-icons/react';
+import { Check, WarningCircle, X } from '@phosphor-icons/react';
 
 export interface BoqViewProps {
     projectId: string;
@@ -98,7 +98,10 @@ export default function BoqView({
                             aria-label={`${categoryShortLabels[category].replace('Electrical', 'electrical')}, ${stageItemCount} ${stageItemCount === 1 ? 'item' : 'items'}`}
                             onClick={() => setActiveTab(category)}
                         >
-                            <span className="stage-number">{index + 1}</span>
+                            <span className="stage-number" aria-hidden="true">
+                                {index + 1}
+                                {isActive && <Check size={12} weight="bold" />}
+                            </span>
                             <span className="stage-switcher-copy">
                                 <strong>{categoryShortLabels[category].replace('Electrical', 'electrical')}</strong>
                                 <small>{stage.is_applicable ? `${stageItemCount} ${stageItemCount === 1 ? 'item' : 'items'}` : 'Not included'}</small>

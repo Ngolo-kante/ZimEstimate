@@ -82,7 +82,7 @@ export default function ProjectViewTabs({
       </nav>
 
       <Drawer open={isMoreOpen} onOpenChange={setIsMoreOpen} closeThreshold={0.25}>
-        <DrawerContent {...focus} id="project-more-sheet" aria-describedby={undefined} onCloseAutoFocus={() => moreButtonRef.current?.focus()}>
+        <DrawerContent {...focus} id="project-more-sheet" className="bg-[var(--color-primary)]" aria-describedby={undefined} onCloseAutoFocus={() => moreButtonRef.current?.focus()}>
           <section className="more-sheet">
 
             <div className="sheet-header">
@@ -199,9 +199,9 @@ export default function ProjectViewTabs({
           .more-sheet {
             width: 100%;
             padding: 8px 12px calc(12px + env(safe-area-inset-bottom, 0px));
-            border: 1px solid #d8e0eb;
+            border: 1px solid var(--color-primary-light);
             border-radius: 8px;
-            background: #fff;
+            background: var(--color-primary);
             box-shadow: 0 24px 60px rgba(5, 18, 35, 0.28);
           }
 
@@ -219,7 +219,7 @@ export default function ProjectViewTabs({
             justify-content: space-between;
             gap: 16px;
             padding: 6px 4px 12px;
-            border-bottom: 1px solid #e6ebf2;
+            border-bottom: 1px solid var(--color-primary-light);
           }
 
           .sheet-header p,
@@ -229,7 +229,7 @@ export default function ProjectViewTabs({
           }
 
           .sheet-header p {
-            color: #64748b;
+            color: var(--color-muted-on-navy);
             font-size: 12px;
             font-weight: 750;
             text-transform: uppercase;
@@ -237,7 +237,7 @@ export default function ProjectViewTabs({
 
           .sheet-header h2 {
             margin-top: 2px;
-            color: #0b1f3b;
+            color: var(--color-text-inverse);
             font-size: 1.08rem;
           }
 
@@ -270,15 +270,15 @@ export default function ProjectViewTabs({
             border: 1px solid transparent;
             border-radius: 7px;
             color: #526176;
-            background: transparent;
+            background: var(--color-surface);
             text-align: left;
             font: inherit;
           }
 
           .sheet-item.active {
-            border-color: #cfe0f3;
-            color: #0b1f3b;
-            background: #f2f6fa;
+            border-color: var(--color-gold-on-navy);
+            color: var(--color-selected-ink);
+            background: var(--color-selected-surface);
           }
 
           .sheet-icon {
@@ -301,7 +301,11 @@ export default function ProjectViewTabs({
 
           .sheet-copy strong { font-size: 0.84rem; }
           .sheet-copy small { color: #5b6b82; font-size: 12px; line-height: 1.3; }
-          .current-label { color: #2563eb; font-size: 12px; font-weight: 750; }
+          .current-label { color: var(--color-selected-ink); font-size: 12px; font-weight: 750; }
+          .sheet-item:focus-visible, .sheet-close:focus-visible {
+            outline: 2px solid var(--color-gold-on-navy);
+            outline-offset: 2px;
+          }
 
         }
 

@@ -1,25 +1,22 @@
 import Link from 'next/link';
-import { ArrowLeft } from '@phosphor-icons/react/dist/ssr';
+import { CaretLeft } from '@phosphor-icons/react/dist/ssr';
 import styles from './ProjectBreadcrumb.module.css';
 
 export default function ProjectBreadcrumb({ name, overviewHref }: { name: string; overviewHref?: string }) {
-    const linkStyle = { display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 44, color: 'var(--project-breadcrumb-link, #1d4ed8)', fontWeight: 600 } as const;
+    const backLabel = overviewHref ? 'Back to project overview' : 'Back to My projects';
     return (
-        <nav aria-label="Breadcrumb" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, fontSize: 14, marginBottom: 16 }}>
-            <Link href="/projects" style={linkStyle} className={styles.link}>
-                {!overviewHref && <ArrowLeft size={16} aria-hidden="true" />}
-                {overviewHref ? 'My projects' : 'Back to My projects'}
-            </Link>
-            <span aria-hidden="true">/</span>
+        <nav aria-label="Breadcrumb" className={styles.trail}>
             {overviewHref && (
                 <>
-                    <Link href={overviewHref} style={linkStyle} className={styles.link}>
-                        <ArrowLeft size={16} aria-hidden="true" />
-                        Back to project overview
-                    </Link>
-                    <span aria-hidden="true">/</span>
+                    <Link href="/projects" className={`${styles.link} ${styles.ancestor}`}>My projects</Link>
+                    <span aria-hidden="true" className={styles.separator}>/</span>
                 </>
             )}
+            <Link href={overviewHref ?? '/projects'} className={`${styles.link} ${styles.back}`} aria-label={backLabel}>
+                <CaretLeft size={20} weight="bold" aria-hidden="true" />
+                <span className={styles.backLabel}>{backLabel}</span>
+            </Link>
+            <span aria-hidden="true" className={styles.separator}>/</span>
             <span aria-current="page" className={styles.current}>{name}</span>
         </nav>
     );

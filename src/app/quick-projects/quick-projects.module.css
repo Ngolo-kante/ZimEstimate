@@ -337,7 +337,7 @@
 
   .header {
     gap: 24px;
-    padding: 34px 20px 30px;
+    padding: 34px 16px 30px;
   }
 
   .header h1 {
@@ -348,8 +348,8 @@
     font-size: 0.88rem;
   }
 
-        .selector {
-    padding: 34px 20px 0;
+  .selector {
+    padding: 34px 16px 0;
   }
 
   .sectionHeader {
@@ -387,7 +387,7 @@
   }
 
   .fullBuild {
-    width: calc(100% - 40px);
+    width: calc(100% - 32px);
     margin-top: 34px;
     padding: 22px 20px;
   }
