@@ -12,12 +12,12 @@ import {
   GridFour,
   HardHat,
   HouseLine,
-  ListChecks,
   Rows,
   Scales,
   SolarPanel,
   SquaresFour,
   Storefront,
+  Timer,
   Toilet,
 } from '@phosphor-icons/react/dist/ssr';
 import type { Icon } from '@phosphor-icons/react';
@@ -26,7 +26,7 @@ import styles from './estimate.module.css';
 
 export const metadata: Metadata = {
   title: 'Start an estimate | ZimEstimate',
-  description: 'House builds, solar, boreholes, water tanks, septic tanks, fencing, paving and budget checks — pick where to start. No account needed.',
+  description: 'Choose an estimate for a house build, solar system, borehole, water tank, septic tank, fencing or paving.',
 };
 
 /**
@@ -55,7 +55,6 @@ const groups: Group[] = [
       { title: 'Estimate by stage', detail: 'Only the stages you are ready for', href: '/boq/new?method=manual&fresh=1&preset=building_in_stages', icon: Buildings },
       { title: 'Read my floor plan', detail: 'Upload a plan, get rooms and sizes', href: '/ai/vision-takeoff', icon: Blueprint },
       { title: 'Start from a template', detail: 'Common house plans, ready to price', href: '/templates', icon: SquaresFour },
-      { title: 'Cost to build a house', detail: 'A guide to typical costs by stage', href: '/cost-to-build-a-house-in-zimbabwe', icon: BookOpen },
     ],
   },
   {
@@ -74,8 +73,9 @@ const groups: Group[] = [
   {
     id: 'more',
     title: 'More',
-    note: 'Already have a quote, or ready to build.',
+    note: 'Cost guides, quotes, contractors and materials.',
     tiles: [
+      { title: 'Cost to build a house', detail: 'A guide to typical costs by stage', href: '/cost-to-build-a-house-in-zimbabwe', icon: BookOpen },
       { title: 'Check a builder\'s quote', detail: 'Each price against the market', href: '/ai/quote-check', icon: Scales },
       { title: 'Scan a BOQ', detail: 'Turn a photo into a project', href: '/ai/boq-scanner', icon: FileMagnifyingGlass },
       { title: 'Find a builder', detail: 'Contractors and trades near you', href: '/contractors', icon: HardHat },
@@ -101,16 +101,8 @@ export default async function EstimateServicesPage({ searchParams }: PageProps<'
                   Back to My projects
                 </Link>
               )}
-              <span className={styles.eyebrow}>Start an estimate</span>
-              <h1>What do you need to work out?</h1>
-              <p>Pick the closest match. You can change quantities, prices and materials before saving.</p>
-            </div>
-            <div className={styles.heroNote}>
-              <ListChecks size={22} weight="duotone" aria-hidden="true" />
-              <div>
-                <strong>No account needed to start</strong>
-                <span>Sign in only when you want to save your work.</span>
-              </div>
+              <h1>Start an estimate</h1>
+              <p>Choose a project. You can adjust quantities, materials and prices before saving.</p>
             </div>
           </div>
         </header>
@@ -134,6 +126,12 @@ export default async function EstimateServicesPage({ searchParams }: PageProps<'
                         <span className={styles.tileText}>
                           <strong>{tile.title}</strong>
                           <span>{tile.detail}</span>
+                          {group.id === 'projects' && (
+                            <span className={styles.duration}>
+                              <Timer size={14} aria-hidden="true" />
+                              2–3 min to get started
+                            </span>
+                          )}
                         </span>
                         <ArrowRight size={14} weight="bold" className={styles.tileArrow} aria-hidden="true" />
                       </Link>

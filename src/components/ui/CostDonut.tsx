@@ -62,13 +62,13 @@ export default function CostDonut({
           <strong className={`mt-0.5 whitespace-nowrap ${size === 'sm' ? 'text-xs' : 'text-sm'} text-[var(--color-text)]`}>{centerValue ?? format(total)}</strong>
         </div>
       </div>
-      <dl className="grid w-full min-w-0 gap-2">
+      <dl className="grid w-full min-w-0 grid-cols-1 gap-2">
         {legend.map((slice) => (
           <div key={slice.label} className="flex items-center justify-between gap-3 rounded-xl bg-[var(--color-background)] px-3 py-2">
             <dt className="flex min-w-0 items-center gap-2 text-sm text-[var(--color-text)]">
               <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-sm" style={{ background: slice.color }} />
               <span className="min-w-0">
-                <span className="block truncate">{slice.label}</span>
+                <span className="block break-words">{slice.label}</span>
                 {slice.note && <span className="block text-xs text-[var(--color-text-secondary)]">{slice.note}</span>}
               </span>
             </dt>

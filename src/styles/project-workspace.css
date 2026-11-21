@@ -662,7 +662,7 @@ body:where(:has(.project-dashboard-shell)) {
         background: var(--color-primary);
     }
 
-    .page-content:has(> .project-dashboard-shell) {
+    .main-content .page-content:has(> .project-dashboard-shell) {
         padding-inline: 4px;
     }
 

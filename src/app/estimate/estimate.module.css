@@ -2,7 +2,6 @@
   /* Bleeds over MainLayout's full-width padding (32px 24px). Not 100vw,
      which counts a desktop scrollbar and made the page scroll sideways. */
   margin: -32px -24px 0;
-  min-height: 100dvh;
   color: var(--color-text);
   background: #f8fafc;
   overflow-x: hidden;
@@ -36,11 +35,7 @@
 
 .heroInner {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
-  align-items: end;
-  gap: 48px;
-  padding-block: 44px 40px;
+  padding-block: 28px;
 }
 
 .backLink {
@@ -55,72 +50,29 @@
   text-underline-offset: 3px;
 }
 
-.eyebrow {
-  display: block;
-  color: #cbd5e1;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .hero h1 {
   max-width: 750px;
-  margin: 14px 0 0;
+  margin: 0;
   font-family: var(--font-heading);
-  font-size: clamp(2.1rem, 4.4vw, 3.6rem);
+  font-size: clamp(1.85rem, 3vw, 2.75rem);
   font-weight: 800;
-  line-height: 0.98;
+  line-height: 1.1;
   letter-spacing: -0.04em;
   text-wrap: balance;
 }
 
 .heroCopy p {
   max-width: 680px;
-  margin: 14px 0 0;
+  margin: 8px 0 0;
   color: #d9e4f2;
   font-size: 1.05rem;
-  line-height: 1.7;
-}
-
-.heroNote {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 18px;
-  color: #0b1f3b;
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
-  box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.16);
-  transform: rotate(1.2deg);
-}
-
-.heroNote svg {
-  flex: 0 0 auto;
-}
-
-.heroNote strong,
-.heroNote span {
-  display: block;
-}
-
-.heroNote strong {
-  font-size: 0.9rem;
-}
-
-.heroNote span {
-  margin-top: 4px;
-  color: #42516a;
-  font-size: 0.75rem;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .directory {
-  padding-block: 32px 88px;
+  padding-block: 22px 44px;
   display: grid;
-  gap: 30px;
+  gap: 24px;
 }
 
 /* ── Groups of small tiles ───────────────────────────────────────────────
@@ -236,11 +188,17 @@
       color: var(--tone);}
 }
 
-@media (max-width: 900px) {
-  .heroInner {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
+.tileText .duration {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  color: var(--color-gold-ink);
+  font-weight: 700;
+}
+
+.duration svg {
+  flex: none;
 }
 
 @media (max-width: 640px) {
@@ -250,8 +208,7 @@
   }
 
   .heroInner {
-    gap: 14px;
-    padding-block: 24px 22px;
+    padding-block: 16px;
   }
 
   .hero h1 {
@@ -263,14 +220,9 @@
     font-size: 0.92rem;
   }
 
-  .heroNote {
-    padding: 10px 12px;
-    transform: none;
-  }
-
   .directory {
-    padding-block: 22px 92px;
-    gap: 24px;
+    padding-block: 16px 24px;
+    gap: 20px;
   }
 
   /* Two tiles per row on a phone, icon stacked over the text, so a whole
@@ -283,29 +235,18 @@
   .tile {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
-    padding: 10px;
+    gap: 6px;
+    padding: 9px 10px;
   }
 
   .tileIcon {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
   }
 
   .tileArrow {
     display: none;
   }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tile,
-  .tileArrow {
-    transition: none;
-  }
-@media (hover: hover) and (pointer: fine) {
-    .tile:hover {
-  }
-}
 }
 
 @media (max-width: 640px) {
@@ -315,6 +256,12 @@
 
   .hero {
     border-bottom-color: #354962;
+  }
+
+  .tile:focus-visible,
+  .backLink:focus-visible {
+    outline: 2px solid var(--color-gold-on-navy);
+    outline-offset: 2px;
   }
 
   .groupHeader {

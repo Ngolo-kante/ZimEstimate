@@ -590,7 +590,7 @@ export default function QuickBudgetPage() {
                   className={`budget-mode-card${active ? ' is-active' : ''}`}
                   title={mode.hint}
                 >
-                  <Icon size={18} weight={active ? 'fill' : 'duotone'} />
+                  <Icon size={18} weight={active ? 'fill' : 'duotone'} aria-hidden="true" />
                   <strong>{mode.title}</strong>
                 </button>
               );
@@ -886,8 +886,8 @@ export default function QuickBudgetPage() {
                   </div>
 
                   <div className="result-stats">
-                    <article>
-                      <span>To move in</span>
+                    <article className="move-in-total">
+                      <span><HouseLine size={16} weight="duotone" aria-hidden="true" /> To move in</span>
                       <strong>{formatUsd(stageEstimate.estimatedTotalUsd)}</strong>
                       {stageEstimate.addLaterUsd > 0 && (
                         <small className="add-later-total">+ {formatUsd(stageEstimate.addLaterUsd)} to add later</small>
@@ -1129,12 +1129,16 @@ export default function QuickBudgetPage() {
       }
 
         .budget-mode-card.is-active {
-          border-color: var(--color-accent, #2E6CF6);
-          background: #eff6ff;
+          border-color: var(--color-gold-ink);
+          background: var(--color-selected-surface);
         }
 
         .budget-mode-card :global(svg) {
           color: var(--color-accent, #2E6CF6);
+        }
+
+        .budget-mode-card.is-active :global(svg) {
+          color: var(--color-gold-ink);
         }
 
         .budget-mode-card strong {
@@ -1453,6 +1457,22 @@ export default function QuickBudgetPage() {
           margin-bottom: 5px;
         }
 
+        .result-stats .move-in-total {
+          background: color-mix(in srgb, var(--color-selected-surface) 45%, white);
+          border-color: var(--color-gold-on-navy);
+        }
+
+        .move-in-total > span {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          color: var(--color-selected-ink);
+        }
+
+        .move-in-total > span :global(svg) {
+          flex: none;
+        }
+
         .result-stats strong {
           font-size: 0.93rem;
           color: var(--color-primary);
@@ -1747,6 +1767,10 @@ export default function QuickBudgetPage() {
         }
 
         @media (max-width: 640px) {
+          .budget-mode-card:focus-visible {
+            outline-color: var(--color-gold-on-navy);
+          }
+
           .budget-checker-page {
             padding: 14px 12px 74px;
           }
