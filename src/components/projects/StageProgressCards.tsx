@@ -8,13 +8,8 @@ import { stageOfLaborCategory } from '@/lib/calculations/laborSubstages';
 import {
     CheckCircle,
     HourglassSimple,
-    Warehouse,
-    Wall,
-    House,
-    PaintBrush,
-    Plug,
-    Tree,
 } from '@phosphor-icons/react';
+import { constructionStageIcons } from './constructionStageIcons';
 import { ProjectStageWithTasks, BOQCategory, StageStatus } from '@/lib/database.types';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { BOQItem } from '@/lib/database.types';
@@ -26,15 +21,6 @@ interface StageProgressCardsProps {
     onStageClick?: (category: BOQCategory) => void;
     activeStage?: BOQCategory;
 }
-
-const stageIcons: Record<BOQCategory, React.ComponentType<{ size: number; weight?: "thin" | "light" | "regular" | "bold" | "fill" | "duotone"; className?: string }>> = {
-    substructure: Warehouse,
-    superstructure: Wall,
-    roofing: House,
-    finishing: PaintBrush,
-    services: Plug,
-    exterior: Tree,
-};
 
 const statusConfig: Record<StageStatus, { color: string; bg: string; label: string }> = {
     planning: { color: 'text-slate-500', bg: 'bg-slate-100', label: stageStatusLabels.planning },
@@ -73,7 +59,7 @@ export function StageProgressCards({
         <div className="stage-progress-cards">
             <div className="stages-container">
                 {applicableStages.map((stage, index) => {
-                    const Icon = stageIcons[stage.boq_category];
+                    const Icon = constructionStageIcons[stage.boq_category];
                     const labels = stageLabels[stage.boq_category];
                     const stats = stageStats[stage.boq_category] || { totalCost: 0, purchasedCount: 0, totalCount: 0, completionPercent: 0 };
                     const config = statusConfig[stage.status];

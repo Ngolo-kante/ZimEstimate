@@ -49,7 +49,7 @@ export default function ProcurementItemCard({
       : 0;
 
     return (
-      <Collapsible open={desktop || isExpanded} onOpenChange={() => toggleItemExpanded(item.id)} className={cn('boq-item-card !rounded-lg buying-item', statusConfig.bgClass, isSaving && 'is-saving')}>
+      <Collapsible open={desktop || isExpanded} onOpenChange={() => toggleItemExpanded(item.id)} className={cn('boq-item-card buying-item', isSaving && 'is-saving')}>
         <CollapsibleTrigger className="buying-mobile-trigger" aria-label={`${item.material_name}: ${isExpanded ? 'hide' : 'show'} purchase history`}>
           <span className="buying-mobile-name"><span className="item-name" title={item.material_name}>{item.material_name}</span><span className="buying-key-fact">{item.remainingQty <= 0 ? 'All bought' : !Number(item.unit_price_usd) ? 'No price yet' : `${formatQuantity(item.remainingQty)} ${item.unit} left`}</span></span>
           <Badge className={cn('item-status', statusConfig.bgClass)}>{statusConfig.label}</Badge>

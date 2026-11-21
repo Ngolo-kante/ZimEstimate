@@ -16,7 +16,7 @@ import { Input } from '@/components/shadcn/input';
 import { useCurrency } from '@/components/ui/CurrencyToggle';
 import type { NotificationChannel } from '@/components/ui/BudgetPlanner';
 import type { BOQItem, MaterialUsage } from '@/lib/database.types';
-import type { MaterialOptionGroup, MaterialUsageStat, UsageSummary } from '@/lib/projects/usageStats';
+import type { MaterialOptionGroup, MaterialUsageStat, UsageSummary, UsageViewMode } from '@/lib/projects/usageStats';
 import {
   Calendar,
   Check,
@@ -53,6 +53,8 @@ export interface UsageLogTabProps {
   onLogUsage: () => void | Promise<void>;
   isLoading: boolean;
   groupedUsage: Record<string, MaterialUsage[]>;
+  viewMode: UsageViewMode;
+  onViewModeChange: (mode: UsageViewMode) => void;
   itemLookup: Map<string, BOQItem>;
 }
 
@@ -70,6 +72,8 @@ export default function UsageLogTab({
   onLogUsage,
   isLoading,
   groupedUsage,
+  viewMode,
+  onViewModeChange,
   itemLookup,
 }: UsageLogTabProps) {
     const controlId = useId();
@@ -261,6 +265,10 @@ export default function UsageLogTab({
           <div className="history-header">
             <h3>Recent usage logs</h3>
             {isLoading && <span>Loading...</span>}
+          </div>
+          <div className="usage-tab-switcher usage-period" role="group" aria-label="Group recent usage logs by">
+            <button type="button" aria-pressed={viewMode === 'daily'} onClick={() => onViewModeChange('daily')}>Daily</button>
+            <button type="button" aria-pressed={viewMode === 'weekly'} onClick={() => onViewModeChange('weekly')}>Weekly</button>
           </div>
           {Object.keys(groupedUsage).length === 0 && !isLoading ? (
             <div className="empty-state">

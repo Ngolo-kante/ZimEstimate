@@ -67,11 +67,10 @@ export default function ProcurementItemsTab({
               {groupBy !== 'none' && (
                 <button
                   type="button"
-                  className="group-header !w-full !rounded-lg motion-reduce:transform-none motion-reduce:transition-none"
+                  className="group-header"
                   onClick={(event) => { setAnimateCollapse(event.detail !== 0); toggleGroupCollapsed(groupKey); }}
                   aria-expanded={!isCollapsed}
                   aria-label={`${stageConfig?.label || groupKey}: ${isCollapsed ? 'expand' : 'collapse'} ${stageStats.total} items`}
-                  style={{ '--stage-color': stageConfig?.color || 'var(--color-text-muted)' } as React.CSSProperties}
                 >
                   <div className="group-header-left">
                     <div className="group-icon" style={{ background: 'var(--color-primary-bg)', color: stageConfig?.color || 'var(--color-text-muted)' }}>

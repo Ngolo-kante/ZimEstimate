@@ -401,25 +401,36 @@
 .boq-group {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-border-light);
+    border-radius: 12px;
+    background: var(--color-surface);
 }
 
 .group-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    width: 100%;
     padding: 16px 20px;
-    background: linear-gradient(135deg, #ffffff, rgba(248, 250, 252, 0.9));
-    border: 1px solid var(--color-border-light);
-    border-radius: 16px;
-    margin-bottom: var(--space-3);
+    background: var(--color-background);
+    border: 0;
+    text-align: left;
     cursor: pointer;
-    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
 }
+
+.group-header[aria-expanded="true"] {
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.group-header:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: -2px;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .group-header:hover {
-    border-color: var(--stage-color, rgba(59, 130, 246, 0.3));
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-    transform: translateY(-1px);
+    background: var(--color-mist);
   }
 }
 
@@ -498,8 +509,6 @@
 .group-items {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
-    padding-left: var(--space-2);
 }
 
 /* =============================================
@@ -512,38 +521,11 @@
 }
 
 .boq-item-card {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border-light);
-    border-radius: 14px;
     overflow: hidden;
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
-}
-@media (hover: hover) and (pointer: fine) {
-  .boq-item-card:hover {
-    border-color: rgba(59, 130, 246, 0.25);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.03);
-    transform: translateY(-1px);
-  }
 }
 
-/* Status highlights */
-.boq-item-card.status-purchased {
-    border-left: 4px solid #22c55e;
-    background: linear-gradient(90deg, rgba(34, 197, 94, 0.03), transparent 40%);
-}
-
-.boq-item-card.status-progress {
-    border-left: 4px solid #3b82f6;
-    background: linear-gradient(90deg, rgba(59, 130, 246, 0.03), transparent 40%);
-}
-
-.boq-item-card.status-over {
-    border-left: 4px solid #ef4444;
-    background: linear-gradient(90deg, rgba(239, 68, 68, 0.03), transparent 40%);
-}
-
-.boq-item-card.status-pending {
-    border-left: 4px solid #94a3b8;
+.group-items > .boq-item-card + .boq-item-card {
+    border-top: 1px solid var(--color-border-light);
 }
 
 /* Saving state animation */

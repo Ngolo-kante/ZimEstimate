@@ -1375,10 +1375,27 @@ export default function TopNavbar() {
           :global(a.zim-navbar-logo) { gap: 8px; }
           .trigger-copy,
           .profile-caret { display: none; }
-          .user-btn { width: 40px; padding: 0; gap: 0; }
+          .user-btn {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            gap: 0;
+            border: 0;
+            border-radius: 9px;
+            background: var(--color-primary);
+          }
           :global(.admin-panel-link) { width: 40px; padding: 0; justify-content: center; }
           :global(.admin-panel-link span) { display: none; }
-          .trigger-avatar { border-radius: 7px; }
+          .trigger-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            background: transparent;
+          }
+          .trigger-avatar .avatar-initials {
+            color: var(--color-gold-on-navy);
+            font-size: 1rem;
+          }
           .profile-dropdown {
             position: fixed;
             top: 64px;

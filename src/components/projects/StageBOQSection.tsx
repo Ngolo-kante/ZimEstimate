@@ -16,7 +16,8 @@ import { addBOQItem } from '@/lib/services/projects';
 import { useCatalog } from '@/lib/catalog/useCatalog';
 import { getLatestPrice } from '@/lib/services/prices';
 import '@/styles/stage-boq-section.css';
-import { Package, CaretDown, CaretUp, ShoppingCart, Plus } from '@phosphor-icons/react';
+import { HardHat, CaretDown, CaretUp, ShoppingCart, Plus } from '@phosphor-icons/react';
+import { constructionStageIcons } from './constructionStageIcons';
 import PriceDisplay from '@/components/projects/PriceDisplay';
 import BoqAddItemForm from './boq/BoqAddItemForm';
 import BoqTableToolbar from './boq/BoqTableToolbar';
@@ -60,6 +61,7 @@ export default function StageBOQSection({
     usageByItem,
     usageTrackingEnabled = false,
 }: StageBOQSectionProps) {
+    const SectionIcon = category === 'labor' ? HardHat : constructionStageIcons[category];
     const [expanded, setExpanded] = useState(true);
     const [animateCollapse, setAnimateCollapse] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
@@ -219,7 +221,7 @@ export default function StageBOQSection({
                     <div className="card-header">
                         <div className="header-title">
                             <div className="icon-wrapper">
-                                <Package size={18} weight="duotone" />
+                                <SectionIcon size={18} weight="duotone" aria-hidden="true" />
                             </div>
                             <h4>{categoryLabel}</h4>
                         </div>
@@ -247,9 +249,6 @@ export default function StageBOQSection({
                         />
                     )}
                     <div className="empty-state">
-                        <div className="empty-icon">
-                            <Package size={32} weight="light" />
-                        </div>
                         <p>{emptyTitle}</p>
                         <span>{emptyHint}</span>
                     </div>
@@ -266,7 +265,7 @@ export default function StageBOQSection({
                         <div className="header-title">
                             <div className="title-row">
                                 <div className="icon-wrapper">
-                                    <Package size={18} weight="duotone" />
+                                    <SectionIcon size={18} weight="duotone" aria-hidden="true" />
                                 </div>
                                 <h4>{categoryLabel}</h4>
                             </div>

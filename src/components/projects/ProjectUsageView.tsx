@@ -205,23 +205,12 @@ export default function ProjectUsageView({
 
   return (
     <div className="project-usage usage-page">
-      <div className="usage-header">
-        <div className="header-actions">
-          <Tabs value={viewMode} onValueChange={value => setViewMode(value as UsageViewMode)}>
-            <TabsList aria-label="Usage period" className="!h-auto">
-              <TabsTrigger className="min-h-11 text-sc-muted-foreground transition-none" value="daily">Daily</TabsTrigger>
-              <TabsTrigger className="min-h-11 text-sc-muted-foreground transition-none" value="weekly">Weekly</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-      </div>
-
       {/* Tab Navigation */}
       {/* Three equal columns that always fit: as a row that could not
           shrink it pushed the page to 426px on a 390px phone and cut off
           the ledger. Short labels on small screens. */}
       <Tabs value={activeTab} onValueChange={value => setActiveTab(value as UsageTab)}>
-      <TabsList aria-label="Usage tracking" className="!h-auto !w-full !grid grid-cols-3">
+      <TabsList aria-label="Usage tracking" className="usage-tab-switcher !h-auto !w-full !grid grid-cols-3">
         <TabsTrigger className="min-h-11 min-w-0 px-1 text-sc-muted-foreground transition-none" value="log">
           <Plus className="hidden sm:block" size={16} weight="duotone" aria-hidden="true" />
           <span className="tab-label-long">Log usage</span><span className="tab-label-short">Log</span>
@@ -251,6 +240,8 @@ export default function ProjectUsageView({
           onLogUsage={handleLogUsage}
           isLoading={isLoading}
           groupedUsage={groupedUsage}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
           itemLookup={itemLookup}
         />
       </TabsContent>

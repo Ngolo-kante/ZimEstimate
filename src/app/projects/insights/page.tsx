@@ -78,7 +78,7 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <MainLayout title="My projects">
+      <MainLayout title="Project insights">
         <ProjectBreadcrumb name="Insights" />
         <ProjectsSubNav active="dashboard" />
         <div className="dashboard-loading">
@@ -111,7 +111,7 @@ function DashboardContent() {
 
   if (loadFailed && !analytics) {
     return (
-      <MainLayout title="My projects">
+      <MainLayout title="Project insights">
         <ProjectBreadcrumb name="Insights" />
         <ProjectsSubNav active="dashboard" />
         <ErrorState
@@ -128,7 +128,7 @@ function DashboardContent() {
   // nothing and should start their first project.
   if (!analytics || (analytics.totalProjects === 0 && analytics.quickEstimates === 0)) {
     return (
-      <MainLayout title="My projects">
+      <MainLayout title="Project insights">
         <ProjectBreadcrumb name="Insights" />
         <ProjectsSubNav active="dashboard" />
         <div className="empty-dashboard">

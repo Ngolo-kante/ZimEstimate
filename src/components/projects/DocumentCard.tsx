@@ -66,7 +66,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
 
     return (
         <>
-            <div className="document-card">
+            <div className="document-card" data-category={document.category}>
                 <div className="card-header">
                     <div className={`file-icon ${isImage ? 'image' : isPdf ? 'pdf' : 'default'}`}>
                         {getIcon()}
@@ -88,9 +88,9 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                 </div>
 
                 <div className="document-actions">
-                    <button type="button" onClick={() => onView(document)}><Eye size={16} /> Open</button>
-                    <button type="button" onClick={() => onDownload(document)}><DownloadSimple size={16} /> Download</button>
-                    <button type="button" className="danger" onClick={() => onDelete(document.id)}><Trash size={16} /> Remove</button>
+                    <button type="button" className="open-document" onClick={() => onView(document)}><Eye size={16} aria-hidden="true" /> Open</button>
+                    <button type="button" onClick={() => onDownload(document)}><DownloadSimple size={16} aria-hidden="true" /> Download</button>
+                    <button type="button" className="danger" onClick={() => onDelete(document.id)}><Trash size={16} aria-hidden="true" /> Remove</button>
                 </div>
                 <div className="card-footer">
                     <Badge variant="secondary">{CATEGORY_LABELS[document.category] || document.category}</Badge>
@@ -139,18 +139,25 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     border-radius: 12px;
                 }
 
-                .file-icon.image, .file-icon.pdf, .file-icon.default { background: #f1f5f9; color: #64748b; }
+                .file-icon.default { background: var(--color-background); color: var(--color-primary); }
+                .file-icon.image { background: var(--color-info-bg); color: var(--color-info-fg); }
+                .file-icon.pdf { background: var(--color-danger-bg); color: var(--color-danger-fg); }
                 .saved-label { flex-shrink: 0; font-size: .8rem; color: #475569; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; }
                 .thumbnail { padding: 0; border: 0; background: #f1f5f9; border-radius: 6px; cursor: pointer; overflow: hidden; }
                 .thumbnail img { display: block; width: 100%; height: 120px; object-fit: cover; }
                 .document-actions { display: flex; gap: 6px; flex-wrap: wrap; }
                 .document-actions button { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; color: #0b1f3b; font-size: .8rem; cursor: pointer; }
                 .document-actions :global(svg) { flex-shrink: 0; }
-                .document-actions .danger { color: #b91c1c; border-color: transparent; background: transparent; }
+                .document-actions .open-document { color: var(--color-text-inverse); border-color: var(--color-accent-dark); background: var(--color-accent-dark); font-weight: 600; }
+                .document-actions .danger { color: var(--color-danger-fg); border-color: transparent; background: transparent; }
+                @media (hover: hover) and (pointer: fine) {
+                    .document-actions button:hover { background: var(--color-info-bg); border-color: var(--color-accent-dark); }
+                    .document-actions .open-document:hover { background: var(--color-primary); border-color: var(--color-primary); }
+                    .document-actions .danger:hover { background: var(--color-danger-bg); border-color: transparent; }
+                }
                 button:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
                 .card-body {
                     min-width: 0;
-                    cursor: pointer;
                     flex: 1;
                 }
 
@@ -183,6 +190,11 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     padding-top: 16px;
                     border-top: 1px solid #f1f5f9;
                 }
+                .document-card[data-category="permit"] .card-footer :global([data-slot="badge"]) {
+                    background: var(--color-selected-surface);
+                    color: var(--color-selected-ink);
+                }
+                .card-footer .file-meta { font-style: italic; }
 
                 .file-meta {
                     white-space: nowrap;

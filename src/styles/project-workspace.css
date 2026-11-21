@@ -392,29 +392,6 @@ body:where(:has(.project-dashboard-shell)) {
     flex-wrap: wrap;
 }
 
-.project-workspace .price-update-alert {
-    background: linear-gradient(135deg, #eaf3ff, #f3f8ff);
-    border: 1px solid #cfe2fb;
-    border-radius: 16px;
-    padding: 14px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    justify-content: space-between;
-    transition:
-        transform var(--dashboard-medium) var(--dashboard-ease),
-        box-shadow var(--dashboard-medium) var(--dashboard-ease);
-}
-
-.project-workspace .price-update-icon {
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(159, 200, 248, 0.7);
-    padding: 8px;
-    border-radius: 10px;
-    color: #2e6cf6;
-    box-shadow: 0 3px 10px rgba(46, 108, 246, 0.12);
-}
-
 .project-workspace .overview-card {
     background: rgba(255, 255, 255, 0.92);
     border: 1px solid rgba(211, 211, 215, 0.7);
@@ -452,8 +429,7 @@ body:where(:has(.project-dashboard-shell)) {
 }
 @media (hover: hover) and (pointer: fine) {
   .project-workspace .pro-tip-card:hover,
-  .project-workspace .overview-card:hover,
-  .project-workspace .price-update-alert:hover {
+  .project-workspace .overview-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 20px 30px rgba(6, 20, 47, 0.08);
   }
@@ -597,7 +573,6 @@ body:where(:has(.project-dashboard-shell)) {
     .project-workspace .view-header,
     .project-workspace .view-panel,
     .project-workspace .overview-card,
-    .project-workspace .price-update-alert,
     .project-workspace .next-step-item {
         transition: none;
         transform: none !important;
@@ -641,7 +616,6 @@ body:where(:has(.project-dashboard-shell)) {
 @media (prefers-reduced-motion: reduce) {
     .project-workspace .pro-tip-card:hover,
   .project-workspace .overview-card:hover,
-  .project-workspace .price-update-alert:hover,
     .project-workspace .next-step-item:hover { transform: none !important; }
 }
 
@@ -661,6 +635,8 @@ body:where(:has(.project-dashboard-shell)) {
 }
 .project-workspace .overview-details-trigger { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 12px; text-align: left; font-weight: 600; color: var(--color-text); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; cursor: pointer; }
 .project-workspace .overview-details-trigger > span:first-child { flex: 1; }
+.project-workspace .price-update-trigger { background: var(--color-selected-surface); border-color: var(--color-gold-on-navy); color: var(--color-selected-ink); }
+.project-workspace .price-update-trigger .overview-details-summary { color: inherit; }
 .project-workspace .overview-details-summary { color: var(--color-text-secondary); font-size: 12px; font-weight: 400; text-align: right; }
 .project-workspace .overview-details-trigger svg { flex-shrink: 0; }
 .project-workspace .overview-details-trigger[data-state="open"] svg { transform: rotate(180deg); }

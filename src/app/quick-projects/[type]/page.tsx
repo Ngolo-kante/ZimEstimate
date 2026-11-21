@@ -90,8 +90,8 @@ export default function QuickProjectPage({ params }: { params: Promise<{ type: s
             <ArrowLeft size={16} />
             Quick Projects
           </Link>
-          <span className="text-slate-300">/</span>
-          <span className="text-slate-900">{PROJECT_TITLES[type]}</span>
+          <span className="hidden text-slate-300 sm:inline" aria-hidden="true">/</span>
+          <span className="hidden text-slate-900 sm:inline" aria-current="page">{PROJECT_TITLES[type]}</span>
         </nav>
 
         <header className="mb-6 text-center md:text-left">

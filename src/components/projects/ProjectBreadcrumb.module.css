@@ -33,8 +33,8 @@
 
 
 @media (max-width: 640px) {
-    .trail { flex-wrap: nowrap; }
-    .ancestor, .separator, .backLabel { display: none; }
+    .trail { flex-wrap: nowrap; margin-bottom: 4px; }
+    .ancestor, .separator, .backLabel, .current { display: none; }
     .back {
         flex: 0 0 44px;
         justify-content: center;

@@ -10,7 +10,6 @@ import {
   BellSimple,
   CalendarBlank,
   CheckCircle,
-  CurrencyDollar,
   Target,
   TrendUp,
   Warning,
@@ -175,10 +174,7 @@ export default function BudgetPlanner({
     <div className="budget-planner">
       <section className={`budget-overview ${isOverBudget ? 'is-over' : ''}`} aria-labelledby="budget-position-title">
         <header className="overview-header">
-          <div>
-            <span className="eyebrow">Project budget</span>
-            <h2 id="budget-position-title">Budget position</h2>
-          </div>
+          <h2 id="budget-position-title">Budget position</h2>
           <span className={`status-badge ${status.tone}`}>
             {status.icon}
             <span>{status.text.split(/(-?\$[\d,]+\.\d{2})/).map((part, index) =>
@@ -187,14 +183,12 @@ export default function BudgetPlanner({
           </span>
         </header>
 
-        <div className="metric-grid">
+        <div className={`metric-grid ${editingLimit ? 'is-editing-limit' : ''}`}>
           <div className="metric">
-            <span className="metric-icon"><Wallet size={18} weight="duotone" /></span>
             <span className="metric-label">BOQ estimate</span>
             <strong className="metric-value">{formatAmount(m.estimateUsd)}</strong>
           </div>
           <div className="metric">
-            <span className="metric-icon"><Target size={18} weight="duotone" /></span>
             <span className="metric-label">
               Your limit
               {onLimitChange && !editingLimit && (
@@ -230,12 +224,10 @@ export default function BudgetPlanner({
             )}
           </div>
           <div className="metric">
-            <span className="metric-icon"><CurrencyDollar size={18} weight="duotone" /></span>
             <span className="metric-label">Spent</span>
             <strong className="metric-value">{formatAmount(m.spentUsd)}</strong>
           </div>
-          <div className={`metric ${isOverBudget ? 'metric-warning' : 'metric-success'}`}>
-            <span className="metric-icon"><TrendUp size={18} weight="duotone" /></span>
+          <div className="metric metric-funding">
             <span className="metric-label">Still to fund</span>
             <strong className="metric-value">{formatAmount(m.stillToFundUsd)}</strong>
           </div>
@@ -403,16 +395,8 @@ export default function BudgetPlanner({
           min-width: 0;
           overflow: hidden;
           border: 1px solid var(--color-border);
-          border-radius: 8px;
+          border-radius: 12px;
           background: var(--color-surface);
-        }
-
-        .budget-overview {
-          border-top: 3px solid var(--color-accent);
-        }
-
-        .budget-overview.is-over {
-          border-top-color: var(--color-warning);
         }
 
         .overview-header,
@@ -493,42 +477,26 @@ export default function BudgetPlanner({
 
         .metric-grid {
           display: grid;
-          grid-template-columns: minmax(0, 1fr);
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           border-block: 1px solid var(--color-border-light);
         }
 
         .metric {
-          position: relative;
           display: grid;
-          grid-template-columns: 24px minmax(0, 1fr);
-          column-gap: 7px;
-          align-items: center;
+          align-content: start;
+          gap: 3px;
           min-width: 0;
           padding: 13px 12px;
-        }
-
-        .metric:not(:last-child) {
-          border-bottom: 1px solid var(--color-border-light);
         }
 
         .metric:nth-child(-n + 2) {
           border-bottom: 1px solid var(--color-border-light);
         }
 
-        .metric-icon {
-          display: grid;
-          grid-row: 1 / 3;
-          place-items: center;
-          color: var(--color-accent);
-        }
-
-        .metric-success .metric-icon {
-          color: var(--color-success);
-        }
-
-        .metric-warning .metric-icon {
-          color: var(--color-warning-fg);
-        }
+        .metric:nth-child(odd) { border-right: 1px solid var(--color-border-light); }
+        .metric-funding { background: var(--color-background); }
+        .metric-funding .metric-value { color: var(--color-gold-ink); }
+        .metric-label:has(.inline-edit) { display: flex; align-items: center; flex-wrap: wrap; }
 
         .metric-value,
         .target-readout strong,
@@ -540,8 +508,8 @@ export default function BudgetPlanner({
         }
 
         .metric-value {
-          white-space: nowrap;
-          font-variant-numeric: tabular-nums;
+          white-space: normal;
+          overflow-wrap: anywhere;
           margin-top: 3px;
           font-size: clamp(0.875rem, 4.2vw, 1.125rem);
           line-height: 1.2;
@@ -918,8 +886,6 @@ export default function BudgetPlanner({
           }
 
           .metric-value {
-          white-space: nowrap;
-          font-variant-numeric: tabular-nums;
             font-size: 1rem;
           }
 
@@ -955,10 +921,10 @@ export default function BudgetPlanner({
 
         /* Four across only when the planner itself is wide enough — with the
            project sidebar open on a tablet it is far narrower than the screen. */
-        @container (min-width: 480px) {
-          .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .metric:nth-child(odd) { border-right: 1px solid var(--color-border-light); }
-          .metric:nth-child(n + 3) { border-bottom: 0; }
+        @container (max-width: 479px) {
+          .metric-grid.is-editing-limit { grid-template-columns: minmax(0, 1fr); }
+          .metric-grid.is-editing-limit .metric { border-right: 0; }
+          .metric-grid.is-editing-limit .metric:not(:last-child) { border-bottom: 1px solid var(--color-border-light); }
         }
 
         @container (min-width: 880px) {

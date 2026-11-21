@@ -28,16 +28,20 @@
     align-items: center;
     gap: 12px;
 }
-.stage-boq-empty .icon-wrapper {
+.boq-card .icon-wrapper {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 36px;
     height: 36px;
-    background: #eff6ff;
+    flex-shrink: 0;
+    background: var(--color-background);
     border-radius: 7px;
-    color: #0284c7;
-    box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.1);
+    color: var(--color-primary);
+}
+.boq-card .icon-wrapper svg [opacity="0.2"] {
+    fill: var(--color-gold-on-navy);
+    opacity: 1;
 }
 .stage-boq-empty h4 {
     margin: 0;
@@ -107,10 +111,6 @@
     text-align: center;
     color: #64748b;
 }
-.stage-boq-empty .empty-icon {
-    margin-bottom: 16px;
-    color: #cbd5e1;
-}
 .stage-boq-empty .empty-state p {
     margin: 0 0 4px;
     font-weight: 600;
@@ -172,16 +172,8 @@
 }
 
 .stage-boq .icon-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     width: 40px;
     height: 40px;
-    background: #eff6ff;
-    border-radius: 7px;
-    color: #0284c7;
-    box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.1);
-    flex-shrink: 0;
 }
 
 .stage-boq h4 {
