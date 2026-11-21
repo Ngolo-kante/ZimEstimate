@@ -42,7 +42,7 @@ export default function TemplatesPage() {
   );
 
   return (
-    <MainLayout title="BOQ Templates">
+    <MainLayout title="BOQ Templates" mobileNavy>
       <div className="templates-page">
         {/* Intro */}
         <div className="intro">
@@ -54,6 +54,8 @@ export default function TemplatesPage() {
           {categories.map((cat) => (
             <button
               key={cat.id}
+              type="button"
+              aria-pressed={selectedCategory === cat.id}
               className={`category-btn ${selectedCategory === cat.id ? 'active' : ''}`}
               onClick={() => setSelectedCategory(cat.id as TemplateCategory)}
             >
@@ -323,6 +325,24 @@ export default function TemplatesPage() {
         }
 
         @media (max-width: 640px) {
+          .templates-page { margin-inline: -8px; gap: 14px; }
+          .intro p, .finish-hint, .disclaimer, .empty-state { color: var(--color-muted-on-navy); }
+          .categories { flex-wrap: wrap; gap: 6px; }
+          .category-btn, .finish-btn { min-height: 44px; }
+          .category-btn.active, .finish-btn.active {
+            border-color: var(--color-gold-ink);
+            background: var(--color-selected-surface);
+            color: var(--color-selected-ink);
+          }
+
+          .category-btn:focus-visible, .finish-btn:focus-visible {
+            outline: 2px solid var(--color-gold-on-navy);
+            outline-offset: 2px;
+          }
+
+          .finish-toggle { margin-bottom: 0; }
+          .finish-hint { flex-basis: 100%; }
+
           .templates-grid {
             grid-template-columns: 1fr;
           }

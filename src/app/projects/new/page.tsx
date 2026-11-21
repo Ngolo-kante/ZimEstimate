@@ -811,6 +811,16 @@ export default function NewProject() {
 
                 }
 
+                @media (max-width: 640px) {
+                    .new-project {
+                        margin-inline: -8px;
+                        background: var(--color-surface);
+                    }
+
+                    .progress-container { margin-bottom: 18px; }
+                    .progress-segment[aria-current="step"] { background: var(--color-gold-ink); }
+                }
+
                 @media (max-width: 480px) {
                     .tiles-grid.four-cols {
                         grid-template-columns: 1fr;

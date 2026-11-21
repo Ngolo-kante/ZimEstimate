@@ -186,7 +186,7 @@ export default function HouseCostZimbabwePage() {
   };
 
   return (
-    <MainLayout fullWidth>
+    <MainLayout fullWidth mobileNavy>
       <div className={styles.page}>
         <script
           type="application/ld+json"

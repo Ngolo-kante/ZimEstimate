@@ -730,6 +730,27 @@
   }
 }
 
+@media (max-width: 640px) {
+  .heroInner, .sectionInner, .faqInner, .boqBandInner, .closing {
+    padding-inline: 16px;
+  }
+
+  .heroInner {
+    gap: 22px;
+    padding-block: 24px 32px;
+  }
+
+  .hero h1 { font-size: clamp(2rem, 9vw, 3rem); }
+  .assurances { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .examples { padding-block: 36px; background: var(--color-primary); }
+  .examples .sectionHeading { gap: 12px; margin-bottom: 20px; }
+  .examples h2 { color: var(--color-text-inverse); }
+  .examples .sectionLabel { color: var(--color-gold-on-navy); }
+  .examples .sectionHeading > p, .dataNote { color: var(--color-muted-on-navy); }
+  .featuredPlan { border-color: var(--color-gold-on-navy); }
+  .featuredPlan .planTotal strong { color: var(--color-gold-on-navy); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .primaryCta,
   .secondaryCta,

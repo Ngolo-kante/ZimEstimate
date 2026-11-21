@@ -615,13 +615,14 @@ export default function MarketplacePage() {
   );
 
   return (
-    <MainLayout title="Marketplace">
+    <MainLayout title="Marketplace" mobileNavy>
       <div className="marketplace">
         {/* Search and Filters */}
         <div className="search-section reveal" data-delay="1">
           <div className="search-box">
             <Input
-              placeholder="Search materials (e.g., cement, rebar, IBR sheets)..."
+              aria-label="Search materials"
+              placeholder="Search cement, rebar, roofing…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               icon={<MagnifyingGlass size={18} weight="light" />}
@@ -632,6 +633,7 @@ export default function MarketplacePage() {
               variant={trustedOnly ? 'primary' : 'secondary'}
               icon={<ShieldCheck size={18} />}
               size="sm"
+              aria-pressed={trustedOnly}
               onClick={() => setTrustedOnly(!trustedOnly)}
             >
               Checked prices only
@@ -647,6 +649,8 @@ export default function MarketplacePage() {
         {/* Category Pills */}
         <div className="category-section reveal" data-delay="2">
           <button
+            type="button"
+            aria-pressed={selectedCategory === 'all'}
             className={`category-pill ${selectedCategory === 'all' ? 'active' : ''}`}
             onClick={() => setSelectedCategory('all')}
           >
@@ -658,6 +662,8 @@ export default function MarketplacePage() {
             return (
               <button
                 key={cat}
+                type="button"
+                aria-pressed={selectedCategory === cat}
                 className={`category-pill ${selectedCategory === cat ? 'active' : ''}`}
                 onClick={() => setSelectedCategory(cat)}
               >
@@ -1951,6 +1957,54 @@ export default function MarketplacePage() {
           .mobile-supplier-flow :global(.suppliers-card) { display: block; }
         }
         @media (max-width: 640px) {
+          .marketplace {
+            margin-inline: -8px;
+            padding: 0 0 24px;
+            gap: 16px;
+          }
+
+          .search-section { gap: 8px; }
+          .search-box { flex-basis: 100%; }
+          .filter-actions :global(.btn) { min-height: 44px; }
+          .filter-actions :global(.btn-secondary) {
+            background: var(--color-surface);
+            border-color: var(--color-border);
+            color: var(--color-primary);
+          }
+          .filter-actions :global(.btn[aria-pressed="true"]) {
+            background: var(--color-selected-surface);
+            border-color: var(--color-gold-ink);
+            color: var(--color-selected-ink);
+          }
+          .filter-actions :global(.btn:focus-visible) {
+            outline: 2px solid var(--color-gold-on-navy);
+            outline-offset: 2px;
+          }
+
+          .category-section {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding: 4px 4px 8px;
+          }
+
+          .category-pill { flex: none; }
+          .category-pill.active {
+            background: var(--color-selected-surface);
+            border-color: var(--color-gold-ink);
+            color: var(--color-selected-ink);
+          }
+
+          .category-pill:focus-visible {
+            outline: 2px solid var(--color-gold-on-navy);
+            outline-offset: 2px;
+          }
+
+          .category-title, .empty-state { color: var(--color-text-inverse); }
+          .loading-banner {
+            background: var(--color-surface);
+            color: var(--color-accent-dark);
+          }
+
           .compare-row {
             grid-template-columns: 1fr;
             gap: var(--space-2);

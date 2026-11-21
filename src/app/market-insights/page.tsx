@@ -220,7 +220,7 @@ export default function MarketInsightsPage() {
   };
 
   return (
-    <MainLayout title="Market Insights">
+    <MainLayout title="Market Insights" mobileNavy>
       <div className="market-page">
         {/* Page Header */}
         <div className="page-header reveal" data-delay="1">
@@ -310,6 +310,7 @@ export default function MarketInsightsPage() {
           <div className="filters-sidebar reveal" data-delay="3">
             <div className="search-box">
               <Input
+                aria-label="Search material prices"
                 placeholder="Search materials..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -325,6 +326,8 @@ export default function MarketInsightsPage() {
                   return (
                     <button
                       key={cat.id}
+                      type="button"
+                      aria-pressed={selectedCategory === cat.id}
                       className={`category-pill ${selectedCategory === cat.id ? 'active' : ''}`}
                       onClick={() => setSelectedCategory(cat.id)}
                     >
@@ -364,7 +367,7 @@ export default function MarketInsightsPage() {
                 </button>
               )}
               <div className="sort-control">
-                <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)}>
+                <select aria-label="Sort material prices" value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)}>
                   <option value="name">Sort by Name</option>
                   <option value="price">Sort by Price</option>
                   <option value="change">Sort by Change</option>
@@ -948,6 +951,35 @@ export default function MarketInsightsPage() {
             }
             .prices-table td.col-name { display: block; text-align: left; padding: 12px 0 10px; }
             .prices-table td.col-name::before { content: none; }
+        }
+
+        @media (max-width: 640px) {
+          .market-page { margin-inline: -8px; padding: 0 0 24px; }
+          .page-header { margin-bottom: 16px; padding-bottom: 14px; border-color: var(--color-primary-light); }
+          .header-content p, .category-list h3 { color: var(--color-muted-on-navy); }
+          .list-header h2 { color: var(--color-text-inverse); }
+          .stats-row { gap: 10px; }
+          .stat-card { padding: 12px; }
+          .stat-card.active { border-color: var(--color-gold-ink); box-shadow: inset 0 0 0 1px var(--color-gold-ink); }
+          .stat-card.active .stat-icon { background: var(--color-selected-surface); color: var(--color-selected-ink); }
+          .pills-container { padding: 4px; }
+          .category-pill, .sort-control select {
+            min-height: 44px;
+            background: var(--color-surface);
+            color: var(--color-primary);
+          }
+          .category-pill.active, .focus-chip {
+            background: var(--color-selected-surface);
+            color: var(--color-selected-ink);
+          }
+          .focus-chip { min-height: 44px; border-color: var(--color-gold-ink); }
+          .category-pill.active .active-dot { background: var(--color-gold-ink); }
+          .sort-control select { border-radius: 8px; padding-inline: 8px; }
+          .category-pill:focus-visible, .focus-chip:focus-visible, .sort-control select:focus-visible,
+          button.stat-card:focus-visible {
+            outline: 2px solid var(--color-gold-on-navy);
+            outline-offset: 2px;
+          }
         }
 
                 @media (prefers-reduced-motion: reduce) {

@@ -106,8 +106,8 @@ export default function ContractorsPage() {
   useReveal({ deps: [visibleContractors.length, loading, selectedTrade, selectedArea] });
 
   return (
-    <MainLayout fullWidth>
-      <main className={styles.page}>
+    <MainLayout fullWidth mobileNavy>
+      <div className={styles.page}>
         <section className={styles.hero} aria-labelledby="contractor-directory-heading">
           <div className={styles.heroInner}>
             <div className={styles.heroCopy}>
@@ -227,7 +227,7 @@ export default function ContractorsPage() {
             </>
           )}
         </div>
-      </main>
+      </div>
     </MainLayout>
   );
 }
