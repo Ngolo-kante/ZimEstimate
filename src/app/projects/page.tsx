@@ -32,7 +32,7 @@ import { useSharedWithMe } from './hooks/useSharedWithMe';
 export default function ProjectsPage() {
     return (
         <ProtectedRoute>
-            <Suspense fallback={<MainLayout title="My projects"><div className="projects-list projects-page"><ProjectsLoading /></div></MainLayout>}>
+            <Suspense fallback={<MainLayout mobileNavy title="My projects"><div className="projects-list projects-page"><ProjectsLoading /></div></MainLayout>}>
                 <ProjectsContent />
             </Suspense>
         </ProtectedRoute>
@@ -73,7 +73,7 @@ function ProjectsContent() {
 
 
     return (
-        <MainLayout fullWidth>
+        <MainLayout fullWidth mobileNavy>
             <div className="projects-list projects-page">
                 <ProjectsHeader canCreateProject={canCreateProject} />
                 {/* No portfolio summary until there are saved projects. */}

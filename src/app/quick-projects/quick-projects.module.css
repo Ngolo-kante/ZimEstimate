@@ -32,7 +32,7 @@
 
 .eyebrow {
   margin-bottom: 10px;
-  color: #bcd2f0;
+  color: var(--color-link-on-navy);
 }
 
 .header h1 {
@@ -47,7 +47,7 @@
 .headerCopy p {
   max-width: 620px;
   margin: 16px 0 0;
-  color: #dbe6f5;
+  color: var(--color-muted-on-navy);
   font-size: 1rem;
   line-height: 1.65;
 }
@@ -432,6 +432,6 @@
   }
 
   .sectionHeader > div > span {
-    color: #bcd2f0;
+    color: var(--color-link-on-navy);
   }
 }

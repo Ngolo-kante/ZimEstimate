@@ -318,7 +318,7 @@
   }
 
   .groupHeader {
-    border-left-color: #bcd2f0;
+    border-left-color: var(--color-link-on-navy);
   }
 
   .groupHeader h2 {
@@ -326,6 +326,6 @@
   }
 
   .groupHeader p {
-    color: #dbe6f5;
+    color: var(--color-muted-on-navy);
   }
 }

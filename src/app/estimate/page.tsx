@@ -89,7 +89,7 @@ const total = groups.reduce((sum, group) => sum + group.tiles.length, 0);
 export default async function EstimateServicesPage({ searchParams }: PageProps<'/estimate'>) {
   const fromProjects = (await searchParams).from === 'projects';
   return (
-    <MainLayout fullWidth>
+    <MainLayout fullWidth mobileNavy>
       <div className={styles.page}>
         <header className={styles.hero}>
           <div className={styles.heroGrid} aria-hidden="true" />

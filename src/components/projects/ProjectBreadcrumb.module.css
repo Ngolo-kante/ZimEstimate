@@ -1,10 +1,15 @@
+.link:focus-visible {
+    outline: 2px solid var(--focus-on-navy, var(--color-accent-dark));
+    outline-offset: 2px;
+}
+
 .current {
     min-width: 0;
     padding: 2px 8px;
     border: 1px solid #e9c96e;
     border-radius: 6px;
-    background: #fff3cd;
-    color: #62420a;
+    background: var(--color-selected-surface);
+    color: var(--color-selected-ink);
     font-weight: 700;
     overflow-wrap: anywhere;
 }

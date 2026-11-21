@@ -275,7 +275,7 @@ function SettingsContent() {
     }
 
     return (
-        <MainLayout fullWidth>
+        <MainLayout fullWidth mobileNavy>
             <div className="settings-container">
                 <header className="settings-header">
                     <div>
@@ -1385,9 +1385,20 @@ function SettingsContent() {
                     }
                 }
 
+                @media (max-width: 640px) {
+                    .settings-container {
+                        margin-inline: -8px;
+                        padding-inline: 0;
+                    }
+
+                    .settings-header { border-bottom-color: var(--color-primary-light); }
+                    .settings-header h1 { color: white; }
+                    .settings-header p, .settings-eyebrow { color: var(--color-muted-on-navy); }
+                }
+
                 @media (max-width: 480px) {
                     .settings-container {
-                        padding: 18px 12px 96px;
+                        padding-block: 18px 96px;
                     }
 
                     .settings-header {

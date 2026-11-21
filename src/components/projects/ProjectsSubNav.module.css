@@ -51,6 +51,18 @@
   }
 }
 
+@media (max-width: 640px) {
+  .nav a {
+    min-height: 44px;
+  }
+
+  .nav a[aria-current='page'] {
+    background: var(--color-selected-surface);
+    color: var(--color-selected-ink);
+    box-shadow: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nav a {
     transition: none;

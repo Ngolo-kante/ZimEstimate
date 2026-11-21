@@ -656,6 +656,73 @@ body:where(:has(.project-dashboard-shell)) {
 .project-workspace .overview-details-summary { color: var(--color-text-secondary); font-size: 12px; font-weight: 400; text-align: right; }
 .project-workspace .overview-details-trigger svg { flex-shrink: 0; }
 .project-workspace .overview-details-trigger[data-state="open"] svg { transform: rotate(180deg); }
+
+@media (max-width: 640px) {
+    .project-workspace.project-dashboard-shell {
+        background: var(--color-primary);
+    }
+
+    .page-content:has(> .project-dashboard-shell) {
+        padding-inline: 4px;
+    }
+
+    .project-workspace .overview-view {
+        padding-inline: 0;
+    }
+
+    .project-workspace .project-main > nav[aria-label="Breadcrumb"] {
+        color: var(--color-muted-on-navy);
+    }
+
+    .project-workspace .view-title,
+    .project-workspace .overview-header h1,
+    .project-workspace .overview-view > section > .section-title {
+        color: white;
+    }
+
+    .project-workspace .view-eyebrow,
+    .project-workspace .view-description,
+    .project-workspace .documents-tab .tab-header .file-count,
+    .project-workspace .compliance-guidance-note,
+    .project-workspace .compliance-empty-state,
+    .project-workspace .compliance-empty-state p {
+        color: var(--color-muted-on-navy);
+    }
+
+    .project-workspace .stage-switcher-item.active {
+        border-color: var(--color-gold-on-navy);
+    }
+
+    .project-workspace .stage-switcher-item.active .stage-number {
+        background: var(--color-selected-surface);
+        color: var(--color-selected-ink);
+    }
+
+    .project-workspace .overview-header .text-secondary {
+        flex-wrap: wrap;
+        color: var(--color-muted-on-navy);
+    }
+
+    .project-workspace .overview-actions .btn {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+        color: var(--color-primary);
+    }
+
+    .project-workspace .overview-actions .btn:is(:hover, :active) {
+        background: #dbeafe;
+    }
+
+    .project-workspace .overview-actions .btn-icon {
+        color: var(--color-gold-ink);
+    }
+
+    .project-workspace .overview-actions .btn:focus-visible,
+    .project-workspace .stage-switcher-item:focus-visible,
+    .project-workspace .project-main > nav[aria-label="Breadcrumb"] a:focus-visible {
+        outline-color: var(--color-gold-on-navy);
+    }
+}
 .project-workspace .overview-details-content { overflow: hidden; }
 .project-workspace .overview-details-content[data-state="closed"] { display: none; }
 .project-workspace .overview-details-content[data-state="open"] { animation: overview-details-open 200ms cubic-bezier(0.23, 1, 0.32, 1); }

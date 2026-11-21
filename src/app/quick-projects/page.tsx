@@ -106,7 +106,7 @@ export default function QuickProjectsPage() {
   const totalSaved = Object.values(savedCounts).reduce((sum, count) => sum + count, 0);
 
   return (
-    <MainLayout>
+    <MainLayout mobileNavy>
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerCopy}>

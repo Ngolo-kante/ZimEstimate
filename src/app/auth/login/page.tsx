@@ -83,7 +83,7 @@ function LoginForm() {
 
     return (
         <>
-            <div className="auth-page">
+            <div className="auth-page mobile-auth-canvas">
                 <AuthBrand />
                 <div className="auth-container">
                     {/* Logo & Header */}
@@ -169,8 +169,8 @@ function LoginForm() {
                     align-content: center;
                     justify-content: center;
                     gap: 16px;
-                    padding: var(--spacing-lg);
-                    background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
+                    padding: var(--spacing-lg) var(--auth-gutter, var(--spacing-lg));
+                    background: var(--auth-canvas, linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%));
                 }
 
                 .auth-container {

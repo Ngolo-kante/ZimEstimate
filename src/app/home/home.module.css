@@ -1090,10 +1090,10 @@ empty strip between the closing band and the footer. */
   }
 
   .startHeader > p {
-    color: #dbe6f5;
+    color: var(--color-muted-on-navy);
   }
 
   .startHeader .sectionIndex {
-    color: #f4ce77;
+    color: var(--color-gold-on-navy);
   }
 }

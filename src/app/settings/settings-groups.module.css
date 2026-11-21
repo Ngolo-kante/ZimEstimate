@@ -24,8 +24,8 @@
     cursor: pointer;
     touch-action: manipulation;
   }
-  .row[aria-expanded='true'] { border-color: #bfd3ef; }
-  .row:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }
+  .row[aria-expanded='true'] { border-color: var(--color-gold-on-navy); }
+  .row:focus-visible { outline: 2px solid var(--focus-on-navy, var(--color-accent-dark)); outline-offset: 2px; }
   .icon { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 10px; background: #f1f5f9; }
   .icon svg [opacity='0.2'] { fill: #e9c46a; opacity: 0.75; }
   .label { flex: 1; }

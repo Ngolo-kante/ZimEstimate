@@ -217,7 +217,7 @@ function DashboardContent() {
   ];
 
   return (
-    <MainLayout fullWidth>
+    <MainLayout fullWidth mobileNavy>
       <div className="dashboard-page">
         <section className="dash-hero">
           <div className="hero-left">
@@ -1056,6 +1056,22 @@ function DashboardContent() {
         }
 
         /* ── Responsive ── */
+        @media (max-width: 640px) {
+          .dashboard-page {
+            width: auto;
+            margin-inline: -8px;
+          }
+
+          .dash-hero { border-bottom-color: var(--color-primary-light); }
+          .dash-hero h1 { color: white; }
+          .dash-eyebrow, .dash-hero p { color: var(--color-muted-on-navy); }
+          .dashboard-page > :global(nav[aria-label="Breadcrumb"]) { color: var(--color-muted-on-navy); }
+          .hero-actions > :global(.btn-secondary) {
+            background: var(--color-surface);
+            color: var(--color-primary);
+          }
+        }
+
         @media (max-width: 1024px) {
           .analytics-grid {
             grid-template-columns: minmax(0, 1fr);

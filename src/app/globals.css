@@ -39,6 +39,14 @@
   /* Blue Hover */
   --color-accent-bg: rgba(46, 108, 246, 0.12);
 
+  /* Readable links and metadata on navy, and gold accents for selection. */
+  --color-gold-on-navy: #f4ce77;
+  --color-selected-surface: #fff3cd;
+  --color-selected-ink: #62420a;
+  --color-gold-ink: #805509;
+  --color-link-on-navy: #bcd2f0;
+  --color-muted-on-navy: #dbe6f5;
+
   /* Backgrounds */
   --color-background: #F8FAFC;
   /* Off-White */
@@ -272,4 +280,11 @@ button, a, summary, [role="button"], [role="tab"] { touch-action: manipulation; 
   color: var(--color-placeholder);
   font-weight: 400;
   opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .auth-page.mobile-auth-canvas {
+    --auth-gutter: 16px;
+    --auth-canvas: var(--color-primary);
+  }
 }

@@ -178,7 +178,7 @@ function ProjectDetailContent() {
             : [];
 
     return (
-        <MainLayout fullWidth hideBottomNav>
+        <MainLayout fullWidth hideBottomNav mobileNavy>
             <div className="project-workspace project-shell project-dashboard-shell">
                 <SidebarSpine
                     project={project}

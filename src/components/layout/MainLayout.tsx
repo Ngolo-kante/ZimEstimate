@@ -22,6 +22,7 @@ interface MainLayoutProps {
   title?: string;
   fullWidth?: boolean;
   hideBottomNav?: boolean;
+  mobileNavy?: boolean;
 }
 
 function MobileBottomNav() {
@@ -198,13 +199,14 @@ export default function MainLayout({
   title,
   fullWidth = false,
   hideBottomNav = false,
+  mobileNavy = false,
 }: MainLayoutProps) {
   return (
     <CurrencyProvider>
       <div className="app-layout">
         <TopNavbar />
         <InstallPromptBanner />
-        <main className="main-content">
+        <main className={`main-content${mobileNavy ? ' mobile-navy' : ''}`}>
           {/* Page Content */}
           <div className={`page-content ${fullWidth ? 'full-width' : ''}`}>
             {title && <h1 className="page-title">{title}</h1>}
@@ -339,6 +341,26 @@ export default function MainLayout({
 
           .app-footer {
             padding-bottom: ${hideBottomNav ? '20px' : '88px'};
+          }
+        }
+
+        @media (max-width: 640px) {
+          .main-content {
+            background: var(--color-primary);
+          }
+
+          .main-content:not(.mobile-navy) {
+            background: linear-gradient(var(--color-background), var(--color-background))
+              center / calc(100% - 24px) 100% no-repeat var(--color-primary);
+          }
+
+          .mobile-navy .page-title {
+            color: white;
+          }
+
+          .mobile-navy {
+            --project-breadcrumb-link: var(--color-link-on-navy);
+            --focus-on-navy: var(--color-gold-on-navy);
           }
         }
 

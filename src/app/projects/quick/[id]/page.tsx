@@ -288,7 +288,7 @@ function SavedQuickEstimate() {
             {formatUsd(total, { wholeDollars: true })}
           </p>
           {boq.shareToken && (
-            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+            <p className="sharing-note mt-1 text-xs text-[var(--color-text-secondary)]">
               Shared — anyone with the link can view the estimate (not your savings, dates or checklist).{' '}
               <button
                 type="button"
@@ -387,12 +387,26 @@ function SavedQuickEstimate() {
         @media (hover: hover) and (pointer: fine) { .act:hover { border-color: var(--color-accent); color: var(--color-accent); } }
 
         @media (max-width: 640px) {
-          .wrap { padding: 20px 16px; }
+          .wrap {
+            margin-inline: -24px;
+            padding: 20px 16px;
+          }
           .head { gap: 12px; }
+          .head h1 { color: white; }
+          .meta, .sharing-note { color: var(--color-muted-on-navy); }
+          .sharing-note button { color: var(--color-link-on-navy); }
+          .type-chip { background: var(--color-selected-surface); color: var(--color-selected-ink); }
+          .wrap > :global(nav[aria-label="Breadcrumb"]) { color: var(--color-muted-on-navy); }
+          .wrap > :global(nav[aria-label="Breadcrumb"] a:focus-visible),
+          .act:focus-visible, .sharing-note button:focus-visible {
+            outline: 2px solid var(--color-gold-on-navy);
+            outline-offset: 3px;
+          }
           .actions { width: 100%; }
           /* Equal share of the row, icon only — four words across a 360px
              screen wrapped onto three lines and pushed the BOQ below the fold. */
           .act { flex: 1; padding: 11px 8px; }
+          .act :global(svg) { color: var(--color-gold-ink); }
           .act span { display: none; }
         }
       `}</style>
@@ -434,14 +448,16 @@ function QuickEstimateAccessGate() {
   }, [id]);
 
   if (access === null) return null;
-  if (access === 'edit' || access === 'view') return <SiteView target={{ kind: 'quick', id }} />;
+  if (access === 'edit' || access === 'view') {
+    return <div className="max-[640px]:rounded-xl max-[640px]:bg-surface max-[640px]:p-3"><SiteView target={{ kind: 'quick', id }} /></div>;
+  }
   // The owner, or no access: the estimate page says "could not open" itself.
   return <SavedQuickEstimate />;
 }
 
 export default function SavedQuickEstimatePage() {
   return (
-    <MainLayout>
+    <MainLayout mobileNavy>
       <ProtectedRoute>
         <QuickEstimateAccessGate />
       </ProtectedRoute>

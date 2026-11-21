@@ -557,7 +557,7 @@ export default function QuickBudgetPage() {
   };
 
   return (
-    <MainLayout fullWidth title="Budget Estimator">
+    <MainLayout fullWidth mobileNavy title="Budget Estimator">
       <div className="budget-checker-page">
         <div className="ambient ambient-one" aria-hidden />
         <div className="ambient ambient-two" aria-hidden />
@@ -1748,8 +1748,11 @@ export default function QuickBudgetPage() {
 
         @media (max-width: 640px) {
           .budget-checker-page {
-  --color-text-muted: #475569;
             padding: 14px 12px 74px;
+          }
+
+          .ambient {
+            display: none;
           }
 
           .control-panel,
