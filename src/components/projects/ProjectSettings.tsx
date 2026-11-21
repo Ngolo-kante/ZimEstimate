@@ -2,7 +2,8 @@
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
 import Switch, { SwitchIndicator } from '@/components/ui/Switch';
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
+import groupStyles from '@/components/settings/settings-groups.module.css';
 
 import { Field, FieldGroup, FieldLabel } from '@/components/shadcn/field';
 import { Input } from '@/components/shadcn/input';
@@ -16,6 +17,7 @@ import type { NotificationChannel } from '@/components/ui/BudgetPlanner';
 import { useReminderChannels } from '@/hooks/useReminderChannels';
 import {
     MapPin,
+    CaretRight,
     HouseLine,
     FloppyDisk,
     Check,
@@ -348,6 +350,23 @@ export default function ProjectSettings({
         }));
     }, [reminderActive, reminderFrequency, defaultReminderAmountUsd]);
 
+    const [openSections, setOpenSections] = useState<string[]>([]);
+    const sectionRow = (id: string, label: string, icon: ReactNode) => (
+        <button
+            type="button"
+            className={groupStyles.row}
+            aria-expanded={openSections.includes(id)}
+            aria-controls={id}
+            onClick={() => setOpenSections(previous => previous.includes(id)
+                ? previous.filter(section => section !== id)
+                : [...previous, id])}
+        >
+            <span className={groupStyles.icon} aria-hidden="true">{icon}</span>
+            <span className={groupStyles.label}>{label}</span>
+            <CaretRight size={18} className={groupStyles.caret} aria-hidden="true" />
+        </button>
+    );
+
     // Arriving from "Remind me to save $X a week" on Budget: switch the budget
     // reminder on with that plan and bring it into view. It is saved with
     // Save changes like any other edit.
@@ -363,6 +382,7 @@ export default function ProjectSettings({
                 amount: reminderDraft.amountUsd.toFixed(2),
             },
         }));
+        setOpenSections(previous => previous.includes('settings-notifications') ? previous : [...previous, 'settings-notifications']);
         setDraftApplied(reminderDraft);
         onReminderDraftUsed?.();
         window.setTimeout(() => document.getElementById('settings-notifications')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
@@ -456,11 +476,9 @@ export default function ProjectSettings({
 
     return (
         <div className="settings-page">
-            {/* Every section is open: collapsed, the settings looked like they
-                were not there. */}
-
             {/* ========== 1. GENERAL ========== */}
-            <section className="settings-card">
+            {sectionRow('settings-general', 'General', <HouseLine size={20} weight="duotone" />)}
+            <section className="settings-card" id="settings-general" data-mobile-open={openSections.includes('settings-general')}>
                 <header className="settings-card-header">
                     <span className="settings-card-icon"><HouseLine size={18} weight="duotone" /></span>
                     <span><h3>General</h3><p>Project name and location.</p></span>
@@ -497,7 +515,8 @@ export default function ProjectSettings({
             </section>
 
             {/* ========== 2. STAGE VISIBILITY ========== */}
-            <section className="settings-card">
+            {sectionRow('settings-stages', 'Project stages', <Stack size={20} weight="duotone" />)}
+            <section className="settings-card" id="settings-stages" data-mobile-open={openSections.includes('settings-stages')}>
                 <header className="settings-card-header">
                     <span className="settings-card-icon"><Stack size={18} weight="duotone" /></span>
                     <span><h3>Project stages</h3><p>{selectedStages.length} of {STAGE_CATEGORIES.length} stages shown in this project. Turn off the ones you are not building.</p></span>
@@ -531,7 +550,8 @@ export default function ProjectSettings({
             </section>
 
             {/* ========== 3. NOTIFICATIONS ========== */}
-            <section className="settings-card notification-centre" id="settings-notifications">
+            {sectionRow('settings-notifications', 'Notifications', <BellRinging size={20} weight="duotone" />)}
+            <section className="settings-card notification-centre" id="settings-notifications" data-mobile-open={openSections.includes('settings-notifications')}>
                 <header className="settings-card-header">
                     <span className="settings-card-icon"><BellRinging size={18} weight="duotone" /></span>
                     <span><h3>Notifications</h3><p>Alerts for this project, and how they reach you.</p></span>

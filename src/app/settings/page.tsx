@@ -12,7 +12,7 @@ import { Field, FieldLabel } from '@/components/shadcn/field';
 import { Input } from '@/components/shadcn/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shadcn/tabs';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import groupStyles from './settings-groups.module.css';
+import groupStyles from '@/components/settings/settings-groups.module.css';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Currency } from '@/lib/database.types';
@@ -87,7 +87,7 @@ function SettingsContent() {
     // A parent row on a phone: the section name with a chevron that turns when open.
     const groupRow = (id: string, label: string, Icon: ComponentType<{ size?: number; weight?: 'duotone' }>) => phone ? (
         <button type="button" className={groupStyles.row} aria-expanded={openGroups.includes(id)} aria-controls={`group-${id}`} onClick={() => toggleGroup(id)}>
-            <span className={groupStyles.icon}><Icon size={20} weight="duotone" /></span>
+            <span aria-hidden="true" className={groupStyles.icon}><Icon size={20} weight="duotone" /></span>
             <span className={groupStyles.label}>{label}</span>
             <CaretRight size={18} className={groupStyles.caret} aria-hidden="true" />
         </button>
@@ -281,9 +281,8 @@ function SettingsContent() {
             <div className="settings-container">
                 <header className="settings-header">
                     <div>
-                        <span className="settings-eyebrow">Account workspace</span>
                         <h1>Settings</h1>
-                        <p>Manage your identity, project preferences, alerts and account security.</p>
+                        <p>Manage your account and preferences.</p>
                     </div>
                     <div className="settings-status" aria-label="Current account plan">
                         <span>Current plan</span>
@@ -652,7 +651,6 @@ function SettingsContent() {
             <style jsx>{`
                 .accordion-heading { width: 100%; text-align: left; font: inherit; color: inherit; background: transparent; border: 0; }
                 .accordion-heading:disabled { opacity: 1; cursor: default; }
-                @media (max-width: 767px) { .settings-sidebar { display: none; } }
                 .settings-container {
                     max-width: 1240px;
                     margin: 0 auto;
@@ -669,16 +667,6 @@ function SettingsContent() {
                     gap: 24px;
                     padding-bottom: 22px;
                     border-bottom: 1px solid #d8e0eb;
-                }
-
-                .settings-eyebrow {
-                    display: block;
-                    margin-bottom: 7px;
-                    color: #2563eb;
-                    font-size: 12px;
-                    font-weight: 800;
-                    letter-spacing: 0;
-                    text-transform: none;
                 }
 
                 .settings-header h1 {
@@ -1324,7 +1312,7 @@ function SettingsContent() {
 
                     .settings-header { border-bottom-color: var(--color-primary-light); }
                     .settings-header h1 { color: white; }
-                    .settings-header p, .settings-eyebrow { color: var(--color-muted-on-navy); }
+                    .settings-header p { color: var(--color-muted-on-navy); }
                 }
 
                 @media (max-width: 480px) {
@@ -1400,6 +1388,22 @@ function SettingsContent() {
                 @media (max-width: 900px) {
                     :global(.settings-container .settings-nav) { flex-direction: row; overflow-x: auto; }
                     :global(.settings-container .settings-nav [data-slot="tabs-trigger"]) { flex: 0 0 auto; }
+                }
+                @media (max-width: 767px) {
+                    .settings-container { gap: 16px; }
+                    .settings-header { flex-direction: row; align-items: center; gap: 12px; padding-bottom: 0; border-bottom: 0; }
+                    .settings-status { align-self: center; }
+                    .settings-status span { display: none; }
+                    .settings-status strong { color: var(--color-selected-ink); }
+                    .settings-status { background: var(--color-selected-surface); border-color: transparent; border-radius: 999px; }
+                    .settings-sidebar { padding: 16px; border-radius: 12px; }
+                    .account-summary { display: flex; padding: 0; border: 0; gap: 12px; }
+                    .account-summary strong { font-size: 0.95rem; }
+                    .account-summary span { font-size: 0.82rem; }
+                    .account-avatar { width: 44px; height: 44px; border-radius: 12px; }
+                    :global(.settings-container .settings-nav) { display: none; }
+                    .settings-grid { gap: 8px; }
+                    :global(.settings-container [data-slot="tabs-content"][hidden]) { display: none; }
                 }
             `}</style>
         </MainLayout>

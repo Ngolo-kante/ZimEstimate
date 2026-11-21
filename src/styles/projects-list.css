@@ -124,8 +124,18 @@
 .projects-list .project-meta { border-top: 1px solid #e2e8f0; padding-top: 16px; }
 .projects-list [data-slot="badge"] { height: auto; min-height: 24px; padding: 3px 10px; background: #f1f5f9; color: #475569; font-size: 12px; white-space: normal; text-align: left; justify-content: flex-start; }
 .projects-list .stage-dot { width: 6px; height: 6px; border-radius: 50%; background: #64748b; flex-shrink: 0; margin-right: 3px; }
-.projects-list .stage-badge[data-status="in-progress"] .stage-dot { background: var(--color-info); }
-.projects-list .stage-badge[data-status="complete"] .stage-dot { background: var(--color-success); }
+.projects-list .stage-badge[data-status="draft"] {
+    background: var(--color-selected-surface);
+    color: var(--color-selected-ink);
+}
+.projects-list .stage-badge:is([data-status="in-progress"], [data-status="complete"]) {
+    background: var(--color-success-bg);
+    color: var(--color-success-fg);
+    border-color: #a7dcb6;
+}
+.projects-list .stage-badge:is([data-status="draft"], [data-status="in-progress"], [data-status="complete"]) .stage-dot {
+    background: currentColor;
+}
 .projects-list .project-budget .muted { font-size: 14px; font-style: italic; }
 .projects-list .continue-spend p { margin: 0; }
 .projects-list .continue-spend > span { color: #1d4ed8; font-weight: 600; }

@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import {
   Bell,
   CaretDown,
+  CaretRight,
   List,
   X,
   User,
@@ -165,6 +166,10 @@ export default function TopNavbar() {
     };
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        const profileMenu = profileMenuRef.current;
+        if (profileMenu?.querySelector('#profile-menu')?.contains(document.activeElement)) {
+          profileMenu.querySelector<HTMLButtonElement>('.user-btn')?.focus();
+        }
         setProfileMenuOpen(false);
         setNotificationMenuOpen(false);
         setMobileMenuOpen(false);
@@ -361,7 +366,7 @@ export default function TopNavbar() {
             </button>
 
             {profileMenuOpen && (
-              <div className="dropdown-menu profile-dropdown" id="profile-menu">
+              <div className={`dropdown-menu profile-dropdown${isAuthenticated ? ' account-popup' : ''}`} id="profile-menu">
                 {isAuthenticated ? (
                   <>
                     <div className="profile-header">
@@ -378,58 +383,36 @@ export default function TopNavbar() {
                         <span className={`profile-tier ${isAdmin ? 'admin' : profile?.tier || 'free'}`}>{tierLabel}</span>
                       </div>
                     </div>
-                    <div className="menu-section">
-                      <span className="menu-section-label">Workspace</span>
+                    <div className="account-popup-links">
                       {isAdmin && (
-                        <Link
-                          href="/admin"
-                          className="quick-link admin-quick-link"
-                          onClick={() => setProfileMenuOpen(false)}
-                        >
-                          <span className="quick-link-icon"><Gauge size={17} weight="duotone" /></span>
-                          <span className="quick-link-copy">
-                            <strong>Admin panel</strong>
-                            <small>Revenue, users and operations</small>
-                          </span>
+                        <Link href="/admin" className="quick-link" onClick={() => setProfileMenuOpen(false)}>
+                          <span className="quick-link-icon"><Gauge size={18} weight="duotone" aria-hidden="true" /></span>
+                          <span className="quick-link-copy"><strong>Admin panel</strong></span>
+                          <CaretRight className="account-popup-caret" size={15} aria-hidden="true" />
                         </Link>
                       )}
-                      <Link
-                        href="/projects"
-                        className="quick-link"
-                        onClick={() => setProfileMenuOpen(false)}
-                      >
-                        <span className="quick-link-icon"><Folders size={17} weight="duotone" /></span>
-                        <span className="quick-link-copy">
-                          <strong>My projects</strong>
-                          <small>Builds, estimates and activity</small>
-                        </span>
+                      <Link href="/projects" className="quick-link" onClick={() => setProfileMenuOpen(false)}>
+                        <span className="quick-link-icon"><Folders size={18} weight="duotone" aria-hidden="true" /></span>
+                        <span className="quick-link-copy"><strong>My projects</strong></span>
+                        <CaretRight className="account-popup-caret" size={15} aria-hidden="true" />
+                      </Link>
+                      <Link href="/settings" className="quick-link" onClick={() => setProfileMenuOpen(false)}>
+                        <span className="quick-link-icon"><Gear size={18} weight="duotone" aria-hidden="true" /></span>
+                        <span className="quick-link-copy"><strong>Account settings</strong></span>
+                        <CaretRight className="account-popup-caret" size={15} aria-hidden="true" />
+                      </Link>
+                      <Link href="/support" className="quick-link" onClick={() => setProfileMenuOpen(false)}>
+                        <span className="quick-link-icon"><ChatCircleText size={18} weight="duotone" aria-hidden="true" /></span>
+                        <span className="quick-link-copy"><strong>Help &amp; support</strong></span>
+                        <CaretRight className="account-popup-caret" size={15} aria-hidden="true" />
                       </Link>
                     </div>
-                    <div className="menu-divider" />
-                    <div className="menu-section compact">
-                      <span className="menu-section-label">Account</span>
-                    <Link
-                      href="/settings"
-                      className="quick-link"
-                      onClick={() => setProfileMenuOpen(false)}
-                    >
-                        <span className="quick-link-icon"><Gear size={17} weight="duotone" /></span>
-                        <span className="quick-link-copy"><strong>Account settings</strong></span>
-                    </Link>
-                    <Link
-                      href="/support"
-                      className="quick-link"
-                      onClick={() => setProfileMenuOpen(false)}
-                    >
-                        <span className="quick-link-icon"><ChatCircleText size={17} weight="duotone" /></span>
-                        <span className="quick-link-copy"><strong>Help &amp; support</strong></span>
-                    </Link>
+                    <div className="account-popup-footer">
+                      <button type="button" className="menu-item logout" onClick={handleSignOut}>
+                        <SignOut size={18} weight="duotone" aria-hidden="true" />
+                        Sign out
+                      </button>
                     </div>
-                    <div className="menu-divider" />
-                    <button className="menu-item logout" onClick={handleSignOut}>
-                      <SignOut size={18} weight="duotone" />
-                      Sign out
-                    </button>
                   </>
                 ) : (
                   <>
@@ -981,6 +964,67 @@ export default function TopNavbar() {
         .profile-tier.free { background: #f3f4f6; color: #6b7280; }
         .profile-tier.pro { background: #eff6ff; color: #3b82f6; }
         .profile-tier.admin { background: #1f2937; color: #fff; }
+
+        .account-popup {
+          border-radius: 16px;
+          background: var(--color-surface);
+          box-shadow: 0 16px 36px rgba(11, 31, 59, 0.24);
+        }
+
+        .account-popup .profile-header {
+          padding: 18px;
+          background: var(--color-primary);
+          border: 0;
+        }
+
+        .account-popup .profile-avatar {
+          width: 46px;
+          height: 46px;
+          flex: none;
+          background: var(--color-selected-surface);
+          color: var(--color-selected-ink);
+        }
+
+        .account-popup .profile-avatar .avatar-initials { color: inherit; }
+        .account-popup .profile-name { color: white; font-size: 1rem; }
+        .account-popup .profile-email { color: var(--color-muted-on-navy); }
+        .account-popup .profile-tier {
+          margin-top: 4px;
+          border-radius: 999px;
+          background: var(--color-selected-surface);
+          color: var(--color-selected-ink);
+          text-transform: none;
+        }
+
+        .account-popup-links { padding: 6px 10px; }
+        .account-popup-links :global(.quick-link) {
+          min-height: 50px;
+          color: var(--color-text);
+        }
+        .account-popup-links :global(.quick-link) + :global(.quick-link) {
+          border-top: 1px solid var(--color-border-light);
+        }
+        .account-popup-links .quick-link-icon {
+          background: var(--color-info-bg);
+          color: var(--color-info-fg);
+          border-radius: 9px;
+        }
+        .account-popup-links :global(.account-popup-caret) { margin-inline-start: auto; color: var(--color-text-secondary); }
+        .account-popup-footer {
+          padding: 4px 10px;
+          border-top: 1px solid var(--color-border-light);
+        }
+        .account-popup-footer .logout {
+          min-height: 44px;
+          padding-inline: 14px;
+          border-radius: 8px;
+          color: var(--color-danger-fg);
+        }
+        .account-popup-links :global(.quick-link:focus-visible),
+        .account-popup-footer .logout:focus-visible {
+          outline: 2px solid var(--color-accent-dark);
+          outline-offset: -2px;
+        }
 
         .menu-divider {
           height: 1px;

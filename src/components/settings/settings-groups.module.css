@@ -1,6 +1,3 @@
-/* Phone: the five Settings sections as collapsed parent rows (owner, 17 Nov).
-   A module, not the page's styled-jsx: the rows come from a helper function,
-   which styled-jsx does not scope. */
 .row { display: none; }
 
 @media (max-width: 767px) {
@@ -9,11 +6,11 @@
     align-items: center;
     gap: 12px;
     width: 100%;
-    min-height: 56px;
+    min-height: 58px;
     padding: 12px 16px;
-    border: 1px solid var(--color-border);
-    border-radius: 14px;
-    background: white;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: var(--color-surface);
     color: var(--color-primary);
     font: inherit;
     font-size: 1rem;
@@ -26,9 +23,9 @@
   }
   .row[aria-expanded='true'] { border-color: var(--color-gold-on-navy); }
   .row:focus-visible { outline: 2px solid var(--focus-on-navy, var(--color-accent-dark)); outline-offset: 2px; }
-  .icon { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 10px; background: #f1f5f9; }
-  .icon svg [opacity='0.2'] { fill: #e9c46a; opacity: 0.75; }
-  .label { flex: 1; }
+  .icon { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 10px; background: var(--color-info-bg); color: var(--color-info-fg); }
+  .row[aria-expanded='true'] .icon { background: var(--color-selected-surface); color: var(--color-selected-ink); }
+  .label { flex: 1; min-width: 0; }
   .caret { flex: none; color: #64748b; transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1); }
   .row[aria-expanded='true'] .caret { transform: rotate(90deg); }
 }
