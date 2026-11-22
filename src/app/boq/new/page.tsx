@@ -943,7 +943,7 @@ function BoqNewPageContent() {
               {isReviewStep && <h1 className="sr-only">Review estimate</h1>}
               {!isReviewStep && (
                 <div className="wiz-step-header mb-8">
-                  <span className="wiz-step-label mb-2 block text-[12px] !text-[#475569]">BOQ MANUAL BUILDER</span>
+                  <span className="wiz-step-label mb-2 block text-[12px]">BOQ MANUAL BUILDER</span>
                   <h1 className="text-xl sm:text-2xl font-bold mb-2" style={{color:'var(--wiz-text-primary)'}}>{WIZARD_STEPS[currentStep].title}</h1>
                   <p className="text-sm" style={{color:'var(--wiz-text-muted)'}}>{WIZARD_STEPS[currentStep].subtitle}</p>
                 </div>
@@ -1169,7 +1169,7 @@ export default function BoqNewPage() {
     // two step navs, two of every id. Effects and refs bound against whichever
     // copy mounted last, which is not something to leave to chance in the one
     // flow the whole product is built around.
-    <MainLayout fullWidth>
+    <MainLayout fullWidth mobileNavy>
       <Suspense fallback={<div className="p-8 text-center">Loading BOQ builder...</div>}>
         <BoqNewPageContent />
       </Suspense>

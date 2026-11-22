@@ -36,7 +36,7 @@ export default function ProjectCostSplit({ items, spentUsd, idSuffix = '' }: { i
     // One stacked bar and a row per cost type: reads faster on a phone than a donut.
     <section className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-5 sm:p-6 shadow-[0_2px_6px_rgb(11_25_46/5%)]" aria-labelledby={`project-cost-split-title${idSuffix}`}>
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-[#f1f5f9] text-[var(--color-primary)]">
+        <div className="icon-tile flex h-10 w-10 flex-none items-center justify-center rounded-[10px]">
           <ChartPieSlice size={22} weight="duotone" />
         </div>
         <div className="min-w-0">

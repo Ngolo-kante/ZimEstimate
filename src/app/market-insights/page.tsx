@@ -266,7 +266,7 @@ export default function MarketInsightsPage() {
           <button type="button" className={`stat-card reveal ${focus === 'movers' ? 'active' : ''}`} data-delay="2"
             onClick={() => showList({ focus: focus === 'movers' ? 'none' : 'movers', sort: 'change' })}
             aria-pressed={focus === 'movers'}>
-            <div className="stat-icon neutral">
+            <div className="stat-icon icon-tile">
               <Storefront size={24} weight="fill" />
             </div>
             <div>
@@ -284,7 +284,7 @@ export default function MarketInsightsPage() {
           <button type="button" className={`stat-card reveal ${focus === 'unpriced' ? 'active' : ''}`} data-delay="3"
             onClick={() => showList({ focus: focus === 'unpriced' ? 'none' : 'unpriced' })}
             aria-pressed={focus === 'unpriced'}>
-            <div className="stat-icon blue">
+            <div className="stat-icon icon-tile">
               <DatabaseIcon size={24} weight="fill" />
             </div>
             <div>

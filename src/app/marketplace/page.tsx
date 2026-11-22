@@ -765,10 +765,11 @@ export default function MarketplacePage() {
 
         {phone && <div className="mobile-supplier-flow">{supplierCard}</div>}
         <Drawer open={phone && !!selectedMaterial} onOpenChange={open => { if (!open) setSelectedMaterial(null); }}>
-          <DrawerContent className="motion-reduce:[animation:none!important] motion-reduce:[transition:none!important] z-[150] max-h-[85dvh] pb-[env(safe-area-inset-bottom)]">
-            <DrawerHeader><DrawerTitle>{selectedMaterial?.name || 'Material details'}</DrawerTitle><DrawerDescription>Details and supplier prices</DrawerDescription></DrawerHeader>
-            <DrawerScrollArea>{phone && selectedMaterial && materialDetail}</DrawerScrollArea>
-            <DrawerClose className="m-4 min-h-11 rounded-lg border border-sc-border">Close</DrawerClose>
+          {/* Navy like every phone sheet (owner, 22 Nov): title on navy, details in a light card. */}
+          <DrawerContent className="bg-[var(--color-primary)] motion-reduce:[animation:none!important] motion-reduce:[transition:none!important] z-[150] max-h-[85dvh] pb-[env(safe-area-inset-bottom)]">
+            <DrawerHeader className="text-left!"><DrawerTitle className="text-white">{selectedMaterial?.name || 'Material details'}</DrawerTitle><DrawerDescription className="text-[var(--color-muted-on-navy)]">Details and supplier prices</DrawerDescription></DrawerHeader>
+            <DrawerScrollArea className="px-4"><div className="rounded-xl bg-[var(--color-surface)]">{phone && selectedMaterial && materialDetail}</div></DrawerScrollArea>
+            <DrawerClose className="m-4 min-h-11 rounded-lg bg-[var(--color-surface)] font-semibold text-[var(--color-primary)]">Close</DrawerClose>
           </DrawerContent>
         </Drawer>
 

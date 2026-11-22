@@ -294,6 +294,19 @@ export default function InviteModal({ isOpen, onClose, projectName, projectId, k
           margin-bottom: var(--spacing-sm);
         }
 
+        /* Phones: a navy bottom sheet like every other phone sheet (owner, 22 Nov):
+           white headings and copy on navy; fields, lists and buttons stay light. */
+        @media (max-width: 640px) {
+          .modal-overlay { align-items: flex-end; padding: 0; background: rgba(0, 0, 0, 0.1); backdrop-filter: blur(4px); }
+          .modal-content { max-width: none; max-height: 85dvh; border-radius: 16px 16px 0 0; padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--color-primary); box-shadow: 0 -8px 30px rgba(11, 25, 46, 0.3); }
+          .modal-content .modal-header { background: transparent; }
+          .modal-content .modal-header h2, .modal-content .section-label { color: #fff; }
+          .modal-content .project-name, .modal-content .link-hint { color: var(--color-muted-on-navy); }
+          .modal-content .close-btn { color: var(--color-muted-on-navy); }
+          .modal-content .close-btn:focus-visible { outline: 2px solid var(--color-gold-on-navy); outline-offset: 2px; }
+          .modal-content :is(.no-shares, .users-list, .loading-state) { background: var(--color-surface); }
+        }
+
         .modal-header h2 {
           font-size: 1.25rem;
           font-weight: 600;

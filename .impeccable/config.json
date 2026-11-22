@@ -11,6 +11,15 @@
         ],
         "createdAt": "2026-11-22T02:42:15.784Z",
         "reason": "Claude: L537 is the 3px animated saving stripe across the top of a buying row while it saves (a progress indicator), not a decorative side tab"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "output/before-after/index.html"
+        ],
+        "createdAt": "2026-11-22T17:14:43.558Z",
+        "reason": "Claude: the empty <img> tags are filled by script (lightbox and screenshot frames) on a local review page in gitignored output/, not app code"
       }
     ]
   }

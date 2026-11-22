@@ -162,3 +162,10 @@
     height: 14px;
   }
 }
+
+/* On the navy phone page (owner, 22 Nov): the review header sits on navy. */
+@media (max-width: 640px) {
+  :global(.mobile-navy) .header > div > span { color: var(--color-gold-on-navy); }
+  :global(.mobile-navy) .header h2 { color: #f1f5fc; }
+  :global(.mobile-navy) .header p { color: var(--color-muted-on-navy); }
+}

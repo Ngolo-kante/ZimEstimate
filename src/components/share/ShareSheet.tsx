@@ -179,6 +179,20 @@ export default function ShareSheet({ isOpen, onClose, name, summary, hasItems, b
         .actions button:disabled { opacity: 0.55; cursor: default; }
         .link-box { width: 100%; margin-top: 10px; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-background); color: var(--color-text); font-size: max(0.82rem, 16px); }
         .note, .loading { margin: 10px 0 0; font-size: 0.8rem; color: var(--color-text-secondary); display: flex; align-items: center; gap: 6px; }
+        /* Phones: a navy bottom sheet like every other phone sheet (owner, 22 Nov):
+           white title and copy on navy, the preview and buttons as light cards. */
+        @media (max-width: 640px) {
+          .overlay { place-items: end stretch; padding: 0; background: rgba(0, 0, 0, 0.1); backdrop-filter: blur(4px); }
+          .sheet { width: 100%; max-height: 85dvh; border-radius: 16px 16px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--color-primary); box-shadow: 0 -8px 30px rgba(11, 25, 46, 0.3); }
+          h2 { color: #fff; }
+          .close { color: var(--color-muted-on-navy); }
+          .lead, .note, .loading { color: var(--color-muted-on-navy); }
+          .lead strong { color: #fff; }
+          .preview { background: var(--color-surface); border-color: transparent; }
+          .actions button, .actions :global(a.btn) { border-color: transparent; }
+          .actions .primary { border-color: var(--color-accent); }
+          .close:focus-visible, .actions button:focus-visible { outline: 2px solid var(--color-gold-on-navy); outline-offset: 2px; }
+        }
         :global(.spin) { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 

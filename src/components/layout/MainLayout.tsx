@@ -99,19 +99,22 @@ function MobileBottomNav() {
             <span className="nav-text">More</span>
           </button>
         </DrawerTrigger>
-        <DrawerContent aria-describedby={undefined}>
-          <DrawerHeader><DrawerTitle>More destinations</DrawerTitle></DrawerHeader>
+        {/* Navy like every phone sheet (owner, 22 Nov): white title, links in one light card. */}
+        <DrawerContent aria-describedby={undefined} className="bg-[var(--color-primary)]">
+          <DrawerHeader className="text-left!"><DrawerTitle className="text-white">More destinations</DrawerTitle></DrawerHeader>
           <DrawerScrollArea className="px-4">
-            {moreItems.map((item) => (
-              <DrawerClose asChild key={item.href}>
-                <Link href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}
-                  className="flex min-h-12 items-center justify-between border-b border-sc-border px-2 font-semibold aria-[current=page]:bg-sc-accent">
-                  {item.label}<CaretRight size={16} aria-hidden="true" />
-                </Link>
-              </DrawerClose>
-            ))}
+            <div className="overflow-hidden rounded-xl bg-[var(--color-surface)]">
+              {moreItems.map((item) => (
+                <DrawerClose asChild key={item.href}>
+                  <Link href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}
+                    className="flex min-h-12 items-center justify-between border-b border-[var(--color-border-light)] px-4 font-semibold text-[var(--color-text)] last:border-b-0 aria-[current=page]:bg-[var(--color-selected-surface)] aria-[current=page]:text-[var(--color-selected-ink)]">
+                    {item.label}<CaretRight size={16} aria-hidden="true" />
+                  </Link>
+                </DrawerClose>
+              ))}
+            </div>
           </DrawerScrollArea>
-          <DrawerClose className="m-4 mb-[max(1rem,env(safe-area-inset-bottom))] min-h-11 rounded-lg border border-sc-border font-semibold">Close</DrawerClose>
+          <DrawerClose className="m-4 mb-[max(1rem,env(safe-area-inset-bottom))] min-h-11 rounded-lg bg-[var(--color-surface)] font-semibold text-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-gold-on-navy)]">Close</DrawerClose>
         </DrawerContent>
       </Drawer>
 

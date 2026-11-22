@@ -443,7 +443,7 @@
 .group-icon {
     width: 40px;
     height: 40px;
-    border-radius: var(--radius-md);
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2081,3 +2081,20 @@
 .procurement-view .buying-mini-bar.is-full > span { background: var(--color-success); }
 .procurement-view .buying-mini-bar.is-over > span { background: var(--color-danger-fg); }
 @media (min-width: 768px) { .procurement-view .buying-mini-bar { display: none; } }
+
+/* Log purchase on phones: a navy sheet like every other phone sheet (owner, 22 Nov).
+   The title and the total sit on navy; the form itself is one light card. */
+@media (max-width: 640px) {
+  .purchase-overlay-content[data-slot="drawer-content"] { background: var(--color-primary); }
+  .purchase-overlay-content .procurement-view, .purchase-overlay-content .purchase-dialog, .purchase-overlay-content .modal-card { background: transparent; box-shadow: none; }
+  .purchase-overlay-content .modal-header { background: transparent; border-bottom: 0; }
+  .purchase-overlay-content .modal-header h3 { color: #fff; }
+  .purchase-overlay-content .modal-item-name { color: var(--color-gold-on-navy); }
+  .purchase-overlay-content .modal-close { color: var(--color-muted-on-navy); background: transparent; }
+  .purchase-overlay-content .modal-close:focus-visible { outline: 2px solid var(--color-gold-on-navy); outline-offset: 2px; }
+  .purchase-overlay-content .modal-body { margin: 0 12px; border-radius: 12px; background: var(--color-surface); }
+  .purchase-overlay-content .modal-footer { background: var(--color-primary); border-top: 1px solid var(--color-primary-light); }
+  .purchase-overlay-content .purchase-total span { color: var(--color-muted-on-navy); }
+  .purchase-overlay-content .purchase-total strong { color: #fff; }
+  .purchase-overlay-content .modal-footer .btn-secondary, .purchase-overlay-content .modal-footer button:not(.btn-primary):not([type="submit"]) { background: var(--color-surface); border-color: transparent; }
+}

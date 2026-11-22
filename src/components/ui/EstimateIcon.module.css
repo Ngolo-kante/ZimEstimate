@@ -4,13 +4,13 @@
   flex: none;
   width: 48px;
   height: 48px;
-  border: 1px solid #d4deea;
+  border: 1px solid var(--icon-tile-border);
   border-radius: 13px;
-  background: #eaf0f7;
-  color: var(--studio-steel);
+  background: var(--icon-tile-bg);
+  color: var(--icon-tile-ink);
 }
 
 .tile svg [opacity='0.2'] {
-  fill: var(--studio-brass);
+  fill: var(--icon-tile-accent);
   opacity: 0.85;
 }

@@ -133,3 +133,14 @@
     transition: none;
   }
 }
+
+/* On the navy phone page (owner, 22 Nov): light counter text, a navy-line track,
+   and the current step in cream like the other navy screens. */
+@media (max-width: 640px) {
+  :global(.mobile-navy) .meta { color: var(--color-muted-on-navy); }
+  :global(.mobile-navy) .meta strong { color: var(--color-gold-on-navy); }
+  :global(.mobile-navy) .track { background: var(--color-primary-light); }
+  :global(.mobile-navy) .track span { background: var(--color-gold-on-navy); }
+  :global(.mobile-navy) .current { color: var(--color-selected-ink); background: var(--color-selected-surface); border-color: var(--color-gold-on-navy); }
+  :global(.mobile-navy) .current span { background: rgba(98, 66, 10, 0.12); }
+}

@@ -79,7 +79,7 @@ export default function ProjectTypeSection() {
 
       {/* ── Project Type Cards ───────────────────────────────────────────── */}
       <div>
-        <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--color-text-muted)] mb-4">
+        <p className="text-xs font-bold uppercase tracking-[0.15em] wiz-text-muted mb-4">
           Choose your project scope
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -103,9 +103,9 @@ export default function ProjectTypeSection() {
                 </div>
 
                 <div className={`flex h-12 w-12 items-center justify-center rounded-xl transition-none ${
-                  isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 wiz-text-muted group-hover:bg-blue-50 group-hover:text-blue-600'
+                  isSelected ? 'bg-blue-100 text-blue-600' : 'icon-tile'
                 }`}>
-                  {Icon && <Icon size={22} weight={isSelected ? 'fill' : 'regular'} />}
+                  {Icon && <Icon size={22} weight={isSelected ? 'fill' : 'duotone'} />}
                 </div>
 
                 <div>
@@ -119,7 +119,7 @@ export default function ProjectTypeSection() {
 
                 {/* Scope badge */}
                 <div className={`self-start px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                  isSelected ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 wiz-text-muted'
+                  isSelected ? 'bg-[var(--color-accent)] text-white' : 'bg-[var(--color-info-bg)] text-[var(--color-info-fg)]'
                 }`}>
                   {type.id === 'full_house' ? 'All Stages' : 'Select Stages'}
                 </div>

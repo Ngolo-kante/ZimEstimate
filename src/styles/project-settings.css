@@ -44,11 +44,11 @@
     justify-content: center;
     width: 48px;
     height: 48px;
-    border-radius: var(--radius-md);
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
-    color: var(--color-white);
+    border-radius: 12px;
+    border: 1px solid var(--icon-tile-border);
+    background: var(--icon-tile-bg);
+    color: var(--icon-tile-ink);
     flex-shrink: 0;
-    box-shadow: var(--shadow-sm);
 }
 
 .settings-header h2 {
@@ -665,10 +665,12 @@
     width: 38px;
     height: 38px;
     border-radius: 10px;
-    background: rgba(46, 108, 246, 0.08);
-    color: var(--color-accent);
+    border: 1px solid var(--icon-tile-border);
+    background: var(--icon-tile-bg);
+    color: var(--icon-tile-ink);
     flex-shrink: 0;
 }
+.settings-card-icon svg [opacity='0.2'], .settings-header-icon svg [opacity='0.2'] { fill: var(--icon-tile-accent); opacity: 0.85; }
 
 .settings-card-content {
     padding: 20px 22px 22px;

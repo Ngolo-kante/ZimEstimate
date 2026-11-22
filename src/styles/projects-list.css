@@ -211,3 +211,18 @@
         color: white;
     }
 }
+
+/* Opened by a tap, the sheet's first action gets focus without a keyboard: don't draw
+   the focus ring then, or "Edit" looks already selected. Keyboard opens keep the ring. */
+.projects-list.card-actions-drawer[data-keyboard="false"] .bottom-sheet-item:focus-visible { outline: none; box-shadow: none; border-color: transparent; }
+
+/* Phone sheets are navy (owner, 22 Nov): navy sheet, actions as light rows on it. */
+.projects-list.card-actions-drawer[data-slot="drawer-content"] { background: var(--color-primary); padding-top: 4px; gap: 6px; }
+.projects-list.card-actions-drawer .bottom-sheet-item { background: var(--color-surface); color: var(--color-text); border: 1px solid transparent; border-radius: 12px; min-height: 52px; font-size: 15px; font-weight: 600; }
+.projects-list.card-actions-drawer .bottom-sheet-item.danger { color: var(--color-danger-fg); }
+.projects-list.card-actions-drawer .bottom-sheet-item:active { background: var(--color-selected-surface); }
+.projects-list.card-actions-drawer .bottom-sheet-item:focus-visible { outline: 2px solid var(--color-gold-on-navy); outline-offset: 2px; }
+
+/* Filter sheet on phones: navy like every phone sheet; labels white, selects stay light. */
+.filters-sheet .filter-group .filter-select { color: #fff; font-weight: 600; }
+.filters-sheet .filter-group select { border-color: transparent; }

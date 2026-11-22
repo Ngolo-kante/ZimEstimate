@@ -295,3 +295,25 @@
 .wiz-bg            { background-color: var(--wiz-bg) !important; }
 .wiz-surface       { background-color: var(--wiz-surface) !important; }
 
+
+/* Phones: the builder sits on the navy page so its white cards stand out (owner,
+   22 Nov). Text on the navy turns light; inside cards, fields and notes it stays navy. */
+@media (max-width: 640px) {
+  .wiz-root {
+    --wiz-bg: var(--color-primary);
+    --wiz-text-primary: #f1f5fc;
+    --wiz-text-muted: var(--color-muted-on-navy);
+  }
+  .wiz-root .wiz-step-label { color: var(--color-gold-on-navy) !important; }
+  /* Half-transparent fills would let the navy through: make them solid. */
+  .wiz-root [class*="bg-blue-50/"] { background-color: #eff6ff; }
+  .wiz-root [class*="bg-slate-50/"] { background-color: #f8fafc; }
+  /* Fixed grey or slate text that sits straight on the navy (labels, help lines),
+     not inside a white card, field or note. */
+  .wiz-root :is(.text-slate-900, .text-slate-800, .text-slate-700, .text-gray-700, .text-gray-900):not(:is(.bg-white, [class*="bg-[var(--color-surface)]"], [class*="bg-[var(--color-background)]"], .bg-slate-50, .bg-blue-50, .bg-amber-100, [class*="bg-blue-50/"], [class*="bg-slate-50/"], .wiz-alert, button, label button) *) { color: #f1f5fc; }
+  .wiz-root :is(.text-slate-600, .text-slate-500, .text-slate-400, .text-gray-500, .text-gray-600, [class*="text-[var(--color-text-muted)]"], [class*="text-[var(--color-text-secondary)]"]):not(:is(.bg-white, [class*="bg-[var(--color-surface)]"], [class*="bg-[var(--color-background)]"], .bg-slate-50, .bg-blue-50, .bg-amber-100, [class*="bg-blue-50/"], [class*="bg-slate-50/"], .wiz-alert, button) *) { color: var(--color-muted-on-navy); }
+  .wiz-root :is(.bg-white, [class*="bg-[var(--color-surface)]"], [class*="bg-[var(--color-background)]"], .bg-slate-50, .bg-blue-50, .bg-amber-100, [class*="bg-blue-50/"], [class*="bg-slate-50/"], .wiz-topbar, .wiz-alert, .wiz-step-chip, input, select, textarea) {
+    --wiz-text-primary: var(--color-primary);
+    --wiz-text-muted: #475569;
+  }
+}

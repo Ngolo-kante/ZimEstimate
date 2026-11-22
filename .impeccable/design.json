@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-22T02:41:45.547Z",
+  "generatedAt": "2026-11-22T15:57:09.047Z",
   "title": "Design System: ZimEstimate",
   "extensions": {
     "colorMeta": {
@@ -518,7 +518,7 @@
       "kind": "nav",
       "refersTo": "nav-bar",
       "description": "The navy frame with brass eyebrow.",
-      "html": "<nav class=\"ds-nav\"><span class=\"ds-nav-brand\">ZimEstimate</span><span class=\"ds-nav-eyebrow\">Construction estimates · Zimbabwe</span><a class=\"ds-nav-link\" href=\"#\">Projects</a></nav>",
+      "html": "<nav class=\"ds-nav\"><span class=\"ds-nav-brand\">ZimEstimate</span><span class=\"ds-nav-eyebrow\">Construction estimates \u00b7 Zimbabwe</span><a class=\"ds-nav-link\" href=\"#\">Projects</a></nav>",
       "css": ".ds-nav{display:flex;align-items:center;gap:20px;height:64px;padding:0 16px;background:#0b192e;color:#f1f5fc;font-family:\"Instrument Sans\",sans-serif}.ds-nav-brand{font:800 18px Sora,sans-serif}.ds-nav-eyebrow{font:600 11.5px \"IBM Plex Mono\",monospace;letter-spacing:.12em;text-transform:uppercase;color:#f4c669}.ds-nav-link{margin-left:auto;color:#c1cfe2;text-decoration:none}.ds-nav-link:hover{color:#f1f5fc}.ds-nav-link:focus-visible{outline:3px solid #e4b44a;outline-offset:2px}"
     },
     {
@@ -552,6 +552,11 @@
         "section": "colors"
       },
       {
+        "name": "The One Icon Tile Rule",
+        "body": "Since 22 Nov 2026, every decorative icon sits on the same tile: steel-navy outline with a soft gold duotone fill on a pale blue-grey tile with a thin edge (the `--icon-tile-*` tokens, the `.icon-tile` class, `EstimateIcon.module.css`). Only icons that show status use status colours: done green, in progress blue, not started grey, a warning amber, Log out and Danger zone red.",
+        "section": "colors"
+      },
+      {
         "name": "The Status Is Earned Rule",
         "body": "Green, amber and red mean saved/OK, needs attention and failed. They never decorate.",
         "section": "colors"
@@ -570,6 +575,11 @@
         "name": "The Flat Worksheet Rule",
         "body": "Cards sit flat at rest, separated by Rule Light borders. A hover or selection changes the border to Action Blue; it doesn't add a shadow.",
         "section": "elevation"
+      },
+      {
+        "name": "The Navy Sheet Rule",
+        "body": "Since 22 Nov 2026 (owner), every phone pop-up (the \"+\" sheet, More, the project \u22ee menu, Share, Invite, Log purchase, filters, the marketplace detail sheet) is a navy sheet: white title, muted navy-ink copy, content as light cards or rows on it, one blue main button, focus rings in gold. Settings (all widths) and the New BOQ builder (phones) sit on the navy page too. Light and dark will follow the device setting (`docs/tasks/system-dark-mode.md`); sheets stay navy in both.",
+        "section": "colors"
       }
     ],
     "dos": [

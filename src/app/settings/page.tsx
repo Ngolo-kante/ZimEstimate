@@ -387,7 +387,7 @@ function SettingsContent() {
                     <TabsContent {...groupProps('profile')} value="profile" asChild><Collapsible open onOpenChange={open => setOpenCard(open ? 'Personal information' : '')} asChild><section className="settings-card">
                         <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                             <div className="header-icon user">
-                                <User size={20} weight="bold" />
+                                <User size={20} weight="duotone" />
                             </div>
                             <div>
                                 <h3>Personal information</h3>
@@ -480,7 +480,7 @@ function SettingsContent() {
                         <TabsContent {...groupProps('plan')} value="plan" asChild><Collapsible open onOpenChange={open => setOpenCard(open ? 'Subscription' : '')} asChild><section className="settings-card">
                             <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                                 <div className="header-icon premium">
-                                    <Crown size={20} weight="bold" />
+                                    <Crown size={20} weight="duotone" />
                                 </div>
                                 <div>
                                     <h3>Subscription</h3>
@@ -515,7 +515,7 @@ function SettingsContent() {
                         <Collapsible open onOpenChange={open => setOpenCard(open ? 'Notifications' : '')} asChild><section className="settings-card" id="notifications">
                             <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                                 <div className="header-icon notification">
-                                    <Bell size={20} weight="bold" />
+                                    <Bell size={20} weight="duotone" />
                                 </div>
                                 <div>
                                     <h3>Notifications</h3>
@@ -596,7 +596,7 @@ function SettingsContent() {
                         <Collapsible open onOpenChange={open => setOpenCard(open ? 'Delivery activity' : '')} asChild><section className="settings-card">
                             <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                                 <div className="header-icon activity">
-                                    <DeviceMobile size={20} weight="bold" />
+                                    <DeviceMobile size={20} weight="duotone" />
                                 </div>
                                 <div>
                                     <h3>Delivery activity</h3>
@@ -629,7 +629,7 @@ function SettingsContent() {
                     <TabsContent {...groupProps('security')} value="security" className="settings-panel"><Collapsible open onOpenChange={open => setOpenCard(open ? 'Security' : '')} asChild><section className="settings-card" id="security">
                         <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                             <div className="header-icon security">
-                                <Lock size={20} weight="bold" />
+                                <Lock size={20} weight="duotone" />
                             </div>
                             <div>
                                 <h3>Security</h3>
@@ -893,9 +893,10 @@ function SettingsContent() {
                     flex-shrink: 0;
                 }
 
-                /* One icon style across Settings, the same as the section rows: blue on a pale
-                   blue tile. Only Danger zone differs, because red there means a real warning. */
-                .header-icon { background: var(--color-info-bg); color: var(--color-info-fg); border: 1px solid var(--color-info-border); }
+                /* The app's standard icon tile (navy and gold on pale blue-grey), as on Quick
+                   Projects. Only Danger zone differs, because red there means a real warning. */
+                .header-icon { background: var(--icon-tile-bg); color: var(--icon-tile-ink); border: 1px solid var(--icon-tile-border); }
+                .header-icon :global(svg [opacity='0.2']) { fill: var(--icon-tile-accent); opacity: 0.85; }
                 .header-icon.danger { background: #fef2f2; color: #ef4444; }
                 /* A thin edge so each icon tile reads as a tile on the pale card header. */
                 .header-icon.danger { border-color: #fbd5d5; }
@@ -1370,6 +1371,15 @@ function SettingsContent() {
                     .settings-header { border-bottom-color: var(--color-primary-light); }
                     .settings-header h1 { color: white; }
                     .settings-header p { color: var(--color-muted-on-navy); }
+                }
+
+                /* Desktop too: Settings sits on the navy page with white cards (owner, 22 Nov). */
+                @media (min-width: 641px) {
+                    :global(.main-content:has(.settings-container)) { background: var(--color-primary); }
+                    .settings-header { border-bottom-color: var(--color-primary-light); }
+                    .settings-header h1 { color: white; }
+                    .settings-header p { color: var(--color-muted-on-navy); }
+                    .settings-status { border-color: transparent; }
                 }
 
                 @media (max-width: 480px) {

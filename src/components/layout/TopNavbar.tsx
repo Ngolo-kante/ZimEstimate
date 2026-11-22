@@ -991,11 +991,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         .account-popup-links :global(.quick-link) + :global(.quick-link) {
           border-top: 1px solid var(--color-border-light);
         }
-        .account-popup-links .quick-link-icon {
-          background: var(--color-info-bg);
-          color: var(--color-info-fg);
-          border-radius: 9px;
-        }
+        .account-popup-links .quick-link-icon { border-radius: 9px; }
         .account-popup-links :global(.account-popup-caret) { margin-inline-start: auto; color: var(--color-text-secondary); }
         .account-popup-footer {
           padding: 4px 10px;
@@ -1156,10 +1152,12 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 6px;
-          color: var(--color-primary);
-          background: #eaf0f7;
+          border-radius: 9px;
+          border: 1px solid var(--icon-tile-border);
+          color: var(--icon-tile-ink);
+          background: var(--icon-tile-bg);
         }
+        .quick-link-icon :global(svg [opacity='0.2']) { fill: var(--icon-tile-accent); opacity: 0.85; }
 
         .quick-link-copy {
           min-width: 0;

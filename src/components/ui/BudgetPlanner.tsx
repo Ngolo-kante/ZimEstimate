@@ -252,7 +252,7 @@ export default function BudgetPlanner({
       <section className="savings-workspace" aria-labelledby="savings-plan-title">
         <header className="workspace-header">
           <div className="title-lockup">
-            <span className="title-icon"><Target size={20} weight="duotone" /></span>
+            <span className="title-icon icon-tile"><Target size={20} weight="duotone" /></span>
             <div>
               <h2 id="savings-plan-title">Savings target</h2>
               <p>Choose what to fund and when you need it. Your choice is saved.</p>
@@ -561,9 +561,7 @@ export default function BudgetPlanner({
           height: 36px;
           flex: 0 0 auto;
           place-items: center;
-          border-radius: 7px;
-          background: var(--color-primary-bg);
-          color: var(--color-accent);
+          border-radius: 10px;
         }
 
         .title-lockup p {

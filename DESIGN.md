@@ -171,6 +171,10 @@ A navy-and-brass frame with a single working blue on cool, pale paper.
 
 **The Gold Lives on Navy Rule.** Brass Gold is only used on Midnight or Steel Navy. On light surfaces, use Gold Ink or Selected Surface instead.
 
+**The One Icon Tile Rule.** Since 22 Nov 2026, every decorative icon sits on the same tile: steel-navy outline with a soft gold duotone fill on a pale blue-grey tile with a thin edge (the `--icon-tile-*` tokens, the `.icon-tile` class, `EstimateIcon.module.css`). Only icons that show status use status colours: done green, in progress blue, not started grey, a warning amber, Log out and Danger zone red.
+
+**The Navy Sheet Rule.** Since 22 Nov 2026 (owner), every phone pop-up (the "+" sheet, More, the project ⋮ menu, Share, Invite, Log purchase, filters, the marketplace detail sheet) is a navy sheet: white title, muted navy-ink copy, content as light cards or rows on it, one blue main button, focus rings in gold. Settings (all widths) and the New BOQ builder (phones) sit on the navy page too. Light and dark will follow the device setting (`docs/tasks/system-dark-mode.md`); sheets stay navy in both.
+
 **The Status Is Earned Rule.** Green, amber and red mean saved/OK, needs attention and failed. They never decorate.
 
 **The One Status Scheme Rule.** Since 21 Nov 2026, every status pill in the app uses the same mapping: in progress is the pale info-blue wash (Info Wash fill, Link Blue text), complete/purchased is green, draft, pending and not started are grey (mist fill, Ink Secondary text), over-purchased or failed is red, and amber only for something that needs action. The info-blue wash is a status tint, not an action, so it does not break the One Blue Rule. Waiting to buy is grey, never amber.

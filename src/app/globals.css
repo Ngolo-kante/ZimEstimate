@@ -26,6 +26,14 @@
   --color-muted-on-navy: #dbe6f5;
 
   --color-surface-elevated: #fff;
+
+  /* The app's one decorative icon tile (owner, 16 Nov): steel-navy outline with a
+     soft gold duotone fill on a pale blue-grey tile. Status icons keep their status
+     colours; everything else uses this. */
+  --icon-tile-bg: #eaf0f7;
+  --icon-tile-border: #d4deea;
+  --icon-tile-ink: var(--studio-steel);
+  --icon-tile-accent: var(--studio-brass);
   /* Example text inside empty fields: clearly lighter than labels and typed
      answers so it never reads as filled in (owner, 16 Nov). Readable on ice and white surfaces. */
   --color-placeholder: #65748a;
@@ -254,3 +262,11 @@ button, a, summary, [role="button"], [role="tab"] { touch-action: manipulation; 
     --auth-canvas: var(--color-primary);
   }
 }
+
+/* Decorative icon tile: add .icon-tile to the element that holds the icon. */
+.icon-tile {
+  background: var(--icon-tile-bg);
+  border: 1px solid var(--icon-tile-border);
+  color: var(--icon-tile-ink);
+}
+.icon-tile svg [opacity='0.2'] { fill: var(--icon-tile-accent); opacity: 0.85; }

@@ -68,8 +68,8 @@ export default function ProjectsFilters({ filters, isMobile }: {
         {isMobile ? (
             <Drawer open={showFilters} onOpenChange={setShowFilters}>
                 <DrawerTrigger asChild>{trigger}</DrawerTrigger>
-                <DrawerContent aria-describedby={undefined}>
-                    <DrawerTitle className="px-5 pt-4">Filter projects</DrawerTitle>
+                <DrawerContent aria-describedby={undefined} className="filters-sheet bg-[var(--color-primary)]">
+                    <DrawerTitle className="px-5 pt-4 text-white">Filter projects</DrawerTitle>
                     <div className="filter-group">
                         {groups.map(group => <label key={group.label} className="filter-select">{group.label}
                             <select aria-label={group.aria} value={group.value} onChange={e => group.change(e.target.value)}>

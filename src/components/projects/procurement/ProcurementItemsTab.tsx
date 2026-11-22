@@ -73,7 +73,7 @@ export default function ProcurementItemsTab({
                   aria-label={`${stageConfig?.label || groupKey}: ${isCollapsed ? 'expand' : 'collapse'} ${stageStats.total} items`}
                 >
                   <div className="group-header-left">
-                    <div className="group-icon" style={{ background: 'var(--color-primary-bg)', color: stageConfig?.color || 'var(--color-text-muted)' }}>
+                    <div className="group-icon icon-tile">
                       <StageIcon size={18} weight="duotone" />
                     </div>
                     <div className="group-title">
