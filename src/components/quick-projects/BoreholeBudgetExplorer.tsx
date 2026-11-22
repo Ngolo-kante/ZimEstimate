@@ -87,7 +87,7 @@ interface BoreholeBudgetExplorerProps {
   /** Names the destination; the default matches the wizard these came from. */
   backLabel?: string;
   isContractor?: boolean;
-  onSave?: (items: BOQItem[], answers: Answers, labor: LaborConfig) => void | Promise<void>;
+  onSave?: (items: BOQItem[], answers: Answers, labor: LaborConfig, markupPct: number) => void | Promise<void>;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -324,7 +324,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
 
     setIsSaving(true);
     try {
-      await onSave(items, answers, labor);
+      await onSave(items, answers, labor, 0);
     } finally {
       setIsSaving(false);
     }
@@ -392,7 +392,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
           // saving from the BOQ table persisted an estimate that recalculated
           // to a different casing grade and pump than the one on screen.
           answers={buildAnswers() as unknown as Record<string, unknown>}
-          onSave={onSave ? (items) => onSave(items, buildAnswers(), labor) : undefined}
+          onSave={onSave ? (items, markupPct) => onSave(items, buildAnswers(), labor, markupPct) : undefined}
         />
       </div>
     );

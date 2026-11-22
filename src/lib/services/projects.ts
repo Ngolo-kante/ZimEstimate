@@ -364,7 +364,9 @@ export async function getProjectWithItems(projectId: string): Promise<{
 /** Save a project and replace its BOQ items. */
 export async function saveProjectWithItems(
     projectId: string,
-    projectUpdates: ProjectUpdate,
+    projectUpdates: Pick<ProjectUpdate, 'name' | 'location' | 'scope' | 'labor_preference' |
+        'selected_stages' | 'status' | 'soil_type' | 'site_slope' | 'geotech_report_uploaded' |
+        'geotech_report_uploaded_at' | 'geotech_report_document_id' | 'geotech_analysis_mode' | 'house_extras'>,
     items: Array<{
         id?: string;
         material_id: string;
@@ -378,41 +380,13 @@ export async function saveProjectWithItems(
         sort_order: number;
     }>
 ): Promise<{ project: Project | null; items: BOQItem[]; error: Error | null }> {
-    // Update project
-    const { project, error: projectError } = await updateProject(projectId, projectUpdates);
-
-    if (projectError) {
-        return { project: null, items: [], error: projectError };
-    }
-
-    // Delete existing items and insert new ones (simpler than diffing)
-    const { error: deleteError } = await deleteBOQItems(projectId);
-
-    if (deleteError) {
-        return { project, items: [], error: deleteError };
-    }
-
-    // Insert new items
-    const itemsToInsert: BOQItemInsert[] = items.map((item, index) => ({
-        project_id: projectId,
-        material_id: item.material_id,
-        material_name: item.material_name,
-        category: item.category,
-        quantity: item.quantity,
-        unit: item.unit,
-        unit_price_usd: item.unit_price_usd,
-        unit_price_zwg: item.unit_price_zwg,
-        notes: item.notes || null,
-        sort_order: item.sort_order ?? index,
-    }));
-
-    const { items: savedItems, error: itemsError } = await addBOQItems(itemsToInsert);
-
-    if (itemsError) {
-        return { project, items: [], error: itemsError };
-    }
-
-    return { project, items: savedItems, error: null };
+    const { data, error } = await db.rpc('save_project_boq', {
+        p_project_id: projectId,
+        p_changes: projectUpdates,
+        p_items: items.map((item, index) => ({ ...item, notes: item.notes || null, sort_order: item.sort_order ?? index })),
+    });
+    if (error) return { project: null, items: [], error: new Error(error.message) };
+    return { project: data.project, items: data.items, error: null };
 }
 
 // ============================================

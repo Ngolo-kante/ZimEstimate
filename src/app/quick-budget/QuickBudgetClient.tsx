@@ -386,8 +386,6 @@ export default function QuickBudgetPage() {
       const { project: savedProject, items: savedItems, error: saveError } = await saveProjectWithItems(
         project.id,
         {
-          total_usd: totals.usd,
-          total_zwg: totals.zwg,
           selected_stages: stageEstimate.rows.filter((row) => row.status === 'build' && row.affordable).map((row) => row.id),
         },
         itemsPayload
@@ -535,7 +533,8 @@ export default function QuickBudgetPage() {
     projectType: 'solar' | 'borehole' | 'fencing' | 'paving',
     boqItems: BOQItem[],
     answers: Record<string, unknown>,
-    labor: LaborConfig
+    labor: LaborConfig,
+    markupPct = 0,
   ) => {
     if (!isAuthenticated) {
       // Same round trip as the house tab: come back to the tab they were on.
@@ -544,7 +543,7 @@ export default function QuickBudgetPage() {
       return;
     }
 
-    const { boq, error } = await createQuickBOQ({ projectType, answers, boqItems, labor, currency: 'USD' });
+    const { boq, error } = await createQuickBOQ({ projectType, answers, boqItems, labor, markupPct, currency: 'USD' });
 
     if (error) {
       showError(error.message || 'Failed to save estimate.');
@@ -608,16 +607,12 @@ export default function QuickBudgetPage() {
             {budgetMode === 'solar' ? (
               <SolarBudgetExplorer
                 onSave={(output) =>
-                  saveQuickBudget('solar', output.boqItems ?? [], output.answers as unknown as Record<string, unknown>, {
-                    enabled: false,
-                    method: 'percentage',
-                    percentage: 25,
-                  })
+                  saveQuickBudget('solar', output.boqItems ?? [], output.answers as unknown as Record<string, unknown>, output.labor, output.markupPct)
                 }
               />
             ) : budgetMode === 'borehole' ? (
               <BoreholeBudgetExplorer
-                onSave={(items, answers, labor) => saveQuickBudget('borehole', items, answers, labor)}
+                onSave={(items, answers, labor, markupPct) => saveQuickBudget('borehole', items, answers, labor, markupPct)}
               />
             ) : (
               <BudgetFitExplorer

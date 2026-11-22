@@ -52,7 +52,7 @@ export default function QuickProjectPage({ params }: { params: Promise<{ type: s
   // can now test for it.
   const isContractor = profile?.user_type === 'contractor';
 
-  async function handleSave(items: BOQItem[], answers: Answers, labor: LaborConfig) {
+  async function handleSave(items: BOQItem[], answers: Answers, labor: LaborConfig, markupPct: number) {
     try {
       // createQuickBOQ reports failure by returning an error, not by throwing —
       // ignoring it meant a signed-out user was told the estimate saved and then
@@ -62,6 +62,7 @@ export default function QuickProjectPage({ params }: { params: Promise<{ type: s
         answers,
         boqItems: items,
         labor,
+        markupPct,
         currency: 'USD',
       });
 
@@ -107,11 +108,7 @@ export default function QuickProjectPage({ params }: { params: Promise<{ type: s
             onChange={() => {}}
             isContractor={isContractor}
             onSave={(output) =>
-              handleSave(output.boqItems ?? [], output.answers as unknown as Answers, {
-                enabled: false,
-                method: 'percentage',
-                percentage: 25,
-              })
+              handleSave(output.boqItems ?? [], output.answers as unknown as Answers, output.labor, output.markupPct)
             }
           />
         ) : (

@@ -132,3 +132,17 @@ describe('the total excludes what the user is not paying for', () => {
     expect(items[0].totalUsd).toBe(100);
   });
 });
+
+it('shows the quoted total including labour and markup on a reopened project card', async () => {
+  listQuickBOQs.mockResolvedValue({ boqs: [quick({
+    boqItems: [
+      { totalCostUsd: 1000, included: true },
+      { totalCostUsd: 50, included: true, optional: true },
+      { totalCostUsd: 500, owned: true },
+    ],
+    labor: { enabled: true, method: 'percentage', percentage: 20 },
+    markupPct: 10,
+  })] });
+  const { items } = await listSavedWork();
+  expect(items[0].totalUsd).toBe(1375);
+});

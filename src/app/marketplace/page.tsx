@@ -13,7 +13,7 @@ import { useCurrency } from '@/components/ui/CurrencyToggle';
 import { useToast } from '@/components/ui/Toast';
 import { useReveal } from '@/hooks/useReveal';
 import { Project } from '@/lib/database.types';
-import { addBOQItem, updateProject, getProject } from '@/lib/services/projects';
+import { addBOQItem } from '@/lib/services/projects';
 import { createRfqRequest } from '@/lib/services/rfq';
 import {
   getBatchPrices,
@@ -189,16 +189,6 @@ export default function MarketplacePage() {
       showError('Failed to add material to project. Please try again.');
       setIsAdding(false);
       return;
-    }
-
-    const { project: currentProject } = await getProject(project.id);
-    if (currentProject) {
-      const itemTotalUsd = livePrice.priceUsd * quantity;
-      const itemTotalZwg = livePrice.priceZwg * quantity;
-      await updateProject(project.id, {
-        total_usd: Number(currentProject.total_usd) + itemTotalUsd,
-        total_zwg: Number(currentProject.total_zwg) + itemTotalZwg,
-      });
     }
 
     success(`${quantity} ${selectedMaterial.unit} of ${selectedMaterial.name} added to ${project.name}`);

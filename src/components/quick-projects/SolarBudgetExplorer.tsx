@@ -240,7 +240,7 @@ interface SolarBudgetExplorerProps {
   /** Names the destination; the default matches the wizard these came from. */
   backLabel?: string;
   isContractor?: boolean;
-  onSave?: (output: SolarWizardOutput & { boqItems?: BOQItem[] }) => void | Promise<void>;
+  onSave?: (output: SolarWizardOutput & { boqItems?: BOQItem[]; labor: LaborConfig; markupPct: number }) => void | Promise<void>;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -525,7 +525,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
     setIsSaving(true);
     try {
-      await onSave({ answers, result: null, boqItems: items } as Parameters<NonNullable<typeof onSave>>[0]);
+      await onSave({ answers, result: null, boqItems: items, labor, markupPct: 0 } as Parameters<NonNullable<typeof onSave>>[0]);
     } finally {
       setIsSaving(false);
     }
@@ -595,8 +595,8 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
           answers={buildAnswers() as unknown as Record<string, unknown>}
           onSave={
             onSave
-              ? (items) =>
-                  onSave({ answers: buildAnswers(), result: null, boqItems: items } as Parameters<NonNullable<typeof onSave>>[0])
+              ? (items, markupPct) =>
+                  onSave({ answers: buildAnswers(), result: null, boqItems: items, labor, markupPct } as Parameters<NonNullable<typeof onSave>>[0])
               : undefined
           }
         />

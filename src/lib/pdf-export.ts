@@ -1,3 +1,5 @@
+import { priceQuickEstimate } from '@/lib/quick-projects/engine/boqEngine';
+import type { BOQItem as QuickLine, LaborConfig } from '@/lib/quick-projects/engine/types';
 import { isLaborCategory } from '@/lib/calculations/laborSubstages';
 import { groupBoqByStage } from '@/lib/boqPresentation';
 import jsPDF from 'jspdf';
@@ -528,16 +530,9 @@ export interface QuickEstimatePdfSource {
     name: string;
     typeLabel: string;
     location: string | null;
-    boqItems: Array<{
-        description: string;
-        category: string;
-        quantity: number;
-        unit: string;
-        unitCostUsd: number;
-        included?: boolean;
-        owned?: boolean;
-    }>;
-    labor?: { enabled?: boolean };
+    boqItems: QuickLine[];
+    labor: LaborConfig;
+    markupPct: number;
 }
 
 export function downloadQuickEstimatePDF(boq: QuickEstimatePdfSource): { error: string | null } {
@@ -554,17 +549,16 @@ export function getQuickEstimatePDFBlob(boq: QuickEstimatePdfSource): Blob | nul
 }
 
 function quickEstimateDocumentData(boq: QuickEstimatePdfSource): VisionBOQData | null {
-    const included = boq.boqItems.filter((i) => i.included !== false && !i.owned);
-    if (included.length === 0) return null;
-
-    const totalUsd = included.reduce((sum, i) => sum + i.quantity * i.unitCostUsd, 0);
+    const { quotedLines, totals } = priceQuickEstimate(boq.boqItems, boq.labor, boq.markupPct);
+    if (quotedLines.length === 0) return null;
+    const totalUsd = totals.grandTotalUsd;
 
     return (
         {
             projectName: boq.name,
             location: boq.location || '',
             totalArea: 0,
-            items: included.map((i) => ({
+            items: quotedLines.map((i) => ({
                 material_name: i.description,
                 category: i.category,
                 quantity: i.quantity,

@@ -13,7 +13,7 @@ import {
   ToggleRight,
   Warning,
 } from '@phosphor-icons/react';
-import { groupByCategory, calculateGrandTotal, calculateLaborItems } from '@/lib/quick-projects/engine/boqEngine';
+import { groupByCategory, priceQuickEstimate } from '@/lib/quick-projects/engine/boqEngine';
 import type { BOQItem, LaborConfig, ProjectType } from '@/lib/quick-projects/engine/types';
 import LaborSection from './LaborSection';
 import CostDonut from '@/components/ui/CostDonut';
@@ -33,7 +33,8 @@ interface QuickBOQTableProps {
   labor: LaborConfig;
   onLaborChange: (l: LaborConfig) => void;
   isContractor?: boolean;
-  onSave?: (items: BOQItem[]) => void;
+  initialMarkupPct?: number;
+  onSave?: (items: BOQItem[], markupPct: number) => void;
   /**
    * The answers this BOQ was calculated from. Carried through the sign-in
    * bounce so the estimate can be recalculated or edited afterwards — without
@@ -60,6 +61,7 @@ export default function QuickBOQTable({
   labor,
   onLaborChange,
   isContractor = false,
+  initialMarkupPct = 0,
   onSave,
   answers = {},
   returnTo,
@@ -67,7 +69,7 @@ export default function QuickBOQTable({
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [items, setItems] = useState<BOQItem[]>(initialItems);
-  const [markupPct, setMarkupPct] = useState(0);
+  const [markupPct, setMarkupPct] = useState(initialMarkupPct);
   const [currency] = useState<'USD' | 'ZWG'>('USD');
   const [clientView, setClientView] = useState(false);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
@@ -119,35 +121,9 @@ export default function QuickBOQTable({
     ]);
   }, []);
 
-  // ── Labor items ────────────────────────────────────────────────────────
-  // Basis for the labour percentage: excludes optional extras such as plant
-  // hire, which should not attract a builder's percentage.
-  const materialsTotal = useMemo(
-    () =>
-      items
-        .filter((i) => i.included && !i.owned && !i.optional)
-        .reduce((s, i) => s + i.totalCostUsd, 0),
-    [items],
-  );
-
-  // Everything the grand total actually counts. calculateGrandTotal keeps
-  // optional items in, so showing materialsTotal as "Materials" made the
-  // labour breakdown disagree with the Grand Total by the value of those
-  // extras — $1,230 + $307.50 displayed against a $1,687.50 total.
-  const materialsSubtotal = useMemo(
-    () =>
-      items
-        .filter((i) => i.included && !i.owned)
-        .reduce((s, i) => s + i.totalCostUsd, 0),
-    [items],
-  );
-  const laborItems = useMemo(() => calculateLaborItems(labor, materialsTotal), [labor, materialsTotal]);
-  const allItems = useMemo(() => [...items, ...laborItems], [items, laborItems]);
-
-  // ── Totals ─────────────────────────────────────────────────────────────
-  const totals = useMemo(
-    () => calculateGrandTotal(allItems, markupPct, currency, zwgRate),
-    [allItems, markupPct, currency, zwgRate],
+  const { materialsTotal, materialsSubtotal, allItems, totals } = useMemo(
+    () => priceQuickEstimate(items, labor, markupPct, currency, zwgRate),
+    [items, labor, markupPct, currency, zwgRate],
   );
   const grouped = useMemo(() => groupByCategory(allItems), [allItems]);
   const costSlices = useMemo(() => quickCostSlices(allItems), [allItems]);
@@ -171,7 +147,7 @@ export default function QuickBOQTable({
       router.push(`/auth/login?redirect=${encodeURIComponent(destination)}`);
       return;
     }
-    if (action === 'save' && onSave) onSave(items);
+    if (action === 'save' && onSave) onSave(items, markupPct);
     if (action === 'pdf') window.print();
   }
 
@@ -184,8 +160,8 @@ export default function QuickBOQTable({
     if (sessionStorage.getItem(PENDING_QUICK_SAVE_KEY) !== projectType) return;
     resumedRef.current = true;
     sessionStorage.removeItem(PENDING_QUICK_SAVE_KEY);
-    onSave(items);
-  }, [isAuthenticated, onSave, projectType, items]);
+    onSave(items, markupPct);
+  }, [isAuthenticated, onSave, projectType, items, markupPct]);
 
   // ── Client view (contractor feature) ───────────────────────────────────
   if (isContractor && clientView) {
@@ -536,7 +512,7 @@ export default function QuickBOQTable({
           {markupPct > 0 && (
             <div className="text-right text-sm">
               <p className="text-slate-400">
-                Materials: {fmt(totals.subtotalUsd - totals.markupUsd, currency, zwgRate)}
+                Subtotal: {fmt(totals.subtotalUsd, currency, zwgRate)}
               </p>
               <p className="text-slate-400">
                 Markup ({markupPct}%): {fmt(totals.markupUsd, currency, zwgRate)}

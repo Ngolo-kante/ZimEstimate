@@ -2115,7 +2115,10 @@ export interface Database {
             [_ in never]: never;
         };
         Functions: {
-            [_ in never]: never;
+            save_project_boq: {
+                Args: { p_project_id: string; p_changes: Json; p_items: Json };
+                Returns: Json;
+            };
         };
         Enums: {
             user_tier: UserTier;

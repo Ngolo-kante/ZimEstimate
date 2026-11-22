@@ -26,7 +26,7 @@ import styles from './WizardChoices.module.css';
 
 interface QuickProjectWizardProps {
   flow: QuestionFlow;
-  onSave?: (items: BOQItem[], answers: Answers, labor: LaborConfig) => void;
+  onSave?: (items: BOQItem[], answers: Answers, labor: LaborConfig, markupPct: number) => void;
   isContractor?: boolean;
 }
 
@@ -419,7 +419,7 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
       <BoreholeBudgetExplorer
         onBack={() => { setStepIndex(0); setAnswers({}); }}
         isContractor={isContractor}
-        onSave={onSave ? (items, ans, lab) => onSave(items, ans, lab) : undefined}
+        onSave={onSave}
       />
     );
   }
@@ -432,13 +432,14 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
           <ArrowLeft size={16} /> Back to questions
         </button>
         <QuickBOQTable
+          initialMarkupPct={restoredForThisFlow?.markupPct}
           projectType={flow.projectType}
           initialItems={boqItems}
           labor={labor}
           onLaborChange={setLabor}
           isContractor={isContractor}
           answers={applyDefaultAnswers(activeSteps, answers, notSureIds)}
-          onSave={onSave ? (items) => onSave(items, applyDefaultAnswers(activeSteps, answers, notSureIds), labor) : undefined}
+          onSave={onSave ? (items, markupPct) => onSave(items, applyDefaultAnswers(activeSteps, answers, notSureIds), labor, markupPct) : undefined}
         />
       </div>
     );

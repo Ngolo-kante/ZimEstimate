@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { getQuickBOQ, startSharingQuickBOQ } from '@/lib/services/quickBoq';
 import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
 import { projectShareSummary } from '@/lib/projects/shareSummary';
+import { priceQuickEstimate } from '@/lib/quick-projects/engine/boqEngine';
 import { getBrowserSiteUrl } from '@/lib/siteUrl';
 import type { QuickBOQ } from '@/lib/quick-projects/engine/types';
 
@@ -33,7 +34,7 @@ export default function QuickShareSheet({ isOpen, onClose, quickId, name, typeLa
   }, [isOpen, quickId]);
 
   const included = useMemo(
-    () => (boq?.boqItems ?? []).filter((i) => i.included !== false && !i.owned),
+    () => boq ? priceQuickEstimate(boq.boqItems, boq.labor, boq.markupPct).quotedLines : [],
     [boq],
   );
   const location = (boq?.answers?.project_location as string) || null;
@@ -41,12 +42,12 @@ export default function QuickShareSheet({ isOpen, onClose, quickId, name, typeLa
   const summary = useMemo(() => (boq
     ? projectShareSummary(
         { name, location },
-        included.map((i) => ({ category: i.category, quantity: i.quantity, unit_price_usd: i.unitCostUsd, total_usd: i.quantity * i.unitCostUsd })),
+        included.map((i) => ({ category: i.category, quantity: i.quantity, unit_price_usd: i.unitCostUsd, total_usd: i.totalCostUsd })),
         getBrowserSiteUrl(),
       )
     : null), [boq, included, name, location]);
 
-  const source = useMemo(() => (boq ? { name, typeLabel, location, boqItems: boq.boqItems, labor: boq.labor } : null), [boq, name, typeLabel, location]);
+  const source = useMemo(() => (boq ? { name, typeLabel, location, boqItems: boq.boqItems, labor: boq.labor, markupPct: boq.markupPct } : null), [boq, name, typeLabel, location]);
 
   const buildPdf = useCallback(async () => {
     const pdf = await loadPdfExport('saved_estimate');

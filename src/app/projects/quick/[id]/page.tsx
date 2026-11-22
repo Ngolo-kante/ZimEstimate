@@ -18,6 +18,7 @@ import { useParams, useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import Card from '@/components/ui/Card';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { priceQuickEstimate } from '@/lib/quick-projects/engine/boqEngine';
 import QuickBOQTable from '@/components/quick-projects/QuickBOQTable';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -42,7 +43,7 @@ import QuickShareSheet from '@/components/projects/QuickShareSheet';
 import InviteModal from '@/components/projects/InviteModal';
 import SiteView from '@/components/projects/SiteView';
 import { getSiteAccess, type SiteAccess } from '@/lib/services/site';
-import { estimateName as estimateNameFor, quickEstimateTotal } from '@/lib/quick-projects/savedEstimate';
+import { estimateName as estimateNameFor } from '@/lib/quick-projects/savedEstimate';
 import type { BOQItem, LaborConfig, QuickBOQ } from '@/lib/quick-projects/engine/types';
 import { PencilSimple, ShareNetwork, Download, UserPlus, Warning } from '@phosphor-icons/react';
 import { loadPdfExport, PDF_LOAD_ERROR } from '@/lib/loadPdfExport';
@@ -100,21 +101,21 @@ function SavedQuickEstimate() {
 
   const total = useMemo(() => {
     if (!boq) return 0;
-    return quickEstimateTotal(boq.boqItems);
+    return priceQuickEstimate(boq.boqItems, boq.labor, boq.markupPct).totals.grandTotalUsd;
   }, [boq]);
 
   // Saving here means updating what is already stored, not creating a second
   // copy — the estimate keeps its id, so the card in My Work stays the card
   // the user came in through.
   const handleSave = useCallback(
-    async (items: BOQItem[]) => {
+    async (items: BOQItem[], markupPct: number) => {
       if (!boq || !labor) return;
-      const { error } = await updateQuickBOQ(boq.id, { boqItems: items, labor });
+      const { error } = await updateQuickBOQ(boq.id, { boqItems: items, labor, markupPct });
       if (error) {
         showError(error.message || 'Could not save your changes.');
         return;
       }
-      setBoq({ ...boq, boqItems: items, labor });
+      setBoq({ ...boq, boqItems: items, labor, markupPct });
       success('Changes saved.');
     },
     [boq, labor, showError, success],
@@ -200,6 +201,7 @@ function SavedQuickEstimate() {
       typeLabel: QUICK_TYPE_LABELS[boq.projectType] ?? boq.projectType,
       location: (boq.answers?.project_location as string) || null,
       boqItems: boq.boqItems,
+      markupPct: boq.markupPct,
       labor: boq.labor,
     });
     if (error) showError(error);
@@ -354,6 +356,7 @@ function SavedQuickEstimate() {
       <QuickBOQTable
         projectType={boq.projectType}
         initialItems={boq.boqItems}
+        initialMarkupPct={boq.markupPct}
         labor={labor}
         onLaborChange={setLabor}
         isContractor={profile?.user_type === 'contractor'}

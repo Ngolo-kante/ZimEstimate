@@ -165,14 +165,34 @@ export function calculateGrandTotal(
   zwgRate = 27
 ): { subtotalUsd: number; markupUsd: number; grandTotalUsd: number; grandTotalDisplay: number } {
   const subtotalUsd = items
-    .filter((i) => i.included && !i.owned)
-    .reduce((sum, i) => sum + i.totalCostUsd, 0);
+    .filter((i) => i.included !== false && !i.owned)
+    .reduce((sum, i) => sum + (Number(i.totalCostUsd) || 0), 0);
 
   const markupUsd = subtotalUsd * ((markupPct ?? 0) / 100);
   const grandTotalUsd = subtotalUsd + markupUsd;
   const grandTotalDisplay = currency === 'ZWG' ? grandTotalUsd * zwgRate : grandTotalUsd;
 
   return { subtotalUsd, markupUsd, grandTotalUsd, grandTotalDisplay };
+}
+
+/** Use the same quote in the editor, saved work, shared links and exports. */
+export function priceQuickEstimate(items: BOQItem[], labor: LaborConfig, markupPct = 0, currency: 'USD' | 'ZWG' = 'USD', zwgRate = 27) {
+  const included = items.filter(item => item.included !== false && !item.owned);
+  const sum = (lines: BOQItem[]) => lines.reduce((total, line) => total + (Number(line.totalCostUsd) || 0), 0);
+  const materialsTotal = sum(included.filter(item => !item.optional));
+  const materialsSubtotal = sum(included);
+  const laborItems = calculateLaborItems(labor, materialsTotal);
+  const allItems = [...items, ...laborItems];
+  const totals = calculateGrandTotal(allItems, markupPct, currency, zwgRate);
+  const quotedLines = [...included, ...laborItems];
+  if (totals.markupUsd > 0) {
+    quotedLines.push({
+      id: 'contractor_markup', category: 'Markup', description: `Contractor markup (${markupPct}%)`,
+      quantity: 1, unit: 'lump sum', unitCostUsd: totals.markupUsd, totalCostUsd: totals.markupUsd,
+      included: true, owned: false, optional: false,
+    });
+  }
+  return { materialsTotal, materialsSubtotal, labour: sum(laborItems), allItems, totals, quotedLines };
 }
 
 /** Groups BOQ items by category for table rendering. */

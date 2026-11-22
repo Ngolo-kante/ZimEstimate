@@ -169,8 +169,6 @@ export function useProjectAutoSave(
                 laborType === 'materials_labor' ? 'with_labor' : 'materials_only';
 
             const items = convertItemsForSave(milestonesState);
-            const totalUsd = items.reduce((sum, item) => sum + (item.quantity * item.unit_price_usd), 0);
-            const totalZwg = items.reduce((sum, item) => sum + (item.quantity * item.unit_price_zwg), 0);
 
             const { project: savedProject, error: saveError } = await saveProjectWithItems(
                 currentProject.id,
@@ -181,8 +179,6 @@ export function useProjectAutoSave(
                     labor_preference,
                     selected_stages: selectedStagesForSave.length > 0 ? selectedStagesForSave : null,
                     status: 'draft',
-                    total_usd: totalUsd,
-                    total_zwg: totalZwg,
                     soil_type: projectDetails.soilType || null,
                     site_slope: projectDetails.siteSlope || null,
                     geotech_report_uploaded: projectDetails.geotechReportUploaded ?? false,

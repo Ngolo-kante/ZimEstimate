@@ -216,6 +216,7 @@ export function useCardActions({
             typeLabel: QUICK_TYPE_LABELS[boq.projectType] ?? item.typeLabel,
             location: (boq.answers?.project_location as string) || null,
             boqItems: boq.boqItems,
+            markupPct: boq.markupPct,
             labor: boq.labor,
         });
         if (pdfError) showError(pdfError);

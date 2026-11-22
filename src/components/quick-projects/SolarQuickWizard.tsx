@@ -44,7 +44,7 @@ type Step = 'size' | 'options' | 'backup' | 'appliances' | 'results' | 'quote';
 interface Props {
   onChange: (output: SolarWizardOutput & { boqItems?: BOQItem[] }) => void;
   isContractor?: boolean;
-  onSave?: (output: SolarWizardOutput & { boqItems?: BOQItem[] }) => void;
+  onSave?: (output: SolarWizardOutput & { boqItems?: BOQItem[]; labor: LaborConfig; markupPct: number }) => void;
 }
 
 function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props) {
@@ -118,9 +118,9 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
   };
   if (boqItems) return <div className="w-full max-w-5xl mx-auto pb-24">
     <button type="button" className="min-h-11 text-sm text-slate-600" onClick={back}>← Back to wizard</button>
-    <QuickBOQTable projectType="solar" initialItems={boqItems} labor={labor} onLaborChange={setLabor}
+    <QuickBOQTable initialMarkupPct={saved?.markupPct} projectType="solar" initialItems={boqItems} labor={labor} onLaborChange={setLabor}
       isContractor={isContractor} answers={answers as unknown as Record<string, unknown>}
-      onSave={onSave ? (items) => onSave({ answers, result: selectedPackage ? packageResult(selectedPackage) : result, boqItems: items }) : undefined} />
+      onSave={onSave ? (items, markupPct) => onSave({ answers, markupPct, labor, result: selectedPackage ? packageResult(selectedPackage) : result, boqItems: items }) : undefined} />
   </div>;
   const title = step === 'size' ? 'What size are you looking at?' : step === 'options' ? `Your ${groups[groupIndex ?? 0].label} options` :
     step === 'backup' ? 'Backup hours' : step === 'appliances' ? 'Appliances' : step === 'quote' ? 'Check your solar quote' : 'Solar recommendation';

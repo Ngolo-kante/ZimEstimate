@@ -10,7 +10,8 @@
 
 import { getProjects } from './projects';
 import { listQuickBOQs } from './quickBoq';
-import type { BOQItem, ProjectType } from '../quick-projects/engine/types';
+import { priceQuickEstimate } from '../quick-projects/engine/boqEngine';
+import type { ProjectType } from '../quick-projects/engine/types';
 
 export type SavedWorkKind = 'project' | 'quick';
 
@@ -34,15 +35,6 @@ export interface SavedWorkItem {
 // whole service. Re-exported so existing imports keep working.
 import { QUICK_TYPE_LABELS } from '@/lib/quick-projects/typeLabels';
 export { QUICK_TYPE_LABELS };
-
-function quickTotal(items: unknown): number {
-  if (!Array.isArray(items)) return 0;
-  return items.reduce((sum: number, raw) => {
-    const item = raw as Partial<BOQItem>;
-    if (item.included === false || item.owned) return sum;
-    return sum + (Number(item.totalCostUsd) || 0);
-  }, 0);
-}
 
 /**
  * Both sources in one list, newest first.
@@ -79,7 +71,7 @@ export async function listSavedWork(): Promise<{ items: SavedWorkItem[]; partial
       name: named || (QUICK_TYPE_LABELS[type] ? `${QUICK_TYPE_LABELS[type]} estimate` : 'Quick estimate'),
       typeLabel: QUICK_TYPE_LABELS[type] ?? 'Quick',
       filterKey: type,
-      totalUsd: quickTotal(q.boqItems),
+      totalUsd: priceQuickEstimate(Array.isArray(q.boqItems) ? q.boqItems : [], q.labor, q.markupPct).totals.grandTotalUsd,
       updatedAt: q.updatedAt || q.createdAt,
       location: typeof q.answers?.project_location === 'string' ? q.answers.project_location : null,
       status: q.archivedAt ? 'archived' : null,

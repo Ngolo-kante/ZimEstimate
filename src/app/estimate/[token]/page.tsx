@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
 import SharedArrival from '@/components/quick-projects/SharedArrival';
-import { calculateLaborItems } from '@/lib/quick-projects/engine/boqEngine';
+import { priceQuickEstimate } from '@/lib/quick-projects/engine/boqEngine';
 import { fetchSharedQuickEstimate } from '@/lib/quick-projects/fetchSharedEstimate';
-import { estimateName, quickEstimateTotal, summariseSavedEstimate } from '@/lib/quick-projects/savedEstimate';
+import { estimateName, summariseSavedEstimate } from '@/lib/quick-projects/savedEstimate';
 import { QUICK_TYPE_LABELS } from '@/lib/quick-projects/typeLabels';
 
 /**
@@ -72,10 +72,7 @@ export default async function SharedEstimatePage({ params }: Props) {
   const label = QUICK_TYPE_LABELS[estimate.projectType] ?? 'Quick';
   const name = estimateName(estimate.projectType, estimate.answers);
   const items = estimate.boqItems.filter((item) => item.included !== false && !item.owned);
-  const materials = quickEstimateTotal(estimate.boqItems);
-  // The same engine function the owner's estimate uses, so labour cannot be
-  // worked out differently here.
-  const labour = calculateLaborItems(estimate.labor, materials).reduce((sum, item) => sum + item.totalCostUsd, 0);
+  const { materialsSubtotal: materials, labour, totals } = priceQuickEstimate(estimate.boqItems, estimate.labor, estimate.markupPct);
 
   const byCategory = items.reduce<Record<string, typeof items>>((groups, item) => {
     (groups[item.category] ??= []).push(item);
@@ -99,7 +96,8 @@ export default async function SharedEstimatePage({ params }: Props) {
           {[
             { label: 'Materials', value: usd(materials) },
             { label: 'Labour', value: labour > 0 ? usd(labour) : 'Not included' },
-            { label: 'Total', value: usd(materials + labour) },
+            ...(totals.markupUsd ? [{ label: 'Contractor markup', value: usd(totals.markupUsd) }] : []),
+            { label: 'Total', value: usd(totals.grandTotalUsd) },
           ].map((stat) => (
             <div key={stat.label} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
               <p className="text-xs font-semibold text-[var(--color-text-secondary)]">{stat.label}</p>
