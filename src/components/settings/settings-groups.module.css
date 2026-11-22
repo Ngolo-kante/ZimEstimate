@@ -1,55 +1,70 @@
-.row { display: none; }
+/* Phone settings: a grouped menu on the navy page, and each section opened as its
+   own screen with a back button. Desktop keeps the tabs, so all of this is phone-only. */
+.menu, .backBar { display: none; }
 
 @media (max-width: 767px) {
-  .row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    min-height: 58px;
-    padding: 12px 16px;
-    border: 1px solid transparent;
-    border-radius: 12px;
-    background: var(--color-surface);
-    color: var(--color-primary);
-    font: inherit;
-    font-size: 1rem;
-    font-weight: 600;
-    letter-spacing: normal;
-    text-transform: none;
-    text-align: left;
-    cursor: pointer;
-    touch-action: manipulation;
-  }
-  /* An open row and its first card read as one card: the row is the card's
-     top, so they share one border and the gap between them closes. */
-  .row[aria-expanded='true'] {
-    border-color: var(--color-border-light);
-    border-bottom-color: transparent;
-    border-radius: 12px 12px 0 0;
-  }
-  .row[aria-expanded='true'] + :global(section.settings-card),
-  .row[aria-expanded='true'] + :global(.settings-panel) > :global(section.settings-card:first-child) {
-    border-top: 0;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
-  }
-  .row[aria-expanded='true'] + :global(section.settings-card),
-  .row[aria-expanded='true'] + :global(.settings-panel) { margin-top: -8px; }
-  /* The row already names the section, so the card's own title would repeat it. */
-  .row[aria-expanded='true'] + :global(section.settings-card) :global(.card-header h3),
-  .row[aria-expanded='true'] + :global(.settings-panel) > :global(section.settings-card:first-child .card-header h3) { display: none; }
-  .row[aria-expanded='true'] + :global(section.settings-card) :global(.card-header),
-  .row[aria-expanded='true'] + :global(.settings-panel) > :global(section.settings-card:first-child .card-header) { padding-top: 0; }
-  .row:focus-visible { outline: 2px solid var(--focus-on-navy, var(--color-accent-dark)); outline-offset: 2px; }
-  .icon { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border: 1px solid var(--color-info-border); border-radius: 10px; background: var(--color-info-bg); color: var(--color-info-fg); }
-  .row[aria-expanded='true'] .icon { border-color: var(--color-featured-border); }
-  .row[aria-expanded='true'] .icon { background: var(--color-selected-surface); color: var(--color-selected-ink); }
-  .label { flex: 1; min-width: 0; }
-  .caret { flex: none; color: #64748b; transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1); }
-  .row[aria-expanded='true'] .caret { transform: rotate(90deg); }
-}
+  .menu { display: grid; gap: 8px; }
 
-@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
-  .caret { transition: none; }
+  /* Who you are: tap to edit your profile. */
+  .profileCard {
+    display: flex; align-items: center; gap: 14px; width: 100%;
+    min-height: 76px; padding: 14px 16px;
+    border: 1px solid var(--color-border-light); border-radius: 12px;
+    background: var(--color-surface); color: var(--color-text);
+    font: inherit; text-align: left; cursor: pointer; touch-action: manipulation;
+  }
+  .avatar {
+    display: grid; place-items: center; width: 48px; height: 48px; flex: none;
+    border-radius: 50%; background: var(--color-primary); color: #fff;
+    font-family: var(--font-heading); font-size: 1rem; font-weight: 700; letter-spacing: 0.02em;
+  }
+  .who { display: grid; gap: 2px; flex: 1; min-width: 0; }
+  .who strong { font-size: 1rem; font-weight: 700; overflow-wrap: anywhere; }
+  .who span { font-size: 0.85rem; color: var(--color-text-secondary); overflow-wrap: anywhere; }
+
+  /* Small uppercase labels above each group, readable on navy. */
+  .sectionLabel {
+    margin: 16px 4px 0; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-muted-on-navy);
+  }
+
+  /* One white card per group, rows split by thin lines. */
+  .group {
+    margin: 0; padding: 0; list-style: none; overflow: hidden;
+    border: 1px solid var(--color-border-light); border-radius: 12px; background: var(--color-surface);
+  }
+  .group > li + li .item { border-top: 1px solid var(--color-border-light); }
+  .item {
+    display: flex; align-items: center; gap: 14px; width: 100%; min-height: 56px; padding: 10px 16px;
+    border: 0; background: none; color: var(--color-text);
+    font: inherit; font-size: 1rem; font-weight: 500; text-align: left; text-decoration: none;
+    cursor: pointer; touch-action: manipulation;
+  }
+  .item:active, .profileCard:active { background: var(--color-info-bg); }
+  .item:focus-visible, .profileCard:focus-visible, .backBtn:focus-visible {
+    outline: 2px solid var(--focus-on-navy, var(--color-accent-dark)); outline-offset: -2px;
+  }
+  .itemIcon {
+    display: grid; place-items: center; width: 34px; height: 34px; flex: none;
+    border: 1px solid var(--color-info-border); border-radius: 10px;
+    background: var(--color-info-bg); color: var(--color-info-fg);
+  }
+  .itemLabel { flex: 1; min-width: 0; }
+  .value {
+    padding: 2px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+    background: var(--color-selected-surface); color: var(--color-selected-ink);
+  }
+  .chev { flex: none; color: #64748b; }
+  .logout { color: var(--color-danger-fg); }
+  .logout .itemIcon { border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger-fg); }
+
+  /* An open section: "<" back to the menu and the section's name. */
+  .backBar { display: flex; align-items: center; gap: 12px; margin-top: -12px; }
+  .backBtn {
+    display: grid; place-items: center; width: 44px; height: 44px; flex: none;
+    border: 1px solid var(--color-border); border-radius: 10px;
+    background: var(--color-surface); color: var(--color-primary); cursor: pointer;
+  }
+  .backBtn:active { background: var(--color-selected-surface); }
+  .detailTitle { margin: 0; color: #fff; font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
 }

@@ -3,7 +3,7 @@
 import Switch from '@/components/ui/Switch';
 
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/shadcn/collapsible';
-import { useState, useEffect, type ComponentType } from 'react';
+import { useState, useEffect, useRef, type ComponentType } from 'react';
 import ReminderChannels from '@/components/settings/ReminderChannels';
 import { useReminderChannels } from '@/hooks/useReminderChannels';
 import MainLayout from '@/components/layout/MainLayout';
@@ -13,6 +13,7 @@ import { Input } from '@/components/shadcn/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shadcn/tabs';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import groupStyles from '@/components/settings/settings-groups.module.css';
+import { initialsFor } from '@/lib/initials';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Currency } from '@/lib/database.types';
@@ -28,13 +29,18 @@ import {
     WarningCircle,
     Bell,
     WhatsappLogo,
-    DeviceMobile
+    DeviceMobile,
+    CaretLeft,
+    Lifebuoy,
+    ShieldCheck,
+    FileText,
+    SignOut
 } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
 function SettingsContent() {
-    const { user, profile, updateProfile, isLoading: authLoading } = useAuth();
+    const { user, profile, updateProfile, signOut, isLoading: authLoading } = useAuth();
     const { success, error: showError } = useToast();
     const whatsappAvailable = useReminderChannels().includes('whatsapp');
 
@@ -44,9 +50,10 @@ function SettingsContent() {
     const SECTION_TABS = ['profile', 'plan', 'notifications', 'security'];
     const [phone, setPhone] = useState(false);
     const [, setOpenCard] = useState('Personal information');
-    // Phone: the five sections are collapsed rows (owner, 17 Nov), opened one or
-    // more at a time; desktop keeps the tabs.
-    const [openGroups, setOpenGroups] = useState<string[]>([]);
+    // Phone: a grouped menu; each section opens as its own screen with a back
+    // button, and the phone's back gesture returns to the menu. Desktop keeps the tabs.
+    const [phoneOpen, setPhoneOpen] = useState<string | null>(null);
+    const pushedSection = useRef(false);
     useEffect(() => {
         const media = window.matchMedia('(max-width: 767px)');
         const sync = () => setPhone(media.matches);
@@ -59,7 +66,7 @@ function SettingsContent() {
         const tab = hash === 'email' ? 'profile' : hash;
         if (SECTION_TABS.includes(tab)) {
             setSection(tab);
-            setOpenGroups([tab]);
+            setPhoneOpen(tab);
             setOpenCard(({ profile: 'Personal information', plan: 'Subscription', notifications: 'Notifications', security: 'Security' } as Record<string, string>)[tab]);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -78,21 +85,29 @@ function SettingsContent() {
         setOpenCard(({ profile: 'Personal information', plan: 'Subscription', notifications: 'Notifications', security: 'Security' } as Record<string, string>)[value]);
         window.history.replaceState(null, '', `#${value}`);
     };
-    const toggleGroup = (id: string) => setOpenGroups(open => {
-        const next = open.includes(id) ? open.filter(g => g !== id) : [...open, id];
-        window.history.replaceState(null, '', next.includes(id) ? `#${id}` : window.location.pathname);
-        return next;
-    });
-    // A parent row on a phone: the section name with a chevron that turns when open.
-    const groupRow = (id: string, label: string, Icon: ComponentType<{ size?: number; weight?: 'duotone' }>) => phone ? (
-        <button type="button" className={groupStyles.row} aria-expanded={openGroups.includes(id)} aria-controls={`group-${id}`} onClick={() => toggleGroup(id)}>
-            <span aria-hidden="true" className={groupStyles.icon}><Icon size={20} weight="duotone" /></span>
-            <span className={groupStyles.label}>{label}</span>
-            <CaretRight size={18} className={groupStyles.caret} aria-hidden="true" />
-        </button>
-    ) : null;
-    // On a phone every panel stays mounted and its row decides whether it shows.
-    const groupProps = (id: string) => phone ? { forceMount: true as const, hidden: !openGroups.includes(id), id: `group-${id}` } : {};
+    useEffect(() => {
+        const sync = () => {
+            const tab = window.location.hash.slice(1);
+            setPhoneOpen(SECTION_TABS.includes(tab) ? tab : null);
+        };
+        window.addEventListener('popstate', sync);
+        return () => window.removeEventListener('popstate', sync);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    const openPhoneSection = (id: string) => {
+        window.history.pushState(null, '', `#${id}`);
+        pushedSection.current = true;
+        setSection(id);
+        setPhoneOpen(id);
+        window.scrollTo(0, 0);
+    };
+    const closePhoneSection = () => {
+        if (pushedSection.current) { pushedSection.current = false; window.history.back(); }
+        else { window.history.replaceState(null, '', window.location.pathname); setPhoneOpen(null); }
+        window.scrollTo(0, 0);
+    };
+    // On a phone every panel stays mounted and only the open section shows.
+    const groupProps = (id: string) => phone ? { forceMount: true as const, hidden: phoneOpen !== id, id: `group-${id}` } : {};
     const [fullName, setFullName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [preferredCurrency, setPreferredCurrency] = useState<Currency>('USD');
@@ -264,6 +279,9 @@ function SettingsContent() {
         setIsChangingPassword(false);
     };
 
+    const planLabel = profile?.tier === 'pro' ? 'Pro' : profile?.tier === 'admin' ? 'Admin' : 'Free';
+    const SECTION_LABELS: Record<string, string> = { profile: 'Profile', plan: 'Plan', notifications: 'Notifications', security: 'Password & account' };
+
     if (authLoading) {
         return (
             <MainLayout fullWidth>
@@ -278,16 +296,72 @@ function SettingsContent() {
     return (
         <MainLayout fullWidth mobileNavy>
             <div className="settings-container">
+                {phone && phoneOpen ? (
+                    <div className={groupStyles.backBar}>
+                        <button type="button" className={groupStyles.backBtn} onClick={closePhoneSection} aria-label="Back to Settings">
+                            <CaretLeft size={20} weight="bold" aria-hidden="true" />
+                        </button>
+                        <h1 className={groupStyles.detailTitle}>{SECTION_LABELS[phoneOpen]}</h1>
+                    </div>
+                ) : (
                 <header className="settings-header">
                     <div>
                         <h1>Settings</h1>
                         <p>Manage your account, plan and notifications.</p>
                     </div>
-                    <div className="settings-status" aria-label="Current account plan">
+                    <div className="settings-status" aria-label="Current account plan" hidden={phone}>
                         <span>Current plan</span>
-                        <strong>{profile?.tier === 'pro' ? 'Pro' : profile?.tier === 'admin' ? 'Admin' : 'Free'}</strong>
+                        <strong>{planLabel}</strong>
                     </div>
                 </header>
+                )}
+
+                {phone && !phoneOpen && (
+                    <nav className={groupStyles.menu} aria-label="Settings">
+                        <button type="button" className={groupStyles.profileCard} onClick={() => openPhoneSection('profile')}>
+                            <span className={groupStyles.avatar} aria-hidden="true">{initialsFor(profile?.full_name || user?.email)}</span>
+                            <span className={groupStyles.who}>
+                                <strong>{profile?.full_name || user?.email?.split('@')[0] || 'Your account'}</strong>
+                                <span>{user?.email}</span>
+                            </span>
+                            <CaretRight size={18} className={groupStyles.chev} aria-hidden="true" />
+                        </button>
+
+                        <h2 className={groupStyles.sectionLabel}>Account</h2>
+                        <ul className={groupStyles.group}>
+                            {([['plan', 'Plan', Crown], ['notifications', 'Notifications', Bell], ['security', 'Password & account', Lock]] as [string, string, ComponentType<{ size?: number; weight?: 'duotone' }>][]).map(([id, label, Icon]) => (
+                                <li key={id}>
+                                    <button type="button" className={groupStyles.item} onClick={() => openPhoneSection(id)}>
+                                        <span className={groupStyles.itemIcon} aria-hidden="true"><Icon size={20} weight="duotone" /></span>
+                                        <span className={groupStyles.itemLabel}>{label}</span>
+                                        {id === 'plan' && <span className={groupStyles.value}>{planLabel}</span>}
+                                        <CaretRight size={18} className={groupStyles.chev} aria-hidden="true" />
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+
+                        <h2 className={groupStyles.sectionLabel}>Help</h2>
+                        <ul className={groupStyles.group}>
+                            {([['/support', 'Help & support', Lifebuoy], ['/privacy', 'Privacy policy', ShieldCheck], ['/terms', 'Terms of use', FileText]] as [string, string, ComponentType<{ size?: number; weight?: 'duotone' }>][]).map(([href, label, Icon]) => (
+                                <li key={href}>
+                                    <Link href={href} className={groupStyles.item}>
+                                        <span className={groupStyles.itemIcon} aria-hidden="true"><Icon size={20} weight="duotone" /></span>
+                                        <span className={groupStyles.itemLabel}>{label}</span>
+                                        <CaretRight size={18} className={groupStyles.chev} aria-hidden="true" />
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+
+                        <div className={groupStyles.group}>
+                            <button type="button" className={`${groupStyles.item} ${groupStyles.logout}`} onClick={() => void signOut()}>
+                                <span className={groupStyles.itemIcon} aria-hidden="true"><SignOut size={20} weight="bold" /></span>
+                                <span className={groupStyles.itemLabel}>Log out</span>
+                            </button>
+                        </div>
+                    </nav>
+                )}
 
                 <Tabs value={section} onValueChange={openSection} className="settings-layout">
                     <aside className="settings-sidebar">
@@ -304,13 +378,13 @@ function SettingsContent() {
                             <TabsTrigger value="profile"><User size={17} />Profile</TabsTrigger>
                             <TabsTrigger value="plan"><Crown size={17} />Plan</TabsTrigger>
                             <TabsTrigger value="notifications"><Bell size={17} />Notifications</TabsTrigger>
-                            <TabsTrigger value="security"><Lock size={17} />Security</TabsTrigger>
+                            <TabsTrigger value="security"><Lock size={17} />Password &amp; account</TabsTrigger>
                         </TabsList>
                     </aside>
 
                     <div className="settings-grid">
                     {/* Profile Section */}
-                    {groupRow('profile', 'Profile', User)}<TabsContent {...groupProps('profile')} value="profile" asChild><Collapsible open onOpenChange={open => setOpenCard(open ? 'Personal information' : '')} asChild><section className="settings-card">
+                    <TabsContent {...groupProps('profile')} value="profile" asChild><Collapsible open onOpenChange={open => setOpenCard(open ? 'Personal information' : '')} asChild><section className="settings-card">
                         <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                             <div className="header-icon user">
                                 <User size={20} weight="bold" />
@@ -403,7 +477,7 @@ function SettingsContent() {
                     <div className="split-grid">
                         {/* The app is USD-only, so there is no currency preference to set. */}
                         {/* Subscription */}
-                        {groupRow('plan', 'Plan', Crown)}<TabsContent {...groupProps('plan')} value="plan" asChild><Collapsible open onOpenChange={open => setOpenCard(open ? 'Subscription' : '')} asChild><section className="settings-card">
+                        <TabsContent {...groupProps('plan')} value="plan" asChild><Collapsible open onOpenChange={open => setOpenCard(open ? 'Subscription' : '')} asChild><section className="settings-card">
                             <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                                 <div className="header-icon premium">
                                     <Crown size={20} weight="bold" />
@@ -437,7 +511,7 @@ function SettingsContent() {
                     </div>
 
                     {/* Notification Preferences */}
-                    {groupRow('notifications', 'Notifications', Bell)}<TabsContent {...groupProps('notifications')} value="notifications" className="settings-panel">
+                    <TabsContent {...groupProps('notifications')} value="notifications" className="settings-panel">
                         <Collapsible open onOpenChange={open => setOpenCard(open ? 'Notifications' : '')} asChild><section className="settings-card" id="notifications">
                             <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                                 <div className="header-icon notification">
@@ -552,7 +626,7 @@ function SettingsContent() {
                     </TabsContent>
 
                     {/* Password Section */}
-                    {groupRow('security', 'Security', Lock)}<TabsContent {...groupProps('security')} value="security" className="settings-panel"><Collapsible open onOpenChange={open => setOpenCard(open ? 'Security' : '')} asChild><section className="settings-card" id="security">
+                    <TabsContent {...groupProps('security')} value="security" className="settings-panel"><Collapsible open onOpenChange={open => setOpenCard(open ? 'Security' : '')} asChild><section className="settings-card" id="security">
                         <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
                             <div className="header-icon security">
                                 <Lock size={20} weight="bold" />
@@ -1378,16 +1452,17 @@ function SettingsContent() {
                     .settings-status span { display: none; }
                     .settings-status strong { color: var(--color-selected-ink); }
                     .settings-status { background: var(--color-selected-surface); border-color: transparent; border-radius: 999px; }
-                    .settings-sidebar { padding: 16px; border-radius: 12px; }
-                    .account-summary { display: flex; padding: 0; border: 0; gap: 12px; }
-                    .account-summary strong { font-size: 0.95rem; }
-                    .account-summary span { font-size: 0.82rem; }
-                    .account-avatar { width: 44px; height: 44px; border-radius: 12px; }
+                    /* The phone menu replaces the sidebar (account card and tabs). */
+                    .settings-sidebar { display: none; }
+                    .settings-status[hidden] { display: none; }
                     :global(.settings-container .settings-nav) { display: none; }
                     .settings-grid { gap: 8px; }
                     :global(.settings-container [data-slot="tabs-content"][hidden]) { display: none; }
-                    /* The section row above already shows this icon; don't repeat it in the card. */
+                    /* The back bar already names the open section, so the first card
+                       doesn't repeat its icon or title; its one-line description stays. */
                     .header-icon:is(.user, .premium, .notification, .security) { display: none; }
+                    .settings-card[data-slot="tabs-content"] > .card-header h3,
+                    :global(.settings-panel) > .settings-card:first-child .card-header h3 { display: none; }
                     .card-header { padding: 14px 16px; }
                     .settings-card { border-radius: 12px; }
                 }
