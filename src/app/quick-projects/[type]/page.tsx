@@ -2,7 +2,7 @@
 
 import { notFound, useRouter } from 'next/navigation';
 import { use } from 'react';
-import { ArrowLeft } from '@phosphor-icons/react';
+import { CaretLeft } from '@phosphor-icons/react';
 import Link from 'next/link';
 import QuickProjectWizard from '@/components/quick-projects/QuickProjectWizard';
 import SolarQuickWizard from '@/components/quick-projects/SolarQuickWizard';
@@ -87,9 +87,14 @@ export default function QuickProjectPage({ params }: { params: Promise<{ type: s
       <div className="max-w-6xl mx-auto px-4 py-6 max-[640px]:-mx-4 max-[640px]:pt-2 md:py-8 animate-fade-in">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm font-medium text-slate-500 mb-4">
-          <Link href="/quick-projects" className="flex items-center gap-1.5 hover:text-blue-600 transition-none">
-            <ArrowLeft size={16} />
-            Quick Projects
+          {/* On phones this is the same 44px "<" back button as the project pages. */}
+          <Link
+            href="/quick-projects"
+            aria-label="Back to Quick Projects"
+            className="inline-flex min-h-11 items-center gap-1.5 hover:text-blue-600 transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent-dark)] max-[640px]:w-11 max-[640px]:justify-center max-[640px]:rounded-[10px] max-[640px]:border max-[640px]:border-[var(--color-border)] max-[640px]:bg-[var(--color-surface)] max-[640px]:text-[var(--color-primary)] max-[640px]:active:bg-[var(--color-selected-surface)]"
+          >
+            <CaretLeft size={20} weight="bold" aria-hidden="true" />
+            <span className="max-[640px]:sr-only">Quick Projects</span>
           </Link>
           <span className="hidden text-slate-300 sm:inline" aria-hidden="true">/</span>
           <span className="hidden text-slate-900 sm:inline" aria-current="page">{PROJECT_TITLES[type]}</span>

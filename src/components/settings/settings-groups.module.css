@@ -21,9 +21,29 @@
     cursor: pointer;
     touch-action: manipulation;
   }
-  .row[aria-expanded='true'] { border-color: var(--color-gold-on-navy); }
+  /* An open row and its first card read as one card: the row is the card's
+     top, so they share one border and the gap between them closes. */
+  .row[aria-expanded='true'] {
+    border-color: var(--color-border-light);
+    border-bottom-color: transparent;
+    border-radius: 12px 12px 0 0;
+  }
+  .row[aria-expanded='true'] + :global(section.settings-card),
+  .row[aria-expanded='true'] + :global(.settings-panel) > :global(section.settings-card:first-child) {
+    border-top: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+  .row[aria-expanded='true'] + :global(section.settings-card),
+  .row[aria-expanded='true'] + :global(.settings-panel) { margin-top: -8px; }
+  /* The row already names the section, so the card's own title would repeat it. */
+  .row[aria-expanded='true'] + :global(section.settings-card) :global(.card-header h3),
+  .row[aria-expanded='true'] + :global(.settings-panel) > :global(section.settings-card:first-child .card-header h3) { display: none; }
+  .row[aria-expanded='true'] + :global(section.settings-card) :global(.card-header),
+  .row[aria-expanded='true'] + :global(.settings-panel) > :global(section.settings-card:first-child .card-header) { padding-top: 0; }
   .row:focus-visible { outline: 2px solid var(--focus-on-navy, var(--color-accent-dark)); outline-offset: 2px; }
-  .icon { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 10px; background: var(--color-info-bg); color: var(--color-info-fg); }
+  .icon { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border: 1px solid var(--color-info-border); border-radius: 10px; background: var(--color-info-bg); color: var(--color-info-fg); }
+  .row[aria-expanded='true'] .icon { border-color: var(--color-featured-border); }
   .row[aria-expanded='true'] .icon { background: var(--color-selected-surface); color: var(--color-selected-ink); }
   .label { flex: 1; min-width: 0; }
   .caret { flex: none; color: #64748b; transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1); }

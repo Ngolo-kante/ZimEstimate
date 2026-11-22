@@ -20,7 +20,6 @@ import { getNotificationDeliveries } from '@/lib/services/notifications';
 import type { NotificationDelivery } from '@/lib/database.types';
 import {
     User,
-    CurrencyDollar,
     Lock,
     Crown,
     EnvelopeSimple,
@@ -42,7 +41,7 @@ function SettingsContent() {
     // Profile form state
     // Sections are tabs; the address says which one is open, so links such as
     // /settings#notifications (or the older #email anchor) open the right tab.
-    const SECTION_TABS = ['profile', 'preferences', 'plan', 'notifications', 'security'];
+    const SECTION_TABS = ['profile', 'plan', 'notifications', 'security'];
     const [phone, setPhone] = useState(false);
     const [, setOpenCard] = useState('Personal information');
     // Phone: the five sections are collapsed rows (owner, 17 Nov), opened one or
@@ -61,7 +60,7 @@ function SettingsContent() {
         if (SECTION_TABS.includes(tab)) {
             setSection(tab);
             setOpenGroups([tab]);
-            setOpenCard(({ profile: 'Personal information', preferences: 'Currency', plan: 'Subscription', notifications: 'Notifications', security: 'Security' } as Record<string, string>)[tab]);
+            setOpenCard(({ profile: 'Personal information', plan: 'Subscription', notifications: 'Notifications', security: 'Security' } as Record<string, string>)[tab]);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -76,7 +75,7 @@ function SettingsContent() {
     }, [section]);
     const openSection = (value: string) => {
         setSection(value);
-        setOpenCard(({ profile: 'Personal information', preferences: 'Currency', plan: 'Subscription', notifications: 'Notifications', security: 'Security' } as Record<string, string>)[value]);
+        setOpenCard(({ profile: 'Personal information', plan: 'Subscription', notifications: 'Notifications', security: 'Security' } as Record<string, string>)[value]);
         window.history.replaceState(null, '', `#${value}`);
     };
     const toggleGroup = (id: string) => setOpenGroups(open => {
@@ -282,7 +281,7 @@ function SettingsContent() {
                 <header className="settings-header">
                     <div>
                         <h1>Settings</h1>
-                        <p>Manage your account and preferences.</p>
+                        <p>Manage your account, plan and notifications.</p>
                     </div>
                     <div className="settings-status" aria-label="Current account plan">
                         <span>Current plan</span>
@@ -303,7 +302,6 @@ function SettingsContent() {
                         </div>
                         <TabsList className="settings-nav" aria-label="Settings sections">
                             <TabsTrigger value="profile"><User size={17} />Profile</TabsTrigger>
-                            <TabsTrigger value="preferences"><CurrencyDollar size={17} />Preferences</TabsTrigger>
                             <TabsTrigger value="plan"><Crown size={17} />Plan</TabsTrigger>
                             <TabsTrigger value="notifications"><Bell size={17} />Notifications</TabsTrigger>
                             <TabsTrigger value="security"><Lock size={17} />Security</TabsTrigger>
@@ -403,22 +401,7 @@ function SettingsContent() {
 
                     {/* Preferences & Security Grid */}
                     <div className="split-grid">
-                        {/* Currency Preference */}
-                        {groupRow('preferences', 'Preferences', CurrencyDollar)}<TabsContent {...groupProps('preferences')} value="preferences" asChild><Collapsible open onOpenChange={open => setOpenCard(open ? 'Currency' : '')} asChild><section className="settings-card">
-                            <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
-                                <div className="header-icon currency">
-                                    <CurrencyDollar size={20} weight="bold" />
-                                </div>
-                                <div>
-                                    <h3>Currency</h3>
-
-                                </div>
-                            </button></CollapsibleTrigger>
-                            <CollapsibleContent asChild><div className="card-content">
-                                <p className="currency-note">Prices are shown in US dollars.</p>
-                            </div></CollapsibleContent>
-                        </section></Collapsible></TabsContent>
-
+                        {/* The app is USD-only, so there is no currency preference to set. */}
                         {/* Subscription */}
                         {groupRow('plan', 'Plan', Crown)}<TabsContent {...groupProps('plan')} value="plan" asChild><Collapsible open onOpenChange={open => setOpenCard(open ? 'Subscription' : '')} asChild><section className="settings-card">
                             <CollapsibleTrigger asChild disabled><button type="button" className="card-header accordion-heading">
@@ -836,13 +819,12 @@ function SettingsContent() {
                     flex-shrink: 0;
                 }
 
-                .header-icon.user { background: #eff6ff; color: #3b82f6; }
-                .header-icon.currency { background: #ecfdf5; color: #10b981; }
-                .header-icon.premium { background: #fff7ed; color: #f59e0b; }
-                .header-icon.security { background: #f1f5f9; color: #64748b; }
+                /* One icon style across Settings, the same as the section rows: blue on a pale
+                   blue tile. Only Danger zone differs, because red there means a real warning. */
+                .header-icon { background: var(--color-info-bg); color: var(--color-info-fg); border: 1px solid var(--color-info-border); }
                 .header-icon.danger { background: #fef2f2; color: #ef4444; }
-                .header-icon.notification { background: #eff6ff; color: #2563eb; }
-                .header-icon.activity { background: #ecfeff; color: #0ea5e9; }
+                /* A thin edge so each icon tile reads as a tile on the pale card header. */
+                .header-icon.danger { border-color: #fbd5d5; }
 
                 .card-header h3 {
                     margin: 0;
@@ -1128,10 +1110,11 @@ function SettingsContent() {
                     justify-content: space-between;
                 }
 
+                /* Card content reads in full ink; only helper notes are grey. */
                 .current-plan .label {
                     font-size: 0.9rem;
                     font-weight: 600;
-                    color: #475569;
+                    color: var(--color-text);
                 }
 
                 .plan-badge {
@@ -1148,7 +1131,7 @@ function SettingsContent() {
 
                 .plan-description {
                     font-size: 0.9rem;
-                    color: #64748b;
+                    color: #334155;
                     line-height: 1.5;
                     margin: 0;
                 }
@@ -1382,7 +1365,6 @@ function SettingsContent() {
                 :global(.settings-container .upgrade-link), :global(.settings-container .request-delete-link) { min-height: 44px; }
                 :global(.settings-container .upgrade-link) { white-space: nowrap; }
                 :global(.settings-container .upgrade-link svg) { flex-shrink: 0; }
-                .currency-note { margin: 0; color: var(--color-text-secondary); }
                 .split-grid { display: contents; }
                 :global(.settings-container .settings-panel[data-state="active"]) { display: flex; flex-direction: column; gap: 18px; }
                 @media (max-width: 900px) {
@@ -1404,6 +1386,10 @@ function SettingsContent() {
                     :global(.settings-container .settings-nav) { display: none; }
                     .settings-grid { gap: 8px; }
                     :global(.settings-container [data-slot="tabs-content"][hidden]) { display: none; }
+                    /* The section row above already shows this icon; don't repeat it in the card. */
+                    .header-icon:is(.user, .premium, .notification, .security) { display: none; }
+                    .card-header { padding: 14px 16px; }
+                    .settings-card { border-radius: 12px; }
                 }
             `}</style>
         </MainLayout>

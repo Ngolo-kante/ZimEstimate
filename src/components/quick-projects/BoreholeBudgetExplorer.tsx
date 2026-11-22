@@ -472,7 +472,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
       )}
 
       {/* Budget and allocation */}
-      <div className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3 mb-6">
+      <div className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3 mb-6">
 
         <div className="min-w-0">
           <h2 className="text-[0.88rem] tracking-[0.08em] uppercase font-extrabold text-[var(--color-primary)] mb-3">Your budget</h2>
@@ -661,7 +661,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
         </div>
       </div>
 
-      <div className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3 mb-6">
+      <div className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3 mb-6">
         <h2 className="text-[0.88rem] tracking-[0.08em] uppercase font-extrabold text-[var(--color-primary)] mb-4">Where the money goes</h2>
         <CostDonut hideEmpty slices={cards.filter((card) => card.enabled).map((card, index) => ({ label: card.label, value: card.cost, color: SERIES_COLORS[index % SERIES_COLORS.length] }))} />
       </div>

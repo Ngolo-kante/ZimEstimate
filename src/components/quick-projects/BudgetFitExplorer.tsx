@@ -111,7 +111,7 @@ export default function BudgetFitExplorer({
         </button>
       )}
 
-      <div className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3">
+      <div className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3">
         <h2 className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-primary)] mb-3">Your budget</h2>
         <Input
           label="AVAILABLE BUDGET (USD)"
@@ -129,7 +129,7 @@ export default function BudgetFitExplorer({
           </div>
         )}
       </div>
-      <div className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3">
+      <div className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3">
         <fieldset>
           <legend className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-primary)]">{config.variantLabel}</legend>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -159,7 +159,7 @@ export default function BudgetFitExplorer({
       </div>
 
       {/* ── The answer ─────────────────────────────────────────────────── */}
-      <div className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3">
+      <div className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3">
         {fit.belowMinimum ? (
           <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
             <Warning size={18} weight="fill" className="mt-0.5 shrink-0 text-amber-600" />
@@ -201,7 +201,7 @@ export default function BudgetFitExplorer({
 
       {/* A split needs at least two parts; paving is often one. */}
       {new Set(costedItems.map((item) => item.category)).size > 1 && (
-        <div className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3">
+        <div className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3">
           <h2 className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-primary)] mb-4">Where the money goes</h2>
           <CostDonut slices={Array.from(new Set(costedItems.map((item) => item.category))).map((category, index) => ({
             label: category,
@@ -213,7 +213,7 @@ export default function BudgetFitExplorer({
 
       {/* ── What it buys ───────────────────────────────────────────────── */}
       {costedItems.length > 0 && (
-        <div className="overflow-hidden rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3">
+        <div className="overflow-hidden rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3">
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
             <h3 className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-primary)]">What that includes</h3>
             <span className="text-xs text-slate-500">{costedItems.length} items</span>

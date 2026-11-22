@@ -15,11 +15,12 @@
   min-height: 40px;
 }
 
+/* Same sheet as the house budget's panel: one light surface on every budget tab. */
 .budget-explorer .explorer-card,
 .budget-explorer .stat-box {
-  border-radius: 14px;
-  border-color: rgba(148, 163, 184, 0.22);
-  background: rgba(248, 250, 252, 0.86);
+  border-radius: 12px;
+  border-color: var(--color-border-light);
+  background: var(--color-surface);
   box-shadow: none;
 }
 
@@ -94,11 +95,6 @@
 }
 
 @media (max-width: 640px) {
-  .mobile-navy .budget-explorer .explorer-card,
-  .mobile-navy .budget-explorer .stat-box {
-    background: var(--color-background);
-  }
-
   .mobile-navy .explorer-band-heading > p {
     color: var(--color-muted-on-navy);
   }

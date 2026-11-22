@@ -773,7 +773,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       )}
 
       {/* Budget and allocation */}
-      <div ref={budgetRef} className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3 mb-6">
+      <div ref={budgetRef} className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3 mb-6">
 
         <div className="min-w-0">
           <h2 className="text-[0.88rem] tracking-[0.08em] uppercase font-extrabold text-[var(--color-primary)] mb-3">Your budget</h2>
@@ -831,7 +831,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       </div>
 
       {/* ── Objective Selector ───────────────────────────────────────────────── */}
-      <div className="rounded-[14px] border border-slate-400/20 bg-slate-50/85 p-3 mb-4">
+      <div className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3 mb-4">
         <p className="text-[0.88rem] tracking-[0.08em] uppercase font-extrabold text-[var(--color-primary)] mb-3">What&apos;s your priority?</p>
         <div className="explorer-grid grid grid-cols-3 gap-2">
           {([
