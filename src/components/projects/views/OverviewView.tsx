@@ -1,6 +1,6 @@
 'use client';
 
-import { pendingItemsOf } from '@/lib/projects/listPresentation';
+import { currentStageLabel, pendingItemsOf, stageLabels } from '@/lib/projects/listPresentation';
 import Card, { CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import SitePhotosPanel from '@/components/projects/SitePhotosPanel';
@@ -21,13 +21,6 @@ import {
     CheckCircle,
     PencilSimple,
 } from '@phosphor-icons/react';
-
-const statusBadgeStyles: Record<string, { background: string; color: string }> = {
-    active: { background: 'var(--color-info-bg)', color: 'var(--color-info-fg)' },
-    draft: { background: 'var(--color-mist)', color: 'var(--color-text-secondary)' },
-    completed: { background: 'var(--color-success-bg)', color: 'var(--color-success-fg)' },
-    archived: { background: 'var(--color-mist)', color: 'var(--color-text-muted)' },
-};
 
 export interface OverviewViewProps {
     project: Project;
@@ -84,6 +77,11 @@ export default function OverviewView({
 }: OverviewViewProps) {
     const { exchangeRate, formatPrice } = useCurrency();
     const pendingItems = pendingItemsOf(materialItems, purchases);
+    // Same wording and colour as the project's badge on My projects.
+    const stageLabel = currentStageLabel(project, stages);
+    const stageStatus = /(?:^| · )complete(?:d)?$/i.test(stageLabel) ? 'complete'
+        : /^(?:active)$| · in progress$/i.test(stageLabel) ? 'in-progress'
+        : project.status === 'draft' ? 'draft' : 'neutral';
     return (
         <div className="overview-view space-y-8 max-w-6xl mx-auto">
             <div className="overview-header">
@@ -93,11 +91,9 @@ export default function OverviewView({
                         <MapPin size={16} />
                         {project.location || 'No location set'}
                         <span className="mx-2">•</span>
-                        <span
-                            className="px-2 py-0.5 rounded-full text-xs font-medium"
-                            style={statusBadgeStyles[project.status] ?? statusBadgeStyles.draft}
-                        >
-                            {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                        <span className="project-stage-pill" data-status={stageStatus}>
+                            <span className="status-dot" aria-hidden="true" />
+                            {stageLabel}
                         </span>
                     </div>
                 </div>
@@ -154,14 +150,15 @@ export default function OverviewView({
                     {/* Next Steps */}
                     <section className="overview-card">
                         <h3 className="text-lg font-bold text-primary mb-4 font-heading">Next steps</h3>
-                        <div className="space-y-4">
+                        <div className="next-step-list">
                             {pendingItems.slice(0, 5).map((item, index) => (
                                 <div key={item.id} className={`next-step-item${index >= 3 ? ' hidden md:flex' : ''}`}>
-                                    <div className="flex min-w-0 flex-wrap items-center gap-3">
-                                        <div className="w-2 h-2 rounded-full bg-accent"></div>
-                                        <span className="font-medium text-primary break-words min-w-0">{item.material_name}</span>
-                                        <span className="text-xs text-secondary">
-                                            {formatPrice(
+                                    <div className="next-step-text">
+                                        <span className="next-step-name">{item.material_name}</span>
+                                        <span className="next-step-meta">
+                                            {stageLabels[item.category as BOQCategory]?.short ?? item.category}
+                                            {' · '}{Number(item.quantity).toLocaleString('en-US')} {item.unit}
+                                            {' · '}{formatPrice(
                                                 Number(item.quantity) * Number(item.unit_price_usd),
                                                 Number(item.quantity) * Number(item.unit_price_usd) * exchangeRate
                                             )}

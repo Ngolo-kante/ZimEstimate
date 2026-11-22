@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/styles/procurement-view.css"
+        ],
+        "createdAt": "2026-11-22T02:42:15.784Z",
+        "reason": "Claude: L537 is the 3px animated saving stripe across the top of a buying row while it saves (a progress indicator), not a decorative side tab"
+      }
+    ]
+  }
+}

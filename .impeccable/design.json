@@ -1,0 +1,593 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-22T02:41:45.547Z",
+  "title": "Design System: ZimEstimate",
+  "extensions": {
+    "colorMeta": {
+      "midnight-navy": {
+        "role": "primary",
+        "displayName": "Midnight Navy",
+        "tonalRamp": [
+          "#050b16",
+          "#1a273a",
+          "#36465e",
+          "#566781",
+          "#788aa5",
+          "#9fafc7",
+          "#c7d2e1",
+          "#ebeff5"
+        ]
+      },
+      "steel-navy": {
+        "role": "primary",
+        "displayName": "Steel Navy",
+        "tonalRamp": [
+          "#030b1a",
+          "#162641",
+          "#304567",
+          "#50678b",
+          "#728ab0",
+          "#9bafd0",
+          "#c4d2e8",
+          "#e9eff8"
+        ]
+      },
+      "navy-line": {
+        "role": "primary",
+        "displayName": "Navy Line",
+        "tonalRamp": [
+          "#030b19",
+          "#152740",
+          "#2f4665",
+          "#506789",
+          "#728bae",
+          "#9ab0ce",
+          "#c4d2e6",
+          "#e9eff7"
+        ]
+      },
+      "navy-ink": {
+        "role": "primary",
+        "displayName": "Navy Ink",
+        "tonalRamp": [
+          "#0a0b0e",
+          "#24272b",
+          "#42454b",
+          "#63666c",
+          "#868990",
+          "#abaeb3",
+          "#cfd1d5",
+          "#eeeef0"
+        ]
+      },
+      "navy-muted": {
+        "role": "primary",
+        "displayName": "Navy Muted",
+        "tonalRamp": [
+          "#070b12",
+          "#1e2733",
+          "#3a4656",
+          "#5b6778",
+          "#7d8a9c",
+          "#a4afbe",
+          "#cad2dc",
+          "#eceff3"
+        ]
+      },
+      "brass-gold": {
+        "role": "secondary",
+        "displayName": "Brass Gold",
+        "tonalRamp": [
+          "#180600",
+          "#3e1d00",
+          "#643b00",
+          "#875e00",
+          "#ad8118",
+          "#cda85f",
+          "#e6cea1",
+          "#f7eddc"
+        ]
+      },
+      "icon-gold": {
+        "role": "secondary",
+        "displayName": "Icon Gold",
+        "tonalRamp": [
+          "#170700",
+          "#3b2000",
+          "#5f3e00",
+          "#826000",
+          "#a78423",
+          "#c8aa64",
+          "#e2cfa3",
+          "#f5eedc"
+        ]
+      },
+      "gold-ink": {
+        "role": "secondary",
+        "displayName": "Gold Ink",
+        "tonalRamp": [
+          "#180600",
+          "#3e1d00",
+          "#643b00",
+          "#885c15",
+          "#ad7f3f",
+          "#cda673",
+          "#e6cdac",
+          "#f7ede0"
+        ]
+      },
+      "selected-surface": {
+        "role": "secondary",
+        "displayName": "Selected Surface",
+        "tonalRamp": [
+          "#0f0b01",
+          "#2e260a",
+          "#4f4424",
+          "#706644",
+          "#948966",
+          "#b7ae90",
+          "#d7d1be",
+          "#f1eee7"
+        ]
+      },
+      "selected-ink": {
+        "role": "secondary",
+        "displayName": "Selected Ink",
+        "tonalRamp": [
+          "#160700",
+          "#392000",
+          "#5e3e04",
+          "#815f2d",
+          "#a68250",
+          "#c7a97f",
+          "#e2ceb3",
+          "#f5ede2"
+        ]
+      },
+      "action-blue": {
+        "role": "tertiary",
+        "displayName": "Action Blue",
+        "tonalRamp": [
+          "#00003a",
+          "#000a7a",
+          "#0231af",
+          "#2359d8",
+          "#4580ff",
+          "#76aaff",
+          "#add1ff",
+          "#e0efff"
+        ]
+      },
+      "action-blue-deep": {
+        "role": "tertiary",
+        "displayName": "Action Blue Deep",
+        "tonalRamp": [
+          "#000036",
+          "#001273",
+          "#0735a6",
+          "#295cce",
+          "#4b82f8",
+          "#7aabff",
+          "#b0d1ff",
+          "#e1efff"
+        ]
+      },
+      "link-blue": {
+        "role": "tertiary",
+        "displayName": "Link Blue",
+        "tonalRamp": [
+          "#01003d",
+          "#010080",
+          "#052bb6",
+          "#2355e0",
+          "#447dff",
+          "#74a8ff",
+          "#abd0ff",
+          "#dfefff"
+        ]
+      },
+      "info-wash": {
+        "role": "tertiary",
+        "displayName": "Info Wash",
+        "tonalRamp": [
+          "#090b0f",
+          "#22272c",
+          "#40464d",
+          "#61676e",
+          "#838a92",
+          "#a9aeb5",
+          "#ced1d6",
+          "#edeef0"
+        ]
+      },
+      "focus-blue": {
+        "role": "tertiary",
+        "displayName": "Focus Blue",
+        "tonalRamp": [
+          "#00003d",
+          "#000180",
+          "#002cb6",
+          "#1b57df",
+          "#3e7eff",
+          "#70a9ff",
+          "#a9d1ff",
+          "#dfefff"
+        ]
+      },
+      "site-board": {
+        "role": "neutral",
+        "displayName": "Site Board",
+        "tonalRamp": [
+          "#090b0e",
+          "#23272b",
+          "#41464b",
+          "#61676d",
+          "#848a90",
+          "#aaaeb4",
+          "#ced1d5",
+          "#edeef0"
+        ]
+      },
+      "worksheet": {
+        "role": "neutral",
+        "displayName": "Worksheet",
+        "tonalRamp": [
+          "#0a0b0c",
+          "#252628",
+          "#434547",
+          "#646669",
+          "#87898c",
+          "#acaeb0",
+          "#d0d1d2",
+          "#eeeeef"
+        ]
+      },
+      "paper-white": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
+        ]
+      },
+      "icon-tile": {
+        "role": "neutral",
+        "displayName": "Icon Tile",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#242729",
+          "#424549",
+          "#63666a",
+          "#868a8d",
+          "#abaeb1",
+          "#cfd1d3",
+          "#eeeeef"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "tonalRamp": [
+          "#080b11",
+          "#202730",
+          "#3d4651",
+          "#5d6773",
+          "#808a97",
+          "#a6afba",
+          "#ccd2d9",
+          "#eceff2"
+        ]
+      },
+      "rule-light": {
+        "role": "neutral",
+        "displayName": "Rule Light",
+        "tonalRamp": [
+          "#080b0f",
+          "#21272e",
+          "#3e464f",
+          "#5f6770",
+          "#828a94",
+          "#a8afb7",
+          "#cdd1d7",
+          "#edeff1"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "tonalRamp": [
+          "#070b15",
+          "#1e2638",
+          "#3b455b",
+          "#5b667e",
+          "#7e89a2",
+          "#a4aec3",
+          "#cad1df",
+          "#eceef4"
+        ]
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "Ink Secondary",
+        "tonalRamp": [
+          "#060b15",
+          "#1b2738",
+          "#37465b",
+          "#58677e",
+          "#7a8aa2",
+          "#a1afc4",
+          "#c8d2df",
+          "#ebeff4"
+        ]
+      },
+      "placeholder": {
+        "role": "neutral",
+        "displayName": "Placeholder",
+        "tonalRamp": [
+          "#060b14",
+          "#1c2737",
+          "#38465a",
+          "#58677d",
+          "#7b8aa1",
+          "#a2afc3",
+          "#c9d2df",
+          "#ebeff4"
+        ]
+      },
+      "success-ink": {
+        "role": "status",
+        "displayName": "Success Ink",
+        "tonalRamp": [
+          "#001300",
+          "#003400",
+          "#005715",
+          "#097b38",
+          "#3fa05b",
+          "#77c288",
+          "#b0dfb8",
+          "#e2f4e5"
+        ]
+      },
+      "warning-ink": {
+        "role": "status",
+        "displayName": "Warning Ink",
+        "tonalRamp": [
+          "#200000",
+          "#4d0900",
+          "#772700",
+          "#9e4b1d",
+          "#c66f43",
+          "#e49975",
+          "#f7c4ad",
+          "#feeae0"
+        ]
+      },
+      "danger-ink": {
+        "role": "status",
+        "displayName": "Danger Ink",
+        "tonalRamp": [
+          "#2a0000",
+          "#600000",
+          "#900000",
+          "#bb1e1e",
+          "#e54d43",
+          "#ff8375",
+          "#ffb8ad",
+          "#ffe5e0"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Home hero headline only, on navy."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Marketing and start-card headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section headings inside app screens."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Explanations, answers, table cells; tabular numerals for figures."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Form labels and small UI text."
+      },
+      "eyebrow": {
+        "displayName": "Eyebrow",
+        "purpose": "Uppercase Plex Mono labels, Brass Gold on navy."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card",
+        "value": "0 2px 6px rgb(11 25 46 / 5%)",
+        "purpose": "Barely-there lift on cards; effectively flat."
+      },
+      {
+        "name": "button-primary-hover",
+        "value": "0 2px 6px rgb(24 72 185 / 22%)",
+        "purpose": "Primary button hover on fine pointers."
+      },
+      {
+        "name": "hero-primary",
+        "value": "0 12px 30px -10px rgba(3,12,28,0.7), inset 0 -3px 0 rgba(11,31,59,0.12)",
+        "purpose": "Primary CTA on the navy home hero only."
+      },
+      {
+        "name": "overlay",
+        "value": "0 20px 40px rgb(15 23 42 / 10%)",
+        "purpose": "Sheets, dialogs and toasts."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(.23, 1, .32, 1)",
+        "purpose": "Default easing for state changes."
+      },
+      {
+        "name": "duration-fast",
+        "value": "150ms",
+        "purpose": "Hover, press and border changes."
+      },
+      {
+        "name": "duration-normal",
+        "value": "220ms",
+        "purpose": "Panels and larger transitions."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "640px"
+      },
+      {
+        "name": "tablet",
+        "value": "768px"
+      },
+      {
+        "name": "desktop",
+        "value": "1024px"
+      }
+    ],
+    "focusRing": "3px solid #2e6cf6, offset 2px"
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action per view.",
+      "html": "<button class=\"ds-btn-primary\">Start your BOQ</button>",
+      "css": ".ds-btn-primary{background:#265cdb;color:#fff;font:600 15px \"Instrument Sans\",sans-serif;padding:12px 24px;border:none;border-radius:8px;cursor:pointer;transition:background-color .15s,box-shadow .15s,transform .15s cubic-bezier(.23,1,.32,1)}.ds-btn-primary:hover{background:#1848b9;box-shadow:0 2px 6px rgb(24 72 185 / 22%)}.ds-btn-primary:active{transform:translateY(1px)}.ds-btn-primary:focus-visible{outline:3px solid #2e6cf6;outline-offset:2px}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Second action beside a primary.",
+      "html": "<button class=\"ds-btn-secondary\">Save as draft</button>",
+      "css": ".ds-btn-secondary{background:#eff6ff;color:#1848b9;font:600 15px \"Instrument Sans\",sans-serif;padding:12px 24px;border:1px solid rgba(46,108,246,.24);border-radius:8px;cursor:pointer;transition:background-color .15s,border-color .15s}.ds-btn-secondary:hover{background:#e2ecfc;border-color:#265cdb}.ds-btn-secondary:focus-visible{outline:3px solid #2e6cf6;outline-offset:2px}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Low-emphasis action.",
+      "html": "<button class=\"ds-btn-ghost\">Cancel</button>",
+      "css": ".ds-btn-ghost{background:transparent;color:#64748b;font:600 15px \"Instrument Sans\",sans-serif;padding:12px 24px;border:none;border-radius:8px;cursor:pointer}.ds-btn-ghost:hover{background:#d7e0eb;color:#0f172a}.ds-btn-ghost:focus-visible{outline:3px solid #2e6cf6;outline-offset:2px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Labelled field on a worksheet.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Your budget in US dollars</span><input class=\"ds-input\" inputmode=\"numeric\" placeholder=\"e.g. 25,000\"></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:6px;font-family:\"Instrument Sans\",sans-serif}.ds-field-label{font-size:14px;font-weight:500;color:#0f172a}.ds-input{padding:12px 16px;font:15px \"Instrument Sans\",sans-serif;font-variant-numeric:tabular-nums;border:1px solid #cbd6e4;border-radius:8px;background:#fafcff;color:#0f172a}.ds-input::placeholder{color:#65748a}.ds-input:focus{outline:none;border-color:#265cdb;box-shadow:0 0 0 3px rgba(78,154,247,.18)}"
+    },
+    {
+      "name": "Worksheet Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flat card on the site board; blue border on hover.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Substructure</h3><p class=\"ds-card-body\">Footings, foundation walls and slab.</p><p class=\"ds-card-fig\">$4,812.50</p></div>",
+      "css": ".ds-card{background:#fafcff;border:1px solid #d7e0eb;border-radius:12px;padding:24px;box-shadow:0 2px 6px rgb(11 25 46 / 5%);transition:border-color .15s;font-family:\"Instrument Sans\",sans-serif}.ds-card:hover{border-color:#265cdb}.ds-card-title{margin:0 0 4px;font:800 20px/1.25 Sora,sans-serif;letter-spacing:-.025em;color:#0f172a}.ds-card-body{margin:0;color:#64748b;font-size:15px}.ds-card-fig{margin:12px 0 0;font-weight:600;font-variant-numeric:tabular-nums;color:#0f172a}"
+    },
+    {
+      "name": "Selected Chip",
+      "kind": "chip",
+      "refersTo": "chip-selected",
+      "description": "A chosen option.",
+      "html": "<span class=\"ds-chip ds-chip-on\">Farm bricks</span> <span class=\"ds-chip\">Common bricks</span>",
+      "css": ".ds-chip{display:inline-flex;align-items:center;padding:6px 12px;border-radius:9999px;border:1px solid #cbd6e4;background:#fff;color:#0f172a;font:500 14px \"Instrument Sans\",sans-serif;cursor:pointer}.ds-chip:hover{border-color:#265cdb}.ds-chip-on{background:#fff3cd;border-color:#e6cc88;color:#62420a}"
+    },
+    {
+      "name": "Navy Top Bar",
+      "kind": "nav",
+      "refersTo": "nav-bar",
+      "description": "The navy frame with brass eyebrow.",
+      "html": "<nav class=\"ds-nav\"><span class=\"ds-nav-brand\">ZimEstimate</span><span class=\"ds-nav-eyebrow\">Construction estimates · Zimbabwe</span><a class=\"ds-nav-link\" href=\"#\">Projects</a></nav>",
+      "css": ".ds-nav{display:flex;align-items:center;gap:20px;height:64px;padding:0 16px;background:#0b192e;color:#f1f5fc;font-family:\"Instrument Sans\",sans-serif}.ds-nav-brand{font:800 18px Sora,sans-serif}.ds-nav-eyebrow{font:600 11.5px \"IBM Plex Mono\",monospace;letter-spacing:.12em;text-transform:uppercase;color:#f4c669}.ds-nav-link{margin-left:auto;color:#c1cfe2;text-decoration:none}.ds-nav-link:hover{color:#f1f5fc}.ds-nav-link:focus-visible{outline:3px solid #e4b44a;outline-offset:2px}"
+    },
+    {
+      "name": "Start Card",
+      "kind": "custom",
+      "description": "Numbered entry point on the navy home band.",
+      "html": "<a class=\"ds-start\" href=\"#\"><span class=\"ds-start-num\">01</span><span class=\"ds-start-title\">Guided build</span><span class=\"ds-start-body\">Answer guided questions and get a full BOQ.</span></a>",
+      "css": ".ds-start{display:flex;flex-direction:column;gap:6px;max-width:280px;padding:24px;border-radius:12px;background:#1c3050;border:1px solid #3b5272;color:#f1f5fc;text-decoration:none;font-family:\"Instrument Sans\",sans-serif}.ds-start:focus-visible{outline:3px solid #e4b44a;outline-offset:2px}.ds-start-num{font:600 12px \"IBM Plex Mono\",monospace;color:#f4c669;letter-spacing:.12em}.ds-start-title{font:800 22px/1.12 Sora,sans-serif}.ds-start-body{color:#c1cfe2;font-size:15px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Site Office",
+    "overview": "ZimEstimate looks like a well-run site office: a midnight-navy board on the wall, brass labels on it, and clean white worksheets on the desk where the numbers live. The navy frame (top bar, home hero, closing band, footer, phone bottom bar) carries the brand. Inside it, the work happens on pale, flat worksheets with thin rules, one blue for every action, and colour that only appears when something has a real status.\n\nApp screens are calm and exact. Cards sit flat on a pale blue-grey board, separated by 1px rules rather than shadows, and the figures, units and status do the talking. Marketing surfaces (the home page) can be bolder in composition, but they stay in the same two worlds: navy with gold, and the pale worksheet. The phone is the main screen, so every decision is checked at about 375px first.\n\nSettled by the owner (16 Nov 2026): the product is light-themed only, with no dark mode, and it uses no line-art illustrations. The home page is flat, quiet navy with no glow or grid lines.",
+    "keyCharacteristics": [
+      "A midnight-navy frame around pale, flat worksheets.",
+      "Brass gold appears only on navy (eyebrows, labels, icon fills); on light surfaces gold becomes a deep ink.",
+      "One action blue per page for buttons, links, arrows and selection.",
+      "Green, amber and red only for real status.",
+      "Sora for headings, Instrument Sans for reading, IBM Plex Mono for eyebrows and figures that need to line up.",
+      "Phone-first, with a fixed navy bottom bar on mobile."
+    ],
+    "rules": [
+      {
+        "name": "The One Blue Rule",
+        "body": "A page has one interactive colour, Action Blue (with its deep and link variants). Never colour buttons or categories per type.",
+        "section": "colors"
+      },
+      {
+        "name": "The Gold Lives on Navy Rule",
+        "body": "Brass Gold is only used on Midnight or Steel Navy. On light surfaces, use Gold Ink or Selected Surface instead.",
+        "section": "colors"
+      },
+      {
+        "name": "The Status Is Earned Rule",
+        "body": "Green, amber and red mean saved/OK, needs attention and failed. They never decorate.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Status Scheme Rule",
+        "body": "Since 21 Nov 2026, every status pill in the app uses the same mapping: in progress is the pale info-blue wash (Info Wash fill, Link Blue text), complete/purchased is green, draft, pending and not started are grey (mist fill, Ink Secondary text), over-purchased or failed is red, and amber only for something that needs action. The info-blue wash is a status tint, not an action, so it does not break the One Blue Rule. Waiting to buy is grey, never amber.",
+        "section": "colors"
+      },
+      {
+        "name": "The Figures Line Up Rule",
+        "body": "Money, quantities and units use tabular numerals, so columns of figures align.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Worksheet Rule",
+        "body": "Cards sit flat at rest, separated by Rule Light borders. A hover or selection changes the border to Action Blue; it doesn't add a shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** keep app screens light: Site Board page, Worksheet cards, 1px rules.",
+      "**Do** use Action Blue for every interactive element on a page, and only Action Blue.",
+      "**Do** put Brass Gold on navy only, and switch to Gold Ink on light surfaces.",
+      "**Do** use tabular numerals for money and quantities.",
+      "**Do** design at about 375px first, with 44px touch targets, and clear the mobile bottom bar.",
+      "**Do** use Phosphor duotone icons (navy outline, gold fill, pale tile) on choice and start cards."
+    ],
+    "donts": [
+      "**Don't** add a dark theme. The owner rejected it on 16 Nov 2026.",
+      "**Don't** add line-art illustrations, including on empty states, errors and contractor pages.",
+      "**Don't** add glows, gradients or grid lines to the navy home sections; they stay flat and quiet.",
+      "**Don't** give categories or item types their own colours.",
+      "**Don't** use green, amber or red for decoration.",
+      "**Don't** lift cards with shadows at rest.",
+      "**Don't** put duotone icons in data tables."
+    ]
+  }
+}

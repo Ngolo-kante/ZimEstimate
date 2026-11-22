@@ -261,10 +261,10 @@ export default function HeroBudgetWidget() {
         </div>
 
         <div>
-          <h2 className="text-lg md:text-xl font-extrabold text-slate-900 leading-tight tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+          <h2 className="text-lg md:text-xl font-extrabold text-[var(--color-text)] leading-tight tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
             How far will your money go?
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
             Type an amount — watch the house build itself.
           </p>
 
@@ -273,13 +273,13 @@ export default function HeroBudgetWidget() {
               assumption behind every number above it, so it reads as a spec
               here instead of a disclaimer down there. */}
           <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs font-bold text-[var(--color-info-fg)] bg-[var(--color-info-bg)] border border-[var(--color-info-border)] rounded px-1.5 py-0.5 tabular-nums">
+            <span className="spec-chip tabular-nums">
               {PLAN_AREA_M2}m²
             </span>
-            <span className="text-xs font-semibold text-[var(--color-info-fg)] bg-[var(--color-info-bg)] border border-[var(--color-info-border)] rounded px-1.5 py-0.5">
+            <span className="spec-chip">
               {PLAN_BEDROOMS}-bed
             </span>
-            <span className="text-xs font-semibold text-[var(--color-info-fg)] bg-[var(--color-info-bg)] border border-[var(--color-info-border)] rounded px-1.5 py-0.5 capitalize">
+            <span className="spec-chip capitalize">
               {PLAN_LOCATION}
             </span>
           </div>
@@ -290,9 +290,9 @@ export default function HeroBudgetWidget() {
         <div className="flex flex-col gap-2 sm:gap-3">
           {/* The house is drawn on graph paper, like the plan it stands for. */}
           <div
-            className="flex min-h-[128px] flex-shrink-0 items-end justify-center overflow-hidden rounded-2xl border border-[#dbe5f5] bg-[#f5f8fe] px-2 pt-3 sm:min-h-36"
+            className="flex min-h-[128px] flex-shrink-0 items-end justify-center overflow-hidden rounded-lg border border-[var(--color-border-light)] bg-white px-2 pt-3 sm:min-h-36"
             style={{
-              backgroundImage: 'linear-gradient(rgba(46,108,246,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(46,108,246,0.08) 1px, transparent 1px)',
+              backgroundImage: 'linear-gradient(rgba(46,108,246,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(46,108,246,0.05) 1px, transparent 1px)',
               backgroundSize: '16px 16px',
             }}
           >
@@ -301,8 +301,8 @@ export default function HeroBudgetWidget() {
 
           <label className="block">
             <span className="sr-only">Your budget in US dollars</span>
-            <div className="flex items-center gap-1.5 bg-white border-2 border-slate-900 rounded-xl px-4 py-2.5 focus-within:border-blue-600 focus-within:ring-4 focus-within:ring-blue-500/15 transition">
-              <span className="text-xl md:text-2xl font-extrabold text-slate-400">$</span>
+            <div className="flex items-center gap-1.5 bg-white border border-[var(--color-border)] rounded-lg px-4 py-2.5 focus-within:border-[var(--color-accent)] focus-within:ring-4 focus-within:ring-[rgba(78,154,247,0.18)] transition-[border-color,box-shadow] duration-150 motion-reduce:transition-none">
+              <span className="text-xl md:text-2xl font-extrabold text-[var(--color-text-secondary)]">$</span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -319,9 +319,9 @@ export default function HeroBudgetWidget() {
                   });
                 }}
                 placeholder="Enter amount"
-                className="w-full bg-transparent text-xl md:text-2xl font-extrabold text-slate-900 outline-none placeholder:text-slate-300 tabular-nums"
+                className="w-full bg-transparent text-xl md:text-2xl font-extrabold text-[var(--color-text)] outline-none tabular-nums"
               />
-              <span className="text-xs font-bold uppercase tracking-normal text-slate-400 flex-shrink-0">USD</span>
+              <span className="text-xs font-bold uppercase tracking-normal text-[var(--color-text-secondary)] flex-shrink-0">USD</span>
             </div>
           </label>
           <div role="group" aria-label="Example budgets" className="grid grid-cols-3 gap-2">
@@ -331,30 +331,30 @@ export default function HeroBudgetWidget() {
                 type="button"
                 aria-pressed={parsedBudget === amount}
                 onClick={() => handleInput(String(amount))}
-                className="min-h-11 rounded-md border border-sc-border bg-white font-mono text-sm text-slate-700 hover:border-blue-600 focus-visible:outline-2 focus-visible:outline-blue-600 aria-pressed:border-blue-700 aria-pressed:bg-blue-50 aria-pressed:text-blue-800"
+                className="min-h-11 rounded-lg border border-[var(--color-border)] bg-white text-sm font-semibold tabular-nums text-[var(--color-text)] transition-colors duration-150 motion-reduce:transition-none hover:border-[var(--color-accent)] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)] aria-pressed:border-[var(--color-accent)] aria-pressed:bg-[var(--color-info-bg)] aria-pressed:text-[var(--color-accent-dark)]"
               >${amount.toLocaleString('en-US')}</button>
             ))}
           </div>
         </div>
 
-        {/* Stage coverage bars */}
-        <div className="hidden sm:flex flex-1 flex-col justify-center gap-1.5 min-h-0">
+        {/* Stage coverage bars: shown on phones too, where most people use the budget check. */}
+        <div className="flex flex-1 flex-col justify-center gap-1.5 min-h-0">
           {(estimate?.rows ?? []).map((row, index) => {
             const later = row.stageCostUsd === 0;
             const pct = later ? 0 : Math.round(row.coveragePercent);
             return (
               <div key={row.id} className="flex items-center gap-2.5">
-                <span className="w-[92px] md:w-[104px] flex-shrink-0 text-xs font-semibold text-slate-600 truncate">
+                <span className="w-[92px] md:w-[104px] flex-shrink-0 text-xs font-semibold text-[var(--color-text-secondary)] truncate">
                   {STAGE_SHORT_LABELS[row.id]}
                 </span>
-                <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div className="flex-1 h-2 rounded-full bg-[var(--color-border-light)] overflow-hidden">
                   <div
                     className="h-full rounded-full bg-[var(--color-success)] transition-[width] duration-200 motion-reduce:transition-none"
                     // In building order: each stage starts a moment after the one before.
                     style={{ width: `${pct}%`, transitionDelay: `${index * 70}ms` }}
                   />
                 </div>
-                <span className={`w-9 flex-shrink-0 text-right text-xs font-bold tabular-nums ${pct > 0 ? 'text-slate-700' : 'text-slate-500'}`}>
+                <span className={`w-10 flex-shrink-0 text-right text-xs font-bold tabular-nums ${pct > 0 ? 'text-[var(--color-text)]' : 'text-[var(--color-text-secondary)]'}`}>
                   {later ? 'Later' : `${pct}%`}
                 </span>
               </div>
@@ -362,14 +362,14 @@ export default function HeroBudgetWidget() {
           })}
 
           {!estimate && (
-            <p className="text-[12px] text-slate-400 text-center py-3">
+            <p className="text-[12px] text-[var(--color-text-secondary)] text-center py-3">
               Enter a budget above to see stage-by-stage coverage.
             </p>
           )}
         </div>
 
         {/* Verdict + CTA */}
-        <div className="bg-[#0B1F3B] rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+        <div className="bg-[var(--color-primary)] rounded-lg px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             {fullyFunded && (
               <CheckCircle size={16} weight="fill" className="text-[var(--color-success)] flex-shrink-0" aria-hidden="true" />
@@ -392,7 +392,7 @@ export default function HeroBudgetWidget() {
               floor_area_m2: PLAN_AREA_M2,
               location_category: PLAN_LOCATION,
             })}
-            className="flex-shrink-0 inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-bold text-[#0B1F3B] active:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white [@media(hover:hover)_and_(pointer:fine)]:hover:bg-blue-50 transition-colors whitespace-nowrap"
+            className="flex-shrink-0 inline-flex min-h-[44px] items-center gap-1.5 rounded-md bg-white px-3 text-xs font-bold text-[var(--color-primary)] active:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white [@media(hover:hover)_and_(pointer:fine)]:hover:bg-blue-50 transition-colors whitespace-nowrap"
           >
             Customize <CaretRight size={12} weight="bold" aria-hidden="true" />
           </Link>
@@ -400,11 +400,12 @@ export default function HeroBudgetWidget() {
 
         {/* The spec itself now sits under the heading, so this is only the
             caveat and the way out of it. */}
-        <p className="hidden sm:block text-xs text-slate-500 leading-snug">
+        <p className="hidden sm:block text-xs text-[var(--color-text-secondary)] leading-snug">
           Materials and labour, standard finish. Adjust size, location and finish in the Budget Studio.
         </p>
       </div>
       <style>{`
+        .spec-chip { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 9999px; border: 1px solid var(--color-info-border); background: var(--color-info-bg); color: var(--color-info-fg); font-size: 0.75rem; font-weight: 600; line-height: 1.3; }
         .hero-verdict { animation: hero-verdict-pop 320ms ease-out; }
         @keyframes hero-verdict-pop {
           from { opacity: 0.2; transform: translateY(4px); }

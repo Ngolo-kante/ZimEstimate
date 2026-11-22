@@ -610,9 +610,10 @@
     background: var(--color-success-bg);
 }
 
+/* Waiting to buy is not a problem, so it is grey, not amber (app-wide status scheme). */
 .stage-boq .status-pill.pending {
-    color: var(--color-warning-fg);
-    background: var(--color-warning-bg);
+    color: var(--color-text-secondary);
+    background: var(--color-mist);
 }
 
 .stage-boq .status-pill.in-progress {

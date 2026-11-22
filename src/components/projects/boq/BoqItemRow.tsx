@@ -254,7 +254,7 @@ export default function BoqItemRow({
         <Collapsible className="compact-row">
           <CollapsibleTrigger className="compact-trigger">
             <span className="compact-copy"><strong>{item.material_name}</strong><span>{formatQuantity(actualQty)} {item.unit} × {actualPrice > 0 ? formatPrice(actualPrice, actualPrice * exchangeRate) : 'No price yet'}</span></span>
-            <span className="compact-end"><strong>{actualPrice > 0 ? formatPrice(lineTotalUsd, lineTotalZwg) : 'No price yet'}</strong><Badge className="bg-sc-muted text-sc-foreground">{getStatusConfig(rowStatus).label}</Badge></span>
+            <span className="compact-end"><strong>{actualPrice > 0 ? formatPrice(lineTotalUsd, lineTotalZwg) : 'No price yet'}</strong><Badge className="item-status-pill" data-status={getStatusConfig(rowStatus).className}>{getStatusConfig(rowStatus).label}</Badge></span>
           </CollapsibleTrigger>
           <CollapsibleContent className="compact-details">
             {Children.map(cells.props.children, cell => isValidElement<{ children: ReactNode; 'data-label'?: string }>(cell) ? <div className="compact-field"><span>{cell.props['data-label']}</span><div>{cell.props.children}</div></div> : null)}
