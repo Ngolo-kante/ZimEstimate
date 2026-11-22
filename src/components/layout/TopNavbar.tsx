@@ -366,8 +366,8 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
                       <div className="profile-info">
                         <span className="profile-name">{displayName}</span>
                         <span className="profile-email">{user?.email}</span>
-                        <span className={`profile-tier ${isAdmin ? 'admin' : profile?.tier || 'free'}`}>{tierLabel}</span>
                       </div>
+                      <span className="profile-tier">{tierLabel}</span>
                     </div>
                     <div className="account-popup-links">
                       {isAdmin && (
@@ -382,12 +382,12 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
                         <span className="quick-link-copy"><strong>My projects</strong></span>
                         <CaretRight className="account-popup-caret" size={15} aria-hidden="true" />
                       </Link>
-                      <Link href="/settings" className="quick-link" onClick={() => setProfileMenuOpen(false)}>
+                      <Link href="/settings" className="quick-link" aria-current={pathname === '/settings' ? 'page' : undefined} onClick={() => setProfileMenuOpen(false)}>
                         <span className="quick-link-icon"><Gear size={18} weight="duotone" aria-hidden="true" /></span>
                         <span className="quick-link-copy"><strong>Account settings</strong></span>
                         <CaretRight className="account-popup-caret" size={15} aria-hidden="true" />
                       </Link>
-                      <Link href="/support" className="quick-link" onClick={() => setProfileMenuOpen(false)}>
+                      <Link href="/support" className="quick-link" aria-current={pathname === '/support' ? 'page' : undefined} onClick={() => setProfileMenuOpen(false)}>
                         <span className="quick-link-icon"><ChatCircleText size={18} weight="duotone" aria-hidden="true" /></span>
                         <span className="quick-link-copy"><strong>Help &amp; support</strong></span>
                         <CaretRight className="account-popup-caret" size={15} aria-hidden="true" />
@@ -938,10 +938,6 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
             margin-top: 2px;
         }
 
-        .profile-tier.free { background: #f3f4f6; color: #6b7280; }
-        .profile-tier.pro { background: #eff6ff; color: #3b82f6; }
-        .profile-tier.admin { background: #1f2937; color: #fff; }
-
         .account-popup {
           border-radius: 16px;
           background: var(--color-surface);
@@ -966,7 +962,9 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         .account-popup .profile-name { color: white; font-size: 1rem; }
         .account-popup .profile-email { color: var(--color-muted-on-navy); }
         .account-popup .profile-tier {
-          margin-top: 4px;
+          flex: none;
+          margin: 0 0 0 auto;
+          white-space: nowrap;
           border-radius: 999px;
           background: var(--color-selected-surface);
           color: var(--color-selected-ink);
@@ -976,7 +974,19 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         .account-popup-links { padding: 6px 10px; }
         .account-popup-links :global(.quick-link) {
           min-height: 50px;
+          background: var(--color-surface);
           color: var(--color-text);
+        }
+        .account-popup-links :global(.quick-link[aria-current="page"]),
+        .account-popup-links :global(.quick-link:active) {
+          background: var(--color-info-bg);
+          color: var(--color-info-fg);
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .account-popup-links :global(.quick-link:hover) {
+            background: var(--color-info-bg);
+            color: var(--color-info-fg);
+          }
         }
         .account-popup-links :global(.quick-link) + :global(.quick-link) {
           border-top: 1px solid var(--color-border-light);

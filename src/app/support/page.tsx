@@ -3,7 +3,7 @@
 import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { CheckCircle, LifebuoyIcon, PaperPlaneTilt, Warning } from '@phosphor-icons/react';
+import { CheckCircle, PaperPlaneTilt, Warning } from '@phosphor-icons/react';
 import MainLayout from '@/components/layout/MainLayout';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -116,7 +116,7 @@ function SupportForm() {
 
   if (reference !== null) {
     return (
-      <MainLayout title="Support">
+      <MainLayout mobileNavy>
         <div className="mx-auto max-w-2xl px-4 py-12">
           <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-center">
             <CheckCircle size={44} weight="duotone" className="mx-auto text-[var(--color-success)]" />
@@ -138,19 +138,14 @@ function SupportForm() {
   }
 
   return (
-    <MainLayout title="Support">
+    <MainLayout mobileNavy>
       <div className="mx-auto max-w-2xl px-4 py-8 sm:py-10">
         <header className="mb-6">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[var(--color-accent-bg)] px-3 py-1 text-xs font-bold text-[var(--color-accent)]">
-            <LifebuoyIcon size={14} weight="fill" />
-            Support
-          </div>
-          <h1 className="mt-3 text-2xl font-black text-[var(--color-text)] sm:text-3xl">
-            How can we help?
+          <h1 className="text-2xl font-bold text-[var(--color-text)] max-[640px]:text-white sm:text-3xl">
+            Help &amp; support
           </h1>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
-            Account problems, pricing questions, supplier or contractor registration, or anything
-            that looks broken. You do not need an account to send this.
+          <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)] max-[640px]:text-[var(--color-muted-on-navy)]">
+            Get help with your account, pricing, or supplier and contractor registration. You can send a message without signing in.
           </p>
         </header>
 
@@ -237,8 +232,8 @@ export default function SupportPage() {
   return (
     <Suspense
       fallback={
-        <MainLayout title="Support">
-          <div className="mx-auto max-w-2xl px-4 py-12 text-center text-sm text-[var(--color-text-secondary)]">
+        <MainLayout mobileNavy>
+          <div className="mx-auto max-w-2xl px-4 py-12 text-center text-sm text-[var(--color-text-secondary)] max-[640px]:text-[var(--color-muted-on-navy)]">
             Loading…
           </div>
         </MainLayout>
