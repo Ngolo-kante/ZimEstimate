@@ -374,7 +374,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
   // ── BOQ View ──────────────────────────────────────────────────────────────
   if (boqItems) {
     return (
-      <div className="w-full max-w-5xl mx-auto animate-fade-in pb-24">
+      <div className="w-full max-w-5xl mx-auto animate-fade-in">
         <button
           onClick={() => setBoqItems(null)}
           className="explorer-back mb-6"
@@ -463,7 +463,7 @@ export default function BoreholeBudgetExplorer({ onBack, backLabel = 'Back to Bo
   ];
 
   return (
-    <div className="budget-explorer w-full min-w-0 max-w-4xl mx-auto pb-24">
+    <div className="budget-explorer w-full min-w-0 max-w-4xl mx-auto">
       {/* Back */}
       {onBack && (
         <button onClick={onBack} className="explorer-back mb-6">

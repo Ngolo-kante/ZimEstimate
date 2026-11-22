@@ -287,7 +287,7 @@ function StepView({
       className="w-full"
     >
       <div className="mb-5">
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">{step.title}</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">{step.title}</h2>
         {step.subtitle && <p className="text-slate-600 text-base">{step.subtitle}</p>}
       </div>
       <div className="space-y-6">
@@ -427,7 +427,7 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
   // ── BOQ Results View ───────────────────────────────────────────────────────
   if (boqItems) {
     return (
-      <div className="w-full max-w-5xl mx-auto animate-fade-in pb-24">
+      <div className="w-full max-w-5xl mx-auto animate-fade-in">
         <button onClick={handleBack} className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-none mb-6">
           <ArrowLeft size={16} /> Back to questions
         </button>
@@ -447,7 +447,7 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
 
   // ── Step Wizard View ───────────────────────────────────────────────────────
   return (
-    <div className="w-full pb-24">
+    <div className="w-full">
       {/* Progress */}
       <div className="mb-6">
         <div className="flex items-center justify-between text-sm font-semibold text-slate-500 mb-3">
@@ -474,12 +474,10 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
       </AnimatePresence>
 
       {/* Navigation */}
-      {/* pb-24 on mobile clears the global bottom navigation, which is fixed,
-          72px tall and painted over anything in normal flow beneath it. Without
-          it Continue and Cancel sat underneath the nav bar and could not be
-          tapped — the same collision that hid Back and Continue in the manual
-          builder. */}
-      <div className="flex items-center justify-between mt-8 pt-5 pb-24 lg:pb-0 border-t border-slate-200/50">
+      {/* MainLayout's .page-content already pads 100px under the fixed bottom
+          navigation on phones, so Continue and Cancel stay tappable without
+          extra padding here (stacking both left ~300px of empty page). */}
+      <div className="flex items-center justify-between mt-8 pt-5 border-t border-slate-200/50">
         <div>
           {stepIndex > 0 ? (
             <Button variant="secondary" icon={<ArrowLeft size={16} />} onClick={handleBack} className="bg-white">
@@ -516,7 +514,7 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
 export default function QuickProjectWizard(props: QuickProjectWizardProps) {
   const isClient = useIsClient();
   if (!isClient) {
-    return <div className="w-full pb-24" aria-busy="true"><div className="h-2 w-full animate-pulse rounded-full bg-slate-100" /></div>;
+    return <div className="w-full" aria-busy="true"><div className="h-2 w-full animate-pulse rounded-full bg-slate-100" /></div>;
   }
   return <QuickProjectWizardInner {...props} />;
 }

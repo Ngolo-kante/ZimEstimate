@@ -116,7 +116,7 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
     else if (step === 'appliances') setStep('backup');
     else setStep('size');
   };
-  if (boqItems) return <div className="w-full max-w-5xl mx-auto pb-24">
+  if (boqItems) return <div className="w-full max-w-5xl mx-auto">
     <button type="button" className="min-h-11 text-sm text-slate-600" onClick={back}>← Back to wizard</button>
     <QuickBOQTable initialMarkupPct={saved?.markupPct} projectType="solar" initialItems={boqItems} labor={labor} onLaborChange={setLabor}
       isContractor={isContractor} answers={answers as unknown as Record<string, unknown>}
@@ -124,10 +124,19 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
   </div>;
   const title = step === 'size' ? 'What size are you looking at?' : step === 'options' ? `Your ${groups[groupIndex ?? 0].label} options` :
     step === 'backup' ? 'Backup hours' : step === 'appliances' ? 'Appliances' : step === 'quote' ? 'Check your solar quote' : 'Solar recommendation';
-  return <div className="w-full pb-24">
-    <div className="mb-6 text-sm font-semibold text-slate-500">Step {number} of {length}</div>
+  return <div className="w-full">
+    {/* The same step header as the other quick project wizards. */}
+    <div className="mb-6">
+      <div className="mb-3 flex items-center justify-between text-sm font-semibold text-slate-500">
+        <span>Step {number} of {length}</span>
+        <span className="text-blue-600">{Math.round(((number - 1) / length) * 100)}%</span>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+        <div className="h-full rounded-full bg-accent motion-safe:transition-[width] motion-safe:duration-200" style={{ width: `${Math.round(((number - 1) / length) * 100)}%` }} />
+      </div>
+    </div>
     <p className="mb-2 text-sm font-semibold text-blue-700">Solar setup</p>
-    <h2 className="mb-2 text-2xl font-bold text-slate-900">{title}</h2>
+    <h2 className="mb-2 text-xl sm:text-2xl font-bold text-slate-900">{title}</h2>
     {step === 'size' && <>
       <p className="mb-5 text-slate-600">Most homes start with 1kVA and add more later.</p>
       <div className={styles.grid}>{groups.map((group, index) => {
