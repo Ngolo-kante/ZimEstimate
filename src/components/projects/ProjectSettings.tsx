@@ -3,7 +3,7 @@
 import { Tabs, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
 import Switch, { SwitchIndicator } from '@/components/ui/Switch';
 import { useId, type ReactNode } from 'react';
-import groupStyles from '@/components/settings/settings-groups.module.css';
+import rowStyles from './project-settings-rows.module.css';
 
 import { Field, FieldGroup, FieldLabel } from '@/components/shadcn/field';
 import { Input } from '@/components/shadcn/input';
@@ -354,16 +354,16 @@ export default function ProjectSettings({
     const sectionRow = (id: string, label: string, icon: ReactNode) => (
         <button
             type="button"
-            className={groupStyles.row}
+            className={rowStyles.row}
             aria-expanded={openSections.includes(id)}
             aria-controls={id}
             onClick={() => setOpenSections(previous => previous.includes(id)
                 ? previous.filter(section => section !== id)
                 : [...previous, id])}
         >
-            <span className={groupStyles.icon} aria-hidden="true">{icon}</span>
-            <span className={groupStyles.label}>{label}</span>
-            <CaretRight size={18} className={groupStyles.caret} aria-hidden="true" />
+            <span className={rowStyles.icon} aria-hidden="true">{icon}</span>
+            <span className={rowStyles.label}>{label}</span>
+            <CaretRight size={18} className={rowStyles.caret} aria-hidden="true" />
         </button>
     );
 
