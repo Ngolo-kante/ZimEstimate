@@ -52,12 +52,12 @@ export default function Card({
           outline-offset: 2px;
         }
         @media (hover: hover) and (pointer: fine) {
-          .card.clickable:hover { border-color: var(--color-accent); }
+          .card.clickable:hover { border-color: var(--color-link); }
         }
 
         .card.selected {
-          border-color: var(--color-accent);
-          box-shadow: inset 0 0 0 1px var(--color-accent);
+          border-color: var(--color-link);
+          box-shadow: inset 0 0 0 1px var(--color-link);
         }
 
         /* Dashboard Card Variant */

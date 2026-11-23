@@ -108,6 +108,70 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface-elevated: var(--color-sheet);
+    --color-accent-bg: var(--color-info-bg);
+    --color-primary-bg: var(--color-info-bg);
+    --color-selected-surface: var(--color-info-bg);
+    --color-selected-ink: var(--color-accent-light);
+    --color-gold-ink: var(--studio-brass);
+    --color-featured-bg: #332e23;
+    --color-featured-border: var(--studio-brass);
+    --color-muted-on-navy: var(--studio-muted);
+    --color-link-on-navy: var(--color-accent-light);
+    --color-placeholder: var(--color-text-muted);
+    --icon-tile-bg: var(--studio-steel);
+    --icon-tile-border: var(--color-border);
+    --icon-tile-ink: var(--studio-muted);
+    --color-success: var(--color-emerald);
+    --color-warning: var(--color-amber);
+    --color-error: var(--color-danger);
+    --color-info: var(--color-accent-light);
+    --color-focus-ring: var(--color-accent-light);
+    --color-error-bg: var(--color-danger-bg);
+    --color-success-fg: var(--color-emerald);
+    --color-success-bg: #143429;
+    --color-success-border: color-mix(in srgb, var(--color-emerald) 32%, var(--color-success-bg));
+    --color-warning-fg: var(--color-amber);
+    --color-warning-bg: #362e22;
+    --color-warning-border: color-mix(in srgb, var(--color-amber) 32%, var(--color-warning-bg));
+    --color-danger-fg: var(--color-danger);
+    --color-danger-bg: #3a242e;
+    --color-danger-border: color-mix(in srgb, var(--color-danger) 32%, var(--color-danger-bg));
+    --color-info-fg: var(--color-accent-light);
+    --color-info-bg: #192d4d;
+    --color-info-border: color-mix(in srgb, var(--color-accent-light) 32%, var(--color-info-bg));
+  }
+
+  /* Sonner portals sit outside the page that triggered the notification. */
+  [data-sonner-toast] {
+    --normal-bg: var(--color-popover);
+    --normal-bg-hover: var(--color-surface);
+    --normal-border-hover: var(--color-border);
+  }
+  [data-sonner-toast][data-type="success"] {
+    --normal-bg: var(--color-success-bg);
+    --normal-text: var(--color-success-fg);
+    --normal-border: var(--color-success-border);
+  }
+  [data-sonner-toast][data-type="warning"] {
+    --normal-bg: var(--color-warning-bg);
+    --normal-text: var(--color-warning-fg);
+    --normal-border: var(--color-warning-border);
+  }
+  [data-sonner-toast][data-type="error"] {
+    --normal-bg: var(--color-danger-bg);
+    --normal-text: var(--color-danger-fg);
+    --normal-border: var(--color-danger-border);
+  }
+  [data-sonner-toast][data-type="info"] {
+    --normal-bg: var(--color-info-bg);
+    --normal-text: var(--color-info-fg);
+    --normal-border: var(--color-info-border);
+  }
+}
+
 /* Tailwind Theme Inline */
 @theme inline {
   --color-oxford-blue: var(--color-primary);
@@ -177,15 +241,15 @@
 
   :where(h1, h2, h3) { font-family: var(--font-heading); }
   :where(table, input[inputmode="numeric"], input[type="number"]) { font-variant-numeric: tabular-nums; }
-  ::selection { color: var(--studio-midnight); background: #f8d995; }
+  ::selection { color: var(--studio-midnight); background: var(--color-selection); }
 
   a {
-    color: var(--color-primary);
+    color: var(--color-link-default);
     text-decoration: none;
   }
 @media (hover: hover) and (pointer: fine) {
     a:hover {
-        color: var(--color-accent);
+        color: var(--color-link);
   }
 }
 }
@@ -221,7 +285,7 @@
 @media (hover: hover) and (pointer: fine) {
     .btn-secondary:hover {
       background: var(--color-surface);
-      border-color: var(--color-primary);}
+      border-color: var(--color-link-default);}
 }
 
 /* Card Base */

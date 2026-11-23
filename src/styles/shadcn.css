@@ -4,7 +4,7 @@
    meanings. scripts/shadcn-scope.mjs renames them after each `shadcn add`.
    Every value here points at the app's own palette, so shadcn adds behaviour,
    not a second look. Text pairs are 4.5:1 or better. */
-@theme inline {
+@theme {
   --color-sc-background: var(--color-surface);
   --color-sc-foreground: var(--color-text);
   --color-sc-card: var(--color-surface);
@@ -14,24 +14,40 @@
 
   /* Primary actions are the brand blue, as in src/components/ui/Button.tsx. */
   --color-sc-primary: var(--color-accent);
-  --color-sc-primary-foreground: #ffffff;
+  --color-sc-primary-foreground: var(--color-white);
 
   /* Quiet fills: slate-100 behind slate-900 / slate-600 text. */
-  --color-sc-secondary: #f1f5f9;
+  --color-sc-secondary: var(--color-surface-quiet);
   --color-sc-secondary-foreground: var(--color-text);
-  --color-sc-muted: #f1f5f9;
-  --color-sc-muted-foreground: #475569;
+  --color-sc-muted: var(--color-surface-quiet);
+  --color-sc-muted-foreground: var(--color-detail);
 
   /* Hover and selected rows: a pale blue tint, never the brand blue itself. */
-  --color-sc-accent: #eff6ff;
+  --color-sc-accent: var(--color-info-bg);
   --color-sc-accent-foreground: var(--color-text);
 
   --color-sc-destructive: var(--color-danger-fg);
-  --color-sc-destructive-foreground: #ffffff;
+  --color-sc-destructive-foreground: var(--color-white);
 
   --color-sc-border: var(--color-border);
   --color-sc-input: var(--color-border);
   --color-sc-ring: var(--color-focus-ring);
+  --color-sc-drawer-handle: var(--color-surface-quiet);
+  --color-sc-popover-ring: color-mix(in oklab, var(--color-text) 10%, transparent);
+}
+
+/* Keep popover utilities bound to runtime properties, including in Radix portals. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-sc-background: var(--color-background);
+    --color-sc-popover: var(--color-sheet);
+    --color-sc-destructive-foreground: var(--studio-midnight);
+    --color-sc-muted: var(--color-border);
+    --color-sc-drawer-handle: var(--color-text-muted);
+    --color-sc-popover-ring: var(--color-border);
+  }
+
+  [data-slot="drawer-content"] { border-color: var(--color-border); }
 }
 
 /* State variants the shadcn components use (normally from shadcn's own

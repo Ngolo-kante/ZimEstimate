@@ -723,19 +723,19 @@ function SettingsContent() {
                     justify-content: space-between;
                     gap: 24px;
                     padding-bottom: 22px;
-                    border-bottom: 1px solid #d8e0eb;
+                    border-bottom: 1px solid var(--color-panel-border);
                 }
 
                 .settings-header h1 {
                     font-size: 2rem;
                     font-weight: 760;
-                    color: #0b1f3b;
+                    color: var(--color-settings-heading);
                     margin: 0;
                     letter-spacing: 0;
                 }
 
                 .settings-header p {
-                    color: #64748b;
+                    color: var(--color-text-secondary);
                     margin: 7px 0 0;
                     max-width: 650px;
                     font-size: 0.95rem;
@@ -747,19 +747,19 @@ function SettingsContent() {
                     align-items: center;
                     gap: 10px;
                     padding: 9px 11px;
-                    border: 1px solid #d8e0eb;
+                    border: 1px solid var(--color-panel-border);
                     border-radius: 7px;
-                    background: #fff;
+                    background: var(--color-surface-raised);
                     white-space: nowrap;
                 }
 
                 .settings-status span {
-                    color: #64748b;
+                    color: var(--color-text-secondary);
                     font-size: 0.75rem;
                 }
 
                 .settings-status strong {
-                    color: #0b1f3b;
+                    color: var(--color-settings-heading);
                     font-size: 0.78rem;
                     text-transform: none;
                 }
@@ -776,9 +776,9 @@ function SettingsContent() {
                     top: 88px;
                     min-width: 0;
                     padding: 14px;
-                    border: 1px solid #d8e0eb;
+                    border: 1px solid var(--color-panel-border);
                     border-radius: 8px;
-                    background: #fff;
+                    background: var(--color-surface-raised);
                 }
 
                 .account-summary {
@@ -787,7 +787,7 @@ function SettingsContent() {
                     gap: 10px;
                     min-width: 0;
                     padding: 2px 2px 14px;
-                    border-bottom: 1px solid #e6ebf2;
+                    border-bottom: 1px solid var(--color-settings-divider);
                 }
 
                 .account-avatar {
@@ -798,8 +798,8 @@ function SettingsContent() {
                     align-items: center;
                     justify-content: center;
                     border-radius: 7px;
-                    color: #fff;
-                    background: #0b1f3b;
+                    color: var(--color-on-navy);
+                    background: var(--color-account-avatar);
                 }
 
                 .account-summary > div:last-child {
@@ -816,8 +816,8 @@ function SettingsContent() {
                     white-space: nowrap;
                 }
 
-                .account-summary strong { color: #0f172a; font-size: 0.79rem; }
-                .account-summary span { color: #64748b; font-size: 12px; }
+                .account-summary strong { color: var(--color-text); font-size: 0.79rem; }
+                .account-summary span { color: var(--color-text-secondary); font-size: 12px; }
 
                 :global(.settings-container .settings-nav) {
                     display: flex;
@@ -833,7 +833,7 @@ function SettingsContent() {
                     min-height: 38px;
                     padding: 8px 9px;
                     border-radius: 6px;
-                    color: #526176;
+                    color: var(--color-settings-nav-ink);
                     font-size: 0.78rem;
                     font-weight: 620;
                     text-decoration: none;
@@ -842,13 +842,13 @@ function SettingsContent() {
                 @media (hover: hover) and (pointer: fine) {
                     .settings-nav a:hover,
                 .settings-nav a:focus-visible {
-                        color: #0b1f3b;
-                        background: #edf2f7;
+                        color: var(--color-settings-heading);
+                        background: var(--color-settings-nav-hover);
                 }
                 }
 
                 .settings-nav a:focus-visible {
-                    outline: 2px solid #2563eb;
+                    outline: 2px solid var(--color-link-bright);
                     outline-offset: 1px;
                 }
 
@@ -867,9 +867,9 @@ function SettingsContent() {
                 }
 
                 .settings-card {
-                    background: #ffffff;
+                    background: var(--color-surface-raised);
                     border-radius: 8px;
-                    border: 1px solid #d8e0eb;
+                    border: 1px solid var(--color-panel-border);
                     overflow: hidden;
                     scroll-margin-top: 88px;
                 }
@@ -879,8 +879,8 @@ function SettingsContent() {
                     display: flex;
                     align-items: center;
                     gap: 16px;
-                    border-bottom: 1px solid #e6ebf2;
-                    background: #fbfcfe;
+                    border-bottom: 1px solid var(--color-settings-divider);
+                    background: var(--color-settings-header-bg);
                 }
 
                 .header-icon {
@@ -897,21 +897,21 @@ function SettingsContent() {
                    Projects. Only Danger zone differs, because red there means a real warning. */
                 .header-icon { background: var(--icon-tile-bg); color: var(--icon-tile-ink); border: 1px solid var(--icon-tile-border); }
                 .header-icon :global(svg [opacity='0.2']) { fill: var(--icon-tile-accent); opacity: 0.85; }
-                .header-icon.danger { background: #fef2f2; color: #ef4444; }
+                .header-icon.danger { background: var(--color-danger-bg); color: var(--color-indicator-danger); }
                 /* A thin edge so each icon tile reads as a tile on the pale card header. */
-                .header-icon.danger { border-color: #fbd5d5; }
+                .header-icon.danger { border-color: var(--color-danger-icon-border); }
 
                 .card-header h3 {
                     margin: 0;
                     font-size: 0.98rem;
                     font-weight: 700;
-                    color: #0f172a;
+                    color: var(--color-text);
                 }
 
                 .card-header p {
                     margin: 2px 0 0;
                     font-size: 0.78rem;
-                    color: #64748b;
+                    color: var(--color-text-secondary);
                 }
 
                 .card-content {
@@ -936,7 +936,7 @@ function SettingsContent() {
                 :global(.settings-container .form-group label) {
                     font-size: 0.8rem;
                     font-weight: 600;
-                    color: #475569;
+                    color: var(--color-detail);
                     text-transform: none;
                     letter-spacing: 0;
                 }
@@ -946,25 +946,25 @@ function SettingsContent() {
                     align-items: center;
                     gap: 10px;
                     padding: 12px 14px;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid var(--color-divider);
                     border-radius: 7px;
-                    background: #ffffff;
+                    background: var(--color-field-solid);
                     transition: none;
                     position: relative;
                 }
 
                 .input-box:focus-within {
-                    border-color: #3b82f6;
-                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                    border-color: var(--color-indicator-blue);
+                    box-shadow: 0 0 0 3px var(--color-focus-wash);
                 }
 
                 .input-box.disabled {
-                    background: #f8fafc;
-                    border-color: #f1f5f9;
+                    background: var(--color-surface-subtle);
+                    border-color: var(--color-divider-faint);
                 }
 
                 .input-box svg {
-                    color: #94a3b8;
+                    color: var(--color-disabled);
                     flex-shrink: 0;
                 }
 
@@ -979,20 +979,20 @@ function SettingsContent() {
                     width: 100%;
                     min-width: 0;
                     font-size: 0.95rem;
-                    color: #0f172a;
+                    color: var(--color-text);
                     background: transparent;
                     text-overflow: ellipsis;
                 }
 
                 :global(.settings-container .input-box input:disabled) {
-                    color: #64748b;
+                    color: var(--color-text-secondary);
                     cursor: not-allowed;
                 }
 
                 .field-hint {
                     margin: 8px 0 0;
                     font-size: 0.8rem;
-                    color: #64748b;
+                    color: var(--color-text-secondary);
                     line-height: 1.45;
                 }
 
@@ -1007,7 +1007,7 @@ function SettingsContent() {
                     padding: 0;
                     border: none;
                     background: none;
-                    color: var(--color-accent);
+                    color: var(--color-link);
                     font: inherit;
                     font-weight: 600;
                     text-decoration: underline;
@@ -1029,8 +1029,8 @@ function SettingsContent() {
                 .badge {
                     font-size: 12px;
                     font-weight: 600;
-                    color: #166534;
-                    background: #dcfce7;
+                    color: var(--color-verified-ink);
+                    background: var(--color-verified-bg);
                     padding: 2px 8px;
                     border-radius: 4px;
                     text-transform: none;
@@ -1060,17 +1060,17 @@ function SettingsContent() {
                 .toggle-label {
                     font-size: 0.95rem;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: var(--color-text);
                     display: block;
                 }
 
                 .toggle-hint {
                     font-size: 0.8rem;
-                    color: #64748b;
+                    color: var(--color-text-secondary);
                 }
 
                 .notification-section {
-                    border-top: 1px solid #f1f5f9;
+                    border-top: 1px solid var(--color-divider-faint);
                     padding-top: 16px;
                     display: flex;
                     flex-direction: column;
@@ -1082,7 +1082,7 @@ function SettingsContent() {
                     font-weight: 600;
                     text-transform: none;
                     letter-spacing: 0.02em;
-                    color: #64748b;
+                    color: var(--color-text-secondary);
                 }
 
                 .chip-grid {
@@ -1092,9 +1092,9 @@ function SettingsContent() {
                 }
 
                 .chip {
-                    border: 1px solid #e2e8f0;
-                    background: #f8fafc;
-                    color: #475569;
+                    border: 1px solid var(--color-divider);
+                    background: var(--color-surface-subtle);
+                    color: var(--color-detail);
                     font-size: 0.85rem;
                     padding: 6px 12px;
                     border-radius: 6px;
@@ -1103,9 +1103,9 @@ function SettingsContent() {
                 }
 
                 .chip.active {
-                    background: #2563eb;
-                    border-color: #2563eb;
-                    color: #ffffff;
+                    background: var(--color-link-bright);
+                    border-color: var(--color-link-bright);
+                    color: var(--color-on-selection);
                 }
 
                 .notice {
@@ -1118,8 +1118,8 @@ function SettingsContent() {
                 }
 
                 .notice.warning {
-                    background: #fff7ed;
-                    color: #c2410c;
+                    background: var(--color-notice-bg);
+                    color: var(--color-notice-ink);
                 }
 
                 .delivery-list {
@@ -1134,7 +1134,7 @@ function SettingsContent() {
                     justify-content: space-between;
                     gap: 12px;
                     padding-bottom: 12px;
-                    border-bottom: 1px solid #f1f5f9;
+                    border-bottom: 1px solid var(--color-divider-faint);
                 }
 
                 .delivery-title {
@@ -1144,7 +1144,7 @@ function SettingsContent() {
 
                 .delivery-meta {
                     font-size: 0.8rem;
-                    color: #64748b;
+                    color: var(--color-text-secondary);
                 }
 
                 .status-pill {
@@ -1153,18 +1153,18 @@ function SettingsContent() {
                     font-size: 0.75rem;
                     font-weight: 600;
                     text-transform: none;
-                    background: #e2e8f0;
-                    color: #475569;
+                    background: var(--color-divider);
+                    color: var(--color-detail);
                 }
 
                 .status-pill.sent {
-                    background: #dcfce7;
-                    color: #166534;
+                    background: var(--color-verified-bg);
+                    color: var(--color-verified-ink);
                 }
 
                 .status-pill.failed {
-                    background: #fee2e2;
-                    color: #b91c1c;
+                    background: var(--color-danger-badge-bg);
+                    color: var(--color-danger-fg);
                 }
 
                 .empty-log {
@@ -1200,13 +1200,13 @@ function SettingsContent() {
                     text-transform: none;
                 }
 
-                .plan-badge.free { background: #f1f5f9; color: var(--color-text); }
-                .plan-badge.pro { background: #eff6ff; color: #2563eb; }
-                .plan-badge.admin { background: #fefce8; color: #b45309; }
+                .plan-badge.free { background: var(--color-surface-quiet); color: var(--color-text); }
+                .plan-badge.pro { background: var(--color-info-bg); color: var(--color-link-bright); }
+                .plan-badge.admin { background: var(--color-admin-badge-bg); color: var(--color-admin-badge-ink); }
 
                 .plan-description {
                     font-size: 0.9rem;
-                    color: #334155;
+                    color: var(--color-detail-strong);
                     line-height: 1.5;
                     margin: 0;
                 }
@@ -1217,7 +1217,7 @@ function SettingsContent() {
                     gap: 6px;
                     font-size: 0.9rem;
                     font-weight: 600;
-                    color: #2563eb;
+                    color: var(--color-link-bright);
                     text-decoration: none;
                     margin-top: 4px;
                 }
@@ -1229,7 +1229,7 @@ function SettingsContent() {
 
                 /* Danger zone */
                 .settings-card.danger {
-                    border-color: #fecaca;
+                    border-color: var(--color-danger-panel-border);
                 }
 
                 .danger-row {
@@ -1242,13 +1242,13 @@ function SettingsContent() {
                     margin: 0;
                     font-size: 1rem;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: var(--color-text);
                 }
 
                 .danger-row p {
                     margin: 4px 0 0;
                     font-size: 0.85rem;
-                    color: #64748b;
+                    color: var(--color-text-secondary);
                 }
 
                 :global(.request-delete-link) {
@@ -1256,17 +1256,17 @@ function SettingsContent() {
                     align-items: center;
                     gap: 6px;
                     padding: 9px 11px;
-                    border: 1px solid #fecaca;
+                    border: 1px solid var(--color-danger-panel-border);
                     border-radius: 6px;
-                    color: #b91c1c;
-                    background: #fff;
+                    color: var(--color-danger-fg);
+                    background: var(--color-surface-raised);
                     font-size: 0.8rem;
                     font-weight: 650;
                     text-decoration: none;
                 }
                 @media (hover: hover) and (pointer: fine) {
                     :global(.request-delete-link:hover) {
-                        background: #fef2f2;
+                        background: var(--color-danger-bg);
                 }
                 }
 
@@ -1369,7 +1369,7 @@ function SettingsContent() {
                     }
 
                     .settings-header { border-bottom-color: var(--color-primary-light); }
-                    .settings-header h1 { color: white; }
+                    .settings-header h1 { color: var(--color-on-navy); }
                     .settings-header p { color: var(--color-muted-on-navy); }
                 }
 
@@ -1377,7 +1377,7 @@ function SettingsContent() {
                 @media (min-width: 641px) {
                     :global(.main-content:has(.settings-container)) { background: var(--color-primary); }
                     .settings-header { border-bottom-color: var(--color-primary-light); }
-                    .settings-header h1 { color: white; }
+                    .settings-header h1 { color: var(--color-on-navy); }
                     .settings-header p { color: var(--color-muted-on-navy); }
                     .settings-status { border-color: transparent; }
                 }
@@ -1419,14 +1419,14 @@ function SettingsContent() {
                     justify-content: center;
                     padding: 80px 0;
                     gap: 16px;
-                    color: #64748b;
+                    color: var(--color-text-secondary);
                 }
 
                 .spinner {
                     width: 32px;
                     height: 32px;
-                    border: 3px solid #e2e8f0;
-                    border-top-color: #3b82f6;
+                    border: 3px solid var(--color-divider);
+                    border-top-color: var(--color-indicator-blue);
                     border-radius: 50%;
                     animation: spin 1s linear infinite;
                 }
@@ -1442,6 +1442,13 @@ function SettingsContent() {
                 :global(.settings-container .settings-nav) { display: flex; flex-direction: column; align-items: stretch; width: 100%; height: auto; background: var(--color-surface); }
                 :global(.settings-container .settings-nav [data-slot="tabs-trigger"]) { min-height: 44px; justify-content: flex-start; padding: 8px 10px; color: var(--color-text); }
                 :global(.settings-container .settings-nav [data-state="active"]) { color: var(--color-text); background: var(--color-background); }
+                @media (prefers-color-scheme: dark) {
+                    :global(.settings-container .settings-nav [data-state="active"]) {
+                        color: var(--color-selected-ink);
+                        background: var(--color-selected-surface);
+                    }
+                    .input-box.disabled { background: var(--input-bg); }
+                }
                 :global(.settings-container .input-box input) { min-height: 44px; height: 44px; padding: 0; box-shadow: none; transition: none; opacity: 1; }
                 .input-box { padding-block: 0; }
                 :global(.settings-container .form-group label) { color: var(--color-text-secondary); font-size: 12px; }

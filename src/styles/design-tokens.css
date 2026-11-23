@@ -8,6 +8,7 @@
  */
 
 :root {
+  color-scheme: light dark;
   /* ========================================
    * TYPOGRAPHY
    * ======================================== */
@@ -246,6 +247,172 @@
   --badge-radius: var(--radius-full);
   --badge-font-size: var(--text-xs);
   --badge-font-weight: var(--font-medium);
+}
+
+/* Surface and interaction roles. The light values preserve the individual
+   worksheet, menu and field colours used in the existing interface. */
+:root {
+  --color-sheet: var(--color-primary);
+  --color-sheet-card: var(--color-surface);
+  --color-field-solid: var(--color-white);
+  --color-heading: var(--color-primary);
+  --color-link-default: var(--color-primary);
+  --color-link: var(--color-accent);
+  --color-link-strong: var(--color-accent-dark);
+  --color-popover: var(--color-surface);
+  --color-on-navy: var(--color-white);
+  --color-selection: #f8d995;
+  --color-detail: #475569;
+  --color-detail-strong: #334155;
+  --color-divider: #e2e8f0;
+  --color-divider-soft: #eef2f7;
+  --color-surface-subtle: #f8fafc;
+  --color-surface-quiet: #f1f5f9;
+  --color-link-bright: #2563eb;
+  --color-indicator-blue: #3b82f6;
+  --color-indicator-danger: #ef4444;
+  --color-saved-border: #bbf7d0;
+  --color-active-wash: #dbeafe;
+  --color-panel-border: #d8e0eb;
+  --color-settings-heading: #0b1f3b;
+  --color-settings-divider: #e6ebf2;
+  --color-settings-nav-ink: #526176;
+  --color-settings-nav-hover: #edf2f7;
+  --color-settings-header-bg: #fbfcfe;
+  --color-danger-icon-border: #fbd5d5;
+  --color-verified-ink: #166534;
+  --color-verified-bg: #dcfce7;
+  --color-notice-bg: #fff7ed;
+  --color-notice-ink: #c2410c;
+  --color-danger-badge-bg: #fee2e2;
+  --color-admin-badge-bg: #fefce8;
+  --color-admin-badge-ink: #b45309;
+  --color-danger-panel-border: #fecaca;
+  --color-secondary-hover: #e2ecfc;
+  --color-nav-item-active: #f2f6fa;
+  --color-profile-header-bg: #f7f9fc;
+  --color-menu-item-hover: #f9fafb;
+  --color-saved-link-ink: #164b93;
+  --color-saved-link-border: #bfd3ef;
+  --color-project-category-ink: #465973;
+  --color-project-detail-ink: #52637a;
+  --color-project-divider: #e3e8ef;
+  --color-project-eyebrow: #1d5fbf;
+  --color-project-header-border: #354962;
+  --color-featured-card: #fffdf7;
+  --color-featured-edge: #e9c46a;
+  --color-on-selection: var(--color-white);
+  --color-destructive-button: #b91c1c;
+  --color-destructive-confirm: #dc2626;
+  --color-destructive-hover: #991b1b;
+  --color-switch-thumb: var(--color-surface);
+  --color-switch-track: #64748b;
+  --color-focus-wash: rgba(59, 130, 246, 0.1);
+  --color-field-focus-wash: rgba(78, 154, 247, 0.18);
+  --color-error-focus-wash: rgba(239, 68, 68, 0.18);
+  --color-nav-hover: rgba(0, 0, 0, 0.04);
+  --color-navbar-link: var(--color-blue-600);
+  --color-navbar-link-hover: var(--color-blue-700);
+  --color-account-action: var(--color-primary);
+  --color-account-action-hover: var(--color-primary-dark);
+  --color-account-avatar: #0b1f3b;
+  --color-divider-faint: #f1f5f9;
+  --color-sheet-card-white: var(--color-white);
+  --color-switch-on: var(--color-accent-dark);
+  --color-dialog-danger-tint: rgba(239, 68, 68, 0.1);
+  --color-dialog-warning-tint: rgba(245, 158, 11, 0.1);
+  --color-dialog-info-tint: rgba(78, 154, 247, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --studio-line: #2a4063;
+    --color-background: var(--studio-midnight);
+    --color-surface: #13243d;
+    --color-surface-raised: var(--color-surface);
+    --input-bg: #0f1f36;
+    --color-background-alt: var(--color-background);
+    --color-border: var(--studio-line);
+    --color-border-light: var(--color-border);
+    --color-border-dark: var(--color-border);
+    --color-text: var(--studio-ink);
+    --color-text-secondary: var(--studio-muted);
+    --color-text-muted: #94a3b8;
+    --color-slate: var(--color-text);
+    --color-slate-light: var(--color-text-secondary);
+    --color-mist: var(--studio-steel);
+    --color-emerald: #4ade80;
+    --color-amber: #fbbf24;
+    --color-danger: #f87171;
+    --input-border-focus: 1px solid var(--color-link);
+    --color-sheet: var(--studio-steel);
+    --color-field-solid: var(--input-bg);
+    --color-heading: var(--color-text);
+    --color-link-default: var(--color-accent-light);
+    --color-link: var(--color-accent-light);
+    --color-link-strong: var(--color-accent-light);
+    --color-popover: var(--color-sheet);
+    --color-on-navy: var(--studio-ink);
+    --color-selection: var(--color-accent-light);
+    --color-detail: var(--color-text-secondary);
+    --color-detail-strong: var(--color-text-secondary);
+    --color-divider: var(--color-border);
+    --color-divider-soft: var(--color-border);
+    --color-surface-subtle: var(--color-mist);
+    --color-surface-quiet: var(--color-mist);
+    --color-link-bright: var(--color-accent-light);
+    --color-indicator-blue: var(--color-accent-light);
+    --color-indicator-danger: var(--color-danger);
+    --color-saved-border: var(--color-success-border);
+    --color-active-wash: var(--color-info-bg);
+    --color-panel-border: var(--color-border);
+    --color-settings-heading: var(--color-text);
+    --color-settings-divider: var(--color-border);
+    --color-settings-nav-ink: var(--color-text-secondary);
+    --color-settings-nav-hover: var(--color-mist);
+    --color-settings-header-bg: var(--color-surface);
+    --color-danger-icon-border: var(--color-danger-border);
+    --color-verified-ink: var(--color-success-fg);
+    --color-verified-bg: var(--color-success-bg);
+    --color-notice-bg: var(--color-warning-bg);
+    --color-notice-ink: var(--color-warning-fg);
+    --color-danger-badge-bg: var(--color-danger-bg);
+    --color-admin-badge-bg: var(--color-warning-bg);
+    --color-admin-badge-ink: var(--color-warning-fg);
+    --color-danger-panel-border: var(--color-danger-border);
+    --color-secondary-hover: var(--color-info-bg);
+    --color-nav-item-active: var(--color-info-bg);
+    --color-profile-header-bg: var(--color-surface);
+    --color-menu-item-hover: var(--color-surface);
+    --color-saved-link-ink: var(--color-accent-light);
+    --color-saved-link-border: var(--color-border);
+    --color-project-category-ink: var(--color-text-secondary);
+    --color-project-detail-ink: var(--color-text-secondary);
+    --color-project-divider: var(--color-border);
+    --color-project-eyebrow: var(--color-accent-light);
+    --color-project-header-border: var(--color-border);
+    --color-featured-card: var(--color-sheet-card);
+    --color-featured-edge: var(--color-gold-on-navy);
+    --color-on-selection: var(--studio-midnight);
+    --color-destructive-confirm: var(--color-destructive-button);
+    --color-switch-thumb: var(--studio-ink);
+    --color-switch-track: var(--color-border);
+    --color-focus-wash: rgb(112 153 247 / 16%);
+    --color-field-focus-wash: rgb(112 153 247 / 18%);
+    --color-error-focus-wash: rgb(248 113 113 / 18%);
+    --color-nav-hover: var(--color-info-bg);
+    --color-navbar-link: var(--color-accent-light);
+    --color-navbar-link-hover: var(--color-accent-light);
+    --color-account-action: var(--color-accent);
+    --color-account-action-hover: var(--color-accent-dark);
+    --color-account-avatar: var(--color-primary);
+    --color-divider-faint: var(--color-border);
+    --color-sheet-card-white: var(--color-sheet-card);
+    --color-switch-on: var(--color-accent);
+    --color-dialog-danger-tint: var(--color-danger-bg);
+    --color-dialog-warning-tint: var(--color-warning-bg);
+    --color-dialog-info-tint: var(--color-info-bg);
+  }
 }
 
 /* ========================================

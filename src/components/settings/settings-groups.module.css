@@ -15,7 +15,7 @@
   }
   .avatar {
     display: grid; place-items: center; width: 48px; height: 48px; flex: none;
-    border-radius: 50%; background: var(--color-primary); color: #fff;
+    border-radius: 50%; background: var(--color-primary); color: var(--color-on-navy);
     font-family: var(--font-heading); font-size: 1rem; font-weight: 700; letter-spacing: 0.02em;
   }
   .who { display: grid; gap: 2px; flex: 1; min-width: 0; }
@@ -42,7 +42,7 @@
   }
   .item:active, .profileCard:active { background: var(--color-info-bg); }
   .item:focus-visible, .profileCard:focus-visible, .backBtn:focus-visible {
-    outline: 2px solid var(--focus-on-navy, var(--color-accent-dark)); outline-offset: -2px;
+    outline: 2px solid var(--focus-on-navy, var(--color-link-strong)); outline-offset: -2px;
   }
   .itemIcon {
     display: grid; place-items: center; width: 34px; height: 34px; flex: none;
@@ -55,7 +55,7 @@
     padding: 2px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
     background: var(--color-selected-surface); color: var(--color-selected-ink);
   }
-  .chev { flex: none; color: #64748b; }
+  .chev { flex: none; color: var(--color-text-secondary); }
   .logout { color: var(--color-danger-fg); }
   .logout .itemIcon { border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger-fg); }
 
@@ -64,8 +64,8 @@
   .backBtn {
     display: grid; place-items: center; width: 44px; height: 44px; flex: none;
     border: 1px solid var(--color-border); border-radius: 10px;
-    background: var(--color-surface); color: var(--color-primary); cursor: pointer;
+    background: var(--color-surface); color: var(--color-heading); cursor: pointer;
   }
   .backBtn:active { background: var(--color-selected-surface); }
-  .detailTitle { margin: 0; color: #fff; font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
+  .detailTitle { margin: 0; color: var(--color-on-navy); font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
 }

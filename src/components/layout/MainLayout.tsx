@@ -100,10 +100,10 @@ function MobileBottomNav() {
           </button>
         </DrawerTrigger>
         {/* Navy like every phone sheet (owner, 22 Nov): white title, links in one light card. */}
-        <DrawerContent aria-describedby={undefined} className="bg-[var(--color-primary)]">
-          <DrawerHeader className="text-left!"><DrawerTitle className="text-white">More destinations</DrawerTitle></DrawerHeader>
+        <DrawerContent aria-describedby={undefined} className="bg-[var(--color-sheet)]">
+          <DrawerHeader className="text-left!"><DrawerTitle className="text-[var(--color-on-navy)]">More destinations</DrawerTitle></DrawerHeader>
           <DrawerScrollArea className="px-4">
-            <div className="overflow-hidden rounded-xl bg-[var(--color-surface)]">
+            <div className="overflow-hidden rounded-xl bg-[var(--color-sheet-card)]">
               {moreItems.map((item) => (
                 <DrawerClose asChild key={item.href}>
                   <Link href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}
@@ -114,7 +114,7 @@ function MobileBottomNav() {
               ))}
             </div>
           </DrawerScrollArea>
-          <DrawerClose className="m-4 mb-[max(1rem,env(safe-area-inset-bottom))] min-h-11 rounded-lg bg-[var(--color-surface)] font-semibold text-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-gold-on-navy)]">Close</DrawerClose>
+          <DrawerClose className="m-4 mb-[max(1rem,env(safe-area-inset-bottom))] min-h-11 rounded-lg bg-[var(--color-sheet-card)] font-semibold text-[var(--color-heading)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-gold-on-navy)]">Close</DrawerClose>
         </DrawerContent>
       </Drawer>
 
@@ -207,7 +207,7 @@ function MobileBottomNav() {
         }
 
         :global(.mobile-nav-item:focus-visible) {
-          outline: 3px solid var(--color-accent);
+          outline: 3px solid var(--color-link);
           outline-offset: -3px;
         }
 
@@ -315,7 +315,7 @@ export default function MainLayout({
         .page-title {
           font-size: 1.5rem;
           font-weight: 700;
-          color: var(--color-primary);
+          color: var(--color-heading);
           margin: 0 0 24px 0;
         }
 
@@ -397,7 +397,7 @@ export default function MainLayout({
           }
 
           .mobile-navy .page-title {
-            color: white;
+            color: var(--color-on-navy);
           }
 
           .mobile-navy {

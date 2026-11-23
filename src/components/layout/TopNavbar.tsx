@@ -279,7 +279,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
                 <div className="dropdown-header">
                   <h3>Notifications</h3>
                   {hasUnread && (
-                    <button type="button" onClick={() => void markAllRead()} className="text-xs text-blue-600 font-medium hover:text-blue-700">Mark all read</button>
+                    <button type="button" onClick={() => void markAllRead()} className="text-xs text-[var(--color-navbar-link)] font-medium hover:text-[var(--color-navbar-link-hover)]">Mark all read</button>
                   )}
                 </div>
                 <div className="notification-list">
@@ -551,7 +551,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         .logo-icon {
           padding: 3px;
           border-radius: 7px;
-          background: #fff;
+          background: var(--color-white);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -597,8 +597,8 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
           right: -12px;
           width: 276px;
           padding: 8px;
-          background: #fff;
-          border: 1px solid #d8e0eb;
+          background: var(--color-surface-elevated);
+          border: 1px solid var(--color-panel-border);
           border-radius: 8px;
           box-shadow: 0 18px 44px rgba(11, 31, 59, 0.16);
           animation: none;
@@ -625,14 +625,14 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
           transition: none;
         }
         :global(.nav-dropdown-link.active) {
-          color: var(--color-primary);
-          background: #f2f6fa;
+          color: var(--color-link-default);
+          background: var(--color-nav-item-active);
         }
         @media (hover: hover) and (pointer: fine) {
         @media (hover: hover) and (pointer: fine) {
             :global(.nav-dropdown-link:hover) {
-                color: var(--color-primary);
-                background: #f2f6fa;
+                color: var(--color-heading);
+                background: var(--color-nav-item-active);
           }
         }
         }
@@ -656,7 +656,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         @media (hover: hover) and (pointer: fine) {
           .desktop-nav :global(.nav-link:hover) {
             background: var(--studio-steel);
-            color: white;
+            color: var(--color-on-navy);
           }
         }
         .top-navbar :global(:focus-visible) {
@@ -682,8 +682,8 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
           padding: 0 12px;
           border: 1px solid var(--color-border);
           border-radius: 7px;
-          color: var(--color-primary);
-          background: #fff;
+          color: var(--color-heading);
+          background: var(--color-surface-raised);
           font-size: 0.78rem;
           font-weight: 700;
           text-decoration: none;
@@ -691,13 +691,13 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
           transition: none;
         }
         :global(.admin-panel-link.active) {
-          border-color: var(--color-accent);
+          border-color: var(--color-link);
           background: var(--color-accent-muted);
         }
         @media (hover: hover) and (pointer: fine) {
         @media (hover: hover) and (pointer: fine) {
             :global(.admin-panel-link:hover) {
-                border-color: var(--color-accent);
+                border-color: var(--color-link);
                 background: var(--color-accent-muted);
           }
         }
@@ -714,8 +714,8 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
           top: calc(100% + 12px);
           right: -8px;
           width: 300px;
-          background: white;
-          border: 1px solid #d8e0eb;
+          background: var(--color-surface-elevated);
+          border: 1px solid var(--color-panel-border);
           border-radius: 8px;
           box-shadow: 0 18px 44px rgba(11, 31, 59, 0.16);
           z-index: 200;
@@ -748,13 +748,13 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         }
         .icon-btn.active {
           background: var(--studio-steel);
-          color: white;
+          color: var(--color-on-navy);
         }
         @media (hover: hover) and (pointer: fine) {
         @media (hover: hover) and (pointer: fine) {
             .icon-btn:hover {
                 background: var(--studio-steel);
-                color: white;
+                color: var(--color-on-navy);
           }
         }
         }
@@ -769,9 +769,9 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
           right: 10px;
           width: 8px;
           height: 8px;
-          background: #ef4444;
+          background: var(--color-indicator-danger);
           border-radius: 50%;
-          border: 2px solid white;
+          border: 2px solid var(--color-white);
         }
 
         /* User Button */
@@ -792,14 +792,14 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
           gap: 8px;
         }
         .user-btn.active {
-          border-color: var(--color-accent);
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          border-color: var(--color-link);
+          box-shadow: 0 0 0 3px var(--color-focus-wash);
         }
         @media (hover: hover) and (pointer: fine) {
         @media (hover: hover) and (pointer: fine) {
             .user-btn:hover {
-                border-color: var(--color-accent);
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                border-color: var(--color-link);
+                box-shadow: 0 0 0 3px var(--color-focus-wash);
           }
         }
         }
@@ -813,7 +813,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
           flex: 0 0 auto;
           overflow: hidden;
           border-radius: 7px 0 0 7px;
-          color: #fff;
+          color: var(--color-on-navy);
           background: var(--color-primary);
         }
 
@@ -876,7 +876,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
           align-items: center;
           gap: 12px;
           padding: 16px;
-          background: #f7f9fc;
+          background: var(--color-profile-header-bg);
           border-bottom: 1px solid var(--color-border-light);
         }
 
@@ -888,7 +888,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
           display: flex;
           align-items: center;
           justify-content: center;
-          color: white;
+          color: var(--color-on-navy);
           overflow: hidden;
           font-size: 0.875rem;
         }
@@ -940,13 +940,13 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
 
         .account-popup {
           border-radius: 16px;
-          background: var(--color-surface);
+          background: var(--color-popover);
           box-shadow: 0 16px 36px rgba(11, 31, 59, 0.24);
         }
 
         .account-popup .profile-header {
           padding: 18px;
-          background: var(--color-primary);
+          background: var(--color-sheet);
           border: 0;
         }
 
@@ -959,7 +959,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         }
 
         .account-popup .profile-avatar .avatar-initials { color: inherit; }
-        .account-popup .profile-name { color: white; font-size: 1rem; }
+        .account-popup .profile-name { color: var(--color-on-navy); font-size: 1rem; }
         .account-popup .profile-email { color: var(--color-muted-on-navy); }
         .account-popup .profile-tier {
           flex: none;
@@ -974,7 +974,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         .account-popup-links { padding: 6px 10px; }
         .account-popup-links :global(.quick-link) {
           min-height: 50px;
-          background: var(--color-surface);
+          background: var(--color-sheet-card);
           color: var(--color-text);
         }
         .account-popup-links :global(.quick-link[aria-current="page"]),
@@ -1005,7 +1005,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         }
         .account-popup-links :global(.quick-link:focus-visible),
         .account-popup-footer .logout:focus-visible {
-          outline: 2px solid var(--color-accent-dark);
+          outline: 2px solid var(--color-link-strong);
           outline-offset: -2px;
         }
 
@@ -1089,22 +1089,22 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         }
 
         :global(.auth-btn-primary) {
-          background: var(--color-primary);
-          color: #fff;
-          border: 1px solid var(--color-primary);
+          background: var(--color-account-action);
+          color: var(--color-white);
+          border: 1px solid var(--color-account-action);
         }
         @media (hover: hover) and (pointer: fine) {
         @media (hover: hover) and (pointer: fine) {
             :global(.auth-btn-primary:hover) {
-                background: var(--color-primary-dark);
+                background: var(--color-account-action-hover);
           }
         }
         }
 
         :global(.auth-btn-secondary) {
           background: transparent;
-          color: var(--color-primary);
-          border: 1px solid var(--color-primary);
+          color: var(--color-heading);
+          border: 1px solid var(--color-heading);
         }
         @media (hover: hover) and (pointer: fine) {
         @media (hover: hover) and (pointer: fine) {
@@ -1134,15 +1134,15 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         @media (hover: hover) and (pointer: fine) {
         @media (hover: hover) and (pointer: fine) {
             :global(.quick-link:hover) {
-                background: #f2f6fa;
-                color: var(--color-primary);
+                background: var(--color-nav-item-active);
+                color: var(--color-heading);
           }
         }
         }
 
         :global(.admin-quick-link) {
-          color: var(--color-primary);
-          background: #f2f6fa;
+          color: var(--color-heading);
+          background: var(--color-nav-item-active);
         }
 
         .quick-link-icon {
@@ -1198,18 +1198,18 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         @media (hover: hover) and (pointer: fine) {
         @media (hover: hover) and (pointer: fine) {
             .menu-item:hover {
-                background: #f9fafb;
+                background: var(--color-menu-item-hover);
                 color: var(--color-text);
           }
         }
         }
 
-        .menu-item.upgrade { color: #2563eb; }
-        .menu-item.logout { color: #ef4444; }
+        .menu-item.upgrade { color: var(--color-link-bright); }
+        .menu-item.logout { color: var(--color-indicator-danger); }
         @media (hover: hover) and (pointer: fine) {
         @media (hover: hover) and (pointer: fine) {
             .menu-item.logout:hover {
-                background: #fef2f2;
+                background: var(--color-danger-bg);
           }
         }
         }
@@ -1263,7 +1263,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         @media (hover: hover) and (pointer: fine) {
         @media (hover: hover) and (pointer: fine) {
             .notification-item:hover {
-                background: #f9fafb;
+                background: var(--color-menu-item-hover);
           }
         }
         }
@@ -1271,15 +1271,15 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         .notification-item:last-child { border-bottom: none; }
 
         .notification-item.unread {
-            background: #f8fafc;
+            background: var(--color-surface-subtle);
         }
 
         .notification-icon {
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background: #eff6ff;
-            color: #3b82f6;
+            background: var(--color-info-bg);
+            color: var(--color-indicator-blue);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1309,14 +1309,14 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #2563eb;
+            background: var(--color-link-bright);
             margin-top: 6px;
         }
 
         .dropdown-footer {
             padding: 12px;
             text-align: center;
-            background: #f9fafb;
+            background: var(--color-menu-item-hover);
             border-top: 1px solid var(--color-border-light);
         }
 
@@ -1329,7 +1329,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         @media (hover: hover) and (pointer: fine) {
         @media (hover: hover) and (pointer: fine) {
             .view-all-link:hover {
-                color: var(--color-primary);
+                color: var(--color-heading);
           }
         }
         }
@@ -1365,7 +1365,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         @media (hover: hover) and (pointer: fine) {
         @media (hover: hover) and (pointer: fine) {
             :global(.mobile-nav-link:hover) {
-                background: rgba(0, 0, 0, 0.04);
+                background: var(--color-nav-hover);
                 color: var(--color-text);
           }
         }
@@ -1373,7 +1373,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
 
         :global(.mobile-nav-link.active) {
           background: var(--color-primary-bg);
-          color: var(--color-primary);
+          color: var(--color-link-default);
           font-weight: 600;
         }
 
@@ -1383,7 +1383,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
           gap: 9px;
           margin-bottom: 6px;
           border: 1px solid var(--color-border);
-          color: var(--color-primary);
+          color: var(--color-heading);
           font-weight: 700;
         }
 
@@ -1393,7 +1393,7 @@ export default function TopNavbar({ showMobileStart = false }: { showMobileStart
         @media (max-width: 1100px) {
           .desktop-nav { display: none; }
           .mobile-toggle { color: var(--studio-ink); display: flex; align-items: center; justify-content: center; border: none; background: none; width: 40px; height: 40px; }
-          .mobile-menu { max-height: calc(100dvh - 125px); overflow-y: auto; display: block; border-top: 1px solid var(--color-border-light); background: #fff; padding: 16px; }
+          .mobile-menu { max-height: calc(100dvh - 125px); overflow-y: auto; display: block; border-top: 1px solid var(--color-border-light); background: var(--color-surface-elevated); padding: 16px; }
           .notification-btn { display: none; }
         }
 
