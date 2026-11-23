@@ -567,6 +567,7 @@ export async function getProjectPurchaseStats(projectId: string): Promise<{
 /** Create a one-off reminder for a project. */
 export async function createReminder(data: {
     project_id: string;
+    /** A boq_items id only (reminders.item_id is a foreign key to boq_items). */
     item_id?: string;
     reminder_type: 'material' | 'savings' | 'deadline' | 'usage';
     message: string;

@@ -131,7 +131,7 @@ export default function ComplianceTrackerTab({
     setReminderDates((prev) => ({ ...prev, [key]: date }));
   };
 
-  const saveReminder = async (label: string, draftKey: string, itemId?: string) => {
+  const saveReminder = async (label: string, draftKey: string) => {
     // Re-entrancy guard as well as a disabled button: the button covers the
     // pointer, this covers a handler that fires twice for one gesture.
     if (savingReminderKey) return;
@@ -151,7 +151,9 @@ export default function ComplianceTrackerTab({
     try {
       ({ error, alreadyScheduled = false } = await createReminder({
         project_id: projectId,
-        item_id: itemId,
+        // No item_id: reminders.item_id references boq_items, and a stage
+        // task id there fails the foreign key ("violates foreign key
+        // constraint reminders_item_id_fkey"). The task title is in the message.
         reminder_type: 'deadline',
         message,
         scheduled_date: scheduledAt.toISOString(),
@@ -628,7 +630,7 @@ export default function ComplianceTrackerTab({
                                 size="sm"
                                 icon={<Bell size={14} />}
                                 disabled={savingReminderKey === draftKey}
-                                onClick={() => saveReminder(task.title, draftKey, task.id)}
+                                onClick={() => saveReminder(task.title, draftKey)}
                               >
                                 {savingReminderKey === draftKey ? 'Scheduling…' : 'Schedule'}
                               </Button>
