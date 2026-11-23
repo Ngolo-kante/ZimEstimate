@@ -36,7 +36,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     return (
         <ToastContext.Provider value={notifications}>
             {children}
-            <Toaster position="bottom-center" closeButton />
+            <Toaster theme="system" position="bottom-center" closeButton />
         </ToastContext.Provider>
     );
 }

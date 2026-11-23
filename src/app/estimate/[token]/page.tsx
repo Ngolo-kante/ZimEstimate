@@ -60,7 +60,7 @@ export default async function SharedEstimatePage({ params }: Props) {
           </p>
           <Link
             href="/quick-projects"
-            className="mt-6 inline-flex rounded-xl bg-[var(--color-accent)] px-5 py-3 text-sm font-bold text-white"
+            className="mt-6 inline-flex rounded-xl bg-[var(--color-accent)] px-5 py-3 text-sm font-bold text-[var(--color-white)]"
           >
             Price your own project
           </Link>
@@ -109,7 +109,7 @@ export default async function SharedEstimatePage({ params }: Props) {
         <div className="mt-6 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
           {Object.entries(byCategory).map(([category, rows]) => (
             <div key={category} className="border-b border-[var(--color-border)] last:border-0">
-              <p className="bg-slate-50 px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+              <p className="bg-[var(--color-worksheet-row)] px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
                 {category}
               </p>
               <ul>
@@ -129,12 +129,12 @@ export default async function SharedEstimatePage({ params }: Props) {
           ))}
         </div>
 
-        <div className="mt-8 rounded-2xl bg-[var(--color-primary)] p-5 text-white">
+        <div className="mt-8 rounded-2xl bg-[var(--color-primary)] p-5 text-[var(--color-on-navy)]">
           <p className="text-base font-bold">Planning a {label.toLowerCase()} job of your own?</p>
-          <p className="mt-1 text-sm text-white/80">Answer a few questions and get your own priced list of materials — free.</p>
+          <p className="mt-1 text-sm text-[var(--color-on-navy)]/80">Answer a few questions and get your own priced list of materials — free.</p>
           <Link
             href={`/quick-projects/${estimate.projectType}`}
-            className="mt-4 inline-flex rounded-xl bg-[var(--color-accent)] px-5 py-3 text-sm font-bold text-white"
+            className="mt-4 inline-flex rounded-xl bg-[var(--color-accent)] px-5 py-3 text-sm font-bold text-[var(--color-white)]"
           >
             Price your own {label.toLowerCase()} project
           </Link>

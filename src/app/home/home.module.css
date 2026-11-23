@@ -27,7 +27,7 @@ numbered annotations retain the app's drawing language. */
 }
 
 .page a:focus-visible {
-  outline: 3px solid #3b82f6;
+  outline: 3px solid var(--color-indicator-blue);
   outline-offset: 4px;
 }
 
@@ -62,12 +62,12 @@ numbered annotations retain the app's drawing language. */
 }
 
 .sectionIndex {
-  color: #8a6514;
+  color: var(--color-home-eyebrow);
 }
 
 .sectionIndex::before {
   width: 28px;
-  background: #d4a73a;
+  background: var(--color-section-marker);
 }
 
 /* Section labels: deep gold text (4.6:1 or more on the light sections) and a
@@ -124,7 +124,7 @@ numbered annotations retain the app's drawing language. */
   background-color: var(--studio-steel);
   background-image: var(--studio-grid);
   background-size: var(--studio-grid-size);
-  color: white;
+  color: var(--color-on-navy);
 }
 
 /* One entrance, in reading order. */
@@ -195,10 +195,10 @@ numbered annotations retain the app's drawing language. */
   justify-content: center;
   gap: 10px;
   padding: 14px 20px;
-  border: 1px solid white;
+  border: 1px solid var(--color-on-navy);
   border-radius: 12px;
-  color: var(--color-primary);
-  background: white;
+  color: var(--color-heading);
+  background: var(--color-surface-raised);
   font-size: 0.97rem;
   font-weight: 700;
   line-height: 1.2;
@@ -209,7 +209,7 @@ numbered annotations retain the app's drawing language. */
 /* The primary action carries the weight. */
 .primaryButton,
 .closingButton {
-  box-shadow: 0 12px 30px -10px rgba(3, 12, 28, 0.7), inset 0 -3px 0 rgba(11, 31, 59, 0.12);
+  box-shadow: 0 12px 30px -10px color-mix(in srgb, var(--color-hero-shadow) 70%, transparent), inset 0 -3px 0 color-mix(in srgb, var(--color-account-avatar) 12%, transparent);
 }
 
 .primaryButton > svg:last-child,
@@ -227,7 +227,7 @@ numbered annotations retain the app's drawing language. */
   .secondaryButton:hover,
   .closingButton:hover {
     transform: translateY(-2px);
-    background: #f1f5fd;
+    background: var(--color-hero-button-hover);
   }
 }
 
@@ -262,13 +262,13 @@ numbered annotations retain the app's drawing language. */
   font-size: 0.92rem;
   font-weight: 600;
   text-decoration: underline;
-  text-decoration-color: rgba(201, 214, 234, 0.4);
+  text-decoration-color: color-mix(in srgb, var(--color-hero-rule) 40%, transparent);
   text-underline-offset: 4px;
 }
 @media (hover: hover) and (pointer: fine) {
   .heroTextLink:hover {
-    color: white;
-    text-decoration-color: white;
+    color: var(--color-on-navy);
+    text-decoration-color: var(--color-on-navy);
   }
 }
 
@@ -289,7 +289,7 @@ numbered annotations retain the app's drawing language. */
 }
 
 .heroAssurances svg {
-  color: #4ade80;
+  color: var(--color-hero-success);
 }
 
 /* The six stages every estimate is priced in, drawn as a dimension line.
@@ -312,7 +312,7 @@ It is the page's one piece of drawing language outside the house itself. */
   left: 0;
   right: 0;
   height: 1px;
-  background: rgba(201, 214, 234, 0.38);
+  background: color-mix(in srgb, var(--color-hero-rule) 38%, transparent);
   transform-origin: left center;
   animation: draw 900ms 620ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
@@ -336,7 +336,7 @@ It is the page's one piece of drawing language outside the house itself. */
   left: 0;
   width: 1px;
   height: 9px;
-  background: rgba(201, 214, 234, 0.7);
+  background: color-mix(in srgb, var(--color-hero-rule) 70%, transparent);
 }
 
 .stageLine li span {
@@ -381,7 +381,7 @@ It is the page's one piece of drawing language outside the house itself. */
 
 .startHeader > p {
   margin: 0;
-  color: #4b5a70;
+  color: var(--color-home-description);
   font-size: 1rem;
   line-height: 1.6;
 }
@@ -414,7 +414,7 @@ It is the page's one piece of drawing language outside the house itself. */
 @media (hover: hover) and (pointer: fine) {
   .startCard:hover {
     border-color: var(--method-accent);
-    box-shadow: 0 18px 36px -18px rgba(11, 31, 59, 0.28);
+    box-shadow: 0 18px 36px -18px color-mix(in srgb, var(--color-account-avatar) 28%, transparent);
     transform: translateY(-3px);
   }
 }
@@ -441,7 +441,7 @@ It is the page's one piece of drawing language outside the house itself. */
 }
 
 .startCardRank {
-  color: var(--color-primary);
+  color: var(--color-heading);
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 600;
@@ -449,7 +449,7 @@ It is the page's one piece of drawing language outside the house itself. */
 }
 
 .startCardCategory {
-  color: #5d6b80;
+  color: var(--color-home-caption);
   font-family: var(--font-mono);
   font-size: 0.68rem;
   font-weight: 600;
@@ -476,15 +476,15 @@ It is the page's one piece of drawing language outside the house itself. */
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  color: var(--color-primary);
-  background: #f1f5f9;
+  color: var(--color-heading);
+  background: var(--color-surface-quiet);
   transition: transform 200ms ease;
 }
 
 /* Duotone icons as in the starred Start something new design (16 Nov): navy
    outline, soft gold fill, on a pale tile. Same look across the start screens. */
 .startCardIcon svg [opacity='0.2'] {
-  fill: #e9c46a;
+  fill: var(--color-featured-edge);
   opacity: 0.75;
 }
 @media (hover: hover) and (pointer: fine) {
@@ -509,7 +509,7 @@ It is the page's one piece of drawing language outside the house itself. */
 
 .startCard p {
   margin: 7px 0 0;
-  color: #4b5a70;
+  color: var(--color-home-description);
   font-size: 0.9rem;
   line-height: 1.55;
 }
@@ -524,7 +524,7 @@ It is the page's one piece of drawing language outside the house itself. */
 
 .startCardDetail {
   min-width: 0;
-  color: #5d6b80;
+  color: var(--color-home-caption);
   font-size: 0.8rem;
   font-weight: 600;
   line-height: 1.35;
@@ -539,7 +539,7 @@ It is the page's one piece of drawing language outside the house itself. */
   justify-content: center;
   margin-left: auto;
   border-radius: 10px;
-  color: white;
+  color: var(--color-on-navy);
   background: var(--color-primary);
   transition: transform 200ms ease, background-color 200ms ease;
 }
@@ -556,7 +556,7 @@ It is the page's one piece of drawing language outside the house itself. */
   --method-accent: var(--accent-on-navy);
   padding: 28px;
   border-color: var(--studio-line);
-  color: white;
+  color: var(--color-on-navy);
   background: var(--studio-steel);
 }
 
@@ -583,9 +583,9 @@ It is the page's one piece of drawing language outside the house itself. */
   width: 60px;
   height: 60px;
   border-radius: 16px;
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  color: var(--color-on-navy);
+  background: color-mix(in srgb, var(--color-white) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-white) 16%, transparent);
 }
 
 .startCard:nth-child(1) h3 {
@@ -629,7 +629,7 @@ It is the page's one piece of drawing language outside the house itself. */
 
 .closingInner {
   padding-block: 84px;
-  color: white;
+  color: var(--color-on-navy);
 }
 
 .closingInner h2 {
@@ -662,9 +662,9 @@ It is the page's one piece of drawing language outside the house itself. */
 
 .closingPanel {
   padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid color-mix(in srgb, var(--color-white) 12%, transparent);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.05);
+  background: color-mix(in srgb, var(--color-white) 5%, transparent);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
@@ -690,17 +690,17 @@ It is the page's one piece of drawing language outside the house itself. */
   align-items: center;
   gap: 14px;
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid color-mix(in srgb, var(--color-white) 14%, transparent);
   border-radius: 14px;
-  color: white;
-  background: rgba(255, 255, 255, 0.07);
+  color: var(--color-on-navy);
+  background: color-mix(in srgb, var(--color-white) 7%, transparent);
   text-decoration: none;
   transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
 }
 @media (hover: hover) and (pointer: fine) {
   .closingGuide:hover {
-    border-color: rgba(255, 255, 255, 0.34);
-    background: rgba(255, 255, 255, 0.13);
+    border-color: color-mix(in srgb, var(--color-white) 34%, transparent);
+    background: color-mix(in srgb, var(--color-white) 13%, transparent);
     transform: translateX(3px);
   }
 }
@@ -735,7 +735,7 @@ It is the page's one piece of drawing language outside the house itself. */
   justify-content: space-between;
   gap: 10px 18px;
   padding-block: 18px 22px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid color-mix(in srgb, var(--color-white) 12%, transparent);
   color: var(--ink-soft);
   font-size: 0.92rem;
 }
@@ -744,7 +744,7 @@ It is the page's one piece of drawing language outside the house itself. */
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: white;
+  color: var(--color-on-navy);
   font-weight: 650;
   text-decoration: none;
 }
@@ -1043,16 +1043,16 @@ empty strip between the closing band and the footer. */
 
 /* Press feedback also works on touch screens, independent of hover. */
 .startCard:active {
-  background: #dbeafe;
+  background: var(--color-active-wash);
 }
 
 .startCard:nth-child(1):active {
-  background: #183b68;
+  background: var(--color-featured-card-pressed);
 }
 
 .primaryButton,
 .closingButton {
-  color: white;
+  color: var(--color-white);
   border-color: var(--color-accent);
   background: var(--color-accent);
 }
@@ -1065,17 +1065,17 @@ empty strip between the closing band and the footer. */
 
 .startHeader h2,
 .startCard h3 {
-  color: var(--color-primary);
+  color: var(--color-heading);
 }
 
 .startCard:nth-child(1) h3 {
-  color: white;
+  color: var(--color-on-navy);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .primaryButton:hover,
   .closingButton:hover {
-    background: #1d4ed8;
+    background: var(--color-estimate-action);
   }
 }
 
@@ -1085,9 +1085,9 @@ empty strip between the closing band and the footer. */
 
 .secondaryButton {
   color: var(--studio-ink);
-  border-color: #7189aa;
+  border-color: var(--color-hero-secondary-edge);
   background: var(--studio-steel);
 }
 @media (hover: hover) and (pointer: fine) {
-  .secondaryButton:hover { color: white; background: #2c476e; }
+  .secondaryButton:hover { color: var(--color-on-navy); background: var(--color-hero-secondary-hover); }
 }

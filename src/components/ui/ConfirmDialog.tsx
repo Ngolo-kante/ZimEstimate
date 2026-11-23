@@ -23,17 +23,17 @@ const variantConfig: Record<DialogVariant, { icon: React.ReactNode; color: strin
     danger: {
         icon: <Trash size={24} weight="duotone" />,
         color: 'var(--color-error)',
-        bgColor: 'rgba(239, 68, 68, 0.1)',
+        bgColor: 'var(--color-dialog-danger-tint)',
     },
     warning: {
         icon: <Warning size={24} weight="duotone" />,
         color: 'var(--color-warning)',
-        bgColor: 'rgba(245, 158, 11, 0.1)',
+        bgColor: 'var(--color-dialog-warning-tint)',
     },
     info: {
         icon: <Info size={24} weight="duotone" />,
-        color: 'var(--color-primary)',
-        bgColor: 'rgba(78, 154, 247, 0.1)',
+        color: 'var(--color-heading)',
+        bgColor: 'var(--color-dialog-info-tint)',
     },
 };
 
@@ -83,8 +83,8 @@ export default function ConfirmDialog({
                             onClick={handleConfirm}
                             loading={isLoading}
                             style={variant === 'danger' ? {
-                                background: 'var(--color-error)',
-                                borderColor: 'var(--color-error)',
+                                background: 'var(--color-destructive-confirm)',
+                                borderColor: 'var(--color-destructive-confirm)',
                             } : undefined}
                         >
                             {confirmText}
@@ -96,7 +96,7 @@ export default function ConfirmDialog({
             <style jsx>{`
 
                 .dialog-content {
-                    background: var(--color-surface);
+                    background: var(--color-popover);
                     border-radius: var(--radius-xl);
                     width: 100%;
                     max-width: 400px;

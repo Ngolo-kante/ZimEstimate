@@ -8,7 +8,7 @@
 }
 
 .bone {
-  background: #dfe6ee;
+  background: var(--color-skeleton-fill);
   border-radius: 4px;
   animation: skeletonPulse 1.8s ease-in-out infinite;
 }
@@ -22,7 +22,7 @@
 /* ---- Page wrapper ---- */
 .page {
   margin: -32px -24px 0;
-  background: #f8fafc;
+  background: var(--color-surface-subtle);
   overflow: hidden;
 }
 
@@ -56,12 +56,12 @@
 .eyebrow {
   width: 110px;
   height: 14px;
-  background: rgba(255, 255, 255, 0.15);
+  background: color-mix(in srgb, var(--color-white) 15%, transparent);
 }
 
 .headingLine {
   height: 52px;
-  background: rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, var(--color-white) 18%, transparent);
   border-radius: 6px;
 }
 
@@ -73,7 +73,7 @@
   width: 85%;
   height: 16px;
   margin-top: 6px;
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--color-white) 10%, transparent);
 }
 
 .heroButtons {
@@ -86,7 +86,7 @@
 .btnSkeleton {
   height: 48px;
   width: 220px;
-  background: rgba(255, 255, 255, 0.14);
+  background: color-mix(in srgb, var(--color-white) 14%, transparent);
   border-radius: 6px;
 }
 
@@ -99,8 +99,8 @@
 
 .btnRowItem {
   height: 56px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: color-mix(in srgb, var(--color-white) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-white) 20%, transparent);
   border-radius: 6px;
 }
 
@@ -113,8 +113,8 @@
 .widgetBox {
   width: 100%;
   min-height: 380px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid #d8e0eb;
+  background: color-mix(in srgb, var(--color-surface-raised) 92%, transparent);
+  border: 1px solid var(--color-panel-border);
   border-radius: 8px;
   padding: 20px;
   display: flex;
@@ -152,27 +152,27 @@
 .widgetInput {
   height: 44px;
   border-radius: 6px;
-  background: #eef2f7;
+  background: var(--color-divider-soft);
 }
 
 .widgetChart {
   flex: 1;
   min-height: 100px;
   border-radius: 6px;
-  background: #f1f4f8;
+  background: var(--color-skeleton-track);
 }
 
 .widgetVerdict {
   height: 42px;
   border-radius: 6px;
-  background: #f1f4f8;
+  background: var(--color-skeleton-track);
 }
 
 /* ---- Start section (four BOQ cards) ---- */
 .startSection {
   padding: 64px 0 72px;
-  background: white;
-  border-bottom: 1px solid #dfe5ed;
+  background: var(--color-surface-raised);
+  border-bottom: 1px solid var(--color-skeleton-divider);
 }
 
 .sectionInner {
@@ -221,9 +221,9 @@
   display: flex;
   flex-direction: column;
   padding: 20px;
-  background: white;
-  border: 1px solid #d8e0eb;
-  border-top: 3px solid #b7cdf4;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-panel-border);
+  border-top: 3px solid var(--color-skeleton-accent);
   border-radius: 8px;
 }
 
@@ -288,7 +288,7 @@
 .cardFooter {
   margin-top: auto;
   padding-top: 20px;
-  border-top: 1px solid #d8e0eb;
+  border-top: 1px solid var(--color-panel-border);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -309,7 +309,7 @@
 /* ---- Hint of the next section (pathways) ---- */
 .pathwayHint {
   padding: 88px 0 40px;
-  background: #f8fafc;
+  background: var(--color-surface-subtle);
 }
 
 .pathwayHintLabel {
@@ -493,14 +493,14 @@
   height: 54px;
   border: 0;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.16);
+  background: color-mix(in srgb, var(--color-white) 16%, transparent);
 }
 
 .stageLine {
   width: min(100%, 600px);
   height: 36px;
   margin-top: 22px;
-  background: rgba(255, 255, 255, 0.07);
+  background: color-mix(in srgb, var(--color-white) 7%, transparent);
 }
 
 .heroBudget {
@@ -526,7 +526,7 @@
 
 .card {
   min-height: 150px;
-  border: 1px solid #e4e1d8;
+  border: 1px solid var(--color-skeleton-card-border);
   border-radius: 18px;
 }
 
@@ -537,7 +537,7 @@
 }
 
 .card:nth-child(1) .bone {
-  background: rgba(255, 255, 255, 0.14);
+  background: color-mix(in srgb, var(--color-white) 14%, transparent);
 }
 
 .card:nth-child(4) {

@@ -66,6 +66,8 @@ import type { SolarWizardOutput } from '@/lib/quick-projects/solar/types';
 import QuickBOQTable from './QuickBOQTable';
 import { captureProductEvent, getBudgetBand } from '@/lib/productAnalytics';
 
+const estimateSeriesColors = ['var(--color-settings-heading)', ...SERIES_COLORS.slice(1)];
+
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 // Was a local 85 while the BOQ charged 80 — another quiet divergence.
@@ -119,7 +121,7 @@ function PackageCard({
   const chips = pkg.appliances.split(',').map((s) => s.trim()).filter(Boolean);
 
   return (
-    <div className={`rounded-xl border p-4 transition-none ${isLoaded ? 'border-blue-400 bg-[var(--color-accent-muted)] ring-2 ring-blue-400/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-200'}`}>
+    <div className={`rounded-xl border p-4 transition-none ${isLoaded ? 'border-[var(--color-choice-focus)] bg-[var(--color-accent-bg)] ring-2 ring-[var(--color-choice-focus)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-choice-edge)]'}`}>
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -129,11 +131,11 @@ function PackageCard({
           <span className="font-semibold text-sm text-[var(--color-text)] truncate">{pkg.name}</span>
         </div>
         <div className="flex-shrink-0 flex flex-col items-end gap-0.5">
-          <span className={`font-bold text-base tabular-nums ${over ? 'text-amber-600' : 'text-emerald-600'}`}>
+          <span className={`font-bold text-base tabular-nums ${over ? 'text-[var(--color-allowance-value)]' : 'text-[var(--color-funded-value)]'}`}>
             {formatUsd(pkg.price)}
           </span>
           {over && (
-            <span className="text-[10px] font-semibold text-amber-500">+{formatUsd(delta)} over</span>
+            <span className="text-[10px] font-semibold text-[var(--color-allowance-indicator)]">+{formatUsd(delta)} over</span>
           )}
         </div>
       </div>
@@ -142,7 +144,7 @@ function PackageCard({
       <p className="text-xs text-[var(--color-text-secondary)] mb-2">
         {pkg.batteryKwh}kWh battery · {pkg.panelCount}×{pkg.panelWatt}W panels
         {pkg.includesInstall && (
-          <span className="ml-1.5 inline-block text-[10px] font-bold uppercase tracking-wide bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
+          <span className="ml-1.5 inline-block text-[10px] font-bold uppercase tracking-wide bg-[var(--color-recommended-bg)] text-[var(--color-recommended-text)] px-1.5 py-0.5 rounded">
             Incl. install
           </span>
         )}
@@ -159,15 +161,15 @@ function PackageCard({
 
       {/* Select button */}
       {isLoaded ? (
-        <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-accent-dark)]">
-          <CheckCircle size={16} weight="fill" className="text-[var(--color-accent)]" />
+        <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-link-strong)]">
+          <CheckCircle size={16} weight="fill" className="text-[var(--color-link)]" />
           Loaded into explorer
         </div>
       ) : (
         <button
           type="button"
           onClick={() => onSelect(pkg)}
-          className="choice-btn choice-btn--combo w-full py-1.5 rounded-lg text-xs font-semibold text-[var(--color-accent-dark)] border border-blue-200 hover:bg-[var(--color-accent-muted)] hover:border-blue-400 transition-none"
+          className="choice-btn choice-btn--combo w-full py-1.5 rounded-lg text-xs font-semibold text-[var(--color-link-strong)] border border-[var(--color-choice-edge)] hover:bg-[var(--color-accent-bg)] hover:border-[var(--color-choice-focus)] transition-none"
         >
           Select This Combo
         </button>
@@ -186,10 +188,10 @@ function KvaGuide({ defaultOpen = false }: { defaultOpen?: boolean }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-none"
+        className="w-full flex items-center justify-between p-4 hover:bg-[var(--color-worksheet-row)] transition-none"
       >
         <span className="font-bold text-[var(--color-text)] flex items-center gap-2 text-sm">
-          <Lightning size={16} weight="duotone" className="text-yellow-500" />
+          <Lightning size={16} weight="duotone" className="text-[var(--color-power-icon)]" />
           kVA Size Guide — What Can Each System Power?
         </span>
         {open ? <CaretUp size={16} className="text-[var(--color-text-muted)]" /> : <CaretDown size={16} className="text-[var(--color-text-muted)]" />}
@@ -210,14 +212,14 @@ function KvaGuide({ defaultOpen = false }: { defaultOpen?: boolean }) {
                   <p className="text-xs text-[var(--color-text-secondary)] mb-2">{tier.typicalUse}</p>
                   <div className="flex flex-wrap gap-1 mb-1.5">
                     {tier.canPower.map((item) => (
-                      <span key={item} className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium border border-emerald-100">
+                      <span key={item} className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--color-funded-bg)] text-[var(--color-funded-label)] font-medium border border-[var(--color-funded-border-soft)]">
                         ✓ {item}
                       </span>
                     ))}
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {tier.cannotPower.map((item) => (
-                      <span key={item} className="text-[11px] px-2 py-0.5 rounded-full bg-red-50 text-red-600 font-medium border border-red-100">
+                      <span key={item} className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--color-validation-bg)] text-[var(--color-validation-text)] font-medium border border-[var(--color-validation-border-soft)]">
                         ✕ {item}
                       </span>
                     ))}
@@ -776,7 +778,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       <div ref={budgetRef} className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3 mb-6">
 
         <div className="min-w-0">
-          <h2 className="text-[0.88rem] tracking-[0.08em] uppercase font-extrabold text-[var(--color-primary)] mb-3">Your budget</h2>
+          <h2 className="text-[0.88rem] tracking-[0.08em] uppercase font-extrabold text-[var(--color-heading)] mb-3">Your budget</h2>
             <Input
               id="solar-budget"
               type="number"
@@ -794,7 +796,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
 
           {budget > 0 && (
-            <div className="explorer-grid grid grid-cols-2 gap-2 my-3 text-xs text-slate-600 [&>span]:rounded-xl [&>span]:border [&>span]:border-slate-200 [&>span]:bg-white [&>span]:p-3 [&_strong]:block [&_strong]:text-base [&_strong]:text-[var(--color-primary)]">
+            <div className="explorer-grid grid grid-cols-2 gap-2 my-3 text-xs text-[var(--color-worksheet-detail)] [&>span]:rounded-xl [&>span]:border [&>span]:border-[var(--color-worksheet-track)] [&>span]:bg-[var(--color-surface-raised)] [&>span]:p-3 [&_strong]:block [&_strong]:text-base [&_strong]:text-[var(--color-heading)]">
               <span>
                 <strong>{usd(totalAllocated)}</strong> allocated
               </span>
@@ -808,7 +810,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
           {budgetNotice && (
             <p
               id="solar-budget-notice"
-              className={`my-3 text-xs ${budgetNotice.tone === 'warn' ? 'text-amber-700' : 'text-slate-500'}`}
+              className={`my-3 text-xs ${budgetNotice.tone === 'warn' ? 'text-[var(--color-allowance-label)]' : 'text-[var(--color-worksheet-caption)]'}`}
             >
               {budgetNotice.text}
             </p>
@@ -821,7 +823,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                 type="button"
                 onClick={() => setBudget(amt)}
                 aria-pressed={budget === amt}
-                className={`min-h-10 rounded-full border px-2.5 py-1.5 text-[0.72rem] font-bold text-[var(--color-primary)] ${budget === amt ? 'border-blue-500/65 bg-blue-100/75' : 'border-slate-400/40 bg-white'}`}
+                className={`min-h-10 rounded-full border px-2.5 py-1.5 text-[0.72rem] font-bold text-[var(--color-heading)] ${budget === amt ? 'border-[var(--color-choice-ring)]/65 bg-[var(--color-choice-fill)]/75' : 'border-[var(--color-worksheet-rule-strong)]/40 bg-[var(--color-surface-raised)]'}`}
               >
                 {formatUsd(amt)}
               </button>
@@ -832,7 +834,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
       {/* ── Objective Selector ───────────────────────────────────────────────── */}
       <div className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3 mb-4">
-        <p className="text-[0.88rem] tracking-[0.08em] uppercase font-extrabold text-[var(--color-primary)] mb-3">What&apos;s your priority?</p>
+        <p className="text-[0.88rem] tracking-[0.08em] uppercase font-extrabold text-[var(--color-heading)] mb-3">What&apos;s your priority?</p>
         <div className="explorer-grid grid grid-cols-3 gap-2">
           {([
             { key: 'economy',  label: 'Economy',  sub: 'Best value, proven brands', icon: <Coins size={18} /> },
@@ -845,11 +847,11 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
               onClick={() => setObjectiveAndBrands(key)}
               className={`choice-btn flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-none ${
                 objective === key
-                  ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-2 ring-[var(--color-accent)]/20 text-[var(--color-accent-dark)]'
-                  : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-blue-300'
+                  ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-bg)] ring-2 ring-[var(--color-accent)]/20 text-[var(--color-link-strong)]'
+                  : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-[var(--color-choice-hover-edge)]'
               }`}
             >
-              <span className={objective === key ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}>{icon}</span>
+              <span className={objective === key ? 'text-[var(--color-link)]' : 'text-[var(--color-text-muted)]'}>{icon}</span>
               <span className="text-sm font-semibold">{label}</span>
               <span className="text-[11px] text-[var(--color-text-secondary)] leading-tight">{sub}</span>
             </button>
@@ -861,13 +863,13 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       <AnimatePresence>
         {comboLoaded && (
           <div
-            className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border border-blue-200 mb-4"
+            className="flex items-center gap-3 p-3 rounded-xl bg-[var(--color-choice-wash)] border border-[var(--color-choice-edge)] mb-4"
           >
-            <CheckCircle size={16} weight="fill" className="text-[var(--color-accent)] flex-shrink-0" />
-            <p className="text-sm text-blue-800 flex-1">
+            <CheckCircle size={16} weight="fill" className="text-[var(--color-link)] flex-shrink-0" />
+            <p className="text-sm text-[var(--color-choice-label)] flex-1">
               <strong>Combo loaded.</strong> Budget and brands have been updated from the selected package.
             </p>
-            <button type="button" onClick={() => setComboLoaded(null)} className="text-xs text-[var(--color-accent)] hover:underline">
+            <button type="button" onClick={() => setComboLoaded(null)} className="text-xs text-[var(--color-link)] hover:underline">
               Dismiss
             </button>
           </div>
@@ -877,7 +879,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
       {/* Empty state — no budget entered yet */}
       {budget === 0 && (
         <div>
-          <div className="explorer-card text-center py-10 mb-6 rounded-2xl border border-dashed border-[var(--color-border)] bg-slate-50/50">
+          <div className="explorer-card text-center py-10 mb-6 rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-worksheet-row)]/50">
             <Lightning size={36} weight="duotone" className="text-[var(--color-border-dark)] mx-auto mb-3" />
             <p className="text-[var(--color-text-secondary)] text-sm">Enter your budget above or tap a quick amount to see what you can get.</p>
           </div>
@@ -895,17 +897,17 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
           {/* ── Freed budget / reallocate ─────────────────────────────────────── */}
           {hasFreedBudget && !redistribute && (
-            <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 mb-5">
+            <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-[var(--color-funded-bg)] border border-[var(--color-funded-border)] mb-5">
               <div className="flex items-start gap-3">
-                <ArrowsClockwise size={18} className="flex-shrink-0 mt-0.5 text-emerald-600" />
-                <p className="text-sm text-emerald-800">
+                <ArrowsClockwise size={18} className="flex-shrink-0 mt-0.5 text-[var(--color-funded-value)]" />
+                <p className="text-sm text-[var(--color-funded-detail)]">
                   <strong>{usd(remaining)} unallocated.</strong> Reallocate into more panels &amp; battery?
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setRedistribute(true)}
-                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-none"
+                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-funded-action)] text-[var(--color-white)] text-xs font-semibold hover:bg-[var(--color-funded-action-hover)] transition-none"
               >
                 <ArrowsClockwise size={14} />
                 Optimise
@@ -919,16 +921,16 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
           {/* ── Fallback Battery Banner ──────────────────────────────────────── */}
           {allocation.fallbackBattery && enabledCards.battery && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-indigo-50 border border-indigo-200 mb-5">
-              <Info size={18} className="flex-shrink-0 mt-0.5 text-indigo-600" />
-              <div className="text-sm text-indigo-900 flex-1">
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-[var(--color-system-note-bg)] border border-[var(--color-system-note-border)] mb-5">
+              <Info size={18} className="flex-shrink-0 mt-0.5 text-[var(--color-system-note-icon)]" />
+              <div className="text-sm text-[var(--color-system-note-text)] flex-1">
                 <strong>Using {allocation.fallbackBattery.label} batteries for now.</strong>{' '}
                 Your selected <strong>{bBrand.label}</strong> ({formatUsd(bBrand.unitPrice)} a unit) does not fit this budget yet.
                 <br />
                 <button
                   type="button"
                   onClick={() => setBatteryBrand(allocation.fallbackBattery!.brand)}
-                  className="text-indigo-700 underline hover:no-underline text-xs font-semibold mt-1 inline-block"
+                  className="text-[var(--color-system-note-link)] underline hover:no-underline text-xs font-semibold mt-1 inline-block"
                 >
                   Keep {allocation.fallbackBattery.label} as selection
                 </button>
@@ -941,16 +943,16 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
               cheapest brand is also cheapest per kWh, so applying it whenever it
               stored more would override every choice at every budget. */}
           {allocation.storageOffer && enabledCards.battery && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 mb-5">
-              <BatteryCharging size={18} className="flex-shrink-0 mt-0.5 text-emerald-700" />
-              <div className="text-sm text-emerald-900 flex-1">
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-[var(--color-funded-bg)] border border-[var(--color-funded-border)] mb-5">
+              <BatteryCharging size={18} className="flex-shrink-0 mt-0.5 text-[var(--color-funded-label)]" />
+              <div className="text-sm text-[var(--color-funded-heading)] flex-1">
                 <strong>More storage for the same money:</strong> {allocation.storageOffer.brand.label} batteries would give
                 you {formatQuantity(allocation.storageOffer.kwh)} kWh at this budget, against {storageKwh} kWh with {bBrand.label}.
                 <br />
                 <button
                   type="button"
                   onClick={() => setBatteryBrand(allocation.storageOffer!.brand.brand)}
-                  className="text-emerald-800 underline hover:no-underline text-xs font-semibold mt-1 inline-block"
+                  className="text-[var(--color-funded-detail)] underline hover:no-underline text-xs font-semibold mt-1 inline-block"
                 >
                   Switch to {allocation.storageOffer.brand.label}
                 </button>
@@ -962,7 +964,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
           {totalAllocated > 0 && (
             <div className="explorer-card p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm mb-6">
               <h4 className="font-bold text-[var(--color-text)] mb-4 flex items-center gap-2">
-                <CheckCircle size={20} weight="fill" className="text-[var(--color-accent)]" />
+                <CheckCircle size={20} weight="fill" className="text-[var(--color-link)]" />
                 Your System Summary
               </h4>
               <div className="explorer-grid explorer-summary-grid grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
@@ -991,16 +993,16 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                 ]
                   .filter((r) => r.show)
                   .map((row) => (
-                    <div key={row.label} className="flex justify-between p-2.5 rounded-lg bg-slate-50">
+                    <div key={row.label} className="flex justify-between p-2.5 rounded-lg bg-[var(--color-worksheet-row)]">
                       <span className="text-[var(--color-text-secondary)]">{row.label}</span>
                       <strong className="text-[var(--color-text)]">{row.value}</strong>
                     </div>
                   ))}
               </div>
 
-              <div className="mt-4 p-3 rounded-lg bg-[var(--color-accent-muted)]/50 border border-blue-100/50">
-                <p className="text-xs font-semibold text-blue-800 mb-1">Assumptions</p>
-                <ul className="text-xs text-[var(--color-accent-dark)] space-y-0.5">
+              <div className="mt-4 p-3 rounded-lg bg-[var(--color-accent-bg)]/50 border border-[var(--color-choice-edge-soft)]/50">
+                <p className="text-xs font-semibold text-[var(--color-choice-label)] mb-1">Assumptions</p>
+                <ul className="text-xs text-[var(--color-link-strong)] space-y-0.5">
                   <li>Prices: Zimbabwe Q1 2026 mid-range market rates</li>
                   <li>Sun hours: 5.5h/day average (Zimbabwe)</li>
                   <li>
@@ -1019,7 +1021,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                     <li className="text-[var(--color-text-secondary)]">Transport not included — enable if your supplier charges separately</li>
                   )}
                   {!enabledCards.protection && (
-                    <li className="text-amber-700 font-semibold">
+                    <li className="text-[var(--color-allowance-label)] font-semibold">
                       Wiring &amp; essentials switched off — not recommended
                     </li>
                   )}
@@ -1041,7 +1043,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                   <button
                     type="button"
                     onClick={() => setRedistribute((prev) => !prev)}
-                    className="underline decoration-dotted underline-offset-2 hover:text-[var(--color-accent)]"
+                    className="underline decoration-dotted underline-offset-2 hover:text-[var(--color-link)]"
                   >
                     {redistribute ? 'show plain split' : 'spend it all'}
                   </button>
@@ -1049,7 +1051,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
               </div>
 
               <div className="mt-4">
-                <CostDonut slices={fundedCards.map((card, index) => ({ label: card.label, value: card.cost, color: SERIES_COLORS[index % SERIES_COLORS.length] }))} />
+                <CostDonut slices={fundedCards.map((card, index) => ({ label: card.label, value: card.cost, color: estimateSeriesColors[index % estimateSeriesColors.length] }))} />
               </div>
             </div>
           )}
@@ -1083,10 +1085,10 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                         key={card.id}
                         className={`explorer-card rounded-2xl border transition-none duration-200 overflow-hidden ${
                           shortfall !== null
-                            ? 'border-amber-300 bg-amber-50/60'
+                            ? 'border-[var(--color-allowance-active-border)] bg-[var(--color-allowance-bg)]/60'
                             : card.enabled
-                              ? 'border-blue-200 bg-[var(--color-surface)] shadow-sm'
-                              : 'border-[var(--color-border)] bg-slate-50/50'
+                              ? 'border-[var(--color-choice-edge)] bg-[var(--color-surface)] shadow-sm'
+                              : 'border-[var(--color-border)] bg-[var(--color-worksheet-row)]/50'
                         }`}
                       >
                         {/* Card header */}
@@ -1099,7 +1101,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                           />
 
                           {/* Icon + label */}
-                          <div className={`flex-shrink-0 ${card.enabled ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}`}>
+                          <div className={`flex-shrink-0 ${card.enabled ? 'text-[var(--color-link)]' : 'text-[var(--color-text-muted)]'}`}>
                             {card.icon}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -1113,7 +1115,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                               <span
                                 className={`text-lg font-bold tabular-nums ${
                                   shortfall !== null
-                                    ? 'text-amber-700'
+                                    ? 'text-[var(--color-allowance-label)]'
                                     : card.enabled
                                       ? 'text-[var(--color-text)]'
                                       : 'text-[var(--color-text-muted)]'
@@ -1128,13 +1130,13 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                             </div>
                             <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 truncate">{card.description}</p>
                             {'outcome' in card && card.outcome && card.enabled && card.cost > 0 && (
-                              <p className="mt-1 text-xs font-semibold text-emerald-700">{card.outcome}</p>
+                              <p className="mt-1 text-xs font-semibold text-[var(--color-funded-label)]">{card.outcome}</p>
                             )}
                             {shortfall !== null && (
                               /* The actionable half of the message. Someone at this
                                  budget wants to know the gap, not that a dash
                                  appeared where a price should be. */
-                              <p className="mt-1 text-xs font-semibold text-amber-800">
+                              <p className="mt-1 text-xs font-semibold text-[var(--color-allowance-detail)]">
                                 The budget ran out before this one — it needs {usd(shortfall)}.
                                 {cheaper && (
                                   <> A {cheaper.label} is {usd(cheaper.price)}.</>
@@ -1147,7 +1149,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                           {card.enabled && (card.hasBrandPicker || card.hasCustomInput) && (
                             <button
                               onClick={() => toggleExpand(card.id)}
-                              className="p-1.5 rounded-lg hover:bg-[var(--color-border-light)] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-none flex-shrink-0"
+                              className="p-1.5 rounded-lg hover:bg-[var(--color-border-light)] text-[var(--color-text-muted)] hover:text-[var(--color-link)] transition-none flex-shrink-0"
                             >
                               {isExpanded ? <CaretUp size={16} /> : <CaretDown size={16} />}
                             </button>
@@ -1168,7 +1170,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                                     {PANEL_BRANDS.map((b) => (
                                       <button key={b.brand} type="button" onClick={() => setPanelBrand(b.brand)}
                                         className={`choice-btn flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-none ${
-                                          panelBrand === b.brand ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
+                                          panelBrand === b.brand ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-bg)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-choice-hover-edge)]'
                                         }`}
                                       >
                                         <span className="font-semibold text-[var(--color-text)]">{b.label}</span>
@@ -1186,13 +1188,13 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                                       return (
                                         <button key={b.brand} type="button" onClick={() => setInverterBrand(b.brand)}
                                           className={`choice-btn flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-none ${
-                                            inverterBrand === b.brand ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
+                                            inverterBrand === b.brand ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-bg)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-choice-hover-edge)]'
                                           }`}
                                         >
                                           <div className="flex w-full items-center justify-between">
                                             <span className="font-semibold text-[var(--color-text)]">{b.label}</span>
                                             <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                                              b.tier === 'budget' ? 'bg-green-100 text-green-700' : b.tier === 'premium' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-[var(--color-accent-dark)]'
+                                              b.tier === 'budget' ? 'bg-[var(--color-recommended-bg)] text-[var(--color-recommended-text)]' : b.tier === 'premium' ? 'bg-[var(--color-premium-tier-bg)] text-[var(--color-premium-tier-text)]' : 'bg-[var(--color-choice-fill)] text-[var(--color-link-strong)]'
                                             }`}>{b.tier}</span>
                                           </div>
                                           <span className="text-xs text-[var(--color-text-secondary)] mt-1">{b.description}</span>
@@ -1209,13 +1211,13 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                                     {BATTERY_BRANDS.map((b) => (
                                       <button key={b.brand} type="button" onClick={() => setBatteryBrand(b.brand)}
                                         className={`choice-btn flex flex-col items-start p-3 rounded-xl border text-left text-sm transition-none ${
-                                          batteryBrand === b.brand ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-muted)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-blue-300'
+                                          batteryBrand === b.brand ? 'is-selected border-[var(--color-accent)] bg-[var(--color-accent-bg)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-choice-hover-edge)]'
                                         }`}
                                       >
                                         <div className="flex w-full items-center justify-between">
                                           <span className="font-semibold text-[var(--color-text)]">{b.label}</span>
                                           <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                                            b.tier === 'budget' ? 'bg-green-100 text-green-700' : b.tier === 'premium' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-[var(--color-accent-dark)]'
+                                            b.tier === 'budget' ? 'bg-[var(--color-recommended-bg)] text-[var(--color-recommended-text)]' : b.tier === 'premium' ? 'bg-[var(--color-premium-tier-bg)] text-[var(--color-premium-tier-text)]' : 'bg-[var(--color-choice-fill)] text-[var(--color-link-strong)]'
                                           }`}>{b.tier}</span>
                                         </div>
                                         <span className="text-xs text-[var(--color-text-secondary)] mt-1">{b.description}</span>
@@ -1260,7 +1262,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                                             onClick={() => setWiringKit(option.kit)}
                                             className={`choice-btn rounded-xl border p-3 text-left transition-none ${
                                               active
-                                                ? 'is-selected border-blue-500 bg-[var(--color-accent-muted)] ring-1 ring-blue-500'
+                                                ? 'is-selected border-[var(--color-choice-ring)] bg-[var(--color-accent-bg)] ring-1 ring-[var(--color-choice-ring)]'
                                                 : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-dark)]'
                                             }`}
                                           >
@@ -1298,7 +1300,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                                               onClick={() => { setInstallCustom(null); setLaborPct(option.pct); }}
                                               className={`choice-btn rounded-xl border px-3 py-2 text-left transition-none ${
                                                 active
-                                                  ? 'is-selected border-blue-500 bg-[var(--color-accent-muted)] ring-1 ring-blue-500'
+                                                  ? 'is-selected border-[var(--color-choice-ring)] bg-[var(--color-accent-bg)] ring-1 ring-[var(--color-choice-ring)]'
                                                   : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-dark)]'
                                               }`}
                                             >
@@ -1329,12 +1331,12 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                                           )} (${Math.round(laborPct * 100)}%)`}
                                           value={installCustom ?? ''}
                                           onChange={(e) => setInstallCustom(e.target.value === '' ? null : Math.max(0, Number(e.target.value)))}
-                                          className="flex-1 rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-blue-400"
+                                          className="flex-1 rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-[var(--color-choice-focus)]"
                                         />
                                         {installCustom !== null && (
                                           <button
                                             onClick={() => setInstallCustom(null)}
-                                            className="text-xs text-[var(--color-accent)] hover:underline whitespace-nowrap"
+                                            className="text-xs text-[var(--color-link)] hover:underline whitespace-nowrap"
                                           >
                                             Use the rate
                                           </button>
@@ -1365,7 +1367,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
           {packageGroups.length > 0 && (
             <div className="mb-6">
               <h4 className="font-bold text-[var(--color-text)] mb-1 text-sm flex items-center gap-2">
-                <Lightning size={16} weight="duotone" className="text-yellow-500" />
+                <Lightning size={16} weight="duotone" className="text-[var(--color-power-icon)]" />
                 Packages Within Your Budget
               </h4>
               <p className="text-xs text-[var(--color-text-secondary)] mb-4">Real Zimbabwe market combos — click to load into the explorer.</p>
@@ -1407,18 +1409,18 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
             const alreadyIdeal = extraPanels === 0 && extraBattery === 0;
 
             return (
-              <div className="p-5 rounded-2xl border border-amber-200 bg-amber-50 shadow-sm mb-6">
-                <h4 className="font-bold text-amber-900 mb-3 flex items-center gap-2">
-                  <Lightbulb size={20} weight="fill" className="text-amber-500" />
+              <div className="p-5 rounded-2xl border border-[var(--color-allowance-border)] bg-[var(--color-allowance-bg)] shadow-sm mb-6">
+                <h4 className="font-bold text-[var(--color-allowance-heading)] mb-3 flex items-center gap-2">
+                  <Lightbulb size={20} weight="fill" className="text-[var(--color-allowance-indicator)]" />
                   System Advisor
                 </h4>
-                <p className="text-xs text-amber-800 mb-4">
+                <p className="text-xs text-[var(--color-allowance-detail)] mb-4">
                   For a <strong>{invKva} kVA {iBrand.label}</strong> inverter, here&apos;s the ideal system vs what your budget buys:
                 </p>
                 <div className="explorer-grid grid grid-cols-2 gap-3 mb-4">
                   {/* Ideal column */}
-                  <div className="stat-box p-3 rounded-xl bg-[var(--color-surface)] border border-amber-200">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 mb-2">Ideal</p>
+                  <div className="stat-box p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-allowance-border)]">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-allowance-value)] mb-2">Ideal</p>
                     <div className="space-y-1.5 text-sm">
                       <div className="flex justify-between">
                         <span className="text-[var(--color-text-secondary)]">Array</span>
@@ -1445,25 +1447,25 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                     <div className="space-y-1.5 text-sm">
                       <div className="flex justify-between">
                         <span className="text-[var(--color-text-secondary)]">Array</span>
-                        <strong className={`${enabledCards.panels && currentPanels > 0 ? (currentPanels >= idealPanelCount ? 'text-emerald-600' : 'text-amber-700') : 'text-[var(--color-text-muted)]'}`}>
+                        <strong className={`${enabledCards.panels && currentPanels > 0 ? (currentPanels >= idealPanelCount ? 'text-[var(--color-funded-value)]' : 'text-[var(--color-allowance-label)]') : 'text-[var(--color-text-muted)]'}`}>
                           {enabledCards.panels && currentPanels > 0 ? `${systemKw} kW` : '—'}
                         </strong>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[var(--color-text-secondary)]">Panels</span>
-                        <strong className={`${enabledCards.panels && currentPanels > 0 ? (currentPanels >= idealPanelCount ? 'text-emerald-600' : 'text-amber-700') : 'text-[var(--color-text-muted)]'}`}>
+                        <strong className={`${enabledCards.panels && currentPanels > 0 ? (currentPanels >= idealPanelCount ? 'text-[var(--color-funded-value)]' : 'text-[var(--color-allowance-label)]') : 'text-[var(--color-text-muted)]'}`}>
                           {enabledCards.panels && currentPanels > 0 ? `${currentPanels}× ${pBrand.watt}W` : '—'}
                         </strong>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[var(--color-text-secondary)]">Battery</span>
-                        <strong className={`${enabledCards.battery && currentBatteryUnits > 0 ? (currentBatteryUnits >= idealBatteryUnits ? 'text-emerald-600' : 'text-amber-700') : 'text-[var(--color-text-muted)]'}`}>
+                        <strong className={`${enabledCards.battery && currentBatteryUnits > 0 ? (currentBatteryUnits >= idealBatteryUnits ? 'text-[var(--color-funded-value)]' : 'text-[var(--color-allowance-label)]') : 'text-[var(--color-text-muted)]'}`}>
                           {enabledCards.battery && currentBatteryUnits > 0 ? `${currentStorageKwh} kWh` : '—'}
                         </strong>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[var(--color-text-secondary)]">Units</span>
-                        <strong className={`${enabledCards.battery && currentBatteryUnits > 0 ? (currentBatteryUnits >= idealBatteryUnits ? 'text-emerald-600' : 'text-amber-700') : 'text-[var(--color-text-muted)]'}`}>
+                        <strong className={`${enabledCards.battery && currentBatteryUnits > 0 ? (currentBatteryUnits >= idealBatteryUnits ? 'text-[var(--color-funded-value)]' : 'text-[var(--color-allowance-label)]') : 'text-[var(--color-text-muted)]'}`}>
                           {enabledCards.battery && currentBatteryUnits > 0 ? `${currentBatteryUnits}× ${activeBatBrand.unitKwh}kWh` : '—'}
                         </strong>
                       </div>
@@ -1473,14 +1475,14 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
                 {/* Gap / upgrade prompt */}
                 {alreadyIdeal ? (
-                  <div className="flex items-center gap-2 text-sm text-emerald-700 font-semibold">
-                    <CheckCircle size={16} weight="fill" className="text-emerald-500" />
+                  <div className="flex items-center gap-2 text-sm text-[var(--color-funded-label)] font-semibold">
+                    <CheckCircle size={16} weight="fill" className="text-[var(--color-funded-indicator)]" />
                     Your system matches the ideal sizing for this inverter. Great setup!
                   </div>
                 ) : (
-                  <div className="flex items-start gap-2 p-3 rounded-xl bg-[var(--color-surface)] border border-amber-200">
-                    <ArrowUp size={16} className="flex-shrink-0 mt-0.5 text-amber-600" />
-                    <div className="text-sm text-amber-900">
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-allowance-border)]">
+                    <ArrowUp size={16} className="flex-shrink-0 mt-0.5 text-[var(--color-allowance-value)]" />
+                    <div className="text-sm text-[var(--color-allowance-heading)]">
                       To reach ideal:{' '}
                       {extraPanels > 0 && (
                         <strong>+{extraPanels} panel{extraPanels > 1 ? 's' : ''} ({formatUsd(extraPanels * pBrand.pricePerPanel)})</strong>
@@ -1490,7 +1492,7 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
                         <strong>+{extraBattery} battery unit{extraBattery > 1 ? 's' : ''} ({formatUsd(extraBattery * activeBatBrand.unitPrice)})</strong>
                       )}
                       {' '}— add approximately{' '}
-                      <strong className="whitespace-nowrap tabular-nums text-amber-800">{formatUsd(costToIdeal)} to your budget</strong>.
+                      <strong className="whitespace-nowrap tabular-nums text-[var(--color-allowance-detail)]">{formatUsd(costToIdeal)} to your budget</strong>.
                     </div>
                   </div>
                 )}
@@ -1503,18 +1505,18 @@ export default function SolarBudgetExplorer({ onBack, backLabel = 'Back to Solar
 
           {/* ── Warnings ──────────────────────────────────────────────────────── */}
           {!enabledCards.protection && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 mb-6">
-              <Warning size={18} className="flex-shrink-0 mt-0.5 text-amber-600" />
-              <div className="text-sm text-amber-800">
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-[var(--color-allowance-bg)] border border-[var(--color-allowance-border)] mb-6">
+              <Warning size={18} className="flex-shrink-0 mt-0.5 text-[var(--color-allowance-value)]" />
+              <div className="text-sm text-[var(--color-allowance-detail)]">
                 <strong>Wiring &amp; essentials switched off.</strong> Cables, breakers, earthing and the changeover switch are what connect the system to your house — no installer will sign off without them. This takes ~${PROTECTION_FIXED} off the estimate, not off the job.
               </div>
             </div>
           )}
 
           {budget > 0 && budget < 900 && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 mb-6">
-              <Warning size={18} className="flex-shrink-0 mt-0.5 text-amber-600" />
-              <div className="text-sm text-amber-800">
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-[var(--color-allowance-bg)] border border-[var(--color-allowance-border)] mb-6">
+              <Warning size={18} className="flex-shrink-0 mt-0.5 text-[var(--color-allowance-value)]" />
+              <div className="text-sm text-[var(--color-allowance-detail)]">
                 <strong>Budget below $900.</strong> The minimum entry-level solar system in Zimbabwe starts around $900. Consider increasing your budget or a basic lighting kit instead.
               </div>
             </div>

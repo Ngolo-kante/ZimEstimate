@@ -11,6 +11,8 @@ import { CaretLeft, Warning, CheckCircle } from '@phosphor-icons/react';
 import { fitQuantityToBudget, totalOf } from '@/lib/quick-projects/fitQuantityToBudget';
 import type { Answers, BOQItem, LaborConfig } from '@/lib/quick-projects/engine/types';
 
+const estimateSeriesColors = ['var(--color-settings-heading)', ...SERIES_COLORS.slice(1)];
+
 /**
  * "What does my budget buy?" for the quick projects whose size is a choice
  * rather than a requirement.
@@ -112,7 +114,7 @@ export default function BudgetFitExplorer({
       )}
 
       <div className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3">
-        <h2 className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-primary)] mb-3">Your budget</h2>
+        <h2 className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-heading)] mb-3">Your budget</h2>
         <Input
           label="AVAILABLE BUDGET (USD)"
           icon={<span>$</span>}
@@ -123,15 +125,15 @@ export default function BudgetFitExplorer({
           placeholder="Enter amount"
         />
         {budgetUsd > 0 && (
-          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500">
-            <div className="rounded-xl border border-slate-200 bg-white p-3"><strong className="block text-base text-[var(--color-primary)]">{money(fit.totalUsd)}</strong>Allocated</div>
-            <div className="rounded-xl border border-slate-200 bg-white p-3"><strong className="block text-base text-[var(--color-primary)]">{money(Math.abs(fit.remainingUsd))}</strong>{fit.remainingUsd >= 0 ? 'Remaining' : 'Over budget'}</div>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[var(--color-worksheet-caption)]">
+            <div className="rounded-xl border border-[var(--color-worksheet-track)] bg-[var(--color-surface-raised)] p-3"><strong className="block text-base text-[var(--color-heading)]">{money(fit.totalUsd)}</strong>Allocated</div>
+            <div className="rounded-xl border border-[var(--color-worksheet-track)] bg-[var(--color-surface-raised)] p-3"><strong className="block text-base text-[var(--color-heading)]">{money(Math.abs(fit.remainingUsd))}</strong>{fit.remainingUsd >= 0 ? 'Remaining' : 'Over budget'}</div>
           </div>
         )}
       </div>
       <div className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3">
         <fieldset>
-          <legend className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-primary)]">{config.variantLabel}</legend>
+          <legend className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-heading)]">{config.variantLabel}</legend>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
             {config.variants.map((option) => {
               const active = option.value === variant;
@@ -143,12 +145,12 @@ export default function BudgetFitExplorer({
                   onClick={() => setVariant(option.value)}
                   className={`rounded-xl border p-3 text-left transition-none ${
                     active
-                      ? 'border-blue-500 bg-blue-50/60 ring-1 ring-blue-500'
-                      : 'border-slate-200 bg-white hover:border-slate-300'
+                      ? 'border-[var(--color-choice-ring)] bg-[var(--color-choice-wash)]/60 ring-1 ring-[var(--color-choice-ring)]'
+                      : 'border-[var(--color-worksheet-track)] bg-[var(--color-surface-raised)] hover:border-[var(--color-worksheet-field-border)]'
                   }`}
                 >
-                  <span className="block text-sm font-bold text-slate-900">{option.label}</span>
-                  <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
+                  <span className="block text-sm font-bold text-[var(--color-worksheet-title)]">{option.label}</span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-[var(--color-worksheet-caption)]">
                     {option.description}
                   </span>
                 </button>
@@ -161,13 +163,13 @@ export default function BudgetFitExplorer({
       {/* ── The answer ─────────────────────────────────────────────────── */}
       <div className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3">
         {fit.belowMinimum ? (
-          <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-            <Warning size={18} weight="fill" className="mt-0.5 shrink-0 text-amber-600" />
+          <div className="flex items-start gap-3 rounded-xl border border-[var(--color-allowance-border)] bg-[var(--color-allowance-bg)] p-4">
+            <Warning size={18} weight="fill" className="mt-0.5 shrink-0 text-[var(--color-allowance-value)]" />
             <div>
-              <p className="text-sm font-bold text-amber-900">
+              <p className="text-sm font-bold text-[var(--color-allowance-heading)]">
                 {money(budgetUsd)} does not cover the smallest job
               </p>
-              <p className="mt-1 text-sm leading-relaxed text-amber-900/90">
+              <p className="mt-1 text-sm leading-relaxed text-[var(--color-allowance-heading)]/90">
                 The smallest {config.noun} we cost is {config.quantityLabel(fit.quantity)}, at{' '}
                 {money(fit.totalUsd)}. You are {money(Math.abs(fit.remainingUsd))} short.
               </p>
@@ -175,23 +177,23 @@ export default function BudgetFitExplorer({
           </div>
         ) : (
           <>
-            <p className="text-sm font-semibold text-slate-500">Your budget covers</p>
-            <p className="mt-1 text-xl font-extrabold tracking-tight text-slate-900">
+            <p className="text-sm font-semibold text-[var(--color-worksheet-caption)]">Your budget covers</p>
+            <p className="mt-1 text-xl font-extrabold tracking-tight text-[var(--color-worksheet-title)]">
               {config.quantityLabel(fit.quantity)}
             </p>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-[var(--color-worksheet-detail)]">
               Materials come to <strong>{money(fit.totalUsd)}</strong>
               {fit.remainingUsd >= 1 && <> — {money(fit.remainingUsd)} left over</>}.
             </p>
 
             {fit.atMaximum && (
-              <p className="mt-3 rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
+              <p className="mt-3 rounded-lg bg-[var(--color-worksheet-row)] p-3 text-xs leading-relaxed text-[var(--color-worksheet-detail)]">
                 That is the largest {config.noun} job this estimator covers. For anything bigger,
                 the full wizard will take exact dimensions.
               </p>
             )}
 
-            <p className="mt-3 text-xs leading-relaxed text-slate-500">
+            <p className="mt-3 text-xs leading-relaxed text-[var(--color-worksheet-caption)]">
               Materials only, at current Zimbabwe prices. Labour and transport are priced
               separately in the full {config.noun} wizard.
             </p>
@@ -202,11 +204,11 @@ export default function BudgetFitExplorer({
       {/* A split needs at least two parts; paving is often one. */}
       {new Set(costedItems.map((item) => item.category)).size > 1 && (
         <div className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3">
-          <h2 className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-primary)] mb-4">Where the money goes</h2>
+          <h2 className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-heading)] mb-4">Where the money goes</h2>
           <CostDonut slices={Array.from(new Set(costedItems.map((item) => item.category))).map((category, index) => ({
             label: category,
             value: costedItems.filter((item) => item.category === category).reduce((sum, item) => sum + item.totalCostUsd, 0),
-            color: SERIES_COLORS[index % SERIES_COLORS.length],
+            color: estimateSeriesColors[index % estimateSeriesColors.length],
           }))} />
         </div>
       )}
@@ -214,14 +216,14 @@ export default function BudgetFitExplorer({
       {/* ── What it buys ───────────────────────────────────────────────── */}
       {costedItems.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] p-3">
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-            <h3 className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-primary)]">What that includes</h3>
-            <span className="text-xs text-slate-500">{costedItems.length} items</span>
+          <div className="flex items-center justify-between border-b border-[var(--color-worksheet-track)] px-5 py-3">
+            <h3 className="text-[0.88rem] font-extrabold uppercase tracking-[0.08em] text-[var(--color-heading)]">What that includes</h3>
+            <span className="text-xs text-[var(--color-worksheet-caption)]">{costedItems.length} items</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
+                <tr className="border-b border-[var(--color-worksheet-rule-soft)] text-left text-xs uppercase tracking-wide text-[var(--color-worksheet-caption)]">
                   <th className="px-5 py-2 font-semibold">Item</th>
                   <th className="px-3 py-2 text-right font-semibold">Qty</th>
                   <th className="px-5 py-2 text-right font-semibold">Cost</th>
@@ -229,21 +231,21 @@ export default function BudgetFitExplorer({
               </thead>
               <tbody>
                 {costedItems.map((item) => (
-                  <tr key={item.id} className="border-b border-slate-50 last:border-0">
-                    <td className="px-5 py-2.5 text-slate-800">{item.description}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-slate-600">
+                  <tr key={item.id} className="border-b border-[var(--color-worksheet-rule-faint)] last:border-0">
+                    <td className="px-5 py-2.5 text-[var(--color-worksheet-strong)]">{item.description}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums text-[var(--color-worksheet-detail)]">
                       {item.quantity} {item.unit}
                     </td>
-                    <td className="px-5 py-2.5 text-right font-semibold tabular-nums text-slate-900">
+                    <td className="px-5 py-2.5 text-right font-semibold tabular-nums text-[var(--color-worksheet-title)]">
                       {money(item.totalCostUsd)}
                     </td>
                   </tr>
                 ))}
-                <tr className="bg-slate-50">
-                  <td className="px-5 py-2.5 font-bold text-slate-900" colSpan={2}>
+                <tr className="bg-[var(--color-worksheet-row)]">
+                  <td className="px-5 py-2.5 font-bold text-[var(--color-worksheet-title)]" colSpan={2}>
                     Total
                   </td>
-                  <td className="px-5 py-2.5 text-right font-extrabold tabular-nums text-slate-900">
+                  <td className="px-5 py-2.5 text-right font-extrabold tabular-nums text-[var(--color-worksheet-title)]">
                     {money(totalOf(fit.items))}
                   </td>
                 </tr>

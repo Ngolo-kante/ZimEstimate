@@ -59,7 +59,7 @@ function OptionGrid({
   }
 
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4 ${hasError ? 'rounded-xl ring-2 ring-red-300 ring-offset-2' : ''}`}>
+    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4 ${hasError ? 'rounded-xl ring-2 ring-[var(--color-validation-border)] ring-offset-2' : ''}`}>
       {options.map((opt) => {
         const active = selected.includes(opt.value);
         return (
@@ -71,13 +71,13 @@ function OptionGrid({
             className={`${styles.card} ${styles.answer} ${active ? styles.selected : ''}`}
           >
             <div className="flex w-full items-start justify-between gap-2">
-              <span className={`text-sm font-semibold block ${active ? 'text-blue-900' : 'text-slate-800'}`}>
+              <span className={`text-sm font-semibold block ${active ? 'text-[var(--color-choice-title)]' : 'text-[var(--color-worksheet-strong)]'}`}>
                 {opt.label}
               </span>
               {active ? (
-                <SelectedIcon weight="fill" className="text-blue-600 flex-shrink-0" size={20} aria-hidden="true" />
+                <SelectedIcon weight="fill" className="text-[var(--color-navbar-link)] flex-shrink-0" size={20} aria-hidden="true" />
               ) : (
-                <span aria-hidden="true" className={`size-5 shrink-0 border border-slate-400 ${multi ? 'rounded-md' : 'rounded-full'}`} />
+                <span aria-hidden="true" className={`size-5 shrink-0 border border-[var(--color-worksheet-rule-strong)] ${multi ? 'rounded-md' : 'rounded-full'}`} />
               )}
             </div>
             {opt.recommended && !active && <CardBadge variant="featured" className="mt-2">Recommended</CardBadge>}
@@ -119,20 +119,20 @@ function QuestionField({
   const hasError = showValidation && question.required !== false && isEmpty;
 
   return (
-    <div className={`mb-6 p-4 sm:p-6 rounded-xl bg-surface border transition-none ${hasError ? 'border-red-300 bg-red-50/30' : 'border-slate-200/60'}`}>
-      <label className="block text-base font-bold text-slate-900 mb-1">{question.title}</label>
-      {question.description && <p className="text-sm text-slate-500 mb-4">{question.description}</p>}
+    <div className={`mb-6 p-4 sm:p-6 rounded-xl bg-surface border transition-none ${hasError ? 'border-[var(--color-validation-border)] bg-[var(--color-validation-bg)]/30' : 'border-[var(--color-worksheet-track)]/60'}`}>
+      <label className="block text-base font-bold text-[var(--color-worksheet-title)] mb-1">{question.title}</label>
+      {question.description && <p className="text-sm text-[var(--color-worksheet-caption)] mb-4">{question.description}</p>}
 
       {/* Toggle */}
       {question.type === 'toggle' && (
-        <div className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-2">
+        <div className="mt-4 flex items-center gap-3 rounded-xl border border-[var(--color-worksheet-track)] px-4 py-2">
           <Switch
             id={switchId}
             checked={toggleChecked}
             label={question.title}
             onCheckedChange={(checked) => onChange(question.id, checked)}
           />
-          <label htmlFor={switchId} className="flex min-h-11 flex-1 cursor-pointer items-center text-sm font-medium text-slate-900">
+          <label htmlFor={switchId} className="flex min-h-11 flex-1 cursor-pointer items-center text-sm font-medium text-[var(--color-worksheet-title)]">
             {toggleChecked ? 'Yes' : 'No'}
           </label>
         </div>
@@ -143,7 +143,7 @@ function QuestionField({
         <select
           value={(val as string) ?? ''}
           onChange={(e) => onChange(question.id, e.target.value)}
-          className={`w-full mt-4 rounded-xl border px-4 py-3 text-base outline-none transition-none bg-white appearance-none cursor-pointer focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${hasError ? 'border-red-400' : 'border-slate-300'}`}
+          className={`w-full mt-4 rounded-xl border px-4 py-3 text-base outline-none transition-none bg-[var(--color-field-solid)] appearance-none cursor-pointer focus:border-[var(--color-choice-ring)] focus:ring-2 focus:ring-[var(--color-choice-ring)]/20 ${hasError ? 'border-[var(--color-validation-field-border)]' : 'border-[var(--color-worksheet-field-border)]'}`}
         >
           <option value="" disabled>Select an option...</option>
           {(question.options ?? []).map((opt) => (
@@ -162,7 +162,7 @@ function QuestionField({
           hasError={hasError}
         />
         {!question.notSureOption && !question.options?.some((opt) => opt.value === 'not_sure') && question.options?.find((opt) => opt.recommended) && (
-          <button type="button" className="mt-3 min-h-11 text-sm font-medium text-blue-700 underline"
+          <button type="button" className="mt-3 min-h-11 text-sm font-medium text-[var(--color-navbar-link-hover)] underline"
             onClick={() => onChange(question.id, question.options?.find((opt) => opt.recommended)?.value)}>
             Not sure — use {question.options.find((opt) => opt.recommended)?.label}
           </button>
@@ -186,8 +186,8 @@ function QuestionField({
         return (
           <div className="mt-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-3xl font-bold text-slate-900">{sliderVal}</span>
-              <span className="text-sm font-medium text-slate-500">{question.unit}</span>
+              <span className="text-3xl font-bold text-[var(--color-worksheet-title)]">{sliderVal}</span>
+              <span className="text-sm font-medium text-[var(--color-worksheet-caption)]">{question.unit}</span>
             </div>
             <input
               type="range"
@@ -196,9 +196,9 @@ function QuestionField({
               step={question.step ?? 1}
               value={sliderVal}
               onChange={(e) => onChange(question.id, parseFloat(e.target.value))}
-              className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:shadow-md"
+              className="w-full h-2 bg-[var(--color-worksheet-track)] rounded-full appearance-none cursor-pointer accent-[var(--color-slider-thumb)] [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--color-slider-thumb)] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:shadow-md"
             />
-            <div className="flex justify-between text-xs text-slate-400">
+            <div className="flex justify-between text-xs text-[var(--color-worksheet-faint)]">
               <span>{question.min ?? 0} {question.unit}</span>
               <span>{question.max ?? 100} {question.unit}</span>
             </div>
@@ -211,14 +211,14 @@ function QuestionField({
         <div className="flex items-center gap-3 mt-4">
           <input
             type="number"
-            className={`w-full max-w-[200px] rounded-xl border px-4 py-3 text-base outline-none transition-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${hasError ? 'border-red-400' : 'border-slate-300'}`}
+            className={`w-full max-w-[200px] rounded-xl border px-4 py-3 text-base outline-none transition-none focus:border-[var(--color-choice-ring)] focus:ring-2 focus:ring-[var(--color-choice-ring)]/20 ${hasError ? 'border-[var(--color-validation-field-border)]' : 'border-[var(--color-worksheet-field-border)]'}`}
             value={(val as number) ?? (question.defaultValue as number) ?? ''}
             min={question.min}
             max={question.max}
             step={question.step ?? 1}
             onChange={(e) => onChange(question.id, parseFloat(e.target.value) || 0)}
           />
-          {question.unit && <span className="text-sm font-medium text-slate-500">{question.unit}</span>}
+          {question.unit && <span className="text-sm font-medium text-[var(--color-worksheet-caption)]">{question.unit}</span>}
         </div>
       )}
 
@@ -226,7 +226,7 @@ function QuestionField({
       {question.type === 'text' && (
         <input
           type="text"
-          className={`w-full mt-4 rounded-xl border px-4 py-3 text-base outline-none transition-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${hasError ? 'border-red-400' : 'border-slate-300'}`}
+          className={`w-full mt-4 rounded-xl border px-4 py-3 text-base outline-none transition-none focus:border-[var(--color-choice-ring)] focus:ring-2 focus:ring-[var(--color-choice-ring)]/20 ${hasError ? 'border-[var(--color-validation-field-border)]' : 'border-[var(--color-worksheet-field-border)]'}`}
           placeholder={question.placeholder ?? ''}
           value={(val as string) ?? ''}
           onChange={(e) => onChange(question.id, e.target.value)}
@@ -237,7 +237,7 @@ function QuestionField({
       {question.notSureOption && (
         <button
           type="button"
-          className={`mt-4 text-sm font-medium transition-none ${isNS ? 'text-blue-600 hover:text-blue-700' : 'text-slate-400 hover:text-slate-600 underline underline-offset-4 decoration-slate-300 hover:decoration-slate-400'}`}
+          className={`mt-4 text-sm font-medium transition-none ${isNS ? 'text-[var(--color-navbar-link)] hover:text-[var(--color-navbar-link-hover)]' : 'text-[var(--color-worksheet-faint)] hover:text-[var(--color-worksheet-detail)] underline underline-offset-4 decoration-[var(--color-worksheet-field-border)] hover:decoration-[var(--color-worksheet-faint)]'}`}
           onClick={() => onNotSure(question.id, !isNS)}
         >
           {isNS ? '← I know the specifics now, go back to options' : "I'm not sure, use safe estimates"}
@@ -246,7 +246,7 @@ function QuestionField({
 
       {/* Validation error */}
       {hasError && (
-        <div className="mt-3 flex items-center gap-2 text-sm text-red-600">
+        <div className="mt-3 flex items-center gap-2 text-sm text-[var(--color-validation-text)]">
           <WarningCircle size={16} weight="fill" />
           <span>Please select an option to continue.</span>
         </div>
@@ -254,8 +254,8 @@ function QuestionField({
 
       {/* Recommendation tip */}
       {tip && (
-        <div className="mt-4 flex items-start gap-3 p-3 rounded-lg bg-blue-50 text-blue-800 border border-blue-100/50">
-          <Info size={18} className="flex-shrink-0 mt-0.5 text-blue-600" />
+        <div className="mt-4 flex items-start gap-3 p-3 rounded-lg bg-[var(--color-choice-wash)] text-[var(--color-choice-label)] border border-[var(--color-choice-edge-soft)]/50">
+          <Info size={18} className="flex-shrink-0 mt-0.5 text-[var(--color-navbar-link)]" />
           <span className="text-sm">{tip}</span>
         </div>
       )}
@@ -287,8 +287,8 @@ function StepView({
       className="w-full"
     >
       <div className="mb-5">
-        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">{step.title}</h2>
-        {step.subtitle && <p className="text-slate-600 text-base">{step.subtitle}</p>}
+        <h2 className="text-xl sm:text-2xl font-bold text-[var(--color-worksheet-title)] mb-2">{step.title}</h2>
+        {step.subtitle && <p className="text-[var(--color-worksheet-detail)] text-base">{step.subtitle}</p>}
       </div>
       <div className="space-y-6">
         {questions.map((q) => (
@@ -428,7 +428,7 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
   if (boqItems) {
     return (
       <div className="w-full max-w-5xl mx-auto animate-fade-in">
-        <button onClick={handleBack} className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-none mb-6">
+        <button onClick={handleBack} className="flex items-center gap-2 text-sm font-medium text-[var(--color-worksheet-caption)] hover:text-[var(--color-navbar-link)] transition-none mb-6">
           <ArrowLeft size={16} /> Back to questions
         </button>
         <QuickBOQTable
@@ -450,11 +450,11 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
     <div className="w-full">
       {/* Progress */}
       <div className="mb-6">
-        <div className="flex items-center justify-between text-sm font-semibold text-slate-500 mb-3">
+        <div className="flex items-center justify-between text-sm font-semibold text-[var(--color-worksheet-caption)] mb-3">
           <span>Step {stepIndex + 1} of {totalSteps}</span>
-          <span className="text-blue-600">{progressPct}%</span>
+          <span className="text-[var(--color-navbar-link)]">{progressPct}%</span>
         </div>
-        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+        <div className="h-2 w-full bg-[var(--color-worksheet-inset)] rounded-full overflow-hidden">
           <div className="h-full bg-accent rounded-full motion-safe:transition-[width] motion-safe:duration-200" style={{ width: `${progressPct}%` }} />
         </div>
       </div>
@@ -477,15 +477,15 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
       {/* MainLayout's .page-content already pads 100px under the fixed bottom
           navigation on phones, so Continue and Cancel stay tappable without
           extra padding here (stacking both left ~300px of empty page). */}
-      <div className="flex items-center justify-between mt-8 pt-5 border-t border-slate-200/50">
+      <div className="flex items-center justify-between mt-8 pt-5 border-t border-[var(--color-worksheet-track)]/50">
         <div>
           {stepIndex > 0 ? (
-            <Button variant="secondary" icon={<ArrowLeft size={16} />} onClick={handleBack} className="bg-white">
+            <Button variant="secondary" icon={<ArrowLeft size={16} />} onClick={handleBack} className="bg-[var(--color-surface-raised)]">
               Back
             </Button>
           ) : (
             <Link href="/quick-projects">
-              <Button variant="secondary" className="bg-white text-slate-400 hover:text-slate-600 hover:border-slate-300">
+              <Button variant="secondary" className="bg-[var(--color-surface-raised)] text-[var(--color-worksheet-faint)] hover:text-[var(--color-worksheet-detail)] hover:border-[var(--color-worksheet-field-border)]">
                 Cancel
               </Button>
             </Link>
@@ -496,7 +496,7 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
           icon={isLastStep ? <CheckCircle size={18} weight="bold" /> : <ArrowRight size={16} />}
           iconPosition="right"
           onClick={handleNext}
-          className={isLastStep ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "shadow-blue-500/25 shadow-lg"}
+          className={isLastStep ? "bg-[var(--color-funded-action)] hover:bg-[var(--color-funded-action-hover)] text-[var(--color-white)]" : "shadow-[var(--color-choice-ring)]/25 shadow-lg"}
         >
           {isLastStep ? 'Generate Bill of Quantities' : 'Continue'}
         </Button>
@@ -514,7 +514,7 @@ function QuickProjectWizardInner({ flow, onSave, isContractor = false }: QuickPr
 export default function QuickProjectWizard(props: QuickProjectWizardProps) {
   const isClient = useIsClient();
   if (!isClient) {
-    return <div className="w-full" aria-busy="true"><div className="h-2 w-full animate-pulse rounded-full bg-slate-100" /></div>;
+    return <div className="w-full" aria-busy="true"><div className="h-2 w-full animate-pulse rounded-full bg-[var(--color-worksheet-inset)]" /></div>;
   }
   return <QuickProjectWizardInner {...props} />;
 }

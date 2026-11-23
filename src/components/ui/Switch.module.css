@@ -13,7 +13,7 @@
 }
 
 .control:focus-visible {
-  outline: 2px solid var(--color-accent-dark);
+  outline: 2px solid var(--color-link-strong);
   outline-offset: 2px;
 }
 
@@ -25,17 +25,17 @@
   height: 26px;
   padding-inline: 3px;
   border-radius: 999px;
-  background: #64748b;
+  background: var(--color-switch-track);
 }
 
 .thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--color-surface);
+  background: var(--color-switch-thumb);
 }
 
 .track[data-state='checked'] {
   justify-content: flex-end;
-  background: var(--color-accent-dark);
+  background: var(--color-switch-on);
 }

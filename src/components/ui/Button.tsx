@@ -85,17 +85,17 @@ export default function Button({
         /* Variants */
         .btn-primary {
           background: var(--color-accent);
-          color: white;
+          color: var(--color-white);
         }
 
         .btn-secondary {
           background: var(--color-info-bg);
           border: 1px solid var(--color-info-border);
-          color: var(--color-accent-dark);
+          color: var(--color-link-strong);
         }
 
         .btn-ghost { background: transparent; color: var(--color-text-secondary); }
-        .btn-danger { background: var(--color-danger-fg); color: white; }
+        .btn-danger { background: var(--color-destructive-button); color: var(--color-white); }
 
         @media (hover: hover) and (pointer: fine) {
           .btn-primary:hover:not(:disabled) {
@@ -103,14 +103,14 @@ export default function Button({
             box-shadow: 0 2px 6px rgb(24 72 185 / 22%);
           }
           .btn-secondary:hover:not(:disabled) {
-            background: #e2ecfc;
-            border-color: var(--color-accent);
+            background: var(--color-secondary-hover);
+            border-color: var(--color-link);
           }
           .btn-ghost:hover:not(:disabled) {
             background: var(--color-border-light);
             color: var(--color-text);
           }
-          .btn-danger:hover:not(:disabled) { background: #991b1b; }
+          .btn-danger:hover:not(:disabled) { background: var(--color-destructive-hover); }
         }
 
         .btn[aria-busy='true'] { cursor: progress; }

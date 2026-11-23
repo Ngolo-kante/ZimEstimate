@@ -70,7 +70,7 @@ export default function Input({
           font-family: inherit;
           border: 1px solid var(--color-border);
           border-radius: var(--radius-md);
-          background: var(--color-surface);
+          background: var(--input-bg);
           color: var(--color-text);
           transition: none;
         }
@@ -81,8 +81,8 @@ export default function Input({
 
         .input-field:focus {
           outline: none;
-          border-color: var(--color-accent);
-          box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.18);
+          border-color: var(--color-link);
+          box-shadow: 0 0 0 3px var(--color-field-focus-wash);
         }
 
         .input-field::placeholder {
@@ -95,7 +95,7 @@ export default function Input({
         }
 
         .has-error .input-field:focus {
-          box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+          box-shadow: 0 0 0 3px var(--color-error-focus-wash);
         }
 
         .input-error {
@@ -164,7 +164,7 @@ export function Textarea({
           font-family: inherit;
           border: 1px solid var(--color-border);
           border-radius: var(--radius-md);
-          background: var(--color-surface);
+          background: var(--input-bg);
           color: var(--color-text);
           resize: vertical;
           transition: none;
@@ -172,8 +172,8 @@ export function Textarea({
 
         .textarea-field:focus {
           outline: none;
-          border-color: var(--color-accent);
-          box-shadow: 0 0 0 3px rgba(78, 154, 247, 0.18);
+          border-color: var(--color-link);
+          box-shadow: 0 0 0 3px var(--color-field-focus-wash);
         }
 
         .textarea-field::placeholder {
