@@ -117,7 +117,7 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
     else setStep('size');
   };
   if (boqItems) return <div className="w-full max-w-5xl mx-auto">
-    <button type="button" className="min-h-11 text-sm text-slate-600" onClick={back}>← Back to wizard</button>
+    <button type="button" className="min-h-11 text-sm text-[var(--color-worksheet-detail)]" onClick={back}>← Back to wizard</button>
     <QuickBOQTable initialMarkupPct={saved?.markupPct} projectType="solar" initialItems={boqItems} labor={labor} onLaborChange={setLabor}
       isContractor={isContractor} answers={answers as unknown as Record<string, unknown>}
       onSave={onSave ? (items, markupPct) => onSave({ answers, markupPct, labor, result: selectedPackage ? packageResult(selectedPackage) : result, boqItems: items }) : undefined} />
@@ -127,18 +127,18 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
   return <div className="w-full">
     {/* The same step header as the other quick project wizards. */}
     <div className="mb-6">
-      <div className="mb-3 flex items-center justify-between text-sm font-semibold text-slate-500">
+      <div className="mb-3 flex items-center justify-between text-sm font-semibold text-[var(--color-worksheet-caption)]">
         <span>Step {number} of {length}</span>
-        <span className="text-blue-600">{Math.round(((number - 1) / length) * 100)}%</span>
+        <span className="text-[var(--color-navbar-link)]">{Math.round(((number - 1) / length) * 100)}%</span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--color-worksheet-inset)]">
         <div className="h-full rounded-full bg-accent motion-safe:transition-[width] motion-safe:duration-200" style={{ width: `${Math.round(((number - 1) / length) * 100)}%` }} />
       </div>
     </div>
-    <p className="mb-2 text-sm font-semibold text-blue-700">Solar setup</p>
-    <h2 className="mb-2 text-xl sm:text-2xl font-bold text-slate-900">{title}</h2>
+    <p className="mb-2 text-sm font-semibold text-[var(--color-navbar-link-hover)]">Solar setup</p>
+    <h2 className="mb-2 text-xl sm:text-2xl font-bold text-[var(--color-worksheet-title)]">{title}</h2>
     {step === 'size' && <>
-      <p className="mb-5 text-slate-600">Most homes start with 1kVA and add more later.</p>
+      <p className="mb-5 text-[var(--color-worksheet-detail)]">Most homes start with 1kVA and add more later.</p>
       <div className={styles.grid}>{groups.map((group, index) => {
         const packages = SOLAR_PACKAGES.filter((pkg) => group.match(pkg.kva));
         const Icon = group.icon;
@@ -156,8 +156,8 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
         <span className={styles.detail}>Answer a few questions for a recommendation.</span>
       </button></div>
       <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-        <Link className="min-h-11 content-center text-blue-700 underline" href="/quick-budget?mode=solar">Have a budget? See what it buys</Link>
-        <button type="button" className="min-h-11 text-left text-blue-700 underline" onClick={() => { setPath('quote'); setStep('quote'); update({ intent: 'quote_check' }); }}>Check a solar quote you have</button>
+        <Link className="min-h-11 content-center text-[var(--color-navbar-link-hover)] underline" href="/quick-budget?mode=solar">Have a budget? See what it buys</Link>
+        <button type="button" className="min-h-11 text-left text-[var(--color-navbar-link-hover)] underline" onClick={() => { setPath('quote'); setStep('quote'); update({ intent: 'quote_check' }); }}>Check a solar quote you have</button>
       </div>
     </>}
     {step === 'options' && <div className="grid gap-4">
@@ -169,9 +169,9 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
           {index === 0 && <CardBadge variant="info" className={styles.badge}>Lowest price</CardBadge>}
         </button>)}
       {selectedPackage && <>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h3 className="mb-3 font-semibold text-slate-900">Included parts</h3>
-          <ol className="grid gap-2 text-sm text-slate-700">
+        <div className="rounded-2xl border border-[var(--color-worksheet-track)] bg-[var(--color-surface-raised)] p-5">
+          <h3 className="mb-3 font-semibold text-[var(--color-worksheet-title)]">Included parts</h3>
+          <ol className="grid gap-2 text-sm text-[var(--color-worksheet-label)]">
             <li>Battery: {selectedPackage.batteryKwh} kWh</li>
             <li>Panels: {selectedPackage.panelCount} × {selectedPackage.panelWatt} W</li>
             <li>Inverter: {selectedPackage.kva} kVA</li>
@@ -192,33 +192,33 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
         <span className={styles.icon}><Question size={28} weight="duotone" /></span><span className={styles.name}>Not sure — use 4 hours</span>
       </button></div>}
     {step === 'appliances' && <div className="grid gap-3">
-      <button type="button" className="min-h-11 justify-self-start text-sm font-semibold text-blue-700 underline" onClick={() => update({ appliances: typicalHomeSelections() })}>Not sure — use a typical home</button>
+      <button type="button" className="min-h-11 justify-self-start text-sm font-semibold text-[var(--color-navbar-link-hover)] underline" onClick={() => update({ appliances: typicalHomeSelections() })}>Not sure — use a typical home</button>
       {SOLAR_APPLIANCES.map((appliance) => {
         const selection = answers.appliances[appliance.id] ?? { id: appliance.id, include: false, qty: 0, hours: 0 };
         const loadKey = appliance.id === 'kettle' || appliance.id === 'microwave' ? 'kettleMicrowave' :
           appliance.id === 'geyser' ? 'geyserWithHouse' : appliance.category === 'pump' ? 'pumpWithHouse' : null;
-        return <div key={appliance.id} className="rounded-2xl border border-slate-200 bg-white p-4">
-          <label className="flex min-h-11 items-center gap-3 font-semibold text-slate-900">
+        return <div key={appliance.id} className="rounded-2xl border border-[var(--color-worksheet-track)] bg-[var(--color-surface-raised)] p-4">
+          <label className="flex min-h-11 items-center gap-3 font-semibold text-[var(--color-worksheet-title)]">
             <input type="checkbox" checked={selection.include} onChange={(event) => update({ appliances: { ...answers.appliances, [appliance.id]: { ...selection, include: event.target.checked, qty: event.target.checked ? selection.qty || 1 : 0, hours: event.target.checked ? selection.hours || 2 : 0 } } })} />
-            {appliance.label}<span className="ml-auto text-sm text-slate-500">{appliance.watts} W</span>
+            {appliance.label}<span className="ml-auto text-sm text-[var(--color-worksheet-caption)]">{appliance.watts} W</span>
           </label>
           {selection.include && <div className="mt-3 grid grid-cols-2 gap-3">
             <Input label="Qty" type="number" min={1} value={selection.qty || ''} onChange={(event) => update({ appliances: { ...answers.appliances, [appliance.id]: { ...selection, qty: Number(event.target.value) } } })} />
             <Input label="Hours/day" type="number" min={0} value={selection.hours || ''} onChange={(event) => update({ appliances: { ...answers.appliances, [appliance.id]: { ...selection, hours: Number(event.target.value) } } })} />
-            {loadKey && <label className="col-span-2 flex min-h-11 items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={answers.simultaneousLoads[loadKey]} onChange={(event) => update({ simultaneousLoads: { ...answers.simultaneousLoads, [loadKey]: event.target.checked } })} />Runs at the same time as other loads</label>}
+            {loadKey && <label className="col-span-2 flex min-h-11 items-center gap-2 text-sm text-[var(--color-worksheet-label)]"><input type="checkbox" checked={answers.simultaneousLoads[loadKey]} onChange={(event) => update({ simultaneousLoads: { ...answers.simultaneousLoads, [loadKey]: event.target.checked } })} />Runs at the same time as other loads</label>}
           </div>}
         </div>;
       })}
     </div>}
     {step === 'results' && path === 'guided' && result && <div className="grid gap-4">
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-700">
-        <h3 className="mb-3 text-lg font-semibold text-slate-900">Recommended system</h3>
+      <div className="rounded-2xl border border-[var(--color-worksheet-track)] bg-[var(--color-surface-raised)] p-5 text-sm text-[var(--color-worksheet-label)]">
+        <h3 className="mb-3 text-lg font-semibold text-[var(--color-worksheet-title)]">Recommended system</h3>
         <p>Inverter: <strong>{result.inverterKva} kVA</strong></p><p>Battery: <strong>{result.batteryKwh} kWh</strong></p>
         <p>Solar array: <strong>{result.solarArrayKw} kW</strong> · {result.panelCount} panels</p>
         <p>Daily energy: {result.dailyEnergyKwh} kWh</p>
         {cost && <p className="mt-2">Estimated total: ${cost.total.toLocaleString('en-US')}</p>}
         <p className="mt-3">Each panel needs about 2 m² of roof.</p>
-        {result.warnings.map((warning) => <p className="mt-2 text-amber-700" key={warning}>{warning}</p>)}
+        {result.warnings.map((warning) => <p className="mt-2 text-[var(--color-allowance-label)]" key={warning}>{warning}</p>)}
       </div>
       {preferences()}
     </div>}
@@ -229,7 +229,7 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
       ] as const).map(([key, label]) => <Input key={key} label={label} type="number" min={0} value={answers.quote[key] ?? ''} onChange={(event) => update({ quote: { ...answers.quote, [key]: Number(event.target.value) } })} />)}
       <Input label="Notes about the quote" value={answers.quote.notes} onChange={(event) => update({ quote: { ...answers.quote, notes: event.target.value } })} />
     </div>}
-    {step === 'results' && path === 'quote' && <div className="rounded-2xl border border-slate-200 bg-white p-5">
+    {step === 'results' && path === 'quote' && <div className="rounded-2xl border border-[var(--color-worksheet-track)] bg-[var(--color-surface-raised)] p-5">
       <h3 className="font-semibold">Quote check summary</h3>
       <p>We will compare your quote against Zimbabwe system tiers once you save this quick project.</p>
       <p>Quoted total: {answers.quote.totalUsd ? `$${answers.quote.totalUsd}` : 'Not provided'}</p>
@@ -237,7 +237,7 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
       <p>Battery: {answers.quote.batteryKwh ?? 'Not provided'} kWh</p>
       <p>Panels: {answers.quote.panelCount ?? 'Not provided'}</p>
     </div>}
-    {step !== 'size' && <div className="mt-8 flex justify-between border-t border-slate-200 pt-5">
+    {step !== 'size' && <div className="mt-8 flex justify-between border-t border-[var(--color-worksheet-track)] pt-5">
       <Button variant="secondary" onClick={back}>Back</Button>
       {step === 'options' ? <Button variant="primary" onClick={makeBoq} disabled={!selectedPackage}>Generate BOQ</Button> :
         step === 'backup' ? <Button variant="primary" onClick={() => setStep('appliances')}>Continue</Button> :
@@ -248,22 +248,22 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
 
   function preferences() {
     return <>
-      <details className="rounded-2xl border border-slate-200 bg-white p-4">
-        <summary className="min-h-11 cursor-pointer font-semibold text-slate-900">Change brands <span className="font-normal text-slate-500">(No preference)</span></summary>
+      <details className="rounded-2xl border border-[var(--color-worksheet-track)] bg-[var(--color-surface-raised)] p-4">
+        <summary className="min-h-11 cursor-pointer font-semibold text-[var(--color-worksheet-title)]">Change brands <span className="font-normal text-[var(--color-worksheet-caption)]">(No preference)</span></summary>
         <div className="grid gap-3 pt-3">{([
           ['Panel brand', panelBrand, setPanelBrand, [['no_pref', 'No preference'], ['ja_solar', 'JA Solar'], ['canadian_solar', 'Canadian Solar'], ['cheapest', 'Cheapest available']]],
           ['Inverter brand', inverterBrand, setInverterBrand, [['no_pref', 'No preference'], ['deye', 'Deye'], ['victron', 'Victron'], ['solarmd', 'SolarMD']]],
           ['Battery brand', batteryBrand, setBatteryBrand, [['no_pref', 'No preference'], ['pylontech', 'Pylontech'], ['freedom_won', 'Freedom Won']]],
-        ] as const).map(([label, value, setter, options]) => <label key={label} className="grid gap-1 text-sm font-medium text-slate-700">{label}
-          <select className="min-h-11 rounded-xl border border-slate-300 bg-white px-3" value={value} onChange={(event) => setter(event.target.value)}>
+        ] as const).map(([label, value, setter, options]) => <label key={label} className="grid gap-1 text-sm font-medium text-[var(--color-worksheet-label)]">{label}
+          <select className="min-h-11 rounded-xl border border-[var(--color-worksheet-field-border)] bg-[var(--color-field-solid)] px-3" value={value} onChange={(event) => setter(event.target.value)}>
             {options.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
           </select></label>)}</div>
       </details>
       <div className="grid gap-2">
-        <h3 className="font-semibold text-slate-900">Optional costs</h3>
+        <h3 className="font-semibold text-[var(--color-worksheet-title)]">Optional costs</h3>
         {/* A package's price already includes installation, so it has no switch. */}
         {([['Equipment delivery / transport', transport, setTransport], ...(selectedPackage && packageBrandsKept ? [] : [['Installation labour', install, setInstall]] as const), ['Contingency (5%)', contingency, setContingency]] as const).map(([label, value, setter]) =>
-          <label key={label} className="flex min-h-11 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-medium text-slate-800">
+          <label key={label} className="flex min-h-11 items-center gap-3 rounded-2xl border border-[var(--color-worksheet-track)] bg-[var(--color-surface-raised)] p-4 text-sm font-medium text-[var(--color-worksheet-strong)]">
             <input type="checkbox" checked={value} onChange={(event) => setter(event.target.checked)} />{label}
           </label>)}
       </div>
@@ -273,6 +273,6 @@ function SolarQuickWizardInner({ onChange, onSave, isContractor = false }: Props
 
 export default function SolarQuickWizard(props: Props) {
   const isClient = useIsClient();
-  if (!isClient) return <div className="h-2 w-full rounded-full bg-slate-100" aria-busy="true" />;
+  if (!isClient) return <div className="h-2 w-full rounded-full bg-[var(--color-worksheet-inset)]" aria-busy="true" />;
   return <SolarQuickWizardInner {...props} />;
 }

@@ -9,9 +9,9 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  color: #1d4ed8;
+  color: var(--color-info-fg);
   cursor: pointer;
-  box-shadow: 0 4px 16px rgb(11 31 59 / 12%);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-account-avatar) 12%, transparent);
 }
 
 .panel {
@@ -46,7 +46,7 @@
 
 .bubble:focus-visible,
 .close:focus-visible {
-  outline: 3px solid #1d4ed8;
+  outline: 3px solid var(--color-info-fg);
   outline-offset: 3px;
 }
 
@@ -57,7 +57,7 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .bubble:hover { border-color: #1d4ed8; }
+  .bubble:hover { border-color: var(--color-info-fg); }
 }
 
 :global(body):has(.panel) :global([data-slot='dialog-overlay']),

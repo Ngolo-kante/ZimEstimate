@@ -1,30 +1,30 @@
-.chat { margin-top: 24px; padding: 16px; border: 1px solid #dbe5f5; border-radius: 16px; background: #f8fafc; color: var(--color-primary); }
+.chat { margin-top: 24px; padding: 16px; border: 1px solid var(--color-conversation-border); border-radius: 16px; background: var(--color-surface-subtle); color: var(--color-heading); }
 .chat p { color: inherit; font-size: 1rem; line-height: 1.6; }
-.assistant { padding: 12px 14px; margin: 0 28px 16px 0; background: white; border: 1px solid #dbe5f5; border-left: 3px solid #d4a73a; border-radius: 12px 12px 12px 4px; }
-.person { padding: 12px 14px; margin: 0 0 16px 28px; background: var(--color-primary); color: white !important; border-radius: 12px 12px 4px 12px; overflow-wrap: anywhere; }
+.assistant { padding: 12px 14px; margin: 0 28px 16px 0; background: var(--color-surface-raised); border: 1px solid var(--color-conversation-border); border-left: 3px solid var(--color-section-marker); border-radius: 12px 12px 12px 4px; }
+.person { padding: 12px 14px; margin: 0 0 16px 28px; background: var(--color-primary); color: var(--color-on-navy) !important; border-radius: 12px 12px 4px 12px; overflow-wrap: anywhere; }
 .composer { display: grid; gap: 8px; margin-block: 12px; }
-.composer input, .composer textarea { width: 100%; min-height: 44px; padding: 12px; border: 1px solid #94a3b8; border-radius: 8px; font: inherit; font-size: 16px; background: white; color: var(--color-primary); }
+.composer input, .composer textarea { width: 100%; min-height: 44px; padding: 12px; border: 1px solid var(--color-disabled); border-radius: 8px; font: inherit; font-size: 16px; background: var(--color-field-solid); color: var(--color-heading); }
 .composer label { font-weight: 600; }
 .choices { display: flex; flex-wrap: wrap; gap: 8px; }
 .chat button { min-height: 44px; }
 .chat ul { margin: 8px 0 0; padding-left: 20px; }
-.composer textarea:focus-visible, .composer input:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 1px; border-color: #1d4ed8; }
+.composer textarea:focus-visible, .composer input:focus-visible { outline: 2px solid var(--color-info-fg); outline-offset: 1px; border-color: var(--color-info-fg); }
 .examples { margin: 0 0 12px; }
-.examplesLabel { margin: 0 0 8px; font-size: 0.875rem !important; font-weight: 600; color: #475569 !important; }
-.example { min-height: 44px; padding: 10px 14px; border: 1px solid #bfdbfe; border-radius: 999px; background: #eff6ff; color: #1d4ed8; font: inherit; font-size: 0.875rem; font-weight: 500; text-align: left; cursor: pointer; touch-action: manipulation; }
-.example:active:not(:disabled) { background: #dbeafe; }
-.example:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }
-@media (hover: hover) and (pointer: fine) { .example:hover:not(:disabled) { border-color: #1d4ed8; } }
+.examplesLabel { margin: 0 0 8px; font-size: 0.875rem !important; font-weight: 600; color: var(--color-detail) !important; }
+.example { min-height: 44px; padding: 10px 14px; border: 1px solid var(--color-example-border); border-radius: 999px; background: var(--color-info-bg); color: var(--color-info-fg); font: inherit; font-size: 0.875rem; font-weight: 500; text-align: left; cursor: pointer; touch-action: manipulation; }
+.example:active:not(:disabled) { background: var(--color-active-wash); }
+.example:focus-visible { outline: 2px solid var(--color-info-fg); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .example:hover:not(:disabled) { border-color: var(--color-info-fg); } }
 .example:disabled { opacity: 0.6; cursor: wait; }
-.error { margin: 8px 0 0; color: #b91c1c !important; font-size: 0.875rem !important; }
+.error { margin: 8px 0 0; color: var(--color-danger-fg) !important; font-size: 0.875rem !important; }
 .inputWrap { position: relative; }
-.inputWrap input { min-height: 60px !important; padding-right: 60px !important; border-radius: 14px !important; border-color: #bfd3ef !important; }
-.inputWrap textarea { padding-right: 60px !important; border-radius: 14px !important; border-color: #bfd3ef !important; resize: none; }
-.send { position: absolute; right: 8px; bottom: 8px; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 999px; background: #1d4ed8; color: white; cursor: pointer; touch-action: manipulation; }
-.send:active:not(:disabled) { background: #1e40af; transform: scale(0.96); }
-.send:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }
-@media (hover: hover) and (pointer: fine) { .send:hover:not(:disabled) { background: #1e40af; } }
+.inputWrap input { min-height: 60px !important; padding-right: 60px !important; border-radius: 14px !important; border-color: var(--color-saved-link-border) !important; }
+.inputWrap textarea { padding-right: 60px !important; border-radius: 14px !important; border-color: var(--color-saved-link-border) !important; resize: none; }
+.send { position: absolute; right: 8px; bottom: 8px; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 999px; background: var(--color-estimate-action); color: var(--color-white); cursor: pointer; touch-action: manipulation; }
+.send:active:not(:disabled) { background: var(--color-estimate-send-hover); transform: scale(0.96); }
+.send:focus-visible { outline: 2px solid var(--color-info-fg); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .send:hover:not(:disabled) { background: var(--color-estimate-send-hover); } }
 .send:disabled { cursor: wait; }
-.spinner { width: 18px; height: 18px; border: 2px solid rgba(255, 255, 255, 0.4); border-top-color: white; border-radius: 50%; animation: chatSpin 700ms linear infinite; }
+.spinner { width: 18px; height: 18px; border: 2px solid color-mix(in srgb, var(--color-white) 40%, transparent); border-top-color: var(--color-on-navy); border-radius: 50%; animation: chatSpin 700ms linear infinite; }
 @keyframes chatSpin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.6s; } .send:active:not(:disabled) { transform: none; } }

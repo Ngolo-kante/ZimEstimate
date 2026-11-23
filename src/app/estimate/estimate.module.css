@@ -10,11 +10,11 @@
 .hero {
   position: relative;
   overflow: hidden;
-  color: white;
+  color: var(--color-on-navy);
   background-color: var(--studio-steel);
   background-image: var(--studio-grid);
   background-size: var(--studio-grid-size);
-  border-bottom: 1px solid #cbd5e1;
+  border-bottom: 1px solid var(--color-border-dark);
 }
 
 
@@ -36,7 +36,7 @@
   gap: 8px;
   min-height: 44px;
   margin-bottom: 12px;
-  color: white;
+  color: var(--color-on-navy);
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -56,7 +56,7 @@
 .heroCopy p {
   max-width: 680px;
   margin: 8px 0 0;
-  color: #d9e4f2;
+  color: var(--color-describe-on-navy);
   font-size: 1.05rem;
   line-height: 1.5;
 }
@@ -73,7 +73,7 @@
 .group {
   /* One accent for every group, matching Quick projects (owner: add colour,
      keep it minimal). #1d4ed8 passes 4.5:1 on white. */
-  --tone: #1d4ed8;
+  --tone: var(--color-info-fg);
 }
 
 .groupHeader {
@@ -96,7 +96,7 @@
 
 .groupHeader p {
   margin: 0;
-  color: #526174;
+  color: var(--color-directory-description);
   font-size: 0.85rem;
 }
 
@@ -115,9 +115,9 @@
   gap: 12px;
   height: 100%;
   padding: 12px 14px;
-  color: #10213b;
-  background: #fff;
-  border: 1px solid #d9dde3;
+  color: var(--color-directory-title);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-directory-border);
   border-radius: 10px;
   text-decoration: none;
   transition: none;
@@ -125,11 +125,11 @@
 @media (hover: hover) and (pointer: fine) {
     .tile:hover {
       border-color: var(--tone);
-      box-shadow: 0 4px 14px rgba(11, 31, 59, 0.08);}
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--color-account-avatar) 8%, transparent);}
 }
 
 .tile:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--tone) 45%, white);
+  outline: 3px solid color-mix(in srgb, var(--tone) 45%, var(--color-white));
   outline-offset: 2px;
 }
 
@@ -141,13 +141,13 @@
   place-items: center;
   width: 40px;
   height: 40px;
-  color: var(--color-primary);
-  background: #f1f5f9;
+  color: var(--color-heading);
+  background: var(--color-surface-quiet);
   border-radius: 10px;
 }
 
 .tileIcon svg [opacity='0.2'] {
-  fill: #e9c46a;
+  fill: var(--color-featured-edge);
   opacity: 0.75;
 }
 
@@ -165,7 +165,7 @@
 .tileText span {
   display: block;
   margin-top: 2px;
-  color: #5b6a7d;
+  color: var(--color-directory-caption);
   font-size: 0.76rem;
   line-height: 1.35;
 }
@@ -247,7 +247,7 @@
   }
 
   .hero {
-    border-bottom-color: #354962;
+    border-bottom-color: var(--color-project-header-border);
   }
 
   .tile:focus-visible,
@@ -262,7 +262,7 @@
     border: 1px solid var(--color-border);
     border-radius: 10px;
     background: var(--color-surface);
-    color: var(--color-primary);
+    color: var(--color-heading);
   }
 
   .backLink span { display: none; }
@@ -272,7 +272,7 @@
   }
 
   .groupHeader h2 {
-    color: white;
+    color: var(--color-on-navy);
   }
 
   .groupHeader p {

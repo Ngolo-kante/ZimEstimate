@@ -255,7 +255,7 @@ export default function HeroBudgetWidget() {
       <div className="relative h-full w-full p-4 sm:p-5 md:p-6 flex flex-col gap-2.5 sm:gap-3">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]" style={{ fontFamily: 'var(--font-mono)' }}>
+          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-heading)]" style={{ fontFamily: 'var(--font-mono)' }}>
             Budget check
           </span>
         </div>
@@ -290,9 +290,9 @@ export default function HeroBudgetWidget() {
         <div className="flex flex-col gap-2 sm:gap-3">
           {/* The house is drawn on graph paper, like the plan it stands for. */}
           <div
-            className="flex min-h-[128px] flex-shrink-0 items-end justify-center overflow-hidden rounded-lg border border-[var(--color-border-light)] bg-white px-2 pt-3 sm:min-h-36"
+            className="flex min-h-[128px] flex-shrink-0 items-end justify-center overflow-hidden rounded-lg border border-[var(--color-border-light)] bg-[var(--color-surface-elevated)] px-2 pt-3 sm:min-h-36"
             style={{
-              backgroundImage: 'linear-gradient(rgba(46,108,246,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(46,108,246,0.05) 1px, transparent 1px)',
+              backgroundImage: 'linear-gradient(color-mix(in srgb, var(--color-focus-ring) 5%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--color-focus-ring) 5%, transparent) 1px, transparent 1px)',
               backgroundSize: '16px 16px',
             }}
           >
@@ -301,7 +301,7 @@ export default function HeroBudgetWidget() {
 
           <label className="block">
             <span className="sr-only">Your budget in US dollars</span>
-            <div className="flex items-center gap-1.5 bg-white border border-[var(--color-border)] rounded-lg px-4 py-2.5 focus-within:border-[var(--color-accent)] focus-within:ring-4 focus-within:ring-[rgba(78,154,247,0.18)] transition-[border-color,box-shadow] duration-150 motion-reduce:transition-none">
+            <div className="flex items-center gap-1.5 bg-[var(--color-field-solid)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 focus-within:border-[var(--color-accent)] focus-within:ring-4 focus-within:ring-[var(--color-field-focus-wash)] transition-[border-color,box-shadow] duration-150 motion-reduce:transition-none">
               <span className="text-xl md:text-2xl font-extrabold text-[var(--color-text-secondary)]">$</span>
               <input
                 type="text"
@@ -331,7 +331,7 @@ export default function HeroBudgetWidget() {
                 type="button"
                 aria-pressed={parsedBudget === amount}
                 onClick={() => handleInput(String(amount))}
-                className="min-h-11 rounded-lg border border-[var(--color-border)] bg-white text-sm font-semibold tabular-nums text-[var(--color-text)] transition-colors duration-150 motion-reduce:transition-none hover:border-[var(--color-accent)] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)] aria-pressed:border-[var(--color-accent)] aria-pressed:bg-[var(--color-info-bg)] aria-pressed:text-[var(--color-accent-dark)]"
+                className="min-h-11 rounded-lg border border-[var(--color-border)] bg-[var(--color-field-solid)] text-sm font-semibold tabular-nums text-[var(--color-text)] transition-colors duration-150 motion-reduce:transition-none hover:border-[var(--color-accent)] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)] aria-pressed:border-[var(--color-accent)] aria-pressed:bg-[var(--color-info-bg)] aria-pressed:text-[var(--color-link-strong)]"
               >${amount.toLocaleString('en-US')}</button>
             ))}
           </div>
@@ -377,7 +377,7 @@ export default function HeroBudgetWidget() {
             <p
               // A new key when the reached stage changes replays the pop.
               key={fullyFunded ? 'full' : estimate?.reachableStageId ?? 'none'}
-              className="hero-verdict text-sm font-semibold text-white leading-snug"
+              className="hero-verdict text-sm font-semibold text-[var(--color-on-navy)] leading-snug"
               aria-live="polite"
               aria-atomic="true"
             >
@@ -392,7 +392,7 @@ export default function HeroBudgetWidget() {
               floor_area_m2: PLAN_AREA_M2,
               location_category: PLAN_LOCATION,
             })}
-            className="flex-shrink-0 inline-flex min-h-[44px] items-center gap-1.5 rounded-md bg-white px-3 text-xs font-bold text-[var(--color-primary)] active:bg-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white [@media(hover:hover)_and_(pointer:fine)]:hover:bg-blue-50 transition-colors whitespace-nowrap"
+            className="flex-shrink-0 inline-flex min-h-[44px] items-center gap-1.5 rounded-md bg-[var(--color-surface-raised)] px-3 text-xs font-bold text-[var(--color-heading)] active:bg-[var(--color-choice-fill)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-on-navy)] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-[var(--color-choice-wash)] transition-colors whitespace-nowrap"
           >
             Customize <CaretRight size={12} weight="bold" aria-hidden="true" />
           </Link>

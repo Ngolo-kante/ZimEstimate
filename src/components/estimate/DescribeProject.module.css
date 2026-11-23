@@ -7,7 +7,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #efb760;
+  color: var(--color-describe-gold);
   font-size: 0.82rem;
   font-weight: 700;
 }
@@ -22,10 +22,10 @@
   flex: 1;
   min-width: 0;
   padding: 12px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid color-mix(in srgb, var(--color-white) 25%, transparent);
   border-radius: 6px;
-  color: #0b1f3b;
-  background: #fffefb;
+  color: var(--color-settings-heading);
+  background: var(--color-describe-field);
   /* iOS zooms the page when a focused input is under 16px. */
   font-size: max(0.95rem, 16px);
 }
@@ -41,8 +41,8 @@
   padding: 0 18px;
   border: none;
   border-radius: 6px;
-  color: #0b1f3b;
-  background: #efb760;
+  color: var(--color-account-avatar);
+  background: var(--color-describe-gold);
   font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
@@ -70,17 +70,17 @@
 
 .examples button {
   padding: 5px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid color-mix(in srgb, var(--color-white) 22%, transparent);
   border-radius: 999px;
-  color: #d9e4f2;
+  color: var(--color-describe-on-navy);
   background: transparent;
   font-size: 0.78rem;
   cursor: pointer;
 }
 @media (hover: hover) and (pointer: fine) {
     .examples button:hover {
-      border-color: #efb760;
-      color: white;}
+      border-color: var(--color-describe-gold);
+      color: var(--color-on-navy);}
 }
 
 .result {
@@ -91,7 +91,7 @@
   margin-top: 12px;
   padding: 12px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--color-white) 8%, transparent);
 }
 
 .chips {
@@ -107,8 +107,8 @@
 .chips li {
   padding: 4px 9px;
   border-radius: 999px;
-  color: #0b1f3b;
-  background: #f4d8a8;
+  color: var(--color-account-avatar);
+  background: var(--color-describe-chip-fill);
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -119,8 +119,8 @@
   gap: 6px;
   padding: 9px 14px;
   border-radius: 6px;
-  color: #0b1f3b;
-  background: #efb760;
+  color: var(--color-account-avatar);
+  background: var(--color-describe-gold);
   font-size: 0.88rem;
   font-weight: 800;
   text-decoration: none;
@@ -128,7 +128,7 @@
 
 .message {
   margin: 12px 0 0;
-  color: #f4d8a8;
+  color: var(--color-describe-chip-fill);
   font-size: 0.85rem;
   line-height: 1.5;
 }
@@ -142,12 +142,12 @@
 
 /* On a white section. */
 .light .label {
-  color: #a55e12;
+  color: var(--color-describe-label);
 }
 
 .light .row input {
-  border-color: #c9d4e2;
-  background: white;
+  border-color: var(--color-describe-field-border);
+  background: var(--color-field-solid);
 }
 
 .light .row input:focus {
@@ -156,23 +156,23 @@
 }
 
 .light .examples button {
-  border-color: #d5dfeb;
-  color: #475569;
-  background: #f8fafc;
+  border-color: var(--color-preview-border);
+  color: var(--color-detail);
+  background: var(--color-surface-subtle);
 }
 @media (hover: hover) and (pointer: fine) {
     .light .examples button:hover {
-      border-color: #efb760;
-      color: #0b1f3b;}
+      border-color: var(--color-describe-gold);
+      color: var(--color-settings-heading);}
 }
 
 .light .result {
-  background: #fff7e8;
-  border: 1px solid #f3d9a8;
+  background: var(--color-describe-result-bg);
+  border: 1px solid var(--color-describe-result-border);
 }
 
 .light .message {
-  color: #8a4b0f;
+  color: var(--color-describe-result-text);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -177,56 +177,56 @@ export default function StageReachList({ rows, lines, onStatusChange }: {
           justify-content: space-between;
           gap: 12px;
           font-size: 0.8rem;
-          color: #475569;
+          color: var(--color-detail);
         }
         .parts strong {
-          color: #0f172a;
+          color: var(--color-text);
           font-weight: 600;
         }
-        .stages { list-style: none; margin: 0; padding: 0; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; overflow: hidden; }
-        .stage + .stage { border-top: 1px solid #edf1f6; }
+        .stages { list-style: none; margin: 0; padding: 0; border: 1px solid var(--color-divider); border-radius: 14px; background: var(--color-surface-raised); overflow: hidden; }
+        .stage + .stage { border-top: 1px solid var(--color-stage-divider); }
         .head {
           display: grid; grid-template-columns: 22px minmax(0, 1fr) auto 16px; align-items: center; gap: 12px;
           width: 100%; padding: 14px 16px; border: none; background: none; text-align: left; cursor: pointer; color: inherit; font: inherit;
         }
 @media (hover: hover) and (pointer: fine) {
-    .head:hover {     background: #f8fafc; }
+    .head:hover {     background: var(--color-surface-subtle); }
 }
-        .head:focus-visible { outline: 2px solid #2e6cf6; outline-offset: -2px; }
+        .head:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: -2px; }
         .mark { display: inline-flex; }
-        .covered .mark { color: #16a34a; }
-        .partial .mark { color: #d97706; }
-        .short .mark { color: #cbd5e1; }
+        .covered .mark { color: var(--color-success); }
+        .partial .mark { color: var(--color-budget-partial); }
+        .short .mark { color: var(--color-stage-unfunded-mark); }
         .copy { display: grid; gap: 2px; min-width: 0; }
-        .name { font-size: 0.92rem; font-weight: 700; color: var(--color-primary); }
+        .name { font-size: 0.92rem; font-weight: 700; color: var(--color-heading); }
         .summary { font-size: 0.76rem; color: var(--color-text-muted); line-height: 1.4; }
         .figures { display: grid; justify-items: end; gap: 4px; }
-        .cost { font-size: 0.95rem; font-weight: 800; color: var(--color-primary); font-variant-numeric: tabular-nums; }
+        .cost { font-size: 0.95rem; font-weight: 800; color: var(--color-heading); font-variant-numeric: tabular-nums; }
         .cost, .price, .parts strong { white-space: nowrap; }
-        .cost.deferred-cost { color: #64748b; font-size: 0.75rem; font-weight: 500; }
+        .cost.deferred-cost { color: var(--color-text-secondary); font-size: 0.75rem; font-weight: 500; }
         .pill { font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
-        .pill.covered { color: #15803d; background: #dcfce7; }
-        .pill.partial { color: #b45309; background: #fef3c7; }
-        .pill.short { color: #64748b; background: #f1f5f9; }
-        .short .name, .short .cost { color: #64748b; }
-        .built .mark { color: #94a3b8; }
-        .later .mark { color: #cbd5e1; }
-        .built .name, .built .cost, .later .name, .later .cost { color: #94a3b8; }
+        .pill.covered { color: var(--color-success-fg); background: var(--color-verified-bg); }
+        .pill.partial { color: var(--color-admin-badge-ink); background: var(--color-budget-warning-wash); }
+        .pill.short { color: var(--color-text-secondary); background: var(--color-surface-quiet); }
+        .short .name, .short .cost { color: var(--color-text-secondary); }
+        .built .mark { color: var(--color-disabled); }
+        .later .mark { color: var(--color-stage-unfunded-mark); }
+        .built .name, .built .cost, .later .name, .later .cost { color: var(--color-disabled); }
         .built .cost { text-decoration: line-through; }
-        .pill.built { color: #475569; background: #e2e8f0; }
-        .pill.later { color: #64748b; background: #f1f5f9; }
+        .pill.built { color: var(--color-detail); background: var(--color-divider); }
+        .pill.later { color: var(--color-text-secondary); background: var(--color-surface-quiet); }
         .status { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 12px 50px; }
         .status button {
-          min-height: 32px; padding: 4px 10px; border: 1px solid #e2e8f0; border-radius: 999px; background: #fff;
-          font: inherit; font-size: 0.74rem; font-weight: 600; color: #475569; cursor: pointer;
+          min-height: 32px; padding: 4px 10px; border: 1px solid var(--color-divider); border-radius: 999px; background: var(--color-surface-raised);
+          font: inherit; font-size: 0.74rem; font-weight: 600; color: var(--color-detail); cursor: pointer;
         }
-        .status button.on { border-color: #2e6cf6; background: #eff6ff; color: #1e3a8a; }
+        .status button.on { border-color: var(--color-focus-ring); background: var(--color-info-bg); color: var(--color-budget-selected-text); }
         .status button:disabled { opacity: 0.45; cursor: not-allowed; }
-        .status button:focus-visible { outline: 2px solid #2e6cf6; outline-offset: 2px; }
-        :global(.caret) { color: #94a3b8; transition: none; }
+        .status button:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }
+        :global(.caret) { color: var(--color-disabled); transition: none; }
         :global(.caret.up) { transform: rotate(180deg); }
-        .track { height: 4px; margin: -4px 16px 12px 50px; border-radius: 999px; background: #f1f5f9; overflow: hidden; }
-        .track span { display: block; height: 100%; border-radius: inherit; background: #f59e0b; }
+        .track { height: 4px; margin: -4px 16px 12px 50px; border-radius: 999px; background: var(--color-surface-quiet); overflow: hidden; }
+        .track span { display: block; height: 100%; border-radius: inherit; background: var(--color-warning); }
         .panel { padding: 0 16px 14px 50px; }
         .panel-summary { display: none; }
         .panel ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }

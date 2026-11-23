@@ -35,19 +35,19 @@ export default function ContractorMarkup({
   const markupUsd = subtotalUsd * (markupPct / 100);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+    <div className="rounded-xl border border-[var(--color-worksheet-track)] bg-[var(--color-surface-raised)] overflow-hidden">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--color-worksheet-rule-soft)] px-4 py-3">
         <div className="min-w-0">
-          <p className="text-sm font-bold text-slate-900">Your markup</p>
-          <p className="text-xs text-slate-500 mt-0.5">Only you see this — client view hides it</p>
+          <p className="text-sm font-bold text-[var(--color-worksheet-title)]">Your markup</p>
+          <p className="text-xs text-[var(--color-worksheet-caption)] mt-0.5">Only you see this — client view hides it</p>
         </div>
-        <span className="flex-shrink-0 rounded-full border border-slate-300 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-600">
+        <span className="flex-shrink-0 rounded-full border border-[var(--color-worksheet-field-border)] bg-[var(--color-worksheet-row)] px-2.5 py-1 text-[11px] font-bold text-[var(--color-worksheet-detail)]">
           Contractor
         </span>
       </div>
 
       <div className="px-4 py-4">
-        <label htmlFor="markup-pct" className="block text-xs font-semibold text-slate-600 mb-1.5">
+        <label htmlFor="markup-pct" className="block text-xs font-semibold text-[var(--color-worksheet-detail)] mb-1.5">
           Markup on the estimate
         </label>
         <div className="flex items-center gap-3">
@@ -56,21 +56,21 @@ export default function ContractorMarkup({
               id="markup-pct"
               type="number"
               inputMode="numeric"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 pr-7 text-sm font-semibold text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-lg border border-[var(--color-worksheet-field-border)] px-3 py-2 pr-7 text-sm font-semibold text-[var(--color-worksheet-title)] focus:border-[var(--color-choice-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-choice-ring)]/20"
               value={markupPct}
               min={0}
               max={100}
               step={1}
               onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
             />
-            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[var(--color-worksheet-faint)]">
               %
             </span>
           </div>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-[var(--color-worksheet-caption)]">
             {markupPct > 0 ? (
               <>
-                adds <strong className="whitespace-nowrap tabular-nums text-slate-900">{fmt(markupUsd, currency, zwgRate)}</strong>
+                adds <strong className="whitespace-nowrap tabular-nums text-[var(--color-worksheet-title)]">{fmt(markupUsd, currency, zwgRate)}</strong>
               </>
             ) : (
               'no markup applied'

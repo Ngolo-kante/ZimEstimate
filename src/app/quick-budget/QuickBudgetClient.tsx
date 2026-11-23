@@ -863,7 +863,7 @@ export default function QuickBudgetPage() {
                   <div
                     className="coverage-ring"
                     style={{
-                      background: `conic-gradient(#2e6cf6 ${Math.max(0, Math.min(100, overallPercent))}%, rgba(203, 213, 225, 0.38) ${Math.max(0, Math.min(100, overallPercent))}% 100%)`,
+                      background: `conic-gradient(var(--color-focus-ring) ${Math.max(0, Math.min(100, overallPercent))}%, color-mix(in srgb, var(--color-border-dark) 38%, transparent) ${Math.max(0, Math.min(100, overallPercent))}% 100%)`,
                     }}
                   >
                     <div>
@@ -947,7 +947,7 @@ export default function QuickBudgetPage() {
                     centerLabel="With fees"
                     hideEmpty
                     slices={[
-                      { label: 'Materials', value: stageEstimate.materialsUsd, color: COST_COLORS.materials },
+                      { label: 'Materials', value: stageEstimate.materialsUsd, color: 'var(--color-settings-heading)' },
                       { label: 'Labour', value: stageEstimate.laborUsd, color: COST_COLORS.labor },
                       { label: 'Council fees & inspections', value: councilFees.low, color: COST_COLORS.fees, note: 'Low-density stand' },
                     ]}
@@ -1009,9 +1009,9 @@ export default function QuickBudgetPage() {
         .mobile-budget-headline { display: none; }
         #budget-results { scroll-margin-top: 100px; }
         @media (max-width: 767px) {
-          .mobile-budget-headline { display: block; margin: 12px 0; padding: 12px; border: 1px solid #cbd5e1; border-radius: 12px; background: #f8fafc; color: #0f172a; font-size: 14px; }
+          .mobile-budget-headline { display: block; margin: 12px 0; padding: 12px; border: 1px solid var(--color-border-dark); border-radius: 12px; background: var(--color-surface-subtle); color: var(--color-text); font-size: 14px; }
           .mobile-budget-headline p { margin: 4px 0; }
-          .mobile-budget-headline a { display: inline-flex; align-items: center; min-height: 44px; color: #1d4ed8; text-decoration: underline; }
+          .mobile-budget-headline a { display: inline-flex; align-items: center; min-height: 44px; color: var(--color-info-fg); text-decoration: underline; }
         }
 
         .explorer-panel {
@@ -1025,7 +1025,7 @@ export default function QuickBudgetPage() {
           padding: 0 0 48px;
         }
         .budget-checker-page {
-  --color-text-muted: #475569;
+          --color-text-muted: var(--color-detail);
           position: relative;
           max-width: 1260px;
           margin: 0 auto;
@@ -1082,15 +1082,15 @@ export default function QuickBudgetPage() {
           min-height: 44px;
           padding: 8px 16px;
           border-radius: 999px;
-          border: 1px solid var(--color-border, #e2e8f0);
-          background: var(--color-surface, #fff);
+          border: 1px solid var(--color-border);
+          background: var(--color-surface);
           font: inherit;
           cursor: pointer;
           transition: none;
         }
       @media (hover: hover) and (pointer: fine) {
           .budget-mode-card:hover {
-              border-color: #94a3b8;
+              border-color: var(--color-disabled);
         }
       }
 
@@ -1100,7 +1100,7 @@ export default function QuickBudgetPage() {
         }
 
         .budget-mode-card :global(svg) {
-          color: var(--color-accent, #2E6CF6);
+          color: var(--color-link);
         }
 
         .budget-mode-card.is-active :global(svg) {
@@ -1114,7 +1114,7 @@ export default function QuickBudgetPage() {
         }
 
         .budget-mode-card:focus-visible {
-          outline: 3px solid var(--color-accent, #2E6CF6);
+          outline: 3px solid var(--color-accent);
           outline-offset: 2px;
         }
 
@@ -1132,26 +1132,26 @@ export default function QuickBudgetPage() {
           text-transform: uppercase;
           font-weight: 700;
           white-space: nowrap;
-          color: #1e3a8a;
-          background: #dbeafe;
+          color: var(--color-budget-selected-text);
+          background: var(--color-active-wash);
         }
 
         .status-pill.tone-secure {
-          color: #166534;
-          background: #dcfce7;
+          color: var(--color-verified-ink);
+          background: var(--color-verified-bg);
         }
 
         .status-pill.tone-fragile {
-          color: #991b1b;
-          background: #fee2e2;
+          color: var(--color-budget-shortfall);
+          background: var(--color-danger-badge-bg);
         }
 
         .result-stats article.short strong {
-          color: #b91c1c;
+          color: var(--color-danger-fg);
         }
 
         .result-stats article.spare strong {
-          color: #15803d;
+          color: var(--color-success-fg);
         }
 
         .assumption {
@@ -1161,7 +1161,7 @@ export default function QuickBudgetPage() {
         }
 
         .assumption + .assumption {
-          border-top: 1px solid #edf1f6;
+          border-top: 1px solid var(--color-stage-divider);
         }
 
         .assumption-label {
@@ -1196,7 +1196,7 @@ export default function QuickBudgetPage() {
           font: inherit;
           font-size: 0.78rem;
           font-weight: 600;
-          color: #1d4ed8;
+          color: var(--color-info-fg);
           text-decoration: underline;
           text-underline-offset: 2px;
           cursor: pointer;
@@ -1212,25 +1212,25 @@ export default function QuickBudgetPage() {
           min-height: 40px;
           padding: 6px 14px;
           border-radius: 10px;
-          border: 1px solid #e2e8f0;
-          background: #fff;
+          border: 1px solid var(--color-divider);
+          background: var(--color-surface-raised);
           font: inherit;
           font-size: 0.84rem;
           font-weight: 600;
-          color: #334155;
+          color: var(--color-detail-strong);
           cursor: pointer;
         }
 
         .segmented button.on {
-          border-color: #2e6cf6;
-          background: #eff6ff;
-          color: #1e3a8a;
-          box-shadow: 0 0 0 1px #2e6cf6;
+          border-color: var(--color-focus-ring);
+          background: var(--color-info-bg);
+          color: var(--color-budget-selected-text);
+          box-shadow: 0 0 0 1px var(--color-focus-ring);
         }
 
         .segmented button:focus-visible,
         .link-button:focus-visible {
-          outline: 2px solid #2e6cf6;
+          outline: 2px solid var(--color-focus-ring);
           outline-offset: 2px;
         }
 
@@ -1258,8 +1258,8 @@ export default function QuickBudgetPage() {
 
         .panel-card {
           border-radius: 14px;
-          border: 1px solid rgba(148, 163, 184, 0.22);
-          background: rgba(248, 250, 252, 0.86);
+          border: 1px solid color-mix(in srgb, var(--color-disabled) 22%, transparent);
+          background: color-mix(in srgb, var(--color-surface-subtle) 86%, transparent);
           padding: 12px;
         }
 
@@ -1278,15 +1278,15 @@ export default function QuickBudgetPage() {
           padding: 10px 0;
           cursor: pointer;
         }
-        .add-later-row + .add-later-row { border-top: 1px solid #e2e8f0; }
+        .add-later-row + .add-later-row { border-top: 1px solid var(--color-divider); }
         .add-later-check { display: grid; place-items: center; min-height: 40px; }
-        .add-later-check input { width: 20px; height: 20px; margin: 0; accent-color: #2e6cf6; cursor: pointer; }
-        .add-later-check input:focus-visible { outline: 2px solid #2e6cf6; outline-offset: 3px; }
+        .add-later-check input { width: 20px; height: 20px; margin: 0; accent-color: var(--color-focus-ring); cursor: pointer; }
+        .add-later-check input:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 3px; }
         .add-later-copy { display: grid; gap: 3px; min-width: 0; }
-        .add-later-copy strong, .add-later-price { font-size: 0.84rem; color: var(--color-primary); }
+        .add-later-copy strong, .add-later-price { font-size: 0.84rem; color: var(--color-heading); }
         .add-later-price, .result-stats strong { white-space: nowrap; font-variant-numeric: tabular-nums; }
         .add-later-total { display: block; margin-top: 5px; }
-        .add-later-footer { margin: 0; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: 0.8rem; font-weight: 600; }
+        .add-later-footer { margin: 0; padding-top: 10px; border-top: 1px solid var(--color-divider); font-size: 0.8rem; font-weight: 600; }
 
         .section-head {
           display: flex;
@@ -1302,7 +1302,7 @@ export default function QuickBudgetPage() {
           letter-spacing: 0.08em;
           text-transform: uppercase;
           font-weight: 800;
-          color: var(--color-primary);
+          color: var(--color-heading);
         }
 
         .section-head span {
@@ -1335,26 +1335,26 @@ export default function QuickBudgetPage() {
         }
 
         .preset {
-          border: 1px solid rgba(148, 163, 184, 0.4);
+          border: 1px solid color-mix(in srgb, var(--color-disabled) 40%, transparent);
           border-radius: 999px;
-          background: white;
+          background: var(--color-surface-raised);
           padding: 6px 10px;
           font-size: 0.75rem;
           font-weight: 700;
-          color: var(--color-primary);
+          color: var(--color-heading);
           cursor: pointer;
           transition: none;
         }
       @media (hover: hover) and (pointer: fine) {
           .preset:hover {
-              border-color: rgba(46, 108, 246, 0.56);
-              box-shadow: 0 6px 14px rgba(78, 154, 247, 0.2);
+              border-color: color-mix(in srgb, var(--color-focus-ring) 56%, transparent);
+              box-shadow: 0 6px 14px color-mix(in srgb, var(--color-budget-focus-glow) 20%, transparent);
         }
       }
 
         .preset.active {
-          border-color: rgba(46, 108, 246, 0.66);
-          background: rgba(219, 234, 254, 0.74);
+          border-color: color-mix(in srgb, var(--color-focus-ring) 66%, transparent);
+          background: color-mix(in srgb, var(--color-active-wash) 74%, transparent);
         }
 
         .result-top {
@@ -1383,7 +1383,7 @@ export default function QuickBudgetPage() {
           height: 130px;
           border-radius: 50%;
           padding: 11px;
-          box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
+          box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-disabled) 20%, transparent);
           animation: none;
         }
 
@@ -1391,8 +1391,8 @@ export default function QuickBudgetPage() {
           width: 100%;
           height: 100%;
           border-radius: 50%;
-          background: #f8fafc;
-          border: 1px solid rgba(148, 163, 184, 0.22);
+          background: var(--color-surface-subtle);
+          border: 1px solid color-mix(in srgb, var(--color-disabled) 22%, transparent);
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -1410,7 +1410,7 @@ export default function QuickBudgetPage() {
 
         .coverage-ring strong {
           font-size: 1.28rem;
-          color: var(--color-primary);
+          color: var(--color-heading);
         }
 
         .result-stats {
@@ -1421,8 +1421,8 @@ export default function QuickBudgetPage() {
 
         .result-stats article {
           border-radius: 12px;
-          border: 1px solid rgba(148, 163, 184, 0.24);
-          background: rgba(248, 250, 252, 0.94);
+          border: 1px solid color-mix(in srgb, var(--color-disabled) 24%, transparent);
+          background: color-mix(in srgb, var(--color-surface-subtle) 94%, transparent);
           padding: 10px;
         }
 
@@ -1457,7 +1457,7 @@ export default function QuickBudgetPage() {
 
         .result-stats strong {
           font-size: 0.93rem;
-          color: var(--color-primary);
+          color: var(--color-heading);
           line-height: 1.3;
         }
 
@@ -1475,11 +1475,11 @@ export default function QuickBudgetPage() {
           align-items: center;
           gap: 6px;
           min-height: 44px;
-          border: 1px solid #e2e8f0;
+          border: 1px solid var(--color-divider);
           border-radius: 12px;
           padding: 10px 8px;
-          background: #fff;
-          color: #334155;
+          background: var(--color-surface-raised);
+          color: var(--color-detail-strong);
           font-size: 0.78rem;
           font-weight: 600;
           text-align: center;
@@ -1487,10 +1487,10 @@ export default function QuickBudgetPage() {
           cursor: pointer;
         }
         .roof-choice.selected {
-          border-color: #2e6cf6;
-          background: #eff6ff;
-          color: #1e3a8a;
-          box-shadow: 0 0 0 1px #2e6cf6;
+          border-color: var(--color-focus-ring);
+          background: var(--color-info-bg);
+          color: var(--color-budget-selected-text);
+          box-shadow: 0 0 0 1px var(--color-focus-ring);
         }
         .roof-choice :global(.roof-icon) {
           width: 48px;
@@ -1509,18 +1509,18 @@ export default function QuickBudgetPage() {
         }
         .labour-explain {
           margin-top: 8px;
-          border: 1px solid #e2e8f0;
+          border: 1px solid var(--color-divider);
           border-radius: 10px;
           padding: 8px 12px;
-          background: #f8fafc;
+          background: var(--color-surface-subtle);
           font-size: 0.78rem;
           line-height: 1.5;
-          color: #475569;
+          color: var(--color-detail);
         }
         .labour-explain summary {
           cursor: pointer;
           font-weight: 700;
-          color: #1e3a8a;
+          color: var(--color-budget-selected-text);
         }
         .labour-explain p {
           margin: 6px 0;
@@ -1534,7 +1534,7 @@ export default function QuickBudgetPage() {
         .labour-explain td {
           padding: 3px 4px;
           text-align: right;
-          border-bottom: 1px solid #e2e8f0;
+          border-bottom: 1px solid var(--color-divider);
           font-weight: 500;
         }
         .labour-explain th[scope='row'],
@@ -1543,7 +1543,7 @@ export default function QuickBudgetPage() {
         }
         .labour-explain thead th {
           font-weight: 700;
-          color: #334155;
+          color: var(--color-detail-strong);
         }
         .labour-note {
           margin: 6px 0 0;
@@ -1552,7 +1552,7 @@ export default function QuickBudgetPage() {
           color: var(--color-text-muted);
         }
         .budget-split {
-          border: 1px solid #e2e8f0;
+          border: 1px solid var(--color-divider);
           border-radius: 14px;
           padding: 14px;
           margin-bottom: 12px;
@@ -1561,21 +1561,21 @@ export default function QuickBudgetPage() {
           margin: 0 0 12px;
           font-size: 0.95rem;
           font-weight: 700;
-          color: #0f172a;
+          color: var(--color-text);
         }
         .council-note {
           margin: 12px 0 0;
           font-size: 0.8rem;
           line-height: 1.5;
-          color: #475569;
+          color: var(--color-detail);
         }
         .guidance {
           border-radius: 12px;
           padding: 11px 14px;
           font-size: 0.86rem;
           line-height: 1.5;
-          color: #1e3a8a;
-          background: #eff6ff;
+          color: var(--color-budget-selected-text);
+          background: var(--color-info-bg);
           margin-bottom: 12px;
         }
 
@@ -1596,14 +1596,14 @@ export default function QuickBudgetPage() {
           gap: 10px;
           margin-top: 11px;
           padding-top: 10px;
-          border-top: 1px solid rgba(148, 163, 184, 0.22);
+          border-top: 1px solid color-mix(in srgb, var(--color-disabled) 22%, transparent);
         }
 
         .empty {
           min-height: 280px;
           border-radius: 14px;
-          border: 1px dashed rgba(148, 163, 184, 0.36);
-          background: linear-gradient(140deg, rgba(248, 250, 252, 0.93), rgba(239, 246, 255, 0.9));
+          border: 1px dashed color-mix(in srgb, var(--color-disabled) 36%, transparent);
+          background: linear-gradient(140deg, color-mix(in srgb, var(--color-surface-subtle) 93%, transparent), color-mix(in srgb, var(--color-info-bg) 90%, transparent));
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -1616,7 +1616,7 @@ export default function QuickBudgetPage() {
         .empty h3 {
           margin: 0;
           font-size: 1.06rem;
-          color: var(--color-primary);
+          color: var(--color-heading);
         }
 
         .empty p {
@@ -1630,8 +1630,8 @@ export default function QuickBudgetPage() {
         .loading-card {
           min-height: 280px;
           border-radius: 14px;
-          border: 1px solid rgba(148, 163, 184, 0.3);
-          background: rgba(248, 250, 252, 0.94);
+          border: 1px solid color-mix(in srgb, var(--color-disabled) 30%, transparent);
+          background: color-mix(in srgb, var(--color-surface-subtle) 94%, transparent);
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -1652,8 +1652,8 @@ export default function QuickBudgetPage() {
           width: 36px;
           height: 36px;
           border-radius: 50%;
-          border: 3px solid rgba(148, 163, 184, 0.34);
-          border-top-color: #2e6cf6;
+          border: 3px solid color-mix(in srgb, var(--color-disabled) 34%, transparent);
+          border-top-color: var(--color-focus-ring);
           animation: spin 0.82s linear infinite;
         }
 
@@ -1667,7 +1667,7 @@ export default function QuickBudgetPage() {
           display: block;
           height: 10px;
           border-radius: 999px;
-          background: linear-gradient(90deg, rgba(226, 232, 240, 0.95), rgba(241, 245, 249, 0.95), rgba(226, 232, 240, 0.95));
+          background: linear-gradient(90deg, color-mix(in srgb, var(--color-divider) 95%, transparent), color-mix(in srgb, var(--color-surface-quiet) 95%, transparent), color-mix(in srgb, var(--color-divider) 95%, transparent));
           background-size: 220% 100%;
           animation: none;
         }

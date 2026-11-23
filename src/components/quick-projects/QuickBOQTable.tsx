@@ -168,15 +168,15 @@ export default function QuickBOQTable({
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-slate-900">Project Cost Summary</h2>
+          <h2 className="text-xl font-bold text-[var(--color-worksheet-title)]">Project Cost Summary</h2>
           <button
             onClick={() => setClientView(false)}
-            className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-none"
+            className="text-sm font-medium text-[var(--color-navbar-link)] hover:text-[var(--color-navbar-link-hover)] transition-none"
           >
             Back to full BOQ
           </button>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+        <div className="rounded-xl border border-[var(--color-worksheet-track)] bg-[var(--color-surface-raised)] overflow-hidden">
           <table className="min-w-full text-sm">
             <tbody>
               {Object.entries(grouped).map(([cat, catItems]) => {
@@ -185,18 +185,18 @@ export default function QuickBOQTable({
                   .reduce((s, i) => s + i.totalCostUsd, 0);
                 if (!catTotal) return null;
                 return (
-                  <tr key={cat} className="border-t border-slate-100 first:border-t-0">
-                    <td className="px-4 py-3 font-medium text-slate-700">{cat === 'Labor' ? 'Labour' : cat}</td>
-                    <td className="whitespace-nowrap font-mono tabular-nums px-4 py-3 text-right font-medium text-slate-900">
+                  <tr key={cat} className="border-t border-[var(--color-worksheet-rule-soft)] first:border-t-0">
+                    <td className="px-4 py-3 font-medium text-[var(--color-worksheet-label)]">{cat === 'Labor' ? 'Labour' : cat}</td>
+                    <td className="whitespace-nowrap font-mono tabular-nums px-4 py-3 text-right font-medium text-[var(--color-worksheet-title)]">
                       {fmt(catTotal, currency, zwgRate)}
                     </td>
                   </tr>
                 );
               })}
               {markupPct > 0 && (
-                <tr className="border-t border-slate-200 bg-slate-50">
-                  <td className="px-4 py-3 text-slate-600">Contractor markup ({markupPct}%)</td>
-                  <td className="whitespace-nowrap font-mono tabular-nums px-4 py-3 text-right font-medium text-slate-900">
+                <tr className="border-t border-[var(--color-worksheet-track)] bg-[var(--color-worksheet-row)]">
+                  <td className="px-4 py-3 text-[var(--color-worksheet-detail)]">Contractor markup ({markupPct}%)</td>
+                  <td className="whitespace-nowrap font-mono tabular-nums px-4 py-3 text-right font-medium text-[var(--color-worksheet-title)]">
                     {fmt(totals.markupUsd, currency, zwgRate)}
                   </td>
                 </tr>
@@ -204,8 +204,8 @@ export default function QuickBOQTable({
             </tbody>
           </table>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-[var(--studio-steel)] px-5 py-4 text-white">
-          <p className="text-xs uppercase tracking-wider text-slate-400">Grand Total</p>
+        <div className="rounded-xl border border-[var(--color-worksheet-track)] bg-[var(--studio-steel)] px-5 py-4 text-[var(--color-on-navy)]">
+          <p className="text-xs uppercase tracking-wider text-[var(--color-worksheet-faint)]">Grand Total</p>
           <p className="whitespace-nowrap font-mono tabular-nums text-2xl font-bold">
             {fmt(totals.grandTotalUsd, currency, zwgRate)}
           </p>
@@ -219,13 +219,13 @@ export default function QuickBOQTable({
     <div className="space-y-4">
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-        <h2 className="text-xl font-bold text-slate-900">Bill of Quantities</h2>
+        <h2 className="text-xl font-bold text-[var(--color-worksheet-title)]">Bill of Quantities</h2>
         <div className="flex items-center gap-2">
 
           {isContractor && (
             <button
               onClick={() => setClientView(true)}
-              className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-none"
+              className="min-h-11 rounded-lg border border-[var(--color-worksheet-field-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--color-worksheet-detail)] hover:bg-[var(--color-worksheet-row)] transition-none"
             >
               Client view
             </button>
@@ -233,7 +233,7 @@ export default function QuickBOQTable({
 
           <button
             onClick={() => handleAuthGatedAction('pdf')}
-            className="min-h-11 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-none"
+            className="min-h-11 inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-worksheet-field-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--color-worksheet-detail)] hover:bg-[var(--color-worksheet-row)] transition-none"
           >
             {!isAuthenticated && <Lock size={12} />}
             <Download size={14} />
@@ -248,7 +248,7 @@ export default function QuickBOQTable({
 
       {/* ── Owned items notice ──────────────────────────────────────────── */}
       {items.some((i) => i.owned) && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+        <div className="flex items-center gap-2 rounded-lg border border-[var(--color-allowance-border)] bg-[var(--color-allowance-bg)] px-4 py-2.5 text-sm text-[var(--color-allowance-detail)]">
           <Warning size={16} className="flex-shrink-0" />
           Items you already own are shown but excluded from the total cost.
         </div>
@@ -256,8 +256,8 @@ export default function QuickBOQTable({
 
       {/* ── Where the money goes ─────────────────────────────────────── */}
       {costSlices.some((slice) => slice.value > 0) && (
-        <section aria-labelledby="quick-cost-split" className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-          <h3 id="quick-cost-split" className="mb-4 text-base font-bold text-slate-900">Where the money goes</h3>
+        <section aria-labelledby="quick-cost-split" className="rounded-xl border border-[var(--color-worksheet-track)] bg-[var(--color-surface-raised)] p-4 sm:p-5">
+          <h3 id="quick-cost-split" className="mb-4 text-base font-bold text-[var(--color-worksheet-title)]">Where the money goes</h3>
           <CostDonut
             size="sm"
             slices={costSlices}
@@ -269,29 +269,29 @@ export default function QuickBOQTable({
       )}
 
       {/* ── Flat item list ──────────────────────────────────────────── */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-[var(--color-worksheet-track)] bg-[var(--color-surface-raised)]">
         {/* Phones: one compact card per item — the six-column table was about
             570px wide in a 293px column and needed sideways scrolling. */}
-        <ul className="divide-y divide-slate-100 sm:hidden">
+        <ul className="divide-y divide-[var(--color-worksheet-rule-soft)] sm:hidden">
           {allItems.map((item) => {
             const dimmed = item.owned || !item.included;
             const displayUnit = currency === 'ZWG' ? item.unitCostUsd * zwgRate : item.unitCostUsd;
             return (
-              <li key={item.id} className={`px-3 py-3 ${dimmed ? 'bg-slate-50' : ''}`}>
+              <li key={item.id} className={`px-3 py-3 ${dimmed ? 'bg-[var(--color-worksheet-row)]' : ''}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <button
                       type="button"
                       aria-expanded={expandedDescriptions.has(item.id)}
                       onClick={() => toggleDescription(item.id)}
-                      className="min-h-11 min-w-0 w-full text-left text-sm font-medium text-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2"
+                      className="min-h-11 min-w-0 w-full text-left text-sm font-medium text-[var(--color-worksheet-strong)] focus-visible:outline-2 focus-visible:outline-offset-2"
                     >
                       <span className={`[overflow-wrap:anywhere] ${expandedDescriptions.has(item.id) ? '' : 'line-clamp-2'}`}>{item.description}</span>
                     </button>
                     <div className="mt-0.5 flex flex-wrap gap-1">
-                      {item.brand && <span className="rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700">{item.brand}</span>}
-                      {item.owned && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">Owned</span>}
-                      {item.optional && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700">Optional</span>}
+                      {item.brand && <span className="rounded bg-[var(--color-choice-wash)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-navbar-link-hover)]">{item.brand}</span>}
+                      {item.owned && <span className="rounded bg-[var(--color-worksheet-inset)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-worksheet-detail)]">Owned</span>}
+                      {item.optional && <span className="rounded bg-[var(--color-allowance-bg)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-allowance-label)]">Optional</span>}
                     </div>
                   </div>
                   {!item.owned && (
@@ -300,13 +300,13 @@ export default function QuickBOQTable({
                       aria-label={`${item.included ? 'Remove' : 'Add'} ${item.description} ${item.included ? 'from' : 'to'} the BOQ`}
                       aria-pressed={item.included}
                       onClick={() => toggleItem(item.id)}
-                      className="min-h-11 min-w-11 -m-1 p-2 rounded hover:bg-slate-100"
+                      className="min-h-11 min-w-11 -m-1 p-2 rounded hover:bg-[var(--color-worksheet-inset)]"
                     >
-                      {item.included ? <ToggleRight size={24} weight="fill" className="text-green-600" /> : <ToggleLeft size={24} className="text-slate-500" />}
+                      {item.included ? <ToggleRight size={24} weight="fill" className="text-[var(--color-included-toggle)]" /> : <ToggleLeft size={24} className="text-[var(--color-worksheet-caption)]" />}
                     </button>
                   )}
                 </div>
-                <div className="mt-2 grid grid-cols-[1fr_auto_1fr_auto] items-center gap-1.5 text-xs text-slate-600">
+                <div className="mt-2 grid grid-cols-[1fr_auto_1fr_auto] items-center gap-1.5 text-xs text-[var(--color-worksheet-detail)]">
                   <label className="grid gap-0.5">
                     <span>Qty ({item.unit})</span>
                     <input
@@ -317,7 +317,7 @@ export default function QuickBOQTable({
                       step={0.01}
                       disabled={dimmed}
                       onChange={(e) => updateQty(item.id, parseFloat(e.target.value) || 0)}
-                      className="min-h-11 w-full rounded border border-slate-300 px-2 py-1.5 text-base text-slate-800 disabled:opacity-50"
+                      className="min-h-11 w-full rounded border border-[var(--color-worksheet-field-border)] px-2 py-1.5 text-base text-[var(--color-worksheet-strong)] disabled:opacity-50"
                     />
                   </label>
                   <span className="pt-4">×</span>
@@ -331,11 +331,11 @@ export default function QuickBOQTable({
                       step={0.01}
                       disabled={dimmed}
                       onChange={(e) => updatePrice(item.id, parseFloat(e.target.value) || 0)}
-                      className="min-h-11 w-full rounded border border-slate-300 px-2 py-1.5 text-base text-slate-800 disabled:opacity-50"
+                      className="min-h-11 w-full rounded border border-[var(--color-worksheet-field-border)] px-2 py-1.5 text-base text-[var(--color-worksheet-strong)] disabled:opacity-50"
                     />
                   </label>
-                  <span className="pt-4 pl-1 text-right text-sm font-semibold text-slate-800 whitespace-nowrap">
-                    {dimmed ? '\u2014' : item.unitCostUsd > 0 ? fmt(item.totalCostUsd, currency, zwgRate) : <span className="text-slate-400">No price yet</span>}
+                  <span className="pt-4 pl-1 text-right text-sm font-semibold text-[var(--color-worksheet-strong)] whitespace-nowrap">
+                    {dimmed ? '\u2014' : item.unitCostUsd > 0 ? fmt(item.totalCostUsd, currency, zwgRate) : <span className="text-[var(--color-worksheet-faint)]">No price yet</span>}
                   </span>
                 </div>
               </li>
@@ -345,7 +345,7 @@ export default function QuickBOQTable({
 
         <div className="hidden overflow-x-auto sm:block">
           <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="bg-[var(--color-worksheet-row)] text-xs uppercase tracking-wide text-[var(--color-worksheet-caption)]">
               <tr>
                 <th className="px-4 py-2.5 text-left">Description</th>
                 <th className="px-4 py-2.5 text-left w-24">Qty</th>
@@ -365,7 +365,7 @@ export default function QuickBOQTable({
                 return (
                   <tr
                     key={item.id}
-                    className={`border-t border-slate-100 ${dimmed ? 'bg-slate-50' : ''}`}
+                    className={`border-t border-[var(--color-worksheet-rule-soft)] ${dimmed ? 'bg-[var(--color-worksheet-row)]' : ''}`}
                   >
                     {/* Description */}
                     <td className="px-4 py-2.5">
@@ -374,22 +374,22 @@ export default function QuickBOQTable({
                       type="button"
                       aria-expanded={expandedDescriptions.has(item.id)}
                       onClick={() => toggleDescription(item.id)}
-                      className="min-h-11 min-w-0 w-full text-left text-sm font-medium text-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2"
+                      className="min-h-11 min-w-0 w-full text-left text-sm font-medium text-[var(--color-worksheet-strong)] focus-visible:outline-2 focus-visible:outline-offset-2"
                     >
                       <span className={`[overflow-wrap:anywhere] ${expandedDescriptions.has(item.id) ? '' : 'line-clamp-2'}`}>{item.description}</span>
                     </button>
                         {item.brand && (
-                          <span className="inline-block rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700">
+                          <span className="inline-block rounded bg-[var(--color-choice-wash)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-navbar-link-hover)]">
                             {item.brand}
                           </span>
                         )}
                         {item.owned && (
-                          <span className="inline-block rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">
+                          <span className="inline-block rounded bg-[var(--color-worksheet-inset)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-worksheet-caption)]">
                             Owned
                           </span>
                         )}
                         {item.optional && (
-                          <span className="inline-block rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700">
+                          <span className="inline-block rounded bg-[var(--color-allowance-bg)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-allowance-label)]">
                             Optional
                           </span>
                         )}
@@ -410,12 +410,12 @@ export default function QuickBOQTable({
                         onChange={(e) =>
                           updateQty(item.id, parseFloat(e.target.value) || 0)
                         }
-                        className="w-20 rounded border border-slate-300 px-2 py-1 text-sm disabled:opacity-50"
+                        className="w-20 rounded border border-[var(--color-worksheet-field-border)] px-2 py-1 text-sm disabled:opacity-50"
                       />
                     </td>
 
                     {/* Unit */}
-                    <td className="px-4 py-2.5 text-slate-600">{item.unit}</td>
+                    <td className="px-4 py-2.5 text-[var(--color-worksheet-detail)]">{item.unit}</td>
 
                     {/* Unit price */}
                     <td className="px-4 py-2.5">
@@ -428,13 +428,13 @@ export default function QuickBOQTable({
                         onChange={(e) =>
                           updatePrice(item.id, parseFloat(e.target.value) || 0)
                         }
-                        className="w-24 rounded border border-slate-300 px-2 py-1 text-sm disabled:opacity-50"
+                        className="w-24 rounded border border-[var(--color-worksheet-field-border)] px-2 py-1 text-sm disabled:opacity-50"
                       />
                     </td>
 
                     {/* Line total */}
-                    <td className="whitespace-nowrap font-mono tabular-nums px-4 py-2.5 font-medium text-slate-800">
-                      {dimmed ? '\u2014' : item.unitCostUsd > 0 ? fmt(lineTotal, currency, zwgRate) : <span className="text-slate-400">No price yet</span>}
+                    <td className="whitespace-nowrap font-mono tabular-nums px-4 py-2.5 font-medium text-[var(--color-worksheet-strong)]">
+                      {dimmed ? '\u2014' : item.unitCostUsd > 0 ? fmt(lineTotal, currency, zwgRate) : <span className="text-[var(--color-worksheet-faint)]">No price yet</span>}
                     </td>
 
                     {/* Toggle */}
@@ -446,16 +446,16 @@ export default function QuickBOQTable({
                           aria-label={`${item.included ? 'Remove' : 'Add'} ${item.description} ${item.included ? 'from' : 'to'} the BOQ`}
                           aria-pressed={item.included}
                           onClick={() => toggleItem(item.id)}
-                          className="p-1 rounded hover:bg-slate-100 transition-none"
+                          className="p-1 rounded hover:bg-[var(--color-worksheet-inset)] transition-none"
                         >
                           {item.included ? (
                             <ToggleRight
                               size={22}
                               weight="fill"
-                              className="text-green-500"
+                              className="text-[var(--color-included-indicator)]"
                             />
                           ) : (
-                            <ToggleLeft size={22} className="text-slate-400" />
+                            <ToggleLeft size={22} className="text-[var(--color-worksheet-faint)]" />
                           )}
                         </button>
                       )}
@@ -468,11 +468,11 @@ export default function QuickBOQTable({
         </div>
 
         {/* Add custom item — on phones too. */}
-        <div className="flex flex-wrap gap-2 border-t border-slate-100 p-3">
+        <div className="flex flex-wrap gap-2 border-t border-[var(--color-worksheet-rule-soft)] p-3">
           <button
             type="button"
             onClick={() => addCustomItem('Custom')}
-            className="min-h-11 inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-none"
+            className="min-h-11 inline-flex items-center gap-1 rounded-lg border border-[var(--color-worksheet-field-border)] px-3 py-2 text-xs font-medium text-[var(--color-worksheet-label)] hover:bg-[var(--color-worksheet-row)] transition-none"
           >
             <Plus size={12} /> Add Item
           </button>
@@ -501,20 +501,20 @@ export default function QuickBOQTable({
       )}
 
       {/* ── Grand Total (dark box — matching manual builder) ──────────── */}
-      <div className="rounded-xl border border-slate-200 bg-[var(--studio-steel)] px-5 py-4 text-white">
+      <div className="rounded-xl border border-[var(--color-worksheet-track)] bg-[var(--studio-steel)] px-5 py-4 text-[var(--color-on-navy)]">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wider text-slate-400">Grand Total</p>
+            <p className="text-xs uppercase tracking-wider text-[var(--color-worksheet-faint)]">Grand Total</p>
             <p className="whitespace-nowrap font-mono tabular-nums text-2xl font-bold mt-0.5">
               {fmt(totals.grandTotalUsd, currency, zwgRate)}
             </p>
           </div>
           {markupPct > 0 && (
             <div className="text-right text-sm">
-              <p className="text-slate-400">
+              <p className="text-[var(--color-worksheet-faint)]">
                 Subtotal: {fmt(totals.subtotalUsd, currency, zwgRate)}
               </p>
-              <p className="text-slate-400">
+              <p className="text-[var(--color-worksheet-faint)]">
                 Markup ({markupPct}%): {fmt(totals.markupUsd, currency, zwgRate)}
               </p>
             </div>
@@ -526,8 +526,8 @@ export default function QuickBOQTable({
       <FindContractorCTA projectType={projectType} />
 
       {/* ── Disclaimer ─────────────────────────────────────────────────── */}
-      <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500 leading-relaxed">
-        <p className="font-medium text-slate-600 mb-1">Disclaimer</p>
+      <div className="rounded-lg border border-[var(--color-worksheet-track)] bg-[var(--color-worksheet-row)] px-4 py-3 text-xs text-[var(--color-worksheet-caption)] leading-relaxed">
+        <p className="font-medium text-[var(--color-worksheet-detail)] mb-1">Disclaimer</p>
         <p>
           This estimate is based on typical Zimbabwe market rates and may vary based on
           site-specific conditions, ground composition, and material availability. Final

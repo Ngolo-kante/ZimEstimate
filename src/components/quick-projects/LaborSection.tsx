@@ -33,8 +33,8 @@ function fmt(amount: number, currency: 'USD' | 'ZWG', zwgRate: number): string {
 }
 
 const NUMBER_INPUT =
-  'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-900 ' +
-  'focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
+  'w-full rounded-lg border border-[var(--color-worksheet-field-border)] px-3 py-2 text-sm font-semibold text-[var(--color-worksheet-title)] ' +
+  'focus:border-[var(--color-choice-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-choice-ring)]/20';
 
 export default function LaborSection({ labor, materialsTotal, materialsSubtotal, currency, zwgRate, onChange }: LaborSectionProps) {
   const pct = labor.percentage ?? 25;
@@ -54,12 +54,12 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
   const basisDiffers = shownMaterials - materialsTotal > 0.005;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-[var(--color-worksheet-track)] bg-[var(--color-surface-raised)] overflow-hidden">
       {/* Header — include / exclude */}
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--color-worksheet-rule-soft)] px-4 py-3">
         <div className="min-w-0">
-          <p className="text-sm font-bold text-slate-900">Labour</p>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-sm font-bold text-[var(--color-worksheet-title)]">Labour</p>
+          <p className="text-xs text-[var(--color-worksheet-caption)] mt-0.5">
             {labor.enabled
               ? 'Included in the total below'
               : 'Materials only — labour is not costed'}
@@ -76,7 +76,7 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
       {labor.enabled && (
         <div className="px-4 py-4 space-y-4">
           {/* Method */}
-          <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1" role="tablist">
+          <div className="inline-flex rounded-lg border border-[var(--color-worksheet-track)] bg-[var(--color-worksheet-row)] p-1" role="tablist">
             {([
               ['percentage', '% of materials'],
               ['daily_rate', 'Daily rate'],
@@ -89,8 +89,8 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
                 onClick={() => onChange({ ...labor, method })}
                 className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-none ${
                   labor.method === method
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-[var(--color-surface-raised)] text-[var(--color-worksheet-title)] shadow-sm'
+                    : 'text-[var(--color-worksheet-caption)] hover:text-[var(--color-worksheet-label)]'
                 }`}
               >
                 {label}
@@ -100,7 +100,7 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
 
           {labor.method === 'percentage' ? (
             <div>
-              <label htmlFor="labour-pct" className="block text-xs font-semibold text-slate-600 mb-1.5">
+              <label htmlFor="labour-pct" className="block text-xs font-semibold text-[var(--color-worksheet-detail)] mb-1.5">
                 Labour as % of materials
               </label>
               <div className="flex items-center gap-3">
@@ -115,22 +115,22 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
                     max={100}
                     onChange={(e) => onChange({ ...labor, percentage: parseInt(e.target.value) || 25 })}
                   />
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">%</span>
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[var(--color-worksheet-faint)]">%</span>
                 </div>
-                <span className="text-sm text-slate-500">
-                  = <strong className="whitespace-nowrap tabular-nums text-slate-900">{fmt(laborCostUsd, currency, zwgRate)}</strong>
+                <span className="text-sm text-[var(--color-worksheet-caption)]">
+                  = <strong className="whitespace-nowrap tabular-nums text-[var(--color-worksheet-title)]">{fmt(laborCostUsd, currency, zwgRate)}</strong>
                 </span>
               </div>
               {/* Anchors the figure to something real rather than leaving the
                   user to guess a percentage out of the air. */}
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-[var(--color-worksheet-caption)]">
                 Labour typically runs 25–30% of materials on Zimbabwe builds.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
-                <label htmlFor="labour-rate" className="block text-xs font-semibold text-slate-600 mb-1.5">
+                <label htmlFor="labour-rate" className="block text-xs font-semibold text-[var(--color-worksheet-detail)] mb-1.5">
                   Daily rate (USD)
                 </label>
                 <input
@@ -144,7 +144,7 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
                 />
               </div>
               <div>
-                <label htmlFor="labour-workers" className="block text-xs font-semibold text-slate-600 mb-1.5">
+                <label htmlFor="labour-workers" className="block text-xs font-semibold text-[var(--color-worksheet-detail)] mb-1.5">
                   Builders
                 </label>
                 <input
@@ -159,7 +159,7 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
                 />
               </div>
               <div>
-                <label htmlFor="labour-days" className="block text-xs font-semibold text-slate-600 mb-1.5">
+                <label htmlFor="labour-days" className="block text-xs font-semibold text-[var(--color-worksheet-detail)] mb-1.5">
                   Working days
                 </label>
                 <input
@@ -173,10 +173,10 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
                   onChange={(e) => onChange({ ...labor, days: parseInt(e.target.value) || 5 })}
                 />
               </div>
-              <p className="sm:col-span-3 text-xs text-slate-500">
+              <p className="sm:col-span-3 text-xs text-[var(--color-worksheet-caption)]">
                 {workers} {workers === 1 ? 'builder' : 'builders'} × {days} {days === 1 ? 'day' : 'days'} ×{' '}
                 {fmt(rate, 'USD', zwgRate)}/day ={' '}
-                <strong className="whitespace-nowrap tabular-nums text-slate-900">{fmt(laborCostUsd, currency, zwgRate)}</strong>
+                <strong className="whitespace-nowrap tabular-nums text-[var(--color-worksheet-title)]">{fmt(laborCostUsd, currency, zwgRate)}</strong>
               </p>
             </div>
           )}
@@ -185,27 +185,27 @@ export default function LaborSection({ labor, materialsTotal, materialsSubtotal,
 
       {/* The sum the user is actually after: what the materials cost, what the
           labour adds, and what that comes to. */}
-      <dl className="border-t border-slate-100 bg-slate-50 px-4 py-3 space-y-1.5">
+      <dl className="border-t border-[var(--color-worksheet-rule-soft)] bg-[var(--color-worksheet-row)] px-4 py-3 space-y-1.5">
         <div className="flex items-center justify-between text-sm">
-          <dt className="text-slate-600">Materials</dt>
-          <dd className="whitespace-nowrap tabular-nums font-semibold text-slate-900 tabular-nums">{fmt(shownMaterials, currency, zwgRate)}</dd>
+          <dt className="text-[var(--color-worksheet-detail)]">Materials</dt>
+          <dd className="whitespace-nowrap tabular-nums font-semibold text-[var(--color-worksheet-title)] tabular-nums">{fmt(shownMaterials, currency, zwgRate)}</dd>
         </div>
         <div className="flex items-center justify-between text-sm">
-          <dt className="text-slate-600">
+          <dt className="text-[var(--color-worksheet-detail)]">
             Labour
             {labor.enabled && labor.method === 'percentage' && (
-              <span className="text-slate-400">
+              <span className="text-[var(--color-worksheet-faint)]">
                 {' '}({pct}%{basisDiffers ? ` of ${fmt(materialsTotal, currency, zwgRate)}` : ''})
               </span>
             )}
           </dt>
-          <dd className={`font-semibold tabular-nums ${labor.enabled ? 'text-slate-900' : 'text-slate-400'}`}>
+          <dd className={`font-semibold tabular-nums ${labor.enabled ? 'text-[var(--color-worksheet-title)]' : 'text-[var(--color-worksheet-faint)]'}`}>
             {labor.enabled ? fmt(laborCostUsd, currency, zwgRate) : 'Excluded'}
           </dd>
         </div>
-        <div className="flex items-center justify-between border-t border-slate-200 pt-1.5 text-sm">
-          <dt className="font-bold text-slate-900">Materials + labour</dt>
-          <dd className="whitespace-nowrap tabular-nums font-bold text-slate-900 tabular-nums">{fmt(total, currency, zwgRate)}</dd>
+        <div className="flex items-center justify-between border-t border-[var(--color-worksheet-track)] pt-1.5 text-sm">
+          <dt className="font-bold text-[var(--color-worksheet-title)]">Materials + labour</dt>
+          <dd className="whitespace-nowrap tabular-nums font-bold text-[var(--color-worksheet-title)] tabular-nums">{fmt(total, currency, zwgRate)}</dd>
         </div>
       </dl>
     </div>

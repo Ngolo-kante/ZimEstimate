@@ -104,7 +104,7 @@ export default function ComplianceCard({
           padding: 3px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700;
           background: var(--color-background); color: var(--color-text-secondary);
         }
-        .pill.clear { background: var(--color-success-muted, #dcfce7); color: var(--color-success); }
+        .pill.clear { background: var(--color-verified-bg); color: var(--color-success); }
 
         .reqs { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
         .req {
@@ -121,7 +121,7 @@ export default function ComplianceCard({
           font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
           background: var(--color-background); color: var(--color-text-muted);
         }
-        .req-auth { font-size: 0.75rem; font-weight: 600; color: var(--color-accent); }
+        .req-auth { font-size: 0.75rem; font-weight: 600; color: var(--color-link); }
         .req-desc { font-size: 0.8rem; color: var(--color-text-secondary); }
 
         .select-wrap { position: relative; display: inline-flex; align-items: center; flex: 0 0 auto; }
