@@ -267,7 +267,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
   // ── Compose ────────────────────────────────────────────────────────────────
   if (mode === 'compose') {
     return (
-      <div className="space-y-5">
+      <div className="space-y-5 max-sm:rounded-xl max-sm:bg-[var(--color-surface)] max-sm:p-4">
         <button
           type="button"
           onClick={() => setMode('list')}
@@ -343,7 +343,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                 </label>
                 <input
                   id="rfq-address"
-                  className="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm"
+                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900"
                   value={deliveryAddress}
                   onChange={(e) => { setDeliveryAddress(e.target.value); setMatches(null); }}
                   placeholder="Site address"
@@ -357,7 +357,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                 <input
                   id="rfq-date"
                   type="date"
-                  className="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm"
+                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900"
                   value={requiredBy}
                   onChange={(e) => setRequiredBy(e.target.value)}
                 />
@@ -371,7 +371,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
               <textarea
                 id="rfq-notes"
                 rows={3}
-                className="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm"
+                className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Access, delivery times, anything they should know."
@@ -431,7 +431,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
 
   // ── List ───────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-sm:rounded-xl max-sm:bg-[var(--color-surface)] max-sm:p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-bold text-slate-900">Requests for quotation</h2>
