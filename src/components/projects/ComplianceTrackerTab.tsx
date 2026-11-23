@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useReminderChannels } from '@/hooks/useReminderChannels';
@@ -12,7 +12,7 @@ import {
   ProjectStageWithTasks,
   StageTask,
 } from '@/lib/database.types';
-import { createReminder } from '@/lib/services/projects';
+import { createReminder, getReminders } from '@/lib/services/projects';
 import {
   createStageTask,
   deleteStageTask,
@@ -21,14 +21,17 @@ import {
 } from '@/lib/services/stages';
 import {
   buildComplianceCertificateMarker,
+  buildComplianceReminderMessage,
   ComplianceCertificateStatus,
   getComplianceRequirementStatus,
   getStageRequirements,
   isComplianceCertificateTask,
+  pendingComplianceReminders,
   summariseCompliance,
 } from '@/lib/compliance';
 import {
   Bell,
+  BellRinging,
   CaretDown,
   CaretUp,
   Certificate,
@@ -72,6 +75,9 @@ const CHANNEL_CONFIG: Record<NotificationChannel, { icon: React.ReactNode; label
   sms: { icon: <ChatCircleText size={16} weight="duotone" />, label: 'SMS' },
 };
 
+const formatReminderDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
 const tomorrowIsoDate = () => {
   const next = new Date();
   next.setDate(next.getDate() + 1);
@@ -105,6 +111,22 @@ export default function ComplianceTrackerTab({
      user generating it in the first place and gives them feedback meanwhile. */
   const [savingReminderKey, setSavingReminderKey] = useState<string | null>(null);
   const [addingTaskStageId, setAddingTaskStageId] = useState<string | null>(null);
+  /* Pending reminders for this project, so each task and certificate can show
+     whether one is already scheduled. Without this the bell looked the same
+     either way and the only way to find out was to schedule again. */
+  const [projectReminders, setProjectReminders] = useState<
+    Array<{ message: string; scheduled_date: string; is_sent: boolean }>
+  >([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getReminders(projectId).then(({ reminders }) => {
+      if (!cancelled) setProjectReminders(reminders);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
 
   const applicableStages = useMemo(
     () => stages.filter((stage) => stage.is_applicable),
@@ -114,6 +136,14 @@ export default function ComplianceTrackerTab({
   /* ---- Global stats ---- */
   // Shared with the Overview card, so both pages count the same things.
   const globalStats = useMemo(() => summariseCompliance(stages), [stages]);
+
+  const scheduledReminders = useMemo(() => {
+    const labels = applicableStages.flatMap((stage) => [
+      ...getStageRequirements(stage.boq_category).map((requirement) => requirement.label),
+      ...stage.tasks.filter((task) => !isComplianceCertificateTask(task)).map((task) => task.title),
+    ]);
+    return pendingComplianceReminders(projectReminders, labels);
+  }, [applicableStages, projectReminders]);
 
   /* ---- Collapse toggle ---- */
   const toggleCollapse = useCallback((stageId: string) => {
@@ -142,7 +172,7 @@ export default function ComplianceTrackerTab({
       return;
     }
 
-    const message = `[${channel.toUpperCase()}] Compliance reminder for ${projectName}: ${label}`;
+    const message = buildComplianceReminderMessage(channel, projectName, label);
     const scheduledAt = new Date(`${getReminderDate(draftKey)}T09:00:00`);
 
     setSavingReminderKey(draftKey);
@@ -176,6 +206,8 @@ export default function ComplianceTrackerTab({
       return;
     }
 
+    setProjectReminders((prev) => [...prev, { message, scheduled_date: scheduledAt.toISOString(), is_sent: false }]);
+    setOpenReminderKey(null);
     success(`Reminder scheduled via ${CHANNEL_CONFIG[channel].label} for ${getReminderDate(draftKey)}`);
   };
 
@@ -491,6 +523,7 @@ export default function ComplianceTrackerTab({
                         const draftKey = `cert-${stage.id}-${requirement.id}`;
                         const isDone = status === 'done';
                         const reminderOpen = openReminderKey === draftKey;
+                        const scheduledFor = scheduledReminders.get(requirement.label);
 
                         return (
                           <div
@@ -510,6 +543,12 @@ export default function ComplianceTrackerTab({
                                     {requirement.required && <span className="cert-required">Required</span>}
                                   </div>
                                   <p className="cert-desc">{requirement.description}</p>
+                                  {scheduledFor && (
+                                    <span className="compliance-reminder-note">
+                                      <BellRinging size={12} weight="fill" aria-hidden="true" />
+                                      Reminder {formatReminderDate(scheduledFor)}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                               <div className="cert-actions">
@@ -531,12 +570,14 @@ export default function ComplianceTrackerTab({
                                 </select>
                                 <button
                                   type="button"
-                                  className={`compliance-icon-button ${reminderOpen ? 'is-active' : ''}`}
-                                  aria-label={`Set reminder for ${requirement.label}`}
+                                  className={`compliance-icon-button ${reminderOpen ? 'is-active' : ''} ${scheduledFor ? 'is-scheduled' : ''}`}
+                                  aria-label={scheduledFor
+                                    ? `Reminder set for ${formatReminderDate(scheduledFor)}. Add another for ${requirement.label}`
+                                    : `Set reminder for ${requirement.label}`}
                                   aria-expanded={reminderOpen}
                                   onClick={() => setOpenReminderKey(reminderOpen ? null : draftKey)}
                                 >
-                                  <Bell size={17} />
+                                  {scheduledFor ? <BellRinging size={17} weight="fill" /> : <Bell size={17} />}
                                 </button>
                               </div>
                             </div>
@@ -577,6 +618,7 @@ export default function ComplianceTrackerTab({
                     {adminTasks.map((task) => {
                       const draftKey = `task-${task.id}`;
                       const reminderOpen = openReminderKey === draftKey;
+                      const scheduledFor = scheduledReminders.get(task.title);
                       return (
                         <div
                           key={task.id}
@@ -594,17 +636,27 @@ export default function ComplianceTrackerTab({
                               <span className="task-check">
                                 <CheckCircle size={12} weight="fill" />
                               </span>
-                              <span className="task-title">{task.title}</span>
+                              <span className="task-copy">
+                                <span className="task-title">{task.title}</span>
+                                {scheduledFor && (
+                                  <span className="compliance-reminder-note">
+                                    <BellRinging size={12} weight="fill" aria-hidden="true" />
+                                    Reminder {formatReminderDate(scheduledFor)}
+                                  </span>
+                                )}
+                              </span>
                             </button>
                             <div className="task-actions-row">
                               <button
                                 type="button"
-                                className={`compliance-icon-button ${reminderOpen ? 'is-active' : ''}`}
-                                aria-label={`Set reminder for ${task.title}`}
+                                className={`compliance-icon-button ${reminderOpen ? 'is-active' : ''} ${scheduledFor ? 'is-scheduled' : ''}`}
+                                aria-label={scheduledFor
+                                  ? `Reminder set for ${formatReminderDate(scheduledFor)}. Add another for ${task.title}`
+                                  : `Set reminder for ${task.title}`}
                                 aria-expanded={reminderOpen}
                                 onClick={() => setOpenReminderKey(reminderOpen ? null : draftKey)}
                               >
-                                <Bell size={16} />
+                                {scheduledFor ? <BellRinging size={16} weight="fill" /> : <Bell size={16} />}
                               </button>
                               <button
                                 type="button"

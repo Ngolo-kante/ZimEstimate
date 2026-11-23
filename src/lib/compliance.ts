@@ -156,3 +156,35 @@ export function summariseCompliance(stages: ComplianceStageInput[]): ComplianceS
   const done = doneCerts + doneTasks;
   return { totalCerts, doneCerts, totalTasks, doneTasks, total, done, pending: total - done, next };
 }
+
+/* ---- Compliance reminders ----
+ * A reminder row has no column pointing at the stage task or certificate it is
+ * for (reminders.item_id references boq_items only), so the message is the
+ * link: it always ends with ": <task or certificate label>". Building and
+ * reading it in one place keeps the two from drifting apart.
+ */
+const COMPLIANCE_REMINDER_MARKER = '] Compliance reminder for ';
+
+export function buildComplianceReminderMessage(channel: string, projectName: string, label: string): string {
+  return `[${channel.toUpperCase()}${COMPLIANCE_REMINDER_MARKER}${projectName}: ${label}`;
+}
+
+/**
+ * Earliest pending compliance reminder per label. Sent reminders are ignored,
+ * so a task shows as scheduled only while something is still due to go out.
+ */
+export function pendingComplianceReminders(
+  reminders: Array<{ message: string; scheduled_date: string; is_sent: boolean }>,
+  labels: string[],
+): Map<string, string> {
+  const result = new Map<string, string>();
+  const pending = reminders.filter((r) => !r.is_sent && r.message.includes(COMPLIANCE_REMINDER_MARKER));
+  for (const label of labels) {
+    for (const reminder of pending) {
+      if (!reminder.message.endsWith(`: ${label}`)) continue;
+      const current = result.get(label);
+      if (!current || reminder.scheduled_date < current) result.set(label, reminder.scheduled_date);
+    }
+  }
+  return result;
+}

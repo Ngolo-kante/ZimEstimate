@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { summariseCompliance, getStageRequirements, COMPLIANCE_CERTIFICATE_PREFIX } from './compliance';
+import {
+  buildComplianceReminderMessage,
+  COMPLIANCE_CERTIFICATE_PREFIX,
+  getStageRequirements,
+  pendingComplianceReminders,
+  summariseCompliance,
+} from './compliance';
 import type { StageTask } from '@/lib/database.types';
 
 const task = (title: string, done = false, note: string | null = null): StageTask => ({
@@ -37,5 +43,28 @@ describe('one count for compliance on every page', () => {
   it('names the first open item, certificates before tasks, in stage order', () => {
     const summary = summariseCompliance([stage('a', 'substructure', [task('Dig trenches')])]);
     expect(summary.next).toMatchObject({ stageId: 'a', type: 'Certificate', label: getStageRequirements('substructure')[0].label });
+  });
+});
+
+describe('pendingComplianceReminders', () => {
+  const message = (label: string) => buildComplianceReminderMessage('email', 'House: Borrowdale', label);
+
+  it('finds the earliest unsent reminder for each label', () => {
+    const found = pendingComplianceReminders([
+      { message: message('Submit plans'), scheduled_date: '2026-12-05T07:00:00.000Z', is_sent: false },
+      { message: message('Submit plans'), scheduled_date: '2026-12-01T07:00:00.000Z', is_sent: false },
+      { message: message('Pay council fees'), scheduled_date: '2026-11-30T07:00:00.000Z', is_sent: true },
+      { message: 'Save $20 this week: Submit plans', scheduled_date: '2026-11-25T07:00:00.000Z', is_sent: false },
+    ], ['Submit plans', 'Pay council fees', 'Book inspection']);
+    expect(found.get('Submit plans')).toBe('2026-12-01T07:00:00.000Z');
+    expect(found.has('Pay council fees')).toBe(false);
+    expect(found.has('Book inspection')).toBe(false);
+  });
+
+  it('does not match a label that only shares an ending', () => {
+    const found = pendingComplianceReminders([
+      { message: message('Resubmit plans'), scheduled_date: '2026-12-01T07:00:00.000Z', is_sent: false },
+    ], ['plans']);
+    expect(found.has('plans')).toBe(false);
   });
 });

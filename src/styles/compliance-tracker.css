@@ -467,6 +467,32 @@
       background: var(--color-accent-muted);}
 }
 
+.compliance-icon-button.is-scheduled {
+  border-color: var(--color-accent);
+  color: var(--color-accent-dark);
+  background: var(--color-accent-muted);
+}
+
+.compliance-reminder-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  color: var(--color-accent-dark);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+}
+
+.compliance-task-toggle .task-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.compliance-task-row.is-done .compliance-reminder-note {
+  color: var(--color-text-muted);
+}
+
 .compliance-task-delete {
   border-color: transparent;
 }
