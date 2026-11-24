@@ -85,7 +85,7 @@ export default function DashboardShell({
           align-items: center;
           gap: 12px;
           text-decoration: none;
-          color: var(--color-primary);
+          color: var(--color-heading);
         }
 
         .brand-name {
@@ -136,14 +136,14 @@ export default function DashboardShell({
         @media (hover: hover) and (pointer: fine) {
             .nav-item:hover {
                 background: rgba(78, 154, 247, 0.08);
-                color: var(--color-primary);
+                color: var(--color-heading);
           }
         }
         }
 
         .nav-item.active {
           background: rgba(78, 154, 247, 0.18);
-          color: var(--color-primary);
+          color: var(--color-heading);
         }
 
         .dash-main {
@@ -169,7 +169,7 @@ export default function DashboardShell({
           width: 40px;
           height: 40px;
           border-radius: 12px;
-          background: #ffffff;
+          background: var(--pw-fill-ffffff);
           border: 1px solid var(--color-border-light);
           align-items: center;
           justify-content: center;
@@ -201,7 +201,7 @@ export default function DashboardShell({
           align-items: center;
           gap: 8px;
           padding: 8px 12px;
-          background: #ffffff;
+          background: var(--pw-fill-ffffff);
           border: 1px solid var(--color-border-light);
           border-radius: 12px;
           min-width: 220px;
@@ -230,7 +230,7 @@ export default function DashboardShell({
           height: 38px;
           border-radius: 12px;
           border: 1px solid var(--color-border-light);
-          background: #ffffff;
+          background: var(--pw-fill-ffffff);
           display: flex;
           align-items: center;
           justify-content: center;

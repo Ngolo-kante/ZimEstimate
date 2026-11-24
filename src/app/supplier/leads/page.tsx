@@ -357,28 +357,28 @@ export default function SupplierLeadsPage() {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            color: #64748b;
+            color: var(--pw-ink-64748b);
             font-size: 14px;
             text-decoration: none;
             margin-bottom: 12px;
           }
 @media (hover: hover) and (pointer: fine) {
-    .back-link:hover {     color: #1e40af; }
+    .back-link:hover {     color: var(--pw-ink-1e40af); }
 }
           .header-label {
             font-size: 12px;
             font-weight: 600;
-            color: #1e40af;
+            color: var(--pw-ink-1e40af);
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 6px;
           }
-          h1 { font-size: 28px; font-weight: 700; color: #0f172a; margin: 0 0 6px; }
-          .header-desc { color: #64748b; margin: 0; font-size: 15px; }
+          h1 { font-size: 28px; font-weight: 700; color: var(--pw-ink-0f172a); margin: 0 0 6px; }
+          .header-desc { color: var(--pw-ink-64748b); margin: 0; font-size: 15px; }
           .leads-tabs {
             display: flex;
             gap: 4px;
-            border-bottom: 2px solid #e2e8f0;
+            border-bottom: 2px solid var(--pw-line-e2e8f0);
             margin-bottom: 20px;
           }
           .leads-tab {
@@ -391,27 +391,27 @@ export default function SupplierLeadsPage() {
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
-            color: #64748b;
+            color: var(--pw-ink-64748b);
             border-bottom: 2px solid transparent;
             margin-bottom: -2px;
             transition: none;
           }
           .leads-tab.active {
-            color: #1e40af;
+            color: var(--pw-ink-1e40af);
             border-bottom-color: #1e40af;
           }
 @media (hover: hover) and (pointer: fine) {
-    .leads-tab:hover:not(.active) {     color: #334155; }
+    .leads-tab:hover:not(.active) {     color: var(--pw-ink-334155); }
 }
           .tab-badge {
-            background: #e2e8f0;
-            color: #475569;
+            background: var(--pw-fill-e2e8f0);
+            color: var(--pw-ink-475569);
             font-size: 11px;
             font-weight: 600;
             padding: 2px 7px;
             border-radius: 9999px;
           }
-          .tab-badge.new { background: #dbeafe; color: #1e40af; }
+          .tab-badge.new { background: var(--pw-fill-dbeafe); color: var(--pw-ink-1e40af); }
           .leads-filters {
             display: flex;
             gap: 10px;
@@ -421,17 +421,17 @@ export default function SupplierLeadsPage() {
           }
           .filter-select, .filter-date {
             padding: 8px 12px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--pw-line-e2e8f0);
             border-radius: 10px;
             font-size: 14px;
-            color: #334155;
-            background: #fff;
+            color: var(--pw-ink-334155);
+            background: var(--pw-fill-ffffff);
           }
           .filter-select:focus, .filter-date:focus {
             outline: none;
             border-color: #1e40af;
           }
-          .leads-loading { text-align: center; padding: 48px; color: #64748b; }
+          .leads-loading { text-align: center; padding: 48px; color: var(--pw-ink-64748b); }
           .leads-list { display: flex; flex-direction: column; gap: 12px; }
           .lead-card { margin: 0; }
           .lead-card-row {
@@ -447,7 +447,7 @@ export default function SupplierLeadsPage() {
             gap: 8px;
             font-size: 15px;
             font-weight: 600;
-            color: #1e293b;
+            color: var(--pw-ink-1e293b);
             margin-bottom: 6px;
           }
           .lead-meta {
@@ -455,7 +455,7 @@ export default function SupplierLeadsPage() {
             align-items: center;
             gap: 6px;
             font-size: 12px;
-            color: #94a3b8;
+            color: var(--pw-ink-94a3b8);
             margin-bottom: 8px;
           }
           .lead-contact {
@@ -463,26 +463,26 @@ export default function SupplierLeadsPage() {
             align-items: center;
             gap: 6px;
             font-size: 13px;
-            color: #64748b;
+            color: var(--pw-ink-64748b);
             margin-bottom: 6px;
           }
-          .lead-contact a { color: #1e40af; text-decoration: none; }
+          .lead-contact a { color: var(--pw-ink-1e40af); text-decoration: none; }
           .lead-message {
             font-size: 13px;
-            color: #475569;
+            color: var(--pw-ink-475569);
             margin: 0 0 8px;
             line-height: 1.5;
           }
           .lead-items { display: flex; flex-wrap: wrap; gap: 6px; }
           .lead-item-chip {
-            background: #f1f5f9;
-            border: 1px solid #e2e8f0;
+            background: var(--pw-fill-f1f5f9);
+            border: 1px solid var(--pw-line-e2e8f0);
             border-radius: 6px;
             padding: 3px 10px;
             font-size: 12px;
-            color: #475569;
+            color: var(--pw-ink-475569);
           }
-          .lead-item-chip.muted { color: #94a3b8; }
+          .lead-item-chip.muted { color: var(--pw-ink-94a3b8); }
           .lead-actions {
             display: flex;
             flex-direction: column;
@@ -496,14 +496,14 @@ export default function SupplierLeadsPage() {
             align-items: center;
             gap: 4px;
             font-size: 12px;
-            color: #16a34a;
+            color: var(--pw-ink-16a34a);
           }
           .leads-empty {
             text-align: center;
             padding: 64px 24px;
-            color: #94a3b8;
+            color: var(--pw-ink-94a3b8);
           }
-          .leads-empty p { font-size: 18px; font-weight: 600; color: #475569; margin: 12px 0 6px; }
+          .leads-empty p { font-size: 18px; font-weight: 600; color: var(--pw-ink-475569); margin: 12px 0 6px; }
           .leads-empty span { font-size: 14px; }
           @media (max-width: 600px) {
             .lead-card-row { flex-direction: column; }

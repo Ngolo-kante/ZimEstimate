@@ -248,7 +248,7 @@ function LoginForm() {
                    an unwrapped descendant rule compiles but matches nothing. */
                 .forgot-row :global(a) {
                     font-size: 0.8125rem;
-                    color: var(--color-primary);
+                    color: var(--color-heading);
                     text-decoration: none;
                     font-weight: 500;
                 }
@@ -266,7 +266,7 @@ function LoginForm() {
                 }
 
                 .auth-footer :global(a) {
-                    color: var(--color-primary);
+                    color: var(--color-heading);
                     text-decoration: none;
                     font-weight: 500;
                 }
@@ -280,7 +280,7 @@ function LoginForm() {
                     .auth-container { grid-column: 1; grid-row: 1; max-width: none; border-radius: 12px 0 0 12px; align-content: center; }
                     .auth-page :global(aside) { grid-column: 2; grid-row: 1; border-radius: 0 12px 12px 0; }
                 }
-                .contractor-cta :global(a) { color: #1d4ed8; display: inline-flex; align-items: center; min-height: 44px; }
+                .contractor-cta :global(a) { color: var(--pw-ink-1d4ed8); display: inline-flex; align-items: center; min-height: 44px; }
                 .contractor-cta :global(a:hover) { text-decoration: underline; }
             `}</style>
         </>

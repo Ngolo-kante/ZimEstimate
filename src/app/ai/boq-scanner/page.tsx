@@ -495,7 +495,7 @@ function BoqScannerContent() {
           display: grid; grid-template-columns: 1fr 90px 90px 100px 36px; gap: 6px; align-items: center;
           padding: 6px; border-radius: 8px; border: 1px solid transparent;
         }
-        .row.flagged { border-color: var(--color-warning); background: var(--color-warning-muted, #fffbeb); }
+        .row.flagged { border-color: var(--color-warning); background: var(--color-warning-muted, var(--pw-fill-fffbeb)); }
         .row input {
           padding: 8px 10px; border: 1px solid var(--color-border); border-radius: 6px;
           background: var(--color-surface); color: var(--color-text); min-width: 0;

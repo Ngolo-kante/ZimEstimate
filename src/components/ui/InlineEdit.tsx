@@ -131,7 +131,7 @@ export default function InlineEdit({
           .input-wrapper {
             display: flex;
             align-items: center;
-            background: white;
+            background: var(--pw-fill-ffffff);
             border: 2px solid var(--color-accent);
             border-radius: var(--radius-md);
             padding: 4px 8px;

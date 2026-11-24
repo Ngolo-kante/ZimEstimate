@@ -270,13 +270,13 @@ export default function VisionTakeoffWizard() {
           min-height: calc(100vh - 120px);
           margin: -32px -24px 0;
           padding-bottom: 72px;
-          background: #f7f8fa;
+          background: var(--pw-fill-f7f8fa);
         }
 
         .vision-workflow-header {
           padding: 22px max(24px, calc((100% - 1180px) / 2)) 20px;
-          background: white;
-          border-bottom: 1px solid #d8e0eb;
+          background: var(--pw-fill-ffffff);
+          border-bottom: 1px solid var(--pw-line-d8e0eb);
         }
 
         .workflow-title-row {
@@ -294,19 +294,19 @@ export default function VisionTakeoffWizard() {
         }
 
         .workflow-title-row span {
-          color: #1d5fbf;
+          color: var(--pw-ink-1d5fbf);
           font-size: 0.75rem;
           font-weight: 700;
         }
 
         .workflow-title-row strong {
-          color: #0f172a;
+          color: var(--pw-ink-0f172a);
           font-size: 0.95rem;
         }
 
         .workflow-title-row :global(a) {
           flex: none;
-          color: #3d4a5c;
+          color: var(--pw-ink-3d4a5c);
           font-size: 0.8125rem;
           font-weight: 600;
           text-decoration: underline;

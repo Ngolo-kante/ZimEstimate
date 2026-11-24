@@ -93,26 +93,26 @@ export default function ProjectTypeSection() {
                 onClick={() => handleSelectType(type.id as ProjectTypeId)}
                 className={`group relative flex flex-col items-start gap-4 rounded-2xl border p-6 text-left transition-none duration-200 shadow-sm ${
                   isSelected
-                    ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
-                    : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-md'
+                    ? 'bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm'
+                    : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] hover:border-[var(--pw-line-blue-200)] hover:shadow-md'
                 }`}
               >
                 {/* Selected indicator */}
                 <div className={`absolute top-4 right-4 transition-none duration-200 ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
-                  <CheckCircle weight="fill" size={20} className="text-blue-500" />
+                  <CheckCircle weight="fill" size={20} className="text-[var(--pw-ink-blue-500)]" />
                 </div>
 
                 <div className={`flex h-12 w-12 items-center justify-center rounded-xl transition-none ${
-                  isSelected ? 'bg-blue-100 text-blue-600' : 'icon-tile'
+                  isSelected ? 'bg-[var(--pw-fill-blue-100)] text-[var(--pw-ink-blue-600)]' : 'icon-tile'
                 }`}>
                   {Icon && <Icon size={22} weight={isSelected ? 'fill' : 'duotone'} />}
                 </div>
 
                 <div>
-                  <div className={`font-bold text-base mb-1 ${isSelected ? 'text-slate-900' : 'wiz-text-primary'}`}>
+                  <div className={`font-bold text-base mb-1 ${isSelected ? 'text-[var(--pw-ink-slate-900)]' : 'wiz-text-primary'}`}>
                     {type.label}
                   </div>
-                  <p className={`text-sm leading-relaxed ${isSelected ? 'text-slate-600' : 'wiz-text-muted'}`}>
+                  <p className={`text-sm leading-relaxed ${isSelected ? 'text-[var(--pw-ink-slate-600)]' : 'wiz-text-muted'}`}>
                     {type.description}
                   </p>
                 </div>
@@ -168,25 +168,25 @@ export default function ProjectTypeSection() {
                     onClick={() => handleToggleStage(stage.id)}
                     className={`group relative flex items-start gap-3 rounded-xl border p-4 text-left transition-none duration-200 ${
                       isSelected
-                        ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
-                        : 'border-slate-200 bg-white opacity-60 hover:opacity-90 hover:border-blue-200 hover:shadow-sm'
+                        ? 'bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm'
+                        : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] opacity-60 hover:opacity-90 hover:border-[var(--pw-line-blue-200)] hover:shadow-sm'
                     }`}
                   >
                     <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-none ${
-                      isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-[var(--color-text-muted)]'
+                      isSelected ? 'bg-[var(--pw-fill-blue-100)] text-[var(--pw-ink-blue-600)]' : 'bg-[var(--pw-fill-slate-100)] text-[var(--color-text-muted)]'
                     }`}>
                       <StageIcon size={16} weight={isSelected ? 'fill' : 'regular'} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className={`text-sm font-semibold ${isSelected ? 'text-slate-900' : 'text-slate-700'}`}>
+                      <div className={`text-sm font-semibold ${isSelected ? 'text-[var(--pw-ink-slate-900)]' : 'text-[var(--pw-ink-slate-700)]'}`}>
                         {stage.label}
                       </div>
-                      <p className={`mt-0.5 text-xs leading-relaxed ${isSelected ? 'text-slate-600' : 'text-[var(--color-text-muted)]'}`}>
+                      <p className={`mt-0.5 text-xs leading-relaxed ${isSelected ? 'text-[var(--pw-ink-slate-600)]' : 'text-[var(--color-text-muted)]'}`}>
                         {stage.description}
                       </p>
                     </div>
                     <div className={`flex-shrink-0 mt-0.5 transition-none duration-200 ${isSelected ? 'opacity-100' : 'opacity-0'}`}>
-                      <Check weight="bold" size={14} className="text-blue-500" />
+                      <Check weight="bold" size={14} className="text-[var(--pw-ink-blue-500)]" />
                     </div>
                   </button>
                 );

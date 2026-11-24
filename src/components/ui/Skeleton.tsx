@@ -97,10 +97,10 @@ export function ProjectCardSkeleton() {
 
             <style jsx>{`
                 .skeleton-card {
-                    background: white;
+                    background: var(--pw-fill-ffffff);
                     border-radius: var(--radius-lg, 12px);
                     padding: 20px;
-                    border: 1px solid var(--color-border-light, #e2e8f0);
+                    border: 1px solid var(--color-border-light, var(--pw-line-e2e8f0));
                     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
                 }
 
@@ -122,7 +122,7 @@ export function ProjectCardSkeleton() {
                     justify-content: space-between;
                     align-items: center;
                     padding-top: 16px;
-                    border-top: 1px solid var(--color-border-light, #e2e8f0);
+                    border-top: 1px solid var(--color-border-light, var(--pw-line-e2e8f0));
                     margin-bottom: 12px;
                 }
 
@@ -188,13 +188,13 @@ export function ProjectDetailSkeleton() {
                 .detail-skeleton {
                     display: flex;
                     min-height: calc(100dvh - 64px);
-                    background: #f8fafc;
+                    background: var(--pw-fill-f8fafc);
                 }
 
                 .detail-sidebar-skeleton {
                     width: 280px;
                     padding: 24px 20px;
-                    background: rgba(255, 255, 255, 0.85);
+                    background: color-mix(in srgb, var(--pw-fill-ffffff) 85%, transparent);
                     border-right: 1px solid rgba(226, 232, 240, 0.6);
                     flex-shrink: 0;
                     display: flex;
@@ -230,10 +230,10 @@ export function ProjectDetailSkeleton() {
                 }
 
                 .detail-card-skeleton {
-                    background: white;
+                    background: var(--pw-fill-ffffff);
                     border-radius: 12px;
                     padding: 24px;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid var(--pw-line-e2e8f0);
                 }
 
                 @media (max-width: 768px) {

@@ -24,27 +24,27 @@ interface ContextualTipsProps {
 const categoryConfig: Record<TipCategory, { icon: React.ReactNode; bg: string; border: string; iconColor: string }> = {
     'info': {
         icon: <Info size={20} weight="fill" />,
-        bg: 'bg-blue-50',
-        border: 'border-blue-200',
-        iconColor: 'text-blue-600'
+        bg: 'bg-[var(--pw-fill-blue-50)]',
+        border: 'border-[var(--pw-line-blue-200)]',
+        iconColor: 'text-[var(--pw-ink-blue-600)]'
     },
     'tip': {
         icon: <Lightbulb size={20} weight="fill" />,
-        bg: 'bg-amber-50',
-        border: 'border-amber-200',
-        iconColor: 'text-amber-600'
+        bg: 'bg-[var(--pw-fill-amber-50)]',
+        border: 'border-[var(--pw-line-amber-200)]',
+        iconColor: 'text-[var(--pw-ink-amber-600)]'
     },
     'warning': {
         icon: <Warning size={20} weight="fill" />,
-        bg: 'bg-orange-50',
+        bg: 'bg-[var(--pw-fill-orange-50)]',
         border: 'border-orange-200',
-        iconColor: 'text-orange-600'
+        iconColor: 'text-[var(--pw-ink-orange-600)]'
     },
     'success': {
         icon: <CheckCircle size={20} weight="fill" />,
-        bg: 'bg-green-50',
-        border: 'border-green-200',
-        iconColor: 'text-green-600'
+        bg: 'bg-[var(--pw-fill-green-50)]',
+        border: 'border-[var(--pw-line-green-200)]',
+        iconColor: 'text-[var(--pw-ink-green-600)]'
     },
     'pro-tip': {
         icon: <Sparkle size={20} weight="fill" />,
@@ -263,13 +263,13 @@ export function ContextualTips({
                     .tip-title {
                         font-size: 0.875rem;
                         font-weight: 600;
-                        color: #0f172a;
+                        color: var(--pw-ink-0f172a);
                         margin: 0 0 4px 0;
                     }
 
                     .tip-text {
                         font-size: 0.8125rem;
-                        color: #475569;
+                        color: var(--pw-ink-475569);
                         margin: 0;
                         line-height: 1.5;
                     }
@@ -287,7 +287,7 @@ export function ContextualTips({
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        color: #64748b;
+                        color: var(--pw-ink-64748b);
                         transition: none;
                     }
 
@@ -295,7 +295,7 @@ export function ContextualTips({
                       @media (hover: hover) and (pointer: fine) {
                           .tip-dismiss:hover {
                               background: rgba(0, 0, 0, 0.05);
-                              color: #64748b;
+                              color: var(--pw-ink-64748b);
                       }
                       }
                     }
@@ -360,9 +360,9 @@ export function ContextualTips({
 
             <style jsx>{`
                 .contextual-tips-sidebar {
-                    background: white;
+                    background: var(--pw-fill-ffffff);
                     border-radius: 12px;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid var(--pw-line-e2e8f0);
                     overflow: hidden;
                 }
 
@@ -373,7 +373,7 @@ export function ContextualTips({
                     gap: 10px;
                     padding: 14px 16px;
                     border: none;
-                    background: #f8fafc;
+                    background: var(--pw-fill-f8fafc);
                     cursor: pointer;
                     transition: none;
                 }
@@ -381,13 +381,13 @@ export function ContextualTips({
                 @media (hover: hover) and (pointer: fine) {
                   @media (hover: hover) and (pointer: fine) {
                       .sidebar-toggle:hover {
-                          background: #f1f5f9;
+                          background: var(--pw-fill-f1f5f9);
                   }
                   }
                 }
 
                 .toggle-icon {
-                    color: #FCA311;
+                    color: var(--pw-ink-fca311);
                 }
 
                 .toggle-text {
@@ -395,11 +395,11 @@ export function ContextualTips({
                     text-align: left;
                     font-size: 0.875rem;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                 }
 
                 .toggle-chevron {
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     transition: none;
                 }
 
@@ -436,7 +436,7 @@ export function ContextualTips({
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                 }
 
                 .tip-dismiss {
@@ -449,7 +449,7 @@ export function ContextualTips({
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     transition: none;
                 }
 
@@ -457,7 +457,7 @@ export function ContextualTips({
                   @media (hover: hover) and (pointer: fine) {
                       .tip-dismiss:hover {
                           background: rgba(0, 0, 0, 0.08);
-                          color: #64748b;
+                          color: var(--pw-ink-64748b);
                   }
                   }
                 }
@@ -465,13 +465,13 @@ export function ContextualTips({
                 .tip-title {
                     font-size: 0.875rem;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                     margin: 0 0 6px 0;
                 }
 
                 .tip-text {
                     font-size: 0.8125rem;
-                    color: #475569;
+                    color: var(--pw-ink-475569);
                     margin: 0;
                     line-height: 1.5;
                 }
@@ -483,7 +483,7 @@ export function ContextualTips({
                     margin-top: 10px;
                     font-size: 0.75rem;
                     font-weight: 500;
-                    color: #2563eb;
+                    color: var(--pw-ink-2563eb);
                     text-decoration: none;
                 }
 

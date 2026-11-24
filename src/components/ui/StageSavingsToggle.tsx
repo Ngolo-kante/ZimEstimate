@@ -54,7 +54,7 @@ export default function StageSavingsToggle(props: StageSavingsToggleProps) {
 
             <style jsx>{`
                 .savings-toggle-card {
-                    background: #ffffff;
+                    background: var(--pw-fill-ffffff);
                     border: 1px solid var(--color-border-light);
                     border-radius: var(--radius-lg);
                     overflow: hidden;

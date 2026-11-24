@@ -31,7 +31,7 @@ const ORDER: HouseExtraId[] = ['site_setup', 'septic', 'water_tank', 'borehole',
 
 const dollars = (value: number) => `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 
-const INPUT = 'w-24 rounded-lg border border-slate-300 px-2 py-2 text-right text-sm font-semibold text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100';
+const INPUT = 'w-24 rounded-lg border border-[var(--pw-line-slate-300)] px-2 py-2 text-right text-sm font-semibold text-[var(--pw-ink-slate-900)] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-[var(--pw-line-blue-100)]';
 
 function Segmented<T extends string | number>({ label, value, options, onChange }: {
   label: string;
@@ -41,7 +41,7 @@ function Segmented<T extends string | number>({ label, value, options, onChange 
 }) {
   return (
     <fieldset>
-      <legend className="mb-1.5 text-xs font-semibold text-slate-600">{label}</legend>
+      <legend className="mb-1.5 text-xs font-semibold text-[var(--pw-ink-slate-600)]">{label}</legend>
       <div className="flex flex-wrap gap-1.5">
         {options.map((option) => (
           <button
@@ -49,7 +49,7 @@ function Segmented<T extends string | number>({ label, value, options, onChange 
             type="button"
             aria-pressed={value === option.value}
             onClick={() => onChange(option.value)}
-            className={`min-h-9 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-none ${value === option.value ? 'border-blue-500 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300'}`}
+            className={`min-h-9 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-none ${value === option.value ? 'border-blue-500 bg-[var(--pw-fill-blue-50)] text-[var(--pw-ink-blue-800)]' : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] text-[var(--pw-ink-slate-700)] hover:border-[var(--pw-line-blue-300)]'}`}
           >
             {option.label}
           </button>
@@ -61,7 +61,7 @@ function Segmented<T extends string | number>({ label, value, options, onChange 
 
 function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
   return (
-    <label className="flex min-h-9 items-center gap-2 text-sm text-slate-800">
+    <label className="flex min-h-9 items-center gap-2 text-sm text-[var(--pw-ink-slate-800)]">
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 accent-blue-700" />
       {label}
     </label>
@@ -72,7 +72,7 @@ function NumberField({ label, value, min, max, step = 1, suffix, onChange }: {
   label: string; value: number; min: number; max: number; step?: number; suffix?: string; onChange: (value: number) => void;
 }) {
   return (
-    <label className="flex items-center justify-between gap-3 text-sm text-slate-800">
+    <label className="flex items-center justify-between gap-3 text-sm text-[var(--pw-ink-slate-800)]">
       <span>{label}</span>
       <span className="flex items-center gap-1.5">
         <input type="number" inputMode="numeric" min={min} max={max} step={step} value={value}
@@ -108,7 +108,7 @@ export default function ExtrasSection() {
 
   if (projectScope !== 'entire') {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-700">
+      <div className="rounded-2xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] p-5 text-sm text-[var(--pw-ink-slate-700)]">
         Extras such as a septic tank, borehole or solar belong to a full house estimate. Choose <strong>Entire house</strong> on the first step to add them.
       </div>
     );
@@ -177,9 +177,9 @@ export default function ExtrasSection() {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-        <h3 className="flex items-center gap-2 text-base font-bold text-slate-900"><HouseLine size={20} weight="duotone" /> Everything beyond the house itself</h3>
-        <p className="mt-1 text-sm leading-6 text-slate-700">
+      <div className="rounded-2xl border border-[var(--pw-line-blue-200)] bg-[var(--pw-fill-blue-50)] p-5">
+        <h3 className="flex items-center gap-2 text-base font-bold text-[var(--pw-ink-slate-900)]"><HouseLine size={20} weight="duotone" /> Everything beyond the house itself</h3>
+        <p className="mt-1 text-sm leading-6 text-[var(--pw-ink-slate-700)]">
           Your BOQ already covers the boundary wall, vehicle and pedestrian gates and driveway paving (Exterior works), and a 150 L electric geyser (Finishing). Add only what your stand still needs. Lines marked <em>add your quote</em> start at $0 because there is no published Zimbabwe price; fill them in on the review step.
         </p>
       </div>
@@ -189,14 +189,14 @@ export default function ExtrasSection() {
         const on = extras[id].enabled;
         const subtotal = subtotals.get(id);
         return (
-          <section key={id} className={`overflow-hidden rounded-2xl border bg-white transition-none ${on ? 'border-blue-400 ring-1 ring-blue-400' : 'border-slate-200'}`}>
+          <section key={id} className={`overflow-hidden rounded-2xl border bg-[var(--pw-fill-white)] transition-none ${on ? 'border-blue-400 ring-1 ring-blue-400' : 'border-[var(--pw-line-slate-200)]'}`}>
             <div className="flex items-start gap-3 p-4 sm:p-5">
-              <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${on ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>{ICONS[id]}</span>
+              <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${on ? 'bg-blue-600 text-white' : 'bg-[var(--pw-fill-slate-100)] text-[var(--pw-ink-slate-600)]'}`}>{ICONS[id]}</span>
               <div className="min-w-0 flex-1">
-                <h4 className="text-sm font-bold text-slate-900">{info.label}</h4>
-                <p className="mt-0.5 text-xs leading-5 text-slate-600">{info.description}</p>
+                <h4 className="text-sm font-bold text-[var(--pw-ink-slate-900)]">{info.label}</h4>
+                <p className="mt-0.5 text-xs leading-5 text-[var(--pw-ink-slate-600)]">{info.description}</p>
                 {on && subtotal && (
-                  <p className="mt-1 text-xs font-semibold text-slate-800">
+                  <p className="mt-1 text-xs font-semibold text-[var(--pw-ink-slate-800)]">
                     {dollars(subtotal.total)}{subtotal.unpriced > 0 ? ` + ${subtotal.unpriced} ${subtotal.unpriced === 1 ? 'line' : 'lines'} to quote` : ''}
                   </p>
                 )}
@@ -207,7 +207,7 @@ export default function ExtrasSection() {
                 onCheckedChange={(enabled) => set(id, { enabled } as Partial<HouseExtras[typeof id]>)}
               />
             </div>
-            {on && options(id) && <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-4 sm:px-5">{options(id)}</div>}
+            {on && options(id) && <div className="border-t border-[var(--pw-line-slate-100)] bg-[color-mix(in_oklab,var(--pw-fill-slate-50)_60%,transparent)] px-4 py-4 sm:px-5">{options(id)}</div>}
           </section>
         );
       })}
@@ -215,7 +215,7 @@ export default function ExtrasSection() {
       <button
         type="button"
         onClick={() => updateProjectDetails({ houseExtras: DEFAULT_HOUSE_EXTRAS })}
-        className="text-sm font-semibold text-slate-600 underline underline-offset-2 hover:text-slate-900"
+        className="text-sm font-semibold text-[var(--pw-ink-slate-600)] underline underline-offset-2 hover:text-[var(--pw-ink-slate-900)]"
       >
         Clear all extras
       </button>

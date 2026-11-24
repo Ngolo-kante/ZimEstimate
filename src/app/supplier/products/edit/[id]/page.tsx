@@ -173,7 +173,7 @@ export default function EditProductPage() {
         justifyContent: 'center',
         backgroundColor: '#f8fafc',
       }}>
-        <Spinner size={32} className="animate-spin motion-reduce:animate-none" style={{ color: '#3b82f6' }} />
+        <Spinner size={32} className="animate-spin motion-reduce:animate-none" style={{ color: 'var(--pw-ink-3b82f6)' }} />
       </div>
     );
   }
@@ -197,7 +197,7 @@ export default function EditProductPage() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.5rem',
-              color: '#64748b',
+              color: 'var(--pw-ink-64748b)',
               textDecoration: 'none',
               marginBottom: '1rem',
             }}
@@ -223,10 +223,10 @@ export default function EditProductPage() {
               borderRadius: '8px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <Package size={20} style={{ color: '#3b82f6' }} />
+                <Package size={20} style={{ color: 'var(--pw-ink-3b82f6)' }} />
                 <span style={{ fontWeight: 600 }}>{product.material_name || product.material_key}</span>
               </div>
-              <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+              <div style={{ fontSize: '0.875rem', color: 'var(--pw-ink-64748b)' }}>
                 {product.unit && `Unit: ${product.unit}`}
               </div>
             </div>
@@ -242,7 +242,7 @@ export default function EditProductPage() {
             }}>
               <div>
                 <div style={{ fontWeight: 500 }}>Product Active</div>
-                <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                <div style={{ fontSize: '0.875rem', color: 'var(--pw-ink-64748b)' }}>
                   {formData.isActive ? 'Visible to buyers' : 'Hidden from buyers'}
                 </div>
               </div>
@@ -285,7 +285,7 @@ export default function EditProductPage() {
                     left: '12px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    color: '#94a3b8',
+                    color: 'var(--pw-ink-94a3b8)',
                   }} />
                   <input
                     type="number"
@@ -304,7 +304,7 @@ export default function EditProductPage() {
                   />
                 </div>
                 {errors.priceUsd && (
-                  <span style={{ color: '#ef4444', fontSize: '0.875rem' }}>{errors.priceUsd}</span>
+                  <span style={{ color: 'var(--pw-ink-ef4444)', fontSize: '0.875rem' }}>{errors.priceUsd}</span>
                 )}
               </div>
 
@@ -322,7 +322,7 @@ export default function EditProductPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--pw-line-e2e8f0)',
                     borderRadius: '8px',
                     fontSize: '1rem',
                   }}
@@ -345,7 +345,7 @@ export default function EditProductPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--pw-line-e2e8f0)',
                     borderRadius: '8px',
                     fontSize: '1rem',
                   }}
@@ -365,7 +365,7 @@ export default function EditProductPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--pw-line-e2e8f0)',
                     borderRadius: '8px',
                     fontSize: '1rem',
                   }}
@@ -385,7 +385,7 @@ export default function EditProductPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--pw-line-e2e8f0)',
                     borderRadius: '8px',
                     fontSize: '1rem',
                     backgroundColor: 'white',
@@ -410,7 +410,7 @@ export default function EditProductPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--pw-line-e2e8f0)',
                     borderRadius: '8px',
                     fontSize: '1rem',
                   }}
@@ -431,7 +431,7 @@ export default function EditProductPage() {
                 style={{
                   width: '100%',
                   padding: '0.75rem',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--pw-line-e2e8f0)',
                   borderRadius: '8px',
                   fontSize: '1rem',
                   resize: 'vertical',
@@ -443,10 +443,10 @@ export default function EditProductPage() {
             {errors.save && (
               <div style={{
                 backgroundColor: '#fef2f2',
-                border: '1px solid #fecaca',
+                border: '1px solid var(--pw-line-fecaca)',
                 borderRadius: '8px',
                 padding: '1rem',
-                color: '#991b1b',
+                color: 'var(--pw-ink-991b1b)',
                 fontSize: '0.875rem',
               }}>
                 {errors.save}
@@ -497,8 +497,8 @@ export default function EditProductPage() {
                   gap: '0.5rem',
                   padding: '1rem',
                   backgroundColor: deleting ? '#94a3b8' : '#fef2f2',
-                  color: deleting ? 'white' : '#ef4444',
-                  border: deleting ? 'none' : '1px solid #fecaca',
+                  color: deleting ? 'white' : 'var(--pw-ink-ef4444)',
+                  border: deleting ? 'none' : '1px solid var(--pw-line-fecaca)',
                   borderRadius: '8px',
                   fontSize: '1rem',
                   fontWeight: 500,

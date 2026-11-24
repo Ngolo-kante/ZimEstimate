@@ -41,7 +41,7 @@ export default function Error({
             {isChunkError ? 'Refresh this page' : 'We hit a snag'}
           </h1>
         </div>
-        <p style={{ color: '#64748b', marginTop: '0.75rem' }}>
+        <p style={{ color: 'var(--pw-ink-64748b)', marginTop: '0.75rem' }}>
           {isChunkError
             ? 'This page could not load all its code. Refresh to load a consistent version, then try the upload again.'
             : (error?.message || 'Unexpected error occurred. Please try again.')}

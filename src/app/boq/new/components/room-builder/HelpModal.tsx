@@ -45,7 +45,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             <div
                 onClick={e => e.stopPropagation()}
                 style={{
-                    background: '#fff',
+                    background: 'var(--pw-fill-ffffff)',
                     borderRadius: '16px',
                     boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
                     width: '90%',
@@ -65,7 +65,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                         background: 'transparent',
                         border: 'none',
                         cursor: 'pointer',
-                        color: '#9ca3af',
+                        color: 'var(--pw-ink-9ca3af)',
                     }}
                 >
                     <X size={20} />
@@ -74,7 +74,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 <h3 style={{
                     fontSize: '18px',
                     fontWeight: 700,
-                    color: '#1f2937',
+                    color: 'var(--pw-ink-1f2937)',
                     marginBottom: '20px',
                     display: 'flex',
                     alignItems: 'center',
@@ -96,16 +96,16 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                                 borderBottom: '1px solid #f3f4f6',
                             }}
                         >
-                            <span style={{ fontSize: '14px', color: '#4b5563' }}>{item.d}</span>
+                            <span style={{ fontSize: '14px', color: 'var(--pw-ink-4b5563)' }}>{item.d}</span>
                             <span style={{
                                 fontFamily: 'monospace',
                                 fontSize: '12px',
                                 fontWeight: 600,
-                                color: '#374151',
-                                background: '#f3f4f6',
+                                color: 'var(--pw-ink-374151)',
+                                background: 'var(--pw-fill-f3f4f6)',
                                 padding: '4px 8px',
                                 borderRadius: '4px',
-                                border: '1px solid #e5e7eb',
+                                border: '1px solid var(--pw-line-e5e7eb)',
                             }}>
                                 {item.k}
                             </span>

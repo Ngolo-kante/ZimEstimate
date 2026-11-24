@@ -31,16 +31,16 @@ const BUILDING_TYPES = [
     label: 'Single Storey',
     description: 'All rooms on one level — most common in Zimbabwe.',
     icon: HouseLine,
-    iconBg: 'bg-blue-50',
-    iconColor: 'text-blue-600',
+    iconBg: 'bg-[var(--pw-fill-blue-50)]',
+    iconColor: 'text-[var(--pw-ink-blue-600)]',
   },
   {
     value: 'double_storey',
     label: 'Double Storey',
     description: 'Living areas on the ground floor, bedrooms above.',
     icon: Buildings,
-    iconBg: 'bg-blue-50',
-    iconColor: 'text-blue-600',
+    iconBg: 'bg-[var(--pw-fill-blue-50)]',
+    iconColor: 'text-[var(--pw-ink-blue-600)]',
   },
 ] as const;
 
@@ -50,10 +50,10 @@ const PLAN_MODES = [
     label: 'Quick Room Count',
     description: 'Enter room counts and total floor area. Fast and simple.',
     icon: ListNumbers,
-    iconBg: 'bg-blue-50',
-    iconColor: 'text-blue-600',
+    iconBg: 'bg-[var(--pw-fill-blue-50)]',
+    iconColor: 'text-[var(--pw-ink-blue-600)]',
     tip: 'Best for early-stage estimates',
-    tipColor: 'text-blue-700 bg-blue-50 border-blue-200',
+    tipColor: 'text-[var(--pw-ink-blue-700)] bg-[var(--pw-fill-blue-50)] border-[var(--pw-line-blue-200)]',
     badge: null as string | null,
     badgeColor: '',
   },
@@ -62,10 +62,10 @@ const PLAN_MODES = [
     label: 'Detailed Room Plan',
     description: 'Use the interactive room builder to sketch each space with dimensions.',
     icon: PencilRuler,
-    iconBg: 'bg-blue-50',
-    iconColor: 'text-blue-600',
+    iconBg: 'bg-[var(--pw-fill-blue-50)]',
+    iconColor: 'text-[var(--pw-ink-blue-600)]',
     tip: 'Most accurate estimate',
-    tipColor: 'text-blue-700 bg-blue-50 border-blue-200',
+    tipColor: 'text-[var(--pw-ink-blue-700)] bg-[var(--pw-fill-blue-50)] border-[var(--pw-line-blue-200)]',
     badge: null as string | null,
     badgeColor: '',
   },
@@ -74,10 +74,10 @@ const PLAN_MODES = [
     label: 'Upload Floor Plan',
     description: 'Upload your architectural drawings — we extract dimensions automatically.',
     icon: FileArrowUp,
-    iconBg: 'bg-blue-50',
-    iconColor: 'text-blue-600',
+    iconBg: 'bg-[var(--pw-fill-blue-50)]',
+    iconColor: 'text-[var(--pw-ink-blue-600)]',
     tip: 'Fastest if you have drawings',
-    tipColor: 'text-blue-700 bg-blue-50 border-blue-200',
+    tipColor: 'text-[var(--pw-ink-blue-700)] bg-[var(--pw-fill-blue-50)] border-[var(--pw-line-blue-200)]',
     badge: null as string | null,
     badgeColor: '',
   },
@@ -114,25 +114,25 @@ const Stepper = ({
   onChange: (v: number) => void;
   onRemove?: () => void;
 }) => (
-  <div className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-2.5 transition-none hover:border-slate-300">
+  <div className="group flex items-center justify-between rounded-xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] p-2.5 transition-none hover:border-[var(--pw-line-slate-300)]">
     <div className="flex items-center gap-2">
       {onRemove && (
         <button
           type="button"
           onClick={onRemove}
-          className="text-[var(--color-text-muted)] hover:text-red-500 transition-none"
+          className="text-[var(--color-text-muted)] hover:text-[var(--pw-ink-red-500)] transition-none"
           title={`Remove ${label}`}
         >
           <Trash size={15} weight="bold" />
         </button>
       )}
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <span className="text-sm font-medium text-[var(--pw-ink-slate-700)]">{label}</span>
     </div>
     <div className="flex items-center gap-2.5">
       <button
         type="button"
         onClick={() => onChange(Math.max(0, value - 1))}
-        className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-none"
+        className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--pw-fill-slate-100)] text-[var(--pw-ink-slate-600)] hover:bg-[var(--pw-fill-slate-200)] transition-none"
       >
         <Minus size={13} weight="bold" />
       </button>
@@ -140,7 +140,7 @@ const Stepper = ({
       <button
         type="button"
         onClick={() => onChange(value + 1)}
-        className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-none"
+        className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--pw-fill-slate-100)] text-[var(--pw-ink-slate-600)] hover:bg-[var(--pw-fill-slate-200)] transition-none"
       >
         <Plus size={13} weight="bold" />
       </button>
@@ -299,12 +299,12 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                 onClick={() => updateProjectDetails({ buildingType: type.value })}
                 className={`group relative flex items-start gap-4 rounded-2xl border p-5 text-left transition-none duration-200 ${
                   isSelected
-                    ? `bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm`
-                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
+                    ? `bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm`
+                    : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] hover:border-[var(--pw-line-slate-300)] hover:shadow-md'
                 }`}
               >
                 {isSelected && (
-                   <CheckCircle weight="fill" size={18} className="absolute top-4 right-4 text-blue-500" />
+                   <CheckCircle weight="fill" size={18} className="absolute top-4 right-4 text-[var(--pw-ink-blue-500)]" />
                 )}
                 <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl transition-none ${
                   isSelected ? type.iconBg : type.iconBg
@@ -312,8 +312,8 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                   <Icon size={22} weight="regular" className={isSelected ? type.iconColor : type.iconColor} />
                 </div>
                 <div>
-                  <div className={`font-bold text-base ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>{type.label}</div>
-                  <p className={`mt-1 text-xs leading-relaxed ${isSelected ? 'text-slate-600' : 'wiz-text-muted'}`}>{type.description}</p>
+                  <div className={`font-bold text-base ${isSelected ? 'text-[var(--pw-ink-slate-900)]' : 'text-[var(--pw-ink-slate-800)]'}`}>{type.label}</div>
+                  <p className={`mt-1 text-xs leading-relaxed ${isSelected ? 'text-[var(--pw-ink-slate-600)]' : 'wiz-text-muted'}`}>{type.description}</p>
                 </div>
               </button>
             );
@@ -357,7 +357,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
             onChange={(e) => updateProjectDetails({ floorPlanSize: e.target.value })}
             placeholder="e.g. 150"
             className={`w-full rounded-2xl border py-4 pl-10 pr-12 text-base font-semibold wiz-text-primary shadow-sm outline-none transition-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-[var(--color-placeholder)] ${
-              showAreaWarning ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'
+              showAreaWarning ? 'border-[var(--pw-line-amber-300)] bg-[var(--pw-fill-amber-50)]' : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)]'
             }`}
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[var(--color-text-muted)]">m²</span>
@@ -371,7 +371,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
 
         {/* Stand size — drives boundary wall length for exterior works */}
         <div className="pt-1">
-          <label htmlFor="stand-size" className="mb-2 block text-sm font-semibold text-slate-700">
+          <label htmlFor="stand-size" className="mb-2 block text-sm font-semibold text-[var(--pw-ink-slate-700)]">
             Stand size <span className="font-normal text-[var(--color-text-muted)]">(optional)</span>
           </label>
           <div className="relative max-w-xs">
@@ -382,7 +382,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
               value={projectDetails.standSize}
               onChange={(e) => updateProjectDetails({ standSize: e.target.value })}
               placeholder="e.g. 600"
-              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-12 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-[var(--color-placeholder)]"
+              className="w-full rounded-2xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] py-3 pl-10 pr-12 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:font-normal placeholder:text-[var(--color-placeholder)]"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[var(--color-text-muted)]">m²</span>
           </div>
@@ -393,7 +393,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
 
         {/* Wall height */}
         <div className="pt-1">
-          <label className="mb-2 block text-sm font-semibold text-slate-700">Wall height</label>
+          <label className="mb-2 block text-sm font-semibold text-[var(--pw-ink-slate-700)]">Wall height</label>
           <div className="relative max-w-xs">
             <ArrowsOut size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
             <input
@@ -401,7 +401,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
               value={projectDetails.wallHeight}
               onChange={(e) => updateProjectDetails({ wallHeight: e.target.value })}
               placeholder="2.7"
-              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm wiz-text-primary shadow-sm outline-none transition-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:text-[var(--color-placeholder)]"
+              className="w-full rounded-2xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] py-3 pl-10 pr-10 text-sm wiz-text-primary shadow-sm outline-none transition-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 placeholder:text-[var(--color-placeholder)]"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-[var(--color-text-muted)]">m</span>
           </div>
@@ -451,12 +451,12 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                 }}
                 className={`relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-none duration-200 ${
                   isSelected
-                    ? `bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm`
-                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
+                    ? `bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm`
+                    : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] hover:border-[var(--pw-line-slate-300)] hover:shadow-md'
                 }`}
               >
                 {isSelected && (
-                  <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-blue-500" />
+                  <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-[var(--pw-ink-blue-500)]" />
                 )}
                 {'badge' in mode && mode.badge && !isSelected && (
                   <span className={`absolute top-3 right-3 rounded-full border px-2 py-0.5 text-xs font-bold uppercase tracking-widest ${mode.badgeColor}`}>
@@ -475,8 +475,8 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                   <Icon size={20} weight="regular" className={isSelected ? mode.iconColor : mode.iconColor} />
                 </div>
                 <div className="flex-1">
-                  <div className={`text-sm font-bold ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>{mode.label}</div>
-                  <p className={`mt-1 text-xs leading-relaxed ${isSelected ? 'text-slate-600' : 'wiz-text-muted'}`}>{mode.description}</p>
+                  <div className={`text-sm font-bold ${isSelected ? 'text-[var(--pw-ink-slate-900)]' : 'text-[var(--pw-ink-slate-800)]'}`}>{mode.label}</div>
+                  <p className={`mt-1 text-xs leading-relaxed ${isSelected ? 'text-[var(--pw-ink-slate-600)]' : 'wiz-text-muted'}`}>{mode.description}</p>
                 </div>
 
                 {/* Tip badge at the bottom — shown when not selected */}
@@ -507,7 +507,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
           <div
             id="plan-details-panel"
             style={{ scrollMarginTop: 160 }}
-            className="space-y-6 rounded-2xl border border-slate-100 bg-slate-50/60 p-5"
+            className="space-y-6 rounded-2xl border border-[var(--pw-line-slate-100)] bg-[color-mix(in_oklab,var(--pw-fill-slate-50)_60%,transparent)] p-5"
           >
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
@@ -519,7 +519,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                   <button
                     type="button"
                     onClick={() => setIsRoomMenuOpen((prev) => !prev)}
-                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
+                    className="flex items-center gap-1.5 rounded-xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] px-3 py-1.5 text-xs font-semibold text-[var(--pw-ink-slate-600)] shadow-sm hover:border-[var(--pw-line-slate-300)] hover:bg-[var(--pw-fill-slate-50)]"
                   >
                     <PlusCircle size={15} weight="regular" />
                     Add room
@@ -537,11 +537,11 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                         onClick={() => setIsRoomMenuOpen(false)}
                       />
                       <div
-                        className="fixed inset-x-0 bottom-0 z-[70] max-h-[70vh] overflow-hidden rounded-t-2xl border border-slate-200 bg-white shadow-xl
+                        className="fixed inset-x-0 bottom-0 z-[70] max-h-[70vh] overflow-hidden rounded-t-2xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] shadow-xl
                                    sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:bottom-auto sm:mt-2 sm:w-48 sm:max-h-none sm:rounded-xl"
                       >
-                        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:hidden">
-                          <span className="text-sm font-bold text-slate-900">Add a room</span>
+                        <div className="flex items-center justify-between border-b border-[var(--pw-line-slate-100)] px-4 py-3 sm:hidden">
+                          <span className="text-sm font-bold text-[var(--pw-ink-slate-900)]">Add a room</span>
                           <button
                             type="button"
                             onClick={() => setIsRoomMenuOpen(false)}
@@ -556,7 +556,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                             <button
                               key={room.key}
                               type="button"
-                              className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 hover:wiz-text-primary transition-none sm:py-2"
+                              className="w-full text-left px-4 py-3 text-sm text-[var(--pw-ink-slate-700)] hover:bg-[var(--pw-fill-slate-50)] hover:wiz-text-primary transition-none sm:py-2"
                               onClick={() => {
                                 setActiveRoomKeys((prev) => [...prev, room.key]);
                                 updateProjectDetails({ roomInputs: { ...projectDetails.roomInputs, [room.key]: '1' } });
@@ -592,7 +592,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                 );
               })}
               {activeRoomKeys.length === 0 && (
-                <div className="col-span-full rounded-xl border border-dashed border-slate-200 py-8 text-center text-sm text-[var(--color-text-muted)]">
+                <div className="col-span-full rounded-xl border border-dashed border-[var(--pw-line-slate-200)] py-8 text-center text-sm text-[var(--color-text-muted)]">
                   No rooms added yet — click &ldquo;Add room&rdquo; above.
                 </div>
               )}
@@ -613,7 +613,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
           <div
             id="plan-details-panel"
             style={{ scrollMarginTop: 160 }}
-            className="rounded-2xl border border-blue-100 bg-blue-50/40 p-5"
+            className="rounded-2xl border border-[var(--pw-line-blue-100)] bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_40%,transparent)] p-5"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -628,7 +628,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                 type="button"
                 data-testid="launch-floor-plan-editor"
                 onClick={onLaunchRoomBuilder}
-                className="rounded-xl border border-blue-200 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-50 hover:border-blue-300 transition-none"
+                className="rounded-xl border border-[var(--pw-line-blue-200)] bg-[var(--pw-fill-white)] px-5 py-2.5 text-sm font-semibold text-[var(--pw-ink-blue-700)] shadow-sm hover:bg-[var(--pw-fill-blue-50)] hover:border-[var(--pw-line-blue-300)] transition-none"
               >
                 Launch Floor Plan Editor
               </button>
@@ -636,7 +636,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
             {detailedArea > 0 && (
               <div className="mt-4 flex items-center gap-3">
                 <span className="text-xs wiz-text-muted">Derived area:</span>
-                <span className="font-bold text-slate-800 text-sm">{detailedArea.toFixed(1)} m²</span>
+                <span className="font-bold text-[var(--pw-ink-slate-800)] text-sm">{detailedArea.toFixed(1)} m²</span>
               </div>
             )}
           </div>
@@ -646,12 +646,12 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
           <div
             id="plan-details-panel"
             style={{ scrollMarginTop: 160 }}
-            className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/40 p-10 text-center"
+            className="rounded-2xl border border-dashed border-[var(--pw-line-slate-200)] bg-[color-mix(in_oklab,var(--pw-fill-slate-50)_40%,transparent)] p-10 text-center"
           >
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-100 bg-white shadow-sm mb-4">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--pw-line-slate-100)] bg-[var(--pw-fill-white)] shadow-sm mb-4">
               <FileArrowUp size={26} weight="regular" className="text-[var(--color-text-muted)]" />
             </div>
-            <h3 className="text-base font-bold text-slate-800 mb-1.5">Upload Floor Plan</h3>
+            <h3 className="text-base font-bold text-[var(--pw-ink-slate-800)] mb-1.5">Upload Floor Plan</h3>
             <p className="text-sm wiz-text-muted mb-5 max-w-sm mx-auto leading-relaxed">
               Upload your architectural drawing (PDF, PNG, JPG or WEBP) and we read
               the room sizes off it. You can correct anything before costing.
@@ -674,7 +674,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
               type="button"
               disabled={planStatus === 'reading'}
               onClick={() => planInputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-default disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] px-6 py-2.5 text-sm font-semibold text-[var(--pw-ink-slate-700)] shadow-sm hover:bg-[var(--pw-fill-slate-50)] disabled:cursor-default disabled:opacity-60"
             >
               {planStatus === 'reading' ? (
                 <>
@@ -700,11 +700,11 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
             {planError && (
               <div
                 role="alert"
-                className="mx-auto mt-5 max-w-sm rounded-xl border border-amber-200 bg-amber-50 p-3 text-left"
+                className="mx-auto mt-5 max-w-sm rounded-xl border border-[var(--pw-line-amber-200)] bg-[var(--pw-fill-amber-50)] p-3 text-left"
               >
                 <div className="flex items-start gap-2">
-                  <Warning size={16} className="mt-0.5 shrink-0 text-amber-600" aria-hidden="true" />
-                  <p className="text-xs leading-relaxed text-amber-900">{planError}</p>
+                  <Warning size={16} className="mt-0.5 shrink-0 text-[var(--pw-ink-amber-600)]" aria-hidden="true" />
+                  <p className="text-xs leading-relaxed text-[var(--pw-ink-amber-900)]">{planError}</p>
                 </div>
                 {planFailure && (
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -720,14 +720,14 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                     <button
                       type="button"
                       onClick={() => { captureProductEvent('plan_recovery_chosen', { tool: 'plan_upload', action: 'mark_rooms', reason: planFailure.code }); setGeometryMode('detailed'); onLaunchRoomBuilder(); }}
-                      className="min-h-[40px] rounded-lg border border-amber-300 bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-amber-100"
+                      className="min-h-[40px] rounded-lg border border-[var(--pw-line-amber-300)] bg-[var(--pw-fill-white)] px-3 text-xs font-semibold text-[var(--pw-ink-slate-800)] hover:bg-[var(--pw-fill-amber-100)]"
                     >
                       Add the rooms yourself
                     </button>
                     <button
                       type="button"
                       onClick={() => { captureProductEvent('plan_recovery_chosen', { tool: 'plan_upload', action: 'enter_area', reason: planFailure.code }); setGeometryMode('quick'); }}
-                      className="min-h-[40px] rounded-lg border border-amber-300 bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-amber-100"
+                      className="min-h-[40px] rounded-lg border border-[var(--pw-line-amber-300)] bg-[var(--pw-fill-white)] px-3 text-xs font-semibold text-[var(--pw-ink-slate-800)] hover:bg-[var(--pw-fill-amber-100)]"
                     >
                       Type the floor area
                     </button>
@@ -737,24 +737,24 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
             )}
 
             {planView && !planError && planStatus !== 'reading' && (
-              <div className="mx-auto mt-5 max-w-sm rounded-xl border border-slate-200 bg-white p-4 text-left">
+              <div className="mx-auto mt-5 max-w-sm rounded-xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] p-4 text-left">
                 <div className="flex items-center gap-2">
-                  <CheckCircle size={16} weight="fill" className="shrink-0 text-emerald-600" />
-                  <span className="truncate text-sm font-bold text-slate-800">
+                  <CheckCircle size={16} weight="fill" className="shrink-0 text-[var(--pw-ink-emerald-600)]" />
+                  <span className="truncate text-sm font-bold text-[var(--pw-ink-slate-800)]">
                     {planView.fileName ?? 'Plan read'}
                   </span>
                 </div>
                 <dl className="mt-3 grid grid-cols-2 gap-y-1 text-xs">
                   <dt className="wiz-text-muted">Rooms found</dt>
-                  <dd className="text-right font-bold text-slate-800">{planView.rooms}</dd>
+                  <dd className="text-right font-bold text-[var(--pw-ink-slate-800)]">{planView.rooms}</dd>
                   <dt className="wiz-text-muted">Floor area</dt>
-                  <dd className="text-right font-bold tabular-nums text-slate-800">
+                  <dd className="text-right font-bold tabular-nums text-[var(--pw-ink-slate-800)]">
                     {planView.area.toFixed(1)} m²
                   </dd>
                   <dt className="wiz-text-muted">Doors</dt>
-                  <dd className="text-right font-bold tabular-nums text-slate-800">{totalDoors > 0 ? totalDoors : 'Not detected'}</dd>
+                  <dd className="text-right font-bold tabular-nums text-[var(--pw-ink-slate-800)]">{totalDoors > 0 ? totalDoors : 'Not detected'}</dd>
                   <dt className="wiz-text-muted">Windows</dt>
-                  <dd className="text-right font-bold tabular-nums text-slate-800">{totalWindows > 0 ? totalWindows : 'Not detected'}</dd>
+                  <dd className="text-right font-bold tabular-nums text-[var(--pw-ink-slate-800)]">{totalWindows > 0 ? totalWindows : 'Not detected'}</dd>
                 </dl>
                 {projectDetails.buildingType === 'double_storey' && (
                   <p className="mt-3 text-xs leading-relaxed wiz-text-muted">
@@ -774,7 +774,7 @@ export default function BuildingDesignSection({ onLaunchRoomBuilder, onPlanPrevi
                 <button
                   type="button"
                   onClick={onLaunchRoomBuilder}
-                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 hover:text-blue-800"
+                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[var(--pw-ink-blue-700)] hover:text-[var(--pw-ink-blue-800)]"
                 >
                   <ArrowsOut size={14} />
                   Open room builder to edit

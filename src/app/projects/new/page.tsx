@@ -508,12 +508,12 @@ export default function NewProject() {
                     margin: 0 0 10px;
                     font-size: 0.875rem;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                 }
 
                 .progress-label span {
                     font-weight: 500;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                 }
 
                 .progress-segments {
@@ -528,7 +528,7 @@ export default function NewProject() {
                 .progress-segment {
                     height: 6px;
                     border-radius: 3px;
-                    background: #e2e8f0;
+                    background: var(--pw-fill-e2e8f0);
                 }
 
                 .progress-segment.filled {
@@ -544,14 +544,14 @@ export default function NewProject() {
                 .step-header h2 {
                     font-size: 2rem;
                     font-weight: 700;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                     margin: 0 0 8px 0;
                     letter-spacing: -0.02em;
                 }
 
                 .step-header p {
                     font-size: 1.125rem;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     margin: 0;
                 }
 
@@ -569,9 +569,9 @@ export default function NewProject() {
                     gap: 6px;
                     padding: 6px 10px;
                     border-radius: 999px;
-                    border: 1px solid #d7e6f5;
-                    background: #f8fbff;
-                    color: #475569;
+                    border: 1px solid var(--pw-line-d7e6f5);
+                    background: var(--pw-fill-f8fbff);
+                    color: var(--pw-ink-475569);
                     font-size: 0.75rem;
                     font-weight: 600;
                 }
@@ -579,11 +579,11 @@ export default function NewProject() {
                 .meta-chip.done {
                     border-color: rgba(22, 163, 74, 0.35);
                     background: rgba(240, 253, 244, 0.9);
-                    color: #166534;
+                    color: var(--pw-ink-166534);
                 }
 
                 .meta-dot {
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     font-size: 0.9rem;
                     line-height: 1;
                 }
@@ -595,7 +595,7 @@ export default function NewProject() {
                     border-radius: 12px;
                     border: 1px solid rgba(220, 38, 38, 0.3);
                     background: rgba(254, 242, 242, 0.95);
-                    color: #991b1b;
+                    color: var(--pw-ink-991b1b);
                     font-size: 0.86rem;
                     font-weight: 600;
                     text-align: center;
@@ -632,8 +632,8 @@ export default function NewProject() {
                     color: inherit;
                     appearance: none;
                     -webkit-appearance: none;
-                    background: white;
-                    border: 2px solid #e2e8f0;
+                    background: var(--pw-fill-ffffff);
+                    border: 2px solid var(--pw-line-e2e8f0);
                     border-radius: 16px;
                     padding: 28px 24px;
                     text-align: center;
@@ -657,7 +657,7 @@ export default function NewProject() {
 
                 @media (hover: hover) and (pointer: fine) {
                 .tile:hover {
-                    border-color: #cbd5e1;
+                    border-color: var(--pw-line-cbd5e1);
                     transform: translateY(-2px);
                     box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
                 }
@@ -667,7 +667,7 @@ export default function NewProject() {
 
                 .tile.selected {
                     border-color: #FCA311;
-                    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+                    background: linear-gradient(135deg, var(--pw-fill-fffbeb) 0%, var(--pw-fill-fef3c7) 100%);
                     box-shadow: 0 0 0 4px rgba(252, 163, 17, 0.15);
                 }
 
@@ -676,40 +676,40 @@ export default function NewProject() {
                     height: 72px;
                     margin: 0 auto 16px auto;
                     border-radius: 50%;
-                    background: #f1f5f9;
+                    background: var(--pw-fill-f1f5f9);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     transition: none;
                 }
 
                 .tile.selected .tile-icon {
                     background: #FCA311;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                 }
 
-                .tile-icon.budget { color: #16a34a; }
-                .tile-icon.quality { color: #2563eb; }
-                .tile-icon.speed { color: #dc2626; }
+                .tile-icon.budget { color: var(--pw-ink-16a34a); }
+                .tile-icon.quality { color: var(--pw-ink-2563eb); }
+                .tile-icon.speed { color: var(--pw-ink-dc2626); }
 
                 .tile.selected .tile-icon.budget,
                 .tile.selected .tile-icon.quality,
                 .tile.selected .tile-icon.speed {
                     background: #FCA311;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                 }
 
                 .tile h3 {
                     font-size: 1.125rem;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                     margin: 0 0 8px 0;
                 }
 
                 .tile p {
                     font-size: 0.875rem;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     margin: 0;
                     line-height: 1.5;
                 }
@@ -718,16 +718,16 @@ export default function NewProject() {
                     display: inline-block;
                     margin-top: 12px;
                     padding: 4px 10px;
-                    background: #f1f5f9;
+                    background: var(--pw-fill-f1f5f9);
                     border-radius: 20px;
                     font-size: 0.75rem;
-                    color: #475569;
+                    color: var(--pw-ink-475569);
                     font-weight: 500;
                 }
 
                 .tile.selected .tile-hint {
                     background: rgba(252, 163, 17, 0.3);
-                    color: #92400e;
+                    color: var(--pw-ink-92400e);
                 }
 
                 /* Form Card */
@@ -751,17 +751,17 @@ export default function NewProject() {
                 .field-label {
                     font-size: 1rem;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                 }
 
                 .field-hint {
                     font-size: 0.813rem;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                 }
 
                 .field-error {
                     margin: 10px 2px 0;
-                    color: #b91c1c;
+                    color: var(--pw-ink-b91c1c);
                     font-size: 0.84rem;
                     font-weight: 600;
                 }
@@ -772,7 +772,7 @@ export default function NewProject() {
                     align-items: center;
                     padding-top: 32px;
                     margin-top: 40px;
-                    border-top: 1px solid #e2e8f0;
+                    border-top: 1px solid var(--pw-line-e2e8f0);
                 }
 
                 .nav-spacer {

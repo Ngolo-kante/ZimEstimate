@@ -11,9 +11,9 @@
   --wiz-surface-muted:var(--color-mist);
 
   /* Midnight Blue — body text (replaces pure black / slate-900) */
-  --wiz-text-primary: var(--color-primary);
-  --wiz-text-muted:   #475569;
-  --wiz-text-faint:   #475569;
+  --wiz-text-primary: var(--color-heading);
+  --wiz-text-muted:   var(--pw-ink-475569);
+  --wiz-text-faint:   var(--pw-ink-475569);
 
   /* Jade — progress bar & active step indicator */
   --wiz-jade:         #2D9D78;
@@ -49,6 +49,26 @@
 
 }
 
+/* Dark mode (follows the device): notes become tinted navy panels. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --wiz-jade-light:  #143429;
+    --wiz-wasabi-text: #86efac;
+    --wiz-info-bg:     #192d4d;
+    --wiz-info-border: #2f4f80;
+    --wiz-info-text:   #bfdbfe;
+    --wiz-info-icon:   #7dd3fc;
+    --wiz-warn-bg:     #362e22;
+    --wiz-warn-border: #6b5a2e;
+    --wiz-warn-text:   #fcd34d;
+    --wiz-warn-icon:   #fbbf24;
+    --wiz-ok-bg:       #143429;
+    --wiz-ok-border:   #23573f;
+    --wiz-ok-text:     #86efac;
+    --wiz-ok-icon:     #4ade80;
+  }
+}
+
 /* ── Global wizard wrapper ─────────────────────────────────────────────────── */
 .wiz-root {
   --color-text-muted: #475569;
@@ -58,12 +78,12 @@
 
 .wiz-topbar {
   background:   var(--wiz-surface);
-  border-color: #E2E8F0;
+  border-color: var(--pw-line-e2e8f0);
 }
 
 /* ── Progress bar ──────────────────────────────────────────────────────────── */
 .wiz-progress-bar-track {
-  background: #E9EAE6;
+  background: var(--pw-fill-e9eae6);
   border-radius: 999px;
   height: 6px;
   overflow: hidden;
@@ -83,7 +103,7 @@
 }
 .wiz-step-dot--active    { background: var(--wiz-primary);    width: 32px; }
 .wiz-step-dot--complete  { background: #93C5FD;               width: 16px; cursor: pointer; }
-.wiz-step-dot--upcoming  { background: #DDE1D8;               width: 16px; }
+.wiz-step-dot--upcoming  { background: var(--pw-fill-dde1d8);               width: 16px; }
 
 /* ── Numbered step chips ───────────────────────────────────────────────────
    Replaces the anonymous dots above. Those were 6px bars whose only label was
@@ -127,28 +147,28 @@
 }
 
 .wiz-step-chip--done {
-  background:   #EFF6FF;
-  border-color: #BFDBFE;
-  color:        #1D4ED8;
+  background:   var(--pw-fill-eff6ff);
+  border-color: var(--pw-line-bfdbfe);
+  color:        var(--pw-ink-1d4ed8);
 }
 @media (hover: hover) and (pointer: fine) {
     .wiz-step-chip--done:hover {
-      background:   #DBEAFE;
-      border-color: #93C5FD;}
+      background:   var(--pw-fill-dbeafe);
+      border-color: var(--pw-line-93c5fd);}
 }
 .wiz-step-chip--done .wiz-step-chip__num {
   background: #BFDBFE;
-  color:      #1D4ED8;
+  color:      var(--pw-ink-1d4ed8);
 }
 
 .wiz-step-chip--locked {
   background:   transparent;
-  border-color: #E2E8F0;
+  border-color: var(--pw-line-e2e8f0);
   color:        var(--color-text-secondary);
   cursor:       not-allowed;
 }
 .wiz-step-chip--locked .wiz-step-chip__num {
-  background: #F1F5F9;
+  background: var(--pw-fill-f1f5f9);
   color:      var(--color-text-secondary);
 }
 
@@ -214,12 +234,12 @@
   font-weight:     600;
   color:           var(--wiz-text-muted);
   background:      transparent;
-  border:          1.5px solid #E2E8F0;
+  border:          1.5px solid var(--pw-line-e2e8f0);
   transition: none;
   cursor:          pointer;
 }
 @media (hover: hover) and (pointer: fine) {
-    .wiz-btn-secondary:hover {     background: #F1F5F9; border-color: #CBD5E1; color: var(--wiz-text-primary); }
+    .wiz-btn-secondary:hover {     background: var(--pw-fill-f1f5f9); border-color: var(--pw-line-cbd5e1); color: var(--wiz-text-primary); }
 }
 
 .wiz-btn-save {
@@ -231,13 +251,13 @@
   font-size:       13px;
   font-weight:     600;
   color:           var(--wiz-primary-dark);
-  background:      #EFF6FF;
+  background:      var(--pw-fill-eff6ff);
   border:          1.5px solid rgba(59,130,246,0.25);
   transition: none;
   cursor:          pointer;
 }
 @media (hover: hover) and (pointer: fine) {
-    .wiz-btn-save:hover {     background: #DBEAFE; }
+    .wiz-btn-save:hover {     background: var(--pw-fill-dbeafe); }
 }
 
 /* ── Info / Warning / Success Alert Banners ────────────────────────────────── */
@@ -283,7 +303,7 @@
 }
 
 /* ── Status badge (top bar) ────────────────────────────────────────────────── */
-.wiz-badge-saving   { background: #F1F5F9; color: var(--wiz-text-muted); }
+.wiz-badge-saving   { background: var(--pw-fill-f1f5f9); color: var(--wiz-text-muted); }
 .wiz-badge-unsaved  { background: var(--wiz-warn-bg); color: var(--wiz-warn-text); }
 .wiz-badge-saved    { background: var(--wiz-ok-bg);   color: var(--wiz-ok-text);  }
 
@@ -306,14 +326,14 @@
   }
   .wiz-root .wiz-step-label { color: var(--color-gold-on-navy) !important; }
   /* Half-transparent fills would let the navy through: make them solid. */
-  .wiz-root [class*="bg-blue-50/"] { background-color: #eff6ff; }
-  .wiz-root [class*="bg-slate-50/"] { background-color: #f8fafc; }
+  .wiz-root [class*="bg-blue-50/"], [class*="var(--pw-fill-blue-50)_"] { background-color: var(--pw-fill-eff6ff); }
+  .wiz-root [class*="bg-slate-50/"], [class*="var(--pw-fill-slate-50)_"] { background-color: var(--pw-fill-f8fafc); }
   /* Fixed grey or slate text that sits straight on the navy (labels, help lines),
      not inside a white card, field or note. */
-  .wiz-root :is(.text-slate-900, .text-slate-800, .text-slate-700, .text-gray-700, .text-gray-900):not(:is(.bg-white, [class*="bg-[var(--color-surface)]"], [class*="bg-[var(--color-background)]"], .bg-slate-50, .bg-blue-50, .bg-amber-100, [class*="bg-blue-50/"], [class*="bg-slate-50/"], .wiz-alert, button, label button) *) { color: #f1f5fc; }
-  .wiz-root :is(.text-slate-600, .text-slate-500, .text-slate-400, .text-gray-500, .text-gray-600, [class*="text-[var(--color-text-muted)]"], [class*="text-[var(--color-text-secondary)]"]):not(:is(.bg-white, [class*="bg-[var(--color-surface)]"], [class*="bg-[var(--color-background)]"], .bg-slate-50, .bg-blue-50, .bg-amber-100, [class*="bg-blue-50/"], [class*="bg-slate-50/"], .wiz-alert, button) *) { color: var(--color-muted-on-navy); }
-  .wiz-root :is(.bg-white, [class*="bg-[var(--color-surface)]"], [class*="bg-[var(--color-background)]"], .bg-slate-50, .bg-blue-50, .bg-amber-100, [class*="bg-blue-50/"], [class*="bg-slate-50/"], .wiz-topbar, .wiz-alert, .wiz-step-chip, input, select, textarea) {
-    --wiz-text-primary: var(--color-primary);
-    --wiz-text-muted: #475569;
+  .wiz-root :is(.text-slate-900, [class*="text-[var(--pw-ink-slate-900)]"], .text-slate-800, [class*="text-[var(--pw-ink-slate-800)]"], .text-slate-700, [class*="text-[var(--pw-ink-slate-700)]"], .text-gray-700, [class*="text-[var(--pw-ink-gray-700)]"], .text-gray-900, [class*="text-[var(--pw-ink-gray-900)]"]):not(:is(.bg-white, [class*="bg-[var(--pw-fill-white)]"], [class*="bg-[var(--color-surface)]"], [class*="bg-[var(--color-background)]"], .bg-slate-50, [class*="bg-[var(--pw-fill-slate-50)]"], .bg-blue-50, [class*="bg-[var(--pw-fill-blue-50)]"], .bg-amber-100, [class*="bg-[var(--pw-fill-amber-100)]"], [class*="bg-blue-50/"], [class*="var(--pw-fill-blue-50)_"], [class*="bg-slate-50/"], [class*="var(--pw-fill-slate-50)_"], .wiz-alert, button, label button) *) { color: var(--pw-ink-f1f5fc); }
+  .wiz-root :is(.text-slate-600, [class*="text-[var(--pw-ink-slate-600)]"], .text-slate-500, [class*="text-[var(--pw-ink-slate-500)]"], .text-slate-400, [class*="text-[var(--pw-ink-slate-400)]"], .text-gray-500, [class*="text-[var(--pw-ink-gray-500)]"], .text-gray-600, [class*="text-[var(--pw-ink-gray-600)]"], [class*="text-[var(--color-text-muted)]"], [class*="text-[var(--color-text-secondary)]"]):not(:is(.bg-white, [class*="bg-[var(--pw-fill-white)]"], [class*="bg-[var(--color-surface)]"], [class*="bg-[var(--color-background)]"], .bg-slate-50, [class*="bg-[var(--pw-fill-slate-50)]"], .bg-blue-50, [class*="bg-[var(--pw-fill-blue-50)]"], .bg-amber-100, [class*="bg-[var(--pw-fill-amber-100)]"], [class*="bg-blue-50/"], [class*="var(--pw-fill-blue-50)_"], [class*="bg-slate-50/"], [class*="var(--pw-fill-slate-50)_"], .wiz-alert, button) *) { color: var(--color-muted-on-navy); }
+  .wiz-root :is(.bg-white, [class*="bg-[var(--pw-fill-white)]"], [class*="bg-[var(--color-surface)]"], [class*="bg-[var(--color-background)]"], .bg-slate-50, [class*="bg-[var(--pw-fill-slate-50)]"], .bg-blue-50, [class*="bg-[var(--pw-fill-blue-50)]"], .bg-amber-100, [class*="bg-[var(--pw-fill-amber-100)]"], [class*="bg-blue-50/"], [class*="var(--pw-fill-blue-50)_"], [class*="bg-slate-50/"], [class*="var(--pw-fill-slate-50)_"], .wiz-topbar, .wiz-alert, .wiz-step-chip, input, select, textarea) {
+    --wiz-text-primary: var(--color-heading);
+    --wiz-text-muted: var(--pw-ink-475569);
   }
 }

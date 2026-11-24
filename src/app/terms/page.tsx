@@ -12,7 +12,7 @@ const titleStyle = { margin: '0 0 12px', fontSize: '1.2rem', color: 'var(--color
 const bodyStyle = { margin: 0, lineHeight: 1.8, color: 'var(--color-text-secondary)' } as const;
 const listStyle = { margin: '8px 0 0 20px', lineHeight: 1.8, color: 'var(--color-text-secondary)', paddingLeft: 0 } as const;
 const tableStyle = { width: '100%', borderCollapse: 'collapse' as const, fontSize: '0.875rem', marginTop: '10px' };
-const thStyle = { background: '#f1f5f9', padding: '8px 12px', textAlign: 'left' as const, fontWeight: 600, border: '1px solid #e2e8f0' };
+const thStyle = { background: 'var(--pw-fill-f1f5f9)', padding: '8px 12px', textAlign: 'left' as const, fontWeight: 600, border: '1px solid var(--pw-fill-e2e8f0)' };
 const tdStyle = { padding: '8px 12px', border: '1px solid #e2e8f0', verticalAlign: 'top' as const };
 
 export default function TermsPage() {

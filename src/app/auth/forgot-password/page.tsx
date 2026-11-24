@@ -135,7 +135,7 @@ export default function ForgotPasswordPage() {
                     display: inline-flex;
                     align-items: center;
                     gap: var(--spacing-sm);
-                    color: var(--color-primary);
+                    color: var(--color-heading);
                     text-decoration: none;
                     margin-bottom: var(--spacing-md);
                 }
@@ -183,7 +183,7 @@ export default function ForgotPasswordPage() {
                 }
 
                 .sent-note :global(svg) {
-                    color: var(--color-success, #10b981);
+                    color: var(--color-success, var(--pw-ink-10b981));
                     flex-shrink: 0;
                     margin-top: 0.1rem;
                 }
@@ -193,7 +193,7 @@ export default function ForgotPasswordPage() {
                     border: none;
                     padding: 0;
                     font: inherit;
-                    color: var(--color-primary);
+                    color: var(--color-heading);
                     font-weight: 500;
                     cursor: pointer;
                     text-decoration: underline;
@@ -213,7 +213,7 @@ export default function ForgotPasswordPage() {
                 }
 
                 .auth-footer :global(a) {
-                    color: var(--color-primary);
+                    color: var(--color-heading);
                     text-decoration: none;
                     font-weight: 500;
                 }

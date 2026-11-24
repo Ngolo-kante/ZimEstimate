@@ -286,7 +286,7 @@ export function CelebrationModal({
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        color: #374151;
+                        color: var(--pw-ink-374151);
                         transition: none;
                         z-index: 20;
                     }
@@ -316,28 +316,28 @@ export function CelebrationModal({
                     }
 
                     .icon-container :global(.success) {
-                        color: #16a34a;
+                        color: var(--pw-ink-16a34a);
                     }
 
                     .icon-container :global(.savings) {
-                        color: #2563eb;
+                        color: var(--pw-ink-2563eb);
                     }
 
                     .icon-container :global(.milestone) {
-                        color: #d97706;
+                        color: var(--pw-ink-d97706);
                     }
 
                     .celebration-title {
                         font-size: 1.75rem;
                         font-weight: 800;
-                        color: #0f172a;
+                        color: var(--pw-ink-0f172a);
                         margin: 0 0 12px 0;
                         letter-spacing: -0.02em;
                     }
 
                     .celebration-message {
                         font-size: 1rem;
-                        color: #475569;
+                        color: var(--pw-ink-475569);
                         margin: 0 0 24px 0;
                         line-height: 1.6;
                     }
@@ -365,7 +365,7 @@ export function CelebrationModal({
 
                     .stat-label {
                         font-size: 0.75rem;
-                        color: #64748b;
+                        color: var(--pw-ink-64748b);
                         text-transform: uppercase;
                         letter-spacing: 0.05em;
                     }
@@ -373,7 +373,7 @@ export function CelebrationModal({
                     .stat-value {
                         font-size: 1.25rem;
                         font-weight: 700;
-                        color: #0f172a;
+                        color: var(--pw-ink-0f172a);
                     }
 
                     .celebration-actions {

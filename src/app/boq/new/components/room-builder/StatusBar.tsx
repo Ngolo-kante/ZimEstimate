@@ -14,7 +14,7 @@ interface StatusBarProps {
 export default function StatusBar({ totals, isOverTarget, isMobile, onContinue, rooms, fromUpload = false }: StatusBarProps) {
     return (
         <div style={{
-            background: '#fff',
+            background: 'var(--pw-fill-ffffff)',
             borderTop: '1px solid #e5e7eb',
             padding: isMobile ? '12px 16px calc(12px + env(safe-area-inset-bottom, 0px))' : '16px 24px',
             display: 'flex',
@@ -29,24 +29,24 @@ export default function StatusBar({ totals, isOverTarget, isMobile, onContinue, 
         }}>
             <div style={{ display: 'flex', gap: isMobile ? '16px' : '40px', flexWrap: 'wrap' }}>
                 <div>
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Total Area</div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--pw-ink-6b7280)', textTransform: 'uppercase' }}>Total Area</div>
                     <div style={{
                         fontSize: isMobile ? '16px' : '18px',
                         fontWeight: 700,
-                        color: fromUpload ? '#2563eb' : isOverTarget ? '#dc2626' : '#10b981',
+                        color: fromUpload ? 'var(--pw-ink-2563eb)' : isOverTarget ? 'var(--pw-ink-dc2626)' : 'var(--pw-ink-10b981)',
                     }}>
                         {totals.area.toFixed(1)}m²
                     </div>
                 </div>
                 {!isMobile && !fromUpload && (
                     <div>
-                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Wall Area</div>
-                        <div style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>{totals.walls.toFixed(1)}m²</div>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--pw-ink-6b7280)', textTransform: 'uppercase' }}>Wall Area</div>
+                        <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--pw-ink-10b981)' }}>{totals.walls.toFixed(1)}m²</div>
                     </div>
                 )}
                 {!fromUpload && <div>
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Brick Count</div>
-                    <div style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: 700, color: '#10b981' }}>~{Math.ceil(totals.bricks).toLocaleString()}</div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--pw-ink-6b7280)', textTransform: 'uppercase' }}>Brick Count</div>
+                    <div style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: 700, color: 'var(--pw-ink-10b981)' }}>~{Math.ceil(totals.bricks).toLocaleString()}</div>
                 </div>}
             </div>
 

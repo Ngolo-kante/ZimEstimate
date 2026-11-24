@@ -21,11 +21,11 @@ const KonvaCanvas = dynamic(() => import('./KonvaCanvas'), {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: '#f0f9ff',
+            background: 'var(--pw-fill-f0f9ff)',
             borderRadius: '8px',
-            border: '2px dashed #bfdbfe',
+            border: '2px dashed var(--pw-line-bfdbfe)',
             minHeight: '500px',
-            color: '#94a3b8',
+            color: 'var(--pw-ink-94a3b8)',
             fontSize: '14px',
         }}>
             Loading canvas...
@@ -182,10 +182,10 @@ export function InteractiveRoomBuilder({ roomCounts, initialRooms, uploadedPlan,
             minHeight: '600px',
             height: 'auto',
             maxHeight: 'calc(100dvh - 80px)',
-            background: '#f3f4f6',
+            background: 'var(--pw-fill-f3f4f6)',
             borderRadius: '12px',
             overflow: 'hidden',
-            border: '1px solid #e5e7eb',
+            border: '1px solid var(--pw-line-e5e7eb)',
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
             margin: '0 auto',
             width: '100%',
@@ -324,7 +324,7 @@ function MobileRoomGrid({
         return (
             <div style={{
                 textAlign: 'center',
-                color: '#9ca3af',
+                color: 'var(--pw-ink-9ca3af)',
                 marginTop: '40px',
                 width: '100%',
             }}>
@@ -392,20 +392,20 @@ function MobileRoomGrid({
                                 En-suite
                             </div>
                         )}
-                        <span style={{ fontSize: '11px', fontWeight: 700, color: isSelected ? '#166534' : '#475569', textTransform: 'uppercase', textAlign: 'center', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: isSelected ? 'var(--pw-ink-166534)' : 'var(--pw-ink-475569)', textTransform: 'uppercase', textAlign: 'center', marginBottom: '4px' }}>
                             {room.label}
                         </span>
-                        <span style={{ fontSize: '10px', color: isSelected ? '#166534' : '#94a3b8', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '10px', color: isSelected ? 'var(--pw-ink-166534)' : 'var(--pw-ink-94a3b8)', marginBottom: '8px' }}>
                             {room.length}m × {room.width}m
                         </span>
                         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: 'auto' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', background: isSelected ? '#bbf7d0' : '#f1f5f9', borderRadius: '4px' }}>
                                 <FrameCorners size={14} color={isSelected ? '#166534' : '#64748b'} />
-                                <span style={{ fontSize: '11px', fontWeight: 600, color: isSelected ? '#166534' : '#64748b' }}>{room.windows}</span>
+                                <span style={{ fontSize: '11px', fontWeight: 600, color: isSelected ? 'var(--pw-ink-166534)' : 'var(--pw-ink-64748b)' }}>{room.windows}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', background: isSelected ? '#bbf7d0' : '#f1f5f9', borderRadius: '4px' }}>
                                 <Door size={14} color={isSelected ? '#166534' : '#64748b'} />
-                                <span style={{ fontSize: '11px', fontWeight: 600, color: isSelected ? '#166534' : '#64748b' }}>{room.doors}</span>
+                                <span style={{ fontSize: '11px', fontWeight: 600, color: isSelected ? 'var(--pw-ink-166534)' : 'var(--pw-ink-64748b)' }}>{room.doors}</span>
                             </div>
                         </div>
                     </div>

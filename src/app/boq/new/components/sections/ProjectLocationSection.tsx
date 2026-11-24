@@ -63,10 +63,10 @@ export default function ProjectLocationSection() {
             placeholder="e.g. Borrowdale Family Home"
             aria-invalid={nameError ? true : undefined}
             aria-describedby={nameError ? 'project-name-error' : undefined}
-            className={`w-full rounded-2xl border bg-white px-5 py-4 text-base font-medium wiz-text-primary placeholder:text-[var(--color-placeholder)] shadow-sm outline-none transition-none focus:ring-2 ${
+            className={`w-full rounded-2xl border bg-[var(--pw-fill-white)] px-5 py-4 text-base font-medium wiz-text-primary placeholder:text-[var(--color-placeholder)] shadow-sm outline-none transition-none focus:ring-2 ${
               nameError
                 ? 'border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[var(--color-error)]/15'
-                : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/15'
+                : 'border-[var(--pw-line-slate-200)] focus:border-blue-500 focus:ring-blue-500/15'
             }`}
           />
           {nameError && (
@@ -75,7 +75,7 @@ export default function ProjectLocationSection() {
             </p>
           )}
           {projectDetails.name.trim() && (
-            <CheckCircle weight="fill" size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500" />
+            <CheckCircle weight="fill" size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--pw-ink-emerald-500)]" />
           )}
         </div>
         {!projectDetails.name.trim() && (
@@ -101,7 +101,7 @@ export default function ProjectLocationSection() {
               value={projectDetails.locationCity}
               onChange={(e) => updateProjectDetails({ locationCity: e.target.value })}
               placeholder="City / Town (e.g. Harare)"
-              className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-10 pr-5 text-sm wiz-text-primary placeholder:text-[var(--color-placeholder)] shadow-sm outline-none transition-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+              className="w-full rounded-2xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] py-4 pl-10 pr-5 text-sm wiz-text-primary placeholder:text-[var(--color-placeholder)] shadow-sm outline-none transition-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
             />
             <datalist id="zw-cities">
               {ZIMBABWE_CITIES.map((c) => <option key={c} value={c} />)}
@@ -113,7 +113,7 @@ export default function ProjectLocationSection() {
               value={projectDetails.specificLocation}
               onChange={(e) => updateProjectDetails({ specificLocation: e.target.value })}
               placeholder="Specific area (e.g. Borrowdale Brooke)"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm wiz-text-primary placeholder:text-[var(--color-placeholder)] shadow-sm outline-none transition-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+              className="w-full rounded-2xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] px-5 py-4 text-sm wiz-text-primary placeholder:text-[var(--color-placeholder)] shadow-sm outline-none transition-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
             />
           </div>
         </div>
@@ -137,21 +137,21 @@ export default function ProjectLocationSection() {
                 onClick={() => updateProjectDetails({ locationType: type.value })}
                 className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-none duration-200 ${
                   isSelected
-                    ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
-                    : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-md'
+                    ? 'bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm'
+                    : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] hover:border-[var(--pw-line-blue-200)] hover:shadow-md'
                 }`}
               >
                 {isSelected && (
-                  <CheckCircle weight="fill" size={18} className="absolute top-4 right-4 text-blue-500" />
+                  <CheckCircle weight="fill" size={18} className="absolute top-4 right-4 text-[var(--pw-ink-blue-500)]" />
                 )}
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                  isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-[var(--color-text-muted)] group-hover:bg-blue-50 group-hover:text-blue-600'
+                  isSelected ? 'bg-[var(--pw-fill-blue-100)] text-[var(--pw-ink-blue-600)]' : 'bg-[var(--pw-fill-slate-100)] text-[var(--color-text-muted)] group-hover:bg-[var(--pw-fill-blue-50)] group-hover:text-[var(--pw-ink-blue-600)]'
                 }`}>
                   <Icon size={20} weight={isSelected ? 'fill' : 'regular'} />
                 </div>
                 <div>
-                  <div className={`font-semibold text-sm ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{type.label}</div>
-                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-blue-700/80' : 'wiz-text-muted'}`}>{type.hint}</div>
+                  <div className={`font-semibold text-sm ${isSelected ? 'text-[var(--pw-ink-blue-900)]' : 'text-[var(--pw-ink-slate-800)]'}`}>{type.label}</div>
+                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-[color-mix(in_oklab,var(--pw-ink-blue-700)_80%,transparent)]' : 'wiz-text-muted'}`}>{type.hint}</div>
                 </div>
               </button>
             );

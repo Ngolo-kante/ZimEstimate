@@ -257,7 +257,7 @@ function ContractorRegisterContent() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center text-sm text-slate-500">
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center text-sm text-[var(--pw-ink-slate-500)]">
         Loading…
       </div>
     );
@@ -268,10 +268,10 @@ function ContractorRegisterContent() {
   if (awaitingConfirmation) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-12">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-          <CheckCircle size={40} weight="duotone" className="mx-auto text-emerald-600" />
-          <h1 className="mt-3 text-lg font-bold text-slate-900">Confirm your email to finish</h1>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600">
+        <div className="rounded-2xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] p-6 text-center">
+          <CheckCircle size={40} weight="duotone" className="mx-auto text-[var(--pw-ink-emerald-600)]" />
+          <h1 className="mt-3 text-lg font-bold text-[var(--pw-ink-slate-900)]">Confirm your email to finish</h1>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--pw-ink-slate-600)]">
             We sent a confirmation link to <strong>{accountEmail}</strong>. Open it and you will
             land back on this page — your details for {companyName} are saved, so you only need
             to press the button once more.
@@ -284,15 +284,15 @@ function ContractorRegisterContent() {
   if (blockedRole) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-12">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-          <h1 className="text-lg font-bold text-slate-900">Not available on this account</h1>
-          <p className="mt-2 text-sm text-slate-600">
+        <div className="rounded-2xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] p-6 text-center">
+          <h1 className="text-lg font-bold text-[var(--pw-ink-slate-900)]">Not available on this account</h1>
+          <p className="mt-2 text-sm text-[var(--pw-ink-slate-600)]">
             This account is registered as a {profile?.user_type}. Contractor tools are for
             accounts that build for clients. Use a separate account if you need both.
           </p>
           <Link
             href="/home"
-            className="mt-4 inline-block text-sm font-bold text-blue-600 hover:underline"
+            className="mt-4 inline-block text-sm font-bold text-[var(--pw-ink-blue-600)] hover:underline"
           >
             Back to home
           </Link>

@@ -480,7 +480,7 @@ export default function SupplierDetailPage() {
         .contact-btn.whatsapp {
           background: #25d366;
           border-color: #25d366;
-          color: #06301a;
+          color: var(--pw-ink-06301a);
         }
 
         @media (max-width: 560px) {

@@ -218,12 +218,12 @@ export function RunningTotalBar({
 
                 .trend.up {
                     background: rgba(239, 68, 68, 0.2);
-                    color: #fca5a5;
+                    color: var(--pw-ink-fca5a5);
                 }
 
                 .trend.down {
                     background: rgba(34, 197, 94, 0.2);
-                    color: #86efac;
+                    color: var(--pw-ink-86efac);
                 }
 
                 .progress-section {
@@ -255,11 +255,11 @@ export function RunningTotalBar({
                 }
 
                 .budget-diff.over {
-                    color: #fca5a5;
+                    color: var(--pw-ink-fca5a5);
                 }
 
                 .budget-diff.under {
-                    color: #86efac;
+                    color: var(--pw-ink-86efac);
                 }
 
                 .progress-bar-container {

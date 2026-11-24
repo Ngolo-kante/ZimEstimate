@@ -616,8 +616,8 @@ export default function SupplierDashboardPage() {
                   padding: '1rem',
                   borderRadius: '12px',
                   backgroundColor: '#fefce8',
-                  border: '1px solid #fde68a',
-                  color: '#713f12',
+                  border: '1px solid var(--pw-line-fde68a)',
+                  color: 'var(--pw-ink-713f12)',
                 }}
               >
                 <Warning size={22} style={{ marginTop: '0.1rem' }} />
@@ -648,14 +648,14 @@ export default function SupplierDashboardPage() {
 
               <div className="bg-surface rounded-xl p-5 shadow-card border border-border-light reveal" data-delay="2">
                 <div className="text-secondary text-sm font-semibold uppercase tracking-wider mb-2">In Stock</div>
-                <div className="text-3xl font-bold font-heading text-emerald-600">
+                <div className="text-3xl font-bold font-heading text-[var(--pw-ink-emerald-600)]">
                   {products.filter(p => p.stock_status === 'in_stock').length}
                 </div>
               </div>
 
               <div className="bg-surface rounded-xl p-5 shadow-card border border-border-light reveal" data-delay="3">
                 <div className="text-secondary text-sm font-semibold uppercase tracking-wider mb-2">Low Stock</div>
-                <div className="text-3xl font-bold font-heading text-amber-500">
+                <div className="text-3xl font-bold font-heading text-[var(--pw-ink-amber-500)]">
                   {products.filter(p => p.stock_status === 'low_stock').length}
                 </div>
               </div>
@@ -681,14 +681,14 @@ export default function SupplierDashboardPage() {
                 </button>
                 <Link
                   href="/supplier/analytics"
-                  className="inline-flex items-center gap-2 px-5 py-3 bg-mist text-text border border-border-light rounded-md font-semibold hover:bg-white hover:border-accent hover:text-accent transition-none"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-mist text-text border border-border-light rounded-md font-semibold hover:bg-[var(--pw-fill-white)] hover:border-accent hover:text-accent transition-none"
                 >
                   <ChartLine size={18} weight="bold" />
                   View Analytics
                 </Link>
                 <Link
                   href="/supplier/leads"
-                  className="inline-flex items-center gap-2 px-5 py-3 bg-mist text-text border border-border-light rounded-md font-semibold hover:bg-white hover:border-accent hover:text-accent transition-none"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-mist text-text border border-border-light rounded-md font-semibold hover:bg-[var(--pw-fill-white)] hover:border-accent hover:text-accent transition-none"
                 >
                   Customer Leads
                 </Link>
@@ -823,7 +823,7 @@ export default function SupplierDashboardPage() {
                                 <div className="flex gap-2">
                                   <Link
                                     href={`/supplier/products/edit/${product.id}`}
-                                    className="p-2 bg-mist rounded text-secondary hover:bg-white hover:text-accent transition-none"
+                                    className="p-2 bg-mist rounded text-secondary hover:bg-[var(--pw-fill-white)] hover:text-accent transition-none"
                                   >
                                     <PencilSimple size={16} />
                                   </Link>
@@ -1175,14 +1175,14 @@ export default function SupplierDashboardPage() {
                     <div className="grid gap-2">
                       {documents.map((doc) => {
                         const statusColor = doc.status === 'verified'
-                          ? 'text-emerald-600'
+                          ? 'text-[var(--pw-ink-emerald-600)]'
                           : doc.status === 'rejected'
-                            ? 'text-red-600'
-                            : 'text-amber-600';
+                            ? 'text-[var(--pw-ink-red-600)]'
+                            : 'text-[var(--pw-ink-amber-600)]';
                         return (
                           <div
                             key={doc.id}
-                            className="flex flex-wrap items-center justify-between gap-3 border border-border-light rounded-md px-4 py-3 bg-white"
+                            className="flex flex-wrap items-center justify-between gap-3 border border-border-light rounded-md px-4 py-3 bg-[var(--pw-fill-white)]"
                           >
                             <div>
                               <div className="font-medium text-primary">
@@ -1249,11 +1249,11 @@ export default function SupplierDashboardPage() {
                         type="text"
                         readOnly
                         value={newApiKey}
-                        className="flex-1 px-3 py-2 rounded-md border border-border bg-white font-mono text-sm"
+                        className="flex-1 px-3 py-2 rounded-md border border-border bg-[var(--pw-fill-white)] font-mono text-sm"
                       />
                       <button
                         onClick={handleCopyApiKey}
-                        className="px-4 py-2 bg-white border border-border-light text-text rounded-md hover:border-accent hover:text-accent transition-none flex items-center gap-2"
+                        className="px-4 py-2 bg-[var(--pw-fill-white)] border border-border-light text-text rounded-md hover:border-accent hover:text-accent transition-none flex items-center gap-2"
                       >
                         <ClipboardText size={16} /> Copy
                       </button>

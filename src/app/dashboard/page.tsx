@@ -16,7 +16,7 @@ export default function DashboardRedirect() {
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: '100dvh',
-      color: '#64748b'
+      color: 'var(--pw-ink-64748b)'
     }}>
       Redirecting...
     </div>

@@ -118,7 +118,7 @@ export default function MaterialsSection() {
   return (
     <div className="space-y-10">
 
-      <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+      <div className="space-y-3 rounded-2xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] p-5 sm:p-6">
         <div>
           <h3 className="text-lg font-bold wiz-text-primary">Roof shape</h3>
           <p className="mt-1 text-sm wiz-text-muted">A hipped roof needs hip rafters and capping, and gutters right round.</p>
@@ -127,18 +127,18 @@ export default function MaterialsSection() {
           {(Object.entries(ROOF_SHAPES) as [RoofShape, (typeof ROOF_SHAPES)[RoofShape]][]).map(([id, option]) => (
             <button key={id} type="button" onClick={() => updateProjectDetails({ roofShape: id })}
               aria-pressed={(projectDetails.roofShape || DEFAULT_ROOF_SHAPE) === id}
-              className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-none ${((projectDetails.roofShape || DEFAULT_ROOF_SHAPE) === id) ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-slate-200 hover:border-blue-300'}`}>
-              <RoofShapeIcon shape={id} className="mt-0.5 h-6 w-12 shrink-0 text-slate-700" />
+              className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-none ${((projectDetails.roofShape || DEFAULT_ROOF_SHAPE) === id) ? 'border-blue-500 bg-[var(--pw-fill-blue-50)] ring-1 ring-blue-500' : 'border-[var(--pw-line-slate-200)] hover:border-[var(--pw-line-blue-300)]'}`}>
+              <RoofShapeIcon shape={id} className="mt-0.5 h-6 w-12 shrink-0 text-[var(--pw-ink-slate-700)]" />
               <span className="min-w-0">
-                <span className="block text-sm font-semibold text-slate-900">{option.label}</span>
-                <span className="mt-1 block text-xs text-slate-600">{option.description}</span>
+                <span className="block text-sm font-semibold text-[var(--pw-ink-slate-900)]">{option.label}</span>
+                <span className="mt-1 block text-xs text-[var(--pw-ink-slate-600)]">{option.description}</span>
               </span>
             </button>
           ))}
         </div>
       </div>
 
-      <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+      <div className="space-y-3 rounded-2xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] p-5 sm:p-6">
         <div>
           <h3 className="text-lg font-bold wiz-text-primary">Roof covering</h3>
           <p className="mt-1 text-sm wiz-text-muted">Choose the covering used for the roofing BOQ. Quantities and prices change with this choice.</p>
@@ -147,16 +147,16 @@ export default function MaterialsSection() {
           {(Object.entries(ROOF_COVERINGS) as [RoofCovering, (typeof ROOF_COVERINGS)[RoofCovering]][]).map(([id, option]) => (
             <button key={id} type="button" onClick={() => updateProjectDetails({ roofCovering: id })}
               aria-pressed={(projectDetails.roofCovering || 'ibr_05') === id}
-              className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-none ${((projectDetails.roofCovering || 'ibr_05') === id) ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-slate-200 hover:border-blue-300'}`}>
-              <RoofProfileIcon covering={id} className="mt-0.5 h-6 w-12 shrink-0 text-slate-700" />
+              className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-none ${((projectDetails.roofCovering || 'ibr_05') === id) ? 'border-blue-500 bg-[var(--pw-fill-blue-50)] ring-1 ring-blue-500' : 'border-[var(--pw-line-slate-200)] hover:border-[var(--pw-line-blue-300)]'}`}>
+              <RoofProfileIcon covering={id} className="mt-0.5 h-6 w-12 shrink-0 text-[var(--pw-ink-slate-700)]" />
               <span className="min-w-0">
-              <span className="block text-sm font-semibold text-slate-900">{option.label}</span>
-              <span className="mt-1 block text-xs text-slate-600">{option.description}</span>
+              <span className="block text-sm font-semibold text-[var(--pw-ink-slate-900)]">{option.label}</span>
+              <span className="mt-1 block text-xs text-[var(--pw-ink-slate-600)]">{option.description}</span>
               </span>
             </button>
           ))}
         </div>
-        {projectDetails.roofCovering === 'concrete_tile' && <p className="rounded-lg bg-amber-50 p-3 text-xs text-amber-900">Concrete tiles are heavier than sheets. The frame is a preliminary allowance; have a roof designer confirm timber sizes, spacing, pitch and fixings. Fixings and ridge pieces need a local quote.</p>}
+        {projectDetails.roofCovering === 'concrete_tile' && <p className="rounded-lg bg-[var(--pw-fill-amber-50)] p-3 text-xs text-[var(--pw-ink-amber-900)]">Concrete tiles are heavier than sheets. The frame is a preliminary allowance; have a roof designer confirm timber sizes, spacing, pitch and fixings. Fixings and ridge pieces need a local quote.</p>}
         <p className="text-xs text-[var(--color-text-muted)]">Pitch and sheet lengths are estimated from floor area and the roof shape; verify them against the roof plan and supplier quote.</p>
       </div>
 
@@ -175,24 +175,24 @@ export default function MaterialsSection() {
             onClick={() => setLaborType('materials_only')}
             className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-none duration-200 ${
               laborType === 'materials_only'
-                ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
-                : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
+                ? 'bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm'
+                : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] hover:border-[var(--pw-line-blue-200)] hover:shadow-sm'
             }`}
           >
-            {laborType === 'materials_only' && <CheckCircle weight="fill" size={16} className="absolute top-4 right-4 text-blue-500" />}
+            {laborType === 'materials_only' && <CheckCircle weight="fill" size={16} className="absolute top-4 right-4 text-[var(--pw-ink-blue-500)]" />}
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-              laborType === 'materials_only' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-[var(--color-text-muted)]'
+              laborType === 'materials_only' ? 'bg-[var(--pw-fill-blue-100)] text-[var(--pw-ink-blue-600)]' : 'bg-[var(--pw-fill-slate-100)] text-[var(--color-text-muted)]'
             }`}>
               <Package size={20} weight="regular" />
             </div>
             <div>
-              <div className={`font-bold text-sm ${laborType === 'materials_only' ? 'text-slate-900' : 'text-slate-800'}`}>Materials only</div>
-              <p className={`mt-1 text-xs leading-relaxed ${laborType === 'materials_only' ? 'text-slate-600' : 'wiz-text-muted'}`}>
+              <div className={`font-bold text-sm ${laborType === 'materials_only' ? 'text-[var(--pw-ink-slate-900)]' : 'text-[var(--pw-ink-slate-800)]'}`}>Materials only</div>
+              <p className={`mt-1 text-xs leading-relaxed ${laborType === 'materials_only' ? 'text-[var(--pw-ink-slate-600)]' : 'wiz-text-muted'}`}>
                 Exclude labour — I have my own crew or will price labour separately.
               </p>
             </div>
             <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
-              laborType === 'materials_only' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 wiz-text-muted'
+              laborType === 'materials_only' ? 'bg-[var(--pw-fill-blue-100)] text-[var(--pw-ink-blue-700)]' : 'bg-[var(--pw-fill-slate-100)] wiz-text-muted'
             }`}>Lower estimate</span>
           </button>
 
@@ -201,24 +201,24 @@ export default function MaterialsSection() {
             onClick={() => setLaborType('materials_labor')}
             className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-5 text-left transition-none duration-200 ${
               laborType === 'materials_labor'
-                ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
-                : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
+                ? 'bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm'
+                : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] hover:border-[var(--pw-line-blue-200)] hover:shadow-sm'
             }`}
           >
-            {laborType === 'materials_labor' && <CheckCircle weight="fill" size={16} className="absolute top-4 right-4 text-blue-500" />}
+            {laborType === 'materials_labor' && <CheckCircle weight="fill" size={16} className="absolute top-4 right-4 text-[var(--pw-ink-blue-500)]" />}
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-              laborType === 'materials_labor' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-[var(--color-text-muted)]'
+              laborType === 'materials_labor' ? 'bg-[var(--pw-fill-blue-100)] text-[var(--pw-ink-blue-600)]' : 'bg-[var(--pw-fill-slate-100)] text-[var(--color-text-muted)]'
             }`}>
               <HardHat size={20} weight="regular" />
             </div>
             <div>
-              <div className={`font-bold text-sm ${laborType === 'materials_labor' ? 'text-slate-900' : 'text-slate-800'}`}>Materials + Labour</div>
-              <p className={`mt-1 text-xs leading-relaxed ${laborType === 'materials_labor' ? 'text-slate-600' : 'wiz-text-muted'}`}>
+              <div className={`font-bold text-sm ${laborType === 'materials_labor' ? 'text-[var(--pw-ink-slate-900)]' : 'text-[var(--pw-ink-slate-800)]'}`}>Materials + Labour</div>
+              <p className={`mt-1 text-xs leading-relaxed ${laborType === 'materials_labor' ? 'text-[var(--pw-ink-slate-600)]' : 'wiz-text-muted'}`}>
                 Include skilled and unskilled labour allowances in your estimate.
               </p>
             </div>
             <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
-              laborType === 'materials_labor' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 wiz-text-muted'
+              laborType === 'materials_labor' ? 'bg-[var(--pw-fill-blue-100)] text-[var(--pw-ink-blue-700)]' : 'bg-[var(--pw-fill-slate-100)] wiz-text-muted'
             }`}>Full cost picture</span>
           </button>
         </div>
@@ -243,13 +243,13 @@ export default function MaterialsSection() {
                 onClick={() => handleBrickKnowledge(opt.value)}
                 className={`group relative flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-none duration-200 ${
                   isSelected
-                    ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
-                    : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
+                    ? 'bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm'
+                    : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] hover:border-[var(--pw-line-blue-200)] hover:shadow-sm'
                 }`}
               >
-                {isSelected && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-blue-500" />}
-                <div className={`text-sm font-semibold ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>{opt.label}</div>
-                <p className={`text-xs ${isSelected ? 'text-slate-600' : 'wiz-text-muted'} leading-relaxed`}>{opt.description}</p>
+                {isSelected && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-[var(--pw-ink-blue-500)]" />}
+                <div className={`text-sm font-semibold ${isSelected ? 'text-[var(--pw-ink-slate-900)]' : 'text-[var(--pw-ink-slate-800)]'}`}>{opt.label}</div>
+                <p className={`text-xs ${isSelected ? 'text-[var(--pw-ink-slate-600)]' : 'wiz-text-muted'} leading-relaxed`}>{opt.description}</p>
               </button>
             );
           })}
@@ -293,17 +293,17 @@ export default function MaterialsSection() {
                       }}
                       className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-4 text-left transition-none duration-200 ${
                         isSelected
-                          ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
-                          : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
+                          ? 'bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm'
+                          : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] hover:border-[var(--pw-line-blue-200)] hover:shadow-sm'
                       }`}
                     >
-                      {isSelected && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-blue-500" />}
-                      <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${isSelected ? 'bg-blue-100' : 'bg-slate-100'}`}>
-                        <Wall size={18} weight="regular" className={isSelected ? 'text-blue-600' : 'text-[var(--color-text-muted)]'} />
+                      {isSelected && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-[var(--pw-ink-blue-500)]" />}
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${isSelected ? 'bg-[var(--pw-fill-blue-100)]' : 'bg-[var(--pw-fill-slate-100)]'}`}>
+                        <Wall size={18} weight="regular" className={isSelected ? 'text-[var(--pw-ink-blue-600)]' : 'text-[var(--color-text-muted)]'} />
                       </div>
                       <div>
-                        <div className={`text-sm font-semibold ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>{opt.label}</div>
-                        <div className={`mt-0.5 text-xs ${isSelected ? 'text-slate-600' : 'wiz-text-muted'} leading-relaxed`}>{opt.hint}</div>
+                        <div className={`text-sm font-semibold ${isSelected ? 'text-[var(--pw-ink-slate-900)]' : 'text-[var(--pw-ink-slate-800)]'}`}>{opt.label}</div>
+                        <div className={`mt-0.5 text-xs ${isSelected ? 'text-[var(--pw-ink-slate-600)]' : 'wiz-text-muted'} leading-relaxed`}>{opt.hint}</div>
                       </div>
                     </button>
                   );
@@ -333,13 +333,13 @@ export default function MaterialsSection() {
                 onClick={() => handleCementKnowledge(opt.value)}
                 className={`group relative flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-none duration-200 ${
                   isSelected
-                    ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
-                    : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
+                    ? 'bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm'
+                    : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] hover:border-[var(--pw-line-blue-200)] hover:shadow-sm'
                 }`}
               >
-                {isSelected && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-blue-500" />}
-                <div className={`text-sm font-semibold ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>{opt.label}</div>
-                <p className={`text-xs ${isSelected ? 'text-slate-600' : 'wiz-text-muted'} leading-relaxed`}>{opt.description}</p>
+                {isSelected && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-[var(--pw-ink-blue-500)]" />}
+                <div className={`text-sm font-semibold ${isSelected ? 'text-[var(--pw-ink-slate-900)]' : 'text-[var(--pw-ink-slate-800)]'}`}>{opt.label}</div>
+                <p className={`text-xs ${isSelected ? 'text-[var(--pw-ink-slate-600)]' : 'wiz-text-muted'} leading-relaxed`}>{opt.description}</p>
               </button>
             );
           })}
@@ -382,24 +382,24 @@ export default function MaterialsSection() {
                       }}
                       className={`group relative flex items-start gap-4 rounded-2xl border p-5 text-left transition-none duration-200 ${
                         isSelected
-                          ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
-                          : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
+                          ? 'bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm'
+                          : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] hover:border-[var(--pw-line-blue-200)] hover:shadow-sm'
                       }`}
                     >
-                      {isSelected && <CheckCircle weight="fill" size={16} className="absolute top-4 right-4 text-blue-500" />}
+                      {isSelected && <CheckCircle weight="fill" size={16} className="absolute top-4 right-4 text-[var(--pw-ink-blue-500)]" />}
                       <div className={`mt-1 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${
-                        isSelected ? 'bg-blue-100' : 'bg-slate-100'
+                        isSelected ? 'bg-[var(--pw-fill-blue-100)]' : 'bg-[var(--pw-fill-slate-100)]'
                       }`}>
-                        <Wall size={20} weight="regular" className={isSelected ? 'text-blue-600' : 'text-[var(--color-text-muted)]'} />
+                        <Wall size={20} weight="regular" className={isSelected ? 'text-[var(--pw-ink-blue-600)]' : 'text-[var(--color-text-muted)]'} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`font-semibold text-sm ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>{opt.label}</span>
+                          <span className={`font-semibold text-sm ${isSelected ? 'text-[var(--pw-ink-slate-900)]' : 'text-[var(--pw-ink-slate-800)]'}`}>{opt.label}</span>
                           <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
-                            isSelected ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 wiz-text-muted'
+                            isSelected ? 'bg-[var(--pw-fill-blue-100)] text-[var(--pw-ink-blue-700)]' : 'bg-[var(--pw-fill-slate-100)] wiz-text-muted'
                           }`}>{opt.badge}</span>
                         </div>
-                        <p className={`mt-1 text-xs ${isSelected ? 'text-slate-600' : 'wiz-text-muted'}`}>{opt.hint}</p>
+                        <p className={`mt-1 text-xs ${isSelected ? 'text-[var(--pw-ink-slate-600)]' : 'wiz-text-muted'}`}>{opt.hint}</p>
                       </div>
                     </button>
                   );
@@ -425,16 +425,16 @@ export default function MaterialsSection() {
             onClick={() => setIncludeTransport(true)}
             className={`group relative flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-none duration-200 ${
               includeTransport === true
-                ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
-                : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
+                ? 'bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm'
+                : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] hover:border-[var(--pw-line-blue-200)] hover:shadow-sm'
             }`}
           >
-            {includeTransport === true && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-blue-500" />}
-            <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${includeTransport === true ? 'bg-blue-100' : 'bg-slate-100'}`}>
-              <Truck size={18} weight="regular" className={includeTransport === true ? 'text-blue-600' : 'text-[var(--color-text-muted)]'} />
+            {includeTransport === true && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-[var(--pw-ink-blue-500)]" />}
+            <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${includeTransport === true ? 'bg-[var(--pw-fill-blue-100)]' : 'bg-[var(--pw-fill-slate-100)]'}`}>
+              <Truck size={18} weight="regular" className={includeTransport === true ? 'text-[var(--pw-ink-blue-600)]' : 'text-[var(--color-text-muted)]'} />
             </div>
-            <div className={`text-sm font-semibold ${includeTransport === true ? 'text-slate-900' : 'text-slate-800'}`}>Yes, add transport</div>
-            <p className={`text-xs ${includeTransport === true ? 'text-slate-600' : 'wiz-text-muted'}`}>
+            <div className={`text-sm font-semibold ${includeTransport === true ? 'text-[var(--pw-ink-slate-900)]' : 'text-[var(--pw-ink-slate-800)]'}`}>Yes, add transport</div>
+            <p className={`text-xs ${includeTransport === true ? 'text-[var(--pw-ink-slate-600)]' : 'wiz-text-muted'}`}>
               Add a percentage to material costs for delivery.
             </p>
           </button>
@@ -444,16 +444,16 @@ export default function MaterialsSection() {
             onClick={() => setIncludeTransport(false)}
             className={`group relative flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-none duration-200 ${
               includeTransport === false
-                ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
-                : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
+                ? 'bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm'
+                : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] hover:border-[var(--pw-line-blue-200)] hover:shadow-sm'
             }`}
           >
-            {includeTransport === false && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-blue-500" />}
-            <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${includeTransport === false ? 'bg-blue-100' : 'bg-slate-100'}`}>
-              <Question size={18} weight="regular" className={includeTransport === false ? 'text-blue-600' : 'text-[var(--color-text-muted)]'} />
+            {includeTransport === false && <CheckCircle weight="fill" size={15} className="absolute top-3 right-3 text-[var(--pw-ink-blue-500)]" />}
+            <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${includeTransport === false ? 'bg-[var(--pw-fill-blue-100)]' : 'bg-[var(--pw-fill-slate-100)]'}`}>
+              <Question size={18} weight="regular" className={includeTransport === false ? 'text-[var(--pw-ink-blue-600)]' : 'text-[var(--color-text-muted)]'} />
             </div>
-            <div className={`text-sm font-semibold ${includeTransport === false ? 'text-slate-900' : 'text-slate-800'}`}>No, skip for now</div>
-            <p className={`text-xs ${includeTransport === false ? 'text-slate-600' : 'wiz-text-muted'}`}>
+            <div className={`text-sm font-semibold ${includeTransport === false ? 'text-[var(--pw-ink-slate-900)]' : 'text-[var(--pw-ink-slate-800)]'}`}>No, skip for now</div>
+            <p className={`text-xs ${includeTransport === false ? 'text-[var(--pw-ink-slate-600)]' : 'wiz-text-muted'}`}>
               I&apos;ll arrange my own transport or add this later.
             </p>
           </button>
@@ -463,7 +463,7 @@ export default function MaterialsSection() {
         <AnimatePresence>
           {includeTransport === true && (
             <div
-              className="space-y-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-5"
+              className="space-y-3 rounded-2xl border border-[var(--pw-line-slate-100)] bg-[color-mix(in_oklab,var(--pw-fill-slate-50)_60%,transparent)] p-5"
             >
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
@@ -481,7 +481,7 @@ export default function MaterialsSection() {
                     max="50"
                     value={transportPercentage}
                     onChange={(e) => setTransportPercentage(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-4 pr-8 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                    className="w-full rounded-xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] py-2.5 pl-4 pr-8 text-sm font-semibold wiz-text-primary shadow-sm outline-none transition-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[var(--color-text-muted)]">%</span>
                 </div>
@@ -520,8 +520,8 @@ export default function MaterialsSection() {
                 onClick={() => updateProjectDetails({ finishLevel: opt.value })}
                 className={`flex flex-col gap-1 rounded-2xl border p-4 text-left transition-none duration-200 ${
                   isSelected
-                    ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
-                    : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
+                    ? 'bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm'
+                    : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] hover:border-[var(--pw-line-blue-200)] hover:shadow-sm'
                 }`}
               >
                 <span className="text-sm font-bold wiz-text-primary">{opt.label}</span>

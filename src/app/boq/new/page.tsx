@@ -1009,7 +1009,7 @@ function BoqNewPageContent() {
                   bar it sat under the live estimate bar and above the global
                   bottom navigation, so Back and Continue were unreachable and
                   the quick menu was covered. pb-24 clears the 72px nav bar. */}
-              <div className="flex items-center justify-between gap-2 border-t border-slate-200 mt-10 pt-6 pb-24 lg:pb-0">
+              <div className="flex items-center justify-between gap-2 border-t border-[var(--pw-line-slate-200)] mt-10 pt-6 pb-24 lg:pb-0">
                 <button
                   type="button"
                   onClick={() => {
@@ -1079,22 +1079,22 @@ function BoqNewPageContent() {
 
         {showInteractiveBuilder && (
           <div data-testid="room-builder-modal" className="fixed inset-0 z-[200] flex flex-col bg-slate-900/50 backdrop-blur-sm">
-            <div className="relative z-[210] flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div className="relative z-[210] flex items-center justify-between border-b border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] px-4 py-3 shadow-sm">
               <div>
-                <h2 className="font-semibold text-slate-900">Interactive Floor Plan</h2>
+                <h2 className="font-semibold text-[var(--pw-ink-slate-900)]">Interactive Floor Plan</h2>
                 <p className="text-xs text-[var(--color-text-muted)]">{geometryMode === 'upload' ? 'Correct imported rooms; the drawing’s overall door and window counts stay intact.' : 'Draw rooms to calculate derived area and openings.'}</p>
               </div>
               <button
                 type="button"
                 aria-label="Close floor plan"
                 onClick={() => setShowInteractiveBuilder(false)}
-                className="rounded-lg bg-slate-100 p-2 text-slate-600 hover:bg-red-50 hover:text-red-500"
+                className="rounded-lg bg-[var(--pw-fill-slate-100)] p-2 text-[var(--pw-ink-slate-600)] hover:bg-[var(--pw-fill-red-50)] hover:text-[var(--pw-ink-red-500)]"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="relative z-[205] flex-1 overflow-hidden bg-slate-100">
+            <div className="relative z-[205] flex-1 overflow-hidden bg-[var(--pw-fill-slate-100)]">
               <InteractiveRoomBuilder
                 roomCounts={{}}
                 /* Rooms read off an uploaded plan, or drawn here before. The
@@ -1115,11 +1115,11 @@ function BoqNewPageContent() {
 
         {showSavePrompt && (
           <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-sm rounded-2xl bg-white p-7 text-center shadow-2xl">
-              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+            <div className="w-full max-w-sm rounded-2xl bg-[var(--pw-fill-white)] p-7 text-center shadow-2xl">
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--pw-fill-blue-50)] text-[var(--pw-ink-blue-600)]">
                 <FloppyDisk size={28} weight="duotone" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900">Save to Dashboard</h3>
+              <h3 className="text-lg font-semibold text-[var(--pw-ink-slate-900)]">Save to Dashboard</h3>
               <p className="mt-2 text-sm text-[var(--color-text-muted)]">Sign in or create an account to save and continue this estimate later.</p>
 
               <div className="mt-6 space-y-2">
@@ -1132,14 +1132,14 @@ function BoqNewPageContent() {
                 </button>
                 <button
                   type="button"
-                  className="w-full rounded-xl bg-blue-50 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                  className="w-full rounded-xl bg-[var(--pw-fill-blue-50)] py-2.5 text-sm font-medium text-[var(--pw-ink-blue-700)] hover:bg-[var(--pw-fill-blue-100)]"
                   onClick={() => persistInSessionAndRedirect('/auth/signup?redirect=/boq/new')}
                 >
                   Create Account
                 </button>
                 <button
                   type="button"
-                  className="w-full rounded-xl py-2.5 text-sm font-medium text-[var(--color-text-muted)] hover:text-slate-700"
+                  className="w-full rounded-xl py-2.5 text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--pw-ink-slate-700)]"
                   onClick={() => setShowSavePrompt(false)}
                 >
                   Cancel

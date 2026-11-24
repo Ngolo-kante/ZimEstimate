@@ -474,7 +474,7 @@ export default function MarketInsightsPage() {
           font-family: var(--font-heading);
           font-size: var(--text-h2);
           font-weight: var(--font-bold);
-          color: var(--color-primary);
+          color: var(--color-heading);
           letter-spacing: -0.03em;
           margin-bottom: var(--space-2);
         }
@@ -699,7 +699,7 @@ export default function MarketInsightsPage() {
           font-family: var(--font-heading);
           font-size: var(--text-h4);
           font-weight: var(--font-bold);
-          color: var(--color-primary);
+          color: var(--color-heading);
           margin: 0;
         }
 
@@ -715,7 +715,7 @@ export default function MarketInsightsPage() {
         }
       @media (hover: hover) and (pointer: fine) {
           .sort-control select:hover {
-              color: var(--color-primary);
+              color: var(--color-heading);
         }
       }
 
@@ -776,7 +776,7 @@ export default function MarketInsightsPage() {
 
         .material-info .name {
           font-weight: var(--font-semibold);
-          color: var(--color-primary);
+          color: var(--color-heading);
           font-size: var(--text-sm);
         }
 
@@ -793,7 +793,7 @@ export default function MarketInsightsPage() {
           font-variant-numeric: tabular-nums;
           font-family: var(--font-mono);
           font-weight: var(--font-medium);
-          color: var(--color-primary);
+          color: var(--color-heading);
           font-size: var(--text-sm);
         }
 
@@ -936,23 +936,23 @@ export default function MarketInsightsPage() {
               overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
             }
             .prices-table tr {
-              border: 1px solid var(--color-border, #e2e8f0);
+              border: 1px solid var(--color-border, var(--pw-line-e2e8f0));
               border-radius: 12px;
               padding: 4px 14px;
               margin-bottom: 10px;
-              background: var(--color-surface, #fff);
+              background: var(--color-surface, var(--pw-fill-ffffff));
             }
             .prices-table td {
               display: flex; align-items: center; justify-content: space-between;
               gap: 14px; padding: 9px 0; text-align: right;
-              border: 0; border-bottom: 1px solid var(--color-border-subtle, #f1f5f9);
+              border: 0; border-bottom: 1px solid var(--color-border-subtle, var(--pw-line-f1f5f9));
             }
             .prices-table td:last-child { border-bottom: 0; }
             .prices-table td::before {
               content: attr(data-label);
               flex-shrink: 0; text-align: left;
               font-size: 0.75rem; font-weight: 600;
-              color: var(--color-text-secondary, #64748b);
+              color: var(--color-text-secondary, var(--pw-ink-64748b));
             }
             .prices-table td.col-name { display: block; text-align: left; padding: 12px 0 10px; }
             .prices-table td.col-name::before { content: none; }
@@ -971,7 +971,7 @@ export default function MarketInsightsPage() {
           .category-pill, .sort-control select {
             min-height: 44px;
             background: var(--color-surface);
-            color: var(--color-primary);
+            color: var(--color-heading);
           }
           .category-pill.active, .focus-chip {
             background: var(--color-selected-surface);

@@ -142,7 +142,7 @@ export default function AIHubPage() {
           align-items: center;
           justify-content: center;
           margin: 0 auto var(--spacing-md);
-          color: var(--color-primary);
+          color: var(--color-heading);
         }
 
         .hero h1 {
@@ -194,7 +194,7 @@ export default function AIHubPage() {
           padding: 4px 8px;
           border-radius: var(--radius-full);
           background: var(--color-accent);
-          color: var(--color-primary);
+          color: var(--color-heading);
         }
 
         .feature-icon {

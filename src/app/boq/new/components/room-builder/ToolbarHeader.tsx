@@ -72,18 +72,18 @@ export default function ToolbarHeader({
 }: ToolbarHeaderProps) {
     const btnStyle = (enabled: boolean): React.CSSProperties => ({
         padding: '6px',
-        background: enabled ? '#fff' : '#f3f4f6',
-        border: '1px solid #e5e7eb',
+        background: enabled ? 'var(--pw-fill-ffffff)' : 'var(--pw-fill-f3f4f6)',
+        border: '1px solid var(--pw-line-e5e7eb)',
         borderRadius: '6px',
         cursor: enabled ? 'pointer' : 'not-allowed',
-        color: enabled ? '#374151' : '#9ca3af',
+        color: enabled ? 'var(--pw-ink-374151)' : 'var(--pw-ink-9ca3af)',
         display: 'flex',
         alignItems: 'center',
     });
 
     return (
         <div style={{
-            background: '#fff',
+            background: 'var(--pw-fill-ffffff)',
             padding: '16px 24px',
             borderBottom: '1px solid #e5e7eb',
             display: 'flex',
@@ -100,20 +100,20 @@ export default function ToolbarHeader({
                 <button
                     onClick={onBack}
                     style={{
-                        border: '1px solid #e5e7eb',
+                        border: '1px solid var(--pw-line-e5e7eb)',
                         borderRadius: '6px',
                         width: '32px',
                         height: '32px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        background: '#fff',
+                        background: 'var(--pw-fill-ffffff)',
                         cursor: 'pointer',
                     }}
                 >
                     <CaretLeft size={16} />
                 </button>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--pw-ink-374151)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     STEP 3/5: ROOM DETAILS
                 </div>
 
@@ -137,13 +137,13 @@ export default function ToolbarHeader({
                             onClick={onResetZoom}
                             style={{
                                 padding: '4px 8px',
-                                background: zoom === 1 ? '#f3f4f6' : '#fff',
-                                border: '1px solid #e5e7eb',
+                                background: zoom === 1 ? 'var(--pw-fill-f3f4f6)' : 'var(--pw-fill-ffffff)',
+                                border: '1px solid var(--pw-line-e5e7eb)',
                                 borderRadius: '6px',
                                 cursor: 'pointer',
                                 fontSize: '11px',
                                 fontWeight: 600,
-                                color: '#374151',
+                                color: 'var(--pw-ink-374151)',
                                 minWidth: '48px',
                             }}
                             title="Reset Zoom"
@@ -157,11 +157,11 @@ export default function ToolbarHeader({
                             onClick={onToggleSnap}
                             style={{
                                 padding: '6px',
-                                background: snapToGrid ? '#dcfce7' : '#fff',
+                                background: snapToGrid ? 'var(--pw-fill-dcfce7)' : 'var(--pw-fill-ffffff)',
                                 border: `1px solid ${snapToGrid ? '#86efac' : '#e5e7eb'}`,
                                 borderRadius: '6px',
                                 cursor: 'pointer',
-                                color: snapToGrid ? '#166534' : '#9ca3af',
+                                color: snapToGrid ? 'var(--pw-ink-166534)' : 'var(--pw-ink-9ca3af)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 marginLeft: '4px',
@@ -174,11 +174,11 @@ export default function ToolbarHeader({
                             onClick={onShowHelp}
                             style={{
                                 padding: '6px',
-                                background: showHelpModal ? '#e0f2fe' : '#fff',
+                                background: showHelpModal ? 'var(--pw-fill-e0f2fe)' : 'var(--pw-fill-ffffff)',
                                 border: `1px solid ${showHelpModal ? '#3b82f6' : '#e5e7eb'}`,
                                 borderRadius: '6px',
                                 cursor: 'pointer',
-                                color: showHelpModal ? '#1d4ed8' : '#374151',
+                                color: showHelpModal ? 'var(--pw-ink-1d4ed8)' : 'var(--pw-ink-374151)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 marginLeft: '4px',
@@ -196,11 +196,11 @@ export default function ToolbarHeader({
                         alignItems: 'center',
                         gap: '8px',
                         padding: '4px 10px',
-                        background: '#dbeafe',
+                        background: 'var(--pw-fill-dbeafe)',
                         borderRadius: '6px',
                         fontSize: '11px',
                         fontWeight: 600,
-                        color: '#1e40af',
+                        color: 'var(--pw-ink-1e40af)',
                     }}>
                         <FloppyDisk size={14} weight="fill" />
                         Loaded from saved
@@ -230,7 +230,7 @@ export default function ToolbarHeader({
                 display: 'flex',
                 alignItems: 'center',
                 gap: isMobile ? '8px' : '16px',
-                background: isUploadedPlan ? '#eff6ff' : isOverTarget ? '#fef2f2' : isUnderTarget ? '#fffbeb' : '#f0fdf4',
+                background: isUploadedPlan ? 'var(--pw-fill-eff6ff)' : isOverTarget ? 'var(--pw-fill-fef2f2)' : isUnderTarget ? 'var(--pw-fill-fffbeb)' : 'var(--pw-fill-f0fdf4)',
                 padding: isMobile ? '6px 10px' : '8px 16px',
                 borderRadius: '8px',
                 border: `1px solid ${isUploadedPlan ? '#bfdbfe' : isOverTarget ? '#fecaca' : isUnderTarget ? '#fde68a' : '#bbf7d0'}`,
@@ -243,13 +243,13 @@ export default function ToolbarHeader({
                     <CheckCircle size={isMobile ? 16 : 18} color="#16a34a" weight="fill" />
                 )}
                 <div>
-                    <div style={{ fontSize: isMobile ? '10px' : '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>
+                    <div style={{ fontSize: isMobile ? '10px' : '11px', fontWeight: 600, color: 'var(--pw-ink-6b7280)', textTransform: 'uppercase' }}>
                         {isUploadedPlan ? 'Original scan' : 'Target'}: {targetFloorArea}m²
                     </div>
                     <div style={{
                         fontSize: isMobile ? '12px' : '13px',
                         fontWeight: 700,
-                        color: isUploadedPlan ? '#2563eb' : isOverTarget ? '#dc2626' : isUnderTarget ? '#d97706' : '#16a34a',
+                        color: isUploadedPlan ? 'var(--pw-ink-2563eb)' : isOverTarget ? 'var(--pw-ink-dc2626)' : isUnderTarget ? 'var(--pw-ink-d97706)' : 'var(--pw-ink-16a34a)',
                     }}>
                         {isUploadedPlan ? 'Check edited rooms against the drawing' : isOverTarget ? `${Math.abs(areaDiff).toFixed(1)}m² over` :
                             isUnderTarget ? `${areaDiff.toFixed(1)}m² remaining` :
@@ -265,7 +265,7 @@ export default function ToolbarHeader({
                             gap: '6px',
                             padding: isMobile ? '4px 8px' : '6px 12px',
                             background: '#fbbf24',
-                            color: '#1f2937',
+                            color: 'var(--pw-ink-1f2937)',
                             border: 'none',
                             borderRadius: '6px',
                             fontSize: isMobile ? '11px' : '12px',
@@ -287,7 +287,7 @@ export default function ToolbarHeader({
                         width: step === 3 ? '24px' : '8px',
                         height: '4px',
                         borderRadius: '2px',
-                        background: step <= 3 ? '#10b981' : '#e5e7eb',
+                        background: step <= 3 ? '#10b981' : 'var(--pw-fill-e5e7eb)',
                         transition: 'none',
                     }} />
                 ))}
@@ -299,9 +299,9 @@ export default function ToolbarHeader({
                             alignItems: 'center',
                             gap: '6px',
                             padding: '8px 12px',
-                            background: sidebarOpen ? '#10b981' : '#f3f4f6',
-                            color: sidebarOpen ? '#fff' : '#374151',
-                            border: '1px solid #e5e7eb',
+                            background: sidebarOpen ? '#10b981' : 'var(--pw-fill-f3f4f6)',
+                            color: sidebarOpen ? '#fff' : 'var(--pw-ink-374151)',
+                            border: '1px solid var(--pw-line-e5e7eb)',
                             borderRadius: '6px',
                             fontSize: '12px',
                             fontWeight: 600,

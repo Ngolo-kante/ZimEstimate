@@ -246,7 +246,7 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
 
         .logo-img {
           flex-shrink: 0;
-          background: white;
+          background: var(--pw-fill-ffffff);
           border-radius: 4px;
         }
 
@@ -522,7 +522,7 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
         }
       @media (hover: hover) and (pointer: fine) {
           .sign-out-btn:hover {
-              color: #ef4444;
+              color: var(--pw-ink-ef4444);
               background: rgba(239,68,68,0.08);
         }
       }

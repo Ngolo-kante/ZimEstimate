@@ -235,14 +235,14 @@ export default function RoomEditPanel({
 
         .dimension-source {
           margin: 0;
-          color: #17624a;
+          color: var(--pw-ink-17624a);
           font-size: 0.75rem;
           line-height: 1.4;
         }
 
-        .dimension-source.needs-review { color: #85510a; }
+        .dimension-source.needs-review { color: var(--pw-ink-85510a); }
 
-        .verify-size { width: fit-content; min-height: 36px; border: 1px solid #b7cae1; border-radius: 8px; padding: 6px 10px; background: #edf5ff; color: #0f4b91; font-size: .78rem; font-weight: 700; cursor: pointer; }
+        .verify-size { width: fit-content; min-height: 36px; border: 1px solid var(--pw-line-b7cae1); border-radius: 8px; padding: 6px 10px; background: var(--pw-fill-edf5ff); color: var(--pw-ink-0f4b91); font-size: .78rem; font-weight: 700; cursor: pointer; }
         .verify-size:disabled { opacity: .5; cursor: not-allowed; }
 
         input {
@@ -251,7 +251,7 @@ export default function RoomEditPanel({
           border-radius: var(--radius-md);
           font-size: 0.9375rem;
           color: var(--color-text);
-          background: #ffffff;
+          background: var(--pw-fill-ffffff);
           transition: all 0.2s ease;
         }
 

@@ -34,10 +34,10 @@ const SOIL_OPTIONS: Array<{
 ];
 
 const RISK_BADGE: Record<string, { bg: string; text: string; label: string }> = {
-  low:     { bg: 'bg-slate-100',   text: 'text-slate-600', label: 'Low risk' },
-  medium:  { bg: 'bg-slate-100',   text: 'text-slate-600', label: 'Medium risk' },
-  high:    { bg: 'bg-amber-100',   text: 'text-amber-700', label: 'High risk' },
-  unknown: { bg: 'bg-slate-100',   text: 'wiz-text-muted', label: 'Default' },
+  low:     { bg: 'bg-[var(--pw-fill-slate-100)]',   text: 'text-[var(--pw-ink-slate-600)]', label: 'Low risk' },
+  medium:  { bg: 'bg-[var(--pw-fill-slate-100)]',   text: 'text-[var(--pw-ink-slate-600)]', label: 'Medium risk' },
+  high:    { bg: 'bg-[var(--pw-fill-amber-100)]',   text: 'text-[var(--pw-ink-amber-700)]', label: 'High risk' },
+  unknown: { bg: 'bg-[var(--pw-fill-slate-100)]',   text: 'wiz-text-muted', label: 'Default' },
 };
 
 export default function SiteConditionsSection() {
@@ -88,12 +88,12 @@ export default function SiteConditionsSection() {
                 onClick={() => updateProjectDetails({ siteSlope: opt.value })}
                 className={`flex flex-col items-center gap-3 rounded-2xl border p-5 text-center transition-none duration-200 ${
                   isSelected
-                    ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:shadow-sm'
+                    ? 'bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm'
+                    : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] text-[var(--pw-ink-slate-700)] hover:border-[var(--pw-line-blue-200)] hover:shadow-sm'
                 }`}
               >
                 {/* Slope angle icon illustration */}
-                <div className={`relative flex h-10 w-10 items-center justify-center ${isSelected ? 'text-blue-600' : 'text-[var(--color-text-muted)]'}`}>
+                <div className={`relative flex h-10 w-10 items-center justify-center ${isSelected ? 'text-[var(--pw-ink-blue-600)]' : 'text-[var(--color-text-muted)]'}`}>
                   <opt.Icon
                     size={28}
                     weight="bold"
@@ -101,11 +101,11 @@ export default function SiteConditionsSection() {
                   />
                 </div>
                 <div>
-                  <div className={`text-sm font-bold ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{opt.label}</div>
-                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-blue-700/80' : 'wiz-text-muted'}`}>{opt.hint}</div>
+                  <div className={`text-sm font-bold ${isSelected ? 'text-[var(--pw-ink-blue-900)]' : 'text-[var(--pw-ink-slate-800)]'}`}>{opt.label}</div>
+                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-[color-mix(in_oklab,var(--pw-ink-blue-700)_80%,transparent)]' : 'wiz-text-muted'}`}>{opt.hint}</div>
                 </div>
                 {isSelected && (
-                  <CheckCircle size={16} weight="fill" className="text-blue-500" />
+                  <CheckCircle size={16} weight="fill" className="text-[var(--pw-ink-blue-500)]" />
                 )}
               </button>
             );
@@ -131,12 +131,12 @@ export default function SiteConditionsSection() {
                 onClick={() => updateProjectDetails({ soilType: opt.value as SoilType })}
                 className={`group relative flex items-start gap-3 rounded-2xl border p-4 text-left transition-none duration-200 ${
                   isSelected
-                    ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-500 shadow-sm'
-                    : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'
+                    ? 'bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_50%,transparent)] border-blue-500 ring-1 ring-blue-500 shadow-sm'
+                    : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] hover:border-[var(--pw-line-blue-200)] hover:shadow-sm'
                 }`}
               >
                 <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
-                  isSelected ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-[var(--color-text-muted)]'
+                  isSelected ? 'bg-[var(--pw-fill-blue-100)] text-[var(--pw-ink-blue-600)]' : 'bg-[var(--pw-fill-slate-100)] text-[var(--color-text-muted)]'
                 }`}>
                   {opt.value === 'not_sure'           ? <Question size={15} weight="bold" /> :
                    opt.value === 'loam'               ? <CheckCircle size={15} weight="bold" /> :
@@ -145,10 +145,10 @@ export default function SiteConditionsSection() {
                    <TrendUp size={15} weight="bold" />}
                 </div>
                 <div className="min-w-0">
-                  <div className={`text-sm font-semibold ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{opt.label}</div>
-                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-blue-700/80' : 'wiz-text-muted'}`}>{opt.hint}</div>
+                  <div className={`text-sm font-semibold ${isSelected ? 'text-[var(--pw-ink-blue-900)]' : 'text-[var(--pw-ink-slate-800)]'}`}>{opt.label}</div>
+                  <div className={`mt-0.5 text-xs ${isSelected ? 'text-[color-mix(in_oklab,var(--pw-ink-blue-700)_80%,transparent)]' : 'wiz-text-muted'}`}>{opt.hint}</div>
                   <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-bold uppercase tracking-wide ${
-                    isSelected ? 'bg-blue-100 text-blue-700' : `${rb.bg} ${rb.text}`
+                    isSelected ? 'bg-[var(--pw-fill-blue-100)] text-[var(--pw-ink-blue-700)]' : `${rb.bg} ${rb.text}`
                   }`}>
                     {rb.label}
                   </span>
@@ -162,9 +162,9 @@ export default function SiteConditionsSection() {
         <AnimatePresence>
           {soilRisk && selectedSoil?.risk === 'high' && (
             <div
-              className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
+              className="flex items-start gap-3 rounded-xl border border-[var(--pw-line-amber-200)] bg-[var(--pw-fill-amber-50)] p-4 text-sm text-[var(--pw-ink-amber-800)]"
             >
-              <Warning size={17} weight="fill" className="shrink-0 mt-0.5 text-amber-500" />
+              <Warning size={17} weight="fill" className="shrink-0 mt-0.5 text-[var(--pw-ink-amber-500)]" />
               <p>
                 {/* This used to end "Your estimate will include additional
                     reinforcement allowances." It does not: SOIL_RISK_PROFILES

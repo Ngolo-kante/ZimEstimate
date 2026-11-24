@@ -509,7 +509,7 @@ function AnalyticsContent() {
 
           .loading-card,
           .error-card {
-            background: white;
+            background: var(--pw-fill-ffffff);
             border-radius: 16px;
             padding: 24px;
             display: flex;
@@ -531,7 +531,7 @@ function AnalyticsContent() {
           }
 
           .empty-state {
-            background: white;
+            background: var(--pw-fill-ffffff);
             border-radius: 20px;
             padding: 48px 32px;
             text-align: center;
@@ -707,15 +707,15 @@ function AnalyticsContent() {
           }
 
           .trend-change.up {
-            color: #16a34a;
+            color: var(--pw-ink-16a34a);
           }
 
           .trend-change.down {
-            color: #ef4444;
+            color: var(--pw-ink-ef4444);
           }
 
           .trend-change.stable {
-            color: #64748b;
+            color: var(--pw-ink-64748b);
           }
 
           .comparison-card {

@@ -98,7 +98,7 @@ export default function SavingOverlay({
 
                 .saving-icon {
                     font-size: 1.75rem;
-                    color: var(--color-primary);
+                    color: var(--color-heading);
                 }
 
                 .saving-icon :global(.spinner) {
@@ -145,11 +145,11 @@ export default function SavingOverlay({
                 }
 
                 .step-row.done {
-                    color: #15803d;
+                    color: var(--pw-ink-15803d);
                 }
 
                 .step-row.active {
-                    color: var(--color-primary);
+                    color: var(--color-heading);
                 }
 
                 .step-icon {

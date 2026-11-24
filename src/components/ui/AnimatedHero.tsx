@@ -19,12 +19,12 @@ export const AnimatedHero = ({
     return (
         <div
             className={cn(
-                "relative flex flex-col items-center justify-center overflow-hidden bg-slate-50 w-full rounded-3xl border border-slate-200/50 shadow-sm",
+                "relative flex flex-col items-center justify-center overflow-hidden bg-[var(--pw-fill-slate-50)] w-full rounded-3xl border border-[color-mix(in_oklab,var(--pw-line-slate-200)_50%,transparent)] shadow-sm",
                 className
             )}
         >
             {/* Background radial gradient */}
-            <div className="absolute inset-0 w-full h-full bg-slate-50 z-0">
+            <div className="absolute inset-0 w-full h-full bg-[var(--pw-fill-slate-50)] z-0">
                 <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-2xl opacity-10"></div>
                 <div className="absolute top-0 -right-4 w-72 h-72 bg-emerald-400 rounded-full mix-blend-multiply filter blur-2xl opacity-10 animation-delay-2000"></div>
                 <div className="absolute -bottom-8 left-20 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-2xl opacity-10 animation-delay-4000"></div>
@@ -39,7 +39,7 @@ export const AnimatedHero = ({
                     className="flex flex-col gap-6 lg:max-w-[48%]"
                 >
                     {title}
-                    <p className="text-lg text-slate-600 max-w-xl">
+                    <p className="text-lg text-[var(--pw-ink-slate-600)] max-w-xl">
                         {subtitle}
                     </p>
                     {actions && (

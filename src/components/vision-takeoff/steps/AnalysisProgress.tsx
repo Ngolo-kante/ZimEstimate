@@ -215,9 +215,9 @@ export default function AnalysisProgress({ onCancel, retrying = false, phase = '
         .retry-note {
           margin: 12px 0 0;
           border-radius: 10px;
-          background: #fff7e6;
+          background: var(--pw-fill-fff7e6);
           padding: 10px 12px;
-          color: #8a5300;
+          color: var(--pw-ink-8a5300);
           font-size: 0.85rem;
           line-height: 1.45;
         }
@@ -258,7 +258,7 @@ export default function AnalysisProgress({ onCancel, retrying = false, phase = '
 
         .cancel-button:hover {
           border-color: var(--color-primary);
-          color: var(--color-primary);
+          color: var(--color-heading);
         }
 
         .cancel-button:focus-visible,

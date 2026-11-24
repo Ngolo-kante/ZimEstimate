@@ -31,13 +31,13 @@ export default function LaborSection() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-        <h3 className="text-base font-bold text-slate-900">Labour by trade</h3>
-        <p className="mt-1 text-sm leading-6 text-slate-700">
+      <div className="rounded-2xl border border-[var(--pw-line-blue-200)] bg-[var(--pw-fill-blue-50)] p-5">
+        <h3 className="text-base font-bold text-[var(--pw-ink-slate-900)]">Labour by trade</h3>
+        <p className="mt-1 text-sm leading-6 text-[var(--pw-ink-slate-700)]">
           Priced the way builders quote: per m² of floor for building, plastering and roofing, per m² tiled, per metre of boundary wall; plumbing, electrical, painting and paving as a share of their materials. Change any trade to match your quote.
         </p>
         {hasCustomLaborRates(rates) && (
-          <button type="button" onClick={() => updateProjectDetails({ laborRates: {} })} className="mt-2 text-sm font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-900">
+          <button type="button" onClick={() => updateProjectDetails({ laborRates: {} })} className="mt-2 text-sm font-semibold text-[var(--pw-ink-blue-700)] underline underline-offset-2 hover:text-[var(--pw-ink-blue-900)]">
             Reset all to the recommended rates
           </button>
         )}
@@ -46,22 +46,22 @@ export default function LaborSection() {
         const substages = LABOR_SUBSTAGES.filter((substage) => substage.stage === stage.id);
         const stageLabour = substages.reduce((sum, substage) => sum + (tradeCosts.get(`labor-${substage.id}`) || 0), 0);
         return (
-          <section key={stage.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-slate-100 bg-slate-50 px-4 py-3 sm:px-5">
-              <h4 className="text-sm font-bold text-slate-900">{stage.label}</h4>
-              <span className="text-sm text-slate-600">Labour <strong className="text-slate-900">{dollars(stageLabour)}</strong></span>
+          <section key={stage.id} className="overflow-hidden rounded-2xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)]">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-[var(--pw-line-slate-100)] bg-[var(--pw-fill-slate-50)] px-4 py-3 sm:px-5">
+              <h4 className="text-sm font-bold text-[var(--pw-ink-slate-900)]">{stage.label}</h4>
+              <span className="text-sm text-[var(--pw-ink-slate-600)]">Labour <strong className="text-[var(--pw-ink-slate-900)]">{dollars(stageLabour)}</strong></span>
             </div>
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-[var(--pw-line-slate-100)]">
               {substages.map((substage) => {
                 const rate = laborRateFor(substage.id, rates);
                 return (
                   <div key={substage.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800">{substage.label}</p>
+                      <p className="text-sm font-semibold text-[var(--pw-ink-slate-800)]">{substage.label}</p>
                       <p className="text-xs text-[var(--color-text-muted)]">{substage.includes}</p>
                       <details className="mt-1 text-xs text-[var(--color-text-muted)]"><summary className="cursor-pointer">Where this rate comes from</summary>{substage.source}</details>
                     </div>
-                    <span className="flex items-center gap-2 text-sm text-slate-600">
+                    <span className="flex items-center gap-2 text-sm text-[var(--pw-ink-slate-600)]">
                       <label className="flex items-center gap-1">
                         <span className="sr-only">{substage.label} labour rate</span>
                         {substage.basis !== 'percent' && <span>$</span>}
@@ -74,11 +74,11 @@ export default function LaborSection() {
                           title={formatLaborRate(substage.id, rate)}
                           value={rate}
                           onChange={(event) => setRate(substage.id, Number(event.target.value) || 0)}
-                          className="w-16 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-right text-sm font-semibold text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                          className="w-16 rounded-lg border border-[var(--pw-line-slate-300)] bg-[var(--pw-fill-white)] px-2 py-1.5 text-right text-sm font-semibold text-[var(--pw-ink-slate-900)] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-[var(--pw-line-blue-100)]"
                         />
                         <span>{laborRateUnit(substage.id)}</span>
                       </label>
-                      <strong className="shrink-0 text-right text-sm text-slate-900">{dollars(tradeCosts.get(`labor-${substage.id}`) || 0)}</strong>
+                      <strong className="shrink-0 text-right text-sm text-[var(--pw-ink-slate-900)]">{dollars(tradeCosts.get(`labor-${substage.id}`) || 0)}</strong>
                     </span>
                   </div>
                 );

@@ -522,7 +522,7 @@ export default function BOQResultsStep({
                       const isEnablement = item.calculationNote.startsWith(ENABLEMENT_ITEM_TAG);
                       return (
                       <Fragment key={item.id}>
-                      {isLaborCategory(item.category) && (index === 0 || !isLaborCategory(groupedItems[category][index - 1].category)) && <tr><th colSpan={6} scope="colgroup" className="text-left text-xs text-slate-500">Labour</th></tr>}
+                      {isLaborCategory(item.category) && (index === 0 || !isLaborCategory(groupedItems[category][index - 1].category)) && <tr><th colSpan={6} scope="colgroup" className="text-left text-xs text-[var(--pw-ink-slate-500)]">Labour</th></tr>}
                       <tr className={`${item.isEdited ? 'edited' : ''} ${isEnablement ? 'enablement' : ''}`.trim()}>
                         <td className="col-material">
                           <div className="material-cell">
@@ -984,7 +984,7 @@ export default function BOQResultsStep({
           font-size: 0.65rem;
           text-transform: uppercase;
           letter-spacing: 0.04em;
-          color: #0369a1;
+          color: var(--pw-ink-0369a1);
           background: rgba(125, 211, 252, 0.3);
           padding: 2px 6px;
           border-radius: 999px;
@@ -1102,7 +1102,7 @@ export default function BOQResultsStep({
         }
 
         .save-modal {
-          background: white;
+          background: var(--pw-fill-ffffff);
           border-radius: var(--radius-lg);
           padding: var(--spacing-xl);
           max-width: 420px;

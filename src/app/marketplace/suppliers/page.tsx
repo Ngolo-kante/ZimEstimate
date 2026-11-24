@@ -296,7 +296,7 @@ export default function SupplierDirectoryPage() {
           font-family: var(--font-heading);
           font-size: var(--text-h2);
           font-weight: var(--font-bold);
-          color: var(--color-primary);
+          color: var(--color-heading);
         }
 
         .directory-header p {
@@ -406,7 +406,7 @@ export default function SupplierDirectoryPage() {
           font-family: var(--font-heading);
           font-size: var(--text-lg);
           font-weight: var(--font-bold);
-          color: var(--color-primary);
+          color: var(--color-heading);
         }
 
         .location {
@@ -508,7 +508,7 @@ export default function SupplierDirectoryPage() {
           border-radius: var(--radius-md);
           font-size: var(--text-sm);
           font-weight: var(--font-semibold);
-          color: var(--color-primary);
+          color: var(--color-heading);
           cursor: pointer;
           transition: none;
           box-shadow: var(--shadow-sm);

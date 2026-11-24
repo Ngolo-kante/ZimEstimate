@@ -1,6 +1,6 @@
 # System light and dark mode (follow the phone's setting)
 
-Status: approved by the owner 22 Nov 2026: follow the system setting, no in-app switch, navy sheets in both modes, built by Codex in phases.
+Status: approved by the owner 22 Nov 2026 (follow the system setting, no in-app switch, navy sheets in both modes). All four phases shipped 23 Nov 2026. Left light on purpose: floor-plan canvases, chart series colours, the Google sign-in button and PDFs.
 This reverses the 16 Nov decision "no dark theme": the owner now wants the app to follow the
 phone's (or computer's) light/dark setting, as Android and iOS apps do.
 

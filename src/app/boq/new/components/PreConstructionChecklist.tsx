@@ -9,15 +9,15 @@ export default function PreConstructionChecklist() {
   const locationType = projectDetails.locationType as 'urban' | 'peri-urban' | 'rural' | '';
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4">
-      <h3 className="text-sm font-semibold text-slate-900">Pre-Construction Checklist</h3>
+    <section className="rounded-xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] p-4">
+      <h3 className="text-sm font-semibold text-[var(--pw-ink-slate-900)]">Pre-Construction Checklist</h3>
       <p className="mt-1 text-xs text-[var(--color-text-muted)]">Track key procedures before procurement and site mobilization.</p>
 
       <div className="mt-4 space-y-2">
         {LOCATION_PROCEDURE_RULES.map((rule) => {
           const status = locationType ? rule.statusByLocation[locationType] : 'recommended';
           return (
-            <label key={rule.id} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+            <label key={rule.id} className="flex items-start gap-3 rounded-lg border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-slate-50)] px-3 py-2">
               <input
                 type="checkbox"
                 checked={Boolean(preConstructionChecks[rule.id])}
@@ -25,9 +25,9 @@ export default function PreConstructionChecklist() {
                 className="mt-1"
               />
               <span>
-                <span className="block text-sm font-medium text-slate-800">{rule.label}</span>
+                <span className="block text-sm font-medium text-[var(--pw-ink-slate-800)]">{rule.label}</span>
                 <span className="block text-xs text-[var(--color-text-muted)]">{rule.description}</span>
-                <span className="mt-1 inline-block rounded-full bg-slate-200 px-2 py-0.5 text-xs uppercase tracking-wide text-slate-700">
+                <span className="mt-1 inline-block rounded-full bg-[var(--pw-fill-slate-200)] px-2 py-0.5 text-xs uppercase tracking-wide text-[var(--pw-ink-slate-700)]">
                   {status.replace('_', ' ')}
                 </span>
               </span>

@@ -53,9 +53,9 @@ export default function DemandProof({ audience, className = '' }: DemandProofPro
 
   return (
     <div
-      className={`flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 ${className}`}
+      className={`flex items-start gap-3 rounded-xl border border-[var(--pw-line-emerald-200)] bg-[var(--pw-fill-emerald-50)] px-4 py-3 ${className}`}
     >
-      <ChartLineUp size={18} weight="duotone" className="mt-0.5 flex-shrink-0 text-emerald-600" />
+      <ChartLineUp size={18} weight="duotone" className="mt-0.5 flex-shrink-0 text-[var(--pw-ink-emerald-600)]" />
       <p className="text-xs leading-relaxed text-emerald-900">
         <strong className="font-bold">
           {headline} {noun}

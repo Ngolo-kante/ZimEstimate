@@ -228,7 +228,7 @@ export default function ProjectInfoStep({
           border-radius: var(--radius-md);
           font-size: 1rem;
           color: var(--color-text);
-          background: #ffffff;
+          background: var(--pw-fill-ffffff);
           transition: all 0.2s ease;
         }
 
@@ -257,7 +257,7 @@ export default function ProjectInfoStep({
           border-radius: var(--radius-md);
           font-size: 1rem;
           color: var(--color-text);
-          background: #ffffff;
+          background: var(--pw-fill-ffffff);
           transition: all 0.2s ease;
           appearance: none;
           cursor: pointer;

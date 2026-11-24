@@ -88,7 +88,7 @@ export default function PhoneNumberModal({
         .modal-content {
           width: 100%;
           max-width: 420px;
-          background: #fff;
+          background: var(--pw-fill-ffffff);
           border-radius: 16px;
           box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
           padding: 20px 22px 24px;
@@ -107,25 +107,25 @@ export default function PhoneNumberModal({
           margin: 0;
           font-size: 1.125rem;
           font-weight: 600;
-          color: #0f172a;
+          color: var(--pw-ink-0f172a);
         }
 
         .close-btn {
           border: none;
           background: transparent;
-          color: #64748b;
+          color: var(--pw-ink-64748b);
           cursor: pointer;
           padding: 4px;
           min-width: 44px; min-height: 44px;
           border-radius: 6px;
         }
 
-        @media (hover: hover) and (pointer: fine) { .close-btn:hover { background: #f1f5f9; } }
+        @media (hover: hover) and (pointer: fine) { .close-btn:hover { background: var(--pw-fill-f1f5f9); } }
 
         .modal-description {
           margin: 0;
           font-size: 0.875rem;
-          color: #64748b;
+          color: var(--pw-ink-64748b);
         }
 
         .modal-actions {
@@ -138,10 +138,10 @@ export default function PhoneNumberModal({
           .modal-content { background: var(--color-primary); }
           .modal-header h2, .modal-content :global(.input-label) { color: var(--color-text-inverse); }
           .modal-description { color: var(--color-muted-on-navy); }
-          .modal-content :global(.input-error) { color: #fecaca; }
+          .modal-content :global(.input-error) { color: var(--pw-ink-fecaca); }
           .close-btn, .modal-actions :global(.btn-ghost) {
             background: var(--color-surface);
-            color: var(--color-primary);
+            color: var(--color-heading);
           }
           .close-btn:focus-visible, .modal-content :global(.btn:focus-visible) {
             outline: 2px solid var(--color-gold-on-navy);

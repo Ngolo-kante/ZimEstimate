@@ -271,7 +271,7 @@ export default function SupplierAnalyticsPage() {
           }
 
           .page-header {
-            background: white;
+            background: var(--pw-fill-ffffff);
             border-radius: 20px;
             padding: 28px 32px;
             display: flex;
@@ -299,7 +299,7 @@ export default function SupplierAnalyticsPage() {
 
           .loading-card,
           .error-card {
-            background: white;
+            background: var(--pw-fill-ffffff);
             border-radius: 16px;
             padding: 24px;
             display: flex;
@@ -378,11 +378,11 @@ export default function SupplierAnalyticsPage() {
           }
 
           .delta.positive {
-            color: #16a34a;
+            color: var(--pw-ink-16a34a);
           }
 
           .delta.negative {
-            color: #ef4444;
+            color: var(--pw-ink-ef4444);
           }
 
           .position-bar {
@@ -483,18 +483,18 @@ export default function SupplierAnalyticsPage() {
 
           .status.accepted {
             background: rgba(16, 185, 129, 0.15);
-            color: #16a34a;
+            color: var(--pw-ink-16a34a);
           }
 
           .status.rejected,
           .status.expired {
             background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
+            color: var(--pw-ink-ef4444);
           }
 
           .status.submitted {
             background: rgba(59, 130, 246, 0.12);
-            color: #2563eb;
+            color: var(--pw-ink-2563eb);
           }
 
           .quote-total {

@@ -52,7 +52,7 @@ export default function RoomSidebar({
     return (
         <div style={{
             width: isMobile ? '100%' : '320px',
-            background: '#fff',
+            background: 'var(--pw-fill-ffffff)',
             borderLeft: isMobile ? 'none' : '1px solid #e5e7eb',
             display: 'flex',
             flexDirection: 'column',
@@ -73,17 +73,17 @@ export default function RoomSidebar({
                     alignItems: 'center',
                     padding: '16px 20px',
                     borderBottom: '1px solid #e5e7eb',
-                    background: '#f9fafb',
+                    background: 'var(--pw-fill-f9fafb)',
                 }}>
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#374151' }}>Room Details</span>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--pw-ink-374151)' }}>Room Details</span>
                     <button
                         onClick={onClose}
                         style={{
                             width: '32px',
                             height: '32px',
-                            border: '1px solid #e5e7eb',
+                            border: '1px solid var(--pw-line-e5e7eb)',
                             borderRadius: '6px',
-                            background: '#fff',
+                            background: 'var(--pw-fill-ffffff)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -109,14 +109,14 @@ export default function RoomSidebar({
                             style={{
                                 width: '32px',
                                 height: '32px',
-                                border: '1px solid #fecaca',
+                                border: '1px solid var(--pw-line-fecaca)',
                                 borderRadius: '6px',
-                                background: '#fef2f2',
+                                background: 'var(--pw-fill-fef2f2)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 cursor: 'pointer',
-                                color: '#dc2626',
+                                color: 'var(--pw-ink-dc2626)',
                             }}
                             title="Remove this room"
                         >
@@ -136,12 +136,12 @@ export default function RoomSidebar({
                                     gap: '8px',
                                     padding: '10px',
                                     width: '100%',
-                                    background: showEnSuitePicker ? '#ecfeff' : '#f0f9ff',
+                                    background: showEnSuitePicker ? 'var(--pw-fill-ecfeff)' : 'var(--pw-fill-f0f9ff)',
                                     border: `1px dashed ${showEnSuitePicker ? '#06b6d4' : '#3b82f6'}`,
                                     borderRadius: '8px',
                                     fontSize: '12px',
                                     fontWeight: 600,
-                                    color: showEnSuitePicker ? '#0891b2' : '#2563eb',
+                                    color: showEnSuitePicker ? 'var(--pw-ink-0891b2)' : 'var(--pw-ink-2563eb)',
                                     cursor: 'pointer',
                                     transition: 'none',
                                 }}
@@ -154,8 +154,8 @@ export default function RoomSidebar({
                                 <div style={{
                                     marginTop: '8px',
                                     padding: '12px',
-                                    background: '#fff',
-                                    border: '1px solid #e5e7eb',
+                                    background: 'var(--pw-fill-ffffff)',
+                                    border: '1px solid var(--pw-line-e5e7eb)',
                                     borderRadius: '8px',
                                     display: 'grid',
                                     gridTemplateColumns: '1fr',
@@ -175,7 +175,7 @@ export default function RoomSidebar({
                                                 borderRadius: '6px',
                                                 fontSize: '12px',
                                                 fontWeight: 500,
-                                                color: '#1f2937',
+                                                color: 'var(--pw-ink-1f2937)',
                                                 cursor: 'pointer',
                                                 textAlign: 'left',
                                                 transition: 'none',
@@ -186,7 +186,7 @@ export default function RoomSidebar({
                                             {type.icon === 'closet' && <Door size={18} color={type.color} weight="fill" />}
                                             <div>
                                                 <div style={{ fontWeight: 600 }}>{type.label}</div>
-                                                <div style={{ fontSize: '10px', color: '#6b7280' }}>
+                                                <div style={{ fontSize: '10px', color: 'var(--pw-ink-6b7280)' }}>
                                                     {type.defaultDims.l}m × {type.defaultDims.w}m
                                                 </div>
                                             </div>
@@ -198,7 +198,7 @@ export default function RoomSidebar({
                             {/* Show existing en-suites */}
                             {rooms.filter(r => r.parentRoomId === selectedRoom.id).length > 0 && (
                                 <div style={{ marginTop: '12px' }}>
-                                    <div style={{ fontSize: '10px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', marginBottom: '6px' }}>
+                                    <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--pw-ink-6b7280)', textTransform: 'uppercase', marginBottom: '6px' }}>
                                         Attached Rooms:
                                     </div>
                                     {rooms.filter(r => r.parentRoomId === selectedRoom.id).map(ensuite => (
@@ -233,7 +233,7 @@ export default function RoomSidebar({
 
                     {/* Wall Material */}
                     <div style={{ marginBottom: '24px' }}>
-                        <label style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>
+                        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--pw-ink-6b7280)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>
                             Wall Material:
                         </label>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -246,7 +246,7 @@ export default function RoomSidebar({
                                         alignItems: 'center',
                                         gap: '12px',
                                         padding: '10px',
-                                        background: (selectedRoom.materialId || 'brick-common') === type.id ? '#eff6ff' : '#fff',
+                                        background: (selectedRoom.materialId || 'brick-common') === type.id ? 'var(--pw-fill-eff6ff)' : 'var(--pw-fill-ffffff)',
                                         border: `1px solid ${(selectedRoom.materialId || 'brick-common') === type.id ? '#3b82f6' : '#e5e7eb'}`,
                                         borderRadius: '8px',
                                         cursor: 'pointer',
@@ -268,8 +268,8 @@ export default function RoomSidebar({
                                         {type.label.charAt(0)}
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: '13px', fontWeight: 600, color: '#1f2937' }}>{type.label}</div>
-                                        <div style={{ fontSize: '11px', color: '#6b7280' }}>~{type.rate} units per m²</div>
+                                        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--pw-ink-1f2937)' }}>{type.label}</div>
+                                        <div style={{ fontSize: '11px', color: 'var(--pw-ink-6b7280)' }}>~{type.rate} units per m²</div>
                                     </div>
                                     {(selectedRoom.materialId || 'brick-common') === type.id && (
                                         <CheckCircle size={18} weight="fill" color="#3b82f6" />
@@ -281,7 +281,7 @@ export default function RoomSidebar({
 
                     {/* Dimensions */}
                     <div style={{ marginBottom: '24px' }}>
-                        <label style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>
+                        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--pw-ink-6b7280)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>
                             Dimensions (m):
                         </label>
                         <div style={{ display: 'flex', gap: '12px' }}>
@@ -310,7 +310,7 @@ export default function RoomSidebar({
                                 </div>
                             </div>
                         </div>
-                        <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '6px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--pw-ink-9ca3af)', marginTop: '6px' }}>
                             Area: {(selectedRoom.length * selectedRoom.width).toFixed(1)}m²
                         </div>
                     </div>
@@ -318,7 +318,7 @@ export default function RoomSidebar({
                     {fromUpload && <p style={{ margin: '0 0 20px', padding: '10px 12px', borderRadius: 8, background: '#eff6ff', color: '#17406d', fontSize: 12, lineHeight: 1.45 }}>Door and window totals from the drawing are edited in the uploaded-plan review. They are not assigned to individual rooms by the scan.</p>}
                     {!fromUpload && <>{/* Window Count */}
                     <div style={{ marginBottom: '24px' }}>
-                        <label style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>
+                        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--pw-ink-6b7280)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>
                             Window Count:
                         </label>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', border: '1px solid #d1d5db', borderRadius: '6px', padding: '4px' }}>
@@ -343,7 +343,7 @@ export default function RoomSidebar({
 
                     {/* Door Count */}
                     <div style={{ marginBottom: '24px' }}>
-                        <label style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>
+                        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--pw-ink-6b7280)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>
                             Door Count:
                         </label>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', border: '1px solid #d1d5db', borderRadius: '6px', padding: '4px' }}>
@@ -370,14 +370,14 @@ export default function RoomSidebar({
                     <div style={{
                         marginBottom: '24px',
                         padding: '16px',
-                        background: '#f9fafb',
+                        background: 'var(--pw-fill-f9fafb)',
                         borderRadius: '8px',
-                        border: '1px solid #e5e7eb',
+                        border: '1px solid var(--pw-line-e5e7eb)',
                     }}>
                         <div style={{
                             fontSize: '12px',
                             fontWeight: 700,
-                            color: '#374151',
+                            color: 'var(--pw-ink-374151)',
                             textTransform: 'uppercase',
                             marginBottom: '12px',
                             display: 'flex',
@@ -404,7 +404,7 @@ export default function RoomSidebar({
 
                             return (
                                 <>
-                                    <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '12px' }}>
+                                    <div style={{ fontSize: '10px', color: 'var(--pw-ink-6b7280)', marginBottom: '12px' }}>
                                         Wall Area: {grossWallArea.toFixed(1)}m² - {doorDeductions.toFixed(1)}m² (doors) - {windowDeductions.toFixed(1)}m² (windows) = <strong>{netWallArea.toFixed(1)}m²</strong>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -418,7 +418,7 @@ export default function RoomSidebar({
                     </div>
 
                     </>}
-                    <p style={{ marginTop: 'auto', fontSize: 11, color: '#64748b' }}>Room changes are kept as you edit. Continue to scope when finished.</p>
+                    <p style={{ marginTop: 'auto', fontSize: 11, color: 'var(--pw-ink-64748b)' }}>Room changes are kept as you edit. Continue to scope when finished.</p>
                 </div>
             ) : (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '14px', padding: '40px', textAlign: 'center' }}>
@@ -436,12 +436,12 @@ function EstimateRow({ label, value, color }: { label: string; value: string; co
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '8px 12px',
-            background: '#fff',
+            background: 'var(--pw-fill-ffffff)',
             borderRadius: '6px',
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ width: '8px', height: '8px', background: color, borderRadius: '2px' }} />
-                <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>{label}</span>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--pw-ink-374151)' }}>{label}</span>
             </div>
             <span style={{ fontSize: '14px', fontWeight: 700, color }}>{value}</span>
         </div>

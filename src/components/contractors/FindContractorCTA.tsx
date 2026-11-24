@@ -56,13 +56,13 @@ export default function FindContractorCTA({ projectType, area, className = '' }:
 
   return (
     <div
-      className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 ${className}`}
+      className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] px-4 py-3.5 ${className}`}
     >
       <div className="flex items-start gap-3">
-        <UsersThree size={20} weight="duotone" className="mt-0.5 flex-shrink-0 text-slate-500" />
+        <UsersThree size={20} weight="duotone" className="mt-0.5 flex-shrink-0 text-[var(--pw-ink-slate-500)]" />
         <div>
-          <p className="text-sm font-bold text-slate-900">Ready to build this?</p>
-          <p className="mt-0.5 text-xs leading-relaxed text-slate-600">
+          <p className="text-sm font-bold text-[var(--pw-ink-slate-900)]">Ready to build this?</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-[var(--pw-ink-slate-600)]">
             {tradeLabel
               // "General contractor" already says contractor; it printed as
               // "general contractor contractors".
@@ -73,7 +73,7 @@ export default function FindContractorCTA({ projectType, area, className = '' }:
       </div>
       <Link
         href={contractorSearchHref(projectType, area)}
-        className="min-h-11 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-none hover:bg-slate-50"
+        className="min-h-11 inline-flex items-center gap-1.5 rounded-lg border border-[var(--pw-line-slate-300)] bg-[var(--pw-fill-white)] px-4 py-2 text-xs font-semibold text-[var(--pw-ink-slate-700)] transition-none hover:bg-[var(--pw-fill-slate-50)]"
       >
         Find a contractor
         <ArrowRight size={14} weight="bold" />

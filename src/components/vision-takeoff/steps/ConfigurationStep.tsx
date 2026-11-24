@@ -285,11 +285,11 @@ export default function ConfigurationStep({
             {(Object.entries(ROOF_SHAPES) as [RoofShape, (typeof ROOF_SHAPES)[RoofShape]][]).map(([id, option]) => (
               <button key={id} type="button" onClick={() => onUpdate({ roofShape: id })}
                 aria-pressed={(config.roofShape || DEFAULT_ROOF_SHAPE) === id}
-                className={`flex items-start gap-3 rounded-xl border p-3 text-left ${(config.roofShape || DEFAULT_ROOF_SHAPE) === id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'}`}>
-                <RoofShapeIcon shape={id} className="mt-0.5 h-6 w-12 shrink-0 text-slate-700" />
+                className={`flex items-start gap-3 rounded-xl border p-3 text-left ${(config.roofShape || DEFAULT_ROOF_SHAPE) === id ? 'border-blue-500 bg-[var(--pw-fill-blue-50)]' : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)]'}`}>
+                <RoofShapeIcon shape={id} className="mt-0.5 h-6 w-12 shrink-0 text-[var(--pw-ink-slate-700)]" />
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-slate-900">{option.label}</span>
-                  <span className="mt-1 block text-xs text-slate-600">{option.description}</span>
+                  <span className="block text-sm font-semibold text-[var(--pw-ink-slate-900)]">{option.label}</span>
+                  <span className="mt-1 block text-xs text-[var(--pw-ink-slate-600)]">{option.description}</span>
                 </span>
               </button>
             ))}
@@ -298,16 +298,16 @@ export default function ConfigurationStep({
             {(Object.entries(ROOF_COVERINGS) as [RoofCovering, (typeof ROOF_COVERINGS)[RoofCovering]][]).map(([id, option]) => (
               <button key={id} type="button" onClick={() => onUpdate({ roofCovering: id })}
                 aria-pressed={(config.roofCovering || 'ibr_05') === id}
-                className={`flex items-start gap-3 rounded-xl border p-3 text-left ${(config.roofCovering || 'ibr_05') === id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'}`}>
-                <RoofProfileIcon covering={id} className="mt-0.5 h-6 w-12 shrink-0 text-slate-700" />
+                className={`flex items-start gap-3 rounded-xl border p-3 text-left ${(config.roofCovering || 'ibr_05') === id ? 'border-blue-500 bg-[var(--pw-fill-blue-50)]' : 'border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)]'}`}>
+                <RoofProfileIcon covering={id} className="mt-0.5 h-6 w-12 shrink-0 text-[var(--pw-ink-slate-700)]" />
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-slate-900">{option.label}</span>
-                  <span className="mt-1 block text-xs text-slate-600">{option.description}</span>
+                  <span className="block text-sm font-semibold text-[var(--pw-ink-slate-900)]">{option.label}</span>
+                  <span className="mt-1 block text-xs text-[var(--pw-ink-slate-600)]">{option.description}</span>
                 </span>
               </button>
             ))}
           </div>
-          {config.roofCovering === 'concrete_tile' && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">Concrete tiles need a roof structure designed for their weight. Confirm timber sizes, spacing, fixings and ridge pieces with a local roof designer and supplier.</p>}
+          {config.roofCovering === 'concrete_tile' && <p className="mt-3 rounded-lg bg-[var(--pw-fill-amber-50)] p-3 text-xs text-[var(--pw-ink-amber-900)]">Concrete tiles need a roof structure designed for their weight. Confirm timber sizes, spacing, fixings and ridge pieces with a local roof designer and supplier.</p>}
         </Card>}
 
         {/* Labor Toggle */}
@@ -393,18 +393,18 @@ export default function ConfigurationStep({
       <style jsx>{`
         .upper-floor-area { display: grid; gap: 8px; margin-top: var(--spacing-md); }
         .upper-floor-area label { font-size: 0.875rem; font-weight: 600; color: var(--color-text); }
-        .upper-floor-area input { width: 100%; max-width: 240px; min-height: 44px; padding: 10px 12px; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); background: #fff; color: var(--color-text); }
+        .upper-floor-area input { width: 100%; max-width: 240px; min-height: 44px; padding: 10px 12px; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); background: var(--pw-fill-ffffff); color: var(--color-text); }
         .upper-floor-area input:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
         .upper-floor-area p { margin: 0; font-size: 0.875rem; color: var(--color-text-secondary); }
         .extras-group { margin-top: 12px; }
-        .extras-heading { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #64748b; margin: 0 0 6px; }
-        .extra-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; min-height: 44px; padding: 10px 0; border-bottom: 1px solid #e2e8f0; cursor: pointer; }
+        .extras-heading { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--pw-ink-64748b); margin: 0 0 6px; }
+        .extra-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; min-height: 44px; padding: 10px 0; border-bottom: 1px solid var(--pw-line-e2e8f0); cursor: pointer; }
         .extra-row input { width: 20px; height: 20px; accent-color: #2e6cf6; }
         .extra-text { display: grid; gap: 2px; min-width: 0; }
         .extra-text strong { font-size: 0.9rem; color: var(--color-text); }
-        .extra-text small { font-size: 0.76rem; color: #64748b; line-height: 1.35; }
-        .extra-price { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--color-primary); }
-        .extras-total { margin: 12px 0 0; font-size: 0.82rem; font-weight: 600; color: #475569; }
+        .extra-text small { font-size: 0.76rem; color: var(--pw-ink-64748b); line-height: 1.35; }
+        .extra-price { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--color-heading); }
+        .extras-total { margin: 12px 0 0; font-size: 0.82rem; font-weight: 600; color: var(--pw-ink-475569); }
         .config-step {
           max-width: 800px;
           margin: 0 auto;
@@ -480,7 +480,7 @@ export default function ConfigurationStep({
           align-items: flex-start;
           gap: var(--spacing-xs);
           padding: var(--spacing-md);
-          background: #ffffff;
+          background: var(--pw-fill-ffffff);
           border: 1px solid var(--color-border-light);
           border-radius: var(--radius-md);
           cursor: pointer;
@@ -550,7 +550,7 @@ export default function ConfigurationStep({
 
         .option-hint {
           font-size: 0.625rem;
-          color: var(--color-primary);
+          color: var(--color-heading);
           font-weight: 500;
         }
 

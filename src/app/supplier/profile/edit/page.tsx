@@ -157,7 +157,7 @@ export default function EditSupplierProfilePage() {
         justifyContent: 'center',
         backgroundColor: '#f8fafc',
       }}>
-        <Spinner size={32} className="animate-spin motion-reduce:animate-none" style={{ color: '#3b82f6' }} />
+        <Spinner size={32} className="animate-spin motion-reduce:animate-none" style={{ color: 'var(--pw-ink-3b82f6)' }} />
       </div>
     );
   }
@@ -177,7 +177,7 @@ export default function EditSupplierProfilePage() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.5rem',
-              color: '#64748b',
+              color: 'var(--pw-ink-64748b)',
               textDecoration: 'none',
               marginBottom: '1rem',
             }}
@@ -192,14 +192,14 @@ export default function EditSupplierProfilePage() {
         {success && (
           <div style={{
             backgroundColor: '#dcfce7',
-            border: '1px solid #86efac',
+            border: '1px solid var(--pw-line-86efac)',
             borderRadius: '8px',
             padding: '1rem',
             marginBottom: '1.5rem',
             display: 'flex',
             alignItems: 'center',
             gap: '0.75rem',
-            color: '#166534',
+            color: 'var(--pw-ink-166534)',
           }}>
             <Check size={20} weight="bold" />
             Profile updated successfully!
@@ -225,7 +225,7 @@ export default function EditSupplierProfilePage() {
                   left: '12px',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  color: '#94a3b8',
+                  color: 'var(--pw-ink-94a3b8)',
                 }} />
                 <input
                   type="text"
@@ -241,7 +241,7 @@ export default function EditSupplierProfilePage() {
                 />
               </div>
               {errors.name && (
-                <span style={{ color: '#ef4444', fontSize: '0.875rem' }}>{errors.name}</span>
+                <span style={{ color: 'var(--pw-ink-ef4444)', fontSize: '0.875rem' }}>{errors.name}</span>
               )}
             </div>
 
@@ -256,7 +256,7 @@ export default function EditSupplierProfilePage() {
                 style={{
                   width: '100%',
                   padding: '0.75rem',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--pw-line-e2e8f0)',
                   borderRadius: '8px',
                   fontSize: '1rem',
                   backgroundColor: 'white',
@@ -279,7 +279,7 @@ export default function EditSupplierProfilePage() {
                   position: 'absolute',
                   left: '12px',
                   top: '12px',
-                  color: '#94a3b8',
+                  color: 'var(--pw-ink-94a3b8)',
                 }} />
                 <textarea
                   value={formData.physicalAddress}
@@ -288,7 +288,7 @@ export default function EditSupplierProfilePage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem 0.75rem 0.75rem 2.5rem',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--pw-line-e2e8f0)',
                     borderRadius: '8px',
                     fontSize: '1rem',
                     resize: 'vertical',
@@ -297,7 +297,7 @@ export default function EditSupplierProfilePage() {
               </div>
             </div>
 
-            <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0' }} />
+            <hr style={{ border: 'none', borderTop: '1px solid var(--pw-line-e2e8f0)' }} />
 
             {/* Contact Phone */}
             <div>
@@ -310,7 +310,7 @@ export default function EditSupplierProfilePage() {
                   left: '12px',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  color: '#94a3b8',
+                  color: 'var(--pw-ink-94a3b8)',
                 }} />
                 <input
                   type="tel"
@@ -326,7 +326,7 @@ export default function EditSupplierProfilePage() {
                 />
               </div>
               {errors.contactPhone && (
-                <span style={{ color: '#ef4444', fontSize: '0.875rem' }}>{errors.contactPhone}</span>
+                <span style={{ color: 'var(--pw-ink-ef4444)', fontSize: '0.875rem' }}>{errors.contactPhone}</span>
               )}
             </div>
 
@@ -341,7 +341,7 @@ export default function EditSupplierProfilePage() {
                   left: '12px',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  color: '#94a3b8',
+                  color: 'var(--pw-ink-94a3b8)',
                 }} />
                 <input
                   type="email"
@@ -357,7 +357,7 @@ export default function EditSupplierProfilePage() {
                 />
               </div>
               {errors.contactEmail && (
-                <span style={{ color: '#ef4444', fontSize: '0.875rem' }}>{errors.contactEmail}</span>
+                <span style={{ color: 'var(--pw-ink-ef4444)', fontSize: '0.875rem' }}>{errors.contactEmail}</span>
               )}
             </div>
 
@@ -372,7 +372,7 @@ export default function EditSupplierProfilePage() {
                   left: '12px',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  color: '#94a3b8',
+                  color: 'var(--pw-ink-94a3b8)',
                 }} />
                 <input
                   type="url"
@@ -382,7 +382,7 @@ export default function EditSupplierProfilePage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem 0.75rem 0.75rem 2.5rem',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--pw-line-e2e8f0)',
                     borderRadius: '8px',
                     fontSize: '1rem',
                   }}
@@ -390,7 +390,7 @@ export default function EditSupplierProfilePage() {
               </div>
             </div>
 
-            <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0' }} />
+            <hr style={{ border: 'none', borderTop: '1px solid var(--pw-line-e2e8f0)' }} />
 
             {/* Material Categories */}
             <div>
@@ -424,7 +424,7 @@ export default function EditSupplierProfilePage() {
                 ))}
               </div>
               {errors.materialCategories && (
-                <span style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.5rem', display: 'block' }}>
+                <span style={{ color: 'var(--pw-ink-ef4444)', fontSize: '0.875rem', marginTop: '0.5rem', display: 'block' }}>
                   {errors.materialCategories}
                 </span>
               )}
@@ -470,7 +470,7 @@ export default function EditSupplierProfilePage() {
                 style={{
                   width: '100%',
                   padding: '0.75rem',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--pw-line-e2e8f0)',
                   borderRadius: '8px',
                   fontSize: '1rem',
                   backgroundColor: 'white',
@@ -487,10 +487,10 @@ export default function EditSupplierProfilePage() {
             {errors.save && (
               <div style={{
                 backgroundColor: '#fef2f2',
-                border: '1px solid #fecaca',
+                border: '1px solid var(--pw-line-fecaca)',
                 borderRadius: '8px',
                 padding: '1rem',
-                color: '#991b1b',
+                color: 'var(--pw-ink-991b1b)',
                 fontSize: '0.875rem',
               }}>
                 {errors.save}

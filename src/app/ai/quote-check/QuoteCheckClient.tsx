@@ -332,7 +332,7 @@ function QuoteCheckContent() {
         .lines-head { padding: 0 6px 4px; font-size: 0.75rem; font-weight: 600; color: var(--color-text-secondary); }
         .lines { display: grid; gap: 4px; }
         .line { padding: 6px; border-radius: 8px; border: 1px solid transparent; }
-        .line.unsure { border-color: var(--color-warning); background: var(--color-warning-muted, #fffbeb); }
+        .line.unsure { border-color: var(--color-warning); background: var(--color-warning-muted, var(--pw-fill-fffbeb)); }
         .line input {
           padding: 8px 10px; border: 1px solid var(--color-border); border-radius: 6px;
           background: var(--color-surface); color: var(--color-text); min-width: 0;
@@ -358,8 +358,8 @@ function QuoteCheckContent() {
         .result-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
         .result-top .desc { font-weight: 600; color: var(--color-text); }
         .chip { flex-shrink: 0; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
-        .chip.high { background: var(--color-warning-muted, #fffbeb); color: var(--color-warning); }
-        .chip.fair { background: var(--color-success-muted, #ecfdf5); color: var(--color-success); }
+        .chip.high { background: var(--color-warning-muted, var(--pw-fill-fffbeb)); color: var(--color-warning); }
+        .chip.fair { background: var(--color-success-muted, var(--pw-fill-ecfdf5)); color: var(--color-success); }
         .chip.low { background: var(--color-background); color: var(--color-accent); }
         .chip.unchecked { background: var(--color-background); color: var(--color-text-muted); }
         .result-meta { margin-top: 2px; font-size: 0.82rem; color: var(--color-text-secondary); }

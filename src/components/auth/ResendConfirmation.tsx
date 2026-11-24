@@ -59,7 +59,7 @@ export default function ResendConfirmation({ email, startCoolingDown = false }: 
             <p className={`resend-status ${status}`} role="status" aria-live="polite">{message}</p>
             <style jsx>{`
                 .resend-confirmation { display: flex; flex-direction: column; gap: 8px; }
-                .resend-status { min-height: 1.25rem; margin: 0; font-size: 0.875rem; color: #475569; text-align: center; }
+                .resend-status { min-height: 1.25rem; margin: 0; font-size: 0.875rem; color: var(--pw-ink-475569); text-align: center; }
                 .resend-status.error { color: var(--color-danger-fg); }
                 .resend-status.sent { color: var(--color-success-fg); }
             `}</style>

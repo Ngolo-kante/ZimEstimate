@@ -154,7 +154,7 @@ export default function AddProductPage() {
         justifyContent: 'center',
         backgroundColor: '#f8fafc',
       }}>
-        <Spinner size={32} className="animate-spin motion-reduce:animate-none" style={{ color: '#3b82f6' }} />
+        <Spinner size={32} className="animate-spin motion-reduce:animate-none" style={{ color: 'var(--pw-ink-3b82f6)' }} />
       </div>
     );
   }
@@ -174,7 +174,7 @@ export default function AddProductPage() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.5rem',
-              color: '#64748b',
+              color: 'var(--pw-ink-64748b)',
               textDecoration: 'none',
               marginBottom: '1rem',
             }}
@@ -207,12 +207,12 @@ export default function AddProductPage() {
                   alignItems: 'center',
                   padding: '1rem',
                   backgroundColor: '#f0fdf4',
-                  border: '1px solid #86efac',
+                  border: '1px solid var(--pw-line-86efac)',
                   borderRadius: '8px',
                 }}>
                   <div>
                     <div style={{ fontWeight: 500 }}>{selectedMaterial.name}</div>
-                    <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                    <div style={{ fontSize: '0.875rem', color: 'var(--pw-ink-64748b)' }}>
                       {selectedMaterial.category} · {selectedMaterial.unit}
                     </div>
                   </div>
@@ -221,9 +221,9 @@ export default function AddProductPage() {
                     style={{
                       padding: '0.5rem 1rem',
                       backgroundColor: 'white',
-                      border: '1px solid #e2e8f0',
+                      border: '1px solid var(--pw-line-e2e8f0)',
                       borderRadius: '6px',
-                      color: '#64748b',
+                      color: 'var(--pw-ink-64748b)',
                       cursor: 'pointer',
                       fontSize: '0.875rem',
                     }}
@@ -237,7 +237,7 @@ export default function AddProductPage() {
                     position: 'absolute',
                     left: '12px',
                     top: '12px',
-                    color: '#94a3b8',
+                    color: 'var(--pw-ink-94a3b8)',
                   }} />
                   <input
                     type="text"
@@ -260,7 +260,7 @@ export default function AddProductPage() {
                       left: 0,
                       right: 0,
                       backgroundColor: 'white',
-                      border: '1px solid #e2e8f0',
+                      border: '1px solid var(--pw-line-e2e8f0)',
                       borderRadius: '8px',
                       boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
                       maxHeight: '300px',
@@ -282,7 +282,7 @@ export default function AddProductPage() {
                           }}
                         >
                           <div style={{ fontWeight: 500 }}>{material.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--pw-ink-64748b)' }}>
                             {material.category} · {material.unit}
                           </div>
                         </button>
@@ -292,7 +292,7 @@ export default function AddProductPage() {
                 </div>
               )}
               {errors.material && (
-                <span style={{ color: '#ef4444', fontSize: '0.875rem' }}>{errors.material}</span>
+                <span style={{ color: 'var(--pw-ink-ef4444)', fontSize: '0.875rem' }}>{errors.material}</span>
               )}
             </div>
 
@@ -308,7 +308,7 @@ export default function AddProductPage() {
                     left: '12px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    color: '#94a3b8',
+                    color: 'var(--pw-ink-94a3b8)',
                   }} />
                   <input
                     type="number"
@@ -327,7 +327,7 @@ export default function AddProductPage() {
                   />
                 </div>
                 {errors.priceUsd && (
-                  <span style={{ color: '#ef4444', fontSize: '0.875rem' }}>{errors.priceUsd}</span>
+                  <span style={{ color: 'var(--pw-ink-ef4444)', fontSize: '0.875rem' }}>{errors.priceUsd}</span>
                 )}
               </div>
 
@@ -345,7 +345,7 @@ export default function AddProductPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--pw-line-e2e8f0)',
                     borderRadius: '8px',
                     fontSize: '1rem',
                   }}
@@ -368,7 +368,7 @@ export default function AddProductPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--pw-line-e2e8f0)',
                     borderRadius: '8px',
                     fontSize: '1rem',
                   }}
@@ -388,7 +388,7 @@ export default function AddProductPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--pw-line-e2e8f0)',
                     borderRadius: '8px',
                     fontSize: '1rem',
                   }}
@@ -408,7 +408,7 @@ export default function AddProductPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--pw-line-e2e8f0)',
                     borderRadius: '8px',
                     fontSize: '1rem',
                     backgroundColor: 'white',
@@ -433,7 +433,7 @@ export default function AddProductPage() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--pw-line-e2e8f0)',
                     borderRadius: '8px',
                     fontSize: '1rem',
                   }}
@@ -454,7 +454,7 @@ export default function AddProductPage() {
                 style={{
                   width: '100%',
                   padding: '0.75rem',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--pw-line-e2e8f0)',
                   borderRadius: '8px',
                   fontSize: '1rem',
                   resize: 'vertical',
@@ -466,10 +466,10 @@ export default function AddProductPage() {
             {errors.save && (
               <div style={{
                 backgroundColor: '#fef2f2',
-                border: '1px solid #fecaca',
+                border: '1px solid var(--pw-line-fecaca)',
                 borderRadius: '8px',
                 padding: '1rem',
-                color: '#991b1b',
+                color: 'var(--pw-ink-991b1b)',
                 fontSize: '0.875rem',
               }}>
                 {errors.save}

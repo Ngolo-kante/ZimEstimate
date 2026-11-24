@@ -82,13 +82,13 @@ export default function EnquiryForm({ contractorId, supplierId, recipientName }:
             gap: 12px;
             padding: 16px 18px;
             border-radius: 14px;
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
-            color: #047857;
+            background: var(--pw-fill-ecfdf5);
+            border: 1px solid var(--pw-line-a7f3d0);
+            color: var(--pw-ink-047857);
           }
           .enquiry-done div { display: flex; flex-direction: column; gap: 2px; }
           .enquiry-done strong { font-size: 0.9rem; }
-          .enquiry-done span { font-size: 0.8rem; color: #059669; }
+          .enquiry-done span { font-size: 0.8rem; color: var(--pw-ink-059669); }
         `}</style>
       </div>
     );
@@ -179,23 +179,23 @@ export default function EnquiryForm({ contractorId, supplierId, recipientName }:
           gap: 10px;
           padding: 18px;
           border-radius: 14px;
-          border: 1px solid #e2e8f0;
-          background: #fff;
+          border: 1px solid var(--pw-line-e2e8f0);
+          background: var(--pw-fill-ffffff);
         }
         .form-head { display: flex; flex-direction: column; gap: 3px; margin-bottom: 2px; }
-        .form-head strong { font-size: 0.95rem; color: #0f172a; }
-        .form-head span { font-size: 0.78rem; color: #64748b; }
+        .form-head strong { font-size: 0.95rem; color: var(--pw-ink-0f172a); }
+        .form-head span { font-size: 0.78rem; color: var(--pw-ink-64748b); }
         .row { display: flex; gap: 10px; }
         .row input { flex: 1; min-width: 0; }
         input, textarea {
           width: 100%;
           padding: 10px 12px;
           border-radius: 9px;
-          border: 1px solid #cbd5e1;
+          border: 1px solid var(--pw-line-cbd5e1);
           font-size: 0.875rem;
           font-family: inherit;
-          color: #0f172a;
-          background: #fff;
+          color: var(--pw-ink-0f172a);
+          background: var(--pw-fill-ffffff);
         }
         input:focus, textarea:focus {
           outline: none;
@@ -203,7 +203,7 @@ export default function EnquiryForm({ contractorId, supplierId, recipientName }:
           box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
         }
         textarea { resize: vertical; }
-        .error { margin: 0; font-size: 0.8rem; color: #b91c1c; }
+        .error { margin: 0; font-size: 0.8rem; color: var(--pw-ink-b91c1c); }
         .actions { display: flex; justify-content: flex-end; gap: 8px; }
         .cancel, .submit {
           padding: 9px 16px;
@@ -212,9 +212,9 @@ export default function EnquiryForm({ contractorId, supplierId, recipientName }:
           font-weight: 600;
           cursor: pointer;
         }
-        .cancel { background: #fff; border: 1px solid #cbd5e1; color: #475569; }
+        .cancel { background: var(--pw-fill-ffffff); border: 1px solid var(--pw-line-cbd5e1); color: var(--pw-ink-475569); }
 @media (hover: hover) and (pointer: fine) {
-    .cancel:hover:not(:disabled) {     background: #f8fafc; }
+    .cancel:hover:not(:disabled) {     background: var(--pw-fill-f8fafc); }
 }
         .submit { background: #1d4ed8; border: none; color: #fff; }
 @media (hover: hover) and (pointer: fine) {

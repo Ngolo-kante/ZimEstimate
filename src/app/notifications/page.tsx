@@ -119,8 +119,8 @@ export default function NotificationsPage() {
         switch (type.toLowerCase()) {
             case 'success': return <CheckCircle size={20} weight="fill" className="text-green-500" />;
             case 'warning': return <Warning size={20} weight="fill" className="text-orange-500" />;
-            case 'error': return <Warning size={20} weight="fill" className="text-red-500" />;
-            default: return <Info size={20} weight="fill" className="text-blue-500" />;
+            case 'error': return <Warning size={20} weight="fill" className="text-[var(--pw-ink-red-500)]" />;
+            default: return <Info size={20} weight="fill" className="text-[var(--pw-ink-blue-500)]" />;
         }
     };
 
@@ -130,14 +130,14 @@ export default function NotificationsPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900 mb-1">Notifications</h1>
-                        <p className="text-slate-500">Stay updated with your project activity and system alerts.</p>
+                        <h1 className="text-2xl font-bold text-[var(--pw-ink-slate-900)] mb-1">Notifications</h1>
+                        <p className="text-[var(--pw-ink-slate-500)]">Stay updated with your project activity and system alerts.</p>
                     </div>
                     <div className="flex gap-3">
                         {unreadCount > 0 && (
                             <button
                                 onClick={handleMarkAllRead}
-                                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-none"
+                                className="flex items-center gap-2 px-4 py-2 bg-[var(--pw-fill-white)] border border-[var(--pw-line-slate-200)] rounded-lg text-sm font-medium text-[var(--pw-ink-slate-700)] hover:bg-[var(--pw-fill-slate-50)] transition-none"
                                 title="Mark all as read"
                             >
                                 <Check size={16} />
@@ -148,13 +148,13 @@ export default function NotificationsPage() {
                 </div>
 
                 {/* Tabs & Filters */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-                    <div className="flex border-b border-slate-100">
+                <div className="bg-[var(--pw-fill-white)] rounded-xl border border-[var(--pw-line-slate-200)] shadow-sm overflow-hidden mb-6">
+                    <div className="flex border-b border-[var(--pw-line-slate-100)]">
                         <button
                             onClick={() => setActiveTab('all')}
                             className={`flex-1 px-6 py-4 text-sm font-medium text-center border-b-2 transition-none ${activeTab === 'all'
-                                    ? 'border-blue-500 text-blue-600'
-                                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                                    ? 'border-blue-500 text-[var(--pw-ink-blue-600)]'
+                                    : 'border-transparent text-[var(--pw-ink-slate-500)] hover:text-[var(--pw-ink-slate-700)]'
                                 }`}
                         >
                             All Notifications
@@ -162,13 +162,13 @@ export default function NotificationsPage() {
                         <button
                             onClick={() => setActiveTab('unread')}
                             className={`flex-1 px-6 py-4 text-sm font-medium text-center border-b-2 transition-none ${activeTab === 'unread'
-                                    ? 'border-blue-500 text-blue-600'
-                                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                                    ? 'border-blue-500 text-[var(--pw-ink-blue-600)]'
+                                    : 'border-transparent text-[var(--pw-ink-slate-500)] hover:text-[var(--pw-ink-slate-700)]'
                                 }`}
                         >
                             Unread
                             {unreadCount > 0 && (
-                                <span className="ml-2 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">
+                                <span className="ml-2 bg-[var(--pw-fill-blue-100)] text-[var(--pw-ink-blue-700)] px-2 py-0.5 rounded-full text-xs">
                                     {unreadCount}
                                 </span>
                             )}
@@ -176,17 +176,17 @@ export default function NotificationsPage() {
                     </div>
 
                     {/* List */}
-                    <div className="divide-y divide-slate-100">
+                    <div className="divide-y divide-[var(--pw-line-slate-100)]">
                         {authLoading || isLoading ? (
-                            <div className="py-20 text-center text-slate-500">Loading notifications...</div>
+                            <div className="py-20 text-center text-[var(--pw-ink-slate-500)]">Loading notifications...</div>
                         ) : filteredNotifications.length > 0 ? (
                             filteredNotifications.map((notification) => (
                                 <div
                                     key={notification.id}
-                                    className={`p-6 flex gap-4 transition-none hover:bg-slate-50 group ${!notification.is_read ? 'bg-blue-50/30' : ''}`}
+                                    className={`p-6 flex gap-4 transition-none hover:bg-[var(--pw-fill-slate-50)] group ${!notification.is_read ? 'bg-[color-mix(in_oklab,var(--pw-fill-blue-50)_30%,transparent)]' : ''}`}
                                 >
                                     <div className="flex-shrink-0 mt-1">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${!notification.is_read ? 'bg-white shadow-sm' : 'bg-slate-100'}`}>
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${!notification.is_read ? 'bg-[var(--pw-fill-white)] shadow-sm' : 'bg-[var(--pw-fill-slate-100)]'}`}>
                                             {getIcon(notification.type)}
                                         </div>
                                     </div>
@@ -194,13 +194,13 @@ export default function NotificationsPage() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-4">
                                             <div>
-                                                <h3 className={`text-sm font-semibold mb-1 ${!notification.is_read ? 'text-slate-900' : 'text-slate-700'}`}>
+                                                <h3 className={`text-sm font-semibold mb-1 ${!notification.is_read ? 'text-[var(--pw-ink-slate-900)]' : 'text-[var(--pw-ink-slate-700)]'}`}>
                                                     {notification.title}
                                                 </h3>
-                                                <p className="text-sm text-slate-600 leading-relaxed mb-2">
+                                                <p className="text-sm text-[var(--pw-ink-slate-600)] leading-relaxed mb-2">
                                                         {notification.message}
                                                     </p>
-                                                    <div className="flex items-center gap-3 text-xs text-slate-400">
+                                                    <div className="flex items-center gap-3 text-xs text-[var(--pw-ink-slate-400)]">
                                                         <span className="flex items-center gap-1">
                                                             <Clock size={14} />
                                                             {notification.timeLabel}
@@ -214,7 +214,7 @@ export default function NotificationsPage() {
                                                 {!notification.is_read && (
                                                     <button
                                                         onClick={() => handleMarkRead(notification.id)}
-                                                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-none"
+                                                        className="p-2 text-[var(--pw-ink-slate-400)] hover:text-[var(--pw-ink-blue-600)] hover:bg-[var(--pw-fill-blue-50)] rounded-lg transition-none"
                                                         title="Mark as read"
                                                     >
                                                         <CheckCircle size={18} />
@@ -222,7 +222,7 @@ export default function NotificationsPage() {
                                                 )}
                                                 <button
                                                     onClick={() => handleDelete(notification.id)}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-none"
+                                                    className="p-2 text-[var(--pw-ink-slate-400)] hover:text-[var(--pw-ink-red-600)] hover:bg-[var(--pw-fill-red-50)] rounded-lg transition-none"
                                                     title="Delete"
                                                 >
                                                     <Trash size={18} />
@@ -240,11 +240,11 @@ export default function NotificationsPage() {
                             ))
                         ) : (
                             <div className="py-20 text-center">
-                                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                                <div className="w-16 h-16 bg-[var(--pw-fill-slate-50)] rounded-full flex items-center justify-center mx-auto mb-4 text-[var(--pw-ink-slate-300)]">
                                     <Bell size={32} />
                                 </div>
-                                <h3 className="text-lg font-medium text-slate-900 mb-1">No notifications</h3>
-                                <p className="text-slate-500">You&apos;re all caught up! Check back later for updates.</p>
+                                <h3 className="text-lg font-medium text-[var(--pw-ink-slate-900)] mb-1">No notifications</h3>
+                                <p className="text-[var(--pw-ink-slate-500)]">You&apos;re all caught up! Check back later for updates.</p>
                             </div>
                         )}
                     </div>

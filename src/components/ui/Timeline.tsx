@@ -23,11 +23,11 @@ export const Timeline = ({
 
 
     return (
-        <div className="w-full bg-white font-sans md:px-10" ref={containerRef}>
+        <div className="w-full bg-[var(--pw-fill-white)] font-sans md:px-10" ref={containerRef}>
             {(title || description) && (
                 <div className="max-w-7xl mx-auto py-10 px-4 md:px-8 lg:px-10">
-                    {title && <h2 className="text-xl md:text-3xl font-bold text-slate-900 max-w-4xl">{title}</h2>}
-                    {description && <p className="text-slate-600 text-sm md:text-base max-w-sm mt-2">{description}</p>}
+                    {title && <h2 className="text-xl md:text-3xl font-bold text-[var(--pw-ink-slate-900)] max-w-4xl">{title}</h2>}
+                    {description && <p className="text-[var(--pw-ink-slate-600)] text-sm md:text-base max-w-sm mt-2">{description}</p>}
                 </div>
             )}
 
@@ -35,19 +35,19 @@ export const Timeline = ({
                 {data.map((item, index) => (
                     <div key={index} className="flex justify-start pt-10 md:pt-24 md:gap-10">
                         <div className="sticky flex flex-col md:flex-row z-40 items-center top-40 self-start max-w-xs lg:max-w-sm md:w-full">
-                            <div className="h-10 absolute left-3 md:left-3 w-10 border-2 border-slate-100 bg-white rounded-full flex items-center justify-center">
-                                <span className="text-xs font-bold text-blue-600">{item.step}</span>
+                            <div className="h-10 absolute left-3 md:left-3 w-10 border-2 border-[var(--pw-line-slate-100)] bg-[var(--pw-fill-white)] rounded-full flex items-center justify-center">
+                                <span className="text-xs font-bold text-[var(--pw-ink-blue-600)]">{item.step}</span>
                             </div>
-                            <h3 className="hidden md:block text-2xl md:pl-20 md:text-4xl font-bold text-slate-800">
+                            <h3 className="hidden md:block text-2xl md:pl-20 md:text-4xl font-bold text-[var(--pw-ink-slate-800)]">
                                 {item.title}
                             </h3>
                         </div>
 
                         <div className="relative pl-16 pr-4 md:pl-4 w-full">
-                            <h3 className="md:hidden block text-2xl mb-4 text-left font-bold text-slate-800">
+                            <h3 className="md:hidden block text-2xl mb-4 text-left font-bold text-[var(--pw-ink-slate-800)]">
                                 {item.title}
                             </h3>
-                            <div className="text-slate-600">
+                            <div className="text-[var(--pw-ink-slate-600)]">
                                 {item.content}
                             </div>
                         </div>
@@ -57,7 +57,7 @@ export const Timeline = ({
                     style={{
                         height: height + "px",
                     }}
-                    className="absolute md:left-8 left-8 top-0 overflow-hidden w-[2px] bg-[linear-gradient(to_bottom,var(--tw-gradient-stops))] from-transparent from-[0%] via-slate-200 dark:via-neutral-700 to-transparent to-[99%]  [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] "
+                    className="absolute md:left-8 left-8 top-0 overflow-hidden w-[2px] bg-[linear-gradient(to_bottom,var(--tw-gradient-stops))] from-transparent from-[0%] via-[var(--pw-fill-slate-200)] dark:via-neutral-700 to-transparent to-[99%]  [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] "
                 >
                     <div
                         style={{

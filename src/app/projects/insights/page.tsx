@@ -166,9 +166,9 @@ function DashboardContent() {
 
   const toneColors = {
     default: { border: 'transparent', iconBg: 'var(--color-background)', iconColor: 'var(--color-text-secondary)' },
-    positive: { border: 'var(--color-success)', iconBg: '#dcfce7', iconColor: 'var(--color-success)' },
-    negative: { border: 'var(--color-error)', iconBg: '#fee2e2', iconColor: 'var(--color-error)' },
-    warning: { border: 'var(--color-warning)', iconBg: '#fef3c7', iconColor: 'var(--color-warning)' },
+    positive: { border: 'var(--color-success)', iconBg: 'var(--pw-line-dcfce7)', iconColor: 'var(--color-success)' },
+    negative: { border: 'var(--color-error)', iconBg: 'var(--pw-line-fee2e2)', iconColor: 'var(--color-error)' },
+    warning: { border: 'var(--color-warning)', iconBg: 'var(--pw-line-fef3c7)', iconColor: 'var(--color-warning)' },
   };
 
   const kpis = [
@@ -497,7 +497,7 @@ function DashboardContent() {
           align-items: flex-end;
           gap: 20px;
           flex-wrap: wrap;
-          border-bottom: 1px solid #d8e0eb;
+          border-bottom: 1px solid var(--pw-line-d8e0eb);
         }
 
         .hero-left {
@@ -507,7 +507,7 @@ function DashboardContent() {
 
         .dash-eyebrow {
           display: block;
-          color: #1d5fbf;
+          color: var(--pw-ink-1d5fbf);
           font-size: 12px;
           font-weight: 800;
           text-transform: uppercase;
@@ -515,7 +515,7 @@ function DashboardContent() {
 
         .dash-hero h1 {
           margin: 7px 0 0;
-          color: #0f172a;
+          color: var(--pw-ink-0f172a);
           font-family: var(--font-heading);
           font-size: 2rem;
           font-weight: 800;
@@ -525,7 +525,7 @@ function DashboardContent() {
         .dash-hero p {
           max-width: 700px;
           margin: 7px 0 0;
-          color: #64748b;
+          color: var(--pw-ink-64748b);
           font-size: 0.84rem;
         }
 
@@ -543,7 +543,7 @@ function DashboardContent() {
         }
 
         .kpi-card {
-          background: white;
+          background: var(--pw-fill-ffffff);
           border: 1px solid var(--color-border);
           border-left-width: 4px;
           border-radius: 8px;
@@ -596,7 +596,7 @@ function DashboardContent() {
 
         /* ── Projects Panel ── */
         .projects-panel {
-          background: white;
+          background: var(--pw-fill-ffffff);
           border: 1px solid var(--color-border);
           border-radius: 8px;
           overflow: hidden;
@@ -628,13 +628,13 @@ function DashboardContent() {
           text-decoration: none;
           padding: 6px 14px;
           border-radius: 6px;
-          background: #eff6ff;
+          background: var(--pw-fill-eff6ff);
           transition: none;
         }
 
         .see-all:hover {
-          background: #dbeafe;
-          color: #1d4ed8;
+          background: var(--pw-fill-dbeafe);
+          color: var(--pw-ink-1d4ed8);
         }
 
         /* ── Projects Table ── */
@@ -749,12 +749,12 @@ function DashboardContent() {
         }
 
         .pt-badge.active {
-          background: #dcfce7;
-          color: #166534;
+          background: var(--pw-fill-dcfce7);
+          color: var(--pw-ink-166534);
         }
 
         .pt-badge.completed {
-          background: #dbeafe;
+          background: var(--pw-fill-dbeafe);
           color: var(--color-accent);
         }
 
@@ -807,7 +807,7 @@ function DashboardContent() {
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          background: white;
+          background: var(--pw-fill-ffffff);
         }
 
         .pt-progress-ring span {
@@ -815,13 +815,13 @@ function DashboardContent() {
           z-index: 1;
           font-size: 12px;
           font-weight: 800;
-          color: #334155;
+          color: var(--pw-ink-334155);
         }
 
         .pt-arrow {
           display: flex;
           align-items: center;
-          color: #cbd5e1;
+          color: var(--pw-ink-cbd5e1);
           transition: color 0.2s ease, transform 0.2s ease;
         }
 
@@ -1060,7 +1060,7 @@ function DashboardContent() {
           .dashboard-page > :global(nav[aria-label="Breadcrumb"]) { color: var(--color-muted-on-navy); }
           .hero-actions > :global(.btn-secondary) {
             background: var(--color-surface);
-            color: var(--color-primary);
+            color: var(--color-heading);
           }
         }
 

@@ -4,15 +4,15 @@
   display: flex;
   flex-direction: column;
   padding: 22px;
-  background: white;
-  border: 1px solid #d8e0eb;
+  background: var(--pw-fill-ffffff);
+  border: 1px solid var(--pw-line-d8e0eb);
   border-radius: 8px;
   box-shadow: 0 5px 18px rgba(11, 31, 59, 0.05);
   transition: none;
 }
 @media (hover: hover) and (pointer: fine) {
     .card:hover {
-      border-color: #9db8dd;
+      border-color: var(--pw-line-9db8dd);
       box-shadow: 0 10px 26px rgba(11, 31, 59, 0.1);}
 }
 
@@ -39,7 +39,7 @@
 .identity h2 {
   overflow: hidden;
   margin: 0;
-  color: #0f172a;
+  color: var(--pw-ink-0f172a);
   font-family: var(--font-heading);
   font-size: 1.05rem;
   font-weight: 800;
@@ -54,7 +54,7 @@
   align-items: center;
   gap: 6px;
   margin: 6px 0 0;
-  color: #64748b;
+  color: var(--pw-ink-64748b);
   font-size: 0.77rem;
 }
 
@@ -62,7 +62,7 @@
   display: -webkit-box;
   overflow: hidden;
   margin: 18px 0 0;
-  color: #526174;
+  color: var(--pw-ink-526174);
   font-size: 0.84rem;
   line-height: 1.6;
   -webkit-box-orient: vertical;
@@ -82,7 +82,7 @@
   align-items: center;
   gap: 5px;
   margin: 0 0 9px;
-  color: #748196;
+  color: var(--pw-ink-748196);
   font-size: 0.7rem;
   font-weight: 750;
   text-transform: uppercase;
@@ -97,9 +97,9 @@
 
 .tags span {
   padding: 5px 8px;
-  color: #164b93;
-  background: #eef4ff;
-  border: 1px solid #d5e4fb;
+  color: var(--pw-ink-164b93);
+  background: var(--pw-fill-eef4ff);
+  border: 1px solid var(--pw-line-d5e4fb);
   border-radius: 5px;
   font-size: 0.7rem;
   font-weight: 700;
@@ -108,7 +108,7 @@
 
 .areas {
   overflow: hidden;
-  color: #475569;
+  color: var(--pw-ink-475569);
   font-size: 0.8rem;
   line-height: 1.45;
   text-overflow: ellipsis;
@@ -121,7 +121,7 @@
   gap: 8px;
   margin-top: 22px;
   padding-top: 16px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--pw-line-e2e8f0);
 }
 
 .actions a {
@@ -141,9 +141,9 @@
 }
 
 .actions a + a {
-  color: #0b1f3b;
-  background: white;
-  border-color: #cbd5e1;
+  color: var(--pw-ink-0b1f3b);
+  background: var(--pw-fill-ffffff);
+  border-color: var(--pw-line-cbd5e1);
 }
 
 @media (max-width: 640px) {

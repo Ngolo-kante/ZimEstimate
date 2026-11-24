@@ -769,7 +769,7 @@ export default function MarketplacePage() {
           <DrawerContent className="bg-[var(--color-primary)] motion-reduce:[animation:none!important] motion-reduce:[transition:none!important] z-[150] max-h-[85dvh] pb-[env(safe-area-inset-bottom)]">
             <DrawerHeader className="text-left!"><DrawerTitle className="text-white">{selectedMaterial?.name || 'Material details'}</DrawerTitle><DrawerDescription className="text-[var(--color-muted-on-navy)]">Details and supplier prices</DrawerDescription></DrawerHeader>
             <DrawerScrollArea className="px-4"><div className="rounded-xl bg-[var(--color-surface)]">{phone && selectedMaterial && materialDetail}</div></DrawerScrollArea>
-            <DrawerClose className="m-4 min-h-11 rounded-lg bg-[var(--color-surface)] font-semibold text-[var(--color-primary)]">Close</DrawerClose>
+            <DrawerClose className="m-4 min-h-11 rounded-lg bg-[var(--color-surface)] font-semibold text-[var(--color-heading)]">Close</DrawerClose>
           </DrawerContent>
         </Drawer>
 
@@ -1039,7 +1039,7 @@ export default function MarketplacePage() {
           gap: var(--space-2);
           font-size: var(--text-base);
           font-weight: var(--font-semibold);
-          color: var(--color-primary);
+          color: var(--color-heading);
           margin: 0;
           font-family: var(--font-heading);
         }
@@ -1222,7 +1222,7 @@ export default function MarketplacePage() {
         .detail-title {
           font-size: var(--text-h4);
           font-weight: var(--font-semibold);
-          color: var(--color-primary);
+          color: var(--color-heading);
           margin: 0 0 var(--space-1) 0;
           font-family: var(--font-heading);
         }
@@ -1286,7 +1286,7 @@ export default function MarketplacePage() {
         .price-value {
           font-size: var(--text-h3);
           font-weight: var(--font-bold);
-          color: var(--color-primary);
+          color: var(--color-heading);
         }
 
         .price-trend {
@@ -1960,7 +1960,7 @@ export default function MarketplacePage() {
           .filter-actions :global(.btn-secondary) {
             background: var(--color-surface);
             border-color: var(--color-border);
-            color: var(--color-primary);
+            color: var(--color-heading);
           }
           .filter-actions :global(.btn[aria-pressed="true"]) {
             background: var(--color-selected-surface);

@@ -106,9 +106,9 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
   };
 
   return (
-    <aside className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <aside className="rounded-2xl border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] shadow-sm">
       {/* ── Header: Total + Export/Share buttons ─────────────────── */}
-      <div className="border-b border-slate-100 px-5 py-5">
+      <div className="border-b border-[var(--pw-line-slate-100)] px-5 py-5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-widest wiz-text-muted">Total Estimate</p>
@@ -123,7 +123,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
               type="button"
               onClick={exportEstimate}
               title="Export estimate"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-[var(--color-text-muted)] hover:bg-slate-50 hover:text-slate-700 transition-none"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--pw-line-slate-200)] text-[var(--color-text-muted)] hover:bg-[var(--pw-fill-slate-50)] hover:text-[var(--pw-ink-slate-700)] transition-none"
             >
               <DownloadSimple size={16} />
             </button>
@@ -131,7 +131,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
               type="button"
               onClick={() => void shareEstimate()}
               title="Share estimate"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-[var(--color-text-muted)] hover:bg-slate-50 hover:text-slate-700 transition-none"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--pw-line-slate-200)] text-[var(--color-text-muted)] hover:bg-[var(--pw-fill-slate-50)] hover:text-[var(--pw-ink-slate-700)] transition-none"
             >
               <ShareNetwork size={16} />
             </button>
@@ -141,14 +141,14 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
       </div>
 
       {/* ── Compact health bar ──────────────────────────────────── */}
-      <div className="px-5 py-3 border-b border-slate-100">
+      <div className="px-5 py-3 border-b border-[var(--pw-line-slate-100)]">
         <div className="flex items-center justify-between text-xs mb-1.5">
           <span className="font-medium text-[var(--color-text-muted)]">Estimate Health</span>
           <span data-testid="live-health" className="font-semibold wiz-text-primary">
             {health.weightedScorePct.toFixed(0)}%
           </span>
         </div>
-        <div className="h-1.5 rounded-full bg-slate-200">
+        <div className="h-1.5 rounded-full bg-[var(--pw-fill-slate-200)]">
           <div
             className="h-1.5 rounded-full transition-none duration-500"
             style={{
@@ -158,7 +158,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
           />
         </div>
         {health.missingCriticalItemIds.length > 0 && (
-          <div className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-600">
+          <div className="mt-1.5 flex items-start gap-1.5 text-xs text-[var(--pw-ink-amber-600)]">
             <WarningCircle size={12} className="mt-0.5 flex-shrink-0" />
             <span>{health.missingCriticalItemIds.length} critical items missing</span>
           </div>
@@ -169,22 +169,22 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
       <div className="px-5 py-4 space-y-2">
         <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Cost Breakdown</p>
         {breakdown.map((row) => (
-          <div key={row.id} className="rounded-lg border border-slate-200 bg-slate-50">
+          <div key={row.id} className="rounded-lg border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-slate-50)]">
             <button
               type="button"
               onClick={() => toggleMilestoneExpanded(row.id)}
               className="flex w-full items-center justify-between px-3 py-2 text-left"
             >
-              <span className="inline-flex items-center gap-1 text-sm text-slate-700">
+              <span className="inline-flex items-center gap-1 text-sm text-[var(--pw-ink-slate-700)]">
                 <CaretDown className={`h-3 w-3 transition-none ${row.expanded ? 'rotate-180' : ''}`} />
                 {row.label}
               </span>
               <span className="text-sm font-semibold wiz-text-primary">{formatAmount(row.total, currency, exchangeRate)}</span>
             </button>
             {row.expanded && (
-              <div className="space-y-1 border-t border-slate-200 px-3 py-2">
+              <div className="space-y-1 border-t border-[var(--pw-line-slate-200)] px-3 py-2">
                 {row.items.filter((item) => !isLaborCategory(item.category)).slice(0, 5).map((item) => (
-                  <div key={item.id} className="flex items-center justify-between text-xs text-slate-600">
+                  <div key={item.id} className="flex items-center justify-between text-xs text-[var(--pw-ink-slate-600)]">
                     <span className="truncate pr-3">{item.materialName}</span>
                     <span>{formatAmount((item.quantity || 0) * item.actualPriceUsd, currency, exchangeRate)}</span>
                   </div>
@@ -194,7 +194,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
                 )}
                 {row.items.some((item) => isLaborCategory(item.category)) && <p className="pt-2 text-xs font-semibold text-[var(--color-text-muted)]">Labour</p>}
                 {row.items.filter((item) => isLaborCategory(item.category)).map((item) => (
-                  <div key={item.id} className="flex items-center justify-between text-xs text-slate-600">
+                  <div key={item.id} className="flex items-center justify-between text-xs text-[var(--pw-ink-slate-600)]">
                     <span className="truncate pr-3">{item.materialName}</span>
                     <span>{formatAmount((item.quantity || 0) * item.actualPriceUsd, currency, exchangeRate)}</span>
                   </div>
@@ -206,7 +206,7 @@ export default function LiveEstimatePanel({ onViewFullBoq }: { onViewFullBoq?: (
       </div>
 
       {/* ── View Full BOQ button ─────────────────────────────────── */}
-      <div className="border-t border-slate-100 px-5 py-4">
+      <div className="border-t border-[var(--pw-line-slate-100)] px-5 py-4">
         <button
           type="button"
           onClick={openReview}

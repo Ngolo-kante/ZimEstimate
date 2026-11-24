@@ -317,25 +317,25 @@ export default function SupplierBillingPage() {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            color: #64748b;
+            color: var(--pw-ink-64748b);
             font-size: 14px;
             text-decoration: none;
             margin-bottom: 12px;
           }
 @media (hover: hover) and (pointer: fine) {
-    .back-link:hover {     color: #1e40af; }
+    .back-link:hover {     color: var(--pw-ink-1e40af); }
 }
           .header-label {
             font-size: 12px;
             font-weight: 600;
-            color: #1e40af;
+            color: var(--pw-ink-1e40af);
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 6px;
           }
-          h1 { font-size: 28px; font-weight: 700; color: #0f172a; margin: 0 0 6px; }
-          .header-desc { color: #64748b; margin: 0; font-size: 15px; }
-          .billing-loading { text-align: center; padding: 48px; color: #64748b; }
+          h1 { font-size: 28px; font-weight: 700; color: var(--pw-ink-0f172a); margin: 0 0 6px; }
+          .header-desc { color: var(--pw-ink-64748b); margin: 0; font-size: 15px; }
+          .billing-loading { text-align: center; padding: 48px; color: var(--pw-ink-64748b); }
           .billing-grid {
             display: grid;
             grid-template-columns: 280px 1fr;
@@ -353,17 +353,17 @@ export default function SupplierBillingPage() {
           .plan-price {
             font-size: 20px;
             font-weight: 600;
-            color: #334155;
+            color: var(--pw-ink-334155);
             margin-bottom: 12px;
           }
-          .plan-price span { font-size: 14px; color: #94a3b8; font-weight: 400; }
+          .plan-price span { font-size: 14px; color: var(--pw-ink-94a3b8); font-weight: 400; }
           .cancel-notice {
             display: flex;
             align-items: center;
             gap: 6px;
             font-size: 13px;
-            color: #b45309;
-            background: #fef3c7;
+            color: var(--pw-ink-b45309);
+            background: var(--pw-fill-fef3c7);
             padding: 8px 12px;
             border-radius: 8px;
             margin-bottom: 12px;
@@ -373,7 +373,7 @@ export default function SupplierBillingPage() {
             align-items: center;
             gap: 6px;
             font-size: 13px;
-            color: #64748b;
+            color: var(--pw-ink-64748b);
             margin-bottom: 12px;
           }
           .plan-actions { margin-top: 4px; }
@@ -381,12 +381,12 @@ export default function SupplierBillingPage() {
             margin: 0;
             font-size: 0.8125rem;
             line-height: 1.5;
-            color: var(--color-text-muted, #64748b);
+            color: var(--color-text-muted, var(--pw-ink-64748b));
           }
           .plan-action-row { display: flex; gap: 8px; flex-wrap: wrap; }
           .cancel-success {
             font-size: 13px;
-            color: #16a34a;
+            color: var(--pw-ink-16a34a);
             margin-top: 10px;
           }
           .features-list { display: flex; flex-direction: column; gap: 10px; }
@@ -396,16 +396,16 @@ export default function SupplierBillingPage() {
             gap: 10px;
             font-size: 14px;
           }
-          .feature-row.locked { color: #94a3b8; }
-          .feature-row.allowed { color: #1e293b; }
-          .feature-icon.yes { color: #16a34a; flex-shrink: 0; }
-          .feature-icon.no { color: #e2e8f0; flex-shrink: 0; }
+          .feature-row.locked { color: var(--pw-ink-94a3b8); }
+          .feature-row.allowed { color: var(--pw-ink-1e293b); }
+          .feature-icon.yes { color: var(--pw-ink-16a34a); flex-shrink: 0; }
+          .feature-icon.no { color: var(--pw-ink-e2e8f0); flex-shrink: 0; }
           .upgrade-hint {
             display: inline-flex;
             align-items: center;
             gap: 3px;
             font-size: 12px;
-            color: #1e40af;
+            color: var(--pw-ink-1e40af);
             text-decoration: none;
             margin-left: auto;
           }
@@ -415,9 +415,9 @@ export default function SupplierBillingPage() {
           .no-payments {
             text-align: center;
             padding: 48px 24px;
-            color: #94a3b8;
+            color: var(--pw-ink-94a3b8);
           }
-          .no-payments p { font-size: 16px; font-weight: 600; color: #475569; margin: 10px 0 4px; }
+          .no-payments p { font-size: 16px; font-weight: 600; color: var(--pw-ink-475569); margin: 10px 0 4px; }
           .no-payments span { font-size: 13px; }
           .payments-table { display: flex; flex-direction: column; gap: 0; }
           .payments-header {
@@ -426,23 +426,23 @@ export default function SupplierBillingPage() {
             padding: 8px 12px;
             font-size: 12px;
             font-weight: 600;
-            color: #94a3b8;
+            color: var(--pw-ink-94a3b8);
             text-transform: uppercase;
             letter-spacing: 0.04em;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid var(--pw-line-f1f5f9);
           }
           .payment-row {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr 100px;
             padding: 12px;
             font-size: 14px;
-            color: #334155;
-            border-bottom: 1px solid #f8fafc;
+            color: var(--pw-ink-334155);
+            border-bottom: 1px solid var(--pw-line-f8fafc);
             align-items: center;
           }
           .payment-row:last-child { border-bottom: none; }
-          .payment-amount { font-weight: 600; color: #1e293b; }
-          .provider-label { font-size: 13px; color: #64748b; }
+          .payment-amount { font-weight: 600; color: var(--pw-ink-1e293b); }
+          .provider-label { font-size: 13px; color: var(--pw-ink-64748b); }
           @media (max-width: 768px) {
             .billing-grid {
               grid-template-columns: 1fr;
