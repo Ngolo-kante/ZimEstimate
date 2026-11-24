@@ -136,13 +136,13 @@ export default function BoqView({
                             <WarningCircle size={18} weight="fill" />
                         </span>
                         <div>
-                            <h4 className="text-sm font-semibold text-amber-900">
+                            <h4 className="text-sm font-semibold text-[var(--pw-ink-amber-900)]">
                                 {activeStageComplianceWarnings.length} pending {activeStageComplianceWarnings.length === 1 ? 'approval' : 'approvals'}
                             </h4>
-                            <p className="text-xs text-amber-800 mt-1">Review these before starting this stage.</p>
+                            <p className="text-xs text-[var(--pw-ink-amber-800)] mt-1">Review these before starting this stage.</p>
                             <details className="compliance-warning-details">
                                 <summary>View pending approvals</summary>
-                                <ul className="mt-2 list-disc pl-5 text-xs text-amber-800 space-y-1">
+                                <ul className="mt-2 list-disc pl-5 text-xs text-[var(--pw-ink-amber-800)] space-y-1">
                                     {activeStageComplianceWarnings.slice(0, 6).map((issue) => (
                                         <li key={issue}>{issue}</li>
                                     ))}

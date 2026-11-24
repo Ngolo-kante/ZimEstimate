@@ -144,8 +144,8 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
 
             <style jsx>{`
                 .task-item {
-                    background: #ffffff;
-                    border: 1px solid #e2e8f0;
+                    background: var(--pw-fill-ffffff);
+                    border: 1px solid var(--pw-line-e2e8f0);
                     border-radius: 12px;
                     overflow: hidden;
                     transition: background-color 0.2s ease, border-color 0.2s ease;
@@ -154,13 +154,13 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
 
                 @media (hover: hover) and (pointer: fine) {
                   .task-item:hover {
-                      border-color: #cbd5e1;
+                      border-color: var(--pw-line-cbd5e1);
                       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
                   }
                 }
 
                 .task-item.completed {
-                    background: #f8fafc;
+                    background: var(--pw-fill-f8fafc);
                     opacity: 0.9;
                 }
 
@@ -175,9 +175,9 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                 .checkbox {
                     width: 22px;
                     height: 22px;
-                    border: 2px solid #cbd5e1;
+                    border: 2px solid var(--pw-line-cbd5e1);
                     border-radius: 6px;
-                    background: #ffffff;
+                    background: var(--pw-fill-ffffff);
                     cursor: pointer;
                     display: flex;
                     align-items: center;
@@ -206,14 +206,14 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                 .task-title {
                     font-size: 0.9rem;
                     font-weight: 500;
-                    color: #1e293b;
+                    color: var(--pw-ink-1e293b);
                     display: block;
                     transition: color 0.1s;
                 }
 
                 .task-item.completed .task-title {
                     text-decoration: line-through;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                 }
 
                 .task-meta {
@@ -228,11 +228,11 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                     align-items: center;
                     gap: 4px;
                     font-size: 0.75rem;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                 }
 
                 .meta-item.verified {
-                    color: #166534;
+                    color: var(--pw-ink-166534);
                     font-weight: 500;
                 }
 
@@ -246,8 +246,8 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                     font-size: 12px;
                     font-weight: 600;
                     padding: 2px 6px;
-                    background: #f1f5f9;
-                    color: #64748b;
+                    background: var(--pw-fill-f1f5f9);
+                    color: var(--pw-ink-64748b);
                     border-radius: 99px;
                     text-transform: uppercase;
                 }
@@ -261,27 +261,27 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                     background: none;
                     border: none;
                     cursor: pointer;
-                    color: #94a3b8;
+                    color: var(--pw-ink-94a3b8);
                     border-radius: 6px;
                     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
                 }
 
                 @media (hover: hover) and (pointer: fine) {
                   .expand-btn:hover {
-                      background: #f1f5f9;
-                      color: #475569;
+                      background: var(--pw-fill-f1f5f9);
+                      color: var(--pw-ink-475569);
                   }
                 }
 
                 .task-details {
                     padding: 16px;
-                    border-top: 1px solid #f1f5f9;
-                    background: #fcfcfc;
+                    border-top: 1px solid var(--pw-line-f1f5f9);
+                    background: var(--pw-fill-fcfcfc);
                 }
 
                 .task-description {
                     font-size: 0.85rem;
-                    color: #475569;
+                    color: var(--pw-ink-475569);
                     margin: 0 0 16px 0;
                     line-height: 1.5;
                 }
@@ -306,15 +306,15 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                 }
 
                 .form-group input {
                     padding: 8px 12px;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid var(--pw-line-e2e8f0);
                     border-radius: 8px;
                     font-size: 0.85rem;
-                    background: #ffffff;
+                    background: var(--pw-fill-ffffff);
                 }
 
                 .form-group input:focus {
@@ -341,13 +341,13 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                 }
 
                 .btn-cancel {
-                    background: #f1f5f9;
-                    color: #64748b;
+                    background: var(--pw-fill-f1f5f9);
+                    color: var(--pw-ink-64748b);
                 }
 
                 @media (hover: hover) and (pointer: fine) {
                   .btn-cancel:hover {
-                      background: #e2e8f0;
+                      background: var(--pw-fill-e2e8f0);
                   }
                 }
 
@@ -372,35 +372,35 @@ export default function StageTaskItem({ task, onToggle, onUpdate, onDelete }: St
                     align-items: center;
                     gap: 6px;
                     padding: 6px 10px;
-                    background: #ffffff;
-                    border: 1px solid #e2e8f0;
+                    background: var(--pw-fill-ffffff);
+                    border: 1px solid var(--pw-line-e2e8f0);
                     border-radius: 6px;
                     font-size: 0.8rem;
-                    color: #475569;
+                    color: var(--pw-ink-475569);
                     cursor: pointer;
                     transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
                 }
 
                 @media (hover: hover) and (pointer: fine) {
                   .action-btn:hover {
-                      border-color: #cbd5e1;
-                      background: #f8fafc;
+                      border-color: var(--pw-line-cbd5e1);
+                      background: var(--pw-fill-f8fafc);
                   }
                 }
 @media (hover: hover) and (pointer: fine) {
 
 
                 .action-btn.danger:hover {
-                    border-color: #fee2e2;
-                    color: #ef4444;
-                    background: #fef2f2;
+                    border-color: var(--pw-line-fee2e2);
+                    color: var(--pw-ink-ef4444);
+                    background: var(--pw-fill-fef2f2);
                 }
 }
 
 
                 .completed-info {
                     font-size: 12px;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     margin: 12px 0 0 0;
                     text-align: right;
                 }

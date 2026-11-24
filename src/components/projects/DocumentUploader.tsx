@@ -105,9 +105,9 @@ export default function DocumentUploader({ onUpload, isUploading }: DocumentUplo
             <p role="status" className="status">{status}</p>
             {error && <p role="alert" className="error">{error}</p>}
             <style jsx>{`
-                .uploader { padding: 24px; border: 1px dashed #aebed0; border-radius: 12px; background: #f8fafc; text-align: center; color: #334155; }
-                .dragging { border-color: #2563eb; background: #eff6ff; }
-                h3 { font-size: 1rem; margin: 10px 0 6px; color: #0b1f3b; }
+                .uploader { padding: 24px; border: 1px dashed var(--pw-line-aebed0); border-radius: 12px; background: var(--pw-fill-f8fafc); text-align: center; color: var(--pw-ink-334155); }
+                .dragging { border-color: #2563eb; background: var(--pw-fill-eff6ff); }
+                h3 { font-size: 1rem; margin: 10px 0 6px; color: var(--pw-ink-0b1f3b); }
                 p { margin: 6px 0 16px; font-size: .9rem; }
                 small { display: block; font-size: .8rem; margin-top: 14px; }
                 .actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
@@ -115,13 +115,13 @@ export default function DocumentUploader({ onUpload, isUploading }: DocumentUplo
                 .selected-file img { width: 64px; height: 72px; object-fit: cover; border-radius: 6px; }
                 .selected-file div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
                 .selected-file span { display: block; font-size: .8rem; margin-top: 4px; }
-                .selected-file button { min-width: 44px; min-height: 44px; display: grid; place-items: center; border: 1px solid #cbd5e1; border-radius: 6px; background: white; cursor: pointer; }
+                .selected-file button { min-width: 44px; min-height: 44px; display: grid; place-items: center; border: 1px solid var(--pw-line-cbd5e1); border-radius: 6px; background: var(--pw-fill-ffffff); cursor: pointer; }
                 .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 20px 0; text-align: left; }
                 label { display: grid; gap: 6px; font-size: .875rem; font-weight: 600; }
-                input, select { width: 100%; min-width: 0; min-height: 46px; padding: 10px; border: 1px solid #b8c7d8; border-radius: 6px; background: white; font: inherit; }
+                input, select { width: 100%; min-width: 0; min-height: 46px; padding: 10px; border: 1px solid var(--pw-line-b8c7d8); border-radius: 6px; background: var(--pw-fill-ffffff); font: inherit; }
                 :is(input, select, button):focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
-                .error { color: #b91c1c; margin: 14px 0 0; }
-                .status { color: #475569; margin: 12px 0 0; }
+                .error { color: var(--pw-ink-b91c1c); margin: 14px 0 0; }
+                .status { color: var(--pw-ink-475569); margin: 12px 0 0; }
                 .status:empty { display: none; }
                 @media(max-width: 600px) { .uploader { padding: 18px 14px; } .fields { grid-template-columns: 1fr; } input, select { font-size: 16px; } }
             `}</style>

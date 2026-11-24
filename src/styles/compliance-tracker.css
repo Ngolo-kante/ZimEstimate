@@ -62,7 +62,7 @@
 }
 
 .compliance-overview-title-row strong {
-  color: var(--color-primary);
+  color: var(--color-heading);
   font-size: var(--text-sm);
 }
 
@@ -160,7 +160,7 @@
   align-items: center;
   gap: var(--space-2);
   flex: 0 0 auto;
-  color: var(--color-primary);
+  color: var(--color-heading);
   font-size: var(--text-xs);
   font-weight: var(--font-semibold);
 }
@@ -176,7 +176,7 @@
 
 .compliance-channel-row .channel-icon {
   display: flex;
-  color: var(--color-primary);
+  color: var(--color-heading);
 }
 
 .compliance-channel-row strong {
@@ -250,13 +250,13 @@
   place-items: center;
   border: 1px solid var(--color-border);
   border-radius: 7px;
-  color: var(--color-primary);
+  color: var(--color-heading);
   background: var(--color-mist);
 }
 
 .compliance-stage-section.is-complete .stage-state {
   border-color: rgba(22, 163, 74, 0.3);
-  color: #15803d;
+  color: var(--pw-ink-15803d);
   background: rgba(22, 163, 74, 0.07);
 }
 
@@ -427,13 +427,13 @@
 
 .compliance-status-select.in_progress {
   border-color: rgba(245, 158, 11, 0.5);
-  color: #92400e;
+  color: var(--pw-ink-92400e);
   background: rgba(245, 158, 11, 0.06);
 }
 
 .compliance-status-select.done {
   border-color: rgba(22, 163, 74, 0.4);
-  color: #166534;
+  color: var(--pw-ink-166534);
   background: rgba(22, 163, 74, 0.06);
 }
 

@@ -6,7 +6,7 @@
 .current {
     min-width: 0;
     padding: 2px 8px;
-    border: 1px solid #e9c96e;
+    border: 1px solid var(--pw-line-e9c96e);
     border-radius: 6px;
     background: var(--color-selected-surface);
     color: var(--color-selected-ink);
@@ -27,7 +27,7 @@
     align-items: center;
     gap: 8px;
     min-height: 44px;
-    color: var(--project-breadcrumb-link, #1d4ed8);
+    color: var(--project-breadcrumb-link, var(--pw-ink-1d4ed8));
     font-weight: 600;
 }
 
@@ -41,7 +41,7 @@
         border: 1px solid var(--color-border);
         border-radius: 10px;
         background: var(--color-surface);
-        color: var(--color-primary);
+        color: var(--color-heading);
     }
     .back:active { background: var(--color-selected-surface); }
 }

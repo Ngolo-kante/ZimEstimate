@@ -603,7 +603,7 @@ export default function ProjectSettings({
                     onClick={handleSave}
                     disabled={isSaving || !isDirty}
                     icon={isSaving
-                        ? <div className="spinner-border animate-spin w-4 h-4 border-2 border-white rounded-full" />
+                        ? <div className="spinner-border animate-spin w-4 h-4 border-2 border-[var(--pw-line-white)] rounded-full" />
                         : <FloppyDisk size={18} />
                     }
                 >

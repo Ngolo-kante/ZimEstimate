@@ -140,7 +140,7 @@ export default function StageTaskList({
 
             <style jsx>{`
                 .task-list-section {
-                    background: #ffffff;
+                    background: var(--pw-fill-ffffff);
                     border: 1px solid var(--color-border-light);
                     border-radius: 20px;
                     overflow: hidden;
@@ -154,8 +154,8 @@ export default function StageTaskList({
                     justify-content: space-between;
                     align-items: center;
                     padding: 16px 24px;
-                    background: #ffffff;
-                    border-bottom: 1px solid #f1f5f9;
+                    background: var(--pw-fill-ffffff);
+                    border-bottom: 1px solid var(--pw-line-f1f5f9);
                 }
 
                 .header-title {
@@ -165,13 +165,13 @@ export default function StageTaskList({
                 }
 
                 .header-title svg {
-                    color: #2563eb;
+                    color: var(--pw-ink-2563eb);
                 }
 
                 .header-title h4 {
                     font-size: 1rem;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                     margin: 0;
                     letter-spacing: -0.01em;
                 }
@@ -191,15 +191,15 @@ export default function StageTaskList({
                     background: transparent;
                     border: none;
                     border-radius: 8px;
-                    color: #94a3b8;
+                    color: var(--pw-ink-94a3b8);
                     cursor: pointer;
                     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
                 }
 
                 @media (hover: hover) and (pointer: fine) {
                   .collapse-btn:hover {
-                      color: #475569;
-                      background: #f1f5f9;
+                      color: var(--pw-ink-475569);
+                      background: var(--pw-fill-f1f5f9);
                   }
                 }
 
@@ -208,16 +208,16 @@ export default function StageTaskList({
                     flex-direction: column;
                     gap: 12px;
                     padding: 20px 24px;
-                    background: #f8fafc;
-                    border-bottom: 1px solid #e2e8f0;
+                    background: var(--pw-fill-f8fafc);
+                    border-bottom: 1px solid var(--pw-line-e2e8f0);
                 }
 
                 .add-task-form input {
                     padding: 12px 16px;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid var(--pw-line-e2e8f0);
                     border-radius: 10px;
                     font-size: 0.95rem;
-                    background: #ffffff;
+                    background: var(--pw-fill-ffffff);
                     width: 100%;
                 }
 
@@ -237,7 +237,7 @@ export default function StageTaskList({
                     display: flex;
                     flex-direction: column;
                     padding: 8px 0;
-                    background: #ffffff;
+                    background: var(--pw-fill-ffffff);
                 }
 
                 .empty-state {
@@ -247,19 +247,19 @@ export default function StageTaskList({
                     justify-content: center;
                     padding: 40px 24px;
                     text-align: center;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                 }
 
                 .empty-state svg {
                     margin-bottom: 12px;
-                    color: #cbd5e1;
+                    color: var(--pw-ink-cbd5e1);
                 }
 
                 .empty-state p {
                     margin: 0 0 16px;
                     font-size: 0.95rem;
                     font-weight: 500;
-                    color: #334155;
+                    color: var(--pw-ink-334155);
                 }
 
                 @media (max-width: 480px) {

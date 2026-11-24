@@ -340,7 +340,7 @@ export default function StageUsageSection({
                 }
 
                 .usage-form {
-                    background: #ffffff;
+                    background: var(--pw-fill-ffffff);
                     border-radius: var(--radius-md);
                     padding: var(--spacing-md);
                     margin-bottom: var(--spacing-md);

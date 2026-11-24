@@ -136,7 +136,7 @@ body:where(:has(.project-dashboard-shell)) {
 
 .project-workspace .view-description {
     margin: 10px 0 0 0;
-    color: #5f6b7e;
+    color: var(--pw-ink-5f6b7e);
     max-width: 680px;
 }
 
@@ -211,17 +211,17 @@ body:where(:has(.project-dashboard-shell)) {
     display: flex;
     align-items: center;
     gap: 9px;
-    border: 1px solid #d8e0eb;
+    border: 1px solid var(--pw-line-d8e0eb);
     border-radius: 7px;
-    background: #fff;
-    color: #526176;
+    background: var(--pw-fill-ffffff);
+    color: var(--pw-ink-526176);
     text-align: left;
     cursor: pointer;
 }
 @media (hover: hover) and (pointer: fine) {
   .project-workspace .stage-switcher-item:hover {
-    border-color: #9fb6d0;
-    background: #f8fafc;
+    border-color: var(--pw-line-9fb6d0);
+    background: var(--pw-fill-f8fafc);
   }
 }
 
@@ -233,8 +233,8 @@ body:where(:has(.project-dashboard-shell)) {
 }
 
 .project-workspace .stage-switcher-item.unavailable:not(.active) {
-    color: #8b96a7;
-    background: #f8fafc;
+    color: var(--pw-ink-8b96a7);
+    background: var(--pw-fill-f8fafc);
 }
 
 .project-workspace .stage-number {
@@ -244,10 +244,10 @@ body:where(:has(.project-dashboard-shell)) {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    border: 1px solid #d8e0eb;
+    border: 1px solid var(--pw-line-d8e0eb);
     border-radius: 6px;
-    background: #f2f6fa;
-    color: #0b1f3b;
+    background: var(--pw-fill-f2f6fa);
+    color: var(--pw-ink-0b1f3b);
     font-size: 12px;
     font-weight: 750;
 }
@@ -281,17 +281,17 @@ body:where(:has(.project-dashboard-shell)) {
 }
 
 .project-workspace .stage-switcher-copy small {
-    color: #5b6b82;
+    color: var(--pw-ink-5b6b82);
     font-size: 12px;
 }
 
 .project-workspace .stage-switcher-item.active .stage-switcher-copy small {
-    color: #c9d5e4;
+    color: var(--pw-ink-c9d5e4);
 }
 
 .project-workspace .compliance-warning-banner {
-    border: 1px solid #fcd34d;
-    background: #fffbeb;
+    border: 1px solid var(--pw-line-fcd34d);
+    background: var(--pw-fill-fffbeb);
     border-radius: 8px;
     padding: 14px 16px;
     display: flex;
@@ -312,8 +312,8 @@ body:where(:has(.project-dashboard-shell)) {
     width: 28px;
     height: 28px;
     border-radius: 999px;
-    background: #fef3c7;
-    color: #b45309;
+    background: var(--pw-fill-fef3c7);
+    color: var(--pw-ink-b45309);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -332,9 +332,9 @@ body:where(:has(.project-dashboard-shell)) {
     width: 30px;
     height: 30px;
     border-radius: 8px;
-    border: 1px solid #fcd34d;
-    background: #fff;
-    color: #92400e;
+    border: 1px solid var(--pw-line-fcd34d);
+    background: var(--pw-fill-ffffff);
+    color: var(--pw-ink-92400e);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -342,7 +342,7 @@ body:where(:has(.project-dashboard-shell)) {
 }
 @media (hover: hover) and (pointer: fine) {
   .project-workspace .compliance-warning-dismiss:hover {
-    background: #fef3c7;
+    background: var(--pw-fill-fef3c7);
   }
 }
 
@@ -352,7 +352,7 @@ body:where(:has(.project-dashboard-shell)) {
 
 .project-workspace .compliance-warning-details summary {
     width: fit-content;
-    color: #92400e;
+    color: var(--pw-ink-92400e);
     font-size: 0.75rem;
     font-weight: 700;
     text-decoration: underline;
@@ -428,8 +428,8 @@ body:where(:has(.project-dashboard-shell)) {
 .project-workspace .project-stage-pill[data-status="complete"] { background: var(--color-success-bg); color: var(--color-success-fg); border-color: var(--color-success-border); }
 
 .project-workspace .pro-tip-card {
-    background: linear-gradient(145deg, #eef6ff, #f8fbff) !important;
-    border: 1px solid #d1e6ff !important;
+    background: linear-gradient(145deg, var(--pw-fill-eef6ff), var(--pw-fill-f8fbff)) !important;
+    border: 1px solid var(--pw-line-d1e6ff) !important;
     transition:
         transform var(--dashboard-medium) var(--dashboard-ease),
         box-shadow var(--dashboard-medium) var(--dashboard-ease),
@@ -679,13 +679,13 @@ body:where(:has(.project-dashboard-shell)) {
     }
 
     .project-workspace .overview-actions .btn {
-        background: #f8fafc;
-        border-color: #cbd5e1;
-        color: var(--color-primary);
+        background: var(--pw-fill-f8fafc);
+        border-color: var(--pw-line-cbd5e1);
+        color: var(--color-heading);
     }
 
     .project-workspace .overview-actions .btn:is(:hover, :active) {
-        background: #dbeafe;
+        background: var(--pw-fill-dbeafe);
     }
 
     .project-workspace .overview-actions .btn-icon {

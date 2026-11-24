@@ -209,7 +209,7 @@ export default function ProjectViewTabs({
             height: 4px;
             margin: 0 auto 8px;
             border-radius: 4px;
-            background: #cbd5e1;
+            background: var(--pw-fill-cbd5e1);
           }
 
           .sheet-header {
@@ -246,10 +246,10 @@ export default function ProjectViewTabs({
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid #d8e0eb;
+            border: 1px solid var(--pw-line-d8e0eb);
             border-radius: 7px;
-            color: #526176;
-            background: #fff;
+            color: var(--pw-ink-526176);
+            background: var(--pw-fill-ffffff);
           }
 
           .sheet-list {
@@ -268,7 +268,7 @@ export default function ProjectViewTabs({
             padding: 8px;
             border: 1px solid transparent;
             border-radius: 7px;
-            color: #526176;
+            color: var(--pw-ink-526176);
             background: var(--color-surface);
             text-align: left;
             font: inherit;
@@ -287,8 +287,8 @@ export default function ProjectViewTabs({
             align-items: center;
             justify-content: center;
             border-radius: 7px;
-            color: #0b1f3b;
-            background: #eaf0f7;
+            color: var(--pw-ink-0b1f3b);
+            background: var(--pw-fill-eaf0f7);
           }
 
           .sheet-copy {
@@ -299,7 +299,7 @@ export default function ProjectViewTabs({
           }
 
           .sheet-copy strong { font-size: 0.84rem; }
-          .sheet-copy small { color: #5b6b82; font-size: 12px; line-height: 1.3; }
+          .sheet-copy small { color: var(--pw-ink-5b6b82); font-size: 12px; line-height: 1.3; }
           .current-label { color: var(--color-selected-ink); font-size: 12px; font-weight: 750; }
           .sheet-item:focus-visible, .sheet-close:focus-visible {
             outline: 2px solid var(--color-gold-on-navy);

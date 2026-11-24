@@ -282,7 +282,7 @@ export default function OverviewView({
                                 <span className="text-secondary"> · {complianceSummary.next.stageName}</span>
                             </div>
                         ) : complianceSummary.total > 0 ? (
-                            <div className="text-xs font-medium text-green-700">All certificates and tasks are done.</div>
+                            <div className="text-xs font-medium text-[var(--pw-ink-green-700)]">All certificates and tasks are done.</div>
                         ) : (
                             <div className="text-xs text-secondary">No stages switched on yet.</div>
                         )}
@@ -305,7 +305,7 @@ export default function OverviewView({
                             </div>
                             <div className="flex justify-between items-center text-xs">
                                 <span className="text-secondary">Geotech report</span>
-                                <span className={`font-medium ${project.geotech_report_uploaded ? 'text-green-700' : 'text-slate-600'}`}>
+                                <span className={`font-medium ${project.geotech_report_uploaded ? 'text-[var(--pw-ink-green-700)]' : 'text-[var(--pw-ink-slate-600)]'}`}>
                                     {project.geotech_report_uploaded ? 'Uploaded' : 'Not uploaded'}
                                 </span>
                             </div>

@@ -91,7 +91,7 @@
     padding: var(--space-4) var(--space-6);
     border: 0;
     border-bottom: 1px solid var(--color-border-light);
-    background: #f8fafc;
+    background: var(--pw-fill-f8fafc);
     cursor: pointer;
 }
 
@@ -266,7 +266,7 @@
 }
 
 .notification-centre .settings-card-header {
-    background: #f8fafc;
+    background: var(--pw-fill-f8fafc);
 }
 
 /* Header Row */
@@ -755,7 +755,7 @@
     padding: 12px 14px 12px 18px;
     border: 1px solid var(--color-border);
     border-radius: 14px;
-    background: rgba(255, 255, 255, 0.96);
+    background: color-mix(in srgb, var(--pw-fill-ffffff) 96%, transparent);
     backdrop-filter: blur(6px);
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
     font-size: 0.86rem;

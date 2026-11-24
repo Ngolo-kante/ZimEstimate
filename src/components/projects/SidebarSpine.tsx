@@ -141,7 +141,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                     {!isCollapsed && (
                         <DropdownMenuContent align="start" className="min-w-64"><DropdownMenuGroup>
                             {isLoadingProjects ? (
-                                <div className="p-4 text-center text-slate-400 text-sm">Loading...</div>
+                                <div className="p-4 text-center text-[var(--pw-ink-slate-400)] text-sm">Loading...</div>
                             ) : (
                                 <>
                                     {projects.map((p) => (
@@ -157,7 +157,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                                     ))}
 
                                     {projects.length === 0 && (
-                                        <div className="p-2 text-center text-slate-400 text-xs">No other projects found</div>
+                                        <div className="p-2 text-center text-[var(--pw-ink-slate-400)] text-xs">No other projects found</div>
                                     )}
                                 </>
                             )}
@@ -237,8 +237,8 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         align-items: center;
                         gap: 12px;
                         width: 100%;
-                        background: rgba(255, 255, 255, 0.9);
-                        border: 1px solid #d4e6ff;
+                        background: color-mix(in srgb, var(--pw-fill-ffffff) 90%, transparent);
+                        border: 1px solid var(--pw-line-d4e6ff);
                         padding: 12px;
                         border-radius: 14px;
                         cursor: pointer;
@@ -258,7 +258,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
 
                     @media (hover: hover) and (pointer: fine) {
                       .switcher-btn:hover {
-                          border-color: #a7ccf9;
+                          border-color: var(--pw-line-a7ccf9);
                           box-shadow: 0 10px 22px rgba(31, 96, 174, 0.14);
                           transform: translateY(-1px);
                       }
@@ -273,8 +273,8 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                     .project-icon {
                         width: 40px;
                         height: 40px;
-                        background: linear-gradient(135deg, #ecf4ff, #d6e8ff);
-                        color: #19508a;
+                        background: linear-gradient(135deg, var(--pw-fill-ecf4ff), var(--pw-fill-d6e8ff));
+                        color: var(--pw-ink-19508a);
                         display: flex;
                         align-items: center;
                         justify-content: center;
@@ -300,7 +300,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         font-size: 12px;
                         text-transform: uppercase;
                         letter-spacing: 0.05em;
-                        color: #4b5f7a;
+                        color: var(--pw-ink-4b5f7a);
                         font-weight: 600;
                         margin-bottom: 2px;
                     }
@@ -308,14 +308,14 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                     .name {
                         font-size: 0.92rem;
                         font-weight: 600;
-                        color: #0f294b;
+                        color: var(--pw-ink-0f294b);
                         white-space: nowrap;
                         overflow: hidden;
                         text-overflow: ellipsis;
                     }
 
                     .caret {
-                        color: #7891b5;
+                        color: var(--pw-ink-7891b5);
                         transition: transform 0.2s, opacity 0.2s;
                         flex-shrink: 0;
                     }
@@ -334,8 +334,8 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         top: calc(100% - 10px);
                         left: 16px;
                         right: 16px;
-                        background: white;
-                        border: 1px solid #d3e4f8;
+                        background: var(--pw-fill-ffffff);
+                        border: 1px solid var(--pw-line-d3e4f8);
                         border-radius: 14px;
                         box-shadow: 0 18px 36px rgba(15, 52, 94, 0.12);
                         z-index: 50;
@@ -361,7 +361,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                         gap: 12px;
                         padding: 10px 12px;
                         font-size: 0.9rem;
-                        color: #516b8e;
+                        color: var(--pw-ink-516b8e);
                         border-radius: 10px;
                         cursor: pointer;
                         transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
@@ -370,8 +370,8 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
 
                     @media (hover: hover) and (pointer: fine) {
                       .dropdown-item:hover {
-                          background: #eff6ff;
-                          color: #173f6a;
+                          background: var(--pw-fill-eff6ff);
+                          color: var(--pw-ink-173f6a);
                           transform: translateX(2px);
                       }
                     }
@@ -383,8 +383,8 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
                     }
 
                     .dropdown-item.active {
-                        background: #e7f2ff;
-                        color: #17467a;
+                        background: var(--pw-fill-e7f2ff);
+                        color: var(--pw-ink-17467a);
                         font-weight: 600;
                     }
 
@@ -396,7 +396,7 @@ export default function SidebarSpine({ project, activeView, onViewChange }: Side
 
                     .dropdown-item.view-all {
                         justify-content: center;
-                        color: #225f9b;
+                        color: var(--pw-ink-225f9b);
                         font-size: 0.85rem;
                         font-weight: 600;
                     }

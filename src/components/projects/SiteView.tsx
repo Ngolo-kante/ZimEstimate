@@ -465,7 +465,7 @@ export default function SiteView({ target, embedded = false, onInvite }: SiteVie
         .site :global(.step-edit) { display: flex; align-items: center; gap: 10px; padding: 6px 4px 6px 8px; border-radius: 8px; background: var(--color-background); }
         .site :global(.step-edit .task-title) { font-size: 0.9rem; color: var(--color-text); }
         .site :global(button.icon-btn) { flex-shrink: 0; width: 44px; padding: 0; color: var(--color-text-secondary); }
-        .site :global(button.icon-btn:hover) { color: var(--color-error, #b91c1c); border-color: currentColor; }
+        .site :global(button.icon-btn:hover) { color: var(--color-error, var(--pw-ink-b91c1c)); border-color: currentColor; }
         .site :global(.step-add) { display: flex; gap: 8px; margin-top: 10px; }
         .site :global(.step-add input) { flex: 1; }
         .site :global(h2) { margin: 0 0 12px; font-size: 1.05rem; font-weight: 700; color: var(--color-text); }
@@ -477,7 +477,7 @@ export default function SiteView({ target, embedded = false, onInvite }: SiteVie
         .site :global(.stage-top strong) { color: var(--color-text); }
         .site :global(select), .site :global(input) { padding: 9px 10px; min-height: 44px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-size: max(0.9rem, 16px); min-width: 0; }
         .site :global(.chip) { font-size: 0.75rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--color-background); color: var(--color-text-secondary); }
-        .site :global(.chip.completed) { color: #166534; }
+        .site :global(.chip.completed) { color: var(--pw-ink-166534); }
         .site :global(.chip.in_progress) { color: var(--color-accent); }
         .site :global(.tasks) { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; }
         .site :global(.task) { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; min-height: 44px; padding: 8px; border: none; border-radius: 8px; background: none; color: var(--color-text); text-align: left; font-size: 0.9rem; font-weight: 500; cursor: pointer; }

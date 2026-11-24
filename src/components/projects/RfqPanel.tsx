@@ -60,11 +60,11 @@ const STAGE_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  open: 'bg-blue-50 text-blue-700 border-blue-200',
-  quoted: 'bg-amber-50 text-amber-700 border-amber-200',
-  accepted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  expired: 'bg-slate-100 text-slate-500 border-slate-200',
-  cancelled: 'bg-slate-100 text-slate-500 border-slate-200',
+  open: 'bg-[var(--pw-fill-blue-50)] text-[var(--pw-ink-blue-700)] border-[var(--pw-line-blue-200)]',
+  quoted: 'bg-[var(--pw-fill-amber-50)] text-[var(--pw-ink-amber-700)] border-[var(--pw-line-amber-200)]',
+  accepted: 'bg-[var(--pw-fill-emerald-50)] text-[var(--pw-ink-emerald-700)] border-[var(--pw-line-emerald-200)]',
+  expired: 'bg-[var(--pw-fill-slate-100)] text-[var(--pw-ink-slate-500)] border-[var(--pw-line-slate-200)]',
+  cancelled: 'bg-[var(--pw-fill-slate-100)] text-[var(--pw-ink-slate-500)] border-[var(--pw-line-slate-200)]',
 };
 
 type Props = {
@@ -245,10 +245,10 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
   // ── Sent confirmation ──────────────────────────────────────────────────────
   if (mode === 'sent') {
     return (
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-6 text-center">
-        <CheckCircle size={40} weight="fill" className="mx-auto text-emerald-500" />
-        <p className="mt-3 text-base font-bold text-slate-900">Request sent</p>
-        <p className="mt-1 text-sm text-slate-600">
+      <div className="rounded-lg border border-[var(--pw-line-emerald-200)] bg-[var(--pw-fill-emerald-50)] p-6 text-center">
+        <CheckCircle size={40} weight="fill" className="mx-auto text-[var(--pw-ink-emerald-500)]" />
+        <p className="mt-3 text-base font-bold text-[var(--pw-ink-slate-900)]">Request sent</p>
+        <p className="mt-1 text-sm text-[var(--pw-ink-slate-600)]">
           {lastSent?.items ?? 0} {lastSent?.items === 1 ? 'item' : 'items'} sent to{' '}
           {lastSent?.suppliers ?? 0} {lastSent?.suppliers === 1 ? 'supplier' : 'suppliers'}.
           {lastSent?.suppliers === 0 && ' No supplier matched these materials yet, so you may want to contact merchants directly.'}
@@ -271,7 +271,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
         <button
           type="button"
           onClick={() => setMode('list')}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--pw-ink-slate-600)] hover:text-[var(--pw-ink-slate-900)]"
         >
           <ArrowLeft size={16} weight="bold" /> Back to requests
         </button>
@@ -284,29 +284,29 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
           />
         ) : (
           <>
-            <div className="rounded-lg border border-slate-200 bg-white">
-              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+            <div className="rounded-lg border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)]">
+              <div className="flex items-center justify-between border-b border-[var(--pw-line-slate-100)] px-4 py-3">
                 <div>
-                  <p className="text-sm font-bold text-slate-900">Choose what to quote</p>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-sm font-bold text-[var(--pw-ink-slate-900)]">Choose what to quote</p>
+                  <p className="text-xs text-[var(--pw-ink-slate-500)] mt-0.5">
                     {selectedItems.length} of {quotableItems.length} selected
                   </p>
                 </div>
               </div>
 
-              <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
+              <div className="max-h-96 overflow-y-auto divide-y divide-[var(--pw-line-slate-100)]">
                 {Object.entries(grouped).map(([stage, stageItems]) => {
                   const allOn = stageItems.every((i) => selectedIds.has(i.id));
                   return (
                     <div key={stage}>
-                      <div className="flex items-center justify-between bg-slate-50 px-4 py-2">
-                        <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                      <div className="flex items-center justify-between bg-[var(--pw-fill-slate-50)] px-4 py-2">
+                        <span className="text-xs font-bold uppercase tracking-wide text-[var(--pw-ink-slate-500)]">
                           {STAGE_LABELS[stage] ?? stage}
                         </span>
                         <button
                           type="button"
                           onClick={() => toggleStage(stage)}
-                          className="text-xs font-bold text-blue-600 hover:underline"
+                          className="text-xs font-bold text-[var(--pw-ink-blue-600)] hover:underline"
                         >
                           {allOn ? 'Clear stage' : 'Select stage'}
                         </button>
@@ -314,18 +314,18 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                       {stageItems.map((item) => (
                         <label
                           key={item.id}
-                          className="flex cursor-pointer items-center gap-3 px-4 py-2.5 hover:bg-slate-50"
+                          className="flex cursor-pointer items-center gap-3 px-4 py-2.5 hover:bg-[var(--pw-fill-slate-50)]"
                         >
                           <input
                             type="checkbox"
-                            className="h-4 w-4 flex-shrink-0 rounded border-slate-300"
+                            className="h-4 w-4 flex-shrink-0 rounded border-[var(--pw-line-slate-300)]"
                             checked={selectedIds.has(item.id)}
                             onChange={() => toggleItem(item.id)}
                           />
-                          <span className="min-w-0 flex-1 truncate text-sm text-slate-800">
+                          <span className="min-w-0 flex-1 truncate text-sm text-[var(--pw-ink-slate-800)]">
                             {item.material_name}
                           </span>
-                          <span className="flex-shrink-0 text-xs tabular-nums text-slate-500">
+                          <span className="flex-shrink-0 text-xs tabular-nums text-[var(--pw-ink-slate-500)]">
                             {formatQuantity(Number(item.quantity))} {item.unit}
                           </span>
                         </label>
@@ -338,26 +338,26 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="rfq-address" className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label htmlFor="rfq-address" className="block text-xs font-bold text-[var(--pw-ink-slate-700)] mb-1.5">
                   Deliver to
                 </label>
                 <input
                   id="rfq-address"
-                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900"
+                  className="min-h-11 w-full rounded-lg border border-[var(--pw-line-slate-300)] bg-[var(--pw-fill-white)] px-3.5 py-2.5 text-sm text-[var(--pw-ink-slate-900)]"
                   value={deliveryAddress}
                   onChange={(e) => { setDeliveryAddress(e.target.value); setMatches(null); }}
                   placeholder="Site address"
                 />
-                <p className="mt-1 text-xs text-slate-500">Used to favour nearby suppliers.</p>
+                <p className="mt-1 text-xs text-[var(--pw-ink-slate-500)]">Used to favour nearby suppliers.</p>
               </div>
               <div>
-                <label htmlFor="rfq-date" className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label htmlFor="rfq-date" className="block text-xs font-bold text-[var(--pw-ink-slate-700)] mb-1.5">
                   Needed by
                 </label>
                 <input
                   id="rfq-date"
                   type="date"
-                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900"
+                  className="min-h-11 w-full rounded-lg border border-[var(--pw-line-slate-300)] bg-[var(--pw-fill-white)] px-3.5 py-2.5 text-sm text-[var(--pw-ink-slate-900)]"
                   value={requiredBy}
                   onChange={(e) => setRequiredBy(e.target.value)}
                 />
@@ -365,13 +365,13 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
             </div>
 
             <div>
-              <label htmlFor="rfq-notes" className="block text-xs font-bold text-slate-700 mb-1.5">
-                Notes for suppliers <span className="font-normal text-slate-400">(optional)</span>
+              <label htmlFor="rfq-notes" className="block text-xs font-bold text-[var(--pw-ink-slate-700)] mb-1.5">
+                Notes for suppliers <span className="font-normal text-[var(--pw-ink-slate-400)]">(optional)</span>
               </label>
               <textarea
                 id="rfq-notes"
                 rows={3}
-                className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900"
+                className="min-h-11 w-full rounded-lg border border-[var(--pw-line-slate-300)] bg-[var(--pw-fill-white)] px-3.5 py-2.5 text-sm text-[var(--pw-ink-slate-900)]"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Access, delivery times, anything they should know."
@@ -379,15 +379,15 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
             </div>
 
             {matches && (
-              <div className="rounded-lg border border-slate-200 bg-white p-4">
-                <p className="text-sm font-bold text-slate-900">
+              <div className="rounded-lg border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)] p-4">
+                <p className="text-sm font-bold text-[var(--pw-ink-slate-900)]">
                   {matches.length > 0
                     ? `This will reach ${matches.length} ${matches.length === 1 ? 'supplier' : 'suppliers'}`
                     : 'No supplier matches these materials yet'}
                 </p>
                 {matches.length === 0 ? (
-                  <p className="mt-1.5 flex items-start gap-2 text-xs text-slate-600">
-                    <Warning size={14} className="mt-0.5 flex-shrink-0 text-amber-500" />
+                  <p className="mt-1.5 flex items-start gap-2 text-xs text-[var(--pw-ink-slate-600)]">
+                    <Warning size={14} className="mt-0.5 flex-shrink-0 text-[var(--pw-ink-amber-500)]" />
                     You can still send it — the request is saved and suppliers who join later
                     will not see it, so you may want to contact merchants directly for now.
                   </p>
@@ -395,8 +395,8 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                   <ul className="mt-2 space-y-1.5">
                     {matches.map((m) => (
                       <li key={m.supplier.id} className="flex items-start justify-between gap-3 text-xs">
-                        <span className="font-semibold text-slate-800">{m.supplier.name}</span>
-                        <span className="text-right text-slate-500">{m.reasons.join(' · ')}</span>
+                        <span className="font-semibold text-[var(--pw-ink-slate-800)]">{m.supplier.name}</span>
+                        <span className="text-right text-[var(--pw-ink-slate-500)]">{m.reasons.join(' · ')}</span>
                       </li>
                     ))}
                   </ul>
@@ -409,7 +409,7 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                 type="button"
                 onClick={handlePreview}
                 disabled={isMatching || selectedItems.length === 0}
-                className="min-h-11 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                className="min-h-11 rounded-lg border border-[var(--pw-line-slate-300)] px-4 py-2.5 text-sm font-bold text-[var(--pw-ink-slate-700)] hover:bg-[var(--pw-fill-slate-50)] disabled:opacity-50"
               >
                 {isMatching ? 'Checking…' : 'Who will get this?'}
               </button>
@@ -434,8 +434,8 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
     <div className="space-y-4 max-sm:rounded-xl max-sm:bg-[var(--color-surface)] max-sm:p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-bold text-slate-900">Requests for quotation</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <h2 className="text-sm font-bold text-[var(--pw-ink-slate-900)]">Requests for quotation</h2>
+          <p className="text-xs text-[var(--pw-ink-slate-500)] mt-0.5">
             Ask suppliers to price items straight from this BOQ.
           </p>
         </div>
@@ -460,19 +460,19 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
             const quotes = rfq.rfq_quotes ?? [];
             const isOpen = expandedRfq === rfq.id;
             return (
-              <div key={rfq.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+              <div key={rfq.id} className="overflow-hidden rounded-lg border border-[var(--pw-line-slate-200)] bg-[var(--pw-fill-white)]">
                 <button
                   type="button"
                   onClick={() => setExpandedRfq(isOpen ? null : rfq.id)}
                   aria-expanded={isOpen}
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-50"
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-[var(--pw-fill-slate-50)]"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-slate-900">
+                    <p className="truncate text-sm font-bold text-[var(--pw-ink-slate-900)]">
                       {rfq.rfq_items?.length ?? 0} {(rfq.rfq_items?.length ?? 0) === 1 ? 'item' : 'items'}
                       {rfq.required_by ? ` · needed by ${formatDateOnly(rfq.required_by)}` : ''}
                     </p>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-xs text-[var(--pw-ink-slate-500)] mt-0.5">
                       Sent {new Date(rfq.created_at).toLocaleDateString()} ·{' '}
                       {rfq.rfq_recipients?.length ?? 0} contacted ·{' '}
                       {quotes.length} {quotes.length === 1 ? 'quote' : 'quotes'} back
@@ -488,14 +488,14 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                 </button>
 
                 {isOpen && (
-                  <div className="border-t border-slate-100 px-4 py-3 space-y-3">
+                  <div className="border-t border-[var(--pw-line-slate-100)] px-4 py-3 space-y-3">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Items</p>
+                      <p className="text-xs font-bold uppercase tracking-wide text-[var(--pw-ink-slate-500)]">Items</p>
                       <ul className="mt-1.5 space-y-1">
                         {(rfq.rfq_items ?? []).map((item) => (
-                          <li key={item.id} className="flex justify-between gap-3 text-xs text-slate-700">
+                          <li key={item.id} className="flex justify-between gap-3 text-xs text-[var(--pw-ink-slate-700)]">
                             <span className="truncate">{item.material_name}</span>
-                            <span className="flex-shrink-0 tabular-nums text-slate-500">
+                            <span className="flex-shrink-0 tabular-nums text-[var(--pw-ink-slate-500)]">
                               {formatQuantity(Number(item.quantity))} {item.unit ?? ''}
                             </span>
                           </li>
@@ -504,9 +504,9 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                     </div>
 
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Quotes</p>
+                      <p className="text-xs font-bold uppercase tracking-wide text-[var(--pw-ink-slate-500)]">Quotes</p>
                       {quotes.length === 0 ? (
-                        <p className="mt-1.5 text-xs text-slate-500">
+                        <p className="mt-1.5 text-xs text-[var(--pw-ink-slate-500)]">
                           Nothing back yet. Suppliers are notified by email when they are sent a request.
                         </p>
                       ) : (
@@ -518,37 +518,37 @@ export default function RfqPanel({ project, items, rfqs: initialRfqs, onRefresh 
                                 key={quote.id}
                                 className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border p-2.5 ${
                                   quote.status === 'accepted'
-                                    ? 'border-emerald-300 bg-emerald-50'
-                                    : 'border-slate-200'
+                                    ? 'border-[var(--pw-line-emerald-300)] bg-[var(--pw-fill-emerald-50)]'
+                                    : 'border-[var(--pw-line-slate-200)]'
                                 }`}
                               >
                                 <div className="min-w-0">
-                                  <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
-                                    <Storefront size={14} className="text-slate-400" />
+                                  <p className="flex items-center gap-1.5 text-sm font-semibold text-[var(--pw-ink-slate-900)]">
+                                    <Storefront size={14} className="text-[var(--pw-ink-slate-400)]" />
                                     {quote.supplier?.name ?? 'Supplier'}
                                     {index === 0 && quotes.length > 1 && quote.status !== 'accepted' && (
-                                      <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[12px] font-bold text-blue-700">
+                                      <span className="rounded bg-[var(--pw-fill-blue-50)] px-1.5 py-0.5 text-[12px] font-bold text-[var(--pw-ink-blue-700)]">
                                         Lowest
                                       </span>
                                     )}
                                   </p>
-                                  <p className="text-xs text-slate-500">
+                                  <p className="text-xs text-[var(--pw-ink-slate-500)]">
                                     {quote.delivery_days ? `${quote.delivery_days} day delivery` : 'Delivery not stated'}
                                   </p>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                  <span className="text-sm font-bold tabular-nums text-slate-900">
+                                  <span className="text-sm font-bold tabular-nums text-[var(--pw-ink-slate-900)]">
                                     {formatPrice(Number(quote.total_usd ?? 0), Number(quote.total_zwg ?? 0))}
                                   </span>
                                   {quote.status === 'accepted' ? (
-                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700">
+                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-[var(--pw-ink-emerald-700)]">
                                       <CheckCircle size={14} weight="fill" /> Accepted
                                     </span>
                                   ) : (
                                     <button
                                       type="button"
                                       onClick={() => handleAccept(rfq.id, quote.id)}
-                                      className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-white"
+                                      className="rounded-lg border border-[var(--pw-line-slate-300)] px-2.5 py-1 text-xs font-bold text-[var(--pw-ink-slate-700)] hover:bg-[var(--pw-fill-white)]"
                                     >
                                       Accept
                                     </button>

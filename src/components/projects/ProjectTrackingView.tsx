@@ -586,14 +586,14 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                 .tracking-header h2 {
                     margin: 0;
                     font-size: 1.75rem;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                     font-weight: 700;
                     letter-spacing: -0.02em;
                 }
 
                 .tracking-header p {
                     margin: 4px 0 0;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     font-size: 1rem;
                 }
 
@@ -605,7 +605,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                 }
 
                 .summary-card {
-                    background: #ffffff;
+                    background: var(--pw-fill-ffffff);
                     border: 1px solid rgba(226, 232, 240, 0.6);
                     border-radius: 20px;
                     padding: 16px 20px;
@@ -626,30 +626,30 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
 
                 .summary-card.alert {
                     border-color: rgba(239, 68, 68, 0.2);
-                    background: #fef2f2;
+                    background: var(--pw-fill-fef2f2);
                 }
 
                 .summary-card .label {
                     font-size: 0.75rem;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     font-weight: 700;
                 }
 
                 .summary-card .value {
                     font-size: 1.5rem;
                     font-weight: 700;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                     line-height: 1;
                 }
 
                 .summary-card.alert .value {
-                    color: #ef4444;
+                    color: var(--pw-ink-ef4444);
                 }
 
                 .progress-card {
-                    background: #ffffff;
+                    background: var(--pw-fill-ffffff);
                     border: 1px solid rgba(226, 232, 240, 0.6);
                     border-radius: 20px;
                     padding: 24px;
@@ -665,12 +665,12 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     justify-content: space-between;
                     font-size: 0.95rem;
                     font-weight: 600;
-                    color: #334155;
+                    color: var(--pw-ink-334155);
                 }
 
                 .progress-bar {
                     height: 10px;
-                    background: #f1f5f9;
+                    background: var(--pw-fill-f1f5f9);
                     border-radius: 999px;
                     overflow: hidden;
                 }
@@ -687,12 +687,12 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     gap: 24px;
                     flex-wrap: wrap;
                     font-size: 0.85rem;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     font-weight: 500;
                 }
 
                 .table-card {
-                    background: #ffffff;
+                    background: var(--pw-fill-ffffff);
                     border: 1px solid rgba(226, 232, 240, 0.6);
                     border-radius: 20px;
                     overflow: hidden;
@@ -706,16 +706,16 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     align-items: center;
                     gap: 16px;
                     padding: 16px 24px;
-                    background: #ffffff;
-                    border-bottom: 1px solid #f1f5f9;
+                    background: var(--pw-fill-ffffff);
+                    border-bottom: 1px solid var(--pw-line-f1f5f9);
                 }
 
                 .search {
                     display: flex;
                     align-items: center;
                     gap: 10px;
-                    background: #f8fafc;
-                    border: 1px solid #e2e8f0;
+                    background: var(--pw-fill-f8fafc);
+                    border: 1px solid var(--pw-line-e2e8f0);
                     border-radius: 10px;
                     padding: 8px 12px;
                     flex: 1;
@@ -725,7 +725,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
 
                 .search:focus-within {
                     border-color: #3b82f6;
-                    background: #ffffff;
+                    background: var(--pw-fill-ffffff);
                     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
                 }
 
@@ -735,16 +735,16 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     outline: none;
                     font-size: 0.9rem;
                     width: 100%;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                 }
 
                 select {
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid var(--pw-line-e2e8f0);
                     border-radius: 10px;
                     padding: 8px 12px;
                     font-size: 0.9rem;
-                    background: #ffffff;
-                    color: #0f172a;
+                    background: var(--pw-fill-ffffff);
+                    color: var(--pw-ink-0f172a);
                     cursor: pointer;
                     outline: none;
                     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
@@ -769,18 +769,18 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     padding: 12px 24px;
-                    background: #f8fafc;
-                    border-bottom: 1px solid #e2e8f0;
+                    background: var(--pw-fill-f8fafc);
+                    border-bottom: 1px solid var(--pw-line-e2e8f0);
                     white-space: nowrap;
                 }
 
                 .tracking-table td {
                     padding: 16px 24px;
-                    border-bottom: 1px solid #f1f5f9;
+                    border-bottom: 1px solid var(--pw-line-f1f5f9);
                     font-size: 0.9rem;
-                    color: #334155;
+                    color: var(--pw-ink-334155);
                     vertical-align: middle;
                 }
 
@@ -800,11 +800,11 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                 }
 
                 .row.status-over_purchased {
-                    background: #fef2f2;
+                    background: var(--pw-fill-fef2f2);
                 }
 
                 .row.status-over_purchased td {
-                    color: #991b1b;
+                    color: var(--pw-ink-991b1b);
                 }
 
                 .item-cell {
@@ -818,13 +818,13 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
           -webkit-line-clamp: 2;
           overflow: hidden;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                     font-size: 0.95rem;
                 }
 
                 .item-sub {
                     font-size: 0.75rem;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     margin-top: 4px;
                 }
 
@@ -834,13 +834,13 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     gap: 8px;
                     margin-top: 8px;
                     font-size: 12px;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                 }
 
                 .progress-track {
                     flex: 1;
                     height: 4px;
-                    background: #e2e8f0;
+                    background: var(--pw-fill-e2e8f0);
                     border-radius: 999px;
                     overflow: hidden;
                     max-width: 80px;
@@ -885,7 +885,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     border: none;
                     cursor: pointer;
                     font-size: 0.8rem;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     padding: 6px 10px;
                     border-radius: 6px;
                     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
@@ -894,35 +894,35 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
 
                 @media (hover: hover) and (pointer: fine) {
                   .history-btn:hover {
-                      background: #f1f5f9;
-                      color: #334155;
+                      background: var(--pw-fill-f1f5f9);
+                      color: var(--pw-ink-334155);
                   }
                 }
 
                 .history-row td {
                     padding: 0;
-                    background: #f8fafc;
-                    border-bottom: 1px solid #e2e8f0;
+                    background: var(--pw-fill-f8fafc);
+                    border-bottom: 1px solid var(--pw-line-e2e8f0);
                 }
 
                 .history-panel {
                     padding: 24px;
                     border-left: 4px solid #3b82f6;
-                    background: #fcfcfc;
+                    background: var(--pw-fill-fcfcfc);
                 }
 
                 .history-empty {
                     padding: 16px;
                     text-align: center;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     font-style: italic;
                     font-size: 0.9rem;
                 }
 
                 .history-table {
                     width: 100%;
-                    background: #ffffff;
-                    border: 1px solid #e2e8f0;
+                    background: var(--pw-fill-ffffff);
+                    border: 1px solid var(--pw-line-e2e8f0);
                     border-radius: 8px;
                     overflow: hidden;
                 }
@@ -931,15 +931,15 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     text-align: left;
                     font-size: 12px;
                     text-transform: uppercase;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     padding: 10px 16px;
-                    background: #f1f5f9;
-                    border-bottom: 1px solid #e2e8f0;
+                    background: var(--pw-fill-f1f5f9);
+                    border-bottom: 1px solid var(--pw-line-e2e8f0);
                 }
 
                 .history-table td {
                     padding: 10px 16px;
-                    border-bottom: 1px solid #f1f5f9;
+                    border-bottom: 1px solid var(--pw-line-f1f5f9);
                     font-size: 0.85rem;
                 }
 
@@ -948,7 +948,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     align-items: center;
                     gap: 8px;
                     font-weight: 500;
-                    color: #334155;
+                    color: var(--pw-ink-334155);
                 }
 
                 .icon-btn {
@@ -957,10 +957,10 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    background: #ffffff;
-                    border: 1px solid #e2e8f0;
+                    background: var(--pw-fill-ffffff);
+                    border: 1px solid var(--pw-line-e2e8f0);
                     border-radius: 6px;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     cursor: pointer;
                     margin-left: 4px;
                     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
@@ -968,18 +968,18 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
 
                 @media (hover: hover) and (pointer: fine) {
                   .icon-btn:hover {
-                      border-color: #cbd5e1;
-                      color: #334155;
-                      background: #f8fafc;
+                      border-color: var(--pw-line-cbd5e1);
+                      color: var(--pw-ink-334155);
+                      background: var(--pw-fill-f8fafc);
                   }
                 }
 @media (hover: hover) and (pointer: fine) {
 
 
                 .icon-btn.danger:hover {
-                    border-color: #fecaca;
-                    color: #ef4444;
-                    background: #fef2f2;
+                    border-color: var(--pw-line-fecaca);
+                    color: var(--pw-ink-ef4444);
+                    background: var(--pw-fill-fef2f2);
                 }
 }
 
@@ -1004,7 +1004,7 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                 }
 
                 .modal {
-                    background: #ffffff;
+                    background: var(--pw-fill-ffffff);
                     border-radius: 24px;
                     width: 100%;
                     max-width: 500px;
@@ -1020,20 +1020,20 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
 
                 .modal-header {
                     padding: 24px;
-                    border-bottom: 1px solid #f1f5f9;
-                    background: #fff;
+                    border-bottom: 1px solid var(--pw-line-f1f5f9);
+                    background: var(--pw-fill-ffffff);
                 }
 
                 .modal-header h3 {
                     margin: 0;
                     font-size: 1.25rem;
                     font-weight: 700;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                 }
 
                 .modal-header p {
                     margin: 4px 0 0;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     font-size: 0.9rem;
                 }
 
@@ -1053,12 +1053,12 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
                 .field label {
                     font-size: 0.85rem;
                     font-weight: 600;
-                    color: #334155;
+                    color: var(--pw-ink-334155);
                 }
 
                 .field input {
                     padding: 10px 14px;
-                    border: 1px solid #cbd5e1;
+                    border: 1px solid var(--pw-line-cbd5e1);
                     border-radius: 10px;
                     font-size: 1rem;
                     transition: border 0.2s;
@@ -1078,8 +1078,8 @@ export default function ProjectTrackingView({ projectId, items, onItemsRefresh }
 
                 .modal-actions {
                     padding: 20px 24px;
-                    background: #f8fafc;
-                    border-top: 1px solid #f1f5f9;
+                    background: var(--pw-fill-f8fafc);
+                    border-top: 1px solid var(--pw-line-f1f5f9);
                     display: flex;
                     justify-content: flex-end;
                     gap: 12px;

@@ -103,8 +103,8 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
             <style jsx>{`
                 .document-card {
                     min-width: 0;
-                    background: #ffffff;
-                    border: 1px solid #d7e6f5;
+                    background: var(--pw-fill-ffffff);
+                    border: 1px solid var(--pw-line-d7e6f5);
                     border-radius: 16px;
                     padding: 20px;
                     transition: none;
@@ -117,7 +117,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
 
                 @media (hover: hover) and (pointer: fine) {
                   .document-card:hover {
-                      border-color: #b9d4ef;
+                      border-color: var(--pw-line-b9d4ef);
                       box-shadow: 0 12px 20px -8px rgba(22, 77, 131, 0.24), 0 4px 8px -2px rgba(22, 77, 131, 0.08);
 
                   }
@@ -139,14 +139,14 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     border-radius: 12px;
                 }
 
-                .file-icon.default { background: var(--color-background); color: var(--color-primary); }
+                .file-icon.default { background: var(--color-background); color: var(--color-heading); }
                 .file-icon.image { background: var(--color-info-bg); color: var(--color-info-fg); }
                 .file-icon.pdf { background: var(--color-danger-bg); color: var(--color-danger-fg); }
-                .saved-label { flex-shrink: 0; font-size: .8rem; color: #475569; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; }
-                .thumbnail { padding: 0; border: 0; background: #f1f5f9; border-radius: 6px; cursor: pointer; overflow: hidden; }
+                .saved-label { flex-shrink: 0; font-size: .8rem; color: var(--pw-ink-475569); background: var(--pw-fill-f1f5f9); padding: 4px 8px; border-radius: 4px; }
+                .thumbnail { padding: 0; border: 0; background: var(--pw-fill-f1f5f9); border-radius: 6px; cursor: pointer; overflow: hidden; }
                 .thumbnail img { display: block; width: 100%; height: 120px; object-fit: cover; }
                 .document-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-                .document-actions button { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; color: #0b1f3b; font-size: .8rem; cursor: pointer; }
+                .document-actions button { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 8px; border: 1px solid var(--pw-line-cbd5e1); border-radius: 6px; background: var(--pw-fill-ffffff); color: var(--pw-ink-0b1f3b); font-size: .8rem; cursor: pointer; }
                 .document-actions :global(svg) { flex-shrink: 0; }
                 .document-actions .open-document { color: var(--color-text-inverse); border-color: var(--color-accent-dark); background: var(--color-accent-dark); font-weight: 600; }
                 .document-actions .danger { color: var(--color-danger-fg); border-color: transparent; background: transparent; }
@@ -164,7 +164,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                 .file-name {
                     font-size: 0.95rem;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                     margin: 0;
                     overflow: hidden;
                     overflow-wrap: anywhere;
@@ -174,7 +174,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
 
                 .file-description {
                     font-size: 0.8rem;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     margin: 4px 0 0 0;
                     overflow: hidden;
                     overflow-wrap: anywhere;
@@ -188,7 +188,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     flex-wrap: wrap;
                     gap: 8px;
                     padding-top: 16px;
-                    border-top: 1px solid #f1f5f9;
+                    border-top: 1px solid var(--pw-line-f1f5f9);
                 }
                 .document-card[data-category="permit"] .card-footer :global([data-slot="badge"]) {
                     background: var(--color-selected-surface);
@@ -200,7 +200,7 @@ export default function DocumentCard({ document, onDelete, onView, onDownload }:
                     white-space: nowrap;
                     font-variant-numeric: tabular-nums;
                     font-size: 0.8rem;
-                    color: #475569;
+                    color: var(--pw-ink-475569);
                     font-weight: 500;
                 }
 

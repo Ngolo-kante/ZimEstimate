@@ -583,7 +583,7 @@ export default function BudgetPlanner({
           margin-top: 3px;
           max-width: 145px;
           font-size: 0.9375rem;
-          color: var(--color-primary);
+          color: var(--color-heading);
           overflow-wrap: normal;
           white-space: nowrap;
         }
@@ -944,8 +944,8 @@ export default function BudgetPlanner({
         .progress-caption span { min-width: 0; }
 
         .status-attention {
-          color: #92400e;
-          background: #fef3c7;
+          color: var(--pw-ink-92400e);
+          background: var(--pw-fill-fef3c7);
         }
 
         .inline-edit {
@@ -999,11 +999,11 @@ export default function BudgetPlanner({
         }
 
         .save-note.ok {
-          color: #15803d;
+          color: var(--pw-ink-15803d);
         }
 
         .save-note.bad {
-          color: var(--color-error, #b91c1c);
+          color: var(--color-error, var(--pw-ink-b91c1c));
         }
 
         .pace-note {

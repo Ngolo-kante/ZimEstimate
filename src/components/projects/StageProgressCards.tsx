@@ -23,7 +23,7 @@ interface StageProgressCardsProps {
 }
 
 const statusConfig: Record<StageStatus, { color: string; bg: string; label: string }> = {
-    planning: { color: 'text-slate-500', bg: 'bg-slate-100', label: stageStatusLabels.planning },
+    planning: { color: 'text-[var(--pw-ink-slate-500)]', bg: 'bg-[var(--pw-fill-slate-100)]', label: stageStatusLabels.planning },
     pending_approval: { color: 'text-[var(--color-warning-fg)]', bg: 'bg-[var(--color-warning-bg)]', label: stageStatusLabels.pending_approval },
     in_progress: { color: 'text-[var(--color-info-fg)]', bg: 'bg-[var(--color-info-bg)]', label: stageStatusLabels.in_progress },
     on_hold: { color: 'text-[var(--color-warning-fg)]', bg: 'bg-[var(--color-warning-bg)]', label: stageStatusLabels.on_hold },
@@ -116,10 +116,10 @@ export function StageProgressCards({
 
             <style jsx>{`
                 .stage-progress-cards {
-                    background: white;
+                    background: var(--pw-fill-ffffff);
                     border-radius: 16px;
                     padding: 24px;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid var(--pw-line-e2e8f0);
                 }
 
                 .stages-container {
@@ -134,7 +134,7 @@ export function StageProgressCards({
                     flex: 1;
                     min-width: 140px;
                     max-width: 180px;
-                    background: #f8fafc;
+                    background: var(--pw-fill-f8fafc);
                     border: 2px solid transparent;
                     border-radius: 12px;
                     padding: 16px;
@@ -147,7 +147,7 @@ export function StageProgressCards({
 
                 @media (hover: hover) and (pointer: fine) {
                   .stage-card:hover {
-                      background: #f1f5f9;
+                      background: var(--pw-fill-f1f5f9);
                       transform: translateY(-2px);
                   }
                 }
@@ -183,7 +183,7 @@ export function StageProgressCards({
                 .stage-name {
                     font-size: 0.9375rem;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                     margin: 0;
                 }
 
@@ -201,17 +201,17 @@ export function StageProgressCards({
                 .stage-cost {
                     font-size: 1rem;
                     font-weight: 700;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                 }
 
                 .stage-items {
                     font-size: 0.75rem;
-                    color: #475569;
+                    color: var(--pw-ink-475569);
                 }
 
                 .stage-progress {
                     height: 4px;
-                    background: #e2e8f0;
+                    background: var(--pw-fill-e2e8f0);
                     border-radius: 2px;
                     overflow: hidden;
                 }
@@ -232,7 +232,7 @@ export function StageProgressCards({
                 .connector-line {
                     width: 24px;
                     height: 2px;
-                    background: #e2e8f0;
+                    background: var(--pw-fill-e2e8f0);
                     border-radius: 1px;
                 }
 

@@ -152,7 +152,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
             <style jsx>{`
                 .stage-header {
                     position: relative;
-                    background: #ffffff;
+                    background: var(--pw-fill-ffffff);
                     border: 1px solid var(--color-border-light);
                     border-radius: 8px;
                     overflow: visible;
@@ -165,7 +165,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
 
                 .stage-description {
                     font-size: 0.9rem;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     margin: 0;
                     line-height: 1.5;
                 }
@@ -175,21 +175,21 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    background: #ffffff;
+                    background: var(--pw-fill-ffffff);
                     border: none;
                     border-bottom: 1px solid transparent;
                     cursor: pointer;
                     padding: 20px 24px;
                     font-size: 1.1rem;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
                     user-select: none;
                 }
 
                 @media (hover: hover) and (pointer: fine) {
                   .section-toggle:hover {
-                      background: #fafafa;
+                      background: var(--pw-fill-fafafa);
                   }
                 }
 
@@ -202,7 +202,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                 }
 
                 .toggle-copy small {
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     font-size: 12px;
                     font-weight: 700;
                     text-transform: uppercase;
@@ -214,7 +214,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                 }
 
                 .stage-header:has(.stage-body) .section-toggle {
-                    border-bottom-color: #f1f5f9;
+                    border-bottom-color: var(--pw-line-f1f5f9);
                 }
 
                 .stage-body {
@@ -224,7 +224,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     justify-content: space-between;
                     gap: 24px;
                     padding: 24px;
-                    background: #ffffff;
+                    background: var(--pw-fill-ffffff);
                 }
 
                 .stage-title {
@@ -258,7 +258,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                 }
 
                 .status-trigger {
@@ -266,8 +266,8 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     align-items: center;
                     gap: 10px;
                     padding: 10px 14px;
-                    background: #ffffff;
-                    border: 1px solid #e2e8f0;
+                    background: var(--pw-fill-ffffff);
+                    border: 1px solid var(--pw-line-e2e8f0);
                     border-radius: 10px;
                     cursor: pointer;
                     transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-out);
@@ -278,8 +278,8 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
 
                 @media (hover: hover) and (pointer: fine) {
                   .status-trigger:hover {
-                      border-color: #cbd5e1;
-                      background: #f8fafc;
+                      border-color: var(--pw-line-cbd5e1);
+                      background: var(--pw-fill-f8fafc);
                   }
                 }
 
@@ -291,7 +291,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                 .status-label {
                     font-size: 0.9rem;
                     font-weight: 500;
-                    color: #1e293b;
+                    color: var(--pw-ink-1e293b);
                     flex: 1;
                     text-align: left;
                 }
@@ -305,8 +305,8 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     top: calc(100% + 6px);
                     left: 0;
                     min-width: 200px;
-                    background: #ffffff;
-                    border: 1px solid #e2e8f0;
+                    background: var(--pw-fill-ffffff);
+                    border: 1px solid var(--pw-line-e2e8f0);
                     border-radius: 12px;
                     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
                                 0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -324,7 +324,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     border: none;
                     cursor: pointer;
                     font-size: 0.9rem;
-                    color: #475569;
+                    color: var(--pw-ink-475569);
                     text-align: left;
                     border-radius: 8px;
                     transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
@@ -332,15 +332,15 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
 
                 @media (hover: hover) and (pointer: fine) {
                   .status-option:hover {
-                      background: #f1f5f9;
-                      color: #1e293b;
+                      background: var(--pw-fill-f1f5f9);
+                      color: var(--pw-ink-1e293b);
                   }
                 }
 
                 .status-option.active {
-                    background: #f1f5f9;
+                    background: var(--pw-fill-f1f5f9);
                     font-weight: 600;
-                    color: #0f172a;
+                    color: var(--pw-ink-0f172a);
                 }
 
                 .option-icon {
@@ -354,8 +354,8 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     align-items: center;
                     gap: 12px;
                     padding: 10px 16px;
-                    background: #f8fafc;
-                    border: 1px solid #e2e8f0;
+                    background: var(--pw-fill-f8fafc);
+                    border: 1px solid var(--pw-line-e2e8f0);
                     border-radius: 10px;
                     min-height: 46px;
                 }
@@ -374,14 +374,14 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                 }
 
                 .date-field input[type="date"] {
                     padding: 0;
                     border: none;
                     font-size: 0.85rem;
-                    color: #1e293b;
+                    color: var(--pw-ink-1e293b);
                     background: transparent;
                     width: 128px;
                     font-weight: 500;
@@ -396,7 +396,7 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
 
                 .date-display {
                     font-size: 0.75rem;
-                    color: #64748b;
+                    color: var(--pw-ink-64748b);
                     display: flex;
                     align-items: center;
                     gap: 6px;
@@ -406,20 +406,20 @@ export default function StageMetadataHeader({ stage, onUpdate, customTitle }: St
                     font-size: 12px;
                     font-weight: 700;
                     padding: 2px 8px;
-                    background: #eff6ff;
-                    color: #2563eb;
+                    background: var(--pw-fill-eff6ff);
+                    color: var(--pw-ink-2563eb);
                     border-radius: 99px;
                     text-transform: uppercase;
                     white-space: nowrap;
                 }
 
                 .days-badge.urgent {
-                    background: #fef2f2;
-                    color: #ef4444;
+                    background: var(--pw-fill-fef2f2);
+                    color: var(--pw-ink-ef4444);
                 }
 
                 .date-separator {
-                    color: #cbd5e1;
+                    color: var(--pw-ink-cbd5e1);
                     font-size: 1.2rem;
                     margin: 0 8px;
                     padding-top: 12px;

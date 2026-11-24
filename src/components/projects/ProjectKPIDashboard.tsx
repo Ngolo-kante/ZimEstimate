@@ -299,8 +299,8 @@ export default function ProjectKPIDashboard({
         }
 
         .kpi-card {
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
+          background: var(--pw-fill-ffffff);
+          border: 1px solid var(--pw-line-e2e8f0);
           border-radius: 16px;
           padding: 20px;
           display: flex;
@@ -332,9 +332,9 @@ export default function ProjectKPIDashboard({
         }
 
         .icon-blue { background: var(--color-accent-muted); color: var(--color-accent); }
-        .icon-orange { background: #fff7ed; color: #f97316; }
+        .icon-orange { background: var(--pw-fill-fff7ed); color: var(--pw-ink-f97316); }
         .icon-red { background: var(--color-danger-bg); color: var(--color-danger-fg); }
-        .icon-amber { background: #fffbeb; color: var(--color-warning-fg); }
+        .icon-amber { background: var(--pw-fill-fffbeb); color: var(--color-warning-fg); }
 
         .kpi-trend {
           display: flex;
@@ -348,7 +348,7 @@ export default function ProjectKPIDashboard({
 
         .trend-up { background: var(--color-danger-bg); color: var(--color-danger-fg); }
         .trend-down { background: var(--color-accent-muted); color: var(--color-accent-dark); }
-        .trend-neutral { background: #f1f5f9; color: #64748b; }
+        .trend-neutral { background: var(--pw-fill-f1f5f9); color: var(--pw-ink-64748b); }
 
         .kpi-content {
           display: flex;
@@ -359,7 +359,7 @@ export default function ProjectKPIDashboard({
         .kpi-label {
           font-size: 0.8rem;
           font-weight: 600;
-          color: #64748b;
+          color: var(--pw-ink-64748b);
           text-transform: uppercase;
           letter-spacing: 0.03em;
         }
@@ -369,14 +369,14 @@ export default function ProjectKPIDashboard({
           font-variant-numeric: tabular-nums;
           font-size: 1.5rem;
           font-weight: 700;
-          color: #0f172a;
+          color: var(--pw-ink-0f172a);
           letter-spacing: -0.02em;
           line-height: 1.2;
         }
 
         .kpi-sub {
           font-size: 0.85rem;
-          color: #64748b;
+          color: var(--pw-ink-64748b);
         }
 
         .kpi-action {
@@ -384,12 +384,12 @@ export default function ProjectKPIDashboard({
           align-items: center;
           gap: 6px;
           padding: 8px 12px;
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
+          background: var(--pw-fill-f8fafc);
+          border: 1px solid var(--pw-line-e2e8f0);
           border-radius: 8px;
           font-size: 0.8rem;
           font-weight: 600;
-          color: #1d4ed8;
+          color: var(--pw-ink-1d4ed8);
           cursor: pointer;
           transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
           margin-top: auto;
@@ -397,8 +397,8 @@ export default function ProjectKPIDashboard({
 
         @media (hover: hover) and (pointer: fine) {
           .kpi-action:hover {
-            background: #eff6ff;
-            border-color: #bfdbfe;
+            background: var(--pw-fill-eff6ff);
+            border-color: var(--pw-line-bfdbfe);
           }
         }
 
@@ -441,7 +441,7 @@ export default function ProjectKPIDashboard({
 
         .alert-action {
           padding: 6px 12px;
-          background: rgba(255, 255, 255, 0.8);
+          background: color-mix(in srgb, var(--pw-fill-ffffff) 80%, transparent);
           border: 1px solid var(--color-danger-border);
           border-radius: 6px;
           font-size: 0.8rem;
@@ -453,7 +453,7 @@ export default function ProjectKPIDashboard({
 
         @media (hover: hover) and (pointer: fine) {
           .alert-action:hover {
-            background: #ffffff;
+            background: var(--pw-fill-ffffff);
           }
         }
 
@@ -462,15 +462,15 @@ export default function ProjectKPIDashboard({
           align-items: center;
           gap: 12px;
           padding: 14px 16px;
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
+          background: var(--pw-fill-ffffff);
+          border: 1px solid var(--pw-line-e2e8f0);
           border-radius: 12px;
           transition: background-color 0.2s ease, border-color 0.2s ease;
         }
 
         @media (hover: hover) and (pointer: fine) {
           .stat-card:hover {
-            border-color: #cbd5e1;
+            border-color: var(--pw-line-cbd5e1);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
           }
         }
@@ -496,7 +496,7 @@ export default function ProjectKPIDashboard({
         .stat-label {
           font-size: 12px;
           font-weight: 600;
-          color: #64748b;
+          color: var(--pw-ink-64748b);
           text-transform: uppercase;
           letter-spacing: 0.03em;
         }
@@ -506,12 +506,12 @@ export default function ProjectKPIDashboard({
           font-variant-numeric: tabular-nums;
           font-size: 1rem;
           font-weight: 700;
-          color: #0f172a;
+          color: var(--pw-ink-0f172a);
         }
 
         .stat-sub {
           font-size: 0.75rem;
-          color: #64748b;
+          color: var(--pw-ink-64748b);
         }
 
         .stat-action {
@@ -520,10 +520,10 @@ export default function ProjectKPIDashboard({
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #f1f5f9;
+          background: var(--pw-fill-f1f5f9);
           border: none;
           border-radius: 6px;
-          color: #64748b;
+          color: var(--pw-ink-64748b);
           cursor: pointer;
           transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
           flex-shrink: 0;
@@ -531,15 +531,15 @@ export default function ProjectKPIDashboard({
 
         @media (hover: hover) and (pointer: fine) {
           .stat-action:hover {
-            background: #e2e8f0;
-            color: #0f172a;
+            background: var(--pw-fill-e2e8f0);
+            color: var(--pw-ink-0f172a);
           }
         }
 
         .progress-bar {
           width: 100%;
           height: 6px;
-          background: #e2e8f0;
+          background: var(--pw-fill-e2e8f0);
           border-radius: 99px;
           overflow: hidden;
           margin-top: 4px;

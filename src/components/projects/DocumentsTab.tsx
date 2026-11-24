@@ -266,7 +266,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
 
                 .file-count {
                     margin: 0;
-                    color: #475569;
+                    color: var(--pw-ink-475569);
                     font-size: 0.86rem;
                 }
 
@@ -274,9 +274,9 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                     display: flex;
                     align-items: center;
                     gap: 8px;
-                    color: #6580a4;
-                    background: rgba(255, 255, 255, 0.94);
-                    border: 1px solid #d3e4f7;
+                    color: var(--pw-ink-6580a4);
+                    background: color-mix(in srgb, var(--pw-fill-ffffff) 94%, transparent);
+                    border: 1px solid var(--pw-line-d3e4f7);
                     border-radius: 10px;
                     padding: 8px 10px;
                 }
@@ -287,7 +287,7 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                     border-radius: 6px;
                     background: transparent;
                     font-size: 0.85rem;
-                    color: #355981;
+                    color: var(--pw-ink-355981);
                     cursor: pointer;
                     outline: none;
                 }
@@ -333,9 +333,9 @@ export default function DocumentsTab({ projectId }: DocumentsTabProps) {
                     padding: var(--spacing-2xl);
                     text-align: center;
                     color: var(--color-text-muted);
-                    background: #f8fafc;
+                    background: var(--pw-fill-f8fafc);
                     border-radius: 16px;
-                    border: 1px dashed #cbd5e1;
+                    border: 1px dashed var(--pw-line-cbd5e1);
                 }
 
                 .setup-state {
